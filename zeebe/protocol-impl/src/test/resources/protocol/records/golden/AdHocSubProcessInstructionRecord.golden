@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -30,6 +31,7 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
   private static final StringValue TENANT_ID = new StringValue("tenantId");
   private static final StringValue COMPLETION_CONDITION_FULFILLED =
       new StringValue("completionConditionFulfilled");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinalKey");
 
   private final LongProperty adHocSubProcessInstanceKey =
       new LongProperty(AD_HOC_SUB_PROCESS_INSTANCE_KEY, -1L);
@@ -41,14 +43,16 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
       new StringProperty(TENANT_ID, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final BooleanProperty completionConditionFulfilledProp =
       new BooleanProperty(COMPLETION_CONDITION_FULFILLED, false);
+  private final IntegerProperty storageOrdinalKeyProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
 
   public AdHocSubProcessInstructionRecord() {
-    super(5);
+    super(6);
     declareProperty(adHocSubProcessInstanceKey)
         .declareProperty(activateElements)
         .declareProperty(cancelRemainingInstances)
         .declareProperty(tenantId)
-        .declareProperty(completionConditionFulfilledProp);
+        .declareProperty(completionConditionFulfilledProp)
+        .declareProperty(storageOrdinalKeyProp);
   }
 
   @Override
@@ -108,6 +112,16 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
 
   public AdHocSubProcessInstructionRecord setTenantId(final String tenantId) {
     this.tenantId.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public AdHocSubProcessInstructionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 }
