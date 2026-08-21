@@ -747,6 +747,7 @@
             <identity.docker.image.version>${version.identity}</identity.docker.image.version>
           </systemPropertyVariables>
           <excludedGroups>rdbms, rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, dl-nightly, async-repl</excludedGroups>
+          <forkedProcessTimeoutInSeconds>10800</forkedProcessTimeoutInSeconds>
         </configuration>
         <dependencies>
           <dependency>
