@@ -38,12 +38,12 @@ final class ClusterRebalanceMapper {
   private ClusterRebalanceMapper() {}
 
   static ClusterRebalanceServices.ClusterRebalanceRequest toServiceRequest(
-      final @Nullable ClusterRebalanceRequest body) {
+      final boolean dryRun, final @Nullable ClusterRebalanceRequest body) {
     if (body == null) {
-      return ClusterRebalanceServices.ClusterRebalanceRequest.withDefaultSettings();
+      return ClusterRebalanceServices.ClusterRebalanceRequest.withDefaultSettings(dryRun);
     }
     return new ClusterRebalanceServices.ClusterRebalanceRequest(
-        Boolean.TRUE.equals(body.getDryRun()),
+        dryRun,
         body.getReplicationLagThreshold(),
         duration("replicationTimeout", body.getReplicationTimeout()),
         body.getMaxTransferAttempts(),

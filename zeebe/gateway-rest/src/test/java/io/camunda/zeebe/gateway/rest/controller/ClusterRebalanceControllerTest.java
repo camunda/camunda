@@ -59,14 +59,15 @@ class ClusterRebalanceControllerTest extends RestControllerTest {
   @Test
   void shouldTriggerWithConfiguredDefaultsWhenNoBodyIsGiven() {
     // given
-    when(clusterRebalanceServices.triggerRebalance(ClusterRebalanceRequest.withDefaultSettings()))
+    when(clusterRebalanceServices.triggerRebalance(
+            ClusterRebalanceRequest.withDefaultSettings(false)))
         .thenReturn(CompletableFuture.completedFuture(idleStatus()));
 
     // when / then
     webClient.post().uri(REBALANCE_URL).exchange().expectStatus().isAccepted();
 
     verify(clusterRebalanceServices)
-        .triggerRebalance(ClusterRebalanceRequest.withDefaultSettings());
+        .triggerRebalance(ClusterRebalanceRequest.withDefaultSettings(false));
   }
 
   @Test
@@ -84,7 +85,6 @@ class ClusterRebalanceControllerTest extends RestControllerTest {
         .bodyValue(
             """
             {
-              "dryRun": false,
               "replicationLagThreshold": 8388608,
               "replicationTimeout": "PT10S",
               "maxTransferAttempts": 3,
@@ -110,14 +110,7 @@ class ClusterRebalanceControllerTest extends RestControllerTest {
         .thenReturn(CompletableFuture.completedFuture(idleStatus()));
 
     // when
-    webClient
-        .post()
-        .uri(REBALANCE_URL)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue("{\"dryRun\": true}")
-        .exchange()
-        .expectStatus()
-        .isAccepted();
+    webClient.post().uri(REBALANCE_URL + "?dryRun=true").exchange().expectStatus().isAccepted();
 
     // then
     assertThat(captor.getValue().dryRun()).isTrue();
@@ -151,9 +144,7 @@ class ClusterRebalanceControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(REBALANCE_URL)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue("{\"dryRun\": true}")
+        .uri(REBALANCE_URL + "?dryRun=true")
         .exchange()
         .expectStatus()
         .isAccepted()
@@ -572,7 +563,8 @@ class ClusterRebalanceControllerTest extends RestControllerTest {
   @Test
   void shouldMapAConflictToHttp409() {
     // given
-    when(clusterRebalanceServices.triggerRebalance(ClusterRebalanceRequest.withDefaultSettings()))
+    when(clusterRebalanceServices.triggerRebalance(
+            ClusterRebalanceRequest.withDefaultSettings(false)))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new ServiceException("a rebalance is already running", Status.ALREADY_EXISTS)));

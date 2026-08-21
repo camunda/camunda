@@ -142,8 +142,8 @@ public final class ClusterRebalanceServices {
       @Nullable Integer maxTransferAttempts,
       @Nullable Duration leaderWaitTimeout) {
 
-    public static ClusterRebalanceRequest withDefaultSettings() {
-      return new ClusterRebalanceRequest(false, null, null, null, null);
+    public static ClusterRebalanceRequest withDefaultSettings(final boolean dryRun) {
+      return new ClusterRebalanceRequest(dryRun, null, null, null, null);
     }
   }
 }

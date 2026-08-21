@@ -1318,6 +1318,16 @@ paths:
         `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
         Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
         valid here.
+      parameters:
+        - name: dryRun
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: >-
+            If true, report the plan the rebalance would carry out without pausing any partition
+            or transferring any leadership.
       requestBody:
         required: false
         content:
@@ -1946,12 +1956,6 @@ components:
         settings".
       type: object
       properties:
-        dryRun:
-          description: >-
-            If true, report the plan the rebalance would carry out without pausing any partition or
-            transferring any leadership.
-          type: boolean
-          default: false
         replicationLagThreshold:
           description: >-
             The highest replication lag (in bytes) that a desired leader may have for its transfer

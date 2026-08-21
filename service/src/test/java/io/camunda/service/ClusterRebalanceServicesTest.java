@@ -52,7 +52,7 @@ final class ClusterRebalanceServicesTest {
 
     // when
     final var result =
-        services.triggerRebalance(ClusterRebalanceRequest.withDefaultSettings()).join();
+        services.triggerRebalance(ClusterRebalanceRequest.withDefaultSettings(false)).join();
 
     // then
     assertThat(result.leadershipStatus().state()).isEqualTo(ClusterLeadershipStatus.State.BALANCED);

@@ -21,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * Coordinated cluster-wide leadership rebalance, authenticated by the cluster-admin security chain.
@@ -41,12 +42,13 @@ public final class ClusterRebalanceController {
 
   @CamundaPostMapping(path = "/rebalance")
   public CompletableFuture<ResponseEntity<Object>> triggerRebalance(
+      @RequestParam(defaultValue = "false") final boolean dryRun,
       @RequestBody(required = false) final @Nullable ClusterRebalanceRequest body) {
     return RequestExecutor.executeServiceMethod(
         () ->
             serviceRegistry
                 .clusterRebalanceServices()
-                .triggerRebalance(ClusterRebalanceMapper.toServiceRequest(body)),
+                .triggerRebalance(ClusterRebalanceMapper.toServiceRequest(dryRun, body)),
         ClusterRebalanceMapper::toClusterBalanceResponse,
         HttpStatus.ACCEPTED);
   }
