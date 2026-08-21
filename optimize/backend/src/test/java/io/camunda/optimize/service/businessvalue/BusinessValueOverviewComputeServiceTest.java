@@ -56,8 +56,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 /**
- * Guards the property the fan-in exists for: the number of report evaluations per sweep depends on
- * the tenant count and the chunk size, never on how many process definitions exist.
+ * Guards the property the fan-in exists for: report evaluations per sweep scale with the number of
+ * definition <em>chunks</em> rather than with the definition count, so 250 extra definitions cost
+ * one extra evaluation per report and range instead of 250.
  */
 class BusinessValueOverviewComputeServiceTest {
 
@@ -129,7 +130,7 @@ class BusinessValueOverviewComputeServiceTest {
   }
 
   @Test
-  void shouldNotEvaluateMoreOftenWhenTheDefinitionCountDoubles() {
+  void shouldScaleEvaluationsWithChunkCountNotDefinitionCount() {
     // given a catalog of 500 definitions on one tenant
     givenDefinitions(DEFAULT_TENANT, 500);
     computeService.computeOverviewRows(allRanges());
@@ -140,8 +141,9 @@ class BusinessValueOverviewComputeServiceTest {
     computeService.computeOverviewRows(allRanges());
     final int evaluationsForOneThousand = evaluationCount.get();
 
-    // then the evaluation count grows with the chunk count, not with the definition count —
-    // 1000 definitions cost 8 evaluations, against the 8000 a per-definition sweep would issue
+    // then doubling the catalog doubles the chunk count and so doubles the evaluations, but the
+    // unit of growth is the 250-definition chunk: 1000 definitions cost 32 evaluations, against the
+    // 8000 a per-definition sweep would issue
     assertThat(evaluationsForFiveHundred).isEqualTo(2 * 4 * 2);
     assertThat(evaluationsForOneThousand).isEqualTo(2 * 4 * 4);
   }

@@ -57,10 +57,11 @@ import org.springframework.stereotype.Component;
  *
  * <p>Both seeded reports group by process definition key, so one evaluation returns a bucket per
  * definition. Evaluation is therefore fanned in to once per {@code (report, metricRange, tenantId,
- * chunk)} rather than once per definition, which keeps the query count independent of how many
- * process definitions exist. Tenant is the finest scope a single evaluation can serve: the reports
- * group by definition key only, with no tenant dimension in the result, so definitions have to be
- * grouped by tenant for a per-tenant row to be correct.
+ * chunk)} rather than once per definition, so the query count scales with the number of chunks
+ * rather than with the definition count itself — a catalog of 1000 definitions on one tenant costs
+ * 32 evaluations per sweep instead of 8000. Tenant is the finest scope a single evaluation can
+ * serve: the reports group by definition key only, with no tenant dimension in the result, so
+ * definitions have to be grouped by tenant for a per-tenant row to be correct.
  *
  * <p>Called from {@link BusinessValueOverviewSchedulerService} on each tick. The target-write and
  * stale-read backstop paths described in the technical design will call in from follow-up PRs once
