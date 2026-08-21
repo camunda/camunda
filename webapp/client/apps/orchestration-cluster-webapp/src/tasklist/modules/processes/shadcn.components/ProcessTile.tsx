@@ -10,14 +10,40 @@ import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Badge, Button, Card, CardContent} from '@camunda/design-system';
 import {ArrowRight, List} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
+import type {StartProcessStatus} from '#/tasklist/modules/processes/startProcessMachine';
 
 type Props = {
 	process: ProcessDefinition;
+	status: StartProcessStatus;
+	isStartButtonDisabled: boolean;
+	onStartProcess: () => void;
 };
 
-const ProcessTile: React.FC<Props> = ({process}) => {
+function getStartProcessStatusLabel(t: (key: string) => string, status: StartProcessStatus) {
+	if (status === 'active') {
+		return t('tasklist.processesStartProcessPendingStatusText');
+	}
+
+	if (status === 'active-tasks') {
+		return t('tasklist.processesStartProcessWaitForTasksText');
+	}
+
+	if (status === 'finished') {
+		return t('tasklist.processesStartProcessSuccess');
+	}
+
+	if (status === 'error') {
+		return t('tasklist.processesStartProcessFailed');
+	}
+
+	return undefined;
+}
+
+const ProcessTile: React.FC<Props> = ({process, status, isStartButtonDisabled, onStartProcess}) => {
 	const {t} = useTranslation();
 	const displayName = process.name ?? process.processDefinitionId;
+	const isBusy = status === 'active' || status === 'active-tasks';
+	const statusLabel = getStartProcessStatusLabel(t, status);
 
 	return (
 		<Card className="h-full" data-testid={`process-tile-${process.processDefinitionKey}`}>
@@ -36,12 +62,15 @@ const ProcessTile: React.FC<Props> = ({process}) => {
 						type="button"
 						variant="secondary"
 						size="sm"
-						onClick={() => {
-							// TODO(#60229): wire the real start-process action here; inert for this slice.
-						}}
+						loading={isBusy}
+						disabled={isStartButtonDisabled}
+						aria-live={status === 'error' || status === 'finished' ? 'assertive' : 'polite'}
+						onClick={onStartProcess}
 					>
-						{t('tasklist.processesTileStartProcessButtonLabel')}
-						{process.hasStartForm ? <ArrowRight aria-hidden className="ml-1 size-4" /> : null}
+						{statusLabel ?? t('tasklist.processesTileStartProcessButtonLabel')}
+						{statusLabel === undefined && process.hasStartForm ? (
+							<ArrowRight aria-hidden className="ml-1 size-4" />
+						) : null}
 					</Button>
 					{process.hasStartForm ? (
 						<Badge className="w-fit gap-1" title={t('tasklist.processesProcessTileAttributes')}>

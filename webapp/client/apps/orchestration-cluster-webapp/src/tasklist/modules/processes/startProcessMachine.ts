@@ -25,12 +25,23 @@ const HTTP_STATUS_FORBIDDEN = 403;
 type StartProcessStatus = 'inactive' | 'active' | 'active-tasks' | 'finished' | 'error';
 type StartProcessFailureReason = 'forbidden' | 'generic';
 type Navigate = ReturnType<typeof useNavigate>;
+// The processes/task-detail routes exist in parallel under both the Carbon and
+// shadcn route trees (#60229) — the machine is shared between them, so the
+// caller (StartProcessProvider) tells it which tree's routes to navigate to
+// rather than either tree being hardcoded here.
+type ProcessesRoute = '/tasklist/processes' | '/shadcn/tasklist/processes';
+type TaskRoute = '/tasklist/$userTaskKey' | '/shadcn/tasklist/$userTaskKey';
 
 type StartProcessMachineInput = {
 	navigate: Navigate;
+	processesRoute?: ProcessesRoute;
+	taskRoute?: TaskRoute;
 };
 
-type StartProcessMachineContext = StartProcessMachineInput & {
+type StartProcessMachineContext = {
+	navigate: Navigate;
+	processesRoute: ProcessesRoute;
+	taskRoute: TaskRoute;
 	selectedProcess: ProcessDefinition | null;
 	variables: Record<string, unknown> | undefined;
 	processInstanceKey: string | null;
@@ -93,13 +104,15 @@ const queryNewProcessInstanceTasksLogic = fromPromise<QueryUserTasksResponseBody
 	},
 );
 
-const navigateToTaskLogic = fromPromise<void, {navigate: Navigate; userTaskKey: string}>(async ({input}) => {
-	await input.navigate({
-		to: '/tasklist/$userTaskKey',
-		params: {userTaskKey: input.userTaskKey},
-		search: {filter: 'all-open', sortBy: 'creation'},
-	});
-});
+const navigateToTaskLogic = fromPromise<void, {navigate: Navigate; taskRoute: TaskRoute; userTaskKey: string}>(
+	async ({input}) => {
+		await input.navigate({
+			to: input.taskRoute,
+			params: {userTaskKey: input.userTaskKey},
+			search: {filter: 'all-open', sortBy: 'creation'},
+		});
+	},
+);
 
 const startProcessMachine = setup({
 	types: {
@@ -125,7 +138,7 @@ const startProcessMachine = setup({
 		})),
 		closeStartForm: ({context, event}) => {
 			if (event.process.hasStartForm) {
-				void context.navigate({to: '/tasklist/processes', search: true});
+				void context.navigate({to: context.processesRoute, search: true});
 			}
 		},
 		storeProcessInstanceKey: assign((_, params: {processInstanceKey: string}) => ({
@@ -189,7 +202,7 @@ const startProcessMachine = setup({
 					actionButtonLabel: t('tasklist.processesNewTaskNotificationAction'),
 					onActionButtonClick: () => {
 						void context.navigate({
-							to: '/tasklist/$userTaskKey',
+							to: context.taskRoute,
 							params: {userTaskKey},
 							search: {filter: 'all-open', sortBy: 'creation'},
 						});
@@ -207,6 +220,8 @@ const startProcessMachine = setup({
 	id: 'startProcess',
 	context: ({input}) => ({
 		navigate: input?.navigate ?? (async () => undefined),
+		processesRoute: input?.processesRoute ?? '/tasklist/processes',
+		taskRoute: input?.taskRoute ?? '/tasklist/$userTaskKey',
 		selectedProcess: null,
 		variables: undefined,
 		processInstanceKey: null,
@@ -295,7 +310,11 @@ const startProcessMachine = setup({
 			tags: 'status:waiting_for_tasks',
 			invoke: {
 				src: 'navigateToTask',
-				input: ({context}) => ({navigate: context.navigate, userTaskKey: context.tasks[0]?.userTaskKey ?? ''}),
+				input: ({context}) => ({
+					navigate: context.navigate,
+					taskRoute: context.taskRoute,
+					userTaskKey: context.tasks[0]?.userTaskKey ?? '',
+				}),
 				onDone: {target: 'Succeeded'},
 				onError: {target: 'Succeeded'},
 			},
@@ -344,4 +363,4 @@ function deriveStartProcessStatus(snapshot: SnapshotFrom<typeof startProcessMach
 }
 
 export {deriveStartProcessStatus, startProcessMachine};
-export type {StartProcessStatus};
+export type {StartProcessStatus, ProcessesRoute, TaskRoute};
