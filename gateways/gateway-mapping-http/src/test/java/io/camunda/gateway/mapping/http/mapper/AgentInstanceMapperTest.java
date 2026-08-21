@@ -35,6 +35,7 @@ class AgentInstanceMapperTest {
   private static final String AGENT_INSTANCE_KEY = "9007199254741017";
   private static final String ELEMENT_INSTANCE_KEY = "2251799813685248";
   private static final String JOB_KEY = "2251799813685249";
+  private static final String JOB_LEASE = "lease-token-1";
 
   private final AgentInstanceMapper mapper =
       new AgentInstanceMapper(new AgentInstanceRequestValidator());
@@ -71,6 +72,8 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
       request.setStatus(AgentInstanceUpdateStatusEnum.THINKING);
 
@@ -95,8 +98,9 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hello"),
@@ -124,8 +128,9 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       final var toolCall =
           AgentInstanceToolCall.Builder.create()
               .toolCallId("tc-001")
@@ -173,9 +178,9 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease("lease-abc")
               .build();
-      request.setJobKey(JOB_KEY);
-      request.setJobLease("lease-abc");
       request.setHistory(List.of(historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hi")));
 
       // when
@@ -195,8 +200,9 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       final var item =
           AgentInstanceHistoryItem.Builder.create()
               .historyItemId("item-1")
@@ -256,8 +262,9 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(List.of(historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hi")));
 
       // when
@@ -283,8 +290,9 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       final var item = historyItem("item-1", AgentInstanceHistoryRoleEnum.CONFIGURATION, "hi");
       item.tools(List.of());
       request.setHistory(List.of(item));
@@ -306,8 +314,9 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       final var itemIterationTwo =
           historyItem("item-1", 2, AgentInstanceHistoryRoleEnum.USER, "hi");
       final var itemIterationThree =
@@ -335,23 +344,23 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceCreationRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease("lease-abc")
+              .history(
+                  List.of(
+                      AgentInstanceHistoryItem.Builder.create()
+                          .historyItemId("item-0")
+                          .loopIteration(1)
+                          .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                          .content(List.of(textContent("configuration")))
+                          .producedAt("2025-06-01T12:00:00Z")
+                          .build()
+                          .model("gpt-4o")
+                          .provider("openai")
+                          .systemPrompt(List.of(textContent("You are a helpful assistant."))),
+                      historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hello"),
+                      historyItem("item-2", AgentInstanceHistoryRoleEnum.ASSISTANT, "hi there")))
               .build();
-      request.setJobKey(JOB_KEY);
-      request.setJobLease("lease-abc");
-      request.setHistory(
-          List.of(
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-0")
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
-                  .content(List.of(textContent("configuration")))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build()
-                  .model("gpt-4o")
-                  .provider("openai")
-                  .systemPrompt(List.of(textContent("You are a helpful assistant."))),
-              historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hello"),
-              historyItem("item-2", AgentInstanceHistoryRoleEnum.ASSISTANT, "hi there")));
 
       // when
       final Either<ProblemDetail, AgentInstanceRecord> result =
@@ -374,26 +383,27 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceCreationRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
+              .history(
+                  List.of(
+                      AgentInstanceHistoryItem.Builder.create()
+                          .historyItemId("item-0")
+                          .loopIteration(1)
+                          .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                          .content(List.of(textContent("configuration")))
+                          .producedAt("2025-06-01T12:00:00Z")
+                          .build()
+                          .model("gpt-4o")
+                          .provider("openai")
+                          .systemPrompt(List.of(textContent("You are a helpful assistant.")))
+                          .limits(
+                              AgentInstanceLimits.Builder.create()
+                                  .maxModelCalls(10)
+                                  .maxTokens(1000L)
+                                  .maxToolCalls(5)
+                                  .build())))
               .build();
-      request.setJobKey(JOB_KEY);
-      request.setHistory(
-          List.of(
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-0")
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
-                  .content(List.of(textContent("configuration")))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build()
-                  .model("gpt-4o")
-                  .provider("openai")
-                  .systemPrompt(List.of(textContent("You are a helpful assistant.")))
-                  .limits(
-                      AgentInstanceLimits.Builder.create()
-                          .maxModelCalls(10)
-                          .maxTokens(1000L)
-                          .maxToolCalls(5)
-                          .build())));
 
       // when
       final Either<ProblemDetail, AgentInstanceRecord> result =
@@ -480,9 +490,10 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
       request.setStatus(AgentInstanceUpdateStatusEnum.IDLE);
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hello"),

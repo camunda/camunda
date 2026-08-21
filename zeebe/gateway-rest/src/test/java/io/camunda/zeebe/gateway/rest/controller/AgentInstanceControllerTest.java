@@ -418,7 +418,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(ELEMENT_INSTANCE_KEY)),
-            "No history provided."),
+            "No jobKey provided. No history provided."),
         Arguments.of(
             named(
                 "history without jobKey",

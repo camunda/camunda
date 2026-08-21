@@ -50,7 +50,9 @@ public class AgentInstanceRequestValidator {
                 request.getElementInstanceKey(), "elementInstanceKey", violations);
           }
 
-          if (request.getJobKey() != null) {
+          if (request.getJobKey() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobKey"));
+          } else {
             validatePositiveKeyFormat(request.getJobKey(), "jobKey", violations);
           }
 
@@ -59,10 +61,6 @@ public class AgentInstanceRequestValidator {
           if (history == null || history.isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history"));
           } else {
-            if (request.getJobKey() == null) {
-              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobKey"));
-            }
-
             for (int i = 0; i < history.size(); i++) {
               validateHistoryItem(i, history.get(i), violations);
             }

@@ -597,6 +597,9 @@ components:
       type: object
       required:
         - elementInstanceKey
+        - jobKey
+        - jobLease
+        - history
       properties:
         elementInstanceKey:
           description: |
@@ -608,8 +611,7 @@ components:
         jobKey:
           description: |
             The key of the job activation during which this creation is being made.
-            Required whenever history is non-empty.
-          nullable: true
+            A creation must always be attributed to the active job that produced it.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
         jobLease:
@@ -618,7 +620,6 @@ components:
             this activation from any other activation of the same job: if the job is
             later retried, history items submitted under a superseded lease are discarded
             rather than committed.
-          nullable: true
           type: string
         history:
           description: |
@@ -627,7 +628,6 @@ components:
             response's createdHistory, positionally correlated. Must include a
             CONFIGURATION item establishing model, provider, and systemPrompt (and,
             if needed, limits).
-          nullable: true
           type: array
           items:
             $ref: '#/components/schemas/AgentInstanceHistoryItem'
@@ -648,7 +648,6 @@ components:
         createdHistory:
           description: |
             One entry per history item submitted in the request, in request order.
-            Empty when no history items were submitted.
           type: array
           items:
             $ref: '#/components/schemas/AgentInstanceCreatedHistoryItem'
@@ -659,6 +658,8 @@ components:
       type: object
       required:
         - elementInstanceKey
+        - jobKey
+        - jobLease
       properties:
         elementInstanceKey:
           nullable: false
@@ -677,8 +678,7 @@ components:
         jobKey:
           description: |
             The key of the job activation during which this update is being made.
-            Required whenever history is provided.
-          nullable: true
+            An update must always be attributed to the active job that produced it.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
         jobLease:
@@ -687,7 +687,6 @@ components:
             this activation from any other activation of the same job: if the job is
             later retried, history items submitted under a superseded lease are discarded
             rather than committed.
-          nullable: true
           type: string
         history:
           description: |
