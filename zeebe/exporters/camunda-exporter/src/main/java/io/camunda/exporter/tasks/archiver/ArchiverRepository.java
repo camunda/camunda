@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -104,10 +105,12 @@ public interface ArchiverRepository extends AutoCloseable {
   }
 
   default String buildHistoricalIndicesPattern(final IndexTemplateDescriptor indexTemplate) {
-    return "%s,-%s,-%s"
+    return "%s,-%s,-%s,-%s%s*"
         .formatted(
             indexTemplate.getIndexPattern(),
             indexTemplate.getFullQualifiedName(),
-            indexTemplate.getAlias());
+            indexTemplate.getAlias(),
+            indexTemplate.getFullQualifiedName(),
+            TargetIndex.ORDINAL_SUFFIX_START);
   }
 }

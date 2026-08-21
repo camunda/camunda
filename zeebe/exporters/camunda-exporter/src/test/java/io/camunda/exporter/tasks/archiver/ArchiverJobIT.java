@@ -10,7 +10,6 @@ package io.camunda.exporter.tasks.archiver;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.ExporterResourceProvider;
-import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.tasks.BackgroundTaskIT;
 import io.camunda.search.test.utils.SearchClientAdapter;
@@ -22,7 +21,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
-import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 
 public abstract class ArchiverJobIT<T extends ArchiverJob<?>> extends BackgroundTaskIT<T> {
   private LifecyclePolicyNameVerifier lifecyclePolicyNameVerifier;
@@ -135,37 +133,6 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> extends Background
 
   protected String getExpectedLifecyclePolicyName() {
     return testPrefix + "-camunda-retention-policy";
-  }
-
-  private ArchiverRepository createArchiverRepository(
-      final ExporterConfiguration config, final ExporterResourceProvider resourceProvider) {
-    final var isElasticsearch = ConnectionTypes.isElasticSearch(config.getConnect().getType());
-    if (isElasticsearch) {
-      return closeLater(
-          new ElasticsearchArchiverRepository(
-              PARTITION_ID,
-              config.getHistory(),
-              resourceProvider,
-              createAsyncESClient(config),
-              executor,
-              exporterMetrics,
-              LOGGER));
-    } else {
-      final var asyncClient = createOSAsyncClient(config);
-      final var genericClient =
-          new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions());
-
-      return closeLater(
-          new OpenSearchArchiverRepository(
-              PARTITION_ID,
-              config.getHistory(),
-              resourceProvider,
-              asyncClient,
-              genericClient,
-              executor,
-              exporterMetrics,
-              LOGGER));
-    }
   }
 
   abstract T createArchiveJob(
