@@ -186,7 +186,7 @@ describe('<CustomFiltersModal />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should load default-tenant processes for a user with one accessible tenant', async () => {
+  it('should load processes from the only accessible tenant', async () => {
     vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
       ...clientConfig.getClientConfig(),
       clientMode: 'v1',
@@ -200,7 +200,7 @@ describe('<CustomFiltersModal />', () => {
         }),
       ),
       http.get('/v1/internal/processes', ({request}) => {
-        if (new URL(request.url).searchParams.get('tenantId') !== '<default>') {
+        if (new URL(request.url).searchParams.get('tenantId') !== 'staging') {
           return HttpResponse.json(null, {status: 400});
         }
 
@@ -260,7 +260,7 @@ describe('<CustomFiltersModal />', () => {
     );
   });
 
-  it('should load default-tenant processes when another tenant is selected', async () => {
+  it('should load processes from the selected tenant', async () => {
     vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
       ...clientConfig.getClientConfig(),
       clientMode: 'v1',
@@ -274,7 +274,7 @@ describe('<CustomFiltersModal />', () => {
         HttpResponse.json(userMocks.currentUserWithTenants),
       ),
       http.get('/v1/internal/processes', ({request}) => {
-        if (new URL(request.url).searchParams.get('tenantId') !== '<default>') {
+        if (new URL(request.url).searchParams.get('tenantId') !== 'tenantB') {
           return HttpResponse.json(null, {status: 400});
         }
 
@@ -296,6 +296,66 @@ describe('<CustomFiltersModal />', () => {
     await waitFor(() =>
       expect(screen.getByRole('combobox', {name: /process/i})).toBeEnabled(),
     );
+  });
+
+  it('should reload processes when the selected tenant changes', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      clientMode: 'v1',
+      isMultiTenancyEnabled: true,
+    });
+    nodeMockServer.use(
+      http.get('/v2/authentication/me', () =>
+        HttpResponse.json(userMocks.currentUserWithTenants),
+      ),
+      http.get(
+        '/v1/internal/processes',
+        ({request}) => {
+          if (
+            new URL(request.url).searchParams.get('tenantId') !== '<default>'
+          ) {
+            return HttpResponse.json(null, {status: 400});
+          }
+
+          return HttpResponse.json([
+            createMockProcess('process-default-tenant'),
+          ]);
+        },
+        {once: true},
+      ),
+      http.get('/v1/internal/processes', ({request}) => {
+        if (new URL(request.url).searchParams.get('tenantId') !== 'tenantB') {
+          return HttpResponse.json(null, {status: 400});
+        }
+
+        return HttpResponse.json([createMockProcess('process-tenantB')]);
+      }),
+    );
+
+    const {user} = render(
+      <CustomFiltersModal
+        isOpen
+        onClose={() => {}}
+        onSuccess={() => {}}
+        onDelete={() => {}}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      await screen.findByRole('option', {
+        name: /process process-default-tenant/i,
+      }),
+    ).toBeInTheDocument();
+
+    await user.selectOptions(
+      screen.getByRole('combobox', {name: /tenant/i}),
+      'tenantB',
+    );
+
+    expect(
+      await screen.findByRole('option', {name: /process process-tenantB/i}),
+    ).toBeInTheDocument();
   });
 
   it('should load processes without a tenant when multi-tenancy is disabled', async () => {
