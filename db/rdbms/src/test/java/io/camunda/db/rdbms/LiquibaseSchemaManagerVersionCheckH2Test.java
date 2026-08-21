@@ -63,8 +63,7 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
     final var manager = buildSchemaManager("8.9.5");
     manager.initialize();
 
-    // then: schema manager starts up successfully
-    assertThat(manager.isInitialized()).isTrue();
+    // then: the migration completed and recorded the running version
     assertThat(readSchemaVersion()).isEqualTo("8.9.5");
   }
 
@@ -79,8 +78,7 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
     final var manager = buildSchemaManager("8.10.0");
     manager.initialize();
 
-    // then: schema manager starts up successfully
-    assertThat(manager.isInitialized()).isTrue();
+    // then: the migration completed and recorded the running version
     assertThat(readSchemaVersion()).isEqualTo("8.10.0");
   }
 
@@ -100,7 +98,6 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
         .isInstanceOf(RdbmsSchemaVersionIncompatibleException.class)
         .hasMessageContaining("8.9.0")
         .hasMessageContaining("8.11.0");
-    assertThat(manager.isInitialized()).isFalse();
     // Schema version should NOT have been updated
     assertThat(readSchemaVersion()).isEqualTo("8.9.0");
     // Liquibase should NOT have applied any new changesets
@@ -117,8 +114,7 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
     final var manager = buildSchemaManager("8.10.0");
     manager.initialize();
 
-    // then: schema is created and version is recorded
-    assertThat(manager.isInitialized()).isTrue();
+    // then: schema is created and the version is recorded
     assertThat(readSchemaVersion()).isEqualTo("8.10.0");
   }
 
@@ -134,8 +130,7 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
     final var manager = buildSchemaManager("8.10.0");
     manager.initialize();
 
-    // then: schema manager starts up successfully and version is recorded
-    assertThat(manager.isInitialized()).isTrue();
+    // then: the migration completed and recorded the running version
     assertThat(readSchemaVersion()).isEqualTo("8.10.0");
   }
 
@@ -152,7 +147,6 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
         .isInstanceOf(RdbmsSchemaVersionIncompatibleException.class)
         .hasMessageContaining(RdbmsSchemaVersionStore.INFERRED_PRE_VERSIONING_SCHEMA_VERSION)
         .hasMessageContaining("8.11.0");
-    assertThat(manager.isInitialized()).isFalse();
   }
 
   // ---- helpers ----

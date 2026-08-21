@@ -27,33 +27,13 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for the per-physical-tenant {@link LiquibaseSchemaManager}. Schema-version behaviour
- * is covered by {@link RdbmsSchemaVersionStoreTest}; multi-tenant orchestration by {@link
- * DefaultRdbmsSchemaManagerRegistryTest}.
+ * is covered by {@link RdbmsSchemaVersionStoreTest}; which manager a tenant gets by {@link
+ * RdbmsSchemaManagersTest}; and orchestrating several tenants by {@code RdbmsSchemaInitializerTest}
+ * in the distribution.
  */
 class LiquibaseSchemaManagerTest {
 
-  // ---- initialize / isInitialized ----
-
-  @Test
-  void shouldMarkInitializedAfterMigration() throws Exception {
-    // given
-    final var schemaManager = new TestLiquibaseSchemaManager(autoDdlConfig(), "8.10.0");
-
-    // when
-    schemaManager.initialize();
-
-    // then
-    assertThat(schemaManager.isInitialized()).isTrue();
-  }
-
-  @Test
-  void shouldNotBeInitializedBeforeMigration() {
-    // given
-    final var schemaManager = new TestLiquibaseSchemaManager(autoDdlConfig(), "8.10.0");
-
-    // then
-    assertThat(schemaManager.isInitialized()).isFalse();
-  }
+  // ---- initialize ----
 
   @Test
   void shouldAbortStartupWhenApplicationVersionIsNull() {
@@ -79,7 +59,6 @@ class LiquibaseSchemaManagerTest {
     // then - the version compatibility check and the version recording both ran
     verify(versionStore).checkCompatibility();
     verify(versionStore).recordCurrentVersion();
-    assertThat(schemaManager.isInitialized()).isTrue();
   }
 
   // ---- stale lock (mock-based) ----
@@ -151,7 +130,6 @@ class LiquibaseSchemaManagerTest {
     schemaManager.initialize();
 
     // then
-    assertThat(schemaManager.isInitialized()).isTrue();
     assertThat(schemaManager.attempts).isEqualTo(2);
     assertThat(schemaManager.waits).isEqualTo(1);
   }
@@ -170,7 +148,6 @@ class LiquibaseSchemaManagerTest {
         .isInstanceOf(RuntimeException.class)
         .hasMessage("liquibase migration failed");
 
-    assertThat(schemaManager.isInitialized()).isFalse();
     assertThat(schemaManager.attempts).isEqualTo(3);
     assertThat(schemaManager.waits).isEqualTo(2);
   }
@@ -186,7 +163,6 @@ class LiquibaseSchemaManagerTest {
         .isInstanceOf(RuntimeException.class)
         .hasMessage("non-retryable failure");
 
-    assertThat(schemaManager.isInitialized()).isFalse();
     assertThat(schemaManager.attempts).isEqualTo(1);
     assertThat(schemaManager.waits).isZero();
   }
@@ -204,7 +180,6 @@ class LiquibaseSchemaManagerTest {
     schemaManager.initialize();
 
     // then
-    assertThat(schemaManager.isInitialized()).isTrue();
     assertThat(schemaManager.attempts).isEqualTo(2);
     assertThat(schemaManager.waits).isEqualTo(1);
   }
@@ -223,7 +198,6 @@ class LiquibaseSchemaManagerTest {
     schemaManager.initialize();
 
     // then
-    assertThat(schemaManager.isInitialized()).isTrue();
     assertThat(schemaManager.attempts).isEqualTo(2);
     assertThat(schemaManager.waits).isEqualTo(1);
   }
