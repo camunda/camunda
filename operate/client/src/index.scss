@@ -136,6 +136,11 @@ body,
           var(--cds-text-primary) 70%,
           var(--cds-background)
         );
+        border-color: color-mix(
+          in srgb,
+          var(--cds-text-primary) 70%,
+          var(--cds-background)
+        );
       }
     }
 
