@@ -121,6 +121,36 @@ final class PartitionRestoreApplierTest {
         .hasMessageContaining("does not replicate that partition");
   }
 
+  /**
+   * The restore graph orders each restore only after the pre-restore of the same broker and
+   * partition, which is only safe as long as this applier writes nothing to the group
+   * configuration. Pinned here so that a write added to either half of the applier fails instead of
+   * silently racing with concurrent restore steps.
+   */
+  @Test
+  void shouldLeaveGroupConfigurationUnchangedOnInit() {
+    // given
+    final var applier =
+        new PartitionRestoreApplier(
+            MEMBER_ID, PARTITION_ID, BACKUP_IDS, new SucceedingRestoreChangeExecutor());
+    final var globalConfig =
+        GlobalConfiguration.init().addMember(MEMBER_ID, BrokerState.initializeAsActive());
+    final var partitionState =
+        Map.of(PARTITION_ID, PartitionState.active(1, DynamicPartitionConfig.init()));
+    final var groupConfig =
+        PartitionGroupConfiguration.empty(1)
+            .addMember(
+                MEMBER_ID,
+                new BrokerPartitionState(0, Instant.MIN, partitionState, Mode.RECOVERING));
+
+    // when
+    final var result = applier.init(globalConfig, groupConfig);
+
+    // then
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get().apply(groupConfig)).isSameAs(groupConfig);
+  }
+
   @Test
   void shouldDelegateToExecutorAndLeaveGroupConfigurationUnchanged() {
     // given

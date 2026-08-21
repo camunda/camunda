@@ -119,6 +119,35 @@ final class PartitionPreRestoreApplierTest {
         .hasMessageContaining("does not replicate that partition");
   }
 
+  /**
+   * The restore graph leaves every pre-restore free of dependencies, which is only safe as long as
+   * this applier writes nothing to the group configuration. Pinned here so that a write added to
+   * either half of the applier fails instead of silently racing with concurrent restore steps.
+   */
+  @Test
+  void shouldLeaveGroupConfigurationUnchangedOnInit() {
+    // given
+    final var applier =
+        new PartitionPreRestoreApplier(
+            MEMBER_ID, PARTITION_ID, new SucceedingRestoreChangeExecutor());
+    final var globalConfig =
+        GlobalConfiguration.init().addMember(MEMBER_ID, BrokerState.initializeAsActive());
+    final var partitionState =
+        Map.of(PARTITION_ID, PartitionState.active(1, DynamicPartitionConfig.init()));
+    final var groupConfig =
+        PartitionGroupConfiguration.empty(1)
+            .addMember(
+                MEMBER_ID,
+                new BrokerPartitionState(0, Instant.MIN, partitionState, Mode.RECOVERING));
+
+    // when
+    final var result = applier.init(globalConfig, groupConfig);
+
+    // then
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get().apply(groupConfig)).isSameAs(groupConfig);
+  }
+
   @Test
   void shouldDelegateToExecutorAndLeaveGroupConfigurationUnchanged() {
     // given
@@ -131,6 +160,9 @@ final class PartitionPreRestoreApplierTest {
     // then
     assertThat(result).succeedsWithin(Duration.ofMillis(100));
     assertThat(executor.invokedPartitionIds).containsExactly(PARTITION_ID);
+
+    final var groupConfiguration = PartitionGroupConfiguration.empty(1);
+    assertThat(result.join().apply(groupConfiguration)).isSameAs(groupConfiguration);
   }
 
   @Test
