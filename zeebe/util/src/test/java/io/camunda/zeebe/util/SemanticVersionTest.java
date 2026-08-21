@@ -82,4 +82,11 @@ final class SemanticVersionTest {
     assertThat(new SemanticVersion(1, 0, 0, "alpha", "build.1"))
         .isEqualByComparingTo(new SemanticVersion(1, 0, 0, "alpha", "build.2"));
   }
+
+  @Test
+  void shouldFormatOnlyMajorAndMinorAsAMinorVersionString() {
+    assertThat(new SemanticVersion(8, 10, 3, null, null).toMinorVersionString()).isEqualTo("8.10");
+    assertThat(new SemanticVersion(8, 10, 0, "SNAPSHOT", null).toMinorVersionString())
+        .isEqualTo("8.10");
+  }
 }

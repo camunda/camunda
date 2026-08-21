@@ -30,6 +30,8 @@ import io.camunda.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExpor
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
+import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -41,6 +43,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
+import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -1047,6 +1050,106 @@ public final class ExporterDirectorTest {
     assertThat(exporter0.getExportedRecords())
         .extracting(Record::getPosition)
         .containsExactly(eventPosition1, eventPosition2, eventPosition3);
+  }
+
+  @Test
+  public void shouldReportExportingMigratedWhenNoExportersConfigured() {
+    // given - no exporters registered at all
+    startExporterDirector(Collections.emptyList());
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+  }
+
+  @Test
+  public void shouldReportExportingMigratedWhenEveryExporterIsCaughtUpToLogHead() {
+    // given - both exporters acknowledge the only record written
+    startExporterDirector(exporterDescriptors);
+    final long eventPosition = writeEvent();
+    waitUntil(() -> exporters.get(0).getExportedRecords().size() == 1);
+    waitUntil(() -> exporters.get(1).getExportedRecords().size() == 1);
+    exporters.get(0).getController().updateLastExportedRecordPosition(eventPosition);
+    exporters.get(1).getController().updateLastExportedRecordPosition(eventPosition);
+    Awaitility.await("both exporters' positions are durably persisted")
+        .untilAsserted(
+            () -> {
+              assertThat(rule.getExportersState().getPosition(EXPORTER_ID_1))
+                  .isEqualTo(eventPosition);
+              assertThat(rule.getExportersState().getPosition(EXPORTER_ID_2))
+                  .isEqualTo(eventPosition);
+            });
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then - nothing remains unexported at all, so trivially no old-version backlog either
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+  }
+
+  @Test
+  public void shouldReportExportingMigratedWhenNextUnexportedRecordIsAlreadyOnTheCurrentVersion() {
+    // given - a record on the current version is written but never acknowledged by either
+    // exporter; only a PREVIOUS-version backlog counts, so this must still report MIGRATED
+    startExporterDirector(exporterDescriptors);
+    writeEvent();
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+  }
+
+  @Test
+  public void
+      shouldReportExportingMigrationInProgressWhenNextUnexportedRecordIsOnAPreviousVersion() {
+    // given - a record stamped with the last supported backwards-compatible version is written
+    // and never acknowledged
+    startExporterDirector(exporterDescriptors);
+    final var previousVersion = VersionUtil.getPreviousSemanticVersion().orElseThrow();
+    rule.writeEventWithBrokerVersion(
+        DeploymentIntent.CREATED,
+        new DeploymentRecord(),
+        new VersionInfo(previousVersion.major(), previousVersion.minor(), previousVersion.patch()));
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATION_IN_PROGRESS);
+  }
+
+  @Test
+  public void shouldReportExportingMigrationUnknownWhenNextUnexportedRecordVersionIsIncompatible() {
+    // given - a record stamped with a version far ahead of the one actually running (as if this
+    // broker had been downgraded), never acknowledged
+    startExporterDirector(exporterDescriptors);
+    rule.writeEventWithBrokerVersion(
+        DeploymentIntent.CREATED, new DeploymentRecord(), new VersionInfo(99, 0, 0));
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.UNKNOWN);
+  }
+
+  @Test
+  public void shouldReportExportingMigrationStatusInPassiveModeUsingItsOwnFreshReader() {
+    // given - passive mode never opens the shared, ACTIVE-only logStreamReader field; this must
+    // still answer correctly using its own throwaway reader over the same log
+    passiveExporterRule.startExporterDirector(exporterDescriptors);
+    passiveExporterRule.writeEventWithBrokerVersion(
+        DeploymentIntent.CREATED, new DeploymentRecord(), new VersionInfo(99, 0, 0));
+
+    // when
+    final var status = passiveExporterRule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.UNKNOWN);
   }
 
   private long writeEvent() {
