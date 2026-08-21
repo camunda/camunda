@@ -57,7 +57,7 @@ public class DocumentBasedHistory {
           "zeebe.broker.exporters.camundaexporter.args.history.maxDelayBetweenRuns",
           "usage-metrics-rollover-interval",
           "zeebe.broker.exporters.camundaexporter.args.history.usageMetricsRolloverInterval");
-  private final String prefix;
+  private String prefix = "";
 
   private boolean processInstanceEnabled = DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED;
 
@@ -104,6 +104,15 @@ public class DocumentBasedHistory {
 
   /** Time range for creating dated usage-metrics indices. */
   private String usageMetricsRolloverInterval = DEFAULT_HISTORY_USAGE_METRICS_ROLLOVER_INTERVAL;
+
+  /**
+   * No-arg constructor solely so spring-boot-configuration-processor does not treat this class as
+   * constructor-bound — with a single parameterized constructor, the processor derives metadata
+   * only from that constructor's parameters and silently ignores every getter/setter below. This
+   * constructor is never invoked at runtime; {@link #DocumentBasedHistory(String)} remains the only
+   * real construction path (see {@link DocumentBasedSecondaryStorageDatabase}).
+   */
+  DocumentBasedHistory() {}
 
   public DocumentBasedHistory(final String databaseName) {
     prefix = "camunda.data.secondary-storage.%s.history".formatted(databaseName);
