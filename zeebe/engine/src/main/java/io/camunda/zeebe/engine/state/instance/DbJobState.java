@@ -261,7 +261,6 @@ public final class DbJobState implements JobState, MutableJobState {
     removeJobBackoff(key, record.getRecurringTime());
 
     // deleteIfExists: a job that predates this CF and was never suspended has no entry here
-    jobKey.wrapLong(key);
     jobIndexProcessInstanceKey.wrapLong(record.getProcessInstanceKey());
     jobsByProcessInstanceColumnFamily.deleteIfExists(processInstanceJobKey);
   }
