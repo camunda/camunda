@@ -29,7 +29,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableAdHocSubProcessInstructionRecordValue.Builder.class)
-public interface AdHocSubProcessInstructionRecordValue extends RecordValue, TenantOwned {
+public interface AdHocSubProcessInstructionRecordValue
+    extends RecordValue, StorageOrdinalKeyRelated, TenantOwned {
 
   /**
    * @return the instance key of the ad-hoc sub-process to modify.
