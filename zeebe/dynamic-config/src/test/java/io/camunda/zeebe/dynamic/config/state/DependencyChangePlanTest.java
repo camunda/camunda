@@ -14,7 +14,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph.PlannedOperation;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
@@ -369,7 +369,7 @@ final class DependencyChangePlanTest {
                   new PartitionRestoreOperation(member(m), p, new java.util.TreeSet<>(Set.of(1L))),
                   Set.of(pre)));
         }
-        builder.add(new DeleteHistoryOperation(member(m)), restoresOfMember);
+        builder.add(new ModeChangeOperation(member(m), Mode.PROCESSING), restoresOfMember);
       }
       return DependencyChangePlan.init(PLAN_ID, builder.build());
     }
@@ -414,7 +414,7 @@ final class DependencyChangePlanTest {
       final var remaining = List.copyOf(plan.runnableFor(member(0)).keySet());
       plan = plan.completeOperation(remaining.get(0));
 
-      // then — DeleteHistory is still waiting on the other restore
+      // then — the mode change is still waiting on the other restore
       assertThat(plan.hasPendingChanges()).isTrue();
       assertThat(plan.runnableFor(member(0))).hasSize(1);
     }
