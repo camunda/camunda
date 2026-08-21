@@ -1984,4 +1984,93 @@ public class AgentInstanceHistoryBatchProcessingTest {
     assertThat(((AgentHistoryRecordValue) newCreatedEvents.get(0).getValue()).getHistoryItemId())
         .isEqualTo("item-c");
   }
+
+  @Test
+  public void shouldRejectWholeBatchWhenTwoItemsShareHistoryItemIdWithinSameRequest() {
+    // given — a single request carries two items with the same historyItemId. This is a
+    // malformed request, distinct from a cross-request retry: nothing may be created at all.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+    final var firstItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("dup-id")
+            .setRole(AgentHistoryRole.USER)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("first"));
+    final var secondItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("dup-id")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("second"));
+
+    // when
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(List.of(firstItem, secondItem))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains(
+            """
+            Expected to update agent instance, but historyItemId 'dup-id' is used by more than one \
+            history item. Each history item must have a unique historyItemId.""");
+
+    // nothing was created at all — bounded via a clock reset sentinel.
+    final var clockResetKey = ENGINE.clock().reset().getKey();
+    final var createdEvents =
+        RecordingExporter.records()
+            .limit(r -> r.getKey() == clockResetKey)
+            .withValueType(ValueType.AGENT_HISTORY)
+            .withIntent(AgentHistoryIntent.CREATED)
+            .filter(
+                r -> ((AgentHistoryRecordValue) r.getValue()).getHistoryItemId().equals("dup-id"))
+            .toList();
+    assertThat(createdEvents).isEmpty();
+  }
 }
