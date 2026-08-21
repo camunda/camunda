@@ -12,6 +12,21 @@ global:
   # ConfigMap still only renders when a key is actually set.
   extraConfig: {}
 
+  # -- Container image defaults for the load-test driver pods this chart deploys
+  # directly (currently the zeebe-secrets benchmark driver in
+  # benchmark-zeebe-secrets-driver.yaml). These mirror the camunda-load-tests
+  # subchart's own `global.image` defaults: Helm does not propagate a subchart's
+  # global values up to the parent, so without this block the parent-owned
+  # templates would render an empty image tag/pullPolicy. Real deployments
+  # override `repository`/`tag` via `--set global.image.*` (see
+  # load-test-install-camunda-platform.sh); this only supplies the fallback used
+  # when nothing sets them (e.g. golden rendering).
+  image:
+    repository: gcr.io/zeebe-io
+    tag: SNAPSHOT
+    pullPolicy: Always
+    pullSecrets: []
+
 # -- Name of the load test.
 name: ""
 
@@ -60,6 +75,80 @@ chaosKiller:
 # generators (e.g. for a bare cluster setup).
 load-tester:
   enabled: true
+
+# -- Seed data for the secrets API benchmark scenario. When enabled, a Secret
+# named `secretName` is created with `count` keys (`<keyPrefix>0`..`<keyPrefix>N-1`),
+# each a deterministic per-namespace value. The orchestration cluster mounts this
+# Secret as a file-based secret store (see camunda-platform-values-zeebe-secrets.yaml), so
+# the zeebe-secrets driver's `camunda.secrets.<keyPrefix><i>` references resolve against
+# real store reads. Only rendered for the `zeebe-secrets` scenario.
+zeebeSecretsBenchmark:
+  # -- Set to true to create the benchmark secret store data.
+  enabled: false
+  # -- Name of the Secret; must match the volume in camunda-platform-values-zeebe-secrets.yaml.
+  secretName: benchmark-secrets
+  # -- Number of distinct secrets to seed. Must be >= the driver's referencePoolSize.
+  count: 100
+  # -- Bare-name prefix; the driver resolves `camunda.secrets.<keyPrefix><i>`.
+  keyPrefix: bench_
+
+  # -- The secrets-resolution benchmark driver. When `zeebeSecretsBenchmark.enabled`
+  # is true, a `zeebe-secrets` Deployment (benchmark-zeebe-secrets-driver.yaml) runs the
+  # dedicated `{global.image.repository}/zeebe-secrets:{global.image.tag}` load-tester
+  # image, driving POST /v2/secrets/resolve and /v2/secrets/list against the
+  # orchestration cluster. It replaces the starter/workers for this scenario
+  # (which the Makefile scales to 0) and reuses the `load-test-credentials`
+  # Secret for OAuth. Each knob maps to a `LOAD_TESTER_ZEEBE_SECRETS_*` env var read
+  # by `ZeebeSecretsDriverProperties`.
+  driver:
+    # -- Number of driver pods. Increase to scale request concurrency across
+    # pods on top of per-pod `threads`.
+    replicas: 1
+    # -- Log level for the driver (`LOG_LEVEL`); empty keeps the image default.
+    logLevel: ""
+    # -- Target request rate (requests per `rateDuration`) the driver submits,
+    # split across both endpoints. At 200/s with resolveRatio=0.5 each endpoint
+    # receives ~100 req/s. Use the resolve-only preset to isolate one endpoint.
+    rate: 200
+    # -- The window over which `rate` requests are submitted (e.g. `1s`).
+    rateDuration: 1s
+    # -- Number of concurrent request-issuing threads per pod.
+    threads: 2
+    # -- Stop after this many seconds (0 = run until the pod is deleted).
+    durationLimit: 0
+    # -- Fraction of requests sent to /v2/secrets/resolve; the rest go to
+    # /v2/secrets/list. 0.5 = an even resolve/list split (the default mixed
+    # traffic), 1.0 = resolve only, 0.0 = list only.
+    resolveRatio: 0.5
+    # -- References per resolve batch (clamped to MAX_BATCH_SIZE=20 by the driver,
+    # which is also the server-side maxItems cap on POST /v2/secrets/resolve).
+    batchSize: 20
+    # -- Fraction of each batch that repeats an already-included reference, to
+    # exercise server-side batch de-duplication (0.0 = all distinct). 0.3 keeps
+    # the default run exercising the gateway's de-duplication path.
+    duplicateRatio: 0.3
+    # -- Number of distinct references a run touches. A small pool relative to
+    # the secret cache stays cache-first; a large pool forces store reads. Must
+    # be <= `count`.
+    referencePoolSize: 100
+    # -- Reference prefix the gateway strips before the store lookup.
+    referencePrefix: camunda.secrets.
+    # -- Bare-name base; the driver resolves `<referencePrefix><referenceBaseName><i>`
+    # and must match `keyPrefix` so references hit the seeded file store.
+    referenceBaseName: bench_
+    # -- Per-request timeout (empty keeps the driver default).
+    requestTimeout: 20s
+    # -- Pre-resolve the whole reference pool once before the measured load, so a
+    # cache-first run does not pay first-touch store cost in its recorded latencies.
+    warmup: false
+    # -- CPU and memory resource requests and limits for the driver pod.
+    resources:
+      requests:
+        cpu: "1"
+        memory: 512Mi
+      limits:
+        cpu: "2"
+        memory: 1Gi
 
 # -- Configuration for the load test applications.
 loadTest:

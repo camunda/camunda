@@ -36,6 +36,11 @@ var update = flag.Bool("update-golden", false,
 // PlatformOnly, when true, renders only the platform chart. Use it for
 // scenarios whose assertions are scoped to platform-only templates.
 //
+// MainOnly, when true, skips the scenario on every version except main. Use it
+// for scenarios that depend on a platform-chart feature not present in the
+// released charts the stable versions pin — e.g. the zeebe-secrets benchmark's
+// first-class file secret store, or physical_tenants, both wired only on main.
+//
 // PathFilter, when set, restricts golden comparison (and, under
 // -update-golden, what gets committed) to rendered manifest paths with one of
 // these prefixes, relative to each chart's own output tree — e.g.
@@ -55,6 +60,7 @@ type scenario struct {
 	SetupTarget     string // named make target for template-load-test-setup variants
 	PhysicalTenants bool
 	PlatformOnly    bool
+	MainOnly        bool
 	PathFilter      []string
 }
 
@@ -97,13 +103,29 @@ var defaultScenarios = []scenario{
 	{Name: "rdbms-stable", Storage: "postgresql", Optimize: false, Stable: true},
 	{Name: "max", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "max"},
 	{Name: "realistic", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "realistic"},
+	// The zeebe-secrets benchmark renders the load-test-setup chart with the secrets
+	// driver (benchmark-zeebe-secrets-driver.yaml) and seed Secret in place of the
+	// starter/workers. Storage is a fixed elasticsearch since the scenario only
+	// changes load-test-setup flags. main-only (see generateScenarios): it
+	// depends on the platform chart's unreleased first-class file secret store.
+	// PathFilter keeps only the manifests this scenario actually verifies — the
+	// driver, the seed Secret, and the scaled-to-0 starter (the worker
+	// Deployment is absent) — so the golden isn't cluttered with the unchanged
+	// Keycloak/Postgres/Elasticsearch baseline.
+	{Name: "zeebe-secrets", Storage: "elasticsearch", Optimize: false, Stable: false, Workload: "zeebe-secrets",
+		MainOnly: true,
+		PathFilter: []string{
+			"templates/benchmark-zeebe-secrets-driver.yaml",
+			"templates/benchmark-secrets.yaml",
+			"charts/load-tester/templates/starter.yaml",
+		}},
 	// SetupTarget scenarios render only the load-test-setup chart via a named
 	// Makefile target, verifying opt-in chart features without duplicating the
 	// full storage matrix.
 	{Name: "chaos-killer", Storage: "elasticsearch", Optimize: false, SetupTarget: "template-load-test-setup-chaos"},
 	// physical_tenants=true deploys a second tenant alongside the default on a
 	// shared RDBMS (table-prefix isolation). Only supported for rdbms storage.
-	{Name: "rdbms-physical-tenants", Storage: "postgresql", Optimize: false, PhysicalTenants: true},
+	{Name: "rdbms-physical-tenants", Storage: "postgresql", Optimize: false, PhysicalTenants: true, MainOnly: true},
 }
 
 // versions lists the setup directories under test, each the name of a directory
@@ -145,8 +167,11 @@ func generateScenarios(versions []string, scenarios []scenario) []versionedScena
 				}
 			}
 
-			// physical_tenants=true is only implemented in the main Makefile.
-			if s.PhysicalTenants && v != "main" {
+			// Some scenarios depend on platform-chart features that are only
+			// present on main (not in the released charts the stable versions
+			// pin) — e.g. the zeebe-secrets benchmark's first-class file secret
+			// store, or physical_tenants. They opt in via MainOnly.
+			if s.MainOnly && v != "main" {
 				continue
 			}
 
