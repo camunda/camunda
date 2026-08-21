@@ -507,6 +507,96 @@ jobs:
     uses: ./.github/workflows/ci-build-distball-reusable.yml
     secrets: inherit
 
+  build-camunda-docker-test-image:
+    name: "Build / Camunda Docker Test Image"
+    # POC: package the already-shared distball into the test image once, then let
+    # integration-test shards load it instead of rebuilding the same image.
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes, build-distball ]
+    runs-on: ${{ 'gcp-perf-core-8-default' }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    env:
+      DOCKER_IMAGE_TAG: current-test
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          persist-credentials: false
+      - name: Check for fork
+        id: is-fork
+        uses: ./.github/actions/is-fork
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+        with:
+          test_product: "Camunda Docker"
+      - uses: ./.github/actions/setup-build
+        if: steps.is-fork.outputs.is-fork != 'true'
+        with:
+          dockerhub-readonly: true
+          maven-cache-key-modifier: build-shared
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - name: Authenticate to GCS build-cache
+        if: steps.is-fork.outputs.is-fork != 'true'
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Create dist/target
+        if: steps.is-fork.outputs.is-fork != 'true'
+        shell: bash
+        run: mkdir -p dist/target
+      - name: Download distball from GCS
+        if: steps.is-fork.outputs.is-fork != 'true'
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 10
+          timeout_minutes: 2
+          shell: bash
+          command: gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-zeebe-*.tar.gz" dist/target/
+      - uses: ./.github/actions/build-platform-docker
+        if: steps.is-fork.outputs.is-fork != 'true'
+        with:
+          repository: camunda/camunda
+          version: ${{ env.DOCKER_IMAGE_TAG }}
+          dockerfile: camunda.Dockerfile
+          platforms: linux/amd64
+          push: false
+      - name: Save and upload test image to GCS
+        if: steps.is-fork.outputs.is-fork != 'true'
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        env:
+          CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED: "False"
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 10
+          timeout_minutes: 3
+          shell: bash
+          command: |
+            set -euo pipefail
+            docker save "camunda/camunda:${DOCKER_IMAGE_TAG}" | gzip > camunda-docker-test-image.tar.gz
+            ls -lh camunda-docker-test-image.tar.gz
+            gcloud storage cp camunda-docker-test-image.tar.gz \
+              "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-docker-test-image.tar.gz"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   build-platform-frontend:
     # Runs when the frontend changed, OR on any non-PR event targeting main/stable
     # (push/schedule/workflow_dispatch) so the snapshot deploy jobs — which download
@@ -1398,7 +1488,7 @@ jobs:
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs (${{ matrix.stressRun }})"
-    needs: [ detect-changes, setup-tests, build-distball ]
+    needs: [ detect-changes, setup-tests, build-distball, build-camunda-docker-test-image ]
     timeout-minutes: 30
     permissions:
       contents: read
@@ -1517,8 +1607,22 @@ jobs:
         if: steps.is-fork.outputs.is-fork == 'true'
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Load shared camunda docker test image
+        if: ${{ matrix.docker-file != '' && steps.is-fork.outputs.is-fork != 'true' }}
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 10
+          timeout_minutes: 3
+          shell: bash
+          command: |
+            set -euo pipefail
+            gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-docker-test-image.tar.gz" "${RUNNER_TEMP}/"
+            docker load -i "${RUNNER_TEMP}/camunda-docker-test-image.tar.gz"
+            docker tag "camunda/camunda:${DOCKER_IMAGE_TAG}" "${{ matrix.docker-repository }}:${DOCKER_IMAGE_TAG}"
+            docker push "${{ matrix.docker-repository }}:${DOCKER_IMAGE_TAG}"
       - uses: ./.github/actions/build-platform-docker
-        if: ${{ matrix.docker-file != '' }}
+        if: ${{ matrix.docker-file != '' && steps.is-fork.outputs.is-fork == 'true' }}
         with:
           repository: ${{ matrix.docker-repository }}
           version: ${{ env.DOCKER_IMAGE_TAG }}
@@ -2618,6 +2722,7 @@ jobs:
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
       - archunit-tests
+      - build-camunda-docker-test-image
       - build-distball
       - build-platform-frontend
       - c8-e2e-test-suite
@@ -2682,9 +2787,9 @@ jobs:
         with:
           github_token: ${{ github.token }}
           has_failures: ${{ contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
-      # Clean up the run-scoped GCS objects (distball + m2 tarball) only when build-distball
-      # succeeded and no other job failed or was cancelled. If any did, keep them so
-      # "Re-run failed jobs" can re-fetch the distball (build-distball won't re-run, so it won't
+      # Clean up the run-scoped GCS objects (distball + m2 tarball + Docker test image) only when
+      # build-distball succeeded and no other job failed or was cancelled. If any did, keep them so
+      # "Re-run failed jobs" can re-fetch the artifacts (producer jobs won't re-run, so they won't
       # re-upload). needs.* here spans every check-results dependency (broader than the old
       # consumer-only gate) — strictly safer: a failure anywhere keeps the objects for a rerun.
       # Orphaned objects on abandoned runs are reaped by the bucket TTL (Infra-owned).
