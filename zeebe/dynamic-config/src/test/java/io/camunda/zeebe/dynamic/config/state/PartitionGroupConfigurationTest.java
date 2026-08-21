@@ -117,6 +117,57 @@ class PartitionGroupConfigurationTest {
     }
 
     @Test
+    void shouldUnionCompletionsOfTheSamePendingChange() {
+      // given — same config version, and two brokers that each completed a *different* operation of
+      // the same plan: the shape a graph change produces, since several brokers progress it at once
+      // and completeOperation deliberately does not move the group version
+      final var started = group(1, Map.of()).startGraphConfigurationChange(twoIndependentOps());
+      final var leftDid = started.completeOperation(OperationId.of(0), UnaryOperator.identity());
+      final var rightDid = started.completeOperation(OperationId.of(1), UnaryOperator.identity());
+
+      // when
+      final var merged = leftDid.merge(rightDid);
+
+      // then — both completions survive; neither side's progress is dropped in favour of the
+      // receiver's own copy
+      assertThat(merged.pendingChanges().orElseThrow().completed())
+          .containsOnlyKeys(OperationId.of(0), OperationId.of(1));
+      assertThat(merged.hasPendingChanges()).isFalse();
+    }
+
+    @Test
+    void shouldUnionCompletionsRegardlessOfMergeDirection() {
+      // given — the same divergence as above
+      final var started = group(1, Map.of()).startGraphConfigurationChange(twoIndependentOps());
+      final var leftDid = started.completeOperation(OperationId.of(0), UnaryOperator.identity());
+      final var rightDid = started.completeOperation(OperationId.of(1), UnaryOperator.identity());
+
+      // when / then — merge is commutative on completions, so gossip converges whichever broker
+      // receives whose state first
+      assertThat(leftDid.merge(rightDid).pendingChanges())
+          .isEqualTo(rightDid.merge(leftDid).pendingChanges());
+    }
+
+    @Test
+    void shouldThrowWhenMergingSameChangeIdWithDifferentGraphs() {
+      // given — two brokers that each derived plan id 2 (the group version they started from) for a
+      // genuinely different graph, which the forced-request path can produce by bypassing the
+      // single-coordinator check
+      final var left =
+          group(1, Map.of())
+              .startGraphConfigurationChange(
+                  OperationGraph.sequential(List.of(new DeleteHistoryOperation(MEMBER_0))));
+      final var right =
+          group(1, Map.of())
+              .startGraphConfigurationChange(
+                  OperationGraph.sequential(List.of(new DeleteHistoryOperation(MEMBER_1))));
+
+      // when / then — refused rather than unioned: operation ids restart at 0 per graph, so a blind
+      // union would mark one graph's operation complete because the other's ran
+      assertThatThrownBy(() -> left.merge(right)).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     void shouldThrowWhenMembersConflictAtEqualVersion() {
       // given — same config version, MEMBER_0 at the same per-member version on both sides but
       // with genuinely different content: the shape two brokers applying concurrent, same-member
