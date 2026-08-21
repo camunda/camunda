@@ -57,8 +57,8 @@ public interface CreateAgentInstanceCommandStep1 {
     /**
      * Sets the opaque job lease token received from the job activation response. Always required —
      * an agentic job activation always carries a lease, and disambiguates this activation from any
-     * other activation of the same job: if the job is later retried, history items submitted under a
-     * superseded lease are discarded rather than committed.
+     * other activation of the same job: if the job is later retried, history items submitted under
+     * a superseded lease are discarded rather than committed.
      *
      * @param jobLease the lease token. Must not be null or blank.
      * @return this builder for method chaining
