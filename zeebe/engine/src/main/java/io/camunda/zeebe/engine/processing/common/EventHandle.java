@@ -271,6 +271,7 @@ public final class EventHandle {
 
     final var process = processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
 
+    // TODO: @yohanfernando >> handle process instance start events
     triggeringProcessEvent(
         processDefinitionKey,
         processInstanceKey,

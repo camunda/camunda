@@ -397,6 +397,7 @@ public final class EngineProcessors {
         secretResolutionScheduler,
         suspensionMetrics);
 
+    // TODO: @yohanfernando >> next need to apply storage ordinal changes here onwards
     final var userTaskProcessor =
         createUserTaskProcessor(
             processingState, bpmnBehaviors, writers, asyncRequestBehavior, cslCheck, tenantCheck);
