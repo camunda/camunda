@@ -20,10 +20,14 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph;
+import io.camunda.zeebe.dynamic.config.state.OperationId;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import java.time.Instant;
 import java.util.Map;
@@ -39,8 +43,9 @@ import org.junit.jupiter.params.provider.EnumSource;
  * Edge cases for the {@code CurrentClusterConfiguration} serialization that the property test
  * ({@code ProtoBufSerializerPropertyTest#shouldEncodeAndDecodeCurrentClusterConfiguration}) cannot
  * exercise: decoding invalid bytes, decoding a proto that carries a broker lifecycle state which
- * the domain model cannot represent, and a group whose pending change is a dependency graph. The
- * remaining happy-path round-trips are covered by the property test.
+ * the domain model cannot represent, a graph whose edges must survive exactly, and the decode-only
+ * legacy phase shape that only a pre-upgrade peer can put on the wire. The remaining happy-path
+ * round-trips are covered by the property test.
  */
 final class CurrentClusterConfigurationSerializerTest {
 
@@ -212,6 +217,65 @@ final class CurrentClusterConfigurationSerializerTest {
             group ->
                 assertThat(group.pendingChanges().orElseThrow().completed())
                     .containsKey(firstOperation));
+  }
+
+  @Test
+  void shouldDecodeALegacyParallelPhaseAsASequentialGraph() {
+    // given — a phase in the shape written before the queue phase and the graph phase became one
+    // type. Nothing encodes this any more; it reaches decode only from a configuration persisted or
+    // gossiped by a broker that predates the merge, which is the rolling-upgrade path.
+    final var first = modeChange(MEMBER);
+    final var second = modeChange(OTHER_MEMBER);
+    final var legacyPhase =
+        Topology.PhasedChangePlanPhase.newBuilder()
+            .setPartitionGroupParallelPhase(
+                Topology.PartitionGroupParallelPhase.newBuilder()
+                    .putGroupOperations(
+                        "tenant",
+                        Topology.PartitionGroupOperationList.newBuilder()
+                            .addOperations(first)
+                            .addOperations(second)
+                            .build()))
+            .build();
+    final var proto =
+        Topology.CurrentClusterConfiguration.newBuilder()
+            .setVersion(0)
+            .setGlobalConfiguration(Topology.GlobalConfiguration.newBuilder().setVersion(1).build())
+            .setPhasedChangeState(
+                Topology.PhasedChangeState.newBuilder()
+                    .setNextId(2)
+                    .addPending(
+                        Topology.PhasedChangePlan.newBuilder()
+                            .setId(1)
+                            .setCurrentPhaseIndex(0)
+                            .addPhases(legacyPhase)
+                            .setStartedAt(Timestamp.newBuilder().build())))
+            .build();
+
+    // when
+    final var decoded = serializer.decodeCurrentClusterConfiguration(proto.toByteArray());
+
+    // then — the flat list becomes a *chain*, not a free graph. Asserting only on the operations
+    // would pass just as well for a fully-parallel decode, which would let both operations start at
+    // once on a plan whose author never claimed they were independent.
+    final var phase =
+        (PartitionGroupPhase) decoded.phasedChangeState().pending().get(1L).phases().getFirst();
+    final var graph = phase.groupGraphs().get("tenant");
+    assertThat(graph.operations().get(OperationId.of(0)).dependsOn()).isEmpty();
+    assertThat(graph.operations().get(OperationId.of(1)).dependsOn())
+        .containsExactly(OperationId.of(0));
+    assertThat(graph.inOrder())
+        .containsExactly(
+            new ModeChangeOperation(MEMBER, Mode.PROCESSING),
+            new ModeChangeOperation(OTHER_MEMBER, Mode.PROCESSING));
+  }
+
+  private static Topology.PartitionGroupChangeOperation modeChange(final MemberId memberId) {
+    return Topology.PartitionGroupChangeOperation.newBuilder()
+        .setMemberId(memberId.id())
+        .setModeChange(
+            Topology.ModeChangeOperation.newBuilder().setMode(Topology.Mode.MODE_PROCESSING))
+        .build();
   }
 
   /** A two-stage graph: both pre-restores may run at once, both restores wait for both of them. */
