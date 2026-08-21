@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {AgentInstanceDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {InstanceMock} from '.';
 
 const PROCESS_INSTANCE_KEY = '2251799813700001';
@@ -88,11 +89,15 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
     </bpmndi:BPMNDiagram>
   </bpmn:definitions>`;
 
-const agentDefinition = {
+const agentDefinition: AgentInstanceDefinition = {
   model: 'gpt-4o',
   provider: 'openai',
-  systemPrompt:
-    'You are **TaskAgent**, a helpful, generic chat agent that can handle a wide variety of customer requests using your own domain knowledge **and** any tools explicitly provided to you at runtime.',
+  systemPrompt: [
+    {
+      contentType: 'TEXT',
+      text: 'You are **TaskAgent**, a helpful, generic chat agent that can handle a wide variety of customer requests using your own domain knowledge **and** any tools explicitly provided to you at runtime.',
+    },
+  ],
 };
 
 const agentLimits = {

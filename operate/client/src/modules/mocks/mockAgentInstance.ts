@@ -18,7 +18,12 @@ function mockAgentInstance(
     definition: {
       model: 'gpt-4',
       provider: 'openai',
-      systemPrompt: 'You are a helpful assistant.',
+      systemPrompt: [
+        {
+          contentType: 'TEXT',
+          text: 'You are a helpful assistant.',
+        },
+      ],
     },
     metrics: {
       inputTokens: 100,
