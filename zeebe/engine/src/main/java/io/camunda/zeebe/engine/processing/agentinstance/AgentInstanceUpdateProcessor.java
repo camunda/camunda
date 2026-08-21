@@ -70,6 +70,11 @@ public final class AgentInstanceUpdateProcessor
       "Expected to update agent instance with key '%d' for element instance with key '%d', but the process instance key '%d' does not match the agent instance's process instance key '%d'.";
   private static final String ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS =
       "Expected to associate element instance with key '%d' with an agent instance, but it is already associated with agent instance with key '%d'.";
+  private static final String ERROR_MSG_SECOND_ACTIVE_WRITER =
+      "Expected to update agent instance with key '%d' for element instance with key '%d', but "
+          + "element instance with key '%d' is still the active writer for this agent instance "
+          + "and has not completed. Only one element instance may write to a given agent instance "
+          + "at a time.";
   private static final long METRIC_NOT_PROVIDED = -1L;
   private static final Set<AgentInstanceStatus> ACTIVE_STATUSES =
       EnumSet.of(
@@ -198,6 +203,23 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
+    // An agent instance has one active writer at a time. It can span several element instances
+    // (e.g. sequential re-entry), but only one of them may add history at any moment — read as
+    // live state (is the previous writer still active?), not a latch, so sequential re-entry is
+    // accepted once that previous element instance has completed.
+    final var currentWriterElementInstanceKey = current.getElementInstanceKey();
+    if (currentWriterElementInstanceKey != newElementInstanceKey) {
+      final var currentWriter = elementInstanceState.getInstance(currentWriterElementInstanceKey);
+      if (currentWriter != null && currentWriter.isActive()) {
+        writeRejection(
+            command,
+            RejectionType.INVALID_STATE,
+            ERROR_MSG_SECOND_ACTIVE_WRITER.formatted(
+                agentInstanceKey, newElementInstanceKey, currentWriterElementInstanceKey));
+        return;
+      }
+    }
+
     final var validJob =
         historyBatchHelper.validateJobContext(
             commandValue.getJobKey(),
@@ -243,9 +265,14 @@ public final class AgentInstanceUpdateProcessor
       current
           .getHistory()
           .forEach(
-              item ->
+              item -> {
+                // A duplicate is skipped entirely: it was already created by an earlier request,
+                // so no second AGENT_HISTORY:CREATED event is appended for it.
+                if (!item.isDuplicate()) {
                   stateWriter.appendFollowUpEvent(
-                      item.getAgentHistoryKey(), AgentHistoryIntent.CREATED, item));
+                      item.getAgentHistoryKey(), AgentHistoryIntent.CREATED, item);
+                }
+              });
 
       changedAttributes.addAll(historyChanges);
     }
