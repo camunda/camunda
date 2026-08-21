@@ -31,9 +31,9 @@ import java.util.Set;
  * treated as "leave it alone" or "remove it" — or rejected outright — is defined by each
  * implementation, not by this interface: {@link AdditivePartitionReassigner} does not support
  * removal at all and rejects any call that omits an existing partition or group (see {@link
- * PartitionReassignmentSupport#validateNoRemoval}); a future implementation is expected to support
- * explicit removal, where omitting an id means exactly that. Consult the implementation's javadoc
- * for its specific policy.
+ * PartitionReassignmentSupport#validateExistingPartitionsAreNotRemoved}); a future implementation
+ * is expected to support explicit removal, where omitting an id means exactly that. Consult the
+ * implementation's javadoc for its specific policy.
  *
  * <p>The order of {@code targetPartitionIds} does not affect the result — implementations process
  * ids in their natural {@link PartitionId} order, not list order, so two calls with the same id set
@@ -72,6 +72,10 @@ public interface PartitionReassigner {
    * @return the new distribution for all of {@code targetPartitionIds}
    * @throws IllegalArgumentException if {@code targetMembers} is empty, {@code replicationFactor}
    *     is not positive, or the implementation's removal policy is violated
+   * @throws IllegalStateException an implementation may also throw this for its own
+   *     configuration-specific validation failures (e.g. a zone-aware implementation rejecting a
+   *     configuration whose zones can't satisfy {@code replicationFactor}) — consult the
+   *     implementation's javadoc for which conditions apply
    */
   Set<PartitionMetadata> reassignPartitions(
       CurrentClusterConfiguration currentConfiguration,

@@ -97,7 +97,8 @@ public final class PartitionReassignmentOperationsGenerator {
 
     // Every existing partition id of a group targetDistribution touches must be present in
     // targetDistribution — mirroring AdditivePartitionReassigner/PartitionReassignmentSupport
-    // #validateNoRemoval. Without this, a targetDistribution that silently omits an existing
+    // #validateExistingPartitionsAreNotRemoved. Without this, a targetDistribution that silently
+    // omits an existing
     // partition (e.g. a caller-side bug, or a reassigner change that starts supporting removal
     // without this generator being updated) would produce no leave operations for it at all: the
     // partition would simply be left out of the result, never mentioned again, without any
