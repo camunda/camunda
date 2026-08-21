@@ -90,6 +90,7 @@ data.secondary-storage.elasticsearch.decision-requirements-cache.cache-name
 data.secondary-storage.elasticsearch.decision-requirements-cache.database-name
 data.secondary-storage.elasticsearch.form-cache.cache-name
 data.secondary-storage.elasticsearch.form-cache.database-name
+data.secondary-storage.elasticsearch.history.database-name
 data.secondary-storage.elasticsearch.incident-notifier.database-name
 data.secondary-storage.elasticsearch.index-prefix
 data.secondary-storage.elasticsearch.interceptor-plugins
@@ -133,6 +134,7 @@ data.secondary-storage.opensearch.decision-requirements-cache.cache-name
 data.secondary-storage.opensearch.decision-requirements-cache.database-name
 data.secondary-storage.opensearch.form-cache.cache-name
 data.secondary-storage.opensearch.form-cache.database-name
+data.secondary-storage.opensearch.history.database-name
 data.secondary-storage.opensearch.incident-notifier.database-name
 data.secondary-storage.opensearch.index-prefix
 data.secondary-storage.opensearch.interceptor-plugins
