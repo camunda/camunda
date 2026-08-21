@@ -123,6 +123,7 @@ public final class BpmnProcessors {
         writers,
         clock,
         transientProcessMessageSubscriptionState);
+    // TODO: @yohanfernando >> Need to look at Timers in relation to storageOrdinalKey
     addTimerStreamProcessors(
         typedRecordProcessors, timerChecker, processingState, bpmnBehaviors, writers);
     addConditionalStreamProcessors(typedRecordProcessors, processingState, bpmnBehaviors, writers);
@@ -187,6 +188,7 @@ public final class BpmnProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final InstantSource clock) {
+    // TODO: @yohanfernando >> Need to add StorageOrdinalKey to commands (mainly command rejection)
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,

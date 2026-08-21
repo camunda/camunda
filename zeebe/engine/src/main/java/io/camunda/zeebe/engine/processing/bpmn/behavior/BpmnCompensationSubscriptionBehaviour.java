@@ -52,6 +52,7 @@ public class BpmnCompensationSubscriptionBehaviour {
   private final TypedCommandWriter commandWriter;
   private final BpmnStateBehavior stateBehavior;
 
+  // TODO: @yohanfernando >> need to apply storage ordinal changes here
   public BpmnCompensationSubscriptionBehaviour(
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
