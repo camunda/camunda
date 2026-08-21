@@ -17,9 +17,11 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.UpdateByQueryRequest;
+import co.elastic.clients.elasticsearch.core.UpdateByQueryResponse;
 import co.elastic.clients.elasticsearch.tasks.ListRequest;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.repository.TaskRepository;
+import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -137,7 +139,9 @@ public class TaskRepositoryES extends TaskRepository {
 
   private boolean syncUpdate(final UpdateByQueryRequest request) {
     try {
-      final Long updated = esClient.submitUpdateTask(request).updated();
+      final UpdateByQueryResponse response = esClient.submitUpdateTask(request);
+      throwOnFailures(response.failures());
+      final Long updated = response.updated();
       return updated != null && updated > 0L;
     } catch (final IOException e) {
       throw new OptimizeRuntimeException("Error while trying to submit update task", e);
@@ -222,7 +226,7 @@ public class TaskRepositoryES extends TaskRepository {
       final String message =
           "A synchronous delete/update by query task contained failures: " + failures;
       LOG.error(message);
-      throw new OptimizeRuntimeException(message);
+      throw new OptimizeByQueryFailureException(message);
     }
   }
 }

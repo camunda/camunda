@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.repository;
 
+import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.PeriodicAction;
@@ -103,7 +104,7 @@ public abstract class TaskRepository {
       final List<Object> failures = taskResponse.getResponseDetails().getFailures();
       if (failures != null && !failures.isEmpty()) {
         LOG.error("A database task contained failures: {}", failures);
-        throw new OptimizeRuntimeException(failures.toString());
+        throw new OptimizeByQueryFailureException(failures.toString());
       }
     }
   }
