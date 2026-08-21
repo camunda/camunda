@@ -30,10 +30,6 @@ class ShadcnTasklistLoginPage extends LoginPage {
 		return this.page.getByRole('heading', {name: 'Tasklist'});
 	}
 
-	get tasklistIndexContent() {
-		return this.page.getByText('Hello "/shadcn/tasklist"!');
-	}
-
 	get usernameError() {
 		return this.page.getByRole('alert').filter({hasText: /username is required/i});
 	}

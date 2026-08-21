@@ -73,8 +73,8 @@ test.describe('user sidebar', () => {
 		await shadcnTasklistIndexPage.goto();
 
 		await test.step('render header with default English translations', async () => {
-			await expect(shadcnTasklistIndexPage.tasksNavItem).toBeVisible();
-			await expect(shadcnTasklistIndexPage.processesNavItem).toBeVisible();
+			await expect(shadcnTasklistIndexPage.header.tasksNavItem).toBeVisible();
+			await expect(shadcnTasklistIndexPage.header.processesNavItem).toBeVisible();
 		});
 
 		await test.step('display user details in the sidebar', async () => {

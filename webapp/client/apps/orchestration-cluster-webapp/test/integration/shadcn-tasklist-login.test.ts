@@ -46,7 +46,7 @@ test('should redirect the Tasklist index to Tasklist login and return after logi
 	await shadcnTasklistLoginPage.submitButton.click();
 
 	await expect(page).toHaveURL('/shadcn/tasklist');
-	await expect(shadcnTasklistLoginPage.tasklistIndexContent).toBeVisible();
+	await expect(page.getByText('Hello "/shadcn/tasklist"!')).toBeVisible();
 });
 
 test('should preserve a Tasklist URL through login', async ({network, page, shadcnTasklistLoginPage}) => {
@@ -66,7 +66,7 @@ test('should preserve a Tasklist URL through login', async ({network, page, shad
 	await shadcnTasklistLoginPage.submitButton.click();
 
 	await expect(page).toHaveURL('/shadcn/tasklist?filter=assigned');
-	await expect(shadcnTasklistLoginPage.tasklistIndexContent).toBeVisible();
+	await expect(page.getByText('Hello "/shadcn/tasklist"!')).toBeVisible();
 });
 
 test('should show an error for wrong credentials', async ({network, shadcnTasklistLoginPage}) => {

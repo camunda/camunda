@@ -23,15 +23,15 @@ class ShadcnTasklistProcessesPage extends BasePage {
 	}
 
 	get heading() {
-		return this.page.getByText('Hello "/shadcn/tasklist/processes"!');
+		return this.page.getByRole('heading', {name: 'Processes', exact: true});
 	}
 
-	get tasksNavItem() {
-		return this.page.getByRole('link', {name: 'Tasks', exact: true});
+	get description() {
+		return this.page.getByText('Browse and run processes published by your organization.');
 	}
 
-	get processesNavItem() {
-		return this.page.getByRole('link', {name: 'Processes'});
+	get startProcessButtons() {
+		return this.page.getByRole('button', {name: 'Start process'});
 	}
 }
 
