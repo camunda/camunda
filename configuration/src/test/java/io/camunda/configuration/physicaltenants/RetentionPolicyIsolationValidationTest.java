@@ -81,14 +81,86 @@ class RetentionPolicyIsolationValidationTest {
 
   @Test
   void shouldPassWhenSharedClusterButDistinctPolicyNames() {
-    // given two retention-enabled tenants on the same cluster with distinct policy names
+    // given two retention-enabled tenants on the same cluster with distinct policy names, both
+    // general and usage-metrics
     final Map<String, Camunda> resolved =
         tenants(
-            "tenanta", es("http://es:9200", true, "tenant-a-policy"),
-            "tenantb", es("http://es:9200", true, "tenant-b-policy"));
+            "tenanta",
+            documentBased(
+                SecondaryStorageType.elasticsearch,
+                "http://es:9200",
+                true,
+                "tenant-a-policy",
+                "tenant-a-usage-metrics-policy"),
+            "tenantb",
+            documentBased(
+                SecondaryStorageType.elasticsearch,
+                "http://es:9200",
+                true,
+                "tenant-b-policy",
+                "tenant-b-usage-metrics-policy"));
 
     // when / then distinct policy names isolate the tenants — no collision
     assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldRejectTenantsSharingClusterWithDistinctGeneralPolicyButDefaultUsageMetricsPolicy() {
+    // given the upgrade scenario for an existing valid config: two tenants already isolated via
+    // distinct general policy names, but both left the usage-metrics policy name at its default
+    // because it was not previously configurable
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta",
+                documentBased(
+                    SecondaryStorageType.elasticsearch,
+                    "http://es:9200",
+                    true,
+                    "tenant-a-policy",
+                    null),
+            "tenantb",
+                documentBased(
+                    SecondaryStorageType.elasticsearch,
+                    "http://es:9200",
+                    true,
+                    "tenant-b-policy",
+                    null));
+
+    // when / then the shared default usage-metrics policy is still rejected as a collision
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb")
+        .withMessageContaining("camunda-usage-metrics-retention-policy");
+  }
+
+  @Test
+  void shouldRejectTenantsSharingClusterAndUsageMetricsPolicyName() {
+    // given two retention-enabled tenants with distinct general policy names but colliding on the
+    // separately-configurable usage-metrics policy name
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta",
+            documentBased(
+                SecondaryStorageType.elasticsearch,
+                "http://es:9200",
+                true,
+                "tenant-a-policy",
+                "shared-usage-metrics-policy"),
+            "tenantb",
+            documentBased(
+                SecondaryStorageType.elasticsearch,
+                "http://es:9200",
+                true,
+                "tenant-b-policy",
+                "shared-usage-metrics-policy"));
+
+    // when / then the usage-metrics collision is rejected even though the general policy differs
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb")
+        .withMessageContaining("shared-usage-metrics-policy");
   }
 
   @Test
@@ -232,19 +304,21 @@ class RetentionPolicyIsolationValidationTest {
 
   private static Camunda es(
       final String url, final boolean retentionEnabled, final String policyName) {
-    return documentBased(SecondaryStorageType.elasticsearch, url, retentionEnabled, policyName);
+    return documentBased(
+        SecondaryStorageType.elasticsearch, url, retentionEnabled, policyName, null);
   }
 
   private static Camunda os(
       final String url, final boolean retentionEnabled, final String policyName) {
-    return documentBased(SecondaryStorageType.opensearch, url, retentionEnabled, policyName);
+    return documentBased(SecondaryStorageType.opensearch, url, retentionEnabled, policyName, null);
   }
 
   private static Camunda documentBased(
       final SecondaryStorageType type,
       final String url,
       final boolean retentionEnabled,
-      final String policyName) {
+      final String policyName,
+      final String usageMetricsPolicyName) {
     final Camunda camunda = new Camunda();
     final var ss = camunda.getData().getSecondaryStorage();
     ss.setType(type);
@@ -254,6 +328,9 @@ class RetentionPolicyIsolationValidationTest {
     database.setUrl(url);
     if (policyName != null) {
       database.getHistory().setPolicyName(policyName);
+    }
+    if (usageMetricsPolicyName != null) {
+      database.getHistory().setUsageMetricsPolicyName(usageMetricsPolicyName);
     }
     return camunda;
   }

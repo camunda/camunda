@@ -42,6 +42,7 @@ public final class CamundaExporterConfigurationApplier {
 
     target.setEnabled(source.isEnabled());
     target.setMinimumAge(source.getMinimumAge());
+    target.setUsageMetricsMinimumAge(source.getUsageMetricsMinimumAge());
   }
 
   public static void applyConnect(
@@ -149,6 +150,10 @@ public final class CamundaExporterConfigurationApplier {
     target.setProcessInstanceRetentionMode(source.getHistory().getProcessInstanceRetentionMode());
     target.setArchiveByIdEnabled(source.getHistory().isArchiveByIdEnabled());
     target.getRetention().setPolicyName(source.getHistory().getPolicyName());
+    target
+        .getRetention()
+        .setUsageMetricsPolicyName(source.getHistory().getUsageMetricsPolicyName());
+    target.setUsageMetricsRolloverInterval(source.getHistory().getUsageMetricsRolloverInterval());
     target.setElsRolloverDateFormat(source.getHistory().getElsRolloverDateFormat());
     target.setRolloverInterval(source.getHistory().getRolloverInterval());
     target.setRolloverBatchSize(source.getHistory().getRolloverBatchSize());
