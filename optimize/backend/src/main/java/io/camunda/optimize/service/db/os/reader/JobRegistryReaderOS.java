@@ -135,6 +135,7 @@ public class JobRegistryReaderOS implements JobRegistryReader {
             .index(JOB_REGISTRY_INDEX_NAME)
             .size(entityIds.size())
             .query(boolQuery.toQuery())
+            .collapse(c -> c.field(JobRegistryIndex.ENTITY_ID))
             .source(QueryDSL.sourceInclude(List.of(JobRegistryIndex.ENTITY_ID)));
 
     final String errorMessage =
