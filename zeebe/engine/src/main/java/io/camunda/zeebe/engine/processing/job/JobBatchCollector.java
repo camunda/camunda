@@ -46,7 +46,8 @@ import org.agrona.collections.ObjectHashSet;
  */
 final class JobBatchCollector {
 
-  // constant regardless of the job key value: a fixed-width long field plus the ignoreLease flag.
+  // maximum regardless of the actual job key value: MsgPack encodes the jobKey field at
+  // variable width, so Long.MAX_VALUE forces its longest encoding, giving a safe upper bound.
   // Reserved per reactivated job below so the ACTIVATED batch never grows into room its
   // compensating DISCARD command (appended later, once the batch is final) would not fit in.
   private static final int DISCARD_COMMAND_LENGTH =

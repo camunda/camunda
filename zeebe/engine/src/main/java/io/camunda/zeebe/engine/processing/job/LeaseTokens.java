@@ -33,7 +33,8 @@ public final class LeaseTokens {
    * io.camunda.zeebe.engine.processing.job.JobBatchCollector} and {@link
    * io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior} for the two
    * existing sites. A new lease-minting site that skips this leaves the previous lease's pending
-   * {@code AgentHistory} items stranded, never discarded or committed.
+   * {@code AgentHistory} items unresolved until a later commit/discard on the new lease
+   * incidentally sweeps them up — a correctness gap in the meantime, not a permanent leak.
    */
   public static String generate() {
     return UUID.randomUUID().toString();
