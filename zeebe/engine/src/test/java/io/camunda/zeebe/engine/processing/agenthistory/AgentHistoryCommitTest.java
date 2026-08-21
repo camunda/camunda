@@ -354,13 +354,14 @@ public class AgentHistoryCommitTest {
   }
 
   @Test
-  public void shouldCommitWinningAndDiscardSupersededOnLeasedJobCompletion() {
+  public void shouldDiscardSupersededItemOnReactivationThenCommitOnlyWinningItemOnCompletion() {
     final var serviceTaskInstance = deployAndCreateProcessInstance();
     final var elementInstanceKey = serviceTaskInstance.getKey();
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
     final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
 
-    // Activation 1 (superseded): create a history item, then fail to trigger re-activation.
+    // Activation 1 (superseded): create a history item, then fail to make the job activatable
+    // again.
     final var job1 = activateJobForProcessInstanceWithLease(processInstanceKey);
     final long supersededItemKey =
         createHistoryItem(agentInstanceKey, job1.key(), elementInstanceKey, job1.leaseToken());
@@ -373,12 +374,21 @@ public class AgentHistoryCommitTest {
         .withRetries(1)
         .fail();
 
-    // Activation 2 (winning): create a history item, then complete the job.
+    // Activation 2 (winning): re-activating with a new lease eagerly discards activation 1's item.
     final var job2 = activateJobForProcessInstanceWithLease(processInstanceKey);
     assertThat(job2.key()).as("re-activation must reuse the same job key").isEqualTo(job1.key());
     assertThat(job2.leaseToken())
         .as("re-activation must advance the lease token")
         .isNotEqualTo(job1.leaseToken());
+
+    final var discarded =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.DISCARDED)
+            .withRecordKey(supersededItemKey)
+            .getFirst();
+    assertThat(discarded.getValue().getJobKey())
+        .as("the superseded activation's item is discarded as soon as the job is re-activated")
+        .isEqualTo(job1.key());
+
     final long winningItemKey =
         createHistoryItem(agentInstanceKey, job2.key(), elementInstanceKey, job2.leaseToken());
 
@@ -397,7 +407,9 @@ public class AgentHistoryCommitTest {
     final long commitPosition = firstCommitted.getSourceRecordPosition();
     final long clockResetKey = ENGINE.clock().reset().getKey();
 
-    // visitByJobLease(job2.leaseToken()) → winning item COMMITTED
+    // visitByJobLease(job2.leaseToken()) → only the winning item is committed; the superseded item
+    // was already discarded earlier and the commit-time safety-net discard pass finds nothing left
+    // to do for it.
     assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getKey() == clockResetKey)
@@ -407,17 +419,6 @@ public class AgentHistoryCommitTest {
                 .map(Record::getKey))
         .as("only the winning activation's history item should be committed")
         .containsExactly(winningItemKey);
-
-    // discard pass → superseded item DISCARDED
-    assertThat(
-            RecordingExporter.records()
-                .limit(r -> r.getKey() == clockResetKey)
-                .withValueType(ValueType.AGENT_HISTORY)
-                .withIntent(AgentHistoryIntent.DISCARDED)
-                .filter(r -> r.getSourceRecordPosition() == commitPosition)
-                .map(Record::getKey))
-        .as("the superseded activation's history item should be discarded")
-        .containsExactly(supersededItemKey);
   }
 
   // --- helpers ---

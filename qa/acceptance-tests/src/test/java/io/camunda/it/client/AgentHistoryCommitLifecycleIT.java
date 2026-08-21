@@ -165,15 +165,18 @@ public class AgentHistoryCommitLifecycleIT {
             AgentInstanceHistoryRole.ASSISTANT,
             "Message from winning activation",
             OffsetDateTime.parse("2025-06-01T10:01:00Z"));
+
+    // The re-activation above already discarded the superseded item eagerly (the engine's
+    // reactivation safety net), so it is DISCARDED here rather than staying PENDING until
+    // completion; the winning item is still PENDING until the job completes.
     awaitHistoryStatuses(
         agentInstanceKey,
-        "both items PENDING before completion",
-        tuple(supersededItemKey, AgentInstanceHistoryCommitStatus.PENDING),
+        "superseded item already DISCARDED, winning item PENDING",
+        tuple(supersededItemKey, AgentInstanceHistoryCommitStatus.DISCARDED),
         tuple(winningItemKey, AgentInstanceHistoryCommitStatus.PENDING));
 
     // Complete the winning activation — JobCompleteProcessor propagates the stored lease token
-    // into AGENT_HISTORY:COMMIT, so visitByJobLease commits the winning item and discards the
-    // superseded one.
+    // into AGENT_HISTORY:COMMIT, so visitByJobLease commits the winning item.
     camundaClient.newCompleteCommand(activation2).execute();
 
     awaitHistoryStatuses(

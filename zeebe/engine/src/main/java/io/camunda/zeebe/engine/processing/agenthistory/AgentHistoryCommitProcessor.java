@@ -47,7 +47,10 @@ public final class AgentHistoryCommitProcessor
       agentHistoryState.visitByJobKey(jobKey, visitor);
     } else {
       agentHistoryState.visitByJobLease(jobKey, jobLease, visitor);
-      // Discard items from superseded activations (different lease, same job)
+      // Safety net: a job re-activation already discards its previous lease's pending items
+      // eagerly, before the new lease can write anything, so by the time a COMMIT is processed
+      // this pass should find nothing left to discard. Kept anyway so that a future change to the
+      // re-activation-discard sites can't silently leak a superseded lease's items forever.
       agentHistoryState.visitByJobKey(
           jobKey,
           item -> {
