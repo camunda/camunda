@@ -146,7 +146,10 @@ public class BrokerAdminServiceTest {
           default -> partitions::resumeExporting;
         };
 
-    // then
+    // then - the actuator's default error handling drops the exception message from the
+    // response body, so only the rejection itself is asserted here; the guidance message is
+    // covered by BrokerAdminServiceImplTest instead. The exact status is Spring Actuator's
+    // exception-to-status mapping, not something this change decided.
     assertThatThrownBy(trigger)
         .asInstanceOf(InstanceOfAssertFactories.throwable(FeignException.class))
         .extracting(FeignException::status)
@@ -268,7 +271,7 @@ public class BrokerAdminServiceTest {
   @Test
   void shouldPauseExporterAfterRestart() {
     // given
-    partitions.pauseExporting();
+    exporting.pause();
 
     // when
     zeebe.stop().start().awaitCompleteTopology();
@@ -281,8 +284,8 @@ public class BrokerAdminServiceTest {
   @Test
   void shouldResumeExporterAfterRestart() {
     // given
-    partitions.pauseExporting();
-    partitions.resumeExporting();
+    exporting.pause();
+    exporting.resume();
 
     // when
     zeebe.stop().start().awaitCompleteTopology();
