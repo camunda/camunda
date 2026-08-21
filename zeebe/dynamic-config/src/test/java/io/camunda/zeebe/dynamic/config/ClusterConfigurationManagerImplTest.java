@@ -81,6 +81,7 @@ final class ClusterConfigurationManagerImplTest {
 
   private static final MemberId MEMBER_0 = MemberId.from("0");
   private static final MemberId MEMBER_1 = MemberId.from("1");
+  private static final MemberId MEMBER_2 = MemberId.from("2");
   private final TestConcurrencyControl executor = new TestConcurrencyControl();
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
@@ -1520,6 +1521,151 @@ final class ClusterConfigurationManagerImplTest {
               assertThat(defaultGroup.hasMember(MEMBER_0)).isFalse();
               assertThat(defaultGroup.hasMember(MEMBER_1)).isTrue();
             });
+  }
+
+  @Test
+  void shouldFinishADrainedChangeWithNoLocalOperationLeftToRun() {
+    // given — a change whose every operation was applied by *peers*, merged into one drained plan
+    // that nobody has cleared yet. This is the mechanic the queue model never had: finishing a
+    // change used to be a side effect of whichever broker applied its last operation, so the broker
+    // that finishes it was always one with work of its own. Here the local member has none, so
+    // nothing about applying an operation can be what triggers the completion.
+    final var persisted =
+        PersistedCurrentClusterConfiguration.ofFile(
+            tmp.resolve("config-drained-no-local-work.meta"), new ProtoBufSerializer());
+    final var manager =
+        new ClusterConfigurationManagerImpl(
+            executor,
+            MEMBER_0,
+            persisted,
+            new TopologyManagerMetrics(new SimpleMeterRegistry()),
+            Duration.ofMillis(1),
+            Duration.ofMillis(1));
+    manager.setCurrentConfigurationGossiper(ignored -> {});
+    manager.registerGlobalChangeAppliers(
+        new GlobalConfigurationChangeAppliersImpl(
+            new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor()));
+
+    // Two independent operations, one per peer, and no operation for MEMBER_0 at all.
+    final var graph = OperationGraph.builder();
+    final var first = graph.add(new PartitionLeaveOperation(MEMBER_1, 1, 1));
+    final var second = graph.add(new PartitionLeaveOperation(MEMBER_2, 2, 1));
+    final var started =
+        threeMemberCluster()
+            .initPlan(
+                List.of(
+                    new PartitionGroupPhase(
+                        Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, graph.build()))));
+    // Each peer recorded its own operation and gossiped that; the merge of the two is what the
+    // local member holds. Neither peer saw the plan drain, so neither cleared it.
+    final var peerOne =
+        started.updatePartitionGroupConfig(
+            CurrentClusterConfiguration.DEFAULT_GROUP,
+            g -> g.completeOperation(first, UnaryOperator.identity()));
+    final var peerTwo =
+        started.updatePartitionGroupConfig(
+            CurrentClusterConfiguration.DEFAULT_GROUP,
+            g -> g.completeOperation(second, UnaryOperator.identity()));
+    final var drained = peerOne.merge(peerTwo);
+    final var drainedGroup = drained.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+    assertThat(drainedGroup.hasPendingChanges()).isFalse();
+    assertThat(drainedGroup.pendingChanges()).isPresent();
+
+    // when — the manager starts from that state and the group's appliers are registered, exactly as
+    // production does once local partitions are up. There is nothing for the local member to apply.
+    manager.start(() -> CompletableActorFuture.completed(drained)).join();
+    manager.registerPartitionGroupChangeAppliers(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+
+    // then — the plan is cleared, its completion recorded, and the phased plan archived
+    Awaitility.await("Drained change is finished without any local operation")
+        .untilAsserted(
+            () -> {
+              final var config = configuration(manager);
+              final var group = config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+              assertThat(group.pendingChanges()).isEmpty();
+              assertThat(group.lastChange()).isPresent();
+              assertThat(config.phasedChangeState().pending()).isEmpty();
+            });
+  }
+
+  @Test
+  void shouldFinishADrainedChangeOnAGossipRoundThatChangesNothing() {
+    // given — the same drained-but-uncleared state, but reached while the manager is already
+    // running and with the completion never having been attempted -- start() does not reconcile, so
+    // a broker that comes up in this state is waiting for something else to notice. A gossip round
+    // that merges to exactly what is already held takes the "merge changed nothing" branch, which
+    // skips reconcile() entirely; that branch is the only thing standing between a completion whose
+    // persist failed and a change that sits drained forever, since gossip is all that is left to
+    // perturb a converged cluster.
+    final var manager = newManager(MEMBER_0);
+    final var graph = OperationGraph.builder();
+    final var peerOperation = graph.add(new PartitionLeaveOperation(MEMBER_1, 1, 1));
+    final var drained =
+        threeMemberCluster()
+            .initPlan(
+                List.of(
+                    new PartitionGroupPhase(
+                        Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, graph.build()))))
+            .updatePartitionGroupConfig(
+                CurrentClusterConfiguration.DEFAULT_GROUP,
+                g -> g.completeOperation(peerOperation, UnaryOperator.identity()));
+    manager.start(() -> CompletableActorFuture.completed(drained)).join();
+    assertThat(
+            configuration(manager)
+                .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                .pendingChanges())
+        .describedAs("start() alone does not finish the drained change")
+        .isPresent();
+
+    // when — a peer gossips the very same state back, so the merge changes nothing locally
+    manager.onGossipReceivedCurrent(drained);
+
+    // then
+    Awaitility.await("Drained change is finished on a gossip round")
+        .untilAsserted(
+            () -> {
+              final var group =
+                  configuration(manager).partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+              assertThat(group.pendingChanges()).isEmpty();
+              assertThat(group.lastChange()).isPresent();
+            });
+  }
+
+  /** Three active members, all replicating partitions 1 and 2 of the default group. */
+  private CurrentClusterConfiguration threeMemberCluster() {
+    final var replicated =
+        BrokerPartitionState.initialize(
+            Map.of(
+                1, PartitionState.active(1, partitionConfig),
+                2, PartitionState.active(1, partitionConfig)));
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        new GlobalConfiguration(
+            1,
+            Optional.empty(),
+            Map.of(
+                MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                MEMBER_2, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty()),
+        Map.of(
+            CurrentClusterConfiguration.DEFAULT_GROUP,
+            new PartitionGroupConfiguration(
+                1,
+                0,
+                Map.of(MEMBER_0, replicated, MEMBER_1, replicated, MEMBER_2, replicated),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty())),
+        PhasedChangeState.empty());
   }
 
   /**
