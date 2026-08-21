@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.exception.UncheckedException;
@@ -53,20 +54,31 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Tag("multi-db-test")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 @TestMethodOrder(OrderAnnotation.class)
 public class TaskMigrationPartialUpdatesIT extends UserTaskMigrationHelper {
+  private static final Logger LOGGER = LoggerFactory.getLogger(TaskMigrationPartialUpdatesIT.class);
   private static final Map<Long, TaskData> PI_TASKS = new HashMap<>();
   private static final List<Long> ARCHIVING_BACKLOG = new ArrayList<>();
   private static final long ONE_DAY_MILLIS = ChronoUnit.DAYS.getDuration().toMillis();
   private static final long WAIT_PERIOD_BEFORE_ARCHIVING_SECONDS = 5;
   private static final long CLOCK_STEP_MILLIS = (WAIT_PERIOD_BEFORE_ARCHIVING_SECONDS + 1) * 1000;
   private static final int TASK_COUNT = 20;
-  private static Instant clock =
-      Instant.now().minus(TASK_COUNT, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MILLIS);
+
+  // The test completes only a subset of the tasks (~40% of them), so that the migration has to deal
+  // with partial documents. The subset is redrawn on every run, so that over time we keep covering
+  // shapes of partial data a fixed subset would never reach.
+  private static final String SEED_PROPERTY = "test.seed";
+  private static final double COMPLETION_THRESHOLD = 0.6;
+  private static final long RANDOM_SEED = resolveSeed();
+  private static final Random RANDOM = new Random(RANDOM_SEED);
+
+  private static Instant clock = initialClock();
   private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private static TaskLegacyIndex legacyIndex;
   private static TaskTemplate taskIndex;
@@ -151,14 +163,54 @@ public class TaskMigrationPartialUpdatesIT extends UserTaskMigrationHelper {
 
   private static void preconditions(final CamundaMigrator migrator) {
     try {
+      resetState();
       final String actuatorUrl = migrator.getActuatorUrl() + "/clock";
       legacyIndex = new TaskLegacyIndex(migrator.getIndexPrefix(), migrator.isElasticsearch());
       taskIndex = new TaskTemplate(migrator.getIndexPrefix(), migrator.isElasticsearch());
       pinClock(actuatorUrl, clock.toEpochMilli());
       dataSetup(migrator);
-    } catch (final IOException | InterruptedException ignored) {
-      // ignored
+    } catch (final IOException | InterruptedException e) {
+      // Swallowing this left the 8.8 upgrade to run on half-seeded data, so the test failed much
+      // later with an assertion that said nothing about the setup step that actually broke.
+      throw new UncheckedException(e);
     }
+  }
+
+  /**
+   * Failsafe reruns a failing test in the same JVM, so these static fields outlive a failed attempt
+   * even though the extension recreates the cluster and wipes the indices for the next one. Without
+   * this reset a rerun inherits the previous attempt's simulated clock — moving it a further ~10
+   * days into the future every time, until nothing is old enough to be archived — plus task keys
+   * belonging to a cluster that no longer exists. Every rerun then fails on an archival timeout no
+   * matter what caused the first failure, and each one costs ~3.5 minutes of the job's budget.
+   */
+  private static void resetState() {
+    PI_TASKS.clear();
+    ARCHIVING_BACKLOG.clear();
+    clock = initialClock();
+    RANDOM.setSeed(RANDOM_SEED);
+  }
+
+  private static Instant initialClock() {
+    return Instant.now().minus(TASK_COUNT, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MILLIS);
+  }
+
+  /**
+   * Draws the seed once per JVM, so every rerun of a failed attempt replays the same subset of
+   * completed tasks. Holding the drawn subset still across attempts is what lets a rerun tell a
+   * timing flake apart from a bug that only surfaces for this particular shape of partial data: if
+   * the retries pass, the circumstances that differed were timing; if they all fail, the data shape
+   * is the problem and the build should stay red.
+   */
+  private static long resolveSeed() {
+    final Long configured = Long.getLong(SEED_PROPERTY);
+    final long seed = configured != null ? configured : new Random().nextLong();
+    LOGGER.info(
+        "Drawing tasks to complete with seed {}. Replay it with -D{}={}",
+        seed,
+        SEED_PROPERTY,
+        seed);
+    return seed;
   }
 
   private static void dataSetup(final CamundaMigrator migrator)
@@ -251,7 +303,7 @@ public class TaskMigrationPartialUpdatesIT extends UserTaskMigrationHelper {
   }
 
   private void tryAssignAndCompleteTask(final CamundaMigrator migrator, final TaskData taskData) {
-    if (Math.random() > 0.6) {
+    if (RANDOM.nextDouble() > COMPLETION_THRESHOLD) {
       if (taskData.implementation.equals(TaskImplementation.ZEEBE_USER_TASK)) {
         migrator
             .getCamundaClient()
@@ -398,14 +450,14 @@ public class TaskMigrationPartialUpdatesIT extends UserTaskMigrationHelper {
           }
 
           assertThat(taskEntityIndexPair.getValue())
-              .withFailMessage(
-                  "Found %s when expecting %s in %s",
-                  taskEntityIndexPair.getValue(), value, taskEntityIndexPair.getKey())
               .extracting(
                   TaskEntity::getKey,
                   TaskEntity::getAssignee,
                   TaskEntity::getImplementation,
                   TaskEntity::getCompletionTime)
+              // Describe rather than override the message: TaskEntity has no toString, so a custom
+              // message here reports "TaskEntity@1b2c3d4" and hides which field actually differed.
+              .as("expected %s in index %s", value, taskEntityIndexPair.getKey())
               .containsExactly(
                   value.taskKey,
                   value.completed ? "demo" : null,
