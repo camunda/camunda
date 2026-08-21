@@ -383,7 +383,15 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
    * for every currently {@code SUSPENDED} job but not an authoritative "all jobs of this instance"
    * list.
    */
-  JOBS_BY_PROCESS_INSTANCE(163, PARTITION_LOCAL);
+  JOBS_BY_PROCESS_INSTANCE(163, PARTITION_LOCAL),
+
+  // (agentInstanceKey, historyItemId) -> agentHistoryKey. Records every history item ever
+  // committed for an agent instance, so a later job resending an id that an earlier, already-
+  // completed job committed can still be recognized as a duplicate — pending state alone can't do
+  // this, since a committed item is deleted from it. Retained for the agent instance's whole
+  // lifetime and deleted in one pass when the instance completes (see
+  // AgentInstanceCompletedApplier).
+  AGENT_HISTORY_COMMITTED_IDS(164, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

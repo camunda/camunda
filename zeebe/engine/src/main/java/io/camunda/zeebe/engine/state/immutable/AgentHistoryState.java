@@ -34,6 +34,12 @@ public interface AgentHistoryState {
    */
   void visitByJobLease(long jobKey, String jobLease, AgentHistoryVisitor visitor);
 
+  /**
+   * @return the {@code agentHistoryKey} of the history item that was committed under this {@code
+   *     historyItemId} for this agent instance, or {@code null} if none was
+   */
+  Long getCommittedHistoryItemKey(long agentInstanceKey, String historyItemId);
+
   @FunctionalInterface
   interface AgentHistoryVisitor {
     void visit(AgentHistoryRecord record);
