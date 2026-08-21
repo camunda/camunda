@@ -20,6 +20,7 @@ import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.container.volume.CamundaVolume;
+import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.grpc.Status.Code;
@@ -113,7 +114,8 @@ final class DiskSpaceRecoveryIT {
     void shouldRecoverAfterOutOfDiskSpaceAfterExporting() throws InterruptedException {
       // given
       final var partitionsClient = PartitionsActuator.of(broker);
-      partitionsClient.pauseExporting();
+      final var exportingClient = ExportingActuator.of(broker);
+      exportingClient.pause();
 
       // fill out the disk as fast as possible
       await("until the disk is full")
@@ -130,7 +132,7 @@ final class DiskSpaceRecoveryIT {
               });
 
       // when
-      partitionsClient.resumeExporting();
+      exportingClient.resume();
       // wait until all records are exported
       Awaitility.await()
           .atMost(Duration.ofMinutes(3))
