@@ -533,6 +533,7 @@ jobs:
         uses: ./.github/actions/print-metadata
         with:
           test_product: "Camunda Docker"
+          test_type: Build
       - uses: ./.github/actions/setup-build
         if: steps.is-fork.outputs.is-fork != 'true'
         with:
