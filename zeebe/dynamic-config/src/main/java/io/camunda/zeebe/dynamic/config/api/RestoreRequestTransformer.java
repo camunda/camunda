@@ -175,7 +175,9 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
    *   <li>{@code preRestore(m,k)} — nothing; every pre-restore of every partition starts at once.
    *   <li>{@code restore(m,k)} — only {@code preRestore(m,k)}. Wiping and reloading a broker's copy
    *       of a partition is local to that broker, so one broker may reload {@code k} while a peer
-   *       is still wiping its own copy of {@code k}.
+   *       is still wiping its own copy of {@code k}. What makes leaving these unordered safe is
+   *       that neither step writes the group configuration — see {@code PartitionPreRestoreApplier}
+   *       and {@code PartitionRestoreApplier}, which both apply {@code UnaryOperator.identity()}.
    *   <li>{@code modeChange(m)} — the restores of the partitions {@code m} holds. Partitions {@code
    *       m} does not hold cannot block it leaving recovery.
    *   <li>{@code awaitModeChange(m)} — every mode change and <em>every</em> restore. This one is
@@ -184,6 +186,13 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
    *   <li>{@code updateIncarnationNumber} — every await. It writes the group's own state, so it is
    *       ordered after everything by construction.
    * </ul>
+   *
+   * <p>Scoping the edges is only safe because no two operations that may run concurrently write the
+   * same part of the group configuration: the wipes and reloads write nothing at all, a mode change
+   * and its await write only broker {@code m}'s own mode and partition states, and the one
+   * whole-group write, the incarnation number, is ordered after every await. An applier that starts
+   * writing something wider has to be paired with edges here that order it against the operations
+   * it now shares a field with.
    *
    * <p>So there is one cluster-wide barrier, at the awaits. Everything before it is scoped: the
    * {@code N·P} wipes and reloads become {@code N·P} independent chains rather than two
