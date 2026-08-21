@@ -165,6 +165,7 @@ public class JobRegistryReaderES implements JobRegistryReader {
                 s.optimizeIndex(esClient, JOB_REGISTRY_INDEX_NAME)
                     .query(query)
                     .source(src -> src.filter(f -> f.includes(JobRegistryIndex.ENTITY_ID)))
+                    .collapse(c -> c.field(JobRegistryIndex.ENTITY_ID))
                     .size(entityIds.size()));
 
     try {
