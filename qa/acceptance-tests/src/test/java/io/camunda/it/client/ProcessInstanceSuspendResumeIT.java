@@ -13,6 +13,7 @@ import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeSuspended;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -94,8 +95,22 @@ public class ProcessInstanceSuspendResumeIT {
     // then - both complete, with the same elements in the same end state
     waitForProcessInstancesToBeCompleted(
         camundaClient, f -> f.processInstanceKey(b -> b.in(suspendedKey, notSuspendedKey)), 2);
-    assertThat(elementIdsAndStates(suspendedKey))
-        .containsExactlyInAnyOrderElementsOf(elementIdsAndStates(notSuspendedKey));
+    // Process-instance COMPLETED can be searchable before every element-instance update is
+    // exported. Wait until both trees agree and are fully COMPLETED rather than comparing once.
+    await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var suspendedElements = elementIdsAndStates(suspendedKey);
+              final var notSuspendedElements = elementIdsAndStates(notSuspendedKey);
+              assertThat(suspendedElements)
+                  .isNotEmpty()
+                  .extracting(t -> t.toList().get(1))
+                  .containsOnly(ElementInstanceState.COMPLETED);
+              assertThat(suspendedElements)
+                  .containsExactlyInAnyOrderElementsOf(notSuspendedElements);
+            });
   }
 
   @Test
