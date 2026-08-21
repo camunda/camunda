@@ -745,7 +745,7 @@ final class ProtoBufSerializerTest {
             1,
             0,
             List.of(
-                new PartitionGroupParallelPhase(
+                PartitionGroupPhase.sequential(
                     Map.of(
                         groupId, List.of(new RemovePhysicalTenantOperation(MemberId.from("1")))))),
             Instant.now());

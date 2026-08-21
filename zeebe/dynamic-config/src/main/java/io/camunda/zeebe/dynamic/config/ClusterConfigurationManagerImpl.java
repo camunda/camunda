@@ -428,8 +428,8 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
 
   /**
    * The single place group-scoped {@link ScopeReconciler}s and {@link GraphScopeReconciler}s are
-   * created — registering a group's appliers via {@link #registerPartitionGroupChangeAppliers}
-   * does not create either. Every live group keeps both on every broker, whether or not the broker
+   * created — registering a group's appliers via {@link #registerPartitionGroupChangeAppliers} does
+   * not create either. Every live group keeps both on every broker, whether or not the broker
    * registered that group's appliers — a broker can be named in a group operation without ever
    * hosting the group (a disabled physical tenant's forced removal executes on whichever broker
    * received the request, and no broker runs a disabled tenant). Removed groups are tombstones that
@@ -656,7 +656,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         groupId,
         localMemberId,
         persistedCurrentConfiguration::getConfiguration,
-        () -> partitionGroupChangeAppliers.get(groupId),
+        operation -> applierFor(operation, partitionGroupChangeAppliers.get(groupId)),
         this::updateLocalCurrentConfiguration,
         executor,
         topologyMetrics,
@@ -673,7 +673,8 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
    * A {@code RemovePhysicalTenantOperation} is dispatchable even with no {@code appliers}
    * registered for the group, since it is a pure configuration edit with no broker-side executor.
    * Every other operation still requires a registered appliers set, returning {@code
-   * Optional.empty()} — leaving it pending — otherwise.
+   * Optional.empty()} — leaving it pending — otherwise. Shared by both execution models: {@link
+   * GroupScopeOperations#nextOperation} for the queue, {@link GraphScopeReconciler} for the graph.
    */
   private static Optional<PartitionGroupConfigurationChangeApplier> applierFor(
       final PartitionGroupOperation operation,

@@ -16,7 +16,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.LinkedHashMap;
@@ -69,7 +69,7 @@ public final class ExportingStateChangeRequestTransformer implements Configurati
     if (operationsPerGroup.isEmpty()) {
       return Either.right(List.of());
     }
-    return Either.right(List.of(new PartitionGroupParallelPhase(operationsPerGroup)));
+    return Either.right(List.of(PartitionGroupPhase.sequential(operationsPerGroup)));
   }
 
   private List<PartitionGroupOperation> exportingStateChangeOperations(

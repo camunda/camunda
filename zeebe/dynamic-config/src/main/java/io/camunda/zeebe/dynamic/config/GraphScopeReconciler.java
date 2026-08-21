@@ -8,7 +8,7 @@
 package io.camunda.zeebe.dynamic.config;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliers;
+import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeApplier;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics.OperationObserver;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -63,7 +64,9 @@ final class GraphScopeReconciler {
   private final String groupId;
   private final MemberId localMemberId;
   private final Supplier<CurrentClusterConfiguration> currentConfiguration;
-  private final Supplier<@Nullable PartitionGroupConfigurationChangeAppliers> appliers;
+  private final Function<
+          PartitionGroupOperation, Optional<PartitionGroupConfigurationChangeApplier>>
+      applierFor;
   private final Function<
           CurrentClusterConfiguration, Either<Exception, CurrentClusterConfiguration>>
       updateLocally;
@@ -75,11 +78,19 @@ final class GraphScopeReconciler {
   private final Set<OperationId> inFlight = new HashSet<>();
   private final Map<OperationId, ExponentialBackoffRetryDelay> backoffs = new HashMap<>();
 
+  /**
+   * @param applierFor resolves the applier for one operation, or {@link Optional#empty()} to leave
+   *     it pending — the same per-operation resolution {@code ClusterConfigurationManagerImpl}'s
+   *     {@code applierFor} gives the queue model's {@code GroupScopeOperations}, so a {@code
+   *     RemovePhysicalTenantOperation} (dispatchable with no registered appliers at all, since it
+   *     is a pure configuration edit) is not blocked by this group having none.
+   */
   GraphScopeReconciler(
       final String groupId,
       final MemberId localMemberId,
       final Supplier<CurrentClusterConfiguration> currentConfiguration,
-      final Supplier<@Nullable PartitionGroupConfigurationChangeAppliers> appliers,
+      final Function<PartitionGroupOperation, Optional<PartitionGroupConfigurationChangeApplier>>
+          applierFor,
       final Function<CurrentClusterConfiguration, Either<Exception, CurrentClusterConfiguration>>
           updateLocally,
       final ConcurrencyControl executor,
@@ -89,7 +100,7 @@ final class GraphScopeReconciler {
     this.groupId = groupId;
     this.localMemberId = localMemberId;
     this.currentConfiguration = currentConfiguration;
-    this.appliers = appliers;
+    this.applierFor = applierFor;
     this.updateLocally = updateLocally;
     this.executor = executor;
     this.topologyMetrics = topologyMetrics;
@@ -108,8 +119,7 @@ final class GraphScopeReconciler {
    */
   void reconcile() {
     final var group = currentConfiguration.get().partitionGroup(groupId);
-    final var groupAppliers = appliers.get();
-    if (group == null || groupAppliers == null) {
+    if (group == null) {
       return;
     }
 
@@ -120,14 +130,21 @@ final class GraphScopeReconciler {
       if (inFlight.contains(entry.getKey())) {
         continue;
       }
-      start(entry.getKey(), entry.getValue(), groupAppliers);
+      start(entry.getKey(), entry.getValue());
     }
   }
 
-  private void start(
-      final OperationId operationId,
-      final PartitionGroupOperation operation,
-      final PartitionGroupConfigurationChangeAppliers groupAppliers) {
+  /**
+   * Leaves {@code operationId} pending — neither in-flight nor retried on a timer — if {@link
+   * #applierFor} resolves nothing for it, exactly as {@code GroupScopeOperations} does for the
+   * queue model: stalling visibly on a genuinely-unregistered operation, rather than fabricating a
+   * no-op success for it.
+   */
+  private void start(final OperationId operationId, final PartitionGroupOperation operation) {
+    final var resolvedApplier = applierFor.apply(operation);
+    if (resolvedApplier.isEmpty()) {
+      return;
+    }
     // Read the configuration fresh for each operation rather than once for the loop above: staging
     // persists within this turn, so a hoisted read would make the second operation of a batch
     // overwrite the first one's staged state.
@@ -141,7 +158,7 @@ final class GraphScopeReconciler {
     final var observer = topologyMetrics.observeOperation(operation);
     LOG.info("Applying partition group '{}' operation {} ({})", groupId, operationId, operation);
 
-    final var applier = groupAppliers.getApplier(operation);
+    final var applier = resolvedApplier.get();
     final var initialized =
         applier
             .init(config.globalConfiguration(), group)
