@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.protocol.rest.ClusterModeChangeResponse;
 import io.camunda.client.protocol.rest.ClusterRestoreRequest;
 import io.camunda.client.protocol.rest.ClusterRestoreResponse;
@@ -332,31 +333,71 @@ public final class InProcessRestoreTestUtil {
         .timeout(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
-              final var jobs =
-                  client
-                      .newActivateJobsCommand()
-                      .jobType(jobType)
-                      .maxJobsToActivate(2 * partitionsCount)
-                      .send()
-                      .join();
-              jobs.getJobs()
-                  .forEach(
-                      job -> {
-                        activatedJobKeys.add(job.getKey());
-                        client.newCompleteCommand(job.getKey()).send().join();
-                      });
-
-              final var partitionsWithActivatedJob =
-                  activatedJobKeys.stream()
-                      .map(Protocol::decodePartitionId)
-                      .collect(Collectors.toSet());
-              assertThat(partitionsWithActivatedJob)
-                  .describedAs(
-                      "jobs are activated from every partition, proving partition data was"
-                          + " actually restored")
-                  .containsExactlyInAnyOrderElementsOf(
-                      IntStream.rangeClosed(1, partitionsCount).boxed().toList());
+              activateAndComplete(client, jobType, partitionsCount, activatedJobKeys);
+              assertEveryPartitionActivated(activatedJobKeys, partitionsCount);
             });
+  }
+
+  /**
+   * Completes <em>every</em> pending job of the given type, asserting that one came from every
+   * partition and that an activation afterwards finds nothing left.
+   *
+   * <p>Drains to exhaustion, where {@link #activateAndCompleteJobsFromEveryPartition} drains only
+   * to partition coverage: that one stops at the first batch spanning every partition, so a job on
+   * an already-covered partition can outlive it. A caller that goes on to assert the type is gone —
+   * because a backup taken at this point must not capture it — needs exhaustion, not coverage.
+   */
+  static void completeEveryJob(
+      final CamundaClient client, final String jobType, final int partitionsCount) {
+    final Set<Long> activatedJobKeys = new HashSet<>();
+    Awaitility.await("every job of type '%s' is completed".formatted(jobType))
+        .timeout(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var activated =
+                  activateAndComplete(client, jobType, partitionsCount, activatedJobKeys);
+              assertEveryPartitionActivated(activatedJobKeys, partitionsCount);
+              assertThat(activated)
+                  .describedAs("no job of type '%s' is left pending", jobType)
+                  .isEmpty();
+            });
+  }
+
+  /**
+   * Activates up to a batch of jobs of the given type, completes each of them, and records their
+   * keys in {@code activatedJobKeys}. Returns the batch, so a caller can tell a poll that found
+   * work from one that found none.
+   */
+  private static List<ActivatedJob> activateAndComplete(
+      final CamundaClient client,
+      final String jobType,
+      final int partitionsCount,
+      final Set<Long> activatedJobKeys) {
+    final var jobs =
+        client
+            .newActivateJobsCommand()
+            .jobType(jobType)
+            .maxJobsToActivate(2 * partitionsCount)
+            .send()
+            .join()
+            .getJobs();
+    jobs.forEach(
+        job -> {
+          activatedJobKeys.add(job.getKey());
+          client.newCompleteCommand(job.getKey()).send().join();
+        });
+    return jobs;
+  }
+
+  private static void assertEveryPartitionActivated(
+      final Set<Long> activatedJobKeys, final int partitionsCount) {
+    final var partitionsWithActivatedJob =
+        activatedJobKeys.stream().map(Protocol::decodePartitionId).collect(Collectors.toSet());
+    assertThat(partitionsWithActivatedJob)
+        .describedAs(
+            "jobs are activated from every partition, proving partition data was actually restored")
+        .containsExactlyInAnyOrderElementsOf(
+            IntStream.rangeClosed(1, partitionsCount).boxed().toList());
   }
 
   /**

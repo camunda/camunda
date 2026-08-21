@@ -246,8 +246,10 @@ final class ClusterAdminRestoreAcceptanceIT {
       ALL_TENANTS.forEach(tenant -> takeBackup(tenant, baselineBackupId));
 
       // and — tenant-c alone completes its baseline jobs and moves on to different work, then takes
-      // an additional backup capturing that later state
-      completeJobsFromEveryPartition(tenantCClient, baselineJobType);
+      // an additional backup capturing that later state. Every baseline job has to be drained, not
+      // just one per partition: any left pending would be captured by the override backup below and
+      // come back with it, breaking the "the baseline jobs never reappear" assertion at the end.
+      completeEveryJob(tenantCClient, baselineJobType);
       createInstancesOnEveryPartition(tenantCClient, overrideProcessId, overrideJobType);
       takeSnapshot(TENANT_C);
       takeBackup(TENANT_C, overrideBackupId);
@@ -411,6 +413,11 @@ final class ClusterAdminRestoreAcceptanceIT {
       final CamundaClient client, final String jobType) {
     InProcessRestoreTestUtil.activateAndCompleteJobsFromEveryPartition(
         client, jobType, PARTITIONS_COUNT);
+  }
+
+  /** Completes every pending job of the type, leaving none behind for a later backup to capture. */
+  private static void completeEveryJob(final CamundaClient client, final String jobType) {
+    InProcessRestoreTestUtil.completeEveryJob(client, jobType, PARTITIONS_COUNT);
   }
 
   /** Deploys a process, idempotent under retry so a transient rejection is simply retried. */

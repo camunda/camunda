@@ -61,6 +61,7 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 final class RestoreRequestTransformerTest {
@@ -575,7 +576,7 @@ final class RestoreRequestTransformerTest {
     }
 
     final var released =
-        group.pendingGraphChanges().orElseThrow().runnableFor(memberOne).values().stream()
+        group.pendingChanges().orElseThrow().runnableFor(memberOne).values().stream()
             .filter(PartitionRestoreOperation.class::isInstance)
             .map(PartitionRestoreOperation.class::cast)
             .toList();
@@ -583,10 +584,62 @@ final class RestoreRequestTransformerTest {
   }
 
   @Test
+  void shouldOrderAModeChangeBehindTheRestoresOfOnlyItsOwnPartitions() {
+    // given - an asymmetric group: member 0 holds partition 1 alone, member 1 holds both. A broker
+    // leaves recovery as soon as the partitions it holds are back, so partition 2 must not block
+    // member 0, which does not host it. This edge is what keeps the mode changes broker-scoped
+    // instead of turning them into a second cluster-wide barrier - the whole point of the graph.
+    final var memberOne = MemberId.from("0");
+    final var memberTwo = MemberId.from("1");
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(
+                validatorReturning(
+                    Either.right(
+                        new RestoreResolvedRequest(
+                            Map.of(1, new long[] {1L}, 2, new long[] {2L}), false)))));
+
+    // when
+    final var result =
+        transformer.phases(
+            clusterWithDefaultGroup(
+                Map.of(
+                    memberOne, recovering(1),
+                    memberTwo, recovering(1, 2))));
+
+    // then - each mode change waits for the restores of its own partitions on every broker, and for
+    // nothing else. Partition 1 is replicated by both brokers, partition 2 only by member 1.
+    EitherAssert.assertThat(result).isRight();
+    final var graph = graphOf(result.get());
+    final var restoresOfPartitionOne = restoresOfPartition(graph, 1);
+    final var restoresOfPartitionTwo = restoresOfPartition(graph, 2);
+    assertThat(restoresOfPartitionOne).hasSize(2);
+    assertThat(restoresOfPartitionTwo).hasSize(1);
+
+    final var modeChangeOf = modeChangesByMember(graph);
+    assertThat(graph.operations().get(modeChangeOf.get(memberOne)).dependsOn())
+        .describedAs("dependencies of the mode change on the broker holding partition 1 only")
+        .containsExactlyInAnyOrderElementsOf(restoresOfPartitionOne);
+    assertThat(graph.operations().get(modeChangeOf.get(memberTwo)).dependsOn())
+        .describedAs("dependencies of the mode change on the broker holding both partitions")
+        .containsExactlyInAnyOrderElementsOf(
+            Stream.concat(restoresOfPartitionOne.stream(), restoresOfPartitionTwo.stream())
+                .toList());
+  }
+
+  @Test
   void shouldAwaitTheModeChangeOnlyAfterEveryRestoreEverywhere() {
     // given - two brokers, two partitions. Restores are narrowed per partition, but awaiting the
     // transition observes the group as a whole, so this stage is a cluster-wide barrier: no broker
     // may start awaiting while any partition anywhere is still reloading.
+    //
+    // The barrier also covers every mode change, including the awaiting broker's own. An earlier
+    // version of the edge rules derived an await's dependencies from the brokers it shares a
+    // partition with, leaving a broker that shares none unordered against its own mode change. Both
+    // write that broker's member entry, so the sub-configuration merge would keep one by version
+    // and
+    // silently drop the other. Nothing rejects that shape any more, so it is pinned here.
     final var memberOne = MemberId.from("0");
     final var memberTwo = MemberId.from("1");
     final var transformer =
@@ -606,7 +659,8 @@ final class RestoreRequestTransformerTest {
                     memberOne, recovering(1, 2),
                     memberTwo, recovering(1, 2))));
 
-    // then - every await waits for all four restores and for both mode changes
+    // then - every await waits for all four restores and for both mode changes, and for nothing
+    // else: the pre-restores are already covered transitively by the restores
     EitherAssert.assertThat(result).isRight();
     final var graph = graphOf(result.get());
     final var restores = idsOf(graph, PartitionRestoreOperation.class);
@@ -618,8 +672,48 @@ final class RestoreRequestTransformerTest {
         .allSatisfy(
             await ->
                 assertThat(graph.operations().get(await).dependsOn())
-                    .containsAll(restores)
-                    .containsAll(modeChanges));
+                    .describedAs("dependencies of the await on %s", memberOf(graph, await))
+                    .containsExactlyInAnyOrderElementsOf(
+                        Stream.concat(restores.stream(), modeChanges.stream()).toList()));
+  }
+
+  @Test
+  void shouldOrderTheIncarnationBumpAfterEveryAwait() {
+    // given - two brokers, two partitions. The incarnation number is the group's own state, written
+    // once the restore is done. Bumping it while any broker is still observing its transition would
+    // advertise a recovery that has not finished, so it is ordered behind every await - not just
+    // behind one of them, and not behind the restores alone.
+    final var memberOne = MemberId.from("0");
+    final var memberTwo = MemberId.from("1");
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(
+                validatorReturning(
+                    Either.right(
+                        new RestoreResolvedRequest(
+                            Map.of(1, new long[] {1L}, 2, new long[] {2L}), false)))));
+
+    // when
+    final var result =
+        transformer.phases(
+            clusterWithDefaultGroup(
+                Map.of(
+                    memberOne, recovering(1, 2),
+                    memberTwo, recovering(1, 2))));
+
+    // then - one bump, waiting for every await and for nothing else
+    EitherAssert.assertThat(result).isRight();
+    final var graph = graphOf(result.get());
+    final var awaits = idsOf(graph, AwaitModeChangeOperation.class);
+    assertThat(awaits).hasSize(2);
+    assertThat(idsOf(graph, UpdateIncarnationNumberOperation.class))
+        .singleElement()
+        .satisfies(
+            bump ->
+                assertThat(graph.operations().get(bump).dependsOn())
+                    .describedAs("dependencies of the incarnation bump")
+                    .containsExactlyInAnyOrderElementsOf(awaits));
   }
 
   private static MemberId memberOf(final OperationGraph graph, final OperationId operationId) {
@@ -631,42 +725,19 @@ final class RestoreRequestTransformerTest {
         .partitionId();
   }
 
-  @Test
-  void shouldOrderEveryBrokersAwaitAfterItsOwnModeChange() {
-    // given — a broker holding no partition of the group still has to leave recovery, so it gets a
-    // mode change and an await with no partition work between them. An earlier version of the edge
-    // rules derived the await's dependencies from the brokers it shares a partition with, which for
-    // this broker is nobody — leaving its own mode change unordered against its own await. Both
-    // write that broker's member entry, so the sub-configuration merge would keep one by version
-    // and silently drop the other. Nothing rejects that shape any more, so it is pinned here.
-    final var withPartitions = MemberId.from("0");
-    final var withoutPartitions = MemberId.from("1");
-    final var transformer =
-        new RestoreRequestTransformer(
-            restoreRequest(),
-            registryWithValidator(validatorReturning(Either.right(resolvedRequest()))));
+  /** The restores of the given partition, one per broker replicating it. */
+  private static List<OperationId> restoresOfPartition(
+      final OperationGraph graph, final int partitionId) {
+    return idsOf(graph, PartitionRestoreOperation.class).stream()
+        .filter(restore -> partitionOf(graph, restore) == partitionId)
+        .toList();
+  }
 
-    // when
-    final var result =
-        transformer.phases(
-            clusterWithDefaultGroup(
-                Map.of(
-                    withPartitions, recovering(1),
-                    withoutPartitions, BrokerPartitionState.initialize(Map.of()))));
-
-    // then — every await depends on its own broker's mode change
-    EitherAssert.assertThat(result).isRight();
-    final var graph = graphOf(result.get());
+  private static Map<MemberId, OperationId> modeChangesByMember(final OperationGraph graph) {
     final var modeChangeOf = new HashMap<MemberId, OperationId>();
     idsOf(graph, ModeChangeOperation.class)
         .forEach(id -> modeChangeOf.put(memberOf(graph, id), id));
-    assertThat(idsOf(graph, AwaitModeChangeOperation.class))
-        .isNotEmpty()
-        .allSatisfy(
-            await ->
-                assertThat(graph.operations().get(await).dependsOn())
-                    .describedAs("dependencies of the await on %s", memberOf(graph, await))
-                    .contains(modeChangeOf.get(memberOf(graph, await))));
+    return modeChangeOf;
   }
 
   private static OperationGraph graphOf(final List<Phase> phases) {
