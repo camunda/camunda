@@ -95,20 +95,23 @@ public class UsageMetricsRetentionConfigurationIT {
     final var config = new ConnectConfiguration();
     config.setUrl(containerUrl);
     final ElasticsearchClient client = new ElasticsearchConnector(config).createClient();
+    try {
+      final var policy = client.ilm().getLifecycle(req -> req.name(USAGE_METRICS_POLICY_NAME));
 
-    final var policy = client.ilm().getLifecycle(req -> req.name(USAGE_METRICS_POLICY_NAME));
-
-    assertThat(policy.result()).containsKey(USAGE_METRICS_POLICY_NAME);
-    assertThat(
-            policy
-                .result()
-                .get(USAGE_METRICS_POLICY_NAME)
-                .policy()
-                .phases()
-                .delete()
-                .minAge()
-                .time())
-        .isEqualTo(USAGE_METRICS_MINIMUM_AGE);
+      assertThat(policy.result()).containsKey(USAGE_METRICS_POLICY_NAME);
+      assertThat(
+              policy
+                  .result()
+                  .get(USAGE_METRICS_POLICY_NAME)
+                  .policy()
+                  .phases()
+                  .delete()
+                  .minAge()
+                  .time())
+          .isEqualTo(USAGE_METRICS_MINIMUM_AGE);
+    } finally {
+      CloseHelper.quietClose(client._transport());
+    }
   }
 
   private void assertOpenSearchUsageMetricsPolicy(final String containerUrl) throws Exception {
@@ -117,29 +120,33 @@ public class UsageMetricsRetentionConfigurationIT {
     config.setUsername("admin");
     config.setPassword("admin");
     final OpenSearchClient client = new OpensearchConnector(config).createClient();
-    final ObjectMapper objectMapper =
-        ((JacksonJsonpMapper) client._transport().jsonpMapper()).objectMapper();
+    try {
+      final ObjectMapper objectMapper =
+          ((JacksonJsonpMapper) client._transport().jsonpMapper()).objectMapper();
 
-    final var request =
-        Requests.builder()
-            .method("GET")
-            .endpoint("/_plugins/_ism/policies/" + USAGE_METRICS_POLICY_NAME)
-            .build();
+      final var request =
+          Requests.builder()
+              .method("GET")
+              .endpoint("/_plugins/_ism/policies/" + USAGE_METRICS_POLICY_NAME)
+              .build();
 
-    try (final var response = client.generic().execute(request)) {
-      assertThat(response.getStatus()).isEqualTo(200);
-      final var policyJson = objectMapper.readTree(response.getBody().get().bodyAsString());
-      final var minIndexAge =
-          policyJson
-              .path("policy")
-              .path("states")
-              .path(0)
-              .path("transitions")
-              .path(0)
-              .path("conditions")
-              .path("min_index_age")
-              .asText();
-      assertThat(minIndexAge).isEqualTo(USAGE_METRICS_MINIMUM_AGE);
+      try (final var response = client.generic().execute(request)) {
+        assertThat(response.getStatus()).isEqualTo(200);
+        final var policyJson = objectMapper.readTree(response.getBody().get().bodyAsString());
+        final var minIndexAge =
+            policyJson
+                .path("policy")
+                .path("states")
+                .path(0)
+                .path("transitions")
+                .path(0)
+                .path("conditions")
+                .path("min_index_age")
+                .asText();
+        assertThat(minIndexAge).isEqualTo(USAGE_METRICS_MINIMUM_AGE);
+      }
+    } finally {
+      CloseHelper.quietClose(client._transport());
     }
   }
 
