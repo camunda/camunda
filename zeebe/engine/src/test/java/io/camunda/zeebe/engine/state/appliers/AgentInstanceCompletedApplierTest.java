@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -128,6 +129,45 @@ public class AgentInstanceCompletedApplierTest {
         .isNull();
     assertThat(agentHistoryState.getCommittedHistoryItemKey(agentInstanceKey, "history-item-2"))
         .isNull();
+  }
+
+  @Test
+  void shouldDeleteCommittedHistoryItemIdsAtScaleOnCompletion() {
+    // given — an agent instance that accumulated more than 1,000 committed history-item ids,
+    // seeded directly against state rather than by applying 1,500 real COMMITTED events, since
+    // only the collect-then-delete cleanup in the applier is under test here
+    final long agentInstanceKey = 24L;
+    final long processInstanceKey = 5L;
+    final int committedIdCount = 1500;
+    createdApplier.applyState(
+        agentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
+    IntStream.range(0, committedIdCount)
+        .forEach(
+            i ->
+                agentHistoryState.putCommittedHistoryItemKey(
+                    agentInstanceKey, "history-item-" + i, i));
+
+    // when — the agent instance completes.
+    completedApplier.applyState(
+        agentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.COMPLETED));
+
+    // then — every committed id seeded for this agent instance is gone.
+    IntStream.range(0, committedIdCount)
+        .forEach(
+            i ->
+                assertThat(
+                        agentHistoryState.getCommittedHistoryItemKey(
+                            agentInstanceKey, "history-item-" + i))
+                    .describedAs("committed id history-item-%d should be removed on completion", i)
+                    .isNull());
   }
 
   @Test
