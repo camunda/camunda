@@ -12,7 +12,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -38,11 +37,16 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PreDestroy;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -86,16 +90,22 @@ public class Starter implements CommandLineRunner {
   private final ObjectMapper objectMapper;
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
+  private final AtomicLong currentProcessDefinitionKey = new AtomicLong(0);
   private final AtomicInteger runFinished = new AtomicInteger(0);
+  private final AtomicInteger deployCounter = new AtomicInteger(0);
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
 
   private Timer responseLatencyTimer;
   private Counter processInstancesStartedCounter;
   private ScheduledExecutorService executorService;
+  private ScheduledExecutorService redeployExecutorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private DataReadMeter dataReadMeter;
   private OptimizeReportEvaluator optimizeReportEvaluator;
+  // Base BPMN XML of the main process, read once from the classpath at startup and reused for
+  // every (re)deploy; each deploy injects a unique marker so Zeebe creates a fresh version.
+  private String baseBpmnXml;
 
   public Starter(
       final CamundaClient client,
@@ -169,6 +179,9 @@ public class Starter implements CommandLineRunner {
     final ScheduledFuture<?> scheduledTask =
         scheduleProcessInstanceCreation(executorService, countDownLatch);
 
+    final ScheduledFuture<?> redeployTask =
+        starterCfg.isRedeployEnabled() ? scheduleRedeploy() : null;
+
     try {
       countDownLatch.await();
     } catch (final InterruptedException e) {
@@ -180,6 +193,9 @@ public class Starter implements CommandLineRunner {
         "Starter finished. Total process instance start requests submitted: {}",
         processInstancesStartedCounter == null ? 0 : (long) processInstancesStartedCounter.count());
     scheduledTask.cancel(true);
+    if (redeployTask != null) {
+      redeployTask.cancel(true);
+    }
     shutdown();
   }
 
@@ -191,6 +207,14 @@ public class Starter implements CommandLineRunner {
         executorService.awaitTermination(60, TimeUnit.SECONDS);
       } catch (final InterruptedException e) {
         LOG.error("Shutdown executor service was interrupted", e);
+      }
+    }
+    if (redeployExecutorService != null && !redeployExecutorService.isShutdown()) {
+      redeployExecutorService.shutdown();
+      try {
+        redeployExecutorService.awaitTermination(60, TimeUnit.SECONDS);
+      } catch (final InterruptedException e) {
+        LOG.error("Shutdown redeploy executor service was interrupted", e);
       }
     }
     if (processInstanceStartMeter != null) {
@@ -377,19 +401,16 @@ public class Starter implements CommandLineRunner {
   }
 
   private void deployProcess() {
-    final var deployCmd = constructDeploymentCommand();
-
+    baseBpmnXml = readClasspathResource(starterCfg.getBpmnXmlPath());
+    LOG.info(
+        "Deploying main resource: {}, extra resources: {}",
+        starterCfg.getBpmnXmlPath(),
+        starterCfg.getExtraBpmnModels());
     while (true) {
       try {
-        final var result = deployCmd.send().join();
-        final var benchmarkProcessDefinitionKey =
-            result.getProcesses().stream()
-                .filter(p -> p.getBpmnProcessId().equals(starterCfg.getProcessId()))
-                .findFirst()
-                .map(Process::getProcessDefinitionKey)
-                .orElse(0L);
+        currentProcessDefinitionKey.set(deployVersion());
         if (properties.isPerformReadBenchmarks()) {
-          dataReadMeter.setContextProcessDefinitionKey(benchmarkProcessDefinitionKey);
+          dataReadMeter.setContextProcessDefinitionKey(currentProcessDefinitionKey.get());
         }
         break;
       } catch (final Exception e) {
@@ -403,21 +424,98 @@ public class Starter implements CommandLineRunner {
     }
   }
 
-  private DeployResourceCommandStep2 constructDeploymentCommand() {
+  /**
+   * Continuously deploys a new version of the benchmark process definition and deletes the previous
+   * one, so the previous version enters the DRAINING state while its instances finish. This
+   * exercises the draining-deletion path under load: the delete distribution and the per-instance
+   * drain-finalize hook, without ever blocking new-instance creation.
+   */
+  private ScheduledFuture<?> scheduleRedeploy() {
+    final long intervalMillis = starterCfg.getRedeployInterval().toMillis();
+    final boolean deleteHistory = starterCfg.isRedeployDeleteHistory();
     LOG.info(
-        "Deploying main resource: {}, extra resources: {}",
-        starterCfg.getBpmnXmlPath(),
-        starterCfg.getExtraBpmnModels());
-    final var deployCmd =
-        client.newDeployResourceCommand().addResourceFromClasspath(starterCfg.getBpmnXmlPath());
+        "Redeploy loop enabled: deploying a new version and deleting the previous one every {}ms (deleteHistory={})",
+        intervalMillis,
+        deleteHistory);
 
-    final var extraBpmnModels = starterCfg.getExtraBpmnModels();
-    if (extraBpmnModels != null) {
-      for (final var model : extraBpmnModels) {
-        deployCmd.addResourceFromClasspath(model);
-      }
+    // Only ever touched by the single-thread redeploy executor, so no synchronization needed.
+    final Deque<Long> keysPendingDeletion = new ArrayDeque<>();
+
+    redeployExecutorService = Executors.newScheduledThreadPool(1);
+    return redeployExecutorService.scheduleAtFixedRate(
+        () -> {
+          try {
+            // Deploy the new version before deleting the old one so that `latestVersion` always
+            // resolves to an ACTIVE definition; the create loop never observes a DRAINING latest.
+            // Advance the current key only after a successful deploy, then enqueue the superseded
+            // key for deletion. Deletes are retried on the next tick so a transient failure never
+            // orphans a version.
+            final long newKey = deployVersion();
+            final long superseded = currentProcessDefinitionKey.getAndSet(newKey);
+            if (superseded != 0) {
+              keysPendingDeletion.add(superseded);
+            }
+            for (int pending = keysPendingDeletion.size(); pending > 0; pending--) {
+              final long key = keysPendingDeletion.poll();
+              try {
+                client.newDeleteResourceCommand(key).deleteHistory(deleteHistory).send().join();
+              } catch (final Exception e) {
+                keysPendingDeletion.add(key);
+                THROTTLED_LOGGER.warn(
+                    "Failed to delete process definition {}, will retry next tick", key, e);
+                break;
+              }
+            }
+          } catch (final Exception e) {
+            THROTTLED_LOGGER.warn("Failed to redeploy the process definition", e);
+          }
+        },
+        intervalMillis,
+        intervalMillis,
+        TimeUnit.MILLISECONDS);
+  }
+
+  /**
+   * Deploys the benchmark process with a byte-unique marker injected into each version, so Zeebe's
+   * checksum-based deployment deduplication always creates a fresh version instead of returning the
+   * previous definition key. Without this the redeploy loop would re-resolve the same definition and
+   * delete the live version, never building up a draining backlog.
+   */
+  private long deployVersion() {
+    final String uniqueMain = withUniqueMarker(baseBpmnXml, deployCounter.incrementAndGet());
+    var deployCmd =
+        client
+            .newDeployResourceCommand()
+            .addResourceStringUtf8(uniqueMain, starterCfg.getBpmnXmlPath());
+    for (final var model : starterCfg.getExtraBpmnModels()) {
+      deployCmd = deployCmd.addResourceFromClasspath(model);
     }
-    return deployCmd;
+    return deployCmd.send().join().getProcesses().stream()
+        .filter(p -> p.getBpmnProcessId().equals(starterCfg.getProcessId()))
+        .findFirst()
+        .map(Process::getProcessDefinitionKey)
+        .orElse(0L);
+  }
+
+  private static String withUniqueMarker(final String xml, final int seq) {
+    // A comment in the XML prolog is valid and ignored by the BPMN parser, so the model semantics
+    // and bpmnProcessId are unchanged while the resource checksum differs on every deploy.
+    final String marker = "<!-- churn-version " + seq + " -->";
+    final int declEnd = xml.indexOf("?>");
+    return declEnd >= 0
+        ? xml.substring(0, declEnd + 2) + "\n" + marker + xml.substring(declEnd + 2)
+        : marker + "\n" + xml;
+  }
+
+  private static String readClasspathResource(final String path) {
+    try (final var in = Thread.currentThread().getContextClassLoader().getResourceAsStream(path)) {
+      if (in == null) {
+        throw new IllegalStateException("Resource not found on classpath: " + path);
+      }
+      return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to read classpath resource: " + path, e);
+    }
   }
 
   private BooleanSupplier createContinuationCondition() {

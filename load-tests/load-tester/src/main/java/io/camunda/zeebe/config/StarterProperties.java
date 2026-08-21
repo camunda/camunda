@@ -26,6 +26,9 @@ public class StarterProperties {
   private int durationLimit = 0;
   private boolean startViaMessage = false;
   private String msgName = "msg";
+  private boolean redeployEnabled = false;
+  private Duration redeployInterval = Duration.ofSeconds(10);
+  private boolean redeployDeleteHistory = false;
 
   public String getProcessId() {
     return processId;
@@ -150,5 +153,29 @@ public class StarterProperties {
 
   public void setMsgName(final String msgName) {
     this.msgName = msgName;
+  }
+
+  public boolean isRedeployEnabled() {
+    return redeployEnabled;
+  }
+
+  public void setRedeployEnabled(final boolean redeployEnabled) {
+    this.redeployEnabled = redeployEnabled;
+  }
+
+  public Duration getRedeployInterval() {
+    return redeployInterval;
+  }
+
+  public void setRedeployInterval(final Duration redeployInterval) {
+    this.redeployInterval = redeployInterval;
+  }
+
+  public boolean isRedeployDeleteHistory() {
+    return redeployDeleteHistory;
+  }
+
+  public void setRedeployDeleteHistory(final boolean redeployDeleteHistory) {
+    this.redeployDeleteHistory = redeployDeleteHistory;
   }
 }
