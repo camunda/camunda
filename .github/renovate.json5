@@ -287,7 +287,7 @@
       enabled: false,
     },
     {
-      description: "Group ES container version bumps so db-versions.yml and parent/pom.xml are always updated together. Also covers the docker-compose files where Renovate's native docker-compose manager auto-detects the same image without needing a comment.",
+      description: "Group ES container version bumps (db-versions.yml, parent/pom.xml, and auto-detected docker-compose files) into one PR.",
       matchPackageNames: [
         "docker.elastic.co/elasticsearch/elasticsearch",
       ],
@@ -298,7 +298,7 @@
       groupName: "elasticsearch container version",
     },
     {
-      description: "Group OS container version bumps so db-versions.yml and parent/pom.xml are always updated together. Also covers the docker-compose files where Renovate's native docker-compose manager auto-detects the same image without needing a comment.",
+      description: "Group OS container version bumps (db-versions.yml, parent/pom.xml, and auto-detected docker-compose files) into one PR.",
       matchPackageNames: [
         "opensearchproject/opensearch",
       ],
@@ -309,7 +309,7 @@
       groupName: "opensearch container version",
     },
     {
-      description: "Group Oracle Free container version bumps across db-versions.yml and any docker-compose file where Renovate's native docker-compose manager auto-detects the same image.",
+      description: "Group Oracle Free container version bumps (db-versions.yml and auto-detected docker-compose files) into one PR.",
       matchPackageNames: [
         "gvenzl/oracle-free",
       ],
