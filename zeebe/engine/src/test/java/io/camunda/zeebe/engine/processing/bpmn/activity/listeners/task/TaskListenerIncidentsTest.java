@@ -307,7 +307,7 @@ public class TaskListenerIncidentsTest {
             UserTaskIntent.UPDATED,
             userTask ->
                 Assertions.assertThat(userTask)
-                    .hasAction("create")
+                    .hasAction("update")
                     .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES));
 
     Assertions.assertThat(

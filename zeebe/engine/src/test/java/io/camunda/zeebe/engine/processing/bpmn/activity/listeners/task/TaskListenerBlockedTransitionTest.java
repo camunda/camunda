@@ -508,7 +508,7 @@ public class TaskListenerBlockedTransitionTest {
             Assertions.assertThat(userTask)
                 .hasVariables(Map.of("status", "APPROVED"))
                 .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES)
-                .hasAction("create"));
+                .hasAction("update"));
   }
 
   private static void verifyVariableCreated(

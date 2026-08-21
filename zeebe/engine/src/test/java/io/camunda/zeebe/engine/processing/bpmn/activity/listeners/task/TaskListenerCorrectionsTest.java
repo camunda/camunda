@@ -117,7 +117,7 @@ public class TaskListenerCorrectionsTest {
                 .withLocalSemantic()
                 .expectUpdating()
                 .update(),
-        "create"); // action persists from the broker-internal CREATING transition
+        "update");
   }
 
   @Test
@@ -1114,7 +1114,7 @@ public class TaskListenerCorrectionsTest {
                 .hasVariables(Map.of("status", "APPROVED"))
                 .hasDueDate("corrected_due")
                 .hasOnlyChangedAttributes(UserTaskRecord.DUE_DATE, UserTaskRecord.VARIABLES)
-                .hasAction("create"));
+                .hasAction("update"));
   }
 
   @Test

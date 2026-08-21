@@ -203,9 +203,9 @@ public final class BpmnUserTaskBehavior {
             .setCreationTimestamp(clock.millis())
             .setTags(getTagsFromProcessInstance(context))
             .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
-            .setBusinessId(getBusinessIdFromProcessInstance(context));
+            .setBusinessId(getBusinessIdFromProcessInstance(context))
+            .setAction(DEFAULT_ACTION_CREATE);
 
-    userTaskRecord.setAction(DEFAULT_ACTION_CREATE);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;
   }
