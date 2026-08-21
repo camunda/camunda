@@ -17,11 +17,9 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
-import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -47,7 +45,6 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
 
   private MutableElementInstanceState elementInstanceState;
   private MutableJobState jobState;
-  private MutableSuspensionState suspensionState;
   private StateWriter stateWriter;
   private ProcessInstanceSuspensionJobBehavior behavior;
 
@@ -55,11 +52,9 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
   void setUp() {
     elementInstanceState = processingState.getElementInstanceState();
     jobState = processingState.getJobState();
-    suspensionState = processingState.getSuspensionState();
     stateWriter = mock(StateWriter.class);
     behavior =
-        new ProcessInstanceSuspensionJobBehavior(
-            elementInstanceState, jobState, suspensionState, stateWriter);
+        new ProcessInstanceSuspensionJobBehavior(elementInstanceState, jobState, stateWriter);
   }
 
   @Test
@@ -148,17 +143,15 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
 
   @Test
   void shouldSearchTheIndexFromTheResumeCursor() {
-    // given - two suspended jobs; the cursor already points past the first
+    // given - two suspended jobs; the cursor already points to the first (inclusive)
     rootInstance();
     suspendedJob(PROCESS_INSTANCE_KEY, JOB_KEY);
     suspendedJob(PROCESS_INSTANCE_KEY, JOB_KEY + 1);
-    suspensionState.setSuspensionState(PROCESS_INSTANCE_KEY, SuspensionState.State.RESUMING);
-    suspensionState.setLastResumedJobKey(PROCESS_INSTANCE_KEY, JOB_KEY);
 
-    // when
-    final var visited = collectVisitedJobs();
+    // when - the caller passes the last-resumed key as the start cursor (inclusive)
+    final var visited = collectVisitedJobsFrom(JOB_KEY);
 
-    // then - the seek starts at the cursor (inclusive) and reaches only what is left
+    // then - the seek starts at the cursor (inclusive) and reaches both
     assertThat(visited).containsExactly(JOB_KEY, JOB_KEY + 1);
   }
 
@@ -200,6 +193,7 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
     // when - the visitor stops after the first job it sees
     behavior.forEachSuspendedJob(
         elementInstanceState.getInstance(PROCESS_INSTANCE_KEY),
+        -1L,
         (jobKey, job) -> {
           visited.add(jobKey);
           return false;
@@ -238,9 +232,14 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
   }
 
   private List<Long> collectVisitedJobs() {
+    return collectVisitedJobsFrom(-1L);
+  }
+
+  private List<Long> collectVisitedJobsFrom(final long startAtJobKey) {
     final var visited = new ArrayList<Long>();
     behavior.forEachSuspendedJob(
         elementInstanceState.getInstance(PROCESS_INSTANCE_KEY),
+        startAtJobKey,
         (jobKey, job) -> {
           visited.add(jobKey);
           return true;

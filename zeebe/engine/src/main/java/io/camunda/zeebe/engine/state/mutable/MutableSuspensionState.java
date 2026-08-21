@@ -38,12 +38,4 @@ public interface MutableSuspensionState extends SuspensionState {
 
   /** Removes all remaining buffered commands for the process instance. */
   void clearBufferedCommands(long processInstanceKey);
-
-  /**
-   * Records the last job this resume re-activated, so a later {@code RESUME_JOBS} cycle can seek
-   * past it instead of re-scanning from the beginning. No-op if the process instance has no
-   * suspension marker (defensive; should not happen in practice since resume only runs while the
-   * marker is {@code RESUMING}).
-   */
-  void setLastResumedJobKey(long processInstanceKey, long jobKey);
 }

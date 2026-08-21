@@ -56,12 +56,6 @@ public interface SuspensionState {
    */
   Optional<BufferedCommand> getOldestBufferedCommand(long processInstanceKey);
 
-  /**
-   * @return the job key of the last job this resume re-activated, or a negative value if none has
-   *     been resumed yet
-   */
-  long getLastResumedJobKey(long processInstanceKey);
-
   @FunctionalInterface
   interface BufferedCommandVisitor {
     void visit(long bufferedCommandKey, ProcessInstanceBufferedCommandRecordValue command);
