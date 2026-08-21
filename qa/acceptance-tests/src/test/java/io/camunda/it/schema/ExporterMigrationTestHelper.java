@@ -34,11 +34,15 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import org.awaitility.Awaitility;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
@@ -53,6 +57,7 @@ import tools.jackson.databind.ObjectMapper;
 public class ExporterMigrationTestHelper {
 
   private static final Logger LOG = LoggerFactory.getLogger(ExporterMigrationTestHelper.class);
+  private static final Pattern RC_SUFFIX_PATTERN = Pattern.compile(".*-rc\\d+$");
 
   private static final String CONTAINER_DATA_PATH = "/usr/local/camunda/data";
   private static final String HTTP_PREFIX = "http://";
@@ -546,6 +551,16 @@ public class ExporterMigrationTestHelper {
     return List.of(allVersions.get(latestReleaseIndex));
   }
 
+  public static Optional<String> findLatestReleaseCandidate(
+      final List<DockerHubTag> allTags, final String previousMinorVersion) {
+    return allTags.stream()
+        .filter(t -> t.name().startsWith(previousMinorVersion))
+        .filter(t -> RC_SUFFIX_PATTERN.matcher(t.name()).matches())
+        .filter(t -> t.lastPushed() != null)
+        .max(Comparator.comparing(t -> Instant.parse(t.lastPushed())))
+        .map(DockerHubTag::name);
+  }
+
   /**
    * Docker Hub is an external dependency, and this runs while JUnit provides the arguments for the
    * migration ITs. An argument-provider failure is a container-level failure, which Failsafe's
@@ -571,7 +586,7 @@ public class ExporterMigrationTestHelper {
       throws IOException, InterruptedException {
     final ObjectMapper mapper = new ObjectMapper();
 
-    final List<String> allTags = new ArrayList<>();
+    final List<DockerHubTag> allTags = new ArrayList<>();
     String url = API_URL;
 
     try (final HttpClient client =
@@ -596,7 +611,10 @@ public class ExporterMigrationTestHelper {
         final JsonNode root = mapper.readTree(response.body());
 
         for (final JsonNode tag : root.get("results")) {
-          allTags.add(tag.get("name").asString());
+          final JsonNode lastPushedNode = tag.get("tag_last_pushed");
+          final String lastPushed =
+              lastPushedNode == null || lastPushedNode.isNull() ? null : lastPushedNode.asString();
+          allTags.add(new DockerHubTag(tag.get("name").asString(), lastPushed));
         }
 
         // pagination
@@ -613,12 +631,12 @@ public class ExporterMigrationTestHelper {
     }
 
     final List<String> allVersions = new ArrayList<>();
-    for (final String tag : allTags) {
-      if (!tag.startsWith(PREVIOUS_MINOR_VERSION)) {
+    for (final DockerHubTag tag : allTags) {
+      if (!tag.name().startsWith(PREVIOUS_MINOR_VERSION)) {
         continue;
       }
 
-      final String[] components = tag.split("\\.");
+      final String[] components = tag.name().split("\\.");
       if (components.length != 3) {
         continue;
       }
@@ -629,17 +647,26 @@ public class ExporterMigrationTestHelper {
         continue;
       }
 
-      allVersions.add(tag);
+      allVersions.add(tag.name());
     }
 
     if (allVersions.isEmpty()) {
-      throw new NoSuchElementException("No release images found for " + PREVIOUS_MINOR_VERSION);
+      final Optional<String> latestRc = findLatestReleaseCandidate(allTags, PREVIOUS_MINOR_VERSION);
+      if (latestRc.isEmpty()) {
+        throw new NoSuchElementException("No release images found for " + PREVIOUS_MINOR_VERSION);
+      }
+      LOG.warn(
+          "No stable release found for previous minor {}, falling back to latest release"
+              + " candidate {}",
+          PREVIOUS_MINOR_VERSION,
+          latestRc.get());
+      allVersions.add(latestRc.get());
+    } else {
+      allVersions.sort(ExporterMigrationTestHelper::comparePatches);
     }
 
-    allVersions.sort(ExporterMigrationTestHelper::comparePatches);
-
     final String snapshotVersion = PREVIOUS_MINOR_VERSION + "-SNAPSHOT";
-    if (allTags.contains(snapshotVersion)) {
+    if (allTags.stream().anyMatch(t -> t.name().equals(snapshotVersion))) {
       allVersions.add(snapshotVersion);
     }
 
@@ -670,4 +697,6 @@ public class ExporterMigrationTestHelper {
 
     return String.format("%s.%s", components[0], String.valueOf(minor - 1));
   }
+
+  record DockerHubTag(String name, String lastPushed) {}
 }
