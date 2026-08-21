@@ -185,6 +185,7 @@
 			"processesStartProcessWithForm": "Démarrer le processus {{processDisplayName}}",
 			"processesStartProcessWithFormCopyURLButtonLabel": "Copié",
 			"processesStartProcessWithFormShareURLAriaLabel": "Partager l'URL du processus",
+			"processesStartProcessWithFormShareButtonLabel": "Copier le lien",
 			"processesTileStartProcessButtonLabel": "Démarrer le processus",
 			"processesStartProcessWithFormStartButtonLabel": "Démarrer le processus",
 			"processesFetchErrorMissingTenant": "Vous devez d'abord sélectionner un client pour démarrer un processus.",

@@ -146,23 +146,27 @@ const StartProcessFormModal: React.FC<Props> = ({
 			processDisplayName={processDisplayName}
 			onClose={onClose}
 			footer={
-				<DialogFooter className="sm:justify-between">
-					<Button type="button" variant="ghost" size="sm" onClick={handleShareButtonClick}>
+				<DialogFooter>
+					{/* Three direct DialogFooter children, not two (share + a wrapping div
+					    around cancel/start) — a wrapping div opts its contents out of
+					    DialogFooter's own flex-col-reverse stacking below `sm`, so cancel/
+					    start stayed force-side-by-side and overflowed on narrow screens.
+					    `sm:mr-auto` on the share button reproduces the "share pinned left,
+					    cancel/start grouped right" desktop layout without that wrapper. */}
+					<Button type="button" variant="ghost" size="sm" className="sm:mr-auto" onClick={handleShareButtonClick}>
 						{isCopied ? <Check aria-hidden /> : <LinkIcon aria-hidden />}
 						{isCopied
 							? t('tasklist.processesStartProcessWithFormCopyURLButtonLabel')
-							: t('tasklist.processesStartProcessWithFormShareURLAriaLabel')}
+							: t('tasklist.processesStartProcessWithFormShareButtonLabel')}
 					</Button>
-					<div className="flex gap-2">
-						<Button type="button" variant="secondary" onClick={onClose}>
-							{t('tasklist.processesProcessTileCancelButtonLabel')}
-						</Button>
-						<Button type="button" loading={isSubmitting} onClick={() => formManagerRef.current?.submit()}>
-							{isSubmitting
-								? t('tasklist.processesStartProcessPendingStatusText')
-								: t('tasklist.processesStartProcessWithFormStartButtonLabel')}
-						</Button>
-					</div>
+					<Button type="button" variant="secondary" onClick={onClose}>
+						{t('tasklist.processesProcessTileCancelButtonLabel')}
+					</Button>
+					<Button type="button" loading={isSubmitting} onClick={() => formManagerRef.current?.submit()}>
+						{isSubmitting
+							? t('tasklist.processesStartProcessPendingStatusText')
+							: t('tasklist.processesStartProcessWithFormStartButtonLabel')}
+					</Button>
 				</DialogFooter>
 			}
 		>
