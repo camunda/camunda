@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import java.io.IOException;
+import org.jspecify.annotations.Nullable;
 
 public interface PartitionAdminControl {
   StreamProcessor getStreamProcessor();
@@ -18,6 +20,13 @@ public interface PartitionAdminControl {
   ZeebeDb getZeebeDb();
 
   LogStream getLogStream();
+
+  /**
+   * The live exporter director on this replica, or {@code null} if it isn't open yet -- needed to
+   * read exporting-migration status directly from the running director (see {@link
+   * ZeebePartitionAdminAccess#getExportingMigrationStatus()}).
+   */
+  @Nullable ExporterDirector getExporterDirector();
 
   void triggerSnapshot();
 
