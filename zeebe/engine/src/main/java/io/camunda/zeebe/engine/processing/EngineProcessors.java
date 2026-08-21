@@ -412,6 +412,8 @@ public final class EngineProcessors {
         cslCheck,
         tenantCheck,
         incidentMetrics);
+    // TODO: @yohanfernando >> needs looking, depends on CatchEventBehaviour and
+    //   StartEventSubscriptionManager
     addResourceDeletionProcessors(
         partitionId,
         typedRecordProcessors,
@@ -442,6 +444,7 @@ public final class EngineProcessors {
         partitionsCount,
         config);
 
+    // TODO: @yohanfernando >> next need to apply storage ordinal changes here onwards
     UserProcessors.addUserProcessors(
         keyGenerator,
         typedRecordProcessors,
