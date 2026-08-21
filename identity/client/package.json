@@ -29,6 +29,7 @@
     "date-fns": "4.4.0",
     "fuse.js": "7.5.0",
     "i18next": "26.3.0",
+    "lucide-react": "1.33.0",
     "mobx": "6.16.1",
     "mobx-react-lite": "4.1.1",
     "react": "19.2.8",
@@ -42,6 +43,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "4.3.0",
     "@types/carbon__elements": "11.10.3",
     "@types/carbon-components-react": "7.55.13",
     "@types/event-source-polyfill": "1.0.5",
@@ -64,12 +66,11 @@
     "prettier": "3.9.4",
     "rollup-plugin-sbom": "4.0.0",
     "sass": "1.102.0",
+    "tailwindcss": "4.3.0",
+    "tailwindcss-scoped-preflight": "4.0.6",
     "typescript": "5.9.3",
     "vite": "8.2.1",
-    "vite-plugin-svgr": "5.2.0",
-    "@tailwindcss/vite": "4.3.0",
-    "tailwindcss": "4.3.0",
-    "tailwindcss-scoped-preflight": "4.0.6"
+    "vite-plugin-svgr": "5.2.0"
   },
   "stableVersion": "8.10.0-SNAPSHOT"
 }

@@ -6,33 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from "styled-components";
-import { Link as BaseLink } from "@carbon/react";
 import { FC, ReactNode } from "react";
 import useTranslate from "../../utility/localization";
 import { useDocsUrl } from "../documentation/DocsUrlContext";
-import { Launch } from "@carbon/react/icons";
-
-export const DocumentationDescription = styled.p`
-  margin-top: var(--cds-spacing-04);
-  max-width: none;
-  text-align: left;
-`;
-
-const Link = styled(BaseLink)`
-  .cds--link__icon {
-    margin-inline-start: 0.25rem;
-  }
-`;
-
-export const LightLink = styled(Link)`
-  display: inline;
-  color: var(--cds-link-inverse) !important;
-`;
+import { ExternalLink } from "lucide-react";
 
 type DocumentationLinkProps = {
   children?: ReactNode;
-  light?: boolean;
   path?: string;
   withIcon?: boolean;
 };
@@ -44,22 +24,27 @@ export const documentationHref = (
 
 export const DocumentationLink: FC<DocumentationLinkProps> = ({
   path = "",
-  light = false,
   withIcon = false,
   children,
 }) => {
-  const LinkComponent = light ? LightLink : Link;
   const { Translate } = useTranslate();
   const docsUrl = useDocsUrl();
 
   return (
-    <LinkComponent
+    <a
       href={documentationHref(docsUrl, path)}
       data-test="documentation-link"
       target="_blank"
-      renderIcon={withIcon ? () => <Launch aria-label="Launch" /> : undefined}
+      rel="noreferrer noopener"
+      className="rounded-sm text-info-action-default underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {children || <Translate>documentation</Translate>}
-    </LinkComponent>
+      {withIcon && (
+        <ExternalLink
+          aria-hidden="true"
+          className="ms-1 inline size-4 align-text-bottom"
+        />
+      )}
+    </a>
   );
 };

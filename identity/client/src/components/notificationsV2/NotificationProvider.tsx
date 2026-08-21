@@ -6,49 +6,39 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, ReactNode, useMemo, useState } from "react";
-import Notification from "./Notification";
-import NotificationContainer from "./NotificationContainer";
+import { FC, ReactNode } from "react";
+import { Toaster, toast } from "@camunda/design-system";
 import NotificationContext, {
   EnqueueNotification,
   NotificationOptions,
 } from "../notifications/NotificationContext";
 
-const NotificationProvider: FC<{ children?: ReactNode }> = ({ children }) => {
-  const [notifications, setNotifications] = useState<
-    (NotificationOptions & { id: string })[]
-  >([]);
-  const contextValue: { enqueueNotification: EnqueueNotification } = useMemo(
-    () => ({
-      enqueueNotification: (notification) =>
-        setNotifications((prevNotifications) => [
-          { ...notification, id: (Date.now() + Math.random()).toString() },
-          ...prevNotifications,
-        ]),
-    }),
-    [],
-  );
-
-  const removeNotification = (id: string) => () => {
-    setNotifications((prevNotifications) =>
-      prevNotifications.filter((notification) => notification.id !== id),
-    );
-  };
-
-  return (
-    <NotificationContext.Provider value={contextValue}>
-      <NotificationContainer>
-        {notifications.map(({ id, ...notificationProps }) => (
-          <Notification
-            key={id}
-            onClose={removeNotification(id)}
-            {...notificationProps}
-          />
-        ))}
-      </NotificationContainer>
-      {children}
-    </NotificationContext.Provider>
-  );
+const TOAST_FN_BY_KIND: Record<
+  NonNullable<NotificationOptions["kind"]>,
+  typeof toast.info
+> = {
+  success: toast.success,
+  error: toast.error,
+  info: toast.info,
+  warning: toast.warning,
 };
+
+const enqueueNotification: EnqueueNotification = ({
+  kind = "info",
+  title,
+  subtitle,
+}) => {
+  const toastFn = TOAST_FN_BY_KIND[kind];
+  toastFn(title, { description: subtitle });
+};
+
+const contextValue = { enqueueNotification };
+
+const NotificationProvider: FC<{ children?: ReactNode }> = ({ children }) => (
+  <NotificationContext.Provider value={contextValue}>
+    <Toaster position="top-right" />
+    {children}
+  </NotificationContext.Provider>
+);
 
 export default NotificationProvider;

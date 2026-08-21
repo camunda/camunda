@@ -6,24 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from "styled-components";
 import { FC } from "react";
-import {
-  ActionableNotification,
-  InlineNotification as CarbonInlineNotification,
-} from "@carbon/react";
+import { Alert, Button } from "@camunda/design-system";
+import type { AlertVariant } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import type { NotificationOptions } from "../notifications/NotificationContext";
 
-const StyledInlineNotification = styled(CarbonInlineNotification)`
-  max-width: 100%;
-  margin: var(--cds-spacing-05) 0 var(--cds-spacing-05);
-`;
-
-const StyledActionableNotification = styled(ActionableNotification)`
-  max-width: 100%;
-  margin: var(--cds-spacing-05) 0 var(--cds-spacing-05);
-`;
+const VARIANT_BY_KIND: Record<
+  NonNullable<NotificationOptions["kind"]>,
+  AlertVariant
+> = {
+  error: "destructive",
+  warning: "warning",
+  success: "success",
+  info: "info",
+};
 
 type InlineNotificationProps = NotificationOptions & {
   actionButton?: {
@@ -35,28 +32,22 @@ type InlineNotificationProps = NotificationOptions & {
 export const InlineNotification: FC<InlineNotificationProps> = ({
   kind = "info",
   title,
-  role,
+  subtitle,
   actionButton,
-}) => {
-  const props = {
-    kind,
-    hideCloseButton: true,
-    lowContrast: true,
-    role: role ?? (kind === "error" ? "alert" : "status"),
-    title,
-  };
-
-  return actionButton ? (
-    <StyledActionableNotification
-      {...props}
-      inline
-      actionButtonLabel={actionButton?.label}
-      onActionButtonClick={actionButton?.onClick}
-    />
-  ) : (
-    <StyledInlineNotification {...props} />
-  );
-};
+}) => (
+  <Alert
+    variant={VARIANT_BY_KIND[kind]}
+    title={title}
+    description={subtitle}
+    className="my-4 max-w-full"
+  >
+    {actionButton && (
+      <Button type="button" variant="ghost" onClick={actionButton.onClick}>
+        {actionButton.label}
+      </Button>
+    )}
+  </Alert>
+);
 
 export const TranslatedInlineNotification: FC<InlineNotificationProps> = ({
   title,
@@ -80,13 +71,13 @@ type ErrorInlineNotificationProps = Omit<InlineNotificationProps, "kind">;
 
 export const ErrorInlineNotification: FC<ErrorInlineNotificationProps> = ({
   title,
-  role,
+  subtitle,
   actionButton,
 }) => (
   <InlineNotification
     kind="error"
     title={title}
-    role={role}
+    subtitle={subtitle}
     actionButton={actionButton}
   />
 );

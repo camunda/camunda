@@ -6,35 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, MouseEvent, ReactNode } from "react";
-import styled from "styled-components";
-import { Breadcrumb, BreadcrumbItem, Content, Stack } from "@carbon/react";
-import { styles } from "@carbon/elements";
-import { useNavigate } from "react-router-dom";
+import { FC, Fragment, ReactNode } from "react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+  PageHeader as DSPageHeader,
+  PageLayout,
+  Text,
+} from "@camunda/design-system";
+import { Link } from "react-router-dom";
 import { DocumentationLink } from "src/components/documentationV2";
 import useTranslate from "src/utility/localization";
-
-const PageTitle = styled.h2`
-  font-size: ${styles.heading04.fontSize};
-  font-weight: ${styles.heading04.fontWeight};
-`;
-
-const PageSubTitle = styled.div`
-  font-size: ${styles.bodyCompact01.fontSize};
-  font-weight: ${styles.bodyCompact01.fontWeight};
-  letter-spacing: ${styles.bodyCompact01.letterSpacing};
-  line-height: ${styles.bodyCompact01.lineHeight};
-  color: var(--cds-text-secondary);
-`;
-
-const StackWithMargin = styled(Stack)`
-  margin-bottom: var(--cds-spacing-07);
-`;
-
-const Page = styled(Content)`
-  height: 100%;
-  padding: var(--cds-spacing-08);
-`;
 
 type PageHeaderProps = {
   title: string;
@@ -52,19 +37,19 @@ export const PageHeader: FC<PageHeaderProps> = ({
   const { Translate } = useTranslate();
 
   return (
-    <StackWithMargin gap="4">
-      <PageTitle>{title}</PageTitle>
+    <div className="flex flex-col gap-1 mb-8">
+      <DSPageHeader title={title} />
       {shouldShowDocumentationLink && (
-        <PageSubTitle>
+        <Text as="p" variant="body-md" className="text-muted-foreground">
           <Translate i18nKey="moreInfo" values={{ linkText }}>
             For more information, see documentation on{" "}
             <DocumentationLink path={docsLinkPath} withIcon>
               {linkText}
             </DocumentationLink>
           </Translate>
-        </PageSubTitle>
+        </Text>
       )}
-    </StackWithMargin>
+    </div>
   );
 };
 
@@ -75,28 +60,31 @@ type BreadcrumbsProps = {
   }[];
 };
 
-export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items }) => {
-  const navigate = useNavigate();
-  const onClick = (href: string) => (e: MouseEvent<HTMLLIElement>) => {
-    void navigate(href);
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  return (
-    <Breadcrumb>
-      {items.map(({ href, title }) => (
-        <BreadcrumbItem href={href} onClick={onClick(href)} key={href}>
-          {title}
-        </BreadcrumbItem>
+export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items }) => (
+  <Breadcrumb>
+    <BreadcrumbList>
+      {items.map(({ href, title }, index) => (
+        <Fragment key={href}>
+          {index > 0 && <BreadcrumbSeparator />}
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to={href}>{title}</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+        </Fragment>
       ))}
-    </Breadcrumb>
-  );
-};
+    </BreadcrumbList>
+  </Breadcrumb>
+);
+
+// TODO: Reevaluate `PageLayout` usage here when `globals` are migrated. It might actually belong in the `AppRoot`...
+const Page: FC<{ children?: ReactNode }> = ({ children }) => (
+  <PageLayout className="h-full">{children}</PageLayout>
+);
 
 export const StackPage: FC<{ children?: ReactNode }> = ({ children }) => (
   <Page>
-    <Stack gap="6">{children}</Stack>
+    <div className="flex flex-col gap-6">{children}</div>
   </Page>
 );
 

@@ -21,7 +21,6 @@ import {
 } from "@camunda/design-system";
 import { Add, CarbonIconType } from "@carbon/react/icons";
 import { DocumentationLink } from "src/components/documentationV2";
-import Flex from "src/components/layoutV2/Flex";
 import useTranslate from "src/utility/localization";
 import { PageResult, SortConfig } from "src/utility/api";
 import SearchBar from "./SearchBar";
@@ -276,9 +275,9 @@ const EntityList = <D extends EntityData>({
     );
 
   return (
-    <Flex direction="column" align="normal">
+    <div className="flex flex-col gap-3">
       {(searchKey || addEntityLabel) && (
-        <Flex>
+        <div className="flex items-center gap-3">
           {searchKey && (
             <SearchBar
               searchKey={searchKey}
@@ -292,7 +291,7 @@ const EntityList = <D extends EntityData>({
               {addEntityLabel}
             </Button>
           )}
-        </Flex>
+        </div>
       )}
       <DataTable<D>
         columns={columns}
@@ -321,7 +320,7 @@ const EntityList = <D extends EntityData>({
             : undefined
         }
       />
-    </Flex>
+    </div>
   );
 };
 
