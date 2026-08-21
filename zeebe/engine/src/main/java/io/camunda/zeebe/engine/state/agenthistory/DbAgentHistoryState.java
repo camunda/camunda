@@ -17,6 +17,8 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableAgentHistoryState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
+import java.util.ArrayList;
+import java.util.function.Consumer;
 
 public final class DbAgentHistoryState implements MutableAgentHistoryState {
 
@@ -36,6 +38,17 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbLong, DbString>, DbLong>, DbNil>
       byJobKeyColumnFamily;
 
+  // Committed ids: (agentInstanceKey, historyItemId) -> agentHistoryKey
+  // Supports prefix search by agentInstanceKey alone, for the one-shot delete on instance
+  // completion.
+  private final DbLong committedAgentInstanceKey = new DbLong();
+  private final DbString committedHistoryItemId = new DbString();
+  private final DbCompositeKey<DbLong, DbString> committedKey =
+      new DbCompositeKey<>(committedAgentInstanceKey, committedHistoryItemId);
+  private final DbLong committedAgentHistoryKey = new DbLong();
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbLong>
+      committedHistoryItemIdsColumnFamily;
+
   public DbAgentHistoryState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     agentHistoryColumnFamily =
@@ -47,6 +60,12 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
             transactionContext,
             jobKeyLeaseAndHistoryItemKey,
             DbNil.INSTANCE);
+    committedHistoryItemIdsColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.AGENT_HISTORY_COMMITTED_IDS,
+            transactionContext,
+            committedKey,
+            committedAgentHistoryKey);
   }
 
   @Override
@@ -110,5 +129,39 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
     jobLease.wrapString(record.getJobLease());
     agentHistoryColumnFamily.deleteIfExists(historyItemKey);
     byJobKeyColumnFamily.deleteIfExists(jobKeyLeaseAndHistoryItemKey);
+  }
+
+  @Override
+  public Long getCommittedHistoryItemKey(final long agentInstanceKey, final String historyItemId) {
+    committedAgentInstanceKey.wrapLong(agentInstanceKey);
+    committedHistoryItemId.wrapString(historyItemId);
+    final var stored = committedHistoryItemIdsColumnFamily.get(committedKey);
+    return stored == null ? null : stored.getValue();
+  }
+
+  @Override
+  public void putCommittedHistoryItemKey(
+      final long agentInstanceKey, final String historyItemId, final long agentHistoryKeyValue) {
+    committedAgentInstanceKey.wrapLong(agentInstanceKey);
+    committedHistoryItemId.wrapString(historyItemId);
+    committedAgentHistoryKey.wrapLong(agentHistoryKeyValue);
+    committedHistoryItemIdsColumnFamily.upsert(committedKey, committedAgentHistoryKey);
+  }
+
+  @Override
+  public void deleteCommittedHistoryItemKeys(final long agentInstanceKey) {
+    committedAgentInstanceKey.wrapLong(agentInstanceKey);
+    // Collect the ids in one pass, then delete in a second: mutating the column family while its
+    // own iterator is still open is unsafe (RocksDB explicitly warns against it), so this must not
+    // call deleteExisting from inside the whileEqualPrefix visitor below.
+    final var historyItemIds = new ArrayList<String>();
+    final Consumer<DbCompositeKey<DbLong, DbString>> collectHistoryItemId =
+        key -> historyItemIds.add(key.second().toString());
+    committedHistoryItemIdsColumnFamily.whileEqualPrefix(
+        committedAgentInstanceKey, collectHistoryItemId);
+    for (final var historyItemId : historyItemIds) {
+      committedHistoryItemId.wrapString(historyItemId);
+      committedHistoryItemIdsColumnFamily.deleteExisting(committedKey);
+    }
   }
 }
