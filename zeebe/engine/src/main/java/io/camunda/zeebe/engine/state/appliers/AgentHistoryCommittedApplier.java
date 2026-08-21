@@ -41,6 +41,9 @@ public final class AgentHistoryCommittedApplier
    */
   private void syncCommittedSnapshot(final long agentInstanceKey) {
     final var live = agentInstanceState.getRecord(agentInstanceKey);
+    if (live == null) {
+      return;
+    }
     final var snapshot = new AgentInstanceRecord();
     snapshot
         .getDefinition()
