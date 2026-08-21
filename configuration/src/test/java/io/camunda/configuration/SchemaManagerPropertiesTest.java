@@ -10,7 +10,7 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerConverter;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 import org.junit.jupiter.api.Nested;
@@ -25,7 +25,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   UnifiedConfiguration.class,
   UnifiedConfigurationHelper.class,
   BrokerBasedPropertiesOverride.class,
-  SearchEngineSchemaManagerPropertiesOverride.class
 })
 public class SchemaManagerPropertiesTest {
 
@@ -42,9 +41,9 @@ public class SchemaManagerPropertiesTest {
 
     WithUnifiedConfigSet(
         @Autowired final BrokerBasedProperties brokerBasedProperties,
-        @Autowired final SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties) {
+        @Autowired final Camunda camunda) {
       this.brokerBasedProperties = brokerBasedProperties;
-      this.searchEngineSchemaManagerProperties = searchEngineSchemaManagerProperties;
+      searchEngineSchemaManagerProperties = SearchEngineSchemaManagerConverter.convert(camunda);
     }
 
     @Test
@@ -75,9 +74,9 @@ public class SchemaManagerPropertiesTest {
 
     WithLegacySchemaManagerPropertySet(
         @Autowired final BrokerBasedProperties brokerBasedProperties,
-        @Autowired final SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties) {
+        @Autowired final Camunda camunda) {
       this.brokerBasedProperties = brokerBasedProperties;
-      this.searchEngineSchemaManagerProperties = searchEngineSchemaManagerProperties;
+      searchEngineSchemaManagerProperties = SearchEngineSchemaManagerConverter.convert(camunda);
     }
 
     @Test
@@ -102,9 +101,8 @@ public class SchemaManagerPropertiesTest {
   class WithUnifiedAndLegacySchemaManagerSet {
     final SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties;
 
-    WithUnifiedAndLegacySchemaManagerSet(
-        @Autowired final SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties) {
-      this.searchEngineSchemaManagerProperties = searchEngineSchemaManagerProperties;
+    WithUnifiedAndLegacySchemaManagerSet(@Autowired final Camunda camunda) {
+      searchEngineSchemaManagerProperties = SearchEngineSchemaManagerConverter.convert(camunda);
     }
 
     @Test

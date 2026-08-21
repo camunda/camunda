@@ -11,47 +11,13 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.beans.LegacySearchEngineIndexProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
-import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.Primary;
 
-@Configuration
-@EnableConfigurationProperties(LegacySearchEngineIndexProperties.class)
-@DependsOn("unifiedConfigurationHelper")
-@ConditionalOnSecondaryStorageType({
-  SecondaryStorageType.elasticsearch,
-  SecondaryStorageType.opensearch
-})
-public class SearchEngineIndexPropertiesOverride {
+/** Converts a {@link Camunda} configuration into a {@link SearchEngineIndexProperties}. */
+public class SearchEngineIndexConverter {
 
-  private final UnifiedConfiguration unifiedConfiguration;
-  private final LegacySearchEngineIndexProperties legacySearchEngineIndexProperties;
-
-  public SearchEngineIndexPropertiesOverride(
-      @Autowired final UnifiedConfiguration unifiedConfiguration,
-      @Autowired final LegacySearchEngineIndexProperties legacySearchEngineIndexProperties) {
-    this.unifiedConfiguration = unifiedConfiguration;
-    this.legacySearchEngineIndexProperties = legacySearchEngineIndexProperties;
-  }
-
-  @Bean
-  @Primary
-  public SearchEngineIndexProperties searchEngineIndexProperties() {
+  public static SearchEngineIndexProperties convert(final Camunda camunda) {
     final SearchEngineIndexProperties override = new SearchEngineIndexProperties();
-    BeanUtils.copyProperties(legacySearchEngineIndexProperties, override);
-    applyTo(unifiedConfiguration.getCamunda(), override);
-    return override;
-  }
-
-  public static void applyTo(final Camunda camunda, final SearchEngineIndexProperties override) {
     final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
 
     final DocumentBasedSecondaryStorageDatabase database =
@@ -74,5 +40,7 @@ public class SearchEngineIndexPropertiesOverride {
     if (!database.getRefreshIntervalByIndexName().isEmpty()) {
       override.setRefreshIntervalByIndexName(database.getRefreshIntervalByIndexName());
     }
+
+    return override;
   }
 }

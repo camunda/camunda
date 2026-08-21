@@ -12,6 +12,6 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 /**
  * NOTE: Some of the fields of this object are overridden with values coming from the Unified
  * Configuration system, from the object
- * io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride
+ * io.camunda.configuration.beanoverrides.SearchEngineConnectConverter
  */
 public class SearchEngineConnectProperties extends ConnectConfiguration {}

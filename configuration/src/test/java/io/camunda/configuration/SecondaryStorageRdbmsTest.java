@@ -10,7 +10,7 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectConverter;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.exporter.rdbms.ExporterConfiguration;
@@ -47,7 +47,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   TasklistPropertiesOverride.class,
   OperatePropertiesOverride.class,
   BrokerBasedPropertiesOverride.class,
-  SearchEngineConnectPropertiesOverride.class,
 })
 public class SecondaryStorageRdbmsTest {
   public static final String FLUSH_INTERVAL = "PT10S";
@@ -144,11 +143,11 @@ public class SecondaryStorageRdbmsTest {
         @Autowired final OperateProperties operateProperties,
         @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+        @Autowired final Camunda camunda) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
-      this.searchEngineConnectProperties = searchEngineConnectProperties;
+      searchEngineConnectProperties = SearchEngineConnectConverter.convert(camunda);
     }
 
     @Test
@@ -395,9 +394,8 @@ public class SecondaryStorageRdbmsTest {
 
     final SearchEngineConnectProperties searchEngineConnectProperties;
 
-    WithUrlsConfigured(
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
-      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    WithUrlsConfigured(@Autowired final Camunda camunda) {
+      searchEngineConnectProperties = SearchEngineConnectConverter.convert(camunda);
     }
 
     @Test

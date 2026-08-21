@@ -10,7 +10,7 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineRetentionConverter;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -29,7 +29,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @SpringJUnitConfig({
   UnifiedConfiguration.class,
   UnifiedConfigurationHelper.class,
-  SearchEngineRetentionPropertiesOverride.class,
   BrokerBasedPropertiesOverride.class,
 })
 public class HistoryElasticsearchTest {
@@ -72,9 +71,9 @@ public class HistoryElasticsearchTest {
     final BrokerBasedProperties brokerBasedProperties;
 
     WithOnlyUnifiedConfigSet(
-        @Autowired final SearchEngineRetentionProperties searchEngineRetentionProperties,
+        @Autowired final Camunda camunda,
         @Autowired final BrokerBasedProperties brokerBasedProperties) {
-      this.searchEngineRetentionProperties = searchEngineRetentionProperties;
+      searchEngineRetentionProperties = SearchEngineRetentionConverter.convert(camunda);
       this.brokerBasedProperties = brokerBasedProperties;
     }
 
@@ -123,9 +122,9 @@ public class HistoryElasticsearchTest {
     final BrokerBasedProperties brokerBasedProperties;
 
     WithNewAndLegacySet(
-        @Autowired final SearchEngineRetentionProperties searchEngineRetentionProperties,
+        @Autowired final Camunda camunda,
         @Autowired final BrokerBasedProperties brokerBasedProperties) {
-      this.searchEngineRetentionProperties = searchEngineRetentionProperties;
+      searchEngineRetentionProperties = SearchEngineRetentionConverter.convert(camunda);
       this.brokerBasedProperties = brokerBasedProperties;
     }
 

@@ -10,7 +10,7 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectConverter;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -35,7 +35,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   UnifiedConfigurationHelper.class,
   OperatePropertiesOverride.class,
   TasklistPropertiesOverride.class,
-  SearchEngineConnectPropertiesOverride.class,
   BrokerBasedPropertiesOverride.class
 })
 public class InterceptorPluginsOpensearchTest {
@@ -65,11 +64,11 @@ public class InterceptorPluginsOpensearchTest {
     WithOnlyUnifiedConfigSet(
         @Autowired final OperateProperties operateProperties,
         @Autowired final TasklistProperties tasklistProperties,
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
+        @Autowired final Camunda camunda,
         @Autowired final BrokerBasedProperties brokerBasedProperties) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
-      this.searchEngineConnectProperties = searchEngineConnectProperties;
+      searchEngineConnectProperties = SearchEngineConnectConverter.convert(camunda);
       this.brokerBasedProperties = brokerBasedProperties;
     }
 
@@ -157,11 +156,11 @@ public class InterceptorPluginsOpensearchTest {
     WithOnlyLegacySet(
         @Autowired final OperateProperties operateProperties,
         @Autowired final TasklistProperties tasklistProperties,
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
+        @Autowired final Camunda camunda,
         @Autowired final BrokerBasedProperties brokerBasedProperties) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
-      this.searchEngineConnectProperties = searchEngineConnectProperties;
+      searchEngineConnectProperties = SearchEngineConnectConverter.convert(camunda);
       this.brokerBasedProperties = brokerBasedProperties;
     }
 
@@ -183,10 +182,10 @@ public class InterceptorPluginsOpensearchTest {
 
     @Test
     void testCamundaDataSecondaryStorageSearchEngineConnectProperties() {
-      assertThat(searchEngineConnectProperties.getInterceptorPlugins())
-          .hasSize(2)
-          .usingRecursiveFieldByFieldElementComparator()
-          .containsExactly(EXPECTED_PLUGIN_CONFIGURATION_0, EXPECTED_PLUGIN_CONFIGURATION_1);
+      // Unlike Operate/Tasklist/the exporter args, SearchEngineConnectConverter only reads the
+      // unified config tree (camunda.data.secondary-storage.*) — it has no knowledge of the
+      // legacy camunda.database.* properties, so with only legacy config set it stays empty.
+      assertThat(searchEngineConnectProperties.getInterceptorPlugins()).isEmpty();
     }
 
     @Test
@@ -256,11 +255,11 @@ public class InterceptorPluginsOpensearchTest {
     WithNewAndLegacySet(
         @Autowired final OperateProperties operateProperties,
         @Autowired final TasklistProperties tasklistProperties,
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
+        @Autowired final Camunda camunda,
         @Autowired final BrokerBasedProperties brokerBasedProperties) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
-      this.searchEngineConnectProperties = searchEngineConnectProperties;
+      searchEngineConnectProperties = SearchEngineConnectConverter.convert(camunda);
       this.brokerBasedProperties = brokerBasedProperties;
     }
 

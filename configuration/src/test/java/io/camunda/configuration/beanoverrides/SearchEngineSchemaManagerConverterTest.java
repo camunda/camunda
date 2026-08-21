@@ -18,7 +18,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-class SearchEngineSchemaManagerPropertiesOverrideTest {
+class SearchEngineSchemaManagerConverterTest {
 
   @BeforeAll
   @AfterAll
@@ -35,13 +35,12 @@ class SearchEngineSchemaManagerPropertiesOverrideTest {
     final Camunda camunda = new Camunda();
     camunda.getSystem().getUpgrade().setEnableVersionCheck(false);
 
-    final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
-
     // when
-    SearchEngineSchemaManagerPropertiesOverride.applyTo(camunda, override);
+    final SearchEngineSchemaManagerProperties result =
+        SearchEngineSchemaManagerConverter.convert(camunda);
 
     // then
-    assertThat(override.isVersionCheckRestrictionEnabled()).isFalse();
+    assertThat(result.isVersionCheckRestrictionEnabled()).isFalse();
   }
 
   @Test
@@ -53,14 +52,13 @@ class SearchEngineSchemaManagerPropertiesOverrideTest {
     secondaryStorage.getElasticsearch().setPerformCleanup(true);
     secondaryStorage.getElasticsearch().setCreateSchema(false);
 
-    final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
-
     // when
-    SearchEngineSchemaManagerPropertiesOverride.applyTo(camunda, override);
+    final SearchEngineSchemaManagerProperties result =
+        SearchEngineSchemaManagerConverter.convert(camunda);
 
     // then
-    assertThat(override.isPerformCleanup()).isTrue();
-    assertThat(override.isCreateSchema()).isFalse();
+    assertThat(result.isPerformCleanup()).isTrue();
+    assertThat(result.isCreateSchema()).isFalse();
   }
 
   @Test
@@ -72,34 +70,13 @@ class SearchEngineSchemaManagerPropertiesOverrideTest {
     secondaryStorage.getOpensearch().setPerformCleanup(true);
     secondaryStorage.getOpensearch().setCreateSchema(false);
 
-    final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
-
     // when
-    SearchEngineSchemaManagerPropertiesOverride.applyTo(camunda, override);
+    final SearchEngineSchemaManagerProperties result =
+        SearchEngineSchemaManagerConverter.convert(camunda);
 
     // then
-    assertThat(override.isPerformCleanup()).isTrue();
-    assertThat(override.isCreateSchema()).isFalse();
-  }
-
-  @Test
-  void shouldNotTouchPerformCleanupOrCreateSchemaForRdbms() {
-    // given
-    final Camunda camunda = new Camunda();
-    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
-    secondaryStorage.setType(SecondaryStorageType.rdbms);
-
-    // and an override pre-populated as if seeded from the legacy properties
-    final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
-    override.setPerformCleanup(true);
-    override.setCreateSchema(false);
-
-    // when
-    SearchEngineSchemaManagerPropertiesOverride.applyTo(camunda, override);
-
-    // then RDBMS is not a document-based database, so these fields are left untouched
-    assertThat(override.isPerformCleanup()).isTrue();
-    assertThat(override.isCreateSchema()).isFalse();
+    assertThat(result.isPerformCleanup()).isTrue();
+    assertThat(result.isCreateSchema()).isFalse();
   }
 
   @Test
@@ -109,12 +86,11 @@ class SearchEngineSchemaManagerPropertiesOverrideTest {
     camunda.getSystem().getUpgrade().setEnableVersionCheck(false);
     camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
 
-    final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
-
     // when
-    SearchEngineSchemaManagerPropertiesOverride.applyTo(camunda, override);
+    final SearchEngineSchemaManagerProperties result =
+        SearchEngineSchemaManagerConverter.convert(camunda);
 
     // then
-    assertThat(override.isVersionCheckRestrictionEnabled()).isFalse();
+    assertThat(result.isVersionCheckRestrictionEnabled()).isFalse();
   }
 }

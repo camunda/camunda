@@ -10,8 +10,8 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectConverter;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexConverter;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
@@ -43,8 +43,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   TasklistPropertiesOverride.class,
   OperatePropertiesOverride.class,
   BrokerBasedPropertiesOverride.class,
-  SearchEngineConnectPropertiesOverride.class,
-  SearchEngineIndexPropertiesOverride.class,
 })
 public class SecondaryStorageOpensearchTest {
   private static final String EXPECTED_CLUSTER_NAME = "sample-cluster";
@@ -193,13 +191,12 @@ public class SecondaryStorageOpensearchTest {
         @Autowired final OperateProperties operateProperties,
         @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
-        @Autowired final SearchEngineIndexProperties searchEngineIndexProperties) {
+        @Autowired final Camunda camunda) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
-      this.searchEngineConnectProperties = searchEngineConnectProperties;
-      this.searchEngineIndexProperties = searchEngineIndexProperties;
+      searchEngineConnectProperties = SearchEngineConnectConverter.convert(camunda);
+      searchEngineIndexProperties = SearchEngineIndexConverter.convert(camunda);
     }
 
     @Test
@@ -552,13 +549,12 @@ public class SecondaryStorageOpensearchTest {
         @Autowired final OperateProperties operateProperties,
         @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
-        @Autowired final SearchEngineIndexProperties searchEngineIndexProperties) {
+        @Autowired final Camunda camunda) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
-      this.searchEngineConnectProperties = searchEngineConnectProperties;
-      this.searchEngineIndexProperties = searchEngineIndexProperties;
+      searchEngineConnectProperties = SearchEngineConnectConverter.convert(camunda);
+      searchEngineIndexProperties = SearchEngineIndexConverter.convert(camunda);
     }
 
     @Test
@@ -743,11 +739,11 @@ public class SecondaryStorageOpensearchTest {
         @Autowired final OperateProperties operateProperties,
         @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+        @Autowired final Camunda camunda) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
-      this.searchEngineConnectProperties = searchEngineConnectProperties;
+      searchEngineConnectProperties = SearchEngineConnectConverter.convert(camunda);
     }
 
     @Test
@@ -812,11 +808,11 @@ public class SecondaryStorageOpensearchTest {
         @Autowired final OperateProperties operateProperties,
         @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+        @Autowired final Camunda camunda) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
-      this.searchEngineConnectProperties = searchEngineConnectProperties;
+      searchEngineConnectProperties = SearchEngineConnectConverter.convert(camunda);
     }
 
     @Test
@@ -882,11 +878,11 @@ public class SecondaryStorageOpensearchTest {
         @Autowired final OperateProperties operateProperties,
         @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+        @Autowired final Camunda camunda) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
-      this.searchEngineConnectProperties = searchEngineConnectProperties;
+      searchEngineConnectProperties = SearchEngineConnectConverter.convert(camunda);
     }
 
     @Test
@@ -952,11 +948,9 @@ public class SecondaryStorageOpensearchTest {
     final Camunda camunda;
     final SearchEngineIndexProperties searchEngineIndexProperties;
 
-    WithDefaultValues(
-        @Autowired final Camunda camunda,
-        @Autowired final SearchEngineIndexProperties searchEngineIndexProperties) {
+    WithDefaultValues(@Autowired final Camunda camunda) {
       this.camunda = camunda;
-      this.searchEngineIndexProperties = searchEngineIndexProperties;
+      searchEngineIndexProperties = SearchEngineIndexConverter.convert(camunda);
     }
 
     @Test

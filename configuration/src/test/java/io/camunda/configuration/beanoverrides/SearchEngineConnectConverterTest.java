@@ -13,11 +13,9 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Elasticsearch;
 import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.Opensearch;
-import io.camunda.configuration.Rdbms;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride.Converter;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.connect.configuration.ProxyConfiguration;
@@ -29,7 +27,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-class SearchEngineConnectPropertiesOverrideConverterTest {
+class SearchEngineConnectConverterTest {
 
   @BeforeAll
   @AfterAll
@@ -64,7 +62,7 @@ class SearchEngineConnectPropertiesOverrideConverterTest {
     elasticsearch.getSecurity().setSelfSigned(true);
 
     // when
-    final SearchEngineConnectProperties result = new Converter(camunda).convert();
+    final SearchEngineConnectProperties result = SearchEngineConnectConverter.convert(camunda);
 
     // then
     assertThat(result.getTypeEnum()).isEqualTo(DatabaseType.ELASTICSEARCH);
@@ -100,7 +98,7 @@ class SearchEngineConnectPropertiesOverrideConverterTest {
     opensearch.setAwsEnabled(true);
 
     // when
-    final SearchEngineConnectProperties result = new Converter(camunda).convert();
+    final SearchEngineConnectProperties result = SearchEngineConnectConverter.convert(camunda);
 
     // then
     assertThat(result.getTypeEnum()).isEqualTo(DatabaseType.OPENSEARCH);
@@ -109,80 +107,6 @@ class SearchEngineConnectPropertiesOverrideConverterTest {
     assertThat(result.getPassword()).isEqualTo("os-pass");
     assertThat(result.getClusterName()).isEqualTo("os-cluster");
     assertThat(result.isAwsEnabled()).isTrue();
-  }
-
-  @Test
-  void shouldConvertRdbmsConfigWithoutTouchingDocumentBasedFields() {
-    // given
-    final Camunda camunda = new Camunda();
-    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
-    secondaryStorage.setType(SecondaryStorageType.rdbms);
-
-    final Rdbms rdbms = secondaryStorage.getRdbms();
-    rdbms.setUrl("jdbc:h2:mem:test");
-    rdbms.setUsername("rdbms-user");
-    rdbms.setPassword("rdbms-pass");
-
-    final SearchEngineConnectProperties seed = new SearchEngineConnectProperties();
-    seed.setClusterName("legacy-cluster");
-    seed.setDateFormat("legacy-format");
-    seed.setIndexPrefix("legacy-prefix");
-
-    // when
-    new Converter(camunda).applyTo(seed);
-
-    // then RDBMS only sets type, url, urls, username, password
-    assertThat(seed.getTypeEnum()).isEqualTo(DatabaseType.RDBMS);
-    assertThat(seed.getUrl()).isEqualTo("jdbc:h2:mem:test");
-    assertThat(seed.getUsername()).isEqualTo("rdbms-user");
-    assertThat(seed.getPassword()).isEqualTo("rdbms-pass");
-
-    // and document-based fields seeded from the legacy properties are preserved
-    assertThat(seed.getClusterName()).isEqualTo("legacy-cluster");
-    assertThat(seed.getDateFormat()).isEqualTo("legacy-format");
-    assertThat(seed.getIndexPrefix()).isEqualTo("legacy-prefix");
-  }
-
-  @Test
-  void shouldLeaveSeedFieldsUntouchedWhenConverterDoesNotMapThem() {
-    // given an ES configuration that doesn't touch fieldDateFormat
-    final Camunda camunda = new Camunda();
-    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
-    secondaryStorage.setType(SecondaryStorageType.elasticsearch);
-    secondaryStorage.getElasticsearch().setUrl("http://es:9200");
-
-    // and a seed pre-populated by the legacy properties
-    final SearchEngineConnectProperties seed = new SearchEngineConnectProperties();
-    seed.setFieldDateFormat("legacy-field-date-format");
-
-    // when
-    new Converter(camunda).applyTo(seed);
-
-    // then the field the converter doesn't touch keeps its seeded value
-    assertThat(seed.getFieldDateFormat()).isEqualTo("legacy-field-date-format");
-    // and the converted field is overridden
-    assertThat(seed.getUrl()).isEqualTo("http://es:9200");
-  }
-
-  @Test
-  void shouldNotSetSocketTimeoutWhenCamundaConfigHasNone() {
-    // given a Camunda config with no socket/connection timeouts
-    final Camunda camunda = new Camunda();
-    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
-    secondaryStorage.setType(SecondaryStorageType.elasticsearch);
-    // no setSocketTimeout / setConnectionTimeout calls — both remain null
-
-    // and a seed with timeouts pre-populated from legacy properties
-    final SearchEngineConnectProperties seed = new SearchEngineConnectProperties();
-    seed.setSocketTimeout(123);
-    seed.setConnectTimeout(456);
-
-    // when
-    new Converter(camunda).applyTo(seed);
-
-    // then seeded timeouts are preserved (the converter only sets them when non-null)
-    assertThat(seed.getSocketTimeout()).isEqualTo(123);
-    assertThat(seed.getConnectTimeout()).isEqualTo(456);
   }
 
   @Test
@@ -199,52 +123,12 @@ class SearchEngineConnectPropertiesOverrideConverterTest {
     secondaryStorage.getElasticsearch().setInterceptorPlugins(List.of(plugin));
 
     // when
-    final SearchEngineConnectProperties result = new Converter(camunda).convert();
+    final SearchEngineConnectProperties result = SearchEngineConnectConverter.convert(camunda);
 
     // then
     assertThat(result.getInterceptorPlugins())
         .containsExactly(
             new PluginConfiguration("p1", "io.camunda.MyPlugin", Path.of("/tmp/plugin.jar")));
-  }
-
-  @Test
-  void shouldPreserveSeedInterceptorPluginsWhenCamundaConfigHasNone() {
-    // given
-    final Camunda camunda = new Camunda();
-    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
-    secondaryStorage.setType(SecondaryStorageType.elasticsearch);
-    // no interceptor plugins on camunda side
-
-    final SearchEngineConnectProperties seed = new SearchEngineConnectProperties();
-    final PluginConfiguration legacyPlugin =
-        new PluginConfiguration("legacy", "io.camunda.LegacyPlugin", Path.of("/legacy.jar"));
-    seed.setInterceptorPlugins(List.of(legacyPlugin));
-
-    // when
-    new Converter(camunda).applyTo(seed);
-
-    // then the seeded interceptor plugins are kept (the converter only overrides on non-empty)
-    assertThat(seed.getInterceptorPlugins()).containsExactly(legacyPlugin);
-  }
-
-  @Test
-  void shouldNotPopulateSecurityForRdbms() {
-    // given
-    final Camunda camunda = new Camunda();
-    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
-    secondaryStorage.setType(SecondaryStorageType.rdbms);
-
-    // and a seed with security pre-populated by the legacy properties
-    final SearchEngineConnectProperties seed = new SearchEngineConnectProperties();
-    seed.getSecurity().setEnabled(true);
-    seed.getSecurity().setCertificatePath("/legacy/cert.pem");
-
-    // when
-    new Converter(camunda).applyTo(seed);
-
-    // then security is not touched by the converter for RDBMS
-    assertThat(seed.getSecurity().isEnabled()).isTrue();
-    assertThat(seed.getSecurity().getCertificatePath()).isEqualTo("/legacy/cert.pem");
   }
 
   @Test
@@ -261,7 +145,7 @@ class SearchEngineConnectPropertiesOverrideConverterTest {
     secondaryStorage.getElasticsearch().setProxy(proxy);
 
     // when
-    final SearchEngineConnectProperties result = new Converter(camunda).convert();
+    final SearchEngineConnectProperties result = SearchEngineConnectConverter.convert(camunda);
 
     // then
     assertThat(result.getProxy()).isSameAs(proxy);

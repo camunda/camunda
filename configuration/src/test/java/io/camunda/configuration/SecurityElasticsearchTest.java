@@ -10,7 +10,7 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectConverter;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -33,7 +33,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @SpringJUnitConfig({
   UnifiedConfiguration.class,
   UnifiedConfigurationHelper.class,
-  SearchEngineConnectPropertiesOverride.class,
   BrokerBasedPropertiesOverride.class,
   TasklistPropertiesOverride.class,
   OperatePropertiesOverride.class,
@@ -68,11 +67,11 @@ public class SecurityElasticsearchTest {
     final OperateProperties operateProperties;
 
     WithOnlyUnifiedConfigSet(
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
+        @Autowired final Camunda camunda,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final TasklistProperties tasklistProperties,
         @Autowired final OperateProperties operateProperties) {
-      this.searchEngineConnectProperties = searchEngineConnectProperties;
+      searchEngineConnectProperties = SearchEngineConnectConverter.convert(camunda);
       this.brokerBasedProperties = brokerBasedProperties;
       this.tasklistProperties = tasklistProperties;
       this.operateProperties = operateProperties;
@@ -146,11 +145,11 @@ public class SecurityElasticsearchTest {
     final OperateProperties operateProperties;
 
     WithNewAndLegacySet(
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
+        @Autowired final Camunda camunda,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final TasklistProperties tasklistProperties,
         @Autowired final OperateProperties operateProperties) {
-      this.searchEngineConnectProperties = searchEngineConnectProperties;
+      searchEngineConnectProperties = SearchEngineConnectConverter.convert(camunda);
       this.brokerBasedProperties = brokerBasedProperties;
       this.tasklistProperties = tasklistProperties;
       this.operateProperties = operateProperties;
