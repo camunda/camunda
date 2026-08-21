@@ -293,7 +293,8 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     processor.postProcessEnvironment(environmentWith(legacy), OPTIMIZE_APPLICATION);
 
     logs.assertContains("camunda.identity.issuerBackendUrl");
-    logs.assertContains("Browser login cannot work against an internal URL");
+    logs.assertContains("browser login cannot reach");
+    logs.assertContains("camunda.identity.issuer'");
   }
 
   @Test
@@ -314,8 +315,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
 
   @Test
   void shouldDeriveEndpointsWhenTheCslIssuerUriIsExplicitlyBlank() {
-    // The legacy issuer would be bridged into issuer-uri, but the explicitly blank value outranks
-    // it, so CSL still sees no issuer and needs the endpoints.
+    // The explicitly blank value outranks the bridged issuer-uri, so CSL needs the endpoints.
     final String backend = "http://identity.svc:18080/auth/realms/camunda-platform";
     final Map<String, Object> legacy = cslEnabledConfig();
     legacy.put("camunda.identity.issuer", "https://weblogin.example.com/realm");
@@ -328,7 +328,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "authorization-uri"))
-        .isEqualTo(backend + "/protocol/openid-connect/auth");
+        .isEqualTo("https://weblogin.example.com/realm/protocol/openid-connect/auth");
     assertThat(env.getProperty(OIDC + "token-uri"))
         .isEqualTo(backend + "/protocol/openid-connect/token");
     assertThat(env.getProperty(OIDC + "jwk-set-uri"))
@@ -338,11 +338,11 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
-  void shouldWithholdCredentialsWhenTheCslIssuerUriIsExplicitlyBlankAndNoEndpointsCanBeDerived() {
-    // Same shadowed legacy issuer, but nothing to derive endpoints from: CSL would get credentials
-    // and no way to build a registration.
+  void shouldDeriveEndpointsFromTheIssuerAloneWhenNoBackendUrlIsConfigured() {
+    // The only host configured, so it serves both channels.
+    final String issuer = "https://keycloak.example.com/auth/realms/camunda-platform";
     final Map<String, Object> legacy = cslEnabledConfig();
-    legacy.put("camunda.identity.issuer", "https://weblogin.example.com/realm");
+    legacy.put("camunda.identity.issuer", issuer);
     legacy.put("camunda.identity.clientId", "optimize");
     legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "secret");
     legacy.put(OIDC + "issuer-uri", "");
@@ -350,8 +350,14 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     final StandardEnvironment env = environmentWith(legacy);
     processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
-    assertThat(env.getProperty(OIDC + "client-id")).isNull();
-    assertThat(env.getProperty(OIDC + "client-secret")).isNull();
+    assertThat(env.getProperty(OIDC + "authorization-uri"))
+        .isEqualTo(issuer + "/protocol/openid-connect/auth");
+    assertThat(env.getProperty(OIDC + "token-uri"))
+        .isEqualTo(issuer + "/protocol/openid-connect/token");
+    assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("optimize");
+    assertThat(env.getProperty(OIDC + "client-secret")).isEqualTo("secret");
+    // The log must not credit a key the operator never set.
+    logs.assertDoesNotContain("camunda.identity.issuerBackendUrl");
   }
 
   @Test
@@ -376,9 +382,243 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
-  void shouldNotDeriveEndpointsFromIssuerBackendUrlWhenAnIssuerIsConfigured() {
-    // With an issuer, CSL resolves the endpoints through discovery against the browser-facing URL.
-    // Deriving internal endpoints on top would override that.
+  void shouldPointTheDeprecationGuidanceAtTheEndpointsWhenTheChannelsAreSplit() {
+    // Migrating to issuer-uri would restore the startup dial against the browser-facing URL, so the
+    // warning has to name the endpoints instead.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "https://camunda.example.com/auth/realms/camunda");
+    legacy.put(
+        "camunda.identity.issuerBackendUrl", "http://keycloak:8080/auth/realms/camunda-platform");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    logs.assertContains(
+        entry ->
+            entry.getMessage().contains("camunda.identity.issuer")
+                && entry.getMessage().contains(OIDC + "authorization-uri"),
+        "expected migration guidance naming the explicit endpoints");
+  }
+
+  @Test
+  void shouldDeriveNothingForANonKeycloakProviderWhenTheCslIssuerUriIsBlanked() {
+    // A blank issuer-uri leaves CSL no issuer, but the issuer is still no basis for Keycloak paths
+    // on another provider. Withholding the credentials keeps a broken guess out of the
+    // registration.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.type", "MICROSOFT");
+    legacy.put("camunda.identity.issuer", "https://login.microsoftonline.com/tenant-id/v2.0");
+    legacy.put("camunda.identity.clientId", "optimize");
+    legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "secret");
+    legacy.put(OIDC + "issuer-uri", "");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "authorization-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "token-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "jwk-set-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "user-info-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "client-id")).isNull();
+    assertThat(env.getProperty(OIDC + "client-secret")).isNull();
+  }
+
+  @Test
+  void shouldLeaveANonKeycloakBackendUrlUnusedRatherThanSubstituteTheIssuer() {
+    // A Keycloak-shaped issuer with a distinct back channel whose paths are unknown. Deriving the
+    // back channel from the issuer would send Optimize at a host it may not reach and ignore the
+    // configured URL, so nothing is derived and the log names the setting it left unused.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "https://camunda.example.com/auth/realms/camunda");
+    legacy.put("camunda.identity.issuerBackendUrl", "https://idp.internal.svc/oauth2/default");
+    legacy.put("camunda.identity.clientId", "optimize");
+    legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "secret");
+    legacy.put(OIDC + "issuer-uri", "");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "authorization-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "token-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "jwk-set-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "user-info-uri")).isNull();
+    logs.assertContains("left 'camunda.identity.issuerBackendUrl' unused");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"keycloak", "KeyCloak", " KEYCLOAK "})
+  void shouldTreatTheIdentityTypeCaseAndPaddingInsensitively(final String type) {
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.type", type);
+    legacy.put("camunda.identity.issuer", "https://idp.example.com/tenant/v2.0");
+    legacy.put("camunda.identity.issuerBackendUrl", "http://idp.internal.svc/tenant/v2.0");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    // Neither URL has a realm path, so only the configured type can select the split.
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "token-uri"))
+        .isEqualTo("http://idp.internal.svc/tenant/v2.0/protocol/openid-connect/token");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"", "   "})
+  void shouldFallBackToTheUrlShapeWhenTheIdentityTypeIsBlank(final String type) {
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.type", type);
+    legacy.put("camunda.identity.issuer", "https://camunda.example.com/auth/realms/camunda");
+    legacy.put(
+        "camunda.identity.issuerBackendUrl", "http://keycloak:8080/auth/realms/camunda-platform");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "token-uri"))
+        .isEqualTo(
+            "http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/token");
+  }
+
+  @Test
+  void shouldKeepDiscoveryWhenTheBackendUrlEqualsTheIssuer() {
+    // The shape of Optimize's own local and smoke-test setups: both settings name the same host, so
+    // there is no reachability problem to solve and nothing to split. Keeping issuer-uri leaves the
+    // registration with a discovered issuer, which CSL needs for issuer validation and for the
+    // UserInfo claims it merges.
+    final String url = "http://localhost:18080/auth/realms/camunda-platform";
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL", url);
+    legacy.put("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL", url);
+    legacy.put("CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID", "optimize");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isEqualTo(url);
+    assertThat(env.getProperty(OIDC + "authorization-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "token-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "user-info-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "end-session-endpoint-uri")).isNull();
+  }
+
+  @Test
+  void shouldKeepDiscoveryWhenTheConfiguredIdentityTypeIsNotKeycloak() {
+    // camunda.identity.type names the provider outright, so it decides even when the URL happens to
+    // look like a Keycloak realm.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.type", "MICROSOFT");
+    legacy.put("camunda.identity.issuer", "https://idp.example.com/auth/realms/lookalike");
+    // A distinct host, so only the configured type can rule Keycloak out: the realm path would
+    // otherwise satisfy the URL check and split the channels.
+    legacy.put(
+        "camunda.identity.issuerBackendUrl", "https://idp.internal.svc:8443/auth/realms/lookalike");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "issuer-uri"))
+        .isEqualTo("https://idp.example.com/auth/realms/lookalike");
+    assertThat(env.getProperty(OIDC + "authorization-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "end-session-endpoint-uri")).isNull();
+  }
+
+  @Test
+  void shouldSplitFrontAndBackChannelWhenTheIdentityTypeIsKeycloak() {
+    // The Helm chart's CAMUNDA_IDENTITY_TYPE, which the Optimize deployment imports from the shared
+    // identity-env-vars ConfigMap. It decides even for a realm path the URL check would not match.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("CAMUNDA_IDENTITY_TYPE", "KEYCLOAK");
+    legacy.put("camunda.identity.issuer", "https://camunda.example.com/auth/realms/camunda/extra");
+    legacy.put("camunda.identity.issuerBackendUrl", "http://keycloak:8080/auth/realms/kc/extra");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "authorization-uri"))
+        .isEqualTo(
+            "https://camunda.example.com/auth/realms/camunda/extra/protocol/openid-connect/auth");
+    assertThat(env.getProperty(OIDC + "token-uri"))
+        .isEqualTo("http://keycloak:8080/auth/realms/kc/extra/protocol/openid-connect/token");
+  }
+
+  @Test
+  void shouldKeepDiscoveryForANonKeycloakIssuerBackendUrl() {
+    // Only Keycloak publishes the paths this bridge would guess, so a provider with a different
+    // layout keeps issuer-uri and lets CSL discover its real endpoints.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "https://login.microsoftonline.com/tenant-id/v2.0");
+    // A distinct host, so the URL check is what has to reject it: an equal URL would short-circuit
+    // before the provider is ever inferred.
+    legacy.put(
+        "camunda.identity.issuerBackendUrl", "https://login.internal.example/tenant-id/v2.0");
+    legacy.put("camunda.identity.clientId", "optimize");
+    legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "secret");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "issuer-uri"))
+        .isEqualTo("https://login.microsoftonline.com/tenant-id/v2.0");
+    assertThat(env.getProperty(OIDC + "authorization-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "token-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "jwk-set-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "end-session-endpoint-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("optimize");
+  }
+
+  @Test
+  void shouldDeriveNothingWhenTheHostConfiguredTheCompleteEndpointTrio() {
+    // CSL enables IdP logout by default, so a guessed end-session endpoint would send a provider
+    // that never published one to a URL it does not serve.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "https://idp.example.com/oauth2/default");
+    legacy.put("camunda.identity.issuerBackendUrl", "https://idp.example.com/oauth2/default");
+    legacy.put(OIDC + "authorization-uri", "https://idp.example.com/oauth2/v1/authorize");
+    legacy.put(OIDC + "token-uri", "https://idp.example.com/oauth2/v1/token");
+    legacy.put(OIDC + "jwk-set-uri", "https://idp.example.com/oauth2/v1/keys");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "end-session-endpoint-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "authorization-uri"))
+        .isEqualTo("https://idp.example.com/oauth2/v1/authorize");
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+  }
+
+  @Test
+  void shouldSplitFrontAndBackChannelForTheLegacyEnvVarSpelling() {
+    // The env vars alone, without the camunda.identity.* mirroring the ccsm profile adds. localhost
+    // is the host-published Keycloak port: it resolves to the Optimize container itself.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put(
+        "CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL",
+        "http://localhost:18080/auth/realms/camunda-platform");
+    legacy.put(
+        "CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL",
+        "http://keycloak:8080/auth/realms/camunda-platform");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "authorization-uri"))
+        .isEqualTo(
+            "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/auth");
+    assertThat(env.getProperty(OIDC + "token-uri"))
+        .isEqualTo(
+            "http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/token");
+    assertThat(env.getProperty(OIDC + "jwk-set-uri"))
+        .isEqualTo(
+            "http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs");
+  }
+
+  @Test
+  void shouldSplitFrontAndBackChannelWhenBothIssuerUrlsAreConfigured() {
+    // The docker-compose CCSM shape: the issuer is reachable from a browser only, so each endpoint
+    // takes the URL its caller can reach.
     final Map<String, Object> legacy = cslEnabledConfig();
     legacy.put(
         "camunda.identity.issuer", "https://public.example.com/auth/realms/camunda-platform");
@@ -389,10 +629,22 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     final StandardEnvironment env = environmentWith(legacy);
     processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
-    assertThat(env.getProperty(OIDC + "issuer-uri"))
-        .isEqualTo("https://public.example.com/auth/realms/camunda-platform");
-    assertThat(env.getProperty(OIDC + "authorization-uri")).isNull();
-    assertThat(env.getProperty(OIDC + "token-uri")).isNull();
+    final String browser = "https://public.example.com/auth/realms/camunda-platform";
+    final String backend = "http://identity.svc:18080/auth/realms/camunda-platform";
+    // No issuer-uri, so CSL builds the registration without OIDC discovery.
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "authorization-uri"))
+        .isEqualTo(browser + "/protocol/openid-connect/auth");
+    assertThat(env.getProperty(OIDC + "end-session-endpoint-uri"))
+        .isEqualTo(browser + "/protocol/openid-connect/logout");
+    assertThat(env.getProperty(OIDC + "token-uri"))
+        .isEqualTo(backend + "/protocol/openid-connect/token");
+    assertThat(env.getProperty(OIDC + "jwk-set-uri"))
+        .isEqualTo(backend + "/protocol/openid-connect/certs");
+    // CSL requests UserInfo during login by default; without the endpoint the call is skipped
+    // and the claims it contributes are lost.
+    assertThat(env.getProperty(OIDC + "user-info-uri"))
+        .isEqualTo(backend + "/protocol/openid-connect/userinfo");
   }
 
   @Test
@@ -489,11 +741,15 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+    // The key stays deprecated, but pointing at issuer-uri would send CSL back to discovery, so the
+    // guidance names the endpoints it builds the registration from.
     logs.assertContains(
         entry ->
             entry.getMessage().contains("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL")
-                && entry.getMessage().contains(OIDC + "issuer-uri"),
-        "the key stays deprecated even when its value no longer feeds issuer-uri");
+                && entry.getMessage().contains(OIDC + "authorization-uri")
+                && entry.getMessage().contains("'token-uri'")
+                && entry.getMessage().contains("'jwk-set-uri'"),
+        "expected migration guidance naming the explicit endpoints");
   }
 
   @Test

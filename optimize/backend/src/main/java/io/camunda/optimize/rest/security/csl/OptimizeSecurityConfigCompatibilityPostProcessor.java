@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -62,7 +63,18 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   static final String CANONICAL_FLAG_PROPERTY_SOURCE_NAME = "optimizeCslFlagCanonical";
 
   private static final String OIDC_PREFIX = "camunda.security.authentication.oidc.";
+  private static final String IDENTITY_ISSUER = "camunda.identity.issuer";
+  private static final String IDENTITY_ISSUER_BACKEND_URL = "camunda.identity.issuerBackendUrl";
+  private static final String LEGACY_ISSUER_ENV_VAR = "CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL";
+  private static final String LEGACY_ISSUER_BACKEND_URL_ENV_VAR =
+      "CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL";
+  private static final String IDENTITY_TYPE = "camunda.identity.type";
+  private static final String IDENTITY_TYPE_ENV_VAR = "CAMUNDA_IDENTITY_TYPE";
+  private static final String KEYCLOAK_IDENTITY_TYPE = "KEYCLOAK";
+  private static final String ISSUER_LABEL = "the configured OIDC issuer";
   private static final String LEGACY_KEY_REMOVAL_VERSION = "8.11";
+  // Keycloak publishes its endpoints under <base>/realms/<realm>/protocol/openid-connect/*.
+  private static final Pattern KEYCLOAK_REALM_URL = Pattern.compile("/realms/[^/]+$");
 
   private static final Logger LOG =
       LoggerFactory.getLogger(OptimizeSecurityConfigCompatibilityPostProcessor.class);
@@ -161,9 +173,8 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   // for OIDC discovery AND for validating each token's iss claim against the discovery document's
   // issuer field. Keycloak reports the same externally-configured issuer regardless of which URL
   // was dialed to reach it, so pointing issuer-uri at the backend-reachable URL would make
-  // discovery fail (issuer mismatch) instead of fixing reachability. camunda.identity.issuer (the
-  // browser-facing one) is the correct, and only, source for issuer-uri. The backend URL does feed
-  // the OIDC endpoints, which carry no issuer check — see deriveOidcEndpointsFromIssuerBackendUrl.
+  // discovery fail (issuer mismatch) instead of fixing reachability. It feeds the back-channel
+  // endpoints, which carry no issuer check — see deriveOidcEndpoints.
   //
   // Also deliberately NOT bridged: camunda.identity.clientSecret, the config-file secret key that
   // application-ccsm.yaml also declares — the official Helm chart never renders it, only the
@@ -173,17 +184,17 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     if (isAuth0Configured(env)) {
       return;
     }
-    mapIssuerUri(env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL");
+    mapIssuerUri(env, derived, LEGACY_ISSUER_ENV_VAR);
     mapIfPresent(env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID", OIDC_PREFIX + "client-id");
     mapIfPresent(
         env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET", OIDC_PREFIX + "client-secret");
     // Only when that env var is absent: application-ccsm.yaml mirrors it into
     // camunda.identity.issuer for every docker-compose CCSM install, so feeding both would
     // double-warn for a value the operator only set once.
-    if (isBlank(env.getProperty("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL"))) {
-      mapIssuerUri(env, derived, "camunda.identity.issuer");
+    if (isBlank(env.getProperty(LEGACY_ISSUER_ENV_VAR))) {
+      mapIssuerUri(env, derived, IDENTITY_ISSUER);
     }
-    deriveOidcEndpointsFromIssuerBackendUrl(env, derived);
+    deriveOidcEndpoints(env, derived);
 
     // The Helm chart's Optimize ConfigMap can legitimately render clientId/CAMUNDA_IDENTITY_
     // CLIENT_SECRET while leaving camunda.identity.issuer blank. Bridging a client-id/secret with
@@ -225,45 +236,154 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     bridgeAuth0SaasOrgAndCluster(env, derived, clusterId);
   }
 
-  // Last resort when no issuer-uri could be derived, so CSL can still build a registration: the
-  // endpoints carry no issuer check, unlike issuer-uri, so the backend URL is usable for them.
+  // Spells out the endpoints so CSL builds the registration without OIDC discovery: CSL
+  // would run that from inside the pod at startup, against a browser-facing issuer. Each
+  // endpoint gets the URL its caller can reach.
   //
-  // The paths assume Keycloak's realm layout, which is what the chart's issuerBackendUrl points
-  // at. Elsewhere they are wrong, but only jwk-set-uri can be dialed from here: no issuer means
-  // no browser login for authorization-uri/token-uri, and the public API's own JWK set URI wins
-  // when it is set. Any other provider has to configure the endpoints explicitly.
-  private void deriveOidcEndpointsFromIssuerBackendUrl(
+  // The paths follow Keycloak's realm layout, so they are only derived for a Keycloak
+  // provider or for endpoints nothing can dial. Every other provider keeps issuer-uri
+  // and lets CSL discover its real endpoints.
+  private void deriveOidcEndpoints(
       final ConfigurableEnvironment env, final Map<String, Object> derived) {
+    if (hasExplicitOidcEndpoints(env)) {
+      // The operator owns the endpoints, including any this would otherwise add.
+      return;
+    }
     if (!isBlank(effectiveOidcProperty(env, derived, "issuer-uri"))) {
+      // CSL discovers the endpoints from the issuer.
       return;
     }
-    final String backendUrl = env.getProperty("camunda.identity.issuerBackendUrl");
-    if (isBlank(backendUrl)) {
+    final String browserIssuer = legacyIssuer(env);
+    final String backendUrl = legacyIssuerBackendUrl(env);
+    if (browserIssuer == null) {
+      // No issuer, so no login dials the front channel and one URL serves both.
+      if (backendUrl != null) {
+        putDerivedEndpoints(env, derived, backendUrl, backendUrl);
+        warnEndpointsDerived(backendUrlLabel(), backendUrlLabel());
+        LOG.info(
+            "Optimize has no browser-facing OIDC issuer, so its authorization endpoint points at an"
+                + " internal URL that browser login cannot reach: set '{}' if this deployment"
+                + " serves the Optimize UI.",
+            IDENTITY_ISSUER);
+      }
       return;
     }
-    final String base = backendUrl.trim().replaceAll("/+$", "");
-    derived.putIfAbsent(OIDC_PREFIX + "authorization-uri", base + "/protocol/openid-connect/auth");
-    derived.putIfAbsent(OIDC_PREFIX + "token-uri", base + "/protocol/openid-connect/token");
-    // The public API's own JWK set URI wins: it is configured for the IdP that signs the API
-    // tokens, which need not be the Identity instance behind issuerBackendUrl. bridgePublicApiJwt
-    // runs later and would not overwrite a value put here.
+    final String backChannel = keycloakBackChannel(env);
+    if (backChannel != null) {
+      putDerivedEndpoints(env, derived, browserIssuer, backChannel);
+      warnEndpointsDerived(ISSUER_LABEL, backendUrlLabel());
+      return;
+    }
+    if (backendUrl != null && !backendUrl.equals(browserIssuer)) {
+      // A distinct back channel whose endpoint paths are unknown. Substituting the issuer would
+      // point Optimize at a host it may not reach, so CSL keeps the issuer and discovers instead.
+      LOG.info(
+          "Optimize left '{}' unused: its OIDC endpoint paths are only known for Keycloak, so CSL"
+              + " resolves the endpoints from the issuer by discovery. Set the"
+              + " 'camunda.security.authentication.oidc.authorization-uri', 'token-uri',"
+              + " 'jwk-set-uri', 'user-info-uri' and 'end-session-endpoint-uri' explicitly to have"
+              + " Optimize reach the provider on that URL.",
+          IDENTITY_ISSUER_BACKEND_URL);
+      return;
+    }
+    if (!isKeycloak(env, browserIssuer)) {
+      return;
+    }
+    putDerivedEndpoints(env, derived, browserIssuer, browserIssuer);
+    warnEndpointsDerived(ISSUER_LABEL, ISSUER_LABEL);
+  }
+
+  private void putDerivedEndpoints(
+      final ConfigurableEnvironment env,
+      final Map<String, Object> derived,
+      final String front,
+      final String back) {
+    // Front channel: the browser is redirected here, so it must be externally reachable.
+    derived.putIfAbsent(OIDC_PREFIX + "authorization-uri", front + "/protocol/openid-connect/auth");
+    // RP-initiated logout has no endpoint unless it is set explicitly.
+    derived.putIfAbsent(
+        OIDC_PREFIX + "end-session-endpoint-uri", front + "/protocol/openid-connect/logout");
+    // Back channel: Optimize calls these itself.
+    derived.putIfAbsent(OIDC_PREFIX + "token-uri", back + "/protocol/openid-connect/token");
+    // CSL requests UserInfo during login by default, and Spring skips the call when the endpoint is
+    // unknown, dropping the claims it contributes.
+    derived.putIfAbsent(OIDC_PREFIX + "user-info-uri", back + "/protocol/openid-connect/userinfo");
+    // The public API's own JWK set URI wins: it belongs to the IdP that signs the API tokens, which
+    // need not be the Identity instance behind issuerBackendUrl.
     final String publicApiJwks =
         env.getProperty("SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI");
     derived.putIfAbsent(
         OIDC_PREFIX + "jwk-set-uri",
-        isBlank(publicApiJwks) ? base + "/protocol/openid-connect/certs" : publicApiJwks);
-    LOG.info(
-        "Optimize derived the CSL OIDC endpoints from 'camunda.identity.issuerBackendUrl', assuming"
-            + " Keycloak's realm paths, because no OIDC issuer is configured. Browser login cannot"
-            + " work against an internal URL: set 'camunda.identity.issuer' if this deployment"
-            + " serves the Optimize UI, or set the OIDC endpoints explicitly for a non-Keycloak"
-            + " provider.");
+        isBlank(publicApiJwks) ? back + "/protocol/openid-connect/certs" : publicApiJwks);
   }
 
-  // Bridges a legacy issuer source into issuer-uri, but only when the host left the OIDC endpoints
-  // to CSL: an issuer-uri makes CSL discover them by dialing the browser-facing issuer from inside
-  // the pod, which is what explicit endpoints exist to avoid. The key is deprecated either way, so
-  // the warning is emitted whenever it is set.
+  private void warnEndpointsDerived(final String frontSource, final String backSource) {
+    LOG.warn(
+        "Optimize derived the CSL OIDC endpoints, assuming Keycloak's realm paths (configure them"
+            + " explicitly for another provider): the browser-facing ones from {}, the back-channel"
+            + " ones from {}. No 'camunda.security.authentication.oidc.issuer-uri' is set, so CSL"
+            + " runs no OIDC discovery at startup and registers no issuer validator: tokens are"
+            + " accepted on their signature, audience and expiry alone.",
+        frontSource,
+        backSource);
+  }
+
+  private static String backendUrlLabel() {
+    return "'" + IDENTITY_ISSUER_BACKEND_URL + "'";
+  }
+
+  // Null when unset, so callers can fall back to the other URL. Templated
+  // values carry padding and trailing slashes.
+  private static String realmBase(final String url) {
+    return isBlank(url) ? null : url.trim().replaceAll("/+$", "");
+  }
+
+  // Both spellings: application-ccsm.yaml mirrors the env var into camunda.identity.issuer, but
+  // only under the ccsm profile.
+  private static String legacyIssuer(final ConfigurableEnvironment env) {
+    return realmBase(firstNonBlankProperty(env, LEGACY_ISSUER_ENV_VAR, IDENTITY_ISSUER));
+  }
+
+  private static String legacyIssuerBackendUrl(final ConfigurableEnvironment env) {
+    return realmBase(
+        firstNonBlankProperty(env, LEGACY_ISSUER_BACKEND_URL_ENV_VAR, IDENTITY_ISSUER_BACKEND_URL));
+  }
+
+  // The back-channel URL only when it is a distinct, usable host: a value equal to the issuer
+  // splits nothing, so the registration keeps its issuer-uri and CSL resolves the endpoints by
+  // discovery as it always has. Only a differing URL says the pod reaches the provider elsewhere.
+  private static String keycloakBackChannel(final ConfigurableEnvironment env) {
+    final String backChannel = legacyIssuerBackendUrl(env);
+    if (backChannel == null || backChannel.equals(legacyIssuer(env))) {
+      return null;
+    }
+    return isKeycloak(env, backChannel) ? backChannel : null;
+  }
+
+  // camunda.identity.type names the provider, and the official Helm chart puts it in every app's
+  // environment (CAMUNDA_IDENTITY_TYPE, from the shared identity-env-vars ConfigMap). Where it is
+  // absent, as in the docker-compose distributions, a realm URL identifies Keycloak instead.
+  private static boolean isKeycloak(final ConfigurableEnvironment env, final String backChannel) {
+    final String type = firstNonBlankProperty(env, IDENTITY_TYPE_ENV_VAR, IDENTITY_TYPE);
+    return type != null
+        ? KEYCLOAK_IDENTITY_TYPE.equalsIgnoreCase(type.trim())
+        : KEYCLOAK_REALM_URL.matcher(backChannel).find();
+  }
+
+  private static String firstNonBlankProperty(
+      final ConfigurableEnvironment env, final String preferredKey, final String fallbackKey) {
+    final String preferred = env.getProperty(preferredKey);
+    if (!isBlank(preferred)) {
+      return preferred;
+    }
+    final String fallback = env.getProperty(fallbackKey);
+    return isBlank(fallback) ? null : fallback;
+  }
+
+  // Bridges a legacy issuer source into issuer-uri, which makes CSL discover the endpoints by
+  // dialing that issuer from inside the pod. Only when neither explicit endpoints nor a Keycloak
+  // back channel are configured, because deriveOidcEndpoints covers those. The key is deprecated
+  // either way, so each branch names the replacement that suits it.
   private void mapIssuerUri(
       final ConfigurableEnvironment env,
       final Map<String, Object> derived,
@@ -272,10 +392,20 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     if (isBlank(value)) {
       return;
     }
-    warnDeprecated(legacyKey, OIDC_PREFIX + "issuer-uri");
-    if (!hasExplicitOidcEndpoints(env)) {
-      derived.putIfAbsent(OIDC_PREFIX + "issuer-uri", value);
+    if (hasExplicitOidcEndpoints(env) || keycloakBackChannel(env) != null) {
+      LOG.warn(
+          "Optimize config '{}' is deprecated; migrate to the explicit"
+              + " 'camunda.security.authentication.oidc.authorization-uri', 'token-uri',"
+              + " 'jwk-set-uri', 'user-info-uri' and 'end-session-endpoint-uri' — the last two are"
+              + " needed for the UserInfo claims and for RP-initiated logout. Prefer those over"
+              + " 'camunda.security.authentication.oidc.issuer-uri', which makes CSL dial this URL"
+              + " for OIDC discovery at startup. Support for the legacy key will be removed in {}.",
+          legacyKey,
+          LEGACY_KEY_REMOVAL_VERSION);
+      return;
     }
+    warnDeprecated(legacyKey, OIDC_PREFIX + "issuer-uri");
+    derived.putIfAbsent(OIDC_PREFIX + "issuer-uri", value);
   }
 
   // All three are required: CSL accepts an issuer-uri or the complete trio, so withholding the
