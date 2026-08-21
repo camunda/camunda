@@ -36,7 +36,7 @@ public interface AgentHistoryState {
 
   /**
    * @return the {@code agentHistoryKey} of the history item that was committed under this {@code
-   *     historyItemId} for this agent instance, or {@code null} if none was
+   *     historyItemId} for this agent instance, or {@code null} if none was committed
    */
   Long getCommittedHistoryItemKey(long agentInstanceKey, String historyItemId);
 
