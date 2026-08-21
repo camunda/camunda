@@ -26,9 +26,7 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateAgentInstanceResponseImpl;
 import io.camunda.client.protocol.rest.AgentInstanceCreationRequest;
 import io.camunda.client.protocol.rest.AgentInstanceCreationResult;
-import io.camunda.client.protocol.rest.AgentInstanceDefinition;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryRoleEnum;
-import io.camunda.client.protocol.rest.AgentInstanceLimits;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,48 +53,6 @@ public class CreateAgentInstanceCommandImpl
   public CreateAgentInstanceCommandStep2 elementInstanceKey(final long elementInstanceKey) {
     ArgumentUtil.ensureGreaterThan("elementInstanceKey", elementInstanceKey, 0);
     request.elementInstanceKey(String.valueOf(elementInstanceKey));
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep2 model(final String model) {
-    ArgumentUtil.ensureNotNullNorEmpty("model", model);
-    ensureDefinition().model(model);
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep2 provider(final String provider) {
-    ArgumentUtil.ensureNotNullNorEmpty("provider", provider);
-    ensureDefinition().provider(provider);
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep2 systemPrompt(final String systemPrompt) {
-    ArgumentUtil.ensureNotNullNorEmpty("systemPrompt", systemPrompt);
-    ensureDefinition().systemPrompt(systemPrompt);
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep2 maxTokens(final long maxTokens) {
-    ArgumentUtil.ensureGreaterThan("maxTokens", maxTokens, -2);
-    ensureLimits().maxTokens(maxTokens);
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep2 maxModelCalls(final int maxModelCalls) {
-    ArgumentUtil.ensureGreaterThan("maxModelCalls", maxModelCalls, -2);
-    ensureLimits().maxModelCalls(maxModelCalls);
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep2 maxToolCalls(final int maxToolCalls) {
-    ArgumentUtil.ensureGreaterThan("maxToolCalls", maxToolCalls, -2);
-    ensureLimits().maxToolCalls(maxToolCalls);
     return this;
   }
 
@@ -142,27 +98,13 @@ public class CreateAgentInstanceCommandImpl
   public CamundaFuture<CreateAgentInstanceResponse> send() {
     final boolean hasHistory = request.getHistory() != null && !request.getHistory().isEmpty();
 
-    if (hasHistory) {
-      if (request.getJobKey() == null) {
-        throw new IllegalArgumentException("jobKey must be set when history is not empty");
-      }
-      if (request.getDefinition() != null) {
-        throw new IllegalArgumentException(
-            "model, provider, and systemPrompt must not be set when history is not empty");
-      }
-      if (request.getLimits() != null) {
-        throw new IllegalArgumentException(
-            "maxTokens, maxModelCalls, and maxToolCalls must not be set when history is not"
-                + " empty");
-      }
-      ensureConfigurationEstablishesDefinition(request.getHistory());
-    } else if (request.getDefinition() == null
-        || request.getDefinition().getModel() == null
-        || request.getDefinition().getProvider() == null
-        || request.getDefinition().getSystemPrompt() == null) {
-      throw new IllegalArgumentException(
-          "model, provider, and systemPrompt must be set when history is empty");
+    if (!hasHistory) {
+      throw new IllegalArgumentException("history must not be empty");
     }
+    if (request.getJobKey() == null) {
+      throw new IllegalArgumentException("jobKey must be set when history is not empty");
+    }
+    ensureConfigurationEstablishesDefinition(request.getHistory());
 
     final HttpCamundaFuture<CreateAgentInstanceResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
@@ -173,20 +115,6 @@ public class CreateAgentInstanceCommandImpl
         CreateAgentInstanceResponseImpl::new,
         result);
     return result;
-  }
-
-  private AgentInstanceDefinition ensureDefinition() {
-    if (request.getDefinition() == null) {
-      request.definition(new AgentInstanceDefinition());
-    }
-    return request.getDefinition();
-  }
-
-  private AgentInstanceLimits ensureLimits() {
-    if (request.getLimits() == null) {
-      request.limits(new AgentInstanceLimits());
-    }
-    return request.getLimits();
   }
 
   private void ensureConfigurationEstablishesDefinition(

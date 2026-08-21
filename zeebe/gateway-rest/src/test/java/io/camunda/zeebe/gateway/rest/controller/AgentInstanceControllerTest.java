@@ -74,14 +74,22 @@ class AgentInstanceControllerTest extends RestControllerTest {
         """
         {
           "elementInstanceKey": "%d",
-          "definition": {
-            "model": "gpt-4o",
-            "provider": "openai",
-            "systemPrompt": "You are a helpful assistant."
-          }
+          "jobKey": "%d",
+          "history": [
+            {
+              "historyItemId": "item-0",
+              "loopIteration": 1,
+              "role": "CONFIGURATION",
+              "content": [{ "contentType": "TEXT", "text": "configuration" }],
+              "producedAt": "2025-06-01T12:00:00Z",
+              "model": "gpt-4o",
+              "provider": "openai",
+              "systemPrompt": [{ "contentType": "TEXT", "text": "You are a helpful assistant." }]
+            }
+          ]
         }
         """
-            .formatted(ELEMENT_INSTANCE_KEY);
+            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
 
     // when / then
     webClient
@@ -106,9 +114,12 @@ class AgentInstanceControllerTest extends RestControllerTest {
             assertArg(
                 record -> {
                   assertThat(record.getElementInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
-                  assertThat(record.getDefinition().getModel()).isEqualTo("gpt-4o");
-                  assertThat(record.getDefinition().getProvider()).isEqualTo("openai");
-                  assertThat(record.getDefinition().getSystemPrompt())
+                  assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
+                  assertThat(record.getHistory()).hasSize(1);
+                  final var configurationItem = record.getHistory().get(0);
+                  assertThat(configurationItem.getModel()).isEqualTo("gpt-4o");
+                  assertThat(configurationItem.getProvider()).isEqualTo("openai");
+                  assertThat(configurationItem.getSystemPrompt())
                       .hasSize(1)
                       .first()
                       .satisfies(
@@ -117,9 +128,9 @@ class AgentInstanceControllerTest extends RestControllerTest {
                                 .isEqualTo(AgentHistoryContentType.TEXT);
                             assertThat(block.getText()).isEqualTo("You are a helpful assistant.");
                           });
-                  assertThat(record.getLimits().getMaxTokens()).isEqualTo(-1L);
-                  assertThat(record.getLimits().getMaxModelCalls()).isEqualTo(-1);
-                  assertThat(record.getLimits().getMaxToolCalls()).isEqualTo(-1);
+                  assertThat(configurationItem.getLimits().getMaxTokens()).isEqualTo(-1L);
+                  assertThat(configurationItem.getLimits().getMaxModelCalls()).isEqualTo(-1);
+                  assertThat(configurationItem.getLimits().getMaxToolCalls()).isEqualTo(-1);
                 }),
             any());
   }
@@ -136,19 +147,27 @@ class AgentInstanceControllerTest extends RestControllerTest {
         """
         {
           "elementInstanceKey": "%d",
-          "definition": {
-            "model": "claude-sonnet-4-6",
-            "provider": "anthropic",
-            "systemPrompt": "You are an expert."
-          },
-          "limits": {
-            "maxTokens": 100000,
-            "maxModelCalls": 10,
-            "maxToolCalls": 50
-          }
+          "jobKey": "%d",
+          "history": [
+            {
+              "historyItemId": "item-0",
+              "loopIteration": 1,
+              "role": "CONFIGURATION",
+              "content": [{ "contentType": "TEXT", "text": "configuration" }],
+              "producedAt": "2025-06-01T12:00:00Z",
+              "model": "claude-sonnet-4-6",
+              "provider": "anthropic",
+              "systemPrompt": [{ "contentType": "TEXT", "text": "You are an expert." }],
+              "limits": {
+                "maxTokens": 100000,
+                "maxModelCalls": 10,
+                "maxToolCalls": 50
+              }
+            }
+          ]
         }
         """
-            .formatted(ELEMENT_INSTANCE_KEY);
+            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
 
     // when / then
     webClient
@@ -165,9 +184,10 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .createAgentInstance(
             assertArg(
                 record -> {
-                  assertThat(record.getLimits().getMaxTokens()).isEqualTo(100_000L);
-                  assertThat(record.getLimits().getMaxModelCalls()).isEqualTo(10);
-                  assertThat(record.getLimits().getMaxToolCalls()).isEqualTo(50);
+                  final var configurationItem = record.getHistory().get(0);
+                  assertThat(configurationItem.getLimits().getMaxTokens()).isEqualTo(100_000L);
+                  assertThat(configurationItem.getLimits().getMaxModelCalls()).isEqualTo(10);
+                  assertThat(configurationItem.getLimits().getMaxToolCalls()).isEqualTo(50);
                 }),
             any());
   }
@@ -195,14 +215,22 @@ class AgentInstanceControllerTest extends RestControllerTest {
         """
         {
           "elementInstanceKey": "%d",
-          "definition": {
-            "model": "gpt-4o",
-            "provider": "openai",
-            "systemPrompt": "You are a helpful assistant."
-          }
+          "jobKey": "%d",
+          "history": [
+            {
+              "historyItemId": "item-0",
+              "loopIteration": 1,
+              "role": "CONFIGURATION",
+              "content": [{ "contentType": "TEXT", "text": "configuration" }],
+              "producedAt": "2025-06-01T12:00:00Z",
+              "model": "gpt-4o",
+              "provider": "openai",
+              "systemPrompt": [{ "contentType": "TEXT", "text": "You are a helpful assistant." }]
+            }
+          ]
         }
         """
-            .formatted(ELEMENT_INSTANCE_KEY);
+            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
 
     // when / then
     webClient
@@ -270,13 +298,22 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 "missing elementInstanceKey",
                 """
                 {
-                  "definition": {
-                    "model": "gpt-4o",
-                    "provider": "openai",
-                    "systemPrompt": "prompt"
-                  }
+                  "jobKey": "%d",
+                  "history": [
+                    {
+                      "historyItemId": "item-0",
+                      "loopIteration": 1,
+                      "role": "CONFIGURATION",
+                      "content": [{ "contentType": "TEXT", "text": "configuration" }],
+                      "producedAt": "2025-06-01T12:00:00Z",
+                      "model": "gpt-4o",
+                      "provider": "openai",
+                      "systemPrompt": [{ "contentType": "TEXT", "text": "prompt" }]
+                    }
+                  ]
                 }
-                """),
+                """
+                    .formatted(JOB_KEY)),
             "No elementInstanceKey provided."),
         Arguments.of(
             named(
@@ -284,13 +321,22 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 """
                 {
                   "elementInstanceKey": null,
-                  "definition": {
-                    "model": "gpt-4o",
-                    "provider": "openai",
-                    "systemPrompt": "prompt"
-                  }
+                  "jobKey": "%d",
+                  "history": [
+                    {
+                      "historyItemId": "item-0",
+                      "loopIteration": 1,
+                      "role": "CONFIGURATION",
+                      "content": [{ "contentType": "TEXT", "text": "configuration" }],
+                      "producedAt": "2025-06-01T12:00:00Z",
+                      "model": "gpt-4o",
+                      "provider": "openai",
+                      "systemPrompt": [{ "contentType": "TEXT", "text": "prompt" }]
+                    }
+                  ]
                 }
-                """),
+                """
+                    .formatted(JOB_KEY)),
             "No elementInstanceKey provided."),
         Arguments.of(
             named(
@@ -298,13 +344,22 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 """
                 {
                   "elementInstanceKey": "not-a-number",
-                  "definition": {
-                    "model": "gpt-4o",
-                    "provider": "openai",
-                    "systemPrompt": "prompt"
-                  }
+                  "jobKey": "%d",
+                  "history": [
+                    {
+                      "historyItemId": "item-0",
+                      "loopIteration": 1,
+                      "role": "CONFIGURATION",
+                      "content": [{ "contentType": "TEXT", "text": "configuration" }],
+                      "producedAt": "2025-06-01T12:00:00Z",
+                      "model": "gpt-4o",
+                      "provider": "openai",
+                      "systemPrompt": [{ "contentType": "TEXT", "text": "prompt" }]
+                    }
+                  ]
                 }
-                """),
+                """
+                    .formatted(JOB_KEY)),
             "The provided elementInstanceKey 'not-a-number' is not a valid key."
                 + " Expected a numeric value."
                 + " Did you pass an entity id instead of an entity key?."),
@@ -314,13 +369,22 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 """
                 {
                   "elementInstanceKey": "0",
-                  "definition": {
-                    "model": "gpt-4o",
-                    "provider": "openai",
-                    "systemPrompt": "prompt"
-                  }
+                  "jobKey": "%d",
+                  "history": [
+                    {
+                      "historyItemId": "item-0",
+                      "loopIteration": 1,
+                      "role": "CONFIGURATION",
+                      "content": [{ "contentType": "TEXT", "text": "configuration" }],
+                      "producedAt": "2025-06-01T12:00:00Z",
+                      "model": "gpt-4o",
+                      "provider": "openai",
+                      "systemPrompt": [{ "contentType": "TEXT", "text": "prompt" }]
+                    }
+                  ]
                 }
-                """),
+                """
+                    .formatted(JOB_KEY)),
             "The value for elementInstanceKey is '0' but must be > 0."),
         Arguments.of(
             named(
@@ -328,66 +392,33 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 """
                 {
                   "elementInstanceKey": "-1",
-                  "definition": {
-                    "model": "gpt-4o",
-                    "provider": "openai",
-                    "systemPrompt": "prompt"
-                  }
+                  "jobKey": "%d",
+                  "history": [
+                    {
+                      "historyItemId": "item-0",
+                      "loopIteration": 1,
+                      "role": "CONFIGURATION",
+                      "content": [{ "contentType": "TEXT", "text": "configuration" }],
+                      "producedAt": "2025-06-01T12:00:00Z",
+                      "model": "gpt-4o",
+                      "provider": "openai",
+                      "systemPrompt": [{ "contentType": "TEXT", "text": "prompt" }]
+                    }
+                  ]
                 }
-                """),
+                """
+                    .formatted(JOB_KEY)),
             "The value for elementInstanceKey is '-1' but must be > 0."),
         Arguments.of(
             named(
-                "missing definition",
+                "missing history",
                 """
                 {
                   "elementInstanceKey": "%d"
                 }
                 """
                     .formatted(ELEMENT_INSTANCE_KEY)),
-            "No definition provided."),
-        Arguments.of(
-            named(
-                "missing definition.model",
-                """
-                {
-                  "elementInstanceKey": "%d",
-                  "definition": {
-                    "provider": "openai",
-                    "systemPrompt": "prompt"
-                  }
-                }
-                """
-                    .formatted(ELEMENT_INSTANCE_KEY)),
-            "No definition.model provided."),
-        Arguments.of(
-            named(
-                "missing definition.provider",
-                """
-                {
-                  "elementInstanceKey": "%d",
-                  "definition": {
-                    "model": "gpt-4o",
-                    "systemPrompt": "prompt"
-                  }
-                }
-                """
-                    .formatted(ELEMENT_INSTANCE_KEY)),
-            "No definition.provider provided."),
-        Arguments.of(
-            named(
-                "missing definition.systemPrompt",
-                """
-                {
-                  "elementInstanceKey": "%d",
-                  "definition": {
-                    "model": "gpt-4o",
-                    "provider": "openai"
-                  }
-                }
-                """
-                    .formatted(ELEMENT_INSTANCE_KEY)),
-            "No definition.systemPrompt provided."),
+            "No history provided."),
         Arguments.of(
             named(
                 "history without jobKey",
@@ -423,73 +454,24 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 """
                 {
                   "elementInstanceKey": "%d",
-                  "definition": {
-                    "model": "gpt-4o",
-                    "provider": "openai",
-                    "systemPrompt": "prompt"
-                  },
-                  "jobKey": "not-a-number"
+                  "jobKey": "not-a-number",
+                  "history": [
+                    {
+                      "historyItemId": "item-0",
+                      "loopIteration": 1,
+                      "role": "CONFIGURATION",
+                      "content": [{ "contentType": "TEXT", "text": "configuration" }],
+                      "producedAt": "2025-06-01T12:00:00Z",
+                      "model": "gpt-4o",
+                      "provider": "openai",
+                      "systemPrompt": [{ "contentType": "TEXT", "text": "prompt" }]
+                    }
+                  ]
                 }
                 """
                     .formatted(ELEMENT_INSTANCE_KEY)),
             "The provided jobKey 'not-a-number' is not a valid key. Expected a numeric value."
                 + " Did you pass an entity id instead of an entity key?."),
-        Arguments.of(
-            named(
-                "definition with history",
-                """
-                {
-                  "elementInstanceKey": "%d",
-                  "definition": {
-                    "model": "gpt-4o",
-                    "provider": "openai",
-                    "systemPrompt": "prompt"
-                  },
-                  "jobKey": "%d",
-                  "history": [
-                    {
-                      "historyItemId": "item-0",
-                      "loopIteration": 1,
-                      "role": "CONFIGURATION",
-                      "content": [{ "contentType": "TEXT", "text": "configuration" }],
-                      "producedAt": "2025-06-01T12:00:00Z",
-                      "model": "gpt-4o",
-                      "provider": "openai",
-                      "systemPrompt": [{ "contentType": "TEXT", "text": "prompt" }]
-                    }
-                  ]
-                }
-                """
-                    .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY)),
-            "The definition must be omitted when history is provided."),
-        Arguments.of(
-            named(
-                "limits with history",
-                """
-                {
-                  "elementInstanceKey": "%d",
-                  "limits": {
-                    "maxTokens": 100,
-                    "maxModelCalls": 1,
-                    "maxToolCalls": 1
-                  },
-                  "jobKey": "%d",
-                  "history": [
-                    {
-                      "historyItemId": "item-0",
-                      "loopIteration": 1,
-                      "role": "CONFIGURATION",
-                      "content": [{ "contentType": "TEXT", "text": "configuration" }],
-                      "producedAt": "2025-06-01T12:00:00Z",
-                      "model": "gpt-4o",
-                      "provider": "openai",
-                      "systemPrompt": [{ "contentType": "TEXT", "text": "prompt" }]
-                    }
-                  ]
-                }
-                """
-                    .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY)),
-            "The limits must be omitted when history is provided."),
         Arguments.of(
             named(
                 "history without a CONFIGURATION item establishing the definition",
@@ -526,14 +508,22 @@ class AgentInstanceControllerTest extends RestControllerTest {
         """
         {
           "elementInstanceKey": "%d",
-          "definition": {
-            "model": "gpt-4o",
-            "provider": "openai",
-            "systemPrompt": "prompt"
-          }
+          "jobKey": "%d",
+          "history": [
+            {
+              "historyItemId": "item-0",
+              "loopIteration": 1,
+              "role": "CONFIGURATION",
+              "content": [{ "contentType": "TEXT", "text": "configuration" }],
+              "producedAt": "2025-06-01T12:00:00Z",
+              "model": "gpt-4o",
+              "provider": "openai",
+              "systemPrompt": [{ "contentType": "TEXT", "text": "prompt" }]
+            }
+          ]
         }
         """
-            .formatted(ELEMENT_INSTANCE_KEY);
+            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
 
     // when / then
     webClient
@@ -587,150 +577,6 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(record.getElementInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
                   assertThat(record.getStatus().name()).isEqualTo("THINKING");
                   assertThat(record.getChangedAttributes()).containsExactly("status");
-                }),
-            any());
-  }
-
-  @Test
-  void shouldUpdateAgentInstanceWithMetrics() {
-    // given
-    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
-        .thenReturn(CompletableFuture.completedFuture(new AgentInstanceRecord()));
-
-    final var requestBody =
-        """
-        {
-          "elementInstanceKey": "%d",
-          "metrics": {
-            "inputTokens": 1000,
-            "outputTokens": 500,
-            "modelCalls": 3,
-            "toolCalls": 7
-          }
-        }
-        """
-            .formatted(ELEMENT_INSTANCE_KEY);
-
-    // when / then
-    webClient
-        .patch()
-        .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(requestBody)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .json(
-            """
-            { "createdHistory": [] }
-            """,
-            JsonCompareMode.STRICT);
-
-    verify(agentInstanceServices)
-        .updateAgentInstance(
-            assertArg(
-                record -> {
-                  assertThat(record.getMetrics().getInputTokens()).isEqualTo(1000L);
-                  assertThat(record.getMetrics().getOutputTokens()).isEqualTo(500L);
-                  assertThat(record.getMetrics().getModelCalls()).isEqualTo(3);
-                  assertThat(record.getMetrics().getToolCalls()).isEqualTo(7);
-                  assertThat(record.getChangedAttributes()).containsExactly("metrics");
-                }),
-            any());
-  }
-
-  @Test
-  void shouldUpdateAgentInstanceWithTools() {
-    // given
-    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
-        .thenReturn(CompletableFuture.completedFuture(new AgentInstanceRecord()));
-
-    final var requestBody =
-        """
-        {
-          "elementInstanceKey": "%d",
-          "tools": [
-            {
-              "name": "searchDatabase",
-              "description": "Searches the database",
-              "elementId": "searchTask"
-            }
-          ]
-        }
-        """
-            .formatted(ELEMENT_INSTANCE_KEY);
-
-    // when / then
-    webClient
-        .patch()
-        .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(requestBody)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .json(
-            """
-            { "createdHistory": [] }
-            """,
-            JsonCompareMode.STRICT);
-
-    verify(agentInstanceServices)
-        .updateAgentInstance(
-            assertArg(
-                record -> {
-                  assertThat(record.getTools()).hasSize(1);
-                  assertThat(record.getTools().get(0).getName()).isEqualTo("searchDatabase");
-                  assertThat(record.getTools().get(0).getDescription())
-                      .isEqualTo("Searches the database");
-                  assertThat(record.getTools().get(0).getElementId()).isEqualTo("searchTask");
-                  assertThat(record.getChangedAttributes()).containsExactly("tools");
-                }),
-            any());
-  }
-
-  @Test
-  void shouldUpdateAgentInstanceWithEmptyToolsList() {
-    // given
-    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
-        .thenReturn(CompletableFuture.completedFuture(new AgentInstanceRecord()));
-
-    final var requestBody =
-        """
-        {
-          "elementInstanceKey": "%d",
-          "tools": []
-        }
-        """
-            .formatted(ELEMENT_INSTANCE_KEY);
-
-    // when / then
-    webClient
-        .patch()
-        .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(requestBody)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .json(
-            """
-            { "createdHistory": [] }
-            """,
-            JsonCompareMode.STRICT);
-
-    verify(agentInstanceServices)
-        .updateAgentInstance(
-            assertArg(
-                record -> {
-                  assertThat(record.getTools()).isEmpty();
-                  assertThat(record.getChangedAttributes()).containsExactly("tools");
                 }),
             any());
   }
@@ -838,85 +684,6 @@ class AgentInstanceControllerTest extends RestControllerTest {
             "The provided elementInstanceKey 'not-a-number' is not a valid key."
                 + " Expected a numeric value."
                 + " Did you pass an entity id instead of an entity key?."),
-        Arguments.of(
-            named(
-                "negative inputTokens delta",
-                new UpdateRequest(
-                    AGENT_INSTANCE_KEY,
-                    """
-                    { "elementInstanceKey": "%d", "metrics": { "inputTokens": -1 } }
-                    """
-                        .formatted(ELEMENT_INSTANCE_KEY))),
-            "The value for metrics.inputTokens is '-1' but must be >= 0."),
-        Arguments.of(
-            named(
-                "negative outputTokens delta",
-                new UpdateRequest(
-                    AGENT_INSTANCE_KEY,
-                    """
-                    { "elementInstanceKey": "%d", "metrics": { "outputTokens": -5 } }
-                    """
-                        .formatted(ELEMENT_INSTANCE_KEY))),
-            "The value for metrics.outputTokens is '-5' but must be >= 0."),
-        Arguments.of(
-            named(
-                "negative modelCalls delta",
-                new UpdateRequest(
-                    AGENT_INSTANCE_KEY,
-                    """
-                    { "elementInstanceKey": "%d", "metrics": { "modelCalls": -1 } }
-                    """
-                        .formatted(ELEMENT_INSTANCE_KEY))),
-            "The value for metrics.modelCalls is '-1' but must be >= 0."),
-        Arguments.of(
-            named(
-                "negative toolCalls delta",
-                new UpdateRequest(
-                    AGENT_INSTANCE_KEY,
-                    """
-                    { "elementInstanceKey": "%d", "metrics": { "toolCalls": -2 } }
-                    """
-                        .formatted(ELEMENT_INSTANCE_KEY))),
-            "The value for metrics.toolCalls is '-2' but must be >= 0."),
-        Arguments.of(
-            named(
-                "tool without name",
-                new UpdateRequest(
-                    AGENT_INSTANCE_KEY,
-                    """
-                    {
-                      "elementInstanceKey": "%d",
-                      "tools": [{ "description": "Search database" }]
-                    }
-                    """
-                        .formatted(ELEMENT_INSTANCE_KEY))),
-            "No tools[0].name provided."),
-        Arguments.of(
-            named(
-                "tool with blank name",
-                new UpdateRequest(
-                    AGENT_INSTANCE_KEY,
-                    """
-                    {
-                      "elementInstanceKey": "%d",
-                      "tools": [{ "name": "" }]
-                    }
-                    """
-                        .formatted(ELEMENT_INSTANCE_KEY))),
-            "No tools[0].name provided."),
-        Arguments.of(
-            named(
-                "tool with null name",
-                new UpdateRequest(
-                    AGENT_INSTANCE_KEY,
-                    """
-                    {
-                      "elementInstanceKey": "%d",
-                      "tools": [{ "name": null }]
-                    }
-                    """
-                        .formatted(ELEMENT_INSTANCE_KEY))),
-            "No tools[0].name provided."),
         Arguments.of(
             named(
                 "zero agentInstanceKey",
@@ -1115,7 +882,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
     }
 
     @Test
-    void shouldReturn200WhenHistoryBatchCombinedWithStatusMetricsAndTools() {
+    void shouldReturn200WhenHistoryBatchCombinedWithStatus() {
       // given
       final var responseRecord = new AgentInstanceRecord();
       responseRecord.addHistoryItem(
@@ -1134,19 +901,6 @@ class AgentInstanceControllerTest extends RestControllerTest {
           {
             "elementInstanceKey": "%d",
             "status": "THINKING",
-            "metrics": {
-              "inputTokens": 1000,
-              "outputTokens": 500,
-              "modelCalls": 3,
-              "toolCalls": 7
-            },
-            "tools": [
-              {
-                "name": "searchDatabase",
-                "description": "Searches the database",
-                "elementId": "searchTask"
-              }
-            ],
             "jobKey": "%d",
             "jobLease": "lease-abc",
             "history": [
@@ -1189,16 +943,12 @@ class AgentInstanceControllerTest extends RestControllerTest {
               assertArg(
                   record -> {
                     assertThat(record.getStatus().name()).isEqualTo("THINKING");
-                    assertThat(record.getMetrics().getInputTokens()).isEqualTo(1000L);
-                    assertThat(record.getTools()).hasSize(1);
-                    assertThat(record.getTools().get(0).getName()).isEqualTo("searchDatabase");
                     assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
                     assertThat(record.getJobLease()).isEqualTo("lease-abc");
                     assertThat(record.getHistory()).hasSize(2);
                     assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-1");
                     assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-2");
-                    assertThat(record.getChangedAttributes())
-                        .containsExactlyInAnyOrder("status", "metrics", "tools");
+                    assertThat(record.getChangedAttributes()).containsExactlyInAnyOrder("status");
                   }),
               any());
     }
@@ -1503,47 +1253,6 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     assertThat(record.getHistory()).hasSize(2);
                   }),
               any());
-    }
-
-    @Test
-    void shouldReturnEmptyCreatedHistoryWhenHistoryIsEmptyArray() {
-      // given
-      final var responseRecord = new AgentInstanceRecord();
-      responseRecord.setAgentInstanceKey(AGENT_INSTANCE_KEY);
-      when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any()))
-          .thenReturn(CompletableFuture.completedFuture(responseRecord));
-
-      final var requestBody =
-          """
-          {
-            "elementInstanceKey": "%d",
-            "definition": {
-              "model": "gpt-4o",
-              "provider": "openai",
-              "systemPrompt": "You are a helpful assistant."
-            },
-            "history": []
-          }
-          """
-              .formatted(ELEMENT_INSTANCE_KEY);
-
-      // when / then
-      webClient
-          .post()
-          .uri(AGENT_INSTANCES_URL)
-          .accept(MediaType.APPLICATION_JSON)
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(requestBody)
-          .exchange()
-          .expectStatus()
-          .isOk()
-          .expectBody()
-          .json(
-              """
-              { "agentInstanceKey": "%d", "createdHistory": [] }
-              """
-                  .formatted(AGENT_INSTANCE_KEY),
-              JsonCompareMode.STRICT);
     }
 
     @Test

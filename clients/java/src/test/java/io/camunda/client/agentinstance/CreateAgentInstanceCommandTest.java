@@ -262,7 +262,6 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
     assertThat(body.getElementInstanceKey()).isEqualTo(String.valueOf(ELEMENT_INSTANCE_KEY));
     assertThat(body.getJobKey()).isEqualTo(String.valueOf(JOB_KEY));
     assertThat(body.getJobLease()).isEqualTo(JOB_LEASE);
-    assertThat(body.getDefinition()).isNull();
     assertThat(body.getHistory())
         .extracting(item -> item.getHistoryItemId())
         .containsExactly("item-0", "item-1", "item-2");
@@ -303,6 +302,20 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
                     .history(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("history must not be null");
+  }
+
+  @Test
+  void shouldRejectEmptyHistoryList() {
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateAgentInstanceCommand()
+                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                    .jobKey(JOB_KEY)
+                    .history(Collections.emptyList())
+                    .execute())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("history must not be empty");
   }
 
   @Test
