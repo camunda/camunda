@@ -41,15 +41,7 @@ message PartitionGroupConfiguration {
   int64 incarnationNumber = 2;
   map<string, BrokerPartitionState> members = 3;
   RoutingState routingState = 4;
-  // A group runs one change at a time, and a change uses one model, chosen by
-  // the transformer that built it: the queue (pendingChanges) or the
-  // dependency graph (pendingGraphChanges). A oneof rather than two independent
-  // optional fields, so "at most one is set" is enforced by the wire format
-  // instead of by a comment a future encoder change could silently violate.
-  oneof pending_change {
-    ClusterChangePlan pendingChanges = 5;
-    DependencyChangePlan pendingGraphChanges = 8;
-  }
+  DependencyChangePlan pendingChanges = 5;
   CompletedChange lastChange = 6;
   TenantAvailability availability = 7;
 }
@@ -142,7 +134,7 @@ message PhasedChangePlanPhase {
   }
 }
 
-// Graphs written to the named groups' pendingGraphChanges when this phase is activated.
+// Graphs written to the named groups' pendingChanges when this phase is activated.
 message PartitionGroupGraphPhase {
   map<string, OperationGraph> groupGraphs = 1;
 }

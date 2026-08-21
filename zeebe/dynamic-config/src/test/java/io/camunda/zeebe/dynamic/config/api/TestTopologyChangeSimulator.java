@@ -126,7 +126,7 @@ final class TestTopologyChangeSimulator {
     for (final var groupId : phase.groupGraphs().keySet()) {
       while (current.partitionGroup(groupId).hasPendingChanges()) {
         final var group = current.partitionGroup(groupId);
-        final var plan = group.pendingGraphChanges().orElseThrow();
+        final var plan = group.pendingChanges().orElseThrow();
         final var runnable = new TreeMap<OperationId, PartitionGroupOperation>();
         plan.graph()
             .operations()

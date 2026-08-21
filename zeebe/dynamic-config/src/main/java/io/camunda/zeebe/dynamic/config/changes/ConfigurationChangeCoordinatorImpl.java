@@ -510,32 +510,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
       onGroupDrained.accept(config);
       return;
     }
-    if (group.pendingGraphChanges().isPresent()) {
-      simulateGraphOperations(config, groupId, groupSimulator, onGroupDrained, simulationCompleted);
-      return;
-    }
-    final var operation = group.nextPendingOperation();
-    final var applier = groupSimulator.getApplier(operation);
-    final var result = applier.init(config.globalConfiguration(), group);
-    if (result.isLeft()) {
-      failFuture(simulationCompleted, new InvalidRequest(result.getLeft()));
-      return;
-    }
-    final var configWithInit = config.updatePartitionGroupConfig(groupId, result.get());
-    applier
-        .apply()
-        .onComplete(
-            (transformer, error) -> {
-              if (error != null) {
-                failFuture(simulationCompleted, new InvalidRequest(error));
-                return;
-              }
-              final var advanced =
-                  configWithInit.updatePartitionGroupConfig(
-                      groupId, g -> g.advanceConfigurationChange(transformer));
-              simulatePartitionGroupOperations(
-                  advanced, groupId, groupSimulator, onGroupDrained, simulationCompleted);
-            });
+    simulateGraphOperations(config, groupId, groupSimulator, onGroupDrained, simulationCompleted);
   }
 
   /**
@@ -561,7 +536,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
       final Consumer<CurrentClusterConfiguration> onGroupDrained,
       final ActorFuture<CurrentClusterConfiguration> simulationCompleted) {
     final var group = Objects.requireNonNull(config.partitionGroup(groupId));
-    final var plan = group.pendingGraphChanges().orElse(null);
+    final var plan = group.pendingChanges().orElse(null);
     if (plan == null || !plan.hasPendingChanges()) {
       onGroupDrained.accept(config);
       return;

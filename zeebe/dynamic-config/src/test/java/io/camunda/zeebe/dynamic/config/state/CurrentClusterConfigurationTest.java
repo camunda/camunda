@@ -89,7 +89,7 @@ class CurrentClusterConfigurationTest {
       final CurrentClusterConfiguration config, final String groupId) {
     var current = config;
     while (current.partitionGroup(groupId).hasPendingChanges()) {
-      final var plan = current.partitionGroup(groupId).pendingGraphChanges().orElseThrow();
+      final var plan = current.partitionGroup(groupId).pendingChanges().orElseThrow();
       final var next =
           plan.operations().keySet().stream().filter(plan::isRunnable).findFirst().orElseThrow();
       current =
@@ -763,7 +763,10 @@ class CurrentClusterConfigurationTest {
       // when — start a change on group "a"
       final var updated =
           config.updatePartitionGroupConfig(
-              "a", g -> g.startConfigurationChange(List.of(new DeleteHistoryOperation(MEMBER_0))));
+              "a",
+              g ->
+                  g.startGraphConfigurationChange(
+                      OperationGraph.sequential(List.of(new DeleteHistoryOperation(MEMBER_0)))));
 
       // then
       assertThat(updated.partitionGroup("a").hasPendingChanges()).isTrue();

@@ -10,8 +10,8 @@ package io.camunda.zeebe.dynamic.config;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
@@ -39,10 +39,10 @@ import org.slf4j.LoggerFactory;
  * PartitionReassignmentOperationsGenerator} to turn that placement into operations.
  *
  * <p>The change is started directly on the new group via {@link
- * PartitionGroupConfiguration#startConfigurationChange(List)}, bypassing the top-level {@link
- * io.camunda.zeebe.dynamic.config.state.PhasedChangePlan} entirely: a phased change may already be
- * in progress for other groups when this runs, and this group is guaranteed to have no pending
- * change of its own yet since it doesn't exist before this modifier creates it.
+ * PartitionGroupConfiguration#startGraphConfigurationChange(OperationGraph)}, bypassing the
+ * top-level {@link io.camunda.zeebe.dynamic.config.state.PhasedChangePlan} entirely: a phased
+ * change may already be in progress for other groups when this runs, and this group is guaranteed
+ * to have no pending change of its own yet since it doesn't exist before this modifier creates it.
  *
  * <p>A physical tenant whose group already exists is left completely untouched, even if it's since
  * been removed from the static configuration — this modifier only ever adds a group, never removes
@@ -198,8 +198,11 @@ public class PhysicalTenantProvisioningInitializer
             updatedGroups,
             configuration.phasedChangeState());
 
-    final List<ClusterConfigurationChangeOperation> operations = List.copyOf(tenantOperations);
+    // Sequential, not the free graph a phase could express: these operations place a brand-new
+    // tenant's partitions, and provisioning has never claimed the independence between them that
+    // would let two run at once.
+    final var graph = OperationGraph.sequential(tenantOperations);
     return withEmptyGroup.updatePartitionGroupConfig(
-        newTenantId, group -> group.startConfigurationChange(operations));
+        newTenantId, group -> group.startGraphConfigurationChange(graph));
   }
 }

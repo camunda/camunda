@@ -49,7 +49,6 @@ import io.camunda.zeebe.dynamic.config.protocol.Topology.CompletedChange;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.PartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -2005,20 +2004,9 @@ public class ProtoBufSerializer
     configuration
         .routingState()
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
-    // A switch over ChangePlan's sealed permits, not an if/else-if: a third implementation would
-    // fail to compile here instead of silently vanishing off the wire the way it would with an
-    // if/else-if that falls through to neither branch.
     configuration
         .pendingChanges()
-        .ifPresent(
-            changePlan -> {
-              switch (changePlan) {
-                case final ClusterChangePlan queue ->
-                    builder.setPendingChanges(encodeChangePlan(queue));
-                case final DependencyChangePlan graph ->
-                    builder.setPendingGraphChanges(encodeDependencyChangePlan(graph));
-              }
-            });
+        .ifPresent(plan -> builder.setPendingChanges(encodeDependencyChangePlan(plan)));
     configuration
         .lastChange()
         .ifPresent(lastChange -> builder.setLastChange(encodeCompletedChange(lastChange)));
@@ -2111,15 +2099,10 @@ public class ProtoBufSerializer
                     e -> MemberId.from(e.getKey()), e -> decodeBrokerPartitionState(e.getValue())));
     final Optional<RoutingState> routingState =
         proto.hasRoutingState() ? decodeRoutingState(proto.getRoutingState()) : Optional.empty();
-    // A oneof, not a hasX()/hasY() preference chain: exactly one of the two can be set on the
-    // wire, so this switches on which rather than inferring it by checking one field first.
-    final Optional<ChangePlan> pendingChanges =
-        switch (proto.getPendingChangeCase()) {
-          case PENDINGCHANGES -> Optional.of(decodeChangePlan(proto.getPendingChanges()));
-          case PENDINGGRAPHCHANGES ->
-              Optional.of(decodeDependencyChangePlan(proto.getPendingGraphChanges()));
-          case PENDINGCHANGE_NOT_SET -> Optional.empty();
-        };
+    final Optional<DependencyChangePlan> pendingChanges =
+        proto.hasPendingChanges()
+            ? Optional.of(decodeDependencyChangePlan(proto.getPendingChanges()))
+            : Optional.empty();
     final Optional<io.camunda.zeebe.dynamic.config.state.CompletedChange> lastChange =
         proto.hasLastChange()
             ? Optional.of(decodeCompletedChange(proto.getLastChange()))

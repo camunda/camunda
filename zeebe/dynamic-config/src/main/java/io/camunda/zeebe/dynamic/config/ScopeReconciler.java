@@ -26,25 +26,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Drives ongoing/retry/backoff for the local member's next pending operation within a single
- * reconciliation scope (the global configuration, or one named partition group). One instance per
- * scope, each with its own {@link ExponentialBackoffRetryDelay}, so a repeated failure applying one
- * scope's operation cannot push another scope's retry delay toward the max the way a single shared
- * backoff instance would (see {@link ClusterConfigurationManagerImpl}, which used to keep three
- * parallel {@code Map}s for this per group, plus two more scalar fields for the global case).
+ * Drives ongoing/retry/backoff for the local member's next pending operation on the global
+ * configuration, whose change is a one-at-a-time queue. Partition groups are driven by {@link
+ * GraphScopeReconciler} instead: their change is a dependency graph, which offers several
+ * operations at once and so cannot share the single-in-flight-operation contract below.
  *
- * <p>{@link Operations} supplies the scope-specific pieces (finding the local member's pending
- * operation, and staging/applying it) so this class only implements the orchestration that is
- * otherwise identical between the global and per-group cases.
+ * <p>{@link Operations} supplies the pieces that are not orchestration (finding the local member's
+ * pending operation, and staging/applying it). It remains an interface, rather than being folded
+ * into this class, because it is the seam that keeps the orchestration below — which is subtle, and
+ * was arrived at by fixing real re-entrancy and backoff bugs — testable and reusable if a second
+ * queue-shaped scope ever appears.
  *
  * <p>Staging an operation ({@code initialize().flatMap(updateLocally)}) persists/gossips the staged
  * config synchronously, which re-enters {@link ClusterConfigurationManagerImpl#reconcile} — and
- * therefore every registered {@code ScopeReconciler}'s {@link #reconcile()}, including this one —
- * before that call returns. The {@code ongoing} flag (set before staging, not after) turns that
- * re-entrant call into a no-op rather than a recursive one, so this doesn't deepen with the number
- * of operations processed; it's bounded only by the number of scopes that simultaneously have a
- * ready operation, which is fine at the scope counts (global plus one per physical tenant) this
- * module deals with today.
+ * therefore this {@link #reconcile()} again — before that call returns. The {@code ongoing} flag
+ * (set before staging, not after) turns that re-entrant call into a no-op rather than a recursive
+ * one, so this doesn't deepen with the number of operations processed.
  */
 @NullMarked
 final class ScopeReconciler {
@@ -192,9 +189,7 @@ final class ScopeReconciler {
     /** The sub-configuration's own version, used to detect a concurrent cancel/change. */
     long versionOf(CurrentClusterConfiguration config);
 
-    /**
-     * Human-readable scope name for logs, e.g. {@code "global"} or {@code "partition group 'x'"}.
-     */
+    /** Human-readable scope name for logs, e.g. {@code "global"}. */
     String describe();
   }
 

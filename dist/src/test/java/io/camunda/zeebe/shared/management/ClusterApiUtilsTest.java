@@ -17,9 +17,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
@@ -1362,57 +1360,10 @@ final class ClusterApiUtilsTest {
   }
 
   @Test
-  void shouldSplitActivePhaseOperationsUsingSubConfigProgress() {
-    // given: the active phase targets physical tenant "tenant-a" with two operations, but the
-    // tenant's own ClusterChangePlan shows the join already completed and only the leave pending
-    final var memberId1 = member(1);
-    final var joinOperation = new PartitionJoinOperation(memberId1, 3, 1);
-    final var leaveOperation = new PartitionLeaveOperation(memberId1, 3, 0);
-    final var tenantPlan =
-        new ClusterChangePlan(
-            1,
-            1,
-            Status.IN_PROGRESS,
-            Instant.now(),
-            List.of(new CompletedOperation(joinOperation, Instant.now())),
-            List.of(leaveOperation));
-    final var tenantGroup =
-        new PartitionGroupConfiguration(
-            1, 0, Map.of(), Optional.empty(), Optional.of(tenantPlan), Optional.empty());
-    final List<Phase> phases =
-        List.of(
-            PartitionGroupPhase.sequential(
-                Map.of("tenant-a", List.of(joinOperation, leaveOperation))),
-            new GlobalPhase(List.of(new MemberLeaveOperation(memberId1))));
-    final var config =
-        new CurrentClusterConfiguration(
-            CurrentClusterConfiguration.INITIAL_VERSION,
-            GlobalConfiguration.init(),
-            Map.of("tenant-a", tenantGroup),
-            new PhasedChangeState(
-                8, Map.of(7L, new PhasedChangePlan(7, 0, phases, Instant.now())), List.of()));
-
-    // when
-    final var response = ClusterApiUtils.mapConfigurationChangeResponse(config, 7);
-
-    // then
-    assertThat(response.getStatusCode().value()).isEqualTo(200);
-    final var body = (ConfigurationChange) response.getBody();
-    assertThat(body).isNotNull();
-    assertThat(body.getCompleted())
-        .extracting(Operation::getOperation, Operation::getPhysicalTenant)
-        .containsExactly(tuple(PARTITION_JOIN, "tenant-a"));
-    assertThat(body.getPending())
-        .extracting(Operation::getOperation, Operation::getPhysicalTenant)
-        .containsExactly(
-            tuple(Operation.OperationEnum.PARTITION_LEAVE, "tenant-a"), tuple(BROKER_REMOVE, null));
-  }
-
-  @Test
   void shouldSplitActiveGraphPhaseUsingSubConfigProgress() {
-    // given: the active phase is a dependency graph rather than a queue. The tenant has run the
-    // join and not the leave, which is what the API must report -- a graph tracks progress as a set
-    // of completed operations, with no queue index to read.
+    // given: the active phase targets physical tenant "tenant-a" with two operations, and the
+    // tenant has run the join and not the leave -- which is what the API must report. A group's
+    // progress is a set of completed operations, with no queue index to read.
     final var memberId1 = member(1);
     final var joinOperation = new PartitionJoinOperation(memberId1, 3, 1);
     final var leaveOperation = new PartitionLeaveOperation(memberId1, 4, 0);
@@ -1427,7 +1378,7 @@ final class ClusterApiUtilsTest {
     final List<Phase> phases =
         List.of(
             new PartitionGroupPhase(
-                Map.of("tenant-a", tenantGroup.pendingGraphChanges().orElseThrow().graph())),
+                Map.of("tenant-a", tenantGroup.pendingChanges().orElseThrow().graph())),
             new GlobalPhase(List.of(new MemberLeaveOperation(memberId1))));
     final var config =
         new CurrentClusterConfiguration(

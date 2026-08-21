@@ -31,9 +31,9 @@ import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState.State;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
@@ -340,7 +340,7 @@ final class ClusterConfigurationManagerImplTest {
     // then — both ran and the graph drained, without any peer having to move
     final var defaultGroup =
         configuration(manager).partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
-    assertThat(defaultGroup.pendingGraphChanges()).isEmpty();
+    assertThat(defaultGroup.pendingChanges()).isEmpty();
     assertThat(defaultGroup.hasMember(MEMBER_0)).isFalse();
   }
 
@@ -368,7 +368,7 @@ final class ClusterConfigurationManagerImplTest {
     // then — nothing was applied and both operations are still outstanding
     final var defaultGroup =
         configuration(manager).partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
-    assertThat(defaultGroup.pendingGraphChanges().orElseThrow().completed()).isEmpty();
+    assertThat(defaultGroup.pendingChanges().orElseThrow().completed()).isEmpty();
     assertThat(defaultGroup.getMember(MEMBER_0).partitions()).containsOnlyKeys(1, 2);
   }
 
@@ -967,7 +967,7 @@ final class ClusterConfigurationManagerImplTest {
             // changes, matching what applyPhase does. Without this, maybeAdvancePhase would see the
             // group as trivially drained (no pending changes) and immediately complete the whole
             // plan before the gossip-receive below even runs.
-            Optional.of(ClusterChangePlan.init(1, List.of(leaveOperation))),
+            Optional.of(DependencyChangePlan.sequential(1, List.of(leaveOperation))),
             Optional.empty());
     final var global =
         new GlobalConfiguration(

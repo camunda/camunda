@@ -152,7 +152,7 @@ final class CurrentClusterConfigurationSerializerTest {
         Topology.PartitionGroupConfiguration.newBuilder()
             .setVersion(1)
             .setIncarnationNumber(0)
-            .setPendingGraphChanges(plan)
+            .setPendingChanges(plan)
             .build();
     final var proto =
         Topology.CurrentClusterConfiguration.newBuilder()
@@ -169,9 +169,9 @@ final class CurrentClusterConfigurationSerializerTest {
 
   @Test
   void shouldRoundTripAGroupCarryingADependencyGraphChange() {
-    // given — a group whose pending change is a graph rather than a queue. The property test only
-    // generates queue plans, because the two models share one field and a generator cannot produce
-    // a graph whose edges and write sets are consistent.
+    // given — a group carrying a graph with real edges. The property test generates graphs too, but
+    // only ones whose shape its generator happens to build; this pins a two-stage fan-in/fan-out
+    // explicitly, since a lost edge is invisible in anything that only compares operation lists.
     final var graph = restoreGraph();
     final var configuration = configurationWithGraph(graph);
 
@@ -186,8 +186,7 @@ final class CurrentClusterConfigurationSerializerTest {
     assertThat(decoded.partitionGroups().values())
         .singleElement()
         .satisfies(
-            group ->
-                assertThat(group.pendingGraphChanges().orElseThrow().graph()).isEqualTo(graph));
+            group -> assertThat(group.pendingChanges().orElseThrow().graph()).isEqualTo(graph));
   }
 
   @Test
@@ -196,7 +195,7 @@ final class CurrentClusterConfigurationSerializerTest {
     // graph change is in flight and the state a peer must be able to read to know what is runnable
     final var started = groupWithGraph(restoreGraph());
     final var firstOperation =
-        started.pendingGraphChanges().orElseThrow().graph().operations().firstKey();
+        started.pendingChanges().orElseThrow().graph().operations().firstKey();
     final var inFlight =
         configurationWith(started.completeOperation(firstOperation, UnaryOperator.identity()));
 
@@ -211,7 +210,7 @@ final class CurrentClusterConfigurationSerializerTest {
         .singleElement()
         .satisfies(
             group ->
-                assertThat(group.pendingGraphChanges().orElseThrow().completed())
+                assertThat(group.pendingChanges().orElseThrow().completed())
                     .containsKey(firstOperation));
   }
 

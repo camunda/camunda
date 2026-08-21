@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
@@ -57,6 +58,17 @@ class PartitionGroupConfigurationTest {
         Optional.empty());
   }
 
+  /**
+   * Two operations with no edge between them, so both are runnable from the start and either broker
+   * can complete its own without waiting — the divergence the merge tests need.
+   */
+  private static OperationGraph twoIndependentOps() {
+    final var builder = OperationGraph.builder();
+    builder.add(new DeleteHistoryOperation(MEMBER_0));
+    builder.add(new DeleteHistoryOperation(MEMBER_1));
+    return builder.build();
+  }
+
   @Nested
   class Merge {
 
@@ -102,25 +114,6 @@ class PartitionGroupConfigurationTest {
 
       // then
       assertThat(merged.routingState()).contains(higherRouting);
-    }
-
-    @Test
-    void shouldMergePendingChangesByPlanVersion() {
-      // given — same config version, two versions of the same plan
-      final var plan = ClusterChangePlan.init(1, List.of(new DeleteHistoryOperation(MEMBER_0)));
-      final var advancedPlan = plan.advance();
-      final var left =
-          new PartitionGroupConfiguration(
-              1, 0, Map.of(), Optional.empty(), Optional.of(plan), Optional.empty());
-      final var right =
-          new PartitionGroupConfiguration(
-              1, 0, Map.of(), Optional.empty(), Optional.of(advancedPlan), Optional.empty());
-
-      // when
-      final var merged = left.merge(right);
-
-      // then — the higher plan version wins
-      assertThat(merged.pendingChanges()).contains(advancedPlan);
     }
 
     @Test
@@ -335,14 +328,16 @@ class PartitionGroupConfigurationTest {
   @Nested
   class StartConfigurationChange {
 
+    private static final OperationGraph ONE_OP =
+        OperationGraph.sequential(List.of(new DeleteHistoryOperation(MEMBER_0)));
+
     @Test
     void shouldSetPendingChangesAndIncrementVersion() {
       // given
       final var config = group(4, Map.of(MEMBER_0, broker(1, 1)));
 
       // when
-      final var updated =
-          config.startConfigurationChange(List.of(new DeleteHistoryOperation(MEMBER_0)));
+      final var updated = config.startGraphConfigurationChange(ONE_OP);
 
       // then
       assertThat(updated.version()).isEqualTo(5);
@@ -358,8 +353,7 @@ class PartitionGroupConfigurationTest {
       final var config = group(4, Map.of());
 
       // when
-      final var updated =
-          config.startConfigurationChange(List.of(new DeleteHistoryOperation(MEMBER_0)));
+      final var updated = config.startGraphConfigurationChange(ONE_OP);
 
       // then
       assertThat(updated.pendingChanges().get().id()).isEqualTo(5);
@@ -368,13 +362,26 @@ class PartitionGroupConfigurationTest {
     @Test
     void shouldThrowWhenChangeAlreadyInProgress() {
       // given
-      final var config =
-          group(4, Map.of())
-              .startConfigurationChange(List.of(new DeleteHistoryOperation(MEMBER_0)));
+      final var config = group(4, Map.of()).startGraphConfigurationChange(ONE_OP);
 
       // when / then
-      assertThatThrownBy(
-              () -> config.startConfigurationChange(List.of(new DeleteHistoryOperation(MEMBER_0))))
+      assertThatThrownBy(() -> config.startGraphConfigurationChange(ONE_OP))
+          .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldThrowWhenPreviousChangeIsDrainedButNotYetCleared() {
+      // given — every operation has completed, but completeGraphChangeIfDrained has not run yet, so
+      // the plan is still there with a lastChange to record and members to prune
+      final var drained =
+          group(4, Map.of())
+              .startGraphConfigurationChange(ONE_OP)
+              .completeOperation(OperationId.of(0), UnaryOperator.identity());
+      assertThat(drained.hasPendingChanges()).isFalse();
+
+      // when / then — refused on the plan's presence, not its content: starting here would discard
+      // that unfinished bookkeeping
+      assertThatThrownBy(() -> drained.startGraphConfigurationChange(ONE_OP))
           .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -384,58 +391,67 @@ class PartitionGroupConfigurationTest {
       final var config = group(4, Map.of());
 
       // when / then
-      assertThatThrownBy(() -> config.startConfigurationChange(List.of()))
+      assertThatThrownBy(
+              () -> config.startGraphConfigurationChange(OperationGraph.sequential(List.of())))
           .isInstanceOf(IllegalArgumentException.class);
     }
   }
 
   @Nested
-  class Advance {
+  class CompleteChange {
 
     private static final DeleteHistoryOperation OP_1 = new DeleteHistoryOperation(MEMBER_0);
     private static final DeleteHistoryOperation OP_2 = new DeleteHistoryOperation(MEMBER_1);
+    private static final OperationId ID_1 = OperationId.of(0);
+    private static final OperationId ID_2 = OperationId.of(1);
 
     @Test
-    void shouldThrowWhenNoPendingChange() {
+    void shouldReturnSameConfigWhenNoPendingChange() {
       // given
       final var config = group(4, Map.of(MEMBER_0, broker(1, 1)));
 
-      // when / then
-      assertThatThrownBy(config::advance).isInstanceOf(IllegalStateException.class);
+      // when / then — unguarded on purpose: every broker calls this on every merge, so a group with
+      // nothing running has to be a no-op rather than a throw
+      assertThat(config.completeGraphChangeIfDrained()).isSameAs(config);
     }
 
     @Test
-    void shouldRemoveFirstPendingOperationWhenMoreRemain() {
-      // given — a plan with two operations
+    void shouldRecordCompletionWithoutMovingVersionWhileOperationsRemain() {
+      // given — a plan with two operations, the second behind the first
       final var config =
-          group(4, Map.of(MEMBER_0, broker(1, 1))).startConfigurationChange(List.of(OP_1, OP_2));
+          group(4, Map.of(MEMBER_0, broker(1, 1)))
+              .startGraphConfigurationChange(OperationGraph.sequential(List.of(OP_1, OP_2)));
       final var versionAfterStart = config.version();
 
       // when
-      final var advanced = config.advance();
+      final var advanced =
+          config.completeOperation(ID_1, UnaryOperator.identity()).completeGraphChangeIfDrained();
 
-      // then — the first operation is removed, the change is still pending, version is unchanged
+      // then — the change is still pending and the version has not moved, so a peer's concurrent
+      // progress still merges structurally instead of being overwritten wholesale
       assertThat(advanced.hasPendingChanges()).isTrue();
-      assertThat(advanced.pendingChanges().get().pendingOperations()).containsExactly(OP_2);
+      assertThat(advanced.pendingChanges().orElseThrow().pendingOperations()).containsExactly(OP_2);
       assertThat(advanced.version()).isEqualTo(versionAfterStart);
     }
 
     @Test
-    void shouldCompleteChangeWhenLastOperationIsRemoved() {
+    void shouldCompleteChangeWhenLastOperationIsRecorded() {
       // given — a plan with a single operation
       final var config =
-          group(4, Map.of(MEMBER_0, broker(1, 1))).startConfigurationChange(List.of(OP_1));
-      final var planId = config.pendingChanges().get().id();
+          group(4, Map.of(MEMBER_0, broker(1, 1)))
+              .startGraphConfigurationChange(OperationGraph.sequential(List.of(OP_1)));
+      final var planId = config.pendingChanges().orElseThrow().id();
       final var versionAfterStart = config.version();
 
       // when
-      final var advanced = config.advance();
+      final var advanced =
+          config.completeOperation(ID_1, UnaryOperator.identity()).completeGraphChangeIfDrained();
 
       // then — pending changes are cleared, the completed change is recorded, version is bumped
       assertThat(advanced.hasPendingChanges()).isFalse();
       assertThat(advanced.pendingChanges()).isEmpty();
       assertThat(advanced.lastChange()).isPresent();
-      assertThat(advanced.lastChange().get().id()).isEqualTo(planId);
+      assertThat(advanced.lastChange().orElseThrow().id()).isEqualTo(planId);
       assertThat(advanced.version()).isEqualTo(versionAfterStart + 1);
     }
 
@@ -444,10 +460,11 @@ class PartitionGroupConfigurationTest {
       // given — MEMBER_0 still hosts partition 1, MEMBER_1 hosts none; a single-op plan
       final var config =
           group(4, Map.of(MEMBER_0, broker(1, 1), MEMBER_1, broker(1)))
-              .startConfigurationChange(List.of(OP_1));
+              .startGraphConfigurationChange(OperationGraph.sequential(List.of(OP_1)));
 
       // when
-      final var advanced = config.advance();
+      final var advanced =
+          config.completeOperation(ID_1, UnaryOperator.identity()).completeGraphChangeIfDrained();
 
       // then — on completion the member with no partitions is removed, the other is kept
       assertThat(advanced.members()).containsOnlyKeys(MEMBER_0);
@@ -459,13 +476,44 @@ class PartitionGroupConfigurationTest {
       // given — MEMBER_1 hosts no partitions, but the plan still has a pending operation
       final var config =
           group(4, Map.of(MEMBER_0, broker(1, 1), MEMBER_1, broker(1)))
-              .startConfigurationChange(List.of(OP_1, OP_2));
+              .startGraphConfigurationChange(OperationGraph.sequential(List.of(OP_1, OP_2)));
 
       // when
-      final var advanced = config.advance();
+      final var advanced =
+          config.completeOperation(ID_1, UnaryOperator.identity()).completeGraphChangeIfDrained();
 
-      // then — members are untouched during an intermediate advance
+      // then — members are untouched until the whole change is done
       assertThat(advanced.members()).containsOnlyKeys(MEMBER_0, MEMBER_1);
+    }
+
+    @Test
+    void shouldStampCompletionWithTheLastOperationRatherThanTheWallClock() {
+      // given — a drained two-operation plan
+      final var drained =
+          group(4, Map.of())
+              .startGraphConfigurationChange(OperationGraph.sequential(List.of(OP_1, OP_2)))
+              .completeOperation(ID_1, UnaryOperator.identity())
+              .completeOperation(ID_2, UnaryOperator.identity());
+      final var lastCompletion = drained.pendingChanges().orElseThrow().completed().get(ID_2);
+
+      // when
+      final var completed = drained.completeGraphChangeIfDrained();
+
+      // then — two brokers observing the drain a moment apart both derive this same value from the
+      // plan, instead of each stamping its own "now" and never converging
+      assertThat(completed.lastChange().orElseThrow().completedAt()).isEqualTo(lastCompletion);
+    }
+
+    @Test
+    void shouldThrowWhenRecordingAnOperationStillWaitingOnItsDependency() {
+      // given — OP_2 sits behind OP_1 in a sequential graph
+      final var config =
+          group(4, Map.of())
+              .startGraphConfigurationChange(OperationGraph.sequential(List.of(OP_1, OP_2)));
+
+      // when / then
+      assertThatThrownBy(() -> config.completeOperation(ID_2, UnaryOperator.identity()))
+          .isInstanceOf(IllegalStateException.class);
     }
   }
 
@@ -661,38 +709,55 @@ class PartitionGroupConfigurationTest {
     private static final DeleteHistoryOperation OP_1 = new DeleteHistoryOperation(MEMBER_1);
 
     @Test
-    void shouldReturnPendingChangeForTargetMemberOnly() {
-      // given
+    void shouldOfferOnlyTheOperationsTargetingTheGivenMember() {
+      // given — two independent operations, one per member, so neither is blocked by the other
       final var config =
           group(4, Map.of(MEMBER_0, broker(1, 1), MEMBER_1, broker(1, 2)))
-              .startConfigurationChange(List.of(OP_1));
+              .startGraphConfigurationChange(twoIndependentOps());
 
-      // when / then
-      assertThat(config.pendingChangesFor(MEMBER_1)).contains(OP_1);
-      assertThat(config.pendingChangesFor(MEMBER_0)).isEmpty();
-      assertThat(config.nextPendingOperation()).isEqualTo(OP_1);
+      // when / then — each member sees its own operation and nothing else; the graph offers both at
+      // once precisely because there is no edge between them
+      assertThat(config.runnableFor(MEMBER_0)).containsExactly(entry(OperationId.of(0), OP_0));
+      assertThat(config.runnableFor(MEMBER_1)).containsExactly(entry(OperationId.of(1), OP_1));
+      assertThat(config.runnableFor(MEMBER_2)).isEmpty();
     }
 
     @Test
-    void shouldReturnEmptyPendingChangeWhenNoChangeInProgress() {
+    void shouldOfferNothingRunnableWhenNoChangeInProgress() {
       // given
       final var config = group(4, Map.of(MEMBER_0, broker(1, 1)));
 
       // when / then
-      assertThat(config.pendingChangesFor(MEMBER_0)).isEmpty();
+      assertThat(config.runnableFor(MEMBER_0)).isEmpty();
+    }
+
+    @Test
+    void shouldNotOfferAnOperationWhoseDependencyHasNotCompleted() {
+      // given — OP_1 sits behind OP_0, and both target their own member
+      final var config =
+          group(4, Map.of(MEMBER_0, broker(1, 1), MEMBER_1, broker(1, 2)))
+              .startGraphConfigurationChange(OperationGraph.sequential(List.of(OP_0, OP_1)));
+
+      // when / then — MEMBER_1's operation stays hidden until MEMBER_0's has been recorded
+      assertThat(config.runnableFor(MEMBER_1)).isEmpty();
+      final var afterFirst = config.completeOperation(OperationId.of(0), UnaryOperator.identity());
+      assertThat(afterFirst.runnableFor(MEMBER_1)).containsExactly(entry(OperationId.of(1), OP_1));
     }
 
     @Test
     void shouldApplyUpdaterAndCompleteChangeOnLastOperation() {
       // given — a single pending operation
       final var config =
-          group(4, Map.of(MEMBER_0, broker(1, 1))).startConfigurationChange(List.of(OP_0));
+          group(4, Map.of(MEMBER_0, broker(1, 1)))
+              .startGraphConfigurationChange(OperationGraph.sequential(List.of(OP_0)));
       final long versionAfterStart = config.version();
 
       // when — the operation completes with an updater that flips the broker mode
       final var advanced =
-          config.advanceConfigurationChange(
-              c -> c.updateMember(MEMBER_0, b -> b.setMode(Mode.RECOVERING)));
+          config
+              .completeOperation(
+                  OperationId.of(0), c -> c.updateMember(MEMBER_0, b -> b.setMode(Mode.RECOVERING)))
+              .completeGraphChangeIfDrained();
 
       // then — the updater's effect is visible, the change is completed and the version is bumped
       assertThat(advanced.getMember(MEMBER_0).mode()).isEqualTo(Mode.RECOVERING);
@@ -702,26 +767,11 @@ class PartitionGroupConfigurationTest {
     }
 
     @Test
-    void shouldStepPlanWithoutBumpingVersionWhileOperationsRemain() {
-      // given — two operations pending
-      final var config =
-          group(4, Map.of(MEMBER_0, broker(1, 1))).startConfigurationChange(List.of(OP_0, OP_1));
-      final long versionAfterStart = config.version();
-
-      // when
-      final var advanced = config.advanceConfigurationChange(UnaryOperator.identity());
-
-      // then
-      assertThat(advanced.hasPendingChanges()).isTrue();
-      assertThat(advanced.pendingChanges().get().pendingOperations()).containsExactly(OP_1);
-      assertThat(advanced.version()).isEqualTo(versionAfterStart);
-    }
-
-    @Test
     void shouldCancelPendingChangesBumpingVersionByTwo() {
       // given
       final var config =
-          group(4, Map.of(MEMBER_0, broker(1, 1))).startConfigurationChange(List.of(OP_0));
+          group(4, Map.of(MEMBER_0, broker(1, 1)))
+              .startGraphConfigurationChange(OperationGraph.sequential(List.of(OP_0)));
       final long versionAfterStart = config.version();
 
       // when

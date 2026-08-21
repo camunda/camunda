@@ -77,8 +77,11 @@ import org.slf4j.LoggerFactory;
  * key's failures cannot delay another's:
  *
  * <ul>
- *   <li>A {@link ScopeReconciler} per {@link Scope} (the global configuration, or one named
- *       partition group) applies the local member's next pending operation in that scope.
+ *   <li>One {@link ScopeReconciler} applies the local member's next pending operation on {@link
+ *       io.camunda.zeebe.dynamic.config.state.GlobalConfiguration}, whose change is a queue.
+ *   <li>A {@link GraphScopeReconciler} per partition group applies whichever of that group's
+ *       operations the local member may run right now — several at once, since a group's change is
+ *       a dependency graph.
  *   <li>A {@link PlanAdvancer} per pending plan id advances that plan to its next phase, or
  *       completes it, once its current phase has fully drained.
  * </ul>
@@ -104,10 +107,10 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       partitionGroupChangeAppliers = new HashMap<>();
   private final Duration minRetryDelay;
   private final Duration maxRetryDelay;
-  private final Map<Scope, ScopeReconciler> scopeReconcilers = new HashMap<>();
-  // Separate from scopeReconcilers: a graph runs several of a group's operations at once, so it
-  // cannot share ScopeReconciler's single-in-flight-operation contract. Keyed by group id, since a
-  // graph change only ever belongs to a partition group.
+  private @Nullable ScopeReconciler globalScopeReconciler;
+  // Not a ScopeReconciler: a graph runs several of a group's operations at once, so it cannot share
+  // ScopeReconciler's single-in-flight-operation contract. Keyed by group id, since a graph change
+  // only ever belongs to a partition group.
   private final Map<String, GraphScopeReconciler> graphReconcilers = new HashMap<>();
   // Keyed by plan id, since multiple plans can be advancing (and independently retrying) at once.
   private final Map<Long, PlanAdvancer> planAdvancers = new HashMap<>();
@@ -391,12 +394,12 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
    * Drops every scope's and plan's reconciliation worker. Only meant to be called once, as part of
    * shutting down the whole manager (see {@link ClusterConfigurationManagerService#closeAsync} ) —
    * unlike {@link #removePartitionGroupChangeAppliers}, which must leave a group's {@link
-   * ScopeReconciler} alone so it survives that group's own register/remove churn.
+   * GraphScopeReconciler} alone so it survives that group's own register/remove churn.
    */
   void close() {
     executor.run(
         () -> {
-          scopeReconcilers.clear();
+          globalScopeReconciler = null;
           graphReconcilers.clear();
           planAdvancers.clear();
         });
@@ -411,8 +414,9 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     executor.run(
         () -> {
           globalChangeAppliers = appliers;
-          scopeReconcilers.computeIfAbsent(
-              new Scope.Global(), ignored -> newGlobalScopeReconciler());
+          if (globalScopeReconciler == null) {
+            globalScopeReconciler = newGlobalScopeReconciler();
+          }
           reconcile(persistedCurrentConfiguration.getConfiguration());
         });
   }
@@ -427,15 +431,15 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   }
 
   /**
-   * The single place group-scoped {@link ScopeReconciler}s and {@link GraphScopeReconciler}s are
-   * created — registering a group's appliers via {@link #registerPartitionGroupChangeAppliers} does
-   * not create either. Every live group keeps both on every broker, whether or not the broker
-   * registered that group's appliers — a broker can be named in a group operation without ever
-   * hosting the group (a disabled physical tenant's forced removal executes on whichever broker
-   * received the request, and no broker runs a disabled tenant). Removed groups are tombstones that
-   * can never have work again, and they accumulate over a cluster's lifetime, so no new reconciler
-   * is created for one — an existing one persisting is fine, since reconcilers are deliberately
-   * never removed except on {@link #close}. A reconciler with nothing pending is a no-op per pass.
+   * The single place group-scoped {@link GraphScopeReconciler}s are created — registering a group's
+   * appliers via {@link #registerPartitionGroupChangeAppliers} does not create one. Every live
+   * group keeps one on every broker, whether or not the broker registered that group's appliers — a
+   * broker can be named in a group operation without ever hosting the group (a disabled physical
+   * tenant's forced removal executes on whichever broker received the request, and no broker runs a
+   * disabled tenant). Removed groups are tombstones that can never have work again, and they
+   * accumulate over a cluster's lifetime, so no new reconciler is created for one — an existing one
+   * persisting is fine, since reconcilers are deliberately never removed except on {@link #close}.
+   * A reconciler with nothing pending is a no-op per pass.
    */
   private void ensurePartitionGroupScopeReconcilers(final CurrentClusterConfiguration config) {
     config
@@ -443,8 +447,6 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         .forEach(
             (groupId, group) -> {
               if (!group.isRemoved()) {
-                scopeReconcilers.computeIfAbsent(
-                    new Scope.Group(groupId), ignored -> newGroupScopeReconciler(groupId));
                 graphReconcilers.computeIfAbsent(
                     groupId, ignored -> newGraphScopeReconciler(groupId));
               }
@@ -455,12 +457,12 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     executor.run(
         () -> {
           partitionGroupChangeAppliers.remove(groupId);
-          // Deliberately not removing this group's ScopeReconciler or GraphScopeReconciler here:
-          // both are created solely by ensurePartitionGroupScopeReconcilers, so they survive a
-          // remove/register round-trip unmolested. PartitionManagerImpl/RecoveryPartitionManager
-          // re-register their change appliers on every recovery/processing mode transition;
-          // discarding either reconciler here would discard its in-flight retry/backoff state on
-          // every such transition, leaving a broker stuck mid-transition (see
+          // Deliberately not removing this group's GraphScopeReconciler here: it is created solely
+          // by ensurePartitionGroupScopeReconcilers, so it survives a remove/register round-trip
+          // unmolested. PartitionManagerImpl/RecoveryPartitionManager re-register their change
+          // appliers on every recovery/processing mode transition; discarding the reconciler here
+          // would discard its in-flight retry/backoff state on every such transition, leaving a
+          // broker stuck mid-transition (see
           // ModeChangeAcceptanceIT#shouldCycleBetweenRecoveryAndProcessing).
         });
   }
@@ -571,7 +573,9 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     if (!planAdvancers.isEmpty()) {
       planAdvancers.keySet().retainAll(pendingIds);
     }
-    scopeReconcilers.values().forEach(ScopeReconciler::reconcile);
+    if (globalScopeReconciler != null) {
+      globalScopeReconciler.reconcile();
+    }
     graphReconcilers.values().forEach(GraphScopeReconciler::reconcile);
     maybeCompleteGraphChanges(config);
   }
@@ -590,10 +594,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         config.partitionGroups().values().stream()
             .anyMatch(
                 group ->
-                    group
-                        .pendingGraphChanges()
-                        .filter(plan -> !plan.hasPendingChanges())
-                        .isPresent());
+                    group.pendingChanges().filter(plan -> !plan.hasPendingChanges()).isPresent());
     if (!drained) {
       return;
     }
@@ -640,17 +641,6 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         maxRetryDelay);
   }
 
-  private ScopeReconciler newGroupScopeReconciler(final String groupId) {
-    return new ScopeReconciler(
-        new GroupScopeOperations(groupId),
-        persistedCurrentConfiguration::getConfiguration,
-        this::updateLocalCurrentConfiguration,
-        executor,
-        topologyMetrics,
-        minRetryDelay,
-        maxRetryDelay);
-  }
-
   private GraphScopeReconciler newGraphScopeReconciler(final String groupId) {
     return new GraphScopeReconciler(
         groupId,
@@ -673,8 +663,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
    * A {@code RemovePhysicalTenantOperation} is dispatchable even with no {@code appliers}
    * registered for the group, since it is a pure configuration edit with no broker-side executor.
    * Every other operation still requires a registered appliers set, returning {@code
-   * Optional.empty()} — leaving it pending — otherwise. Shared by both execution models: {@link
-   * GroupScopeOperations#nextOperation} for the queue, {@link GraphScopeReconciler} for the graph.
+   * Optional.empty()} — leaving it pending — otherwise.
    */
   private static Optional<PartitionGroupConfigurationChangeApplier> applierFor(
       final PartitionGroupOperation operation,
@@ -708,47 +697,6 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     }
   }
 
-  private record GroupOperation(
-      String groupId,
-      PartitionGroupOperation operation,
-      PartitionGroupConfigurationChangeApplier applier)
-      implements Operation {
-
-    @Override
-    public Either<Exception, CurrentClusterConfiguration> initialize(
-        final CurrentClusterConfiguration config) {
-      final var group = config.partitionGroup(groupId);
-      return applier
-          .init(config.globalConfiguration(), group)
-          .map(transformer -> config.updatePartitionGroupConfig(groupId, transformer));
-    }
-
-    @Override
-    public ActorFuture<UnaryOperator<CurrentClusterConfiguration>> apply() {
-      return applier
-          .apply()
-          .thenApply(
-              transformer ->
-                  (UnaryOperator<CurrentClusterConfiguration>)
-                      config ->
-                          config.updatePartitionGroupConfig(
-                              groupId, g -> g.advanceConfigurationChange(transformer)));
-    }
-  }
-
-  /**
-   * Identifies exactly one reconciliation target: the global configuration, or a single named
-   * partition group. Distinct from {@code PhasedChangePlan.Scope}, which names a <em>plan's</em>
-   * footprint (possibly several groups at once, for admission conflict checks) — this key always
-   * names exactly one target, since it addresses a single {@link ScopeReconciler}.
-   */
-  private sealed interface Scope permits Scope.Global, Scope.Group {
-
-    record Global() implements Scope {}
-
-    record Group(String groupId) implements Scope {}
-  }
-
   /** {@link ScopeReconciler.Operations} for the global configuration. */
   private final class GlobalScopeOperations implements Operations {
 
@@ -773,41 +721,6 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     @Override
     public String describe() {
       return "global";
-    }
-  }
-
-  /** {@link ScopeReconciler.Operations} for one named partition group. */
-  private final class GroupScopeOperations implements Operations {
-
-    private final String groupId;
-
-    private GroupScopeOperations(final String groupId) {
-      this.groupId = groupId;
-    }
-
-    @Override
-    public Optional<Operation> nextOperation(final CurrentClusterConfiguration config) {
-      final var group = config.partitionGroup(groupId);
-      if (group == null) {
-        return Optional.empty();
-      }
-      return group
-          .pendingChangesFor(localMemberId)
-          .flatMap(
-              operation ->
-                  applierFor(operation, partitionGroupChangeAppliers.get(groupId))
-                      .map(applier -> new GroupOperation(groupId, operation, applier)));
-    }
-
-    @Override
-    public long versionOf(final CurrentClusterConfiguration config) {
-      final var group = config.partitionGroup(groupId);
-      return group == null ? -1 : group.version();
-    }
-
-    @Override
-    public String describe() {
-      return "partition group '%s'".formatted(groupId);
     }
   }
 }
