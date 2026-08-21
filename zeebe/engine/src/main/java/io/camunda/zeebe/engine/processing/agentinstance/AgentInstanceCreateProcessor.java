@@ -225,7 +225,8 @@ public final class AgentInstanceCreateProcessor
           commandValue.getJobKey(),
           commandValue.getJobLease(),
           commandValue.getElementInstanceKey(),
-          commandValue.getHistory());
+          commandValue.getHistory(),
+          false);
     }
 
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.CREATED, event);
