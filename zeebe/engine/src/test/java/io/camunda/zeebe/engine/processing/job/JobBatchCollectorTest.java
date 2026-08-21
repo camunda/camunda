@@ -313,6 +313,46 @@ final class JobBatchCollectorTest {
   }
 
   @Test
+  void shouldDeferReactivatedJobWhenNoRoomForItsDiscardCommand() {
+    // given — capture the room a plain (non-reactivated) job's own event needs. Both jobs below
+    // request a lease (setWithLease(true)), so the collector overwrites each one's lease token
+    // with a freshly generated, equal-length token before measuring it — the two jobs are given
+    // equal-length types too, so the only length difference between them is the reservation this
+    // fix adds for the reactivated job's compensating DISCARD command. They are also given
+    // distinct types so the second collectJobs call's activatable-job scan cannot pick up the
+    // first job left behind by the first call — collectJobs never persists its lease-token/
+    // deadline mutations back into job state, so a same-typed job would still look activatable.
+    final long plainScopeKey = state.getKeyGenerator().nextKey();
+    createJobOfType(plainScopeKey, "type-a");
+    final var plainRecord = createRecord();
+    plainRecord.getValue().setType("type-a").setWithLease(true);
+    final var bareLength = new MutableReference<Integer>();
+    lengthEvaluator.canWriteEventOfLength =
+        length -> {
+          bareLength.set(length);
+          return true;
+        };
+    collector.collectJobs(plainRecord, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // when — an identically-shaped reactivated job is offered exactly that much room, which fits
+    // the bare event but leaves no room for its compensating DISCARD command
+    final long reactivatedScopeKey = state.getKeyGenerator().nextKey();
+    createLeasedJobOfType(reactivatedScopeKey, "type-b");
+    when(agentDefinitionBehavior.belongsToAgent(any())).thenReturn(true);
+    final var record = createRecord();
+    record.getValue().setType("type-b").setWithLease(true);
+    final int roomForBareEventOnly = bareLength.ref;
+    lengthEvaluator.canWriteEventOfLength = length -> length <= roomForBareEventOnly;
+    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+        collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // then — the job is deferred as too large rather than activated without room left for the
+    // discard command its re-activation requires
+    EitherAssert.assertThat(result).left();
+    assertThat(collector.reactivatedAgenticJobKeys()).isEmpty();
+  }
+
+  @Test
   void shouldNotTrackReactivationWhenJobIsRejectedForBatchSize() {
     // given — an agentic job that already holds a lease from a previous activation, so it looks
     // like a re-activation, but the collector rejects it for being too large to write. Its
@@ -826,6 +866,35 @@ final class JobBatchCollectorTest {
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             // the job stays activatable while holding a token, which is the state an unleased
             // activation has to skip over
+            .setLeaseToken("lease-token");
+    final long jobKey = state.getKeyGenerator().nextKey();
+
+    state.getJobState().create(jobKey, jobRecord);
+    return new Job(jobKey, jobRecord);
+  }
+
+  private Job createJobOfType(final long variableScopeKey, final String type) {
+    final var jobRecord =
+        new JobRecord()
+            .setBpmnProcessId("process")
+            .setElementId("element")
+            .setElementInstanceKey(variableScopeKey)
+            .setType(type)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final long jobKey = state.getKeyGenerator().nextKey();
+
+    state.getJobState().create(jobKey, jobRecord);
+    return new Job(jobKey, jobRecord);
+  }
+
+  private Job createLeasedJobOfType(final long variableScopeKey, final String type) {
+    final var jobRecord =
+        new JobRecord()
+            .setBpmnProcessId("process")
+            .setElementId("element")
+            .setElementInstanceKey(variableScopeKey)
+            .setType(type)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setLeaseToken("lease-token");
     final long jobKey = state.getKeyGenerator().nextKey();
 
