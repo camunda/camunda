@@ -35,18 +35,27 @@ test.beforeEach(({network}) => {
 	);
 });
 
-test('should have no accessibility violations in the populated processes page', async ({
-	network,
-	shadcnTasklistProcessesPage,
-	makeAxeBuilder,
-}) => {
+test('should match the populated processes page snapshot', async ({network, shadcnTasklistProcessesPage, page}) => {
 	network.use(
 		mockQueryProcessDefinitionsEndpoint({
 			successResponse: HttpResponse.json(
 				createQueryProcessDefinitionsResponse({
 					items: [
 						createProcessDefinition({name: 'Invoice review', processDefinitionKey: '1', hasStartForm: true}),
-						createProcessDefinition({name: null, processDefinitionId: 'order-approval', processDefinitionKey: '2'}),
+						createProcessDefinition({name: 'Order approval', processDefinitionKey: '2'}),
+						createProcessDefinition({
+							name: 'Customer onboarding process with a very long descriptive process name that exceeds the card width',
+							processDefinitionId: 'customer-onboarding-with-a-process-definition-id-that-exceeds-the-card-width',
+							processDefinitionKey: '3',
+							hasStartForm: true,
+						}),
+						createProcessDefinition({
+							name: null,
+							processDefinitionId: 'expense-reimbursement',
+							processDefinitionKey: '4',
+						}),
+						createProcessDefinition({name: 'Contract renewal', processDefinitionKey: '5'}),
+						createProcessDefinition({name: 'Purchase request', processDefinitionKey: '6', hasStartForm: true}),
 					],
 					page: {endCursor: 'next-page', hasMoreTotalItems: true},
 				}),
@@ -56,27 +65,26 @@ test('should have no accessibility violations in the populated processes page', 
 
 	await shadcnTasklistProcessesPage.goto();
 	await expect(shadcnTasklistProcessesPage.processHeading('Invoice review')).toBeVisible();
+	await expect(shadcnTasklistProcessesPage.loadMoreButton).toBeVisible();
 
-	const accessibilityScanResults = await makeAxeBuilder().analyze();
-	expect(accessibilityScanResults.violations).toEqual([]);
+	await expect(page).toHaveScreenshot();
 });
 
-test('should have no accessibility violations in the unpublished-processes empty state', async ({
-	shadcnTasklistProcessesPage,
-	makeAxeBuilder,
-}) => {
+test('should match the unpublished-processes empty-state snapshot', async ({shadcnTasklistProcessesPage, page}) => {
 	await shadcnTasklistProcessesPage.goto();
 	await expect(shadcnTasklistProcessesPage.unpublishedProcessesHeading).toBeVisible();
 
-	const accessibilityScanResults = await makeAxeBuilder().analyze();
-	expect(accessibilityScanResults.violations).toEqual([]);
+	await expect(page).toHaveScreenshot();
 });
 
-test('should have no accessibility violations in the filtered empty state with tenant filtering enabled', async ({
-	network,
-	shadcnTasklistProcessesPage,
-	makeAxeBuilder,
-}) => {
+test('should match the filtered empty-state snapshot', async ({shadcnTasklistProcessesPage, page}) => {
+	await shadcnTasklistProcessesPage.goto('?search=missing');
+	await expect(shadcnTasklistProcessesPage.noMatchingProcessesHeading).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the multi-tenant processes page snapshot', async ({network, shadcnTasklistProcessesPage, page}) => {
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(
@@ -96,12 +104,18 @@ test('should have no accessibility violations in the filtered empty state with t
 				}),
 			),
 		}),
+		mockQueryProcessDefinitionsEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryProcessDefinitionsResponse({
+					items: [createProcessDefinition({name: 'Tenant process', processDefinitionKey: '1'})],
+				}),
+			),
+		}),
 	);
 
-	await shadcnTasklistProcessesPage.goto('?search=missing');
-	await expect(shadcnTasklistProcessesPage.noMatchingProcessesHeading).toBeVisible();
+	await shadcnTasklistProcessesPage.goto();
 	await expect(shadcnTasklistProcessesPage.tenantFilter).toBeVisible();
+	await expect(shadcnTasklistProcessesPage.processHeading('Tenant process')).toBeVisible();
 
-	const accessibilityScanResults = await makeAxeBuilder().analyze();
-	expect(accessibilityScanResults.violations).toEqual([]);
+	await expect(page).toHaveScreenshot();
 });
