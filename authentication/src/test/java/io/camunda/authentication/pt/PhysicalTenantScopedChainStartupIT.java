@@ -62,14 +62,17 @@ class PhysicalTenantScopedChainStartupIT {
   }
 
   /**
-   * No case pairs this with {@code oidc} and no {@code client-id}: the scoped <em>API</em> chain
-   * needs a provider whatever the webapp setting is, so such a cluster cannot start either way and
-   * the gate makes no difference to it.
+   * Basic auth only. OC cannot start with {@code method=oidc} and the webapp disabled — {@code
+   * OidcOverrideBeansConfiguration}'s {@code authorizedClientManager} needs a {@code
+   * ClientRegistrationRepository}, which CSL publishes only while the webapp is enabled — so there
+   * is no OIDC configuration for this gate to act on.
+   *
+   * <p>Nor is it paired with {@code oidc} and no {@code client-id}: the scoped <em>API</em> chain
+   * needs a provider whatever the webapp setting is, so that cluster cannot start either way.
    */
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("authMethods")
-  void shouldNotServeScopedLoginWhenWebappDisabled(final String method, final String[] properties) {
-    runnerWith(properties)
+  @Test
+  void shouldNotServeScopedLoginWhenWebappDisabled() {
+    runnerWith("camunda.security.authentication.method=basic")
         .withPropertyValues("camunda.security.authentication.webapp-enabled=false")
         .run(
             ctx -> {
