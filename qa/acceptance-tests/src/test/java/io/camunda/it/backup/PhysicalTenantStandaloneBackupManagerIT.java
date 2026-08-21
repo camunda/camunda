@@ -23,20 +23,20 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Verifies that the standalone backup manager backs up every configured physical tenant. Both
- * tenants share one search cluster and one snapshot repository, so the test also verifies that
- * snapshot name prefixing keeps the tenants' backups distinguishable in a shared repository.
+ * tenants share one search cluster but own a snapshot repository each — the isolation the boot-time
+ * {@code SnapshotRepositoryIsolationValidation} rule enforces — so the test also verifies that a
+ * tenant's snapshots land in its own repository and nowhere else.
  */
 @ZeebeIntegration
 final class PhysicalTenantStandaloneBackupManagerIT {
 
-  private static final String REPOSITORY_NAME = "backup-test";
+  private static final String DEFAULT_REPOSITORY_NAME = "backup-test";
+  private static final String TENANT_A_REPOSITORY_NAME = "backup-test-tenanta";
   private static final String TENANT_A = "tenanta";
   private static final long BACKUP_ID = 42L;
 
-  private static final String DEFAULT_SNAPSHOT_PREFIX =
+  private static final String SNAPSHOT_PREFIX =
       new WebappsSnapshotNameProvider().getSnapshotNamePrefix(BACKUP_ID);
-  private static final String TENANT_A_SNAPSHOT_PREFIX =
-      new WebappsSnapshotNameProvider(TENANT_A).getSnapshotNamePrefix(BACKUP_ID);
 
   @TestZeebe(autoStart = false)
   final TestStandaloneBackupManager backupManager = new TestStandaloneBackupManager();
@@ -48,7 +48,7 @@ final class PhysicalTenantStandaloneBackupManagerIT {
   final TestStandaloneSchemaManager tenantASchemaManager = new TestStandaloneSchemaManager();
 
   @Test
-  void shouldBackupAllPhysicalTenantsIntoSharedRepository() throws Exception {
+  void shouldBackupAllPhysicalTenantsIntoOwnRepositories() throws Exception {
     try (final SearchBackendStrategy strategy = new ElasticsearchBackendStrategy()) {
       // given
       strategy.startContainer();
@@ -67,16 +67,17 @@ final class PhysicalTenantStandaloneBackupManagerIT {
       defaultSchemaManager.start();
       tenantASchemaManager.start();
 
-      strategy.createSnapshotRepository(REPOSITORY_NAME);
+      strategy.createSnapshotRepository(DEFAULT_REPOSITORY_NAME);
+      strategy.createSnapshotRepository(TENANT_A_REPOSITORY_NAME);
 
-      strategy.configureStandaloneBackupManager(backupManager, REPOSITORY_NAME);
+      strategy.configureStandaloneBackupManager(backupManager, DEFAULT_REPOSITORY_NAME);
       backupManager
           .withProperty(tenantProperty("data.secondary-storage.elasticsearch.url"), url)
           .withProperty(
               tenantProperty("data.secondary-storage.elasticsearch.index-prefix"), TENANT_A)
           .withProperty(
               tenantProperty("data.secondary-storage.elasticsearch.backup.repository-name"),
-              REPOSITORY_NAME)
+              TENANT_A_REPOSITORY_NAME)
           .withProperty(
               tenantProperty("security.initialization.default-roles.admin.users[0]"),
               TENANT_A + "-admin");
@@ -84,20 +85,18 @@ final class PhysicalTenantStandaloneBackupManagerIT {
       // when
       backupManager.withBackupId(BACKUP_ID).withSkipSchemaCheck(true).start();
 
-      // then
+      // then each tenant's snapshots are complete in its own repository
       final List<String> defaultSnapshots =
-          waitForSuccessSnapshots(strategy, DEFAULT_SNAPSHOT_PREFIX);
+          waitForSuccessSnapshots(strategy, DEFAULT_REPOSITORY_NAME);
       final List<String> tenantASnapshots =
-          waitForSuccessSnapshots(strategy, TENANT_A_SNAPSHOT_PREFIX);
+          waitForSuccessSnapshots(strategy, TENANT_A_REPOSITORY_NAME);
 
       assertThat(defaultSnapshots).isNotEmpty().hasSameSizeAs(tenantASnapshots);
-      // the default tenant keeps the legacy unprefixed names; tenant A's are prefixed
+      // the repository, not the snapshot name, is what separates the tenants
       assertThat(defaultSnapshots)
           .allSatisfy(name -> assertThat(name).startsWith("camunda_webapps_"));
       assertThat(tenantASnapshots)
-          .allSatisfy(name -> assertThat(name).startsWith(TENANT_A + "_camunda_webapps_"));
-      // sharing one repository must not leak one tenant's snapshots into the other's listing
-      assertThat(defaultSnapshots).doesNotContainAnyElementsOf(tenantASnapshots);
+          .allSatisfy(name -> assertThat(name).startsWith("camunda_webapps_"));
     }
   }
 
@@ -106,12 +105,12 @@ final class PhysicalTenantStandaloneBackupManagerIT {
   }
 
   private List<String> waitForSuccessSnapshots(
-      final SearchBackendStrategy strategy, final String snapshotNamePrefix) {
-    return Awaitility.await("should find completed snapshots for prefix " + snapshotNamePrefix)
+      final SearchBackendStrategy strategy, final String repositoryName) {
+    return Awaitility.await("should find completed snapshots in repository " + repositoryName)
         .atMost(ofSeconds(60))
         .pollDelay(ofSeconds(2))
         .until(
-            () -> strategy.getSuccessSnapshots(REPOSITORY_NAME, snapshotNamePrefix),
+            () -> strategy.getSuccessSnapshots(repositoryName, SNAPSHOT_PREFIX),
             snapshots -> !snapshots.isEmpty());
   }
 }

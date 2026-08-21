@@ -11,7 +11,6 @@ import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.ela
 import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
 
 import io.camunda.application.commons.backup.BackupServiceRegistry.PhysicalTenantBackup;
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.DocumentBasedSecondaryStorageBackup;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
@@ -161,7 +160,7 @@ public class BackupServiceRegistryConfiguration {
       final SearchClients searchClients,
       final BackupRepositoryProps props,
       final ThreadPoolTaskExecutor threadPoolTaskExecutor) {
-    final var snapshotNameProvider = snapshotNameProvider(physicalTenantId);
+    final var snapshotNameProvider = new WebappsSnapshotNameProvider();
     final var esClient = searchClients.esClients().get(physicalTenantId);
     if (esClient != null) {
       return new ElasticsearchBackupRepository(
@@ -184,12 +183,6 @@ public class BackupServiceRegistryConfiguration {
           secondaryStorage.getType(),
           secondaryStorage.getType());
     }
-  }
-
-  static WebappsSnapshotNameProvider snapshotNameProvider(final String physicalTenantId) {
-    return PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)
-        ? new WebappsSnapshotNameProvider()
-        : new WebappsSnapshotNameProvider(physicalTenantId);
   }
 
   static BackupRepositoryProps props(
