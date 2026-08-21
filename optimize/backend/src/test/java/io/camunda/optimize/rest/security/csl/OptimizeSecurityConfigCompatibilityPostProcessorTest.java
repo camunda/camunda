@@ -424,6 +424,63 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
+  void shouldLeaveANonKeycloakBackendUrlUnusedRatherThanSubstituteTheIssuer() {
+    // A Keycloak-shaped issuer with a distinct back channel whose paths are unknown. Deriving the
+    // back channel from the issuer would send Optimize at a host it may not reach and ignore the
+    // configured URL, so nothing is derived and the log names the setting it left unused.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "https://camunda.example.com/auth/realms/camunda");
+    legacy.put("camunda.identity.issuerBackendUrl", "https://idp.internal.svc/oauth2/default");
+    legacy.put("camunda.identity.clientId", "optimize");
+    legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "secret");
+    legacy.put(OIDC + "issuer-uri", "");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "authorization-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "token-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "jwk-set-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "user-info-uri")).isNull();
+    logs.assertContains("left 'camunda.identity.issuerBackendUrl' unused");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"keycloak", "KeyCloak", " KEYCLOAK "})
+  void shouldTreatTheIdentityTypeCaseAndPaddingInsensitively(final String type) {
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.type", type);
+    legacy.put("camunda.identity.issuer", "https://idp.example.com/tenant/v2.0");
+    legacy.put("camunda.identity.issuerBackendUrl", "http://idp.internal.svc/tenant/v2.0");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    // Neither URL has a realm path, so only the configured type can select the split.
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "token-uri"))
+        .isEqualTo("http://idp.internal.svc/tenant/v2.0/protocol/openid-connect/token");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"", "   "})
+  void shouldFallBackToTheUrlShapeWhenTheIdentityTypeIsBlank(final String type) {
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.type", type);
+    legacy.put("camunda.identity.issuer", "https://camunda.example.com/auth/realms/camunda");
+    legacy.put(
+        "camunda.identity.issuerBackendUrl", "http://keycloak:8080/auth/realms/camunda-platform");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "token-uri"))
+        .isEqualTo(
+            "http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/token");
+  }
+
+  @Test
   void shouldKeepDiscoveryWhenTheBackendUrlEqualsTheIssuer() {
     // The shape of Optimize's own local and smoke-test setups: both settings name the same host, so
     // there is no reachability problem to solve and nothing to split. Keeping issuer-uri leaves the

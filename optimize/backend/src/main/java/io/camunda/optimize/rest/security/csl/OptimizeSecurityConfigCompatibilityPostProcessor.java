@@ -71,6 +71,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   private static final String IDENTITY_TYPE = "camunda.identity.type";
   private static final String IDENTITY_TYPE_ENV_VAR = "CAMUNDA_IDENTITY_TYPE";
   private static final String KEYCLOAK_IDENTITY_TYPE = "KEYCLOAK";
+  private static final String ISSUER_LABEL = "the configured OIDC issuer";
   private static final String LEGACY_KEY_REMOVAL_VERSION = "8.11";
   // Keycloak publishes its endpoints under <base>/realms/<realm>/protocol/openid-connect/*.
   private static final Pattern KEYCLOAK_REALM_URL = Pattern.compile("/realms/[^/]+$");
@@ -253,19 +254,50 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
       return;
     }
     final String browserIssuer = legacyIssuer(env);
-    final String backChannel =
-        browserIssuer == null ? legacyIssuerBackendUrl(env) : keycloakBackChannel(env);
-    if (backChannel == null && browserIssuer == null) {
+    final String backendUrl = legacyIssuerBackendUrl(env);
+    if (browserIssuer == null) {
+      // No issuer, so no login dials the front channel and one URL serves both.
+      if (backendUrl != null) {
+        putDerivedEndpoints(env, derived, backendUrl, backendUrl);
+        warnEndpointsDerived(backendUrlLabel(), backendUrlLabel());
+        LOG.info(
+            "Optimize has no browser-facing OIDC issuer, so its authorization endpoint points at an"
+                + " internal URL that browser login cannot reach: set '{}' if this deployment"
+                + " serves the Optimize UI.",
+            IDENTITY_ISSUER);
+      }
       return;
     }
-    // With one URL configured it serves both channels; CSL needs the complete trio either way.
-    final String front = browserIssuer != null ? browserIssuer : backChannel;
-    final String back = backChannel != null ? backChannel : browserIssuer;
-    // With an issuer configured, login dials these endpoints, so their paths have to be known to be
-    // right. Without one there is no login to dial them.
-    if (browserIssuer != null && !isKeycloak(env, back)) {
+    final String backChannel = keycloakBackChannel(env);
+    if (backChannel != null) {
+      putDerivedEndpoints(env, derived, browserIssuer, backChannel);
+      warnEndpointsDerived(ISSUER_LABEL, backendUrlLabel());
       return;
     }
+    if (backendUrl != null && !backendUrl.equals(browserIssuer)) {
+      // A distinct back channel whose endpoint paths are unknown. Substituting the issuer would
+      // point Optimize at a host it may not reach, so CSL keeps the issuer and discovers instead.
+      LOG.info(
+          "Optimize left '{}' unused: its OIDC endpoint paths are only known for Keycloak, so CSL"
+              + " resolves the endpoints from the issuer by discovery. Set the"
+              + " 'camunda.security.authentication.oidc.authorization-uri', 'token-uri',"
+              + " 'jwk-set-uri', 'user-info-uri' and 'end-session-endpoint-uri' explicitly to have"
+              + " Optimize reach the provider on that URL.",
+          IDENTITY_ISSUER_BACKEND_URL);
+      return;
+    }
+    if (!isKeycloak(env, browserIssuer)) {
+      return;
+    }
+    putDerivedEndpoints(env, derived, browserIssuer, browserIssuer);
+    warnEndpointsDerived(ISSUER_LABEL, ISSUER_LABEL);
+  }
+
+  private void putDerivedEndpoints(
+      final ConfigurableEnvironment env,
+      final Map<String, Object> derived,
+      final String front,
+      final String back) {
     // Front channel: the browser is redirected here, so it must be externally reachable.
     derived.putIfAbsent(OIDC_PREFIX + "authorization-uri", front + "/protocol/openid-connect/auth");
     // RP-initiated logout has no endpoint unless it is set explicitly.
@@ -283,22 +315,21 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     derived.putIfAbsent(
         OIDC_PREFIX + "jwk-set-uri",
         isBlank(publicApiJwks) ? back + "/protocol/openid-connect/certs" : publicApiJwks);
-    final String issuerLabel = "the configured OIDC issuer";
-    final String backendUrlLabel = "'" + IDENTITY_ISSUER_BACKEND_URL + "'";
-    LOG.info(
+  }
+
+  private void warnEndpointsDerived(final String frontSource, final String backSource) {
+    LOG.warn(
         "Optimize derived the CSL OIDC endpoints, assuming Keycloak's realm paths (configure them"
             + " explicitly for another provider): the browser-facing ones from {}, the back-channel"
             + " ones from {}. No 'camunda.security.authentication.oidc.issuer-uri' is set, so CSL"
-            + " runs no OIDC discovery at startup.",
-        browserIssuer != null ? issuerLabel : backendUrlLabel,
-        backChannel != null ? backendUrlLabel : issuerLabel);
-    if (browserIssuer == null) {
-      LOG.info(
-          "Optimize has no browser-facing OIDC issuer, so its authorization endpoint points at an"
-              + " internal URL that browser login cannot reach: set '{}' if this deployment serves"
-              + " the Optimize UI.",
-          IDENTITY_ISSUER);
-    }
+            + " runs no OIDC discovery at startup and registers no issuer validator: tokens are"
+            + " accepted on their signature, audience and expiry alone.",
+        frontSource,
+        backSource);
+  }
+
+  private static String backendUrlLabel() {
+    return "'" + IDENTITY_ISSUER_BACKEND_URL + "'";
   }
 
   // Null when unset, so callers can fall back to the other URL. Templated
