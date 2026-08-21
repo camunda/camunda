@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.agenthistory;
 
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
@@ -24,12 +25,15 @@ import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.concurrent.atomic.AtomicReference;
+import org.slf4j.Logger;
 
 // COMMIT is always a follow-up command emitted internally by the engine and is never issued
 // through the public API, so there is no user to authorize against.
 @ExcludeAuthorizationCheck
 public final class AgentHistoryCommitProcessor
     implements TypedRecordProcessor<AgentHistoryRecord>, SuspensionAware<AgentHistoryRecord> {
+
+  private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
 
   private final StateWriter stateWriter;
   private final AgentInstanceState agentInstanceState;
@@ -86,6 +90,11 @@ public final class AgentHistoryCommitProcessor
       // Safety net, should never happen: a CONFIGURATION item's job is always tied to exactly one
       // still-existing agent instance. Guards against an NPE below if that ever stops holding.
       if (agentInstance.get() == null) {
+        LOG.error(
+            "Expected agent instance '{}' to exist while committing agent history item '{}', but"
+                + " it was not found",
+            item.getAgentInstanceKey(),
+            item.getAgentHistoryKey());
         return;
       }
 
