@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
@@ -27,24 +26,9 @@ public interface PartitionAdminControl {
 
   boolean shouldProcess();
 
-  boolean shouldExport();
-
   void pauseProcessing() throws IOException;
 
   void resumeProcessing() throws IOException;
-
-  boolean pauseExporting() throws IOException;
-
-  boolean softPauseExporting() throws IOException;
-
-  boolean resumeExporting() throws IOException;
-
-  /**
-   * The exporter phase persisted for this partition. It is readable on every replica, not only the
-   * leader, because the phase is persisted alongside the partition data rather than held by the
-   * (leader-only) exporter director.
-   */
-  ExporterPhase getExporterPhase();
 
   /**
    * {@code true} once a snapshot capturing this replica's migrated state has been taken since it

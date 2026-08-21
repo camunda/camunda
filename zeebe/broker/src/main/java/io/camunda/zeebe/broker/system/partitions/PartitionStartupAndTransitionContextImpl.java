@@ -22,7 +22,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -299,11 +298,6 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setPartitionCommandSender(final InterPartitionCommandSenderService sender) {
     interPartitionCommandSender = sender;
-  }
-
-  @Override
-  public ExporterPhase getExporterPhase() {
-    return partitionProcessingState.getExporterPhase();
   }
 
   @Override
