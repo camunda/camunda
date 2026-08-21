@@ -26,8 +26,12 @@ import NumberField from "src/components/formV2/NumberField";
 import { LISTENER_EVENT_TYPES } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
 import {
+<<<<<<< HEAD
   getEventTypeOptions,
   getExecutionOrderOptions,
+=======
+  getEventTypeLabel,
+>>>>>>> 879d6eed (refactor: migrate global task listener page)
   LISTENER_TYPE_PATTERN,
   syncAllEventType,
   toFormValues,
@@ -87,8 +91,22 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
     );
   };
 
+<<<<<<< HEAD
   const afterNonGlobalOptions = getExecutionOrderOptions(t);
   const eventTypeOptions = getEventTypeOptions(t);
+=======
+  // `Select` is value-based, so the boolean is carried as its stringified form
+  // and converted back in `onValueChange`.
+  const afterNonGlobalOptions = [
+    { value: "false", label: t("executionOrderBefore") },
+    { value: "true", label: t("executionOrderAfter") },
+  ];
+>>>>>>> 879d6eed (refactor: migrate global task listener page)
+
+  const eventTypeOptions = LISTENER_EVENT_TYPES.map((eventType) => ({
+    value: eventType,
+    label: getEventTypeLabel(eventType, t),
+  }));
 
   return (
     <FormModal
@@ -157,9 +175,19 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
                 // "+N more" chip and hide what is stored.
                 maxCount={LISTENER_EVENT_TYPES.length}
                 value={field.value}
+<<<<<<< HEAD
                 onValueChange={(value) =>
                   field.onChange(syncAllEventType(value, field.value))
                 }
+=======
+                onValueChange={(value) => {
+                  handleEventTypeChange(
+                    LISTENER_EVENT_TYPES.filter((eventType) =>
+                      value.includes(eventType),
+                    ),
+                  );
+                }}
+>>>>>>> 879d6eed (refactor: migrate global task listener page)
               />
             )}
           </FormField>

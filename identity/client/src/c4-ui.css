@@ -163,8 +163,11 @@
  * but every click passes through to whatever is underneath it. `Select`
  * doesn't have this problem; Radix's own `Select` primitive already sets
  * `pointer-events: auto` on its content itself.
+<<<<<<< HEAD
  *
  * REF: https://github.com/camunda/design-system/issues/496
+=======
+>>>>>>> 879d6eed (refactor: migrate global task listener page)
  */
 :where(.c4-ui) [data-slot="multi-select-content"] {
   pointer-events: auto;

@@ -6,7 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+<<<<<<< HEAD
 import { useState } from "react";
+=======
+import { FC, SubmitEvent, useState } from "react";
+>>>>>>> 879d6eed (refactor: migrate global task listener page)
 import { Alert } from "@camunda/design-system";
 import {
   ApiError,
@@ -37,7 +41,11 @@ const FormModal: React.FC<FormModalProps> = ({
     onSubmit?.();
   };
 
+<<<<<<< HEAD
   const formSubmitHandler = (e: React.SubmitEvent) => {
+=======
+  const formSubmitHandler = (e: SubmitEvent) => {
+>>>>>>> 879d6eed (refactor: migrate global task listener page)
     e.preventDefault();
     submit();
   };

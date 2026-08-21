@@ -63,6 +63,7 @@ const FormField: FC<FormFieldProps> = ({
         "aria-invalid": error ? true : undefined,
         "aria-describedby": describedBy,
       })}
+<<<<<<< HEAD
       {error || showHelperText ? (
         <Text
           as="p"
@@ -72,6 +73,22 @@ const FormField: FC<FormFieldProps> = ({
           className={error ? "text-danger-action-default" : undefined}
         >
           {error || helperText}
+=======
+      {error ? (
+        <Text
+          as="p"
+          variant="helper"
+          id={errorId}
+          role="alert"
+          className="text-danger-action-default"
+        >
+          {error}
+        </Text>
+      ) : null}
+      {showHelperText ? (
+        <Text as="p" variant="helper" id={helperId}>
+          {helperText}
+>>>>>>> 879d6eed (refactor: migrate global task listener page)
         </Text>
       ) : null}
       {footer?.(footerId)}
