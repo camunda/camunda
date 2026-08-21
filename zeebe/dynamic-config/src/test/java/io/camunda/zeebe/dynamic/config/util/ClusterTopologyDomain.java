@@ -414,13 +414,16 @@ public final class ClusterTopologyDomain extends DomainContextBase {
         .ofMaxSize(ids.size())
         .map(
             completedIds -> {
-              // Real completions are stamped by whichever broker applied the operation, at
-              // whatever moment it happened -- an exact value here does not matter to the
-              // consumers this domain feeds (decode round-trip, merge, the change view), only
-              // that completed is a valid subset of the graph's own ids, so reusing one instant
-              // for all of them keeps the generator simple without weakening that coverage.
+              // Each completion gets its own instant, derived from the operation id so it stays
+              // reproducible. Reusing startedAt for all of them would make every generated plan
+              // share the shape an encoder bug produces -- writing startedAt in place of each
+              // operation's real completion instant -- and the round-trip property could then
+              // never tell the bug from the fixture.
               final SortedMap<OperationId, Instant> completed = new TreeMap<>();
-              completedIds.forEach(operationId -> completed.put(operationId, partial.startedAt()));
+              completedIds.forEach(
+                  operationId ->
+                      completed.put(
+                          operationId, partial.startedAt().plusMillis(1L + operationId.value())));
               return new DependencyChangePlan(
                   partial.id(), partial.status(), partial.startedAt(), partial.graph(), completed);
             });

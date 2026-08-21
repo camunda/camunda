@@ -212,10 +212,15 @@ class PartitionGroupConfigurationTest {
       // given — same config version, but the two sides disagree on which change last completed on
       // this group: a genuinely later, unrelated completion on one side, not a re-stamp of the
       // same one
+      // The higher id also carries the *earlier* completedAt, so a merge that compared timestamps
+      // first and only broke ties on id would pick `older` here and fail. With both stamped at the
+      // same instant the two rules are indistinguishable.
       final var older =
-          new CompletedChange(3, ClusterChangePlan.Status.COMPLETED, Instant.EPOCH, Instant.EPOCH);
+          new CompletedChange(
+              3, ClusterChangePlan.Status.COMPLETED, Instant.EPOCH, Instant.EPOCH.plusSeconds(9));
       final var newer =
-          new CompletedChange(4, ClusterChangePlan.Status.COMPLETED, Instant.EPOCH, Instant.EPOCH);
+          new CompletedChange(
+              4, ClusterChangePlan.Status.COMPLETED, Instant.EPOCH, Instant.EPOCH.plusSeconds(2));
       final var left =
           new PartitionGroupConfiguration(
               3, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.of(older));
