@@ -35,6 +35,7 @@ export const DocumentationLink: FC<DocumentationLinkProps> = ({
       href={documentationHref(docsUrl, path)}
       data-test="documentation-link"
       target="_blank"
+      rel="noreferrer noopener"
       className="rounded-sm text-info-action-default underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {children || <Translate>documentation</Translate>}

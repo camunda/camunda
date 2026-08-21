@@ -32,8 +32,10 @@ const enqueueNotification: EnqueueNotification = ({
   toastFn(title, { description: subtitle });
 };
 
+const contextValue = { enqueueNotification };
+
 const NotificationProvider: FC<{ children?: ReactNode }> = ({ children }) => (
-  <NotificationContext.Provider value={{ enqueueNotification }}>
+  <NotificationContext.Provider value={contextValue}>
     <Toaster position="top-right" />
     {children}
   </NotificationContext.Provider>

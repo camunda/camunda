@@ -45,7 +45,11 @@ const PageEmptyState: FC<PageEmptyStateProps> = ({
       }
       secondaryAction={
         <Button variant="link" size="sm" asChild>
-          <a href={documentationHref(docsUrl, docsLinkPath)} target="_blank">
+          <a
+            href={documentationHref(docsUrl, docsLinkPath)}
+            target="_blank"
+            rel="noreferrer noopener"
+          >
             {t("emptyStateLearnText", { resourceType: resourceTypeText })}
           </a>
         </Button>
