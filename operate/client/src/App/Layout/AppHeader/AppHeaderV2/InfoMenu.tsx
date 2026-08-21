@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Help} from '@carbon/react/icons';
+import {CircleHelp} from 'lucide-react';
 import {
   Button,
   DropdownMenu,
@@ -60,7 +60,7 @@ const InfoMenu: React.FC<{isPaidPlan: boolean}> = ({isPaidPlan}) => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="ghost" size="icon" aria-label="Info">
-          <Help aria-hidden className="size-4" />
+          <CircleHelp aria-hidden className="size-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end">
