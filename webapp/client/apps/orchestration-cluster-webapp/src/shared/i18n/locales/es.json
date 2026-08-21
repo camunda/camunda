@@ -185,6 +185,7 @@
 			"processesStartProcessWithForm": "Iniciar proceso {{processDisplayName}}",
 			"processesStartProcessWithFormCopyURLButtonLabel": "Copiado",
 			"processesStartProcessWithFormShareURLAriaLabel": "Compartir URL del proceso",
+			"processesStartProcessWithFormShareButtonLabel": "Copiar enlace",
 			"processesTileStartProcessButtonLabel": "Iniciar proceso",
 			"processesStartProcessWithFormStartButtonLabel": "Iniciar proceso",
 			"processesFetchErrorMissingTenant": "Primero debe seleccionar un Arrendatario para iniciar un proceso.",
