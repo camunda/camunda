@@ -87,7 +87,10 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
   test('Suspend finished batch operation returns 404', async ({request}) => {
     const key =
       await test.step('Create completed batch operation', async () => {
-        return createCompletedBatchOperation(request);
+        return createCompletedBatchOperation(
+          request,
+          'batch_suspension_process',
+        );
       });
 
     const res = await suspendBatchOperation(request, key, 404);
