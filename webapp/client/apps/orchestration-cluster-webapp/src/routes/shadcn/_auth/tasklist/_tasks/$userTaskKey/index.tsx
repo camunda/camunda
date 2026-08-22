@@ -7,9 +7,12 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
+import {TaskDetailsPlaceholderPage} from '#/tasklist/pages/shadcn.components/TaskDetailsPlaceholderPage';
 
-export const Route = createFileRoute('/shadcn/_auth/tasklist/')({
-	component() {
-		return <div>Hello "/shadcn/tasklist"!</div>;
+export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks/$userTaskKey/')({
+	component: function TaskDetailsPlaceholderRoute() {
+		const {userTaskKey} = Route.useParams();
+
+		return <TaskDetailsPlaceholderPage userTaskKey={userTaskKey} />;
 	},
 });

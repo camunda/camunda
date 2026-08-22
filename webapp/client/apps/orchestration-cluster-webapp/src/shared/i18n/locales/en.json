@@ -341,6 +341,7 @@
 			"taskEmptyDetail2": "through your BPMN diagram and forms.",
 			"taskEmptyTaskAvailablePrompt": "Select a task to view its details.",
 			"taskEmptyTutorial": "Follow our tutorial to <2>learn how to create tasks.</2>",
+			"taskEmptyTutorialCta": "View tutorial",
 			"taskFiltersHeaderAria": "Filters",
 			"taskFiltersUnassigned": "Unassigned",
 			"taskFiltersCompleted": "Completed",
