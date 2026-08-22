@@ -21,6 +21,7 @@ import {
 function mockResponses({
   batchOperations,
   processDefinitions,
+  drainingProcessDefinitions,
   statistics,
   processInstances,
   processXml,
@@ -28,6 +29,7 @@ function mockResponses({
 }: {
   batchOperations?: QueryBatchOperationsResponseBody;
   processDefinitions?: QueryProcessDefinitionsResponseBody['items'];
+  drainingProcessDefinitions?: QueryProcessDefinitionsResponseBody['items'];
   statistics?: GetProcessDefinitionStatisticsResponseBody;
   processInstances?: QueryProcessInstancesResponseBody;
   processXml?: string;
@@ -124,15 +126,28 @@ function mockResponses({
     }
 
     if (route.request().url().includes('/v2/process-definitions/search')) {
+      const query = route
+        .request()
+        .postDataJSON() as QueryProcessDefinitionsRequestBody;
+
+      if (query.filter?.state === 'DRAINING') {
+        const items = drainingProcessDefinitions ?? [];
+        return route.fulfill({
+          status: 200,
+          body: JSON.stringify({
+            items,
+            page: {totalItems: items.length},
+          }),
+          headers: {'content-type': 'application/json'},
+        });
+      }
+
       if (!processDefinitions) {
         return route.fulfill({
           status: 400,
           headers: {'content-type': 'application/json'},
         });
       }
-      const query = route
-        .request()
-        .postDataJSON() as QueryProcessDefinitionsRequestBody;
 
       let matchingDefinitions = processDefinitions;
       if (query.filter?.processDefinitionId) {

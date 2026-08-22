@@ -11,6 +11,7 @@ import {DangerButton} from 'modules/components/OperationItem/DangerButton';
 import {OperationItems} from 'modules/components/OperationItems';
 import {DeleteButtonContainer} from 'modules/components/DeleteDefinition/styled';
 import {InlineLoading, Link, ListItem, Stack} from '@carbon/react';
+import {DrainingTag} from 'modules/components/DrainingTag';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
 import {StructuredList} from 'modules/components/StructuredList';
 import {UnorderedList} from 'modules/components/DeleteDefinitionModal/Warning/styled';
@@ -20,6 +21,8 @@ import {tracking} from 'modules/tracking';
 import {observer} from 'mobx-react';
 import {useRunningInstancesCount} from 'modules/queries/processInstance/useRunningInstancesCount';
 import {useDeleteResource} from 'modules/mutations/resource/useDeleteResource';
+import {useDrainingProcessDefinitions} from 'modules/queries/processDefinitions/useDrainingProcessDefinitions';
+import {DRAINING_MESSAGES} from 'modules/utils/draining';
 
 type Props = {
   processDefinitionKey: string;
@@ -53,6 +56,9 @@ const ProcessOperations: React.FC<Props> = observer(
       },
     );
 
+    const {data: draining} = useDrainingProcessDefinitions();
+    const isDraining = !!draining?.byKey.has(processDefinitionKey);
+
     const isOperationRunning = deleteResourceMutation.isPending;
 
     return (
@@ -61,28 +67,35 @@ const ProcessOperations: React.FC<Props> = observer(
           {isOperationRunning && (
             <InlineLoading data-testid="delete-operation-spinner" />
           )}
-          <OperationItems>
-            <DangerButton
-              title={
-                (runningInstancesCount ?? 0) > 0
-                  ? 'Only process definitions without running instances can be deleted.'
-                  : `Delete Process Definition "${processName} - Version ${processVersion}"`
-              }
-              type="DELETE"
-              disabled={
-                isOperationRunning || (runningInstancesCount ?? 0) !== 0
-              }
-              onClick={() => {
-                tracking.track({
-                  eventName: 'definition-deletion-button',
-                  resource: 'process',
-                  version: processVersion.toString(),
-                });
-
-                setIsDeleteModalVisible(true);
-              }}
+          {isDraining ? (
+            <DrainingTag
+              description={DRAINING_MESSAGES.version}
+              align="left-top"
             />
-          </OperationItems>
+          ) : (
+            <OperationItems>
+              <DangerButton
+                title={
+                  (runningInstancesCount ?? 0) > 0
+                    ? 'Only process definitions without running instances can be deleted.'
+                    : `Delete Process Definition "${processName} - Version ${processVersion}"`
+                }
+                type="DELETE"
+                disabled={
+                  isOperationRunning || (runningInstancesCount ?? 0) !== 0
+                }
+                onClick={() => {
+                  tracking.track({
+                    eventName: 'definition-deletion-button',
+                    resource: 'process',
+                    version: processVersion.toString(),
+                  });
+
+                  setIsDeleteModalVisible(true);
+                }}
+              />
+            </OperationItems>
+          )}
         </DeleteButtonContainer>
         <DeleteDefinitionModal
           title="Delete Process Definition"
