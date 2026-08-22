@@ -20,9 +20,8 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Objects;
 
 /**
- * Mints {@code AgentDefinition} records for elements carrying a recognized agent marker (explicit
- * {@code zeebe:agentDefinition}, or a {@code zeebe:modelerTemplate} fallback — see {@code
- * AgentElementTypeTransformer}) at deploy time.
+ * Mints {@code AgentDefinition} records for elements carrying an explicit {@code
+ * zeebe:agentDefinition} marker (see {@code AgentElementTypeTransformer}) at deploy time.
  */
 final class AgentDefinitionTransformer {
 
