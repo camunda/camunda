@@ -344,7 +344,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // RESUMING) — the marker is only removed once resuming has fully completed
   SUSPENDED_PROCESS_INSTANCES(156, PARTITION_LOCAL),
   // commands diverted while their target process instance is suspended, keyed by a
-  // KeyGenerator-issued bufferedCommandKey -> ProcessInstanceBufferedCommandRecord
+  // KeyGenerator-issued bufferedCommandKey -> BufferedCommandRecord
   BUFFERED_PROCESS_INSTANCE_COMMANDS(157, PARTITION_LOCAL),
   // secondary index: (processInstanceKey, bufferedCommandKey) → ∅; supports FIFO prefix iteration
   // of buffered commands for a process instance (bufferedCommandKey is KeyGenerator-issued and

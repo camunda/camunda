@@ -20,10 +20,10 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -78,18 +78,13 @@ public final class ResumeProcessInstanceDrainTest {
     // then - one DRAIN cycle per command; the last cycle finds the buffer empty and hands off to
     // COMPLETE_RESUMING directly instead of an extra empty DRAIN cycle
     final var bufferedCommandRecords = bufferedCommandRecordsUntilResumed(processInstanceKey);
-    assertThat(
-            recordsWithIntent(bufferedCommandRecords, ProcessInstanceBufferedCommandIntent.DRAIN))
+    assertThat(recordsWithIntent(bufferedCommandRecords, BufferedCommandIntent.DRAIN))
         .hasSize(BUFFERED_COMMAND_COUNT);
 
     final var buffered =
-        commandKeys(
-            recordsWithIntent(
-                bufferedCommandRecords, ProcessInstanceBufferedCommandIntent.BUFFERED));
+        commandKeys(recordsWithIntent(bufferedCommandRecords, BufferedCommandIntent.BUFFERED));
     final var drained =
-        commandKeys(
-            recordsWithIntent(
-                bufferedCommandRecords, ProcessInstanceBufferedCommandIntent.DRAINED));
+        commandKeys(recordsWithIntent(bufferedCommandRecords, BufferedCommandIntent.DRAINED));
     assertThat(buffered).hasSize(BUFFERED_COMMAND_COUNT);
     assertThat(drained).containsExactlyElementsOf(buffered);
   }
@@ -118,8 +113,7 @@ public final class ResumeProcessInstanceDrainTest {
 
     final var drained =
         recordsWithIntent(
-            bufferedCommandRecordsUntilResumed(processInstanceKey),
-            ProcessInstanceBufferedCommandIntent.DRAINED);
+            bufferedCommandRecordsUntilResumed(processInstanceKey), BufferedCommandIntent.DRAINED);
     assertThat(drained).hasSize(BUFFERED_COMMAND_COUNT);
     assertThat(drained.getLast().getPosition()).isLessThan(resumed.getPosition());
 
@@ -164,8 +158,7 @@ public final class ResumeProcessInstanceDrainTest {
 
     // then
     final var bufferedCommandRecords = bufferedCommandRecordsUntilResumed(processInstanceKey);
-    assertThat(
-            recordsWithIntent(bufferedCommandRecords, ProcessInstanceBufferedCommandIntent.DRAINED))
+    assertThat(recordsWithIntent(bufferedCommandRecords, BufferedCommandIntent.DRAINED))
         .hasSize(BUFFERED_COMMAND_COUNT);
     assertThat(bufferedCommandRecords)
         .noneMatch(r -> r.getRejectionType() == RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
@@ -195,8 +188,8 @@ public final class ResumeProcessInstanceDrainTest {
         RecordingExporter.records()
             .onlyCommandRejections()
             .withRejectionType(RejectionType.EXCEEDED_BATCH_RECORD_SIZE)
-            .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
-            .withIntent(ProcessInstanceBufferedCommandIntent.DRAIN)
+            .withValueType(ValueType.BUFFERED_COMMAND)
+            .withIntent(BufferedCommandIntent.DRAIN)
             .filter(r -> processInstanceKeyOf(r) == processInstanceKey)
             .getFirst();
     assertThat(rejection).isNotNull();
@@ -205,8 +198,8 @@ public final class ResumeProcessInstanceDrainTest {
     assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getPosition() >= rejection.getPosition())
-                .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
-                .withIntent(ProcessInstanceBufferedCommandIntent.DRAINED)
+                .withValueType(ValueType.BUFFERED_COMMAND)
+                .withIntent(BufferedCommandIntent.DRAINED)
                 .filter(r -> processInstanceKeyOf(r) == processInstanceKey)
                 .asList())
         .isEmpty();
@@ -321,24 +314,24 @@ public final class ResumeProcessInstanceDrainTest {
             .getFirst();
     return RecordingExporter.records()
         .limit(r -> r.getPosition() >= resumed.getPosition())
-        .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
+        .withValueType(ValueType.BUFFERED_COMMAND)
         .filter(r -> processInstanceKeyOf(r) == processInstanceKey)
         .asList();
   }
 
   private static List<Record<RecordValue>> recordsWithIntent(
-      final List<Record<RecordValue>> records, final ProcessInstanceBufferedCommandIntent intent) {
+      final List<Record<RecordValue>> records, final BufferedCommandIntent intent) {
     return records.stream().filter(r -> r.getIntent() == intent).toList();
   }
 
   private static List<Long> commandKeys(final List<Record<RecordValue>> records) {
     return records.stream()
-        .map(r -> ((ProcessInstanceBufferedCommandRecordValue) r.getValue()).getCommandKey())
+        .map(r -> ((BufferedCommandRecordValue) r.getValue()).getCommandKey())
         .toList();
   }
 
   private static long processInstanceKeyOf(final Record<RecordValue> record) {
-    return ((ProcessInstanceBufferedCommandRecordValue) record.getValue()).getProcessInstanceKey();
+    return ((BufferedCommandRecordValue) record.getValue()).getProcessInstanceKey();
   }
 
   private static List<String> elementLifecycle(final long processInstanceKey) {

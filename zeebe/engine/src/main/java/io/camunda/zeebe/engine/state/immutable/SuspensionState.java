@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -58,9 +58,9 @@ public interface SuspensionState {
 
   @FunctionalInterface
   interface BufferedCommandVisitor {
-    void visit(long bufferedCommandKey, ProcessInstanceBufferedCommandRecordValue command);
+    void visit(long bufferedCommandKey, BufferedCommandRecordValue command);
   }
 
   /** A buffered command together with the key it is stored under. */
-  record BufferedCommand(long key, ProcessInstanceBufferedCommandRecord command) {}
+  record BufferedCommand(long key, BufferedCommandRecord command) {}
 }

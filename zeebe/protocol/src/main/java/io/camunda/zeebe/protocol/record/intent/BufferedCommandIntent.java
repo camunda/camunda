@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
-public enum ProcessInstanceBufferedCommandIntent implements Intent, ProcessInstanceRelatedIntent {
+public enum BufferedCommandIntent implements Intent, ProcessInstanceRelatedIntent {
   BUFFER((short) 0, false),
   BUFFERED((short) 1),
   DRAIN((short) 2, false),
@@ -24,11 +24,11 @@ public enum ProcessInstanceBufferedCommandIntent implements Intent, ProcessInsta
   private final short value;
   private final boolean shouldBanInstance;
 
-  ProcessInstanceBufferedCommandIntent(final short value) {
+  BufferedCommandIntent(final short value) {
     this(value, true);
   }
 
-  ProcessInstanceBufferedCommandIntent(final short value, final boolean shouldBanInstance) {
+  BufferedCommandIntent(final short value, final boolean shouldBanInstance) {
     this.value = value;
     this.shouldBanInstance = shouldBanInstance;
   }

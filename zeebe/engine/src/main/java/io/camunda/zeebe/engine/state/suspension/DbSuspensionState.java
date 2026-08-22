@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -32,9 +32,8 @@ public final class DbSuspensionState implements MutableSuspensionState {
   private final ColumnFamily<DbLong, SuspensionMarkerValue> suspensionColumnFamily;
 
   private final DbLong bufferedCommandKey = new DbLong();
-  private final DbProcessInstanceBufferedCommand dbBufferedCommand =
-      new DbProcessInstanceBufferedCommand();
-  private final ColumnFamily<DbLong, DbProcessInstanceBufferedCommand> bufferedCommandColumnFamily;
+  private final DbBufferedCommand dbBufferedCommand = new DbBufferedCommand();
+  private final ColumnFamily<DbLong, DbBufferedCommand> bufferedCommandColumnFamily;
 
   private final DbCompositeKey<DbLong, DbLong> processInstanceKeyAndBufferedCommandKey =
       new DbCompositeKey<>(processInstanceKey, bufferedCommandKey);
@@ -98,8 +97,7 @@ public final class DbSuspensionState implements MutableSuspensionState {
           final long bufferedKey = compositeKey.second().getValue();
           bufferedCommandKey.wrapLong(bufferedKey);
           final var stored =
-              bufferedCommandColumnFamily.get(
-                  bufferedCommandKey, DbProcessInstanceBufferedCommand::new);
+              bufferedCommandColumnFamily.get(bufferedCommandKey, DbBufferedCommand::new);
           if (stored == null) {
             LOG.error(
                 "Expected to find buffered command with key '{}' for process instance '{}', but "
@@ -122,8 +120,7 @@ public final class DbSuspensionState implements MutableSuspensionState {
           final long bufferedKey = compositeKey.second().getValue();
           bufferedCommandKey.wrapLong(bufferedKey);
           final var stored =
-              bufferedCommandColumnFamily.get(
-                  bufferedCommandKey, DbProcessInstanceBufferedCommand::new);
+              bufferedCommandColumnFamily.get(bufferedCommandKey, DbBufferedCommand::new);
           if (stored == null) {
             // broken invariant: secondary index and primary CF are always written/deleted together,
             // so a secondary entry with no matching primary record signals index corruption
@@ -144,7 +141,7 @@ public final class DbSuspensionState implements MutableSuspensionState {
 
   @Override
   public void bufferCommand(
-      final long bufferedCommandKeyValue, final ProcessInstanceBufferedCommandRecord command) {
+      final long bufferedCommandKeyValue, final BufferedCommandRecord command) {
     processInstanceKey.wrapLong(command.getProcessInstanceKey());
     bufferedCommandKey.wrapLong(bufferedCommandKeyValue);
     dbBufferedCommand.setRecord(command);

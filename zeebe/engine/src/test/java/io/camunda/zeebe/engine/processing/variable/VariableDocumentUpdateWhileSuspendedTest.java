@@ -16,15 +16,15 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -129,11 +129,11 @@ public final class VariableDocumentUpdateWhileSuspendedTest {
     // then - conditional TRIGGER is buffered rather than processed immediately
     final Record<?> buffered =
         RecordingExporter.records()
-            .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
-            .withIntent(ProcessInstanceBufferedCommandIntent.BUFFERED)
+            .withValueType(ValueType.BUFFERED_COMMAND)
+            .withIntent(BufferedCommandIntent.BUFFERED)
             .filter(
                 r -> {
-                  final var value = (ProcessInstanceBufferedCommandRecordValue) r.getValue();
+                  final var value = (BufferedCommandRecordValue) r.getValue();
                   return value.getProcessInstanceKey() == processInstanceKey
                       && value.getValueType() == ValueType.CONDITIONAL_SUBSCRIPTION
                       && value.getIntent() == ConditionalSubscriptionIntent.TRIGGER;
