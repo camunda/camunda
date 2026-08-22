@@ -858,6 +858,220 @@ filed/reused issue (a dispatch may yield several bugs):
 fingerprint marker to suppress re-dispatch while the issue is open; once the skip PR merges the test
 no longer runs, and when the issue is later closed the skip should be removed so the test runs again.
 
+## Unskip Verify Agent
+
+This section is read automatically by the Claude Code agent dispatched from
+`c8-orchestration-cluster-unskip-verify.yml`. It is a *different* job from the Nightly
+Fix Agent above: nothing is failing in CI yet. A weekly workflow in
+`camunda/qa-metrics-exporter` opens one PR per branch + category that flips
+`test.skip(` back to `test(` for every test whose referenced bug is now **closed**,
+and your job is to answer the question that PR cannot answer on its own — *do those
+tests actually pass now?* — and to make them pass when they don't.
+
+A test that has been skipped for weeks or months is usually stale in some small way
+(a renamed selector, a changed default, a flow that gained a confirmation step) even
+when the product bug really is fixed. Repairing that staleness is the main value here.
+
+### Context you receive
+
+The calling workflow prepares everything before you start:
+
+* **The environment is already running** — `scripts/start-verify-env.sh` has been run
+  for this cell (`DATABASE`, `TASKLIST_MODE`), `npm ci` is done, Chromium is
+  installed, and `.env` is written. **Never restart, rebuild, or tear it down**, and
+  never start a second one. You are changing test code, not product code.
+* **`/tmp/cell-plan.json`** — this cell's plan:
+  * `spec_paths` — the spec files that actually execute in this dimension.
+  * `projects` — the Playwright projects to pass.
+  * `unskipped_tests` — `{file, test_name, bug}` for each test this PR un-skipped
+    (`bug` is the closed issue the skip marker pointed at).
+  * `manual_markers` — `{path, line, bug, reason}` for skips the unskip workflow
+    deliberately left in place (see the second pass below).
+* **`/tmp/baseline/results.json`** — the Playwright JSON report of the reproduce run,
+  and `BASELINE` (`green` / `red`) tells you its outcome at a glance.
+* Env vars: `PR_NUMBER`, `BRANCH`, `BASE_REF`, `VERSION`, `CELL`, `CATEGORY`,
+  `DATABASE`, `TASKLIST_MODE`, `SPEC_PATHS`, `PROJECT_ARGS`, `REPO`.
+
+Re-run the scoped specs with exactly:
+
+```bash
+npx playwright test $PROJECT_ARGS $SPEC_PATHS
+```
+
+Never run the full suite, and never widen the scope beyond `spec_paths`.
+
+### The loop
+
+**Pass 1 — the un-skipped tests.**
+
+1. If `BASELINE=green`, every un-skipped test in this cell already passes. Do not
+   touch the code. Go straight to Pass 2.
+2. Otherwise, read the failures out of `/tmp/baseline/results.json` (error message,
+   `snippet`, and the trace/screenshot under `test-results/`) and diagnose each one
+   the same way the Nightly Fix Agent does — the "### Diagnosis steps" guidance above
+   applies verbatim, minus the artifact download (you have a live environment
+   instead, which is strictly better evidence).
+3. Classify every failure before editing:
+   * **Test-side staleness** — selector moved, an added dialog, a changed label, a
+     wait that is now too short, an assertion that contradicts current *documented*
+     behaviour. This is the expected case. Fix it.
+   * **Product-side** — the closed bug is not actually fixed, or a new regression
+     broke the flow. See "When the product is still broken" below. **Do not fix it
+     test-side and do not re-skip it.**
+4. Apply the fix and re-run the scoped specs against the same environment. Green →
+   done. Still red → refine and retry. **Maximum 3 iterations** — a hard cost cap,
+   not a suggestion.
+5. **A shared root cause applies to every sibling flow in this PR.** These tests were
+   skipped around the same time, often by the same change; when one fix explains more
+   than one failure, apply it to all of them in this PR rather than fixing one and
+   letting the next cell rediscover it.
+
+**Pass 2 — the manual-review markers.**
+
+`cell_plan.manual_markers` lists skips the unskip workflow refused to touch
+automatically: a skip inside a conditional/ternary, or a marker sitting above
+commented-out code that could not be re-enabled without unbalancing brackets. Their
+bugs are closed too, so they are in scope for you — this pass is the whole reason a
+human-quality agent is doing this job.
+
+For each marker, in the file at `path` around `line`:
+
+1. Re-enable the test the way the code actually shapes it — pick the live branch of a
+   ternary and drop the dead one, or uncomment the block and drop the marker comment.
+   Keep prose/`!Note:` comments; they are documentation, not code.
+2. Run the scoped specs. Fix what is stale, exactly as in Pass 1 (the 3-iteration cap
+   covers both passes together — do not spend the whole budget here).
+3. If re-enabling it cannot be done safely — the commented-out code no longer
+   compiles against the current page objects, the ternary guards a genuinely
+   version-specific path, or the flow it tests no longer exists — **leave the marker
+   exactly as it was** and record it as `left-as-is` with a one-line reason. A marker
+   you cannot resolve is a fine outcome; a marker you resolve badly is not.
+
+### When the product is still broken
+
+If a test is red because the product genuinely misbehaves — the closed bug was not
+actually fixed, or something regressed since — then:
+
+1. Confirm it against the three gates in "## Product-Bug Escalation" above (not
+   flaky, pinned to a product change, the test itself is still correct).
+2. **Leave the test un-skipped and failing.** Do NOT re-add `test.skip(`, do NOT mask
+   it with a longer timeout, a viewport pin, or a weakened assertion. The PR is
+   *supposed* to go red here: that is the signal a human needs.
+3. Reopen the closed issue the marker referenced (`gh issue reopen`) — or file a new
+   one per "### Filing the bug ticket (dedupe FIRST)" when the original is not the
+   right home — and comment on it linking this verification run.
+4. Comment on the unskip PR (`gh pr comment $PR_NUMBER --repo $REPO`) with the test,
+   the evidence, and the reopened issue link.
+5. Record the test as `product-bug` in the result manifest with the issue URL. The
+   calling workflow labels the PR `unverified` and a human decides whether to drop
+   that test from the PR or keep waiting on the fix.
+
+Use the default `GH_TOKEN` (qa-processes) for every `gh` call first; only if one
+fails retry that same command once with `GH_TOKEN="$GH_PAT"`.
+
+### Committing
+
+You are working **on the unskip PR's own branch**, already checked out.
+
+1. Lint every file you touched, from the suite directory:
+
+   ```bash
+   npx prettier --write <changed-files>
+   npx eslint <changed-files> --fix
+   ```
+
+   Fix any remaining eslint errors before committing.
+
+2. Commit with the `test:` type (commitlint rejects `fix:` for test-only changes):
+   `git commit -m "test: <what was stale and how it was fixed> (unskip ${VERSION})"`.
+
+3. Push onto the same branch:
+
+   ```bash
+   git push origin HEAD:"$BRANCH"
+   ```
+
+   Environment cells run one at a time, each from the branch's current tip, so this
+   is normally a fast-forward. Only if the push is *rejected* — another cell landed
+   a commit meanwhile — rebase onto the new tip and push again; never force-push:
+
+   ```bash
+   git fetch origin "$BRANCH" && git rebase FETCH_HEAD && git push origin HEAD:"$BRANCH"
+   ```
+4. **Never open a new PR and never create another branch.** Every change belongs to
+   the PR being verified.
+
+### Constraints
+
+- **Allowed:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`,
+  `npx prettier`, `npx eslint`, and `npx playwright test` **scoped to `$SPEC_PATHS`**.
+- **Forbidden:** `make`, `mvn`, `./mvnw`, `docker`/`docker compose`, `kubectl`,
+  `helm`, `npm install`, `npm ci`, `npm run build`, the `start-verify-env.sh` /
+  `stop-verify-env.sh` scripts, and any unscoped `npx playwright test`. The
+  environment is provisioned for you and torn down for you.
+- **Re-skipping is forbidden.** This agent exists to *remove* skips. `test.skip()` /
+  `test.fixme()` / `test.only` must not appear in any diff you produce — not for a
+  product bug (leave it red and escalate), not for flakiness (fix the wait), not for
+  a test you find hard to repair (report it and leave it red).
+- **Never weaken a check to go green:** no viewport pinning for a responsive-layout
+  failure (see the Nightly Fix Agent constraint above — it applies here in full), no
+  deleted assertions, no `continue-on-error`, no timeout lowered to skip a slow step.
+  Fix the wait, or fix a provably-wrong assertion after confirming intended behaviour
+  in `camunda-docs` for this exact version.
+- **Never edit `json-body-assertions/_generated/responses.json` by hand** —
+  regenerate it with `npm run responses:regenerate`.
+- **Minimal diff:** only the files carrying un-skipped tests or the page objects and
+  helpers they depend on. No refactoring, no dependency bumps, no formatting sweeps.
+
+### Result manifest
+
+Always write `/tmp/unskip-meta.json` before stopping, even when you changed nothing:
+
+```json
+{
+  "verdict": "green",
+  "iterations": 0,
+  "pushed": false,
+  "root_cause": "One sentence, or empty when nothing was wrong.",
+  "fix": "One sentence describing what changed, or empty.",
+  "tests": [
+    {
+      "file": "tests/operate/dashboard.spec.ts",
+      "test_name": "Navigate to processes view (same truncated error message)",
+      "outcome": "green",
+      "bug": "https://github.com/camunda/camunda/issues/45129",
+      "note": ""
+    }
+  ],
+  "manual_markers": [
+    {"path": "tests/operate/operations.spec.ts", "line": 66, "outcome": "unskipped-fixed", "note": ""}
+  ],
+  "product_bugs": []
+}
+```
+
+`verdict` — the cell as a whole:
+
+| `verdict` |                          Meaning                           |
+|-----------|------------------------------------------------------------|
+| `green`   | Everything passed untouched; nothing was committed.        |
+| `fixed`   | Everything passes after your changes, which are pushed.    |
+| `partial` | Some tests/markers are green, at least one is still red.   |
+| `blocked` | Nothing could be made green (product bug, or no safe fix). |
+
+`tests[].outcome` — one per entry in `cell_plan.unskipped_tests`: `green` (passed
+untouched), `fixed` (passed after your change), `still-red` (no safe fix found), or
+`product-bug` (escalated — set `note` to the reopened/filed issue URL).
+
+`manual_markers[].outcome` — one per entry in `cell_plan.manual_markers`:
+`unskipped-green`, `unskipped-fixed`, `left-as-is`, or `product-bug`.
+
+`pushed` must be `true` if and only if you pushed at least one commit — the workflow
+reports it, and a `fixed` verdict with `pushed: false` is a contradiction that will be
+read as a bug in your run. `product_bugs` uses the same object shape as the Nightly
+Fix Agent's manifest (`repo`, `component`, `issue_url`, `root_cause`,
+`suspect_commit`), but there is **no skip PR** — the failing test stays un-skipped.
+
 ## Workflow-Level Failure Fix Agent
 
 This section is read by the fix agent when `/tmp/test_specs.json` contains an empty array — the nightly run failed without producing test results, or failed in a non-test step.
