@@ -33,7 +33,7 @@
     "lodash": "4.18.1",
     "lucide-react": "1.33.0",
     "mixpanel-browser": "2.82.0",
-    "mobx": "6.16.1",
+    "mobx": "7.0.3",
     "mobx-react": "9.2.1",
     "mobx-react-lite": "4.1.1",
     "react": "19.2.8",
