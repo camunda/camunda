@@ -29,7 +29,7 @@ externalDocs:
   description: Find out more
   url: https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/orchestration-cluster-api-rest-overview/
 servers:
-  - url: "{schema}://{host}:{port}/v2"
+  - url: "{schema}://{host}:{port}/physical-tenants/{physicalTenantId}/v2"
     variables:
       host:
         default: localhost
@@ -40,6 +40,9 @@ servers:
       schema:
         default: http
         description: The schema of the Orchestration Cluster REST API server.
+      physicalTenantId:
+        default: default
+        description: The id of the physical tenant to use.
 tags:
   - name: Ad-hoc sub-process
   - name: Agent definition
