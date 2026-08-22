@@ -229,12 +229,19 @@ public class UserTaskListenersTest {
         userTask -> {
           assertThat(userTask)
               .describedAs("Canceled user task should match the originally created one")
+              .usingRecursiveComparison()
+              .ignoringFields("action")
+              .ignoringFieldsMatchingRegexes(".*[Cc]ustomHeaders.*")
               .isEqualTo(createdUserTask);
 
           assertThat(userTask.getAssignee())
               .describedAs(
                   "Assignee should be empty because the task was canceled during an ongoing `assigning` transition")
               .isEmpty();
+
+          assertThat(userTask.getAction())
+              .describedAs("Action should reflect the cancel transition")
+              .isEqualTo("cancel");
         });
   }
 
@@ -929,7 +936,7 @@ public class UserTaskListenersTest {
           assertThat(userTask.getDueDate()).isEmpty();
           assertThat(userTask.getFollowUpDate()).isEmpty();
           assertThat(userTask.getVariables()).isEmpty();
-          assertThat(userTask.getAction()).isEmpty();
+          assertThat(userTask.getAction()).isEqualTo("cancel");
           // updated attributes
           assertThat(userTask.getAssignee()).isEqualTo("corrected_assignee");
           assertThat(userTask.getPriority()).isEqualTo(3);
@@ -987,10 +994,15 @@ public class UserTaskListenersTest {
 
     ZeebeAssertHelper.assertUserTaskCanceled(
         userTaskKey,
-        userTask ->
-            assertThat(userTask)
-                .describedAs("Canceled user task should match the originally created one")
-                .isEqualTo(createdUserTask));
+        userTask -> {
+          assertThat(userTask)
+              .describedAs("Canceled user task should match the originally created one")
+              .usingRecursiveComparison()
+              .ignoringFields("action")
+              .ignoringFieldsMatchingRegexes(".*[Cc]ustomHeaders.*")
+              .isEqualTo(createdUserTask);
+          assertThat(userTask.getAction()).isEqualTo("cancel");
+        });
   }
 
   @Test
@@ -1046,10 +1058,15 @@ public class UserTaskListenersTest {
 
     ZeebeAssertHelper.assertUserTaskCanceled(
         userTaskKey,
-        userTask ->
-            assertThat(userTask)
-                .describedAs("Canceled user task should match the originally created one")
-                .isEqualTo(createdUserTask));
+        userTask -> {
+          assertThat(userTask)
+              .describedAs("Canceled user task should match the originally created one")
+              .usingRecursiveComparison()
+              .ignoringFields("action")
+              .ignoringFieldsMatchingRegexes(".*[Cc]ustomHeaders.*")
+              .isEqualTo(createdUserTask);
+          assertThat(userTask.getAction()).isEqualTo("cancel");
+        });
   }
 
   @Test

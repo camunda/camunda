@@ -96,7 +96,6 @@ public final class AssignUserTaskTest {
   public void shouldEmitAssignEventsForUserTaskWhenItWasCreatedWithTheDefinedAssigneeProperty() {
     // given
     final var assignee = "merry";
-    final var action = StringUtils.EMPTY;
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeAssignee(assignee))).deploy();
 
     // when
@@ -121,12 +120,12 @@ public final class AssignUserTaskTest {
             r -> r.getValue().getAction(),
             r -> r.getValue().getChangedAttributes())
         .containsExactly(
-            tuple(UserTaskIntent.CREATING, assignee, action, List.of()),
-            tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action, List.of()),
+            tuple(UserTaskIntent.CREATING, assignee, "create", List.of()),
+            tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, "create", List.of()),
             // The `assignee` property isn't yet available during the `CREATED` event
             // as it becomes effective only during the assignment phase.
-            tuple(UserTaskIntent.ASSIGNING, assignee, action, List.of(UserTaskRecord.ASSIGNEE)),
-            tuple(UserTaskIntent.ASSIGNED, assignee, action, List.of(UserTaskRecord.ASSIGNEE)));
+            tuple(UserTaskIntent.ASSIGNING, assignee, "assign", List.of(UserTaskRecord.ASSIGNEE)),
+            tuple(UserTaskIntent.ASSIGNED, assignee, "assign", List.of(UserTaskRecord.ASSIGNEE)));
   }
 
   @Test
@@ -258,12 +257,20 @@ public final class AssignUserTaskTest {
             r -> r.getValue().getAction(),
             r -> r.getValue().getChangedAttributes())
         .containsExactly(
-            tuple(UserTaskIntent.CREATING, initialAssignee, "", List.of()),
-            tuple(UserTaskIntent.CREATED, "", "", List.of()),
+            tuple(UserTaskIntent.CREATING, initialAssignee, "create", List.of()),
+            tuple(UserTaskIntent.CREATED, "", "create", List.of()),
             // The `assignee` property isn't yet available during the `CREATING/CREATED` events
             // as it becomes effective only during the assignment phase.
-            tuple(UserTaskIntent.ASSIGNING, initialAssignee, "", List.of(UserTaskRecord.ASSIGNEE)),
-            tuple(UserTaskIntent.ASSIGNED, initialAssignee, "", List.of(UserTaskRecord.ASSIGNEE)),
+            tuple(
+                UserTaskIntent.ASSIGNING,
+                initialAssignee,
+                "assign",
+                List.of(UserTaskRecord.ASSIGNEE)),
+            tuple(
+                UserTaskIntent.ASSIGNED,
+                initialAssignee,
+                "assign",
+                List.of(UserTaskRecord.ASSIGNEE)),
             // records related to user task unassignment
             tuple(UserTaskIntent.ASSIGNING, "", unassignAction, List.of(UserTaskRecord.ASSIGNEE)),
             tuple(UserTaskIntent.ASSIGNED, "", unassignAction, List.of(UserTaskRecord.ASSIGNEE)));

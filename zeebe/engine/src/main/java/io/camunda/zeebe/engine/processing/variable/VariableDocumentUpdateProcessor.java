@@ -59,6 +59,8 @@ public final class VariableDocumentUpdateProcessor
   private static final String INVALID_USER_TASK_STATE_MESSAGE =
       "Expected to trigger update transition for user task with key '%d', but it is in state '%s'";
 
+  private static final String DEFAULT_ACTION_UPDATE = "update";
+
   private final ElementInstanceState elementInstanceState;
   private final MutableUserTaskState userTaskState;
   private final ProcessState processState;
@@ -168,6 +170,7 @@ public final class VariableDocumentUpdateProcessor
       if (hasVariables(value)) {
         userTaskRecord.setVariables(value.getVariablesBuffer()).setVariablesChanged();
       }
+      userTaskRecord.setAction(DEFAULT_ACTION_UPDATE);
       writers.state().appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, userTaskRecord);
 
       final var userTaskElement =
