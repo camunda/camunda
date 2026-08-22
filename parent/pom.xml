@@ -2596,6 +2596,12 @@
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <systemPropertyVariables>
+              <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
+              the property later. If only ${surefire.forkNumber} is used maven will fail to resolve it
+              and don't set the system property -->
+              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            </systemPropertyVariables>
             <properties>
               <property>
                 <name>listener</name>
@@ -2633,6 +2639,12 @@
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <systemPropertyVariables>
+              <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
+              the property later. If only ${surefire.forkNumber} is used maven will fail to resolve it
+              and don't set the system property -->
+              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            </systemPropertyVariables>
             <properties>
               <property>
                 <name>listener</name>
@@ -3258,12 +3270,6 @@
             <configuration>
               <forkCount>${forkCount}</forkCount>
               <reuseForks>true</reuseForks>
-              <systemPropertyVariables>
-                <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
-                the property later. If only ${surefire.forkNumber} is used maven will fail to resolve it
-                and don't set the system property -->
-                <testForkNumber>$${surefire.forkNumber}</testForkNumber>
-              </systemPropertyVariables>
               <properties>
                 <configurationParameters>${junitConfigurationParameters}</configurationParameters>
               </properties>
@@ -3275,12 +3281,6 @@
             <configuration>
               <forkCount>${forkCount}</forkCount>
               <reuseForks>true</reuseForks>
-              <systemPropertyVariables>
-                <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
-                the property later. If only ${surefire.forkNumber} is used maven will fail to resolve it
-                and don't set the system property -->
-                <testForkNumber>$${surefire.forkNumber}</testForkNumber>
-              </systemPropertyVariables>
               <properties>
                 <configurationParameters>${junitConfigurationParameters}</configurationParameters>
               </properties>
