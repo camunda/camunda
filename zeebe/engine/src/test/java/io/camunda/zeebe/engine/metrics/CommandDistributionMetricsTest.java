@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.metrics;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -112,6 +113,20 @@ public class CommandDistributionMetricsTest {
             metrics -> assertThat(metrics.active).isEqualTo(2),
             metrics -> assertThat(metrics.pending).isEqualTo(2),
             metrics -> assertThat(metrics.inflight).isEqualTo(1));
+    assertThat(
+            getGaugeValue(
+                1,
+                "zeebe.command.distributions.pending",
+                2,
+                DistributionQueue.DEPLOYMENT.getQueueId()))
+        .isEqualTo(2);
+    assertThat(
+            getGaugeValue(
+                1,
+                "zeebe.command.distributions.inflight",
+                2,
+                DistributionQueue.DEPLOYMENT.getQueueId()))
+        .isOne();
 
     // when
     engine.resumeProcessing(2);
@@ -227,6 +242,20 @@ public class CommandDistributionMetricsTest {
 
   private double getGaugeValue(final int partition, final String metricName) {
     final var gauge = engine.getMeterRegistry(partition).find(metricName).gauge();
+    return gauge != null ? gauge.value() : 0.0;
+  }
+
+  private double getGaugeValue(
+      final int partition,
+      final String metricName,
+      final int targetPartition,
+      final String queue) {
+    final var gauge =
+        engine
+            .getMeterRegistry(partition)
+            .find(metricName)
+            .tags("targetPartition", String.valueOf(targetPartition), "queue", queue)
+            .gauge();
     return gauge != null ? gauge.value() : 0.0;
   }
 
