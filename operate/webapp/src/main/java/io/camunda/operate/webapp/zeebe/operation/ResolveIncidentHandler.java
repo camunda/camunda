@@ -9,14 +9,22 @@ package io.camunda.operate.webapp.zeebe.operation;
 
 import static io.camunda.webapps.schema.entities.operation.OperationType.RESOLVE_INCIDENT;
 
+import io.camunda.client.api.command.ClientStatusException;
+import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +33,10 @@ import org.springframework.stereotype.Component;
 @ConditionalOnRdbmsDisabled
 public class ResolveIncidentHandler extends AbstractOperationHandler implements OperationHandler {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(ResolveIncidentHandler.class);
+
   @Autowired private IncidentReader incidentReader;
+  @Autowired private OperationsManager operationsManager;
 
   @Override
   public void handleWithException(final OperationEntity operation) throws Exception {
@@ -47,7 +58,20 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
     if (errorType != null && errorType.isResolvedViaRetries()) {
       operationServicesAdapter.updateJobRetries(incident.getJobKey(), 1, operation.getId());
     }
-    operationServicesAdapter.resolveIncident(incident.getKey(), operation.getId());
+    try {
+      operationServicesAdapter.resolveIncident(incident.getKey(), operation.getId());
+    } catch (final Exception ex) {
+      if (isIncidentNotFound(ex)) {
+        // Incident already resolved/removed in the engine — desired end-state achieved.
+        LOGGER.debug(
+            "Incident {} no longer exists while processing operation {}; marking completed.",
+            incident.getKey(),
+            operation.getId());
+        completeOperation(operation);
+        return;
+      }
+      throw ex;
+    }
     // mark operation as sent
     markAsSent(operation);
   }
@@ -55,5 +79,33 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
   @Override
   public Set<OperationType> getTypes() {
     return Set.of(RESOLVE_INCIDENT);
+  }
+
+  private void completeOperation(final OperationEntity operation) throws PersistenceException {
+    operationsManager.completeOperation(operation);
+  }
+
+  /**
+   * Whether the failure means the incident is already gone in the engine (idempotent RESOLVE).
+   * Walks cause chain for service-layer and client/gRPC NOT_FOUND rejections.
+   */
+  static boolean isIncidentNotFound(final Throwable error) {
+    Throwable current = error;
+    while (current != null) {
+      if (current instanceof final ServiceException serviceException
+          && serviceException.getStatus() == ServiceException.Status.NOT_FOUND) {
+        return true;
+      }
+      if (current instanceof final ClientStatusException clientStatusException
+          && clientStatusException.getStatusCode() == Status.Code.NOT_FOUND) {
+        return true;
+      }
+      if (current instanceof final StatusRuntimeException statusRuntimeException
+          && statusRuntimeException.getStatus().getCode() == Status.Code.NOT_FOUND) {
+        return true;
+      }
+      current = current.getCause();
+    }
+    return false;
   }
 }
