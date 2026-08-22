@@ -147,7 +147,7 @@
     ut.CUSTOM_HEADERS,
     ut.PRIORITY
     FROM ${prefix}USER_TASK ut
-    <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchAndAuthFilter"/>
     ) filtered
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -164,12 +164,12 @@
     SELECT COUNT(*) FROM (
       SELECT 1 as col
       FROM ${prefix}USER_TASK ut
-      <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
+      <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchAndAuthFilter"/>
       ${count.limit}
     ) t
   </select>
 
-  <sql id="searchFilter">
+  <sql id="searchAndAuthFilter">
     <where>
       <!-- authorization filters -->
       <if test="(authorizedProcessDefinitionIds != null and !authorizedProcessDefinitionIds.isEmpty())
@@ -228,6 +228,22 @@
         </foreach>
       </if>
 
+      <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
+      <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
+        AND (
+        <foreach collection="filter.orFilters" item="filter" separator=" OR ">
+          <trim prefix="(" suffix=")">
+            <trim prefixOverrides="AND">
+              <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
+            </trim>
+          </trim>
+        </foreach>
+        )
+      </if>
+    </where>
+  </sql>
+
+  <sql id="searchFilter">
       <!-- basic filters -->
       <if test="filter.userTaskKeys != null and !filter.userTaskKeys.isEmpty()">
         AND ut.USER_TASK_KEY IN
@@ -407,7 +423,6 @@
             )))
         </foreach>
       </if>
-    </where>
   </sql>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">

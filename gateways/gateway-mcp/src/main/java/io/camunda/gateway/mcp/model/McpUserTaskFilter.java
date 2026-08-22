@@ -16,5 +16,5 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * to exclude certain fields from the MCP JSON schema while keeping the underlying mapping code
  * intact.
  */
-@JsonIgnoreProperties({"candidateGroup", "candidateUser", "tenantId"})
+@JsonIgnoreProperties({"candidateGroup", "candidateUser", "$or", "tenantId"})
 public interface McpUserTaskFilter {}
