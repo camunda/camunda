@@ -96,13 +96,20 @@ test('add, edit and delete sources', async (t) => {
   // add source by definition
   await t.click(e.emptyStateAdd);
   const definitionName = 'Big variable process';
-  await t.typeText(e.sourceModalSearchField, 'big', {replace: true});
+  await t.typeText(e.sourceModalSearchField, 'big variable', {replace: true});
   await t.click(e.selectAllCheckbox);
   await t.click(Common.modalConfirmButton);
   await t.expect(e.processItem.visible).ok();
   await t.expect(e.processItem.textContent).contains(definitionName);
   await t.expect(e.processItem.textContent).contains('Process');
   // await t.expect(e.processItem.textContent).contains('engineering');
+
+  // a second source, so the single and bulk deletes below each have one to act on
+  await t.click(e.addButton);
+  await t.typeText(e.sourceModalSearchField, 'order', {replace: true});
+  await t.click(e.itemCheckbox(0));
+  await t.click(Common.modalConfirmButton);
+  await t.expect(e.processItem.count).eql(2);
 
   // // add source by tenant
   // await t.click(e.addButton);
