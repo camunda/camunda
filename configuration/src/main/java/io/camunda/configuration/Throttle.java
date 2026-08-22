@@ -16,7 +16,7 @@ public class Throttle {
   private static final String PREFIX = "camunda.processing.flow-control.write.throttle";
 
   private static final boolean DEFAULT_THROTTLING_ENABLED = false;
-  private static final int DEFAULT_ACCEPTABLE_BACKLOG = 100_000;
+  private static final int DEFAULT_ACCEPTABLE_BACKLOG = 50_000;
   private static final int DEFAULT_MINIMUM_LIMIT = 100;
   private static final Duration DEFAULT_RESOLUTION = Duration.ofSeconds(15);
 
