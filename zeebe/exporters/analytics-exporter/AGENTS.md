@@ -158,15 +158,19 @@ Hash-based deterministic sampling in `OtelSdkManager.logEvent()`. See `docs/samp
 
 ### Config Defaults
 
-|     Property      |               Default                |
-|-------------------|--------------------------------------|
-| endpoint          | `https://analytics.cloud.camunda.io` |
-| maxQueueSize      | 2048                                 |
-| maxBatchSize      | 512 (must be ≤ maxQueueSize)         |
-| pushInterval      | PT5M                                 |
-| heartbeatInterval | PT10M                                |
-| signing           | true                                 |
-| samplingRate      | 1.0 (no sampling)                    |
+Note: the `endpoint` default below is an interim Cloud Run hostname, not final — see the
+comment on the `endpoint` field's default value in `AnalyticsExporterConfig` before relying
+on it staying stable.
+
+|     Property      |                                  Default                                   |
+|-------------------|----------------------------------------------------------------------------|
+| endpoint          | `https://camunda-product-telemetry-collector-prod-yysisctcoa-ew.a.run.app` |
+| maxQueueSize      | 2048                                                                       |
+| maxBatchSize      | 512 (must be ≤ maxQueueSize)                                               |
+| pushInterval      | PT5M                                                                       |
+| heartbeatInterval | PT10M                                                                      |
+| signing           | true                                                                       |
+| samplingRate      | 1.0 (no sampling)                                                          |
 
 ## Testing
 
