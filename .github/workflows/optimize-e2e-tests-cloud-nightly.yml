@@ -22,6 +22,7 @@ on:
       - ".github/workflows/optimize-e2e-tests-cloud-nightly.yml"
       - "optimize/client/e2e/cloud-tests/**"
       - "optimize/client/e2e/config.js"
+      - "optimize/client/scripts/start-backend.js"
 
 # One bucket for the whole workflow: every run authenticates the same user against the same Auth0
 # tenant, and concurrent logins are what trip its per-IP throttling. In-flight runs are left to
