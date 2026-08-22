@@ -21,21 +21,7 @@ import java.util.List;
 /**
  * Represents a request to create a new agent instance.
  *
- * <p>Usage example without a history batch, setting model/provider/systemPrompt directly:
- *
- * <pre>
- *   CreateAgentInstanceResponse response = camundaClient
- *       .newCreateAgentInstanceCommand()
- *       .elementInstanceKey(2251799813685248L)
- *       .model("gpt-4o")
- *       .provider("openai")
- *       .systemPrompt("You are a helpful assistant.")
- *       .send()
- *       .join();
- * </pre>
- *
- * <p>Usage example with a history batch, establishing model/provider/systemPrompt through a
- * CONFIGURATION history item instead:
+ * <p>Usage example, establishing model/provider/systemPrompt through a CONFIGURATION history item:
  *
  * <pre>
  *   CreateAgentInstanceResponse response = camundaClient
@@ -60,68 +46,8 @@ public interface CreateAgentInstanceCommandStep1 {
   interface CreateAgentInstanceCommandStep2 extends FinalCommandStep<CreateAgentInstanceResponse> {
 
     /**
-     * Sets the LLM model identifier for the agent instance. Must be omitted when {@link
-     * #history(List)} is provided; establish it through a CONFIGURATION history item instead.
-     * Required when no history is provided.
-     *
-     * @param model the model identifier (for example, gpt-4o). Must not be null or empty.
-     * @return this builder for method chaining
-     */
-    CreateAgentInstanceCommandStep2 model(String model);
-
-    /**
-     * Sets the LLM provider for the agent instance. Must be omitted when {@link #history(List)} is
-     * provided; establish it through a CONFIGURATION history item instead. Required when no history
-     * is provided.
-     *
-     * @param provider the provider name (for example, openai). Must not be null or empty.
-     * @return this builder for method chaining
-     */
-    CreateAgentInstanceCommandStep2 provider(String provider);
-
-    /**
-     * Sets the system prompt for the agent instance. Must be omitted when {@link #history(List)} is
-     * provided; establish it through a CONFIGURATION history item instead. Required when no history
-     * is provided.
-     *
-     * @param systemPrompt the system prompt text. Must not be null or empty.
-     * @return this builder for method chaining
-     */
-    CreateAgentInstanceCommandStep2 systemPrompt(String systemPrompt);
-
-    /**
-     * Sets the maximum number of tokens the agent instance may use. Defaults to -1 (no limit). Must
-     * be omitted when {@link #history(List)} is provided; establish it through a CONFIGURATION
-     * history item instead, if needed.
-     *
-     * @param maxTokens the token limit. Use -1 for no limit.
-     * @return this builder for method chaining
-     */
-    CreateAgentInstanceCommandStep2 maxTokens(long maxTokens);
-
-    /**
-     * Sets the maximum number of LLM model calls the agent instance may make. Defaults to -1 (no
-     * limit). Must be omitted when {@link #history(List)} is provided; establish it through a
-     * CONFIGURATION history item instead, if needed.
-     *
-     * @param maxModelCalls the model-call limit. Use -1 for no limit.
-     * @return this builder for method chaining
-     */
-    CreateAgentInstanceCommandStep2 maxModelCalls(int maxModelCalls);
-
-    /**
-     * Sets the maximum number of tool calls the agent instance may make. Defaults to -1 (no limit).
-     * Must be omitted when {@link #history(List)} is provided; establish it through a CONFIGURATION
-     * history item instead, if needed.
-     *
-     * @param maxToolCalls the tool-call limit. Use -1 for no limit.
-     * @return this builder for method chaining
-     */
-    CreateAgentInstanceCommandStep2 maxToolCalls(int maxToolCalls);
-
-    /**
-     * Sets the job key of the currently active job during which this creation was produced.
-     * Required whenever {@link #history(List)} is non-empty; otherwise irrelevant to the creation.
+     * Sets the job key of the currently active job during which this creation was produced. Always
+     * required — a creation must always be attributed to the active job that produced it.
      *
      * @param jobKey the key of the active job. Must be greater than 0.
      * @return this builder for method chaining
@@ -129,9 +55,10 @@ public interface CreateAgentInstanceCommandStep1 {
     CreateAgentInstanceCommandStep2 jobKey(long jobKey);
 
     /**
-     * Sets the opaque job lease token received from the job activation response. Disambiguates this
-     * activation from any other activation of the same job: if the job is later retried, history
-     * items submitted under a superseded lease are discarded rather than committed.
+     * Sets the opaque job lease token received from the job activation response. Always required —
+     * an agentic job activation always carries a lease, and disambiguates this activation from any
+     * other activation of the same job: if the job is later retried, history items submitted under
+     * a superseded lease are discarded rather than committed.
      *
      * @param jobLease the lease token. Must not be null or blank.
      * @return this builder for method chaining
@@ -141,8 +68,7 @@ public interface CreateAgentInstanceCommandStep1 {
     /**
      * Sets the batch of conversation history items to append to the agent instance at creation.
      * Requires {@link #jobKey(long)} to also be set, and requires a CONFIGURATION item within the
-     * batch that establishes model, provider, and systemPrompt — {@link #model(String)}, {@link
-     * #provider(String)}, and {@link #systemPrompt(String)} must then be omitted.
+     * batch that establishes model, provider, and systemPrompt.
      *
      * @param history the history items to append, in order. Must not be null; elements must not be
      *     null.

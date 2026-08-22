@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryCommitStatus;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import org.assertj.core.groups.Tuple;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -54,7 +56,8 @@ public class AgentHistoryCommitLifecycleIT {
             activatedJob,
             AgentInstanceHistoryRole.USER,
             "Hello, what can you do?",
-            OffsetDateTime.parse("2025-06-01T10:00:00Z"));
+            OffsetDateTime.parse("2025-06-01T10:00:00Z"),
+            1);
     final long historyItemKey2 =
         createHistoryItem(
             agentInstanceKey,
@@ -62,7 +65,8 @@ public class AgentHistoryCommitLifecycleIT {
             activatedJob,
             AgentInstanceHistoryRole.ASSISTANT,
             "I can help with many tasks.",
-            OffsetDateTime.parse("2025-06-01T10:01:00Z"));
+            OffsetDateTime.parse("2025-06-01T10:01:00Z"),
+            1);
     awaitHistoryStatuses(
         agentInstanceKey,
         "history items indexed as PENDING",
@@ -94,7 +98,8 @@ public class AgentHistoryCommitLifecycleIT {
             activatedJob,
             AgentInstanceHistoryRole.USER,
             "Hello, what can you do?",
-            OffsetDateTime.parse("2025-06-01T10:00:00Z"));
+            OffsetDateTime.parse("2025-06-01T10:00:00Z"),
+            1);
     final long historyItemKey2 =
         createHistoryItem(
             agentInstanceKey,
@@ -102,7 +107,8 @@ public class AgentHistoryCommitLifecycleIT {
             activatedJob,
             AgentInstanceHistoryRole.ASSISTANT,
             "I can help with many tasks.",
-            OffsetDateTime.parse("2025-06-01T10:01:00Z"));
+            OffsetDateTime.parse("2025-06-01T10:01:00Z"),
+            1);
     awaitHistoryStatuses(
         agentInstanceKey,
         "history items indexed as PENDING",
@@ -136,7 +142,8 @@ public class AgentHistoryCommitLifecycleIT {
             activation1,
             AgentInstanceHistoryRole.USER,
             "Message from superseded activation",
-            OffsetDateTime.parse("2025-06-01T10:00:00Z"));
+            OffsetDateTime.parse("2025-06-01T10:00:00Z"),
+            1);
     awaitHistoryStatuses(
         agentInstanceKey,
         "superseded item indexed as PENDING before fail",
@@ -164,7 +171,9 @@ public class AgentHistoryCommitLifecycleIT {
             activation2,
             AgentInstanceHistoryRole.ASSISTANT,
             "Message from winning activation",
-            OffsetDateTime.parse("2025-06-01T10:01:00Z"));
+            OffsetDateTime.parse("2025-06-01T10:01:00Z"),
+            2);
+
     awaitHistoryStatuses(
         agentInstanceKey,
         "both items PENDING before completion",
@@ -221,16 +230,46 @@ public class AgentHistoryCommitLifecycleIT {
   }
 
   private long createAgentInstance(final long elementInstanceKey) {
+    // CREATE now requires a jobKey backed by an actual activation of the agentic job; fail it
+    // straight back (no backoff) so the test's own activateAgenticJob call can still pick it up.
+    final var activatedJob =
+        camundaClient
+            .newActivateJobsCommand()
+            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .maxJobsToActivate(1)
+            .withLease(false)
+            .timeout(Duration.ofMinutes(5))
+            .send()
+            .join()
+            .getJobs()
+            .getFirst();
+
     final long agentInstanceKey =
         camundaClient
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
-            .model("gpt-4o")
-            .provider("openai")
-            .systemPrompt("You are a helpful assistant.")
+            .jobKey(activatedJob.getKey())
+            .history(
+                List.of(
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.CONFIGURATION)
+                        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+                        .producedAt(OffsetDateTime.now())
+                        .model("gpt-4o")
+                        .provider("openai")
+                        .systemPrompt(
+                            List.of(
+                                AgentInstanceHistoryContent.text("You are a helpful assistant.")))))
             .send()
             .join()
             .getAgentInstanceKey();
+
+    // This also emits AGENT_HISTORY:DISCARD for the CONFIGURATION item just created above (no
+    // committed snapshot exists yet, so model/provider/systemPrompt roll back to defaults). Tests
+    // using this helper only assert on the non-CONFIGURATION history items they create afterward.
+    camundaClient.newFailCommand(activatedJob).retries(1).execute();
 
     waitForAgentInstanceToBeIndexed(camundaClient, agentInstanceKey);
     return agentInstanceKey;
@@ -259,26 +298,33 @@ public class AgentHistoryCommitLifecycleIT {
       final ActivatedJob activatedJob,
       final AgentInstanceHistoryRole role,
       final String text,
-      final OffsetDateTime producedAt) {
-    final var finalCommandStep =
+      final OffsetDateTime producedAt,
+      final int loopIteration) {
+    final var commandStep =
         camundaClient
-            .newCreateAgentHistoryItemCommand(agentInstanceKey)
+            .newUpdateAgentInstanceCommand(agentInstanceKey)
             .elementInstanceKey(elementInstanceKey)
             .jobKey(activatedJob.getKey())
-            .role(role)
-            .content(List.of(AgentInstanceHistoryContent.text(text)))
-            .producedAt(producedAt);
+            .history(
+                List.of(
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(loopIteration)
+                        .role(role)
+                        .content(List.of(AgentInstanceHistoryContent.text(text)))
+                        .producedAt(producedAt)));
     if (activatedJob.getLeaseToken() != null) {
-      finalCommandStep.jobLease(activatedJob.getLeaseToken());
+      commandStep.jobLease(activatedJob.getLeaseToken());
     }
-    return finalCommandStep.execute().getHistoryItemKey();
+    return commandStep.send().join().getCreatedHistory().getFirst().getHistoryItemKey();
   }
 
   /**
    * Awaits until the agent instance's history items match exactly the expected (key, commit-status)
    * tuples. Filters by all commit statuses so that any spurious item of any status is visible (the
    * search API returns COMMITTED items by default) and so that leftover PENDING items would fail
-   * the assertion rather than be silently hidden.
+   * the assertion rather than be silently hidden. Excludes the CONFIGURATION item that CREATE now
+   * mandatorily establishes, since it is not one of the items under test in any of these scenarios.
    */
   private void awaitHistoryStatuses(
       final long agentInstanceKey, final String description, final Tuple... expected) {
@@ -293,11 +339,12 @@ public class AgentHistoryCommitLifecycleIT {
                       .filter(
                           f ->
                               f.commitStatus(
-                                  s ->
-                                      s.in(
-                                          AgentInstanceHistoryCommitStatus.PENDING,
-                                          AgentInstanceHistoryCommitStatus.COMMITTED,
-                                          AgentInstanceHistoryCommitStatus.DISCARDED)))
+                                      s ->
+                                          s.in(
+                                              AgentInstanceHistoryCommitStatus.PENDING,
+                                              AgentInstanceHistoryCommitStatus.COMMITTED,
+                                              AgentInstanceHistoryCommitStatus.DISCARDED))
+                                  .role(r -> r.neq(AgentInstanceHistoryRole.CONFIGURATION)))
                       .execute()
                       .items();
               assertThat(items)

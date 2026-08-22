@@ -41,12 +41,12 @@ import java.util.List;
 
 /**
  * Validates and maps the conversation-history sub-structures (content blocks, tool calls, metrics,
- * and whole history items) shared between {@link CreateAgentHistoryItemCommandImpl} (a single
- * history item), {@link CreateAgentInstanceCommandImpl} and {@link UpdateAgentInstanceCommandImpl}
- * (a batch of history items). All three commands submit items built from the same {@link
- * AgentInstanceHistoryContent}/{@link AgentInstanceHistoryToolCall}/ {@link
- * AgentInstanceHistoryMetrics} API types onto the same protocol wire types, so this class keeps
- * their validation rules and error messages in one place rather than several.
+ * and whole history items) shared between {@link CreateAgentInstanceCommandImpl} and {@link
+ * UpdateAgentInstanceCommandImpl} (each submitting a batch of history items). Both commands submit
+ * items built from the same {@link AgentInstanceHistoryContent}/{@link
+ * AgentInstanceHistoryToolCall}/ {@link AgentInstanceHistoryMetrics} API types onto the same
+ * protocol wire types, so this class keeps their validation rules and error messages in one place
+ * rather than several.
  */
 final class AgentInstanceHistoryMapper {
 

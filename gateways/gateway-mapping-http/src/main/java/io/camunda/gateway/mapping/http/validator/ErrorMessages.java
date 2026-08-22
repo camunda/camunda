@@ -60,8 +60,6 @@ public final class ErrorMessages {
       "The provided metadata has %d entries but must not exceed %d entries";
   public static final String ERROR_MESSAGE_METADATA_TOO_LARGE =
       "The provided metadata exceeds the maximum serialized size of %d bytes";
-  public static final String ERROR_MESSAGE_NOT_ALLOWED_WITH_HISTORY =
-      "The %s must be omitted when history is provided";
   public static final String ERROR_MESSAGE_HISTORY_MISSING_CONFIGURATION_ATTRIBUTE =
       "No CONFIGURATION history item sets '%s'; when history is provided, it must be set there instead of on definition";
 }

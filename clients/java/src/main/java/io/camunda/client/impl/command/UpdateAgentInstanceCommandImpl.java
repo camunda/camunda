@@ -19,7 +19,6 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.AgentInstanceUpdateStatus;
-import io.camunda.client.api.command.AgentTool;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.UpdateAgentInstanceCommandStep2;
 import io.camunda.client.api.response.UpdateAgentInstanceResponse;
@@ -27,7 +26,6 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UpdateAgentInstanceResponseImpl;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.AgentInstanceMetricsDelta;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateRequest;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateResult;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateStatusEnum;
@@ -66,36 +64,6 @@ public class UpdateAgentInstanceCommandImpl
   @Override
   public UpdateAgentInstanceCommandStep2 status(final AgentInstanceUpdateStatus status) {
     request.status(EnumUtil.convert(status, AgentInstanceUpdateStatusEnum.class));
-    return this;
-  }
-
-  @Override
-  public UpdateAgentInstanceCommandStep2 inputTokens(final long inputTokens) {
-    ensureMetrics().inputTokens(inputTokens);
-    return this;
-  }
-
-  @Override
-  public UpdateAgentInstanceCommandStep2 outputTokens(final long outputTokens) {
-    ensureMetrics().outputTokens(outputTokens);
-    return this;
-  }
-
-  @Override
-  public UpdateAgentInstanceCommandStep2 modelCalls(final int modelCalls) {
-    ensureMetrics().modelCalls(modelCalls);
-    return this;
-  }
-
-  @Override
-  public UpdateAgentInstanceCommandStep2 toolCalls(final int toolCalls) {
-    ensureMetrics().toolCalls(toolCalls);
-    return this;
-  }
-
-  @Override
-  public UpdateAgentInstanceCommandStep2 tools(final List<AgentTool> tools) {
-    request.tools(AgentInstanceHistoryMapper.toProtocolTools(tools));
     return this;
   }
 
@@ -153,12 +121,5 @@ public class UpdateAgentInstanceCommandImpl
         UpdateAgentInstanceResponseImpl::new,
         result);
     return result;
-  }
-
-  private AgentInstanceMetricsDelta ensureMetrics() {
-    if (request.getMetrics() == null) {
-      request.metrics(new AgentInstanceMetricsDelta());
-    }
-    return request.getMetrics();
   }
 }

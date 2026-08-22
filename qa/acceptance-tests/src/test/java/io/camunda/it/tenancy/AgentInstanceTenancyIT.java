@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.qa.util.auth.Authenticated;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -100,12 +102,17 @@ public class AgentInstanceTenancyIT {
     // Create history item immediately while jobKeyA is still active, before waiting for
     // agent B to be indexed (which can take long enough for the job to expire).
     adminClient
-        .newCreateAgentHistoryItemCommand(agentInstanceKeyA)
+        .newUpdateAgentInstanceCommand(agentInstanceKeyA)
         .elementInstanceKey(elementInstanceKeyA)
         .jobKey(jobKeyA)
-        .role(AgentInstanceHistoryRole.USER)
-        .content(List.of(AgentInstanceHistoryContent.text("Hello from " + TENANT_A)))
-        .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+        .history(
+            List.of(
+                new AgentInstanceHistoryItem()
+                    .historyItemId(UUID.randomUUID().toString())
+                    .loopIteration(1)
+                    .role(AgentInstanceHistoryRole.USER)
+                    .content(List.of(AgentInstanceHistoryContent.text("Hello from " + TENANT_A)))
+                    .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
         .execute();
     // Complete job A so JobCompleteProcessor emits AGENT_HISTORY:COMMIT for its items.
     adminClient.newCompleteCommand(jobKeyA).execute();
@@ -117,12 +124,17 @@ public class AgentInstanceTenancyIT {
 
     // Create history item immediately while jobKeyB is still active.
     adminClient
-        .newCreateAgentHistoryItemCommand(agentInstanceKeyB)
+        .newUpdateAgentInstanceCommand(agentInstanceKeyB)
         .elementInstanceKey(elementInstanceKeyB)
         .jobKey(jobKeyB)
-        .role(AgentInstanceHistoryRole.USER)
-        .content(List.of(AgentInstanceHistoryContent.text("Hello from " + TENANT_B)))
-        .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+        .history(
+            List.of(
+                new AgentInstanceHistoryItem()
+                    .historyItemId(UUID.randomUUID().toString())
+                    .loopIteration(1)
+                    .role(AgentInstanceHistoryRole.USER)
+                    .content(List.of(AgentInstanceHistoryContent.text("Hello from " + TENANT_B)))
+                    .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
         .execute();
     // Complete job B so its history items also transition to COMMITTED.
     adminClient.newCompleteCommand(jobKeyB).execute();
@@ -216,9 +228,11 @@ public class AgentInstanceTenancyIT {
                     camundaClient
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKeyB)
-                        .model("gpt-4o")
-                        .provider("openai")
-                        .systemPrompt("You are a helpful assistant.")
+                        .jobKey(1L)
+                        .history(
+                            List.of(
+                                configurationHistoryItem(
+                                    "gpt-4o", "openai", "You are a helpful assistant.")))
                         .execute())
             .actual();
 
@@ -302,12 +316,17 @@ public class AgentInstanceTenancyIT {
             .isThrownBy(
                 () ->
                     camundaClient
-                        .newCreateAgentHistoryItemCommand(agentInstanceKeyB)
+                        .newUpdateAgentInstanceCommand(agentInstanceKeyB)
                         .elementInstanceKey(elementInstanceKeyB)
                         .jobKey(jobKeyB)
-                        .role(AgentInstanceHistoryRole.USER)
-                        .content(List.of(AgentInstanceHistoryContent.text("hello")))
-                        .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+                        .history(
+                            List.of(
+                                new AgentInstanceHistoryItem()
+                                    .historyItemId(UUID.randomUUID().toString())
+                                    .loopIteration(1)
+                                    .role(AgentInstanceHistoryRole.USER)
+                                    .content(List.of(AgentInstanceHistoryContent.text("hello")))
+                                    .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
                         .execute())
             .actual();
 
@@ -372,16 +391,6 @@ public class AgentInstanceTenancyIT {
             .getFirst()
             .getElementInstanceKey();
 
-    final var agentInstanceKey =
-        client
-            .newCreateAgentInstanceCommand()
-            .elementInstanceKey(elementInstanceKey)
-            .model("gpt-4o")
-            .provider("openai")
-            .systemPrompt("You are a helpful assistant.")
-            .execute()
-            .getAgentInstanceKey();
-
     final var activatedJobs =
         client
             .newActivateJobsCommand()
@@ -397,7 +406,31 @@ public class AgentInstanceTenancyIT {
         .isNotEmpty();
     final long jobKey = activatedJobs.get(0).getKey();
 
+    final var agentInstanceKey =
+        client
+            .newCreateAgentInstanceCommand()
+            .elementInstanceKey(elementInstanceKey)
+            .jobKey(jobKey)
+            .history(
+                List.of(
+                    configurationHistoryItem("gpt-4o", "openai", "You are a helpful assistant.")))
+            .execute()
+            .getAgentInstanceKey();
+
     return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey, jobKey);
+  }
+
+  private static AgentInstanceHistoryItem configurationHistoryItem(
+      final String model, final String provider, final String systemPrompt) {
+    return new AgentInstanceHistoryItem()
+        .historyItemId(UUID.randomUUID().toString())
+        .loopIteration(1)
+        .role(AgentInstanceHistoryRole.CONFIGURATION)
+        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+        .producedAt(OffsetDateTime.now())
+        .model(model)
+        .provider(provider)
+        .systemPrompt(List.of(AgentInstanceHistoryContent.text(systemPrompt)));
   }
 
   private record AgentInstanceCreationResult(

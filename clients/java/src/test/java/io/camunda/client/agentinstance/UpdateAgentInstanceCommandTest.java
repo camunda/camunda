@@ -98,10 +98,6 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .status(AgentInstanceUpdateStatus.THINKING)
-          .inputTokens(100L)
-          .outputTokens(200L)
-          .modelCalls(3)
-          .toolCalls(2)
           .execute();
 
       // then
@@ -109,10 +105,6 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
       assertThat(body.getElementInstanceKey()).isEqualTo(String.valueOf(ELEMENT_INSTANCE_KEY));
       assertThat(body.getStatus()).isEqualTo(AgentInstanceUpdateStatusEnum.THINKING);
-      assertThat(body.getMetrics().getInputTokens()).isEqualTo(100L);
-      assertThat(body.getMetrics().getOutputTokens()).isEqualTo(200L);
-      assertThat(body.getMetrics().getModelCalls()).isEqualTo(3);
-      assertThat(body.getMetrics().getToolCalls()).isEqualTo(2);
     }
 
     @Test
@@ -131,107 +123,9 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
       assertThat(body.getElementInstanceKey()).isEqualTo(String.valueOf(ELEMENT_INSTANCE_KEY));
       assertThat(body.getStatus()).isNull();
-      assertThat(body.getMetrics()).isNull();
-      assertThat(body.getTools()).isNull();
       assertThat(body.getJobKey()).isNull();
       assertThat(body.getJobLease()).isNull();
       assertThat(body.getHistory()).isNull();
-    }
-  }
-
-  @Nested
-  class ToolsMappingTest {
-
-    @Test
-    void shouldMapToolsWithAllFields() {
-      // given
-      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-
-      // when
-      client
-          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-          .tools(Arrays.asList(AgentTool.of("search", "A web search tool", "searchTask")))
-          .execute();
-
-      // then
-      final AgentInstanceUpdateRequest body =
-          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-      assertThat(body.getTools())
-          .singleElement()
-          .satisfies(
-              tool -> {
-                assertThat(tool.getName()).isEqualTo("search");
-                assertThat(tool.getDescription()).isEqualTo("A web search tool");
-                assertThat(tool.getElementId()).isEqualTo("searchTask");
-              });
-    }
-
-    @Test
-    void shouldMapToolWithNameOnlyOmittingNullOptionalFields() {
-      // given
-      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-
-      // when
-      client
-          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-          .tools(Arrays.asList(AgentTool.of("summarize")))
-          .execute();
-
-      // then
-      final AgentInstanceUpdateRequest body =
-          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-      assertThat(body.getTools()).hasSize(1);
-      final io.camunda.client.protocol.rest.AgentTool tool = body.getTools().get(0);
-      assertThat(tool.getName()).isEqualTo("summarize");
-      assertThat(tool.getDescription()).isNull();
-      assertThat(tool.getElementId()).isNull();
-    }
-
-    @Test
-    void shouldSendEmptyToolsList() {
-      // given
-      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-
-      // when
-      client
-          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-          .tools(Collections.emptyList())
-          .execute();
-
-      // then
-      final AgentInstanceUpdateRequest body =
-          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-      assertThat(body.getTools()).isEmpty();
-    }
-
-    @Test
-    void shouldMapMultipleToolsMixingOptionalFields() {
-      // given
-      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-
-      // when
-      client
-          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-          .tools(
-              Arrays.asList(
-                  AgentTool.of("search", "Search the web", "searchTask"),
-                  AgentTool.of("summarize")))
-          .execute();
-
-      // then
-      final AgentInstanceUpdateRequest body =
-          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-      assertThat(body.getTools())
-          .extracting(
-              io.camunda.client.protocol.rest.AgentTool::getName,
-              io.camunda.client.protocol.rest.AgentTool::getDescription,
-              io.camunda.client.protocol.rest.AgentTool::getElementId)
-          .containsExactly(
-              tuple("search", "Search the web", "searchTask"), tuple("summarize", null, null));
     }
   }
 
@@ -470,7 +364,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
     }
 
     @Test
-    void shouldCombineJobKeyJobLeaseStatusToolsAndHistoryInOneRequest() {
+    void shouldCombineJobKeyJobLeaseStatusAndHistoryInOneRequest() {
       // given
       gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
 
@@ -481,7 +375,6 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .jobKey(JOB_KEY)
           .jobLease(JOB_LEASE)
           .status(AgentInstanceUpdateStatus.THINKING)
-          .tools(Collections.singletonList(AgentTool.of("search")))
           .history(Collections.singletonList(historyItem("item-1")))
           .execute();
 
@@ -491,9 +384,6 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
       assertThat(body.getJobKey()).isEqualTo("91011");
       assertThat(body.getJobLease()).isEqualTo(JOB_LEASE);
       assertThat(body.getStatus()).isEqualTo(AgentInstanceUpdateStatusEnum.THINKING);
-      assertThat(body.getTools())
-          .singleElement()
-          .satisfies(tool -> assertThat(tool.getName()).isEqualTo("search"));
       assertThat(body.getHistory())
           .singleElement()
           .satisfies(item -> assertThat(item.getHistoryItemId()).isEqualTo("item-1"));
