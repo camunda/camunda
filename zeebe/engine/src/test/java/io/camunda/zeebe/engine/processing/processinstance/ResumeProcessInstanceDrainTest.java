@@ -67,8 +67,10 @@ public final class ResumeProcessInstanceDrainTest {
   @Test
   public void shouldDrainBufferedCommandsOneCycleAtATime() {
     // given
-    final long processInstanceKey = deployAndStart();
+    final String processId = Strings.newRandomValidBpmnId();
+    final long processInstanceKey = deployAndStart(processId);
     final var children = activatedChildren(processInstanceKey);
+    activateJobs(processId);
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
     bufferCompleteCommands(children);
 
@@ -97,8 +99,10 @@ public final class ResumeProcessInstanceDrainTest {
   @Test
   public void shouldStayResumingUntilTheBufferIsDrained() {
     // given
-    final long processInstanceKey = deployAndStart();
+    final String processId = Strings.newRandomValidBpmnId();
+    final long processInstanceKey = deployAndStart(processId);
     final var children = activatedChildren(processInstanceKey);
+    activateJobs(processId);
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
     bufferCompleteCommands(children);
 
@@ -136,10 +140,13 @@ public final class ResumeProcessInstanceDrainTest {
     // given
     final String processId = Strings.newRandomValidBpmnId();
     final long controlInstanceKey = deployAndStart(processId);
-    bufferCompleteCommands(activatedChildren(controlInstanceKey));
+    final var controlChildren = activatedChildren(controlInstanceKey);
+    activateJobs(processId);
+    bufferCompleteCommands(controlChildren);
 
     final long processInstanceKey = start(processId);
     final var children = activatedChildren(processInstanceKey);
+    activateJobs(processId);
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
     bufferCompleteCommands(children);
 
@@ -269,11 +276,19 @@ public final class ResumeProcessInstanceDrainTest {
         .serviceTask(
             "task",
             t ->
-                t.zeebeJobType("type")
+                t.zeebeJobType(processId)
                     .multiInstance(
                         m -> m.zeebeInputCollectionExpression("items").zeebeInputElement("item")))
         .endEvent()
         .done();
+  }
+
+  /**
+   * Activates jobs before suspending so they are {@code ACTIVATED}, exempting them from suspension
+   * and preventing dangling {@code SUSPENDED} entries after element completion races the drain.
+   */
+  private static void activateJobs(final String jobType) {
+    ENGINE.jobs().withType(jobType).withMaxJobsToActivate(BUFFERED_COMMAND_COUNT).activate();
   }
 
   private static List<Record<ProcessInstanceRecordValue>> activatedChildren(

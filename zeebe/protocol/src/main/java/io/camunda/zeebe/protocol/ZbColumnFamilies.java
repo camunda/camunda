@@ -372,7 +372,18 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID at deploy time, so the record can
   // be fully retrieved, without re-deriving it from the parsed BPMN model. GLOBAL for the same
   // reason as the sibling CF above.
-  AGENT_DEFINITION_BY_KEY(162, GLOBAL);
+  AGENT_DEFINITION_BY_KEY(162, GLOBAL),
+
+  /**
+   * Indexes every job of a process instance, keyed [processInstanceKey | jobKey], so resume can
+   * find a suspended instance's jobs by an ordered prefix scan from its resume cursor. Only resume
+   * reads it; suspend still walks the element instance tree.
+   *
+   * <p>Filled at job creation (8.10+); backfilled on suspension for older jobs, so it is complete
+   * for every currently {@code SUSPENDED} job but not an authoritative "all jobs of this instance"
+   * list.
+   */
+  JOBS_BY_PROCESS_INSTANCE(163, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

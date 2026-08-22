@@ -21,12 +21,16 @@ import java.util.function.Predicate;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Parks and un-parks the jobs of a process instance while it is suspended, walking its
- * element-instance tree.
+ * Suspends and resumes the jobs of a process instance while it is suspended.
  *
- * <p>Jobs of called child instances are untouched — {@link ElementInstanceState#getChildren} never
- * returns a child instance's root, so the walk can't reach them; the {@code processInstanceKey}
- * filter below is a defensive backstop for that.
+ * <p>{@link #suspendJobs} always walks the element-instance tree — suspending is what populates the
+ * {@code JOBS_BY_PROCESS_INSTANCE} index, so the index can't help find newly-suspendable jobs.
+ * {@link #forEachSuspendedJob} seeks that index from the resume cursor instead; keyed by each job's
+ * own {@code processInstanceKey}, the index excludes a called child instance's jobs.
+ *
+ * <p>Jobs of called child instances are left untouched by the tree walk — {@link
+ * ElementInstanceState#getChildren} never returns a child instance's root, so the walk can't reach
+ * them; the {@code processInstanceKey} filter below is a defensive backstop for that.
  */
 @NullMarked
 public final class ProcessInstanceSuspensionJobBehavior {
@@ -37,9 +41,6 @@ public final class ProcessInstanceSuspensionJobBehavior {
    */
   private static final Set<State> SUSPENDABLE_STATES =
       EnumSet.of(State.ACTIVATABLE, State.WAITING_FOR_SECRET_RESOLUTION);
-
-  /** The only state {@link JobIntent#RESUMED} leaves; see {@code JobResumedApplier}. */
-  private static final Set<State> RESUMABLE_STATES = EnumSet.of(State.SUSPENDED);
 
   private final ElementInstanceState elementInstanceState;
   private final JobState jobState;
@@ -62,7 +63,6 @@ public final class ProcessInstanceSuspensionJobBehavior {
     }
     walk(
         processInstance,
-        // never stops early: every suspendable job must be parked
         elementInstance ->
             visitJobInStates(
                 elementInstance,
@@ -75,13 +75,31 @@ public final class ProcessInstanceSuspensionJobBehavior {
 
   /**
    * Visits {@link State#SUSPENDED} jobs of the process instance until {@code visitor} stops the
-   * walk, without changing their state. Takes the already-loaded root so a per-cycle caller doesn't
-   * re-read it.
+   * walk, without changing their state. Seeks the {@code JOBS_BY_PROCESS_INSTANCE} index from
+   * {@code startAfterJobKey} (inclusive): the cursor marks the last job a previous cycle resumed,
+   * so every entry from there onward is either already resumed (skipped) or halts the scan for this
+   * cycle. Takes the already-loaded root so a per-cycle caller doesn't re-read it, even though only
+   * its {@code processInstanceKey} is used here.
+   *
+   * <p>If the index entry for {@code startAfterJobKey} no longer exists (e.g. the job was deleted
+   * after the cursor was recorded), RocksDB's seek lands on the next key ≥ {@code
+   * startAfterJobKey}, so iteration naturally continues from there.
    */
-  public void forEachSuspendedJob(final ElementInstance processInstance, final JobVisitor visitor) {
-    walk(
-        processInstance,
-        elementInstance -> visitJobInStates(elementInstance, RESUMABLE_STATES, visitor));
+  public void forEachSuspendedJob(
+      final ElementInstance processInstance,
+      final long startAfterJobKey,
+      final JobVisitor visitor) {
+    final long processInstanceKey = processInstance.getValue().getProcessInstanceKey();
+    jobState.forEachJobsByProcessInstance(
+        processInstanceKey,
+        startAfterJobKey,
+        jobKey -> {
+          if (jobState.getState(jobKey) != State.SUSPENDED) {
+            return true;
+          }
+          final var job = jobState.getJob(jobKey);
+          return job == null || visitor.visit(jobKey, job);
+        });
   }
 
   /**

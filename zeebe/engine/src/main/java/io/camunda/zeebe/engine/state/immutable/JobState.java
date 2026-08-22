@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.LongPredicate;
 import org.agrona.DirectBuffer;
 
 public interface JobState {
@@ -49,6 +50,19 @@ public interface JobState {
   boolean jobDeadlineExists(final long jobKey, final long deadline);
 
   long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback);
+
+  /**
+   * Visits every job key indexed under the given process instance, in key order. Not guaranteed to
+   * find every job of the instance, since the index is only filled in at job creation (8.10+) and
+   * on suspension.
+   *
+   * @param processInstanceKey the process instance whose jobs to visit
+   * @param startAtJobKey the job key to start at (inclusive), or a negative value to start at the
+   *     beginning
+   * @param visitor called with each job key; returning {@code false} stops the iteration
+   */
+  void forEachJobsByProcessInstance(
+      long processInstanceKey, long startAtJobKey, LongPredicate visitor);
 
   /** Index to point to a specific position in the jobs with deadline column family. */
   record DeadlineIndex(long deadline, long key) {}

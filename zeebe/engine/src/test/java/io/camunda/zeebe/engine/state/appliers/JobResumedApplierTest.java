@@ -80,7 +80,7 @@ public class JobResumedApplierTest {
   }
 
   @Test
-  void shouldLeaveJobThatWasNeverParkedAlone() {
+  void shouldNotModifyJobNotInSuspendedState() {
     // given
     final long jobKey = 3L;
     final var record = jobRecord();
