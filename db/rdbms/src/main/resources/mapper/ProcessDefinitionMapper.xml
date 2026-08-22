@@ -242,6 +242,11 @@
           AND pi.TENANT_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if test="filter.businessIdOperations != null and !filter.businessIdOperations.isEmpty()">
+        <foreach collection="filter.businessIdOperations" item="operation">
+          AND pi.BUSINESS_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
       <if test="filter.hasIncident != null">
         <if test="filter.hasIncident == true">
           AND pi.NUM_INCIDENTS > 0
