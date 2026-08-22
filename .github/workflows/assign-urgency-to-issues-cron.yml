@@ -54,6 +54,7 @@ jobs:
           max_attempts: 3
           retry_on: error
           retry_wait_seconds: 10
+          timeout_minutes: 15
           command: |
             bash .github/workflows/assign-urgency-to-issues.sh \
               --project 187 \
