@@ -84,6 +84,7 @@ import io.camunda.zeebe.engine.processing.resource.RpaReexportMigrator;
 import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.processing.secretreference.SecretReferenceProcessors;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
@@ -150,6 +151,9 @@ public final class EngineProcessors {
     final int partitionId = typedRecordProcessorContext.getPartitionId();
     final var config = typedRecordProcessorContext.getConfig();
     final var securityConfig = typedRecordProcessorContext.getSecurityConfig();
+
+    final StorageOrdinalKeyProvider storageOrdinalKeyProvider =
+        getStorageOrdinalKeyProvider(config);
 
     final DueDateTimerCheckScheduler timerChecker =
         new DueDateTimerCheckScheduler(
@@ -352,11 +356,13 @@ public final class EngineProcessors {
             routingInfo,
             clock,
             config,
+            storageOrdinalKeyProvider,
             asyncRequestBehavior,
             cslCheck,
             transientProcessMessageSubscriptionState,
             processEngineMetrics);
 
+    // TODO: @yohanfernando >> next need to apply storage ordinal changes here onwards
     addDecisionProcessors(
         typedRecordProcessors, decisionBehavior, writers, processingState, cslCheck);
 
@@ -550,6 +556,15 @@ public final class EngineProcessors {
     return typedRecordProcessors;
   }
 
+  private static StorageOrdinalKeyProvider getStorageOrdinalKeyProvider(
+      final EngineConfiguration config) {
+    if (config.isArchiverlessEnabled()) {
+      return StorageOrdinalKeyProvider.getFixedProvider(config);
+    } else {
+      return StorageOrdinalKeyProvider.getNoopProvider();
+    }
+  }
+
   /**
    * Wires the identity/authorization subsystem: builds the CSL authorization graph via {@link
    * AuthorizationPortsFactory} and registers the authorization command processors on the given
@@ -679,6 +694,7 @@ public final class EngineProcessors {
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final EngineConfiguration config,
+      final StorageOrdinalKeyProvider storageOrdinalKeyProvider,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
@@ -696,6 +712,7 @@ public final class EngineProcessors {
         routingInfo,
         clock,
         config,
+        storageOrdinalKeyProvider,
         asyncRequestBehavior,
         cslCheck,
         transientProcessMessageSubscriptionState,
