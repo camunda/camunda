@@ -19,6 +19,7 @@ import io.camunda.configuration.physicaltenants.MapOverlaySpec.MapDescriptor;
 import io.camunda.configuration.physicaltenants.MapOverlaySpec.OverlayContext;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.context.properties.bind.Bindable;
@@ -58,7 +59,36 @@ public final class PhysicalTenantDocumentConfigurations {
 
   private static void postProcess(final OverlayContext context, final Document doc) {
     validateStoreIdUniqueness(context.tenantId(), doc);
+    validateCredentialOverridesAreComplete(context);
     narrowToAssigned(context, doc);
+  }
+
+  /**
+   * The overlay merges field by field, so a tenant restating only one half of an AWS key pair
+   * inherits the other from the root and ends up with two halves of different identities. Both are
+   * non-null, so the store's own both-or-neither check passes and the mismatch first appears as an
+   * S3 signature failure that names nothing about the merge. Enforced here because the tenant's
+   * delta is only distinguishable from an inheritance before it is folded into the root.
+   */
+  private static void validateCredentialOverridesAreComplete(final OverlayContext context) {
+    final Map<String, AwsStore> overrides =
+        context
+            .binder()
+            .bind(context.ptPrefix() + ".aws", Bindable.mapOf(String.class, AwsStore.class))
+            .orElseGet(Map::of);
+    overrides.forEach(
+        (storeId, store) -> {
+          if ((store.getAccessKey() == null) == (store.getSecretKey() == null)) {
+            return;
+          }
+          throw new UnifiedConfigurationException(
+              "Physical tenant '"
+                  + context.tenantId()
+                  + "' overrides only one of 'access-key' and 'secret-key' for document store '"
+                  + storeId
+                  + "'. The other half would be inherited from the root configuration, pairing two"
+                  + " keys that belong to different identities. Override both or neither.");
+        });
   }
 
   private static void validateStoreIdUniqueness(final String tenantId, final Document doc) {

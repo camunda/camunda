@@ -20,8 +20,8 @@ import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.store.InputStreamHashCalculator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.HttpStatusCode;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.LegacyMd5Plugin;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
@@ -84,46 +85,16 @@ public class AwsDocumentStore implements DocumentStore {
       final String bucketName,
       final Long defaultTTL,
       final String bucketPath,
-      final ExecutorService executor) {
-    this(bucketName, defaultTTL, bucketPath, executor, null, null, null);
-  }
-
-  public AwsDocumentStore(
-      final String bucketName,
-      final Long defaultTTL,
-      final String bucketPath,
       final ExecutorService executor,
-      final URI endpointOverride,
-      final Boolean forcePathStyle,
-      final Boolean chunkedEncodingEnabled) {
+      final AwsClientOptions clientOptions) {
     this(
         bucketName,
         defaultTTL,
         bucketPath,
+        buildClient(clientOptions),
         executor,
-        endpointOverride,
-        forcePathStyle,
-        chunkedEncodingEnabled,
-        null);
-  }
-
-  public AwsDocumentStore(
-      final String bucketName,
-      final Long defaultTTL,
-      final String bucketPath,
-      final ExecutorService executor,
-      final URI endpointOverride,
-      final Boolean forcePathStyle,
-      final Boolean chunkedEncodingEnabled,
-      final Boolean supportLegacyMd5) {
-    this(
-        bucketName,
-        defaultTTL,
-        bucketPath,
-        buildClient(endpointOverride, forcePathStyle, chunkedEncodingEnabled, supportLegacyMd5),
-        executor,
-        buildPresigner(endpointOverride, forcePathStyle, chunkedEncodingEnabled),
-        Boolean.FALSE.equals(chunkedEncodingEnabled));
+        buildPresigner(clientOptions),
+        Boolean.FALSE.equals(clientOptions.chunkedEncodingEnabled()));
   }
 
   public AwsDocumentStore(
@@ -153,54 +124,58 @@ public class AwsDocumentStore implements DocumentStore {
     this.requiresBuffering = requiresBuffering;
   }
 
-  private static S3Client buildClient(
-      final URI endpointOverride,
-      final Boolean forcePathStyle,
-      final Boolean chunkedEncodingEnabled,
-      final Boolean supportLegacyMd5) {
-    if (endpointOverride == null
-        && forcePathStyle == null
-        && chunkedEncodingEnabled == null
-        && !Boolean.TRUE.equals(supportLegacyMd5)) {
+  @VisibleForTesting
+  static S3Client buildClient(final AwsClientOptions options) {
+    // supportLegacyMd5 is a client-only plugin, which is why it forces the builder path here but
+    // not in buildPresigner.
+    if (options.usesSdkDefaults() && !Boolean.TRUE.equals(options.supportLegacyMd5())) {
       return S3Client.create();
     }
     final S3ClientBuilder builder = S3Client.builder();
-    if (endpointOverride != null) {
-      builder.endpointOverride(endpointOverride);
+    if (options.endpointOverride() != null) {
+      builder.endpointOverride(options.endpointOverride());
     }
-    if (Boolean.TRUE.equals(supportLegacyMd5)) {
+    if (options.region() != null) {
+      builder.region(Region.of(options.region()));
+    }
+    if (options.hasStaticCredentials()) {
+      builder.credentialsProvider(options.credentialsProvider());
+    }
+    if (Boolean.TRUE.equals(options.supportLegacyMd5())) {
       builder.addPlugin(LegacyMd5Plugin.create());
     }
-    builder.serviceConfiguration(
-        buildS3Configuration(endpointOverride, forcePathStyle, chunkedEncodingEnabled));
+    builder.serviceConfiguration(buildS3Configuration(options));
     return builder.build();
   }
 
-  private static S3Presigner buildPresigner(
-      final URI endpointOverride,
-      final Boolean forcePathStyle,
-      final Boolean chunkedEncodingEnabled) {
-    if (endpointOverride == null && forcePathStyle == null && chunkedEncodingEnabled == null) {
+  @VisibleForTesting
+  static S3Presigner buildPresigner(final AwsClientOptions options) {
+    if (options.usesSdkDefaults()) {
       return S3Presigner.create();
     }
     final S3Presigner.Builder builder = S3Presigner.builder();
-    if (endpointOverride != null) {
-      builder.endpointOverride(endpointOverride);
+    if (options.endpointOverride() != null) {
+      builder.endpointOverride(options.endpointOverride());
     }
-    builder.serviceConfiguration(
-        buildS3Configuration(endpointOverride, forcePathStyle, chunkedEncodingEnabled));
+    if (options.region() != null) {
+      builder.region(Region.of(options.region()));
+    }
+    if (options.hasStaticCredentials()) {
+      builder.credentialsProvider(options.credentialsProvider());
+    }
+    builder.serviceConfiguration(buildS3Configuration(options));
     return builder.build();
   }
 
-  private static S3Configuration buildS3Configuration(
-      final URI endpointOverride,
-      final Boolean forcePathStyle,
-      final Boolean chunkedEncodingEnabled) {
-    final boolean usePathStyle = forcePathStyle != null ? forcePathStyle : endpointOverride != null;
+  private static S3Configuration buildS3Configuration(final AwsClientOptions options) {
+    final boolean usePathStyle =
+        options.forcePathStyle() != null
+            ? options.forcePathStyle()
+            : options.endpointOverride() != null;
     final S3Configuration.Builder s3config =
         S3Configuration.builder().pathStyleAccessEnabled(usePathStyle);
-    if (chunkedEncodingEnabled != null) {
-      s3config.chunkedEncodingEnabled(chunkedEncodingEnabled);
+    if (options.chunkedEncodingEnabled() != null) {
+      s3config.chunkedEncodingEnabled(options.chunkedEncodingEnabled());
     }
     return s3config.build();
   }

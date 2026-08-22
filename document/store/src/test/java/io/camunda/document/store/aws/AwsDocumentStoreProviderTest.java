@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import software.amazon.awssdk.regions.Region;
 
 public class AwsDocumentStoreProviderTest {
 
@@ -41,10 +42,7 @@ public class AwsDocumentStoreProviderTest {
                       eq(bucketTtl),
                       eq(""),
                       any(),
-                      eq((URI) null),
-                      eq((Boolean) null),
-                      eq((Boolean) null),
-                      eq((Boolean) null)))
+                      eq(AwsClientOptions.sdkDefaults())))
           .thenReturn(mockDocumentStore);
 
       final DocumentStoreConfigurationRecord configuration =
@@ -140,20 +138,13 @@ public class AwsDocumentStoreProviderTest {
     try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
       // given
       final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
-      final ArgumentCaptor<URI> endpointCaptor = ArgumentCaptor.forClass(URI.class);
-      final ArgumentCaptor<Boolean> pathStyleCaptor = ArgumentCaptor.forClass(Boolean.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
       mockedFactory
           .when(
               () ->
                   AwsDocumentStoreFactory.create(
-                      any(),
-                      any(),
-                      any(),
-                      any(),
-                      endpointCaptor.capture(),
-                      pathStyleCaptor.capture(),
-                      any(),
-                      any()))
+                      any(), any(), any(), any(), optionsCaptor.capture()))
           .thenReturn(mockDocumentStore);
 
       final DocumentStoreConfigurationRecord configuration =
@@ -167,8 +158,9 @@ public class AwsDocumentStoreProviderTest {
           .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
       // then
-      assertThat(endpointCaptor.getValue()).isEqualTo(URI.create("http://minio.local:9000"));
-      assertThat(pathStyleCaptor.getValue()).isNull();
+      assertThat(optionsCaptor.getValue().endpointOverride())
+          .isEqualTo(URI.create("http://minio.local:9000"));
+      assertThat(optionsCaptor.getValue().forcePathStyle()).isNull();
     }
   }
 
@@ -177,12 +169,13 @@ public class AwsDocumentStoreProviderTest {
     try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
       // given
       final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
-      final ArgumentCaptor<Boolean> pathStyleCaptor = ArgumentCaptor.forClass(Boolean.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
       mockedFactory
           .when(
               () ->
                   AwsDocumentStoreFactory.create(
-                      any(), any(), any(), any(), any(), pathStyleCaptor.capture(), any(), any()))
+                      any(), any(), any(), any(), optionsCaptor.capture()))
           .thenReturn(mockDocumentStore);
 
       final DocumentStoreConfigurationRecord configuration =
@@ -197,7 +190,7 @@ public class AwsDocumentStoreProviderTest {
           .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
       // then
-      assertThat(pathStyleCaptor.getValue()).isFalse();
+      assertThat(optionsCaptor.getValue().forcePathStyle()).isFalse();
     }
   }
 
@@ -230,12 +223,13 @@ public class AwsDocumentStoreProviderTest {
     try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
       // given
       final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
-      final ArgumentCaptor<Boolean> chunkedCaptor = ArgumentCaptor.forClass(Boolean.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
       mockedFactory
           .when(
               () ->
                   AwsDocumentStoreFactory.create(
-                      any(), any(), any(), any(), any(), any(), chunkedCaptor.capture(), any()))
+                      any(), any(), any(), any(), optionsCaptor.capture()))
           .thenReturn(mockDocumentStore);
 
       final DocumentStoreConfigurationRecord configuration =
@@ -250,7 +244,318 @@ public class AwsDocumentStoreProviderTest {
           .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
       // then
-      assertThat(chunkedCaptor.getValue()).isFalse();
+      assertThat(optionsCaptor.getValue().chunkedEncodingEnabled()).isFalse();
+    }
+  }
+
+  @Test
+  public void shouldPassConfiguredRegion() {
+    try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
+      // given
+      final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
+      mockedFactory
+          .when(
+              () ->
+                  AwsDocumentStoreFactory.create(
+                      any(), any(), any(), any(), optionsCaptor.capture()))
+          .thenReturn(mockDocumentStore);
+
+      final DocumentStoreConfigurationRecord configuration =
+          new DocumentStoreConfigurationRecord(
+              "aws", AwsDocumentStoreProvider.class, new HashMap<>());
+      configuration.properties().put("BUCKET", "bucket");
+      configuration.properties().put("REGION", "eu-central-1");
+
+      // when
+      new AwsDocumentStoreProvider()
+          .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
+
+      // then
+      assertThat(optionsCaptor.getValue().region()).isEqualTo("eu-central-1");
+    }
+  }
+
+  @Test
+  public void shouldLeaveRegionToTheSdkWhenNotConfigured() {
+    try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
+      // given
+      final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
+      mockedFactory
+          .when(
+              () ->
+                  AwsDocumentStoreFactory.create(
+                      any(), any(), any(), any(), optionsCaptor.capture()))
+          .thenReturn(mockDocumentStore);
+
+      final DocumentStoreConfigurationRecord configuration =
+          new DocumentStoreConfigurationRecord(
+              "aws", AwsDocumentStoreProvider.class, new HashMap<>());
+      configuration.properties().put("BUCKET", "bucket");
+      configuration.properties().put("REGION", "  ");
+
+      // when
+      new AwsDocumentStoreProvider()
+          .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
+
+      // then
+      assertThat(optionsCaptor.getValue().region()).isNull();
+    }
+  }
+
+  @Test
+  public void shouldTargetTheConfiguredRegionFromClientAndPresigner() {
+    // given
+    final AwsClientOptions options =
+        new AwsClientOptions(null, null, null, null, "eu-central-1", null, null);
+
+    // when
+    try (final var client = AwsDocumentStore.buildClient(options);
+        final var presigner = AwsDocumentStore.buildPresigner(options)) {
+
+      // then
+      assertThat(client.serviceClientConfiguration().region()).isEqualTo(Region.of("eu-central-1"));
+      // the presigner does not expose its region; it only builds at all once one is resolvable
+      assertThat(presigner).isNotNull();
+    }
+  }
+
+  @Test
+  public void shouldPassConfiguredCredentials() {
+    try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
+      // given
+      final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
+      mockedFactory
+          .when(
+              () ->
+                  AwsDocumentStoreFactory.create(
+                      any(), any(), any(), any(), optionsCaptor.capture()))
+          .thenReturn(mockDocumentStore);
+
+      final DocumentStoreConfigurationRecord configuration =
+          new DocumentStoreConfigurationRecord(
+              "aws", AwsDocumentStoreProvider.class, new HashMap<>());
+      configuration.properties().put("BUCKET", "bucket");
+      configuration.properties().put("ACCESS_KEY", "tenant-a-key");
+      configuration.properties().put("SECRET_KEY", "tenant-a-secret");
+
+      // when
+      new AwsDocumentStoreProvider()
+          .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
+
+      // then
+      assertThat(optionsCaptor.getValue().accessKey()).isEqualTo("tenant-a-key");
+      assertThat(optionsCaptor.getValue().secretKey()).isEqualTo("tenant-a-secret");
+      assertThat(optionsCaptor.getValue().hasStaticCredentials()).isTrue();
+    }
+  }
+
+  @Test
+  public void shouldFallBackToTheSdkCredentialChainWhenNoKeyPairIsConfigured() {
+    try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
+      // given
+      final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
+      mockedFactory
+          .when(
+              () ->
+                  AwsDocumentStoreFactory.create(
+                      any(), any(), any(), any(), optionsCaptor.capture()))
+          .thenReturn(mockDocumentStore);
+
+      final DocumentStoreConfigurationRecord configuration =
+          new DocumentStoreConfigurationRecord(
+              "aws", AwsDocumentStoreProvider.class, new HashMap<>());
+      configuration.properties().put("BUCKET", "bucket");
+
+      // when
+      new AwsDocumentStoreProvider()
+          .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
+
+      // then
+      assertThat(optionsCaptor.getValue().hasStaticCredentials()).isFalse();
+      assertThat(optionsCaptor.getValue().credentialsProvider()).isNull();
+    }
+  }
+
+  @Test
+  public void shouldThrowIfOnlyAccessKeyIsConfigured() {
+    // given
+    final DocumentStoreConfigurationRecord configuration =
+        new DocumentStoreConfigurationRecord(
+            "my-aws", AwsDocumentStoreProvider.class, new HashMap<>());
+    configuration.properties().put("BUCKET", "bucket");
+    configuration.properties().put("ACCESS_KEY", "tenant-a-key");
+
+    final AwsDocumentStoreProvider provider = new AwsDocumentStoreProvider();
+
+    // when / then
+    final var ex =
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                () ->
+                    provider.createDocumentStore(
+                        configuration, Executors.newSingleThreadExecutor()))
+            .actual();
+    assertThat(ex.getMessage())
+        .startsWith(
+            "Failed to configure document store with id 'my-aws': 'ACCESS_KEY' and 'SECRET_KEY' must be configured together");
+  }
+
+  @Test
+  public void shouldThrowIfOnlySecretKeyIsConfigured() {
+    // given
+    final DocumentStoreConfigurationRecord configuration =
+        new DocumentStoreConfigurationRecord(
+            "my-aws", AwsDocumentStoreProvider.class, new HashMap<>());
+    configuration.properties().put("BUCKET", "bucket");
+    configuration.properties().put("SECRET_KEY", "tenant-a-secret");
+
+    final AwsDocumentStoreProvider provider = new AwsDocumentStoreProvider();
+
+    // when / then
+    final var ex =
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                () ->
+                    provider.createDocumentStore(
+                        configuration, Executors.newSingleThreadExecutor()))
+            .actual();
+    assertThat(ex.getMessage())
+        .startsWith(
+            "Failed to configure document store with id 'my-aws': 'ACCESS_KEY' and 'SECRET_KEY' must be configured together");
+  }
+
+  @Test
+  public void shouldSignWithTheConfiguredCredentials() {
+    // given
+    final AwsClientOptions options =
+        new AwsClientOptions(
+            null, null, null, null, "eu-central-1", "tenant-a-key", "tenant-a-secret");
+
+    // when
+    try (final var client = AwsDocumentStore.buildClient(options)) {
+
+      // then
+      final var credentials =
+          client.serviceClientConfiguration().credentialsProvider().resolveIdentity().join();
+      assertThat(credentials.accessKeyId()).isEqualTo("tenant-a-key");
+      assertThat(credentials.secretAccessKey()).isEqualTo("tenant-a-secret");
+    }
+  }
+
+  @Test
+  public void shouldNotExposeEitherHalfOfTheKeyPairWhenPrinted() {
+    // given
+    final AwsClientOptions options =
+        new AwsClientOptions(
+            null, null, null, null, "eu-central-1", "tenant-a-key", "tenant-a-secret");
+
+    // when
+    final String printed = options.toString();
+
+    // then
+    assertThat(printed).contains("eu-central-1").contains("<redacted>");
+    assertThat(printed).doesNotContain("tenant-a-secret").doesNotContain("tenant-a-key");
+  }
+
+  @Test
+  public void shouldRejectHalfOfAKeyPair() {
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(() -> new AwsClientOptions(null, null, null, null, null, "tenant-a-key", null))
+        .withMessageContaining("must be set together");
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(
+            () -> new AwsClientOptions(null, null, null, null, null, null, "tenant-a-secret"))
+        .withMessageContaining("must be set together");
+  }
+
+  @Test
+  public void shouldLeaveEverySettingToTheSdkWhenNothingIsOverridden() {
+    // the path every deployment without per-store credentials still takes, and the one no
+    // integration test can exercise
+    assertThat(AwsClientOptions.sdkDefaults().usesSdkDefaults()).isTrue();
+  }
+
+  @Test
+  public void shouldNotFallBackToTheSdkWhenAnySingleSettingIsOverridden() {
+    // a store configuring only its credentials, or only its region, must not silently keep
+    // addressing the process environment
+    assertThat(
+            new AwsClientOptions(
+                    URI.create("http://minio.local:9000"), null, null, null, null, null, null)
+                .usesSdkDefaults())
+        .isFalse();
+    assertThat(new AwsClientOptions(null, true, null, null, null, null, null).usesSdkDefaults())
+        .isFalse();
+    assertThat(new AwsClientOptions(null, null, false, null, null, null, null).usesSdkDefaults())
+        .isFalse();
+    assertThat(
+            new AwsClientOptions(null, null, null, null, "eu-central-1", null, null)
+                .usesSdkDefaults())
+        .isFalse();
+    assertThat(
+            new AwsClientOptions(null, null, null, null, null, "tenant-a-key", "tenant-a-secret")
+                .usesSdkDefaults())
+        .isFalse();
+  }
+
+  @Test
+  public void shouldThrowIfRegionIsNotAValidRegion() {
+    // given
+    final DocumentStoreConfigurationRecord configuration =
+        new DocumentStoreConfigurationRecord(
+            "my-aws", AwsDocumentStoreProvider.class, new HashMap<>());
+    configuration.properties().put("BUCKET", "bucket");
+    configuration.properties().put("REGION", "EU West 1");
+
+    final AwsDocumentStoreProvider provider = new AwsDocumentStoreProvider();
+
+    // when / then
+    final var ex =
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                () ->
+                    provider.createDocumentStore(
+                        configuration, Executors.newSingleThreadExecutor()))
+            .actual();
+    assertThat(ex.getMessage())
+        .isEqualTo(
+            "Failed to configure document store with id 'my-aws': 'REGION' is not a valid region: EU West 1");
+  }
+
+  @Test
+  public void shouldAcceptARegionTheSdkDoesNotKnow() {
+    try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
+      // given — a region newer than the bundled SDK, or an S3-compatible backend's own name
+      final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
+      mockedFactory
+          .when(
+              () ->
+                  AwsDocumentStoreFactory.create(
+                      any(), any(), any(), any(), optionsCaptor.capture()))
+          .thenReturn(mockDocumentStore);
+
+      final DocumentStoreConfigurationRecord configuration =
+          new DocumentStoreConfigurationRecord(
+              "aws", AwsDocumentStoreProvider.class, new HashMap<>());
+      configuration.properties().put("BUCKET", "bucket");
+      configuration.properties().put("REGION", "xx-fictional-9");
+
+      // when
+      new AwsDocumentStoreProvider()
+          .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
+
+      // then
+      assertThat(optionsCaptor.getValue().region()).isEqualTo("xx-fictional-9");
     }
   }
 }
