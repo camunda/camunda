@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
+import {HttpResponse, http} from 'msw';
+import {endpoints, queryDecisionDefinitionsRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.10';
 import {createEndpointMock} from './mock-endpoint';
 
 const mockQueryUserTasksEndpoint = createEndpointMock({
@@ -69,6 +70,36 @@ const mockQueryDecisionDefinitionsEndpoint = createEndpointMock({
 	method: endpoints.queryDecisionDefinitions.method,
 });
 
+function mockQueryDecisionDefinitionsEndpointByFilter({
+	unfilteredResponse,
+	filteredResponse,
+	versionsResponses = [filteredResponse],
+}: {
+	unfilteredResponse: Response;
+	filteredResponse: Response;
+	versionsResponses?: Response[];
+}) {
+	let versionResponseIndex = 0;
+
+	return http.post(endpoints.queryDecisionDefinitions.getUrl(), async ({request}) => {
+		const result = queryDecisionDefinitionsRequestBodySchema.safeParse(await request.json());
+		if (!result.success) {
+			return HttpResponse.json({}, {status: 400});
+		}
+
+		if (result.data.filter?.decisionDefinitionId === undefined) {
+			return unfilteredResponse.clone();
+		}
+		if (result.data.filter.version !== undefined) {
+			return filteredResponse.clone();
+		}
+
+		const response = versionsResponses[Math.min(versionResponseIndex, versionsResponses.length - 1)];
+		versionResponseIndex += 1;
+		return (response ?? filteredResponse).clone();
+	});
+}
+
 const mockQueryDecisionInstancesEndpoint = createEndpointMock({
 	endpoint: endpoints.queryDecisionInstances.getUrl(),
 	method: endpoints.queryDecisionInstances.method,
@@ -77,6 +108,11 @@ const mockQueryDecisionInstancesEndpoint = createEndpointMock({
 const mockCreateDecisionInstancesDeletionBatchOperationEndpoint = createEndpointMock({
 	endpoint: endpoints.createDecisionInstancesDeletionBatchOperation.getUrl(),
 	method: endpoints.createDecisionInstancesDeletionBatchOperation.method,
+});
+
+const mockGetDecisionDefinitionXmlEndpoint = createEndpointMock({
+	endpoint: endpoints.getDecisionDefinitionXml.getUrl({decisionDefinitionKey: ':decisionDefinitionKey'}),
+	method: endpoints.getDecisionDefinitionXml.method,
 });
 
 const mockCurrentUserEndpoint = createEndpointMock({
@@ -207,8 +243,10 @@ export {
 	mockQueryBatchOperationsEndpoint,
 	mockGetDecisionInstanceEndpoint,
 	mockQueryDecisionDefinitionsEndpoint,
+	mockQueryDecisionDefinitionsEndpointByFilter,
 	mockQueryDecisionInstancesEndpoint,
 	mockCreateDecisionInstancesDeletionBatchOperationEndpoint,
+	mockGetDecisionDefinitionXmlEndpoint,
 	mockQueryAuditLogsEndpoint,
 	mockGetProcessInstanceCallHierarchyEndpoint,
 };
