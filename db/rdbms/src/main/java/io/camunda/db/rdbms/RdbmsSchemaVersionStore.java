@@ -145,9 +145,11 @@ public class RdbmsSchemaVersionStore {
         | RdbmsSchemaVersionIndeterminateException e) {
       throw e;
     } catch (final Exception e) {
-      LOG.error("[RDBMS Schema] Failed to determine current schema version. Startup aborted.", e);
+      LOG.error(
+          "[RDBMS Schema] Failed to determine current schema version for prefix '{}'.", prefix, e);
       throw new RdbmsSchemaVersionUnreadableException(
-          "[RDBMS Schema] Failed to determine current schema version. Startup aborted.", e);
+          "[RDBMS Schema] Failed to determine current schema version for prefix '" + prefix + "'.",
+          e);
     }
   }
 
@@ -236,12 +238,16 @@ public class RdbmsSchemaVersionStore {
       }
     } catch (final Exception e) {
       LOG.error(
-          "[RDBMS Schema] Failed to update schema version in {} for prefix '{}'. Startup aborted.",
+          "[RDBMS Schema] Failed to update schema version in {} for prefix '{}'.",
           tableName,
           prefix,
           e);
       throw new RdbmsSchemaVersionUnreadableException(
-          "[RDBMS Schema] Failed to update schema version in " + tableName + ". Startup aborted.",
+          "[RDBMS Schema] Failed to update schema version in "
+              + tableName
+              + " for prefix '"
+              + prefix
+              + "'.",
           e);
     }
   }
@@ -345,7 +351,7 @@ public class RdbmsSchemaVersionStore {
     if (parsedSchemaVersion.isEmpty() || parsedAppVersion.isEmpty()) {
       LOG.error(
           "[RDBMS Schema] Cannot determine version compatibility for prefix '{}': schema={}, app={}. "
-              + "The stored schema version may be invalid. Startup aborted.",
+              + "The stored schema version may be invalid.",
           prefix,
           currentSchemaVersion,
           stableAppVersion);
@@ -354,7 +360,7 @@ public class RdbmsSchemaVersionStore {
               + currentSchemaVersion
               + ", app="
               + stableAppVersion
-              + ". The stored schema version may be invalid. Startup aborted.");
+              + ". The stored schema version may be invalid.");
     }
 
     final var schemaVersion = parsedSchemaVersion.get();

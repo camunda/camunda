@@ -78,8 +78,8 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
   private final RdbmsSchemaVersionStore versionStore;
 
   /**
-   * When the stale-lock probe last ran, so it can be spaced by {@code ddl-lock-wait-timeout}. Null
-   * until the first attempt, which always probes.
+   * When the stale-lock probe last <em>completed</em>, so it can be spaced by {@code
+   * ddl-lock-wait-timeout}. Null until the first attempt, which always probes.
    */
   private volatile Instant lastStaleLockProbe;
 
@@ -132,6 +132,17 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
   private boolean staleLockProbeIsDue() {
     final var lastProbe = lastStaleLockProbe;
     return lastProbe == null || lastProbe.plus(ddlLockWaitTimeout).isBefore(Instant.now());
+  }
+
+  /**
+   * Whether a probe got far enough to be worth spacing. Only a probe that read the lock table can
+   * have released anything, so only that one has to be spaced; a probe that could not reach the
+   * database at all released nothing. Recording that one too would hold off the release for the
+   * rest of the interval, which is exactly the tenant whose database has just come back and whose
+   * peer left a stale lock behind — the recovery this whole path exists for.
+   */
+  private void recordCompletedStaleLockProbe() {
+    lastStaleLockProbe = Instant.now();
   }
 
   @VisibleForTesting
@@ -235,7 +246,6 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
     if (!staleLockProbeIsDue()) {
       return;
     }
-    lastStaleLockProbe = Instant.now();
     try (final var connection = dataSource.getConnection()) {
       final var database = openDatabase(connection, prefix + "DATABASECHANGELOGLOCK");
       try {
@@ -259,6 +269,7 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
             break;
           }
         }
+        recordCompletedStaleLockProbe();
       } finally {
         database.close();
       }
