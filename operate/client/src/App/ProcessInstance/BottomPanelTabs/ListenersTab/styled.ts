@@ -6,14 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {StructuredList as BaseStructuredList} from 'modules/components/StructuredList';
 import {WarningFilled as BaseWarningFilled} from '@carbon/react/icons';
 import styled from 'styled-components';
-import {
-  Stack as BaseStack,
-  Dropdown as BaseDropdown,
-  Layer,
-} from '@carbon/react';
+import {Stack, Dropdown as BaseDropdown, Layer} from '@carbon/react';
 
 const Content = styled(Layer)`
   position: relative;
@@ -22,24 +17,27 @@ const Content = styled(Layer)`
   flex-direction: column;
   padding: 0 var(--cds-spacing-05);
 
+  [role='table'] {
+    table-layout: fixed;
+  }
+
+  td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .cds--loading-overlay {
     position: absolute;
   }
 `;
 
-const StructuredList = styled(BaseStructuredList)`
-  [role='table'] {
-    table-layout: fixed;
-  }
-`;
-
-const CellContainer = styled(BaseStack)`
-  padding: var(--cds-spacing-03) var(--cds-spacing-01);
+const CellContainer = styled(Stack)`
+  align-items: center;
 `;
 
 const WarningFilled = styled(BaseWarningFilled)`
   fill: var(--cds-support-error);
-  margin-top: var(--cds-spacing-01);
+  min-width: 1rem;
 `;
 
 const Dropdown = styled(BaseDropdown)`
@@ -47,29 +45,4 @@ const Dropdown = styled(BaseDropdown)`
   margin-bottom: var(--cds-spacing-03);
 `;
 
-const EmptyMessageWrapper = styled.div`
-  display: flex;
-  height: 100%;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-
-  > div {
-    max-width: 475px;
-  }
-`;
-
-const Stack = styled(BaseStack)`
-  height: 100%;
-  overflow-y: auto;
-`;
-
-export {
-  Content,
-  StructuredList,
-  CellContainer,
-  WarningFilled,
-  Dropdown,
-  EmptyMessageWrapper,
-  Stack,
-};
+export {Content, CellContainer, WarningFilled, Dropdown};
