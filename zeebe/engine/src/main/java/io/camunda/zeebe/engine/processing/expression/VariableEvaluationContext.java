@@ -9,11 +9,11 @@ package io.camunda.zeebe.engine.processing.expression;
 
 import static io.camunda.zeebe.util.EnsureUtil.ensureGreaterThan;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import org.agrona.DirectBuffer;
 
 public final class VariableEvaluationContext implements ScopedEvaluationContext {
 
@@ -37,11 +37,12 @@ public final class VariableEvaluationContext implements ScopedEvaluationContext 
   }
 
   @Override
-  public Either<DirectBuffer, EvaluationContext> getVariable(final String variableName) {
+  public Either<ContextValue, EvaluationContext> getVariable(final String variableName) {
     if (scopeKey < 0) {
       return Either.left(null);
     }
-    final var value = variableState.getVariable(scopeKey, BufferUtil.wrapString(variableName));
-    return value != null && value.capacity() > 0 ? Either.left(value) : Either.left(null);
+    return Either.left(
+        ContextValue.msgPack(
+            variableState.getVariable(scopeKey, BufferUtil.wrapString(variableName))));
   }
 }

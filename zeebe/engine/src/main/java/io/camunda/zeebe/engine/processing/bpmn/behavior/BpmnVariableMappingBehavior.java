@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -78,6 +79,10 @@ public final class BpmnVariableMappingBehavior {
    * result assigned to a whole name shadows it totally. Evaluation stops at the first failing
    * mapping and no variables are applied in that case.
    *
+   * <p>A mapping's result reaches the next mapping as the FEEL value it is, not as MessagePack, so
+   * a duration stays a duration across the list. The type boundary is the write into the variable
+   * scope at the end: variables hold only what the storage format holds.
+   *
    * @param context The current bpmn element context
    * @param element The current bpmn element
    * @return either void if successful, otherwise a failure
@@ -107,7 +112,7 @@ public final class BpmnVariableMappingBehavior {
       if (result.isLeft()) {
         return Either.left(result.getLeft());
       }
-      resultBuilder.put(mapping.targetPath(), result.get());
+      resultBuilder.put(mapping.targetPath(), new ContextValue.Evaluated(result.get()));
     }
     return mapLocalVariables(context, element, resultBuilder.toDocument());
   }
@@ -120,6 +125,10 @@ public final class BpmnVariableMappingBehavior {
    * and falls back to the element's variable scope otherwise. A nested target merges with the
    * existing scope value at every path level. Evaluation stops at the first failing mapping and no
    * variables are applied in that case.
+   *
+   * <p>A mapping's result reaches the next mapping as the FEEL value it is, not as MessagePack, so
+   * a duration stays a duration across the list. The type boundary is the write into the variable
+   * scope at the end: variables hold only what the storage format holds.
    *
    * @param context The current bpmn element context
    * @param element The current bpmn element
@@ -186,7 +195,7 @@ public final class BpmnVariableMappingBehavior {
         if (result.isLeft()) {
           return Either.left(result.getLeft());
         }
-        resultBuilder.put(mapping.targetPath(), result.get());
+        resultBuilder.put(mapping.targetPath(), new ContextValue.Evaluated(result.get()));
       }
       return mapVariables(
           context, element, getVariableScopeKey(context), resultBuilder.toDocument());
