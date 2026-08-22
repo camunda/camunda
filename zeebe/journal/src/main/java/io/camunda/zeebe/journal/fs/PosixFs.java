@@ -8,6 +8,7 @@
 package io.camunda.zeebe.journal.fs;
 
 import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
+import io.camunda.zeebe.util.libc.LibC;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -52,13 +53,13 @@ public final class PosixFs {
   private volatile boolean supportsPosixFallocate =
       FILE_DESCRIPTOR_FD_FIELD != null && Platform.getNativePlatform().isUnix();
 
-  private final LibC libC;
+  private final @Nullable LibC libC;
 
   public PosixFs() {
-    this(LibC.ofNativeLibrary());
+    this(LibC.instance());
   }
 
-  public PosixFs(final LibC libC) {
+  public PosixFs(final @Nullable LibC libC) {
     this.libC = libC;
   }
 
@@ -112,6 +113,9 @@ public final class PosixFs {
    */
   public void posixFallocate(final FileDescriptor descriptor, final long offset, final long length)
       throws IOException {
+    if (libC == null) {
+      throw new LinkageError("Expected to call POSIX fallocate but no LibC binding is available");
+    }
     if (offset < 0) {
       throw new IllegalArgumentException(
           String.format("Cannot allocate file with a negative offset of [%d]", offset));

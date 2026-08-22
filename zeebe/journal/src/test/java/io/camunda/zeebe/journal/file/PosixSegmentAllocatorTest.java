@@ -9,7 +9,6 @@ package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.journal.fs.LibC;
 import io.camunda.zeebe.journal.fs.PosixFs;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
 import java.io.IOException;
@@ -27,7 +26,7 @@ final class PosixSegmentAllocatorTest {
   @Test
   void shouldUseFallbackWhenPosixNotSupported(final @TempDir Path tmpDir) throws IOException {
     // given
-    final var posixFs = new PosixFs(new LibC.InvalidLibC());
+    final var posixFs = new PosixFs(null);
     final var fallback = SegmentAllocator.fill();
     final var allocator = new PosixSegmentAllocator(posixFs, fallback);
     final var segmentFile = tmpDir.resolve("file");
