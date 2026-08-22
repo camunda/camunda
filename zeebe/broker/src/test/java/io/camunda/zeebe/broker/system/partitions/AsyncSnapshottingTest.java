@@ -40,6 +40,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -148,6 +149,36 @@ public final class AsyncSnapshottingTest {
 
     // when
     setCommitPosition(100L);
+
+    // then
+    assertThat(snapshot.join()).isNotNull();
+    assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(snapshot.join());
+  }
+
+  @Test
+  public void shouldNotPersistSnapshotUntilLastProcessedPositionIsCommitted() {
+    // given a processor that processed a record above the commit index whose result wrote nothing,
+    // leaving the written position behind the processed one
+    when(mockStreamProcessor.getLastProcessedPositionAsync())
+        .thenReturn(CompletableActorFuture.completed(50L));
+    when(mockStreamProcessor.getLastWrittenPositionAsync())
+        .thenReturn(CompletableActorFuture.completed(10L));
+    createSnapshotDirector(StreamProcessorMode.PROCESSING);
+    final var snapshot = asyncSnapshotDirector.forceSnapshot();
+    verify(mockStreamProcessor, timeout(10000)).getLastWrittenPositionAsync();
+
+    // when only the written position is committed
+    setCommitPosition(10L);
+
+    // then the snapshot is held back, because the state it captured includes position 50
+    Awaitility.await("the snapshot is not persisted")
+        .during(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> !snapshot.isDone());
+    assertThat(persistedSnapshotStore.getLatestSnapshot()).isEmpty();
+
+    // when the processed position is committed too
+    setCommitPosition(50L);
 
     // then
     assertThat(snapshot.join()).isNotNull();

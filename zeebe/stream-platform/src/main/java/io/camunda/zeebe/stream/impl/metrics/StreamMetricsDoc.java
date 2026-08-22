@@ -108,6 +108,27 @@ public enum StreamMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
+  /**
+   * Number of processing results whose side effects are queued, waiting for the results to be
+   * committed
+   */
+  PENDING_SIDE_EFFECTS {
+    @Override
+    public String getDescription() {
+      return "Number of processing results whose side effects are queued, waiting for the results to be committed";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.stream.processor.side.effects.pending";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+  },
+
   /** Number of times batch processing failed due to reaching batch limit and was retried */
   BATCH_PROCESSING_RETRIES {
     @Override

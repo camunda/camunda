@@ -104,6 +104,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   // processing
   private final StreamProcessorContext streamProcessorContext;
   private @Nullable LogStreamReader logStreamReader;
+  private @Nullable LogStreamReader processingLogStreamReader;
   private @Nullable ProcessingStateMachine processingStateMachine;
   private @Nullable ReplayStateMachine replayStateMachine;
 
@@ -145,6 +146,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     final var reader = logStream.newLogStreamReader();
     logStreamReader = reader;
     streamProcessorContext.logStreamReader(reader);
+    if (!isInReplayOnlyMode()) {
+      // Only the processing state machine reads uncommitted records, and it is never created in
+      // replay-only mode. Since an open reader defers deletion of the segment it sits on, opening
+      // one here would hold on to a segment that nothing ever reads.
+      final var processingReader = logStream.newUncommittedLogStreamReader();
+      processingLogStreamReader = processingReader;
+      streamProcessorContext.processingLogStreamReader(processingReader);
+    }
   }
 
   @Override
@@ -271,9 +280,24 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     return isOpened() && shouldProcess;
   }
 
+  /**
+   * Closes the reader that replay reads committed records from, at most once. In REPLAY mode replay
+   * never finishes, so this only runs on shutdown; in PROCESSING mode it runs as soon as replay is
+   * done.
+   */
+  private void closeReplayReader() {
+    final var reader = logStreamReader;
+    if (reader != null) {
+      logStreamReader = null;
+      reader.close();
+    }
+  }
+
   private void tearDown() {
-    streamProcessorContext.getLogStreamReader().close();
-    logStream.removeRecordAvailableListener(this);
+    closeReplayReader();
+    CloseHelper.close(processingLogStreamReader);
+    logStream.removeAppendedRecordAvailableListener(this);
+    CloseHelper.close(processingStateMachine);
     CloseHelper.close(replayStateMachine);
     scheduledCommandCache.clear();
   }
@@ -291,7 +315,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             recordProcessors,
             scheduledCommandCache);
 
-    logStream.registerRecordAvailableListener(this);
+    // Processing reads uncommitted records, so it must be woken as soon as records are appended;
+    // the later commit of those same records would tell it nothing new.
+    logStream.registerAppendedRecordAvailableListener(this);
 
     // start reading
     lifecycleAwareListeners.forEach(l -> l.onRecovered(streamProcessorContext));
@@ -359,6 +385,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void onRecovered(final LastProcessingPositions lastProcessingPositions) {
+    // Replay is the only consumer of the committed reader, and it is done: it is reached only in
+    // PROCESSING mode, where the replay state machine never registers as a record-available
+    // listener and so is never woken again. Leaving the reader open would pin the oldest log
+    // position that any reader still needs, keeping segments (and, in the test log storage, every
+    // appended entry) alive for the lifetime of the partition.
+    closeReplayReader();
+
     final var writer = logStream.newLogStreamWriter();
     streamProcessorContext.logStreamWriter(writer);
     streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);

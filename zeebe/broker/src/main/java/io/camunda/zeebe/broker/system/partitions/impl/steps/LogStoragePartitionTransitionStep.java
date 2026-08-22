@@ -34,7 +34,9 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
     if (logStorage != null
         && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
             || targetRole == Role.INACTIVE)) {
-      context.getRaftPartition().getServer().removeCommitListener(logStorage);
+      final var server = context.getRaftPartition().getServer();
+      server.removeCommitListener(logStorage);
+      server.removeCommittedEntryListener(logStorage.committedPositionNotifier());
       context.setLogStorage(null);
     }
     return CompletableActorFuture.completed(null);
@@ -52,7 +54,9 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
       if (logStorageOrException.isRight()) {
         final var logStorage = logStorageOrException.get();
         context.setLogStorage(logStorage);
-        context.getRaftPartition().getServer().addCommitListener(logStorage);
+        final var server = context.getRaftPartition().getServer();
+        server.addCommitListener(logStorage);
+        server.addCommittedEntryListener(logStorage.committedPositionNotifier());
         openFuture.complete(null);
       } else {
         openFuture.completeExceptionally(logStorageOrException.getLeft());
@@ -92,6 +96,7 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
     return right(
         new AtomixLogStorage(
             server::openReader,
+            server::openUncommittedReader,
             // Prevent followers from writing new events
             new LogAppenderForReadOnlyStorage()));
   }
@@ -123,7 +128,9 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
           new NotLeaderException(
               String.format(WRONG_TERM_ERROR_MSG, targetTerm, raftTerm, context.getPartitionId())));
     } else {
-      final var logStorage = AtomixLogStorage.ofPartition(server::openReader, logAppender);
+      final var logStorage =
+          AtomixLogStorage.ofPartition(
+              server::openReader, server::openUncommittedReader, logAppender);
       return right(logStorage);
     }
   }

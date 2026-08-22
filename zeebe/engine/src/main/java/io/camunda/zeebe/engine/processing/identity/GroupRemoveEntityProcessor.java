@@ -149,7 +149,6 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
     sideEffectWriter.appendSideEffect(
         () -> {
           membershipStateAdapter.invalidateAll();
-          return true;
         });
   }
 
