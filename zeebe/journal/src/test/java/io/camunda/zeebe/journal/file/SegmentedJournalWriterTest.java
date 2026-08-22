@@ -74,7 +74,7 @@ final class SegmentedJournalWriterTest {
     writer.flush();
 
     // when
-    writer.deleteAfter(2);
+    writer.deleteAfter(2, false);
 
     // then
     assertThat(writer.getLastFlushedIndex()).isEqualTo(2L);
@@ -147,7 +147,7 @@ final class SegmentedJournalWriterTest {
   void shouldInvalidateNextEntryAfterAppend() {
     try (final SegmentedJournalReader reader =
         new SegmentedJournalReader(
-            journalFactory.journal(segments), new JournalMetrics(meterRegistry))) {
+            journalFactory.journal(segments), new JournalMetrics(meterRegistry), false)) {
       // when
       writer.append(-1, journalFactory.entry());
 
@@ -172,7 +172,9 @@ final class SegmentedJournalWriterTest {
 
     try (final SegmentedJournalReader reader =
         new SegmentedJournalReader(
-            followerJournalFactory.journal(followerSegments), new JournalMetrics(meterRegistry))) {
+            followerJournalFactory.journal(followerSegments),
+            new JournalMetrics(meterRegistry),
+            false)) {
       // when
       final byte[] serializedRecord = BufferUtil.bufferAsArray(writtenRecord.serializedRecord());
       followerWriter.append(writtenRecord.checksum(), serializedRecord);
