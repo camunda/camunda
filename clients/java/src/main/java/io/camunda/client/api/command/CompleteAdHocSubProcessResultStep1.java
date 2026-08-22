@@ -21,7 +21,8 @@ import java.util.Map;
 public interface CompleteAdHocSubProcessResultStep1 extends CompleteJobResult {
 
   /**
-   * Adds an element to activate in the ad-hoc sub-process.
+   * Adds an element to activate in the ad-hoc sub-process. This starts a new variable accumulation;
+   * variables added afterward apply to this element rather than any previously activated element.
    *
    * @return this result
    */
@@ -52,7 +53,7 @@ public interface CompleteAdHocSubProcessResultStep1 extends CompleteJobResult {
      * @return the builder for this command.
      */
     @Override
-    CompleteAdHocSubProcessResultStep1 variables(String variables);
+    CompleteAdHocSubProcessResultStep2 variables(String variables);
 
     /**
      * The variables that will be created on the activated element instance.
@@ -61,7 +62,7 @@ public interface CompleteAdHocSubProcessResultStep1 extends CompleteJobResult {
      * @return the builder for this command.
      */
     @Override
-    CompleteAdHocSubProcessResultStep1 variables(Object variables);
+    CompleteAdHocSubProcessResultStep2 variables(Object variables);
 
     /**
      * The variables that will be created on the activated element instance.
@@ -70,7 +71,7 @@ public interface CompleteAdHocSubProcessResultStep1 extends CompleteJobResult {
      * @return the builder for this command.
      */
     @Override
-    CompleteAdHocSubProcessResultStep1 variables(InputStream variables);
+    CompleteAdHocSubProcessResultStep2 variables(InputStream variables);
 
     /**
      * The variables that will be created on the activated element instance.
@@ -79,7 +80,7 @@ public interface CompleteAdHocSubProcessResultStep1 extends CompleteJobResult {
      * @return the builder for this command.
      */
     @Override
-    CompleteAdHocSubProcessResultStep1 variables(Map<String, Object> variables);
+    CompleteAdHocSubProcessResultStep2 variables(Map<String, Object> variables);
 
     /**
      * A single variable that will be created on the activated element instance.
@@ -89,6 +90,25 @@ public interface CompleteAdHocSubProcessResultStep1 extends CompleteJobResult {
      * @return the builder for this command.
      */
     @Override
-    CompleteAdHocSubProcessResultStep1 variable(String key, Object value);
+    CompleteAdHocSubProcessResultStep2 variable(String key, Object value);
+
+    /**
+     * Adds a single variable to the most recently activated element instance.
+     *
+     * @param key the key of the variable as string
+     * @param value the value of the variable as object
+     * @return the builder for this command.
+     */
+    @Override
+    CompleteAdHocSubProcessResultStep2 addVariable(String key, Object value);
+
+    /**
+     * Adds multiple variables to the most recently activated element instance.
+     *
+     * @param variables the variables document as map
+     * @return the builder for this command.
+     */
+    @Override
+    CompleteAdHocSubProcessResultStep2 addVariables(Map<String, Object> variables);
   }
 }

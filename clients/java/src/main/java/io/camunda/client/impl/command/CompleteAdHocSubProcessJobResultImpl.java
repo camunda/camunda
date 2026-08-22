@@ -47,6 +47,7 @@ public class CompleteAdHocSubProcessJobResultImpl
   @Override
   public CompleteAdHocSubProcessResultStep2 activateElement(final String elementId) {
     ArgumentUtil.ensureNotNull("elementId", elementId);
+    resetAccumulatedVariables();
     latestActivateElement = new ActivateElement().setElementId(elementId);
     activateElements.add(latestActivateElement);
     return this;

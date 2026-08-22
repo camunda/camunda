@@ -18,11 +18,13 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.JsonMapper;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 public abstract class CommandWithVariables<T> {
 
   protected final JsonMapper objectMapper;
+  private final Map<String, Object> accumulatedVariables = new HashMap<>();
 
   public CommandWithVariables(final JsonMapper jsonMapper) {
     objectMapper = jsonMapper;
@@ -30,27 +32,73 @@ public abstract class CommandWithVariables<T> {
 
   public T variables(final InputStream variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariablesInternal(objectMapper.validateJson("variables", variables));
+    final String validatedVariables = objectMapper.validateJson("variables", variables);
+    replaceAccumulatedVariables(validatedVariables);
+    return setVariablesInternal(validatedVariables);
   }
 
   public T variables(final String variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariablesInternal(objectMapper.validateJson("variables", variables));
+    final String validatedVariables = objectMapper.validateJson("variables", variables);
+    replaceAccumulatedVariables(validatedVariables);
+    return setVariablesInternal(validatedVariables);
   }
 
   public T variables(final Map<String, Object> variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
-    return variables((Object) variables);
+    final String serializedVariables = objectMapper.toJson(variables);
+    replaceAccumulatedVariables(variables);
+    return setVariablesInternal(serializedVariables);
   }
 
   public T variables(final Object variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariablesInternal(objectMapper.toJson(variables));
+    final String serializedVariables = objectMapper.toJson(variables);
+    final Object transformedVariables = objectMapper.transform(variables, Object.class);
+    replaceAccumulatedVariables(ArgumentUtil.ensureJsonObject("variables", transformedVariables));
+    return setVariablesInternal(serializedVariables);
   }
 
   public T variable(final String key, final Object value) {
     ArgumentUtil.ensureNotNull("key", key);
-    return variables(Collections.singletonMap(key, value));
+    accumulatedVariables.clear();
+    accumulatedVariables.put(key, value);
+    return setVariablesInternal(objectMapper.toJson(accumulatedVariables));
+  }
+
+  public T addVariable(final String key, final Object value) {
+    ArgumentUtil.ensureNotNull("key", key);
+    accumulatedVariables.put(key, value);
+    return setVariablesInternal(objectMapper.toJson(accumulatedVariables));
+  }
+
+  public T addVariables(final Map<String, Object> variables) {
+    ArgumentUtil.ensureNotNull("variables", variables);
+    accumulatedVariables.putAll(variables);
+    return setVariablesInternal(objectMapper.toJson(accumulatedVariables));
+  }
+
+  private void replaceAccumulatedVariables(final String variables) {
+    if (variables == null || variables.trim().isEmpty()) {
+      replaceAccumulatedVariables(Collections.emptyMap());
+      return;
+    }
+
+    final Object parsedVariables = objectMapper.fromJson(variables, Object.class);
+    if (parsedVariables == null) {
+      replaceAccumulatedVariables(Collections.emptyMap());
+      return;
+    }
+    replaceAccumulatedVariables(ArgumentUtil.ensureJsonObject("variables", parsedVariables));
+  }
+
+  protected final void resetAccumulatedVariables() {
+    accumulatedVariables.clear();
+  }
+
+  protected final void replaceAccumulatedVariables(final Map<String, Object> variables) {
+    accumulatedVariables.clear();
+    accumulatedVariables.putAll(variables);
   }
 
   protected abstract T setVariablesInternal(String variables);
