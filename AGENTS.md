@@ -254,11 +254,14 @@ Load extra context on demand — only when relevant, only if the files exist.
 
 **When editing these areas**, read the corresponding instruction file:
 
+- CI/release MCP configuration (`.vscode/mcp.json`) →
+  `.github/instructions/ci-mcp-tooling.instructions.md`
 - Frontend code (`client/` directories) → `.github/instructions/frontend.instructions.md`
 - MCP gateway (`gateways/gateway-mcp/`) → `gateways/gateway-mcp/AGENTS.md`
 - Load tests (`load-tests/`, load test workflows) →
   `.github/instructions/load-tests.instructions.md`
-- Testing libraries / Camunda Process Test (`testing/`) → `testing/AGENTS.md`
+- Testing libraries / Camunda Process Test (`testing/`) →
+  `.github/instructions/testing.instructions.md` and `testing/AGENTS.md`
 
 **When working inside a specific module**:
 
