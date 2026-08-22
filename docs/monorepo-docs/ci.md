@@ -14,9 +14,12 @@ This page has information and answers questions around how the [C8 monorepo CI](
 Maven artifacts are available on [Artifactory](https://artifacts.camunda.com/) and Docker images are available on [DockerHub](https://hub.docker.com/u/camunda/):
 
 * Pushed commits to `main` branch produce:
-  * Maven artifacts with version `8.10.0-SNAPSHOT` for all C8 components
+  * Maven artifacts with version `8.11.0-SNAPSHOT` for all C8 components
   * Docker images with tags `X.Y-SNAPSHOT` and `SNAPSHOT` for [Camunda](https://hub.docker.com/r/camunda/camunda)
   * Docker images with tags `X.Y-SNAPSHOT` and `8-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize)
+* Pushed commits to `stable/8.10` branch produce:
+  * Maven artifacts with version `8.10.0-SNAPSHOT` for Optimize, Operate, Tasklist, Zeebe
+  * Docker images with tag `8.10-SNAPSHOT` for [Camunda](https://hub.docker.com/r/camunda/camunda/tags?name=8.10-SNAPSHOT), [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.10-SNAPSHOT)
 * Pushed commits to `stable/8.9` branch produce:
   * Maven artifacts with version `8.9.0-SNAPSHOT` for Optimize, Operate, Tasklist, Zeebe
   * Docker images with tag `8.9-SNAPSHOT` for [Camunda](https://hub.docker.com/r/camunda/camunda/tags?name=8.9-SNAPSHOT), [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.9-SNAPSHOT)
