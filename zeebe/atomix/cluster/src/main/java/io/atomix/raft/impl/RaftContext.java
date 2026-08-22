@@ -1400,6 +1400,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return partitionConfig.getPreferSnapshotReplicationThreshold();
   }
 
+  public long getPromotionLagThreshold() {
+    return partitionConfig.getPromotionLagThreshold();
+  }
+
   public void setPreferSnapshotReplicationThreshold(final int snapshotReplicationThreshold) {
     partitionConfig.setPreferSnapshotReplicationThreshold(snapshotReplicationThreshold);
   }
