@@ -133,26 +133,30 @@ public class ItemProviderFactory {
 
   private ProcessInstanceItemProvider forSuspendProcessInstance(
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    // Suspension does not cascade between parent and child instances, so call activity child
+    // instances are eligible on their own. Unlike cancel, the root-only filter is intentionally
+    // not applied here.
     return new ProcessInstanceItemProvider(
         searchClientsProxy,
         metrics,
         filter.toBuilder()
             .partitionId(partitionId)
             .states(ProcessInstanceState.ACTIVE.name())
-            .parentProcessInstanceKeyOperations(Operation.exists(false))
             .build(),
         authentication);
   }
 
   private ProcessInstanceItemProvider forResumeProcessInstance(
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    // Resumption does not cascade between parent and child instances, so call activity child
+    // instances are eligible on their own. Unlike cancel, the root-only filter is intentionally
+    // not applied here.
     return new ProcessInstanceItemProvider(
         searchClientsProxy,
         metrics,
         filter.toBuilder()
             .partitionId(partitionId)
             .states(ProcessInstanceState.SUSPENDED.name())
-            .parentProcessInstanceKeyOperations(Operation.exists(false))
             .build(),
         authentication);
   }

@@ -50,14 +50,16 @@ const useBatchOperationMutationRequestBody = () =>
     processInstancesSelectionStore.checkedRunningIds,
   );
 
+// Suspend applies to any ACTIVE (running) instance; suspension does not cascade, so call activity
+// child instances are eligible on their own rather than being restricted to root instances.
 const useSuspendProcessInstancesBatchOperationMutationRequestBody = () =>
   useProcessInstancesBatchOperationMutationRequestBody(
-    processInstancesSelectionStore.checkedActiveRootIds,
+    processInstancesSelectionStore.checkedRunningIds,
   );
 
 const useResumeProcessInstancesBatchOperationMutationRequestBody = () =>
   useProcessInstancesBatchOperationMutationRequestBody(
-    processInstancesSelectionStore.checkedSuspendedRootIds,
+    processInstancesSelectionStore.checkedSuspendedIds,
     true,
   );
 

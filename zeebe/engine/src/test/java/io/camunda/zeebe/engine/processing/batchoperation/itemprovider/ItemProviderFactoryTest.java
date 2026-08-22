@@ -67,8 +67,10 @@ class ItemProviderFactoryTest {
     assertThat(itemProvider).isNotNull();
     assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
 
+    // suspension does not cascade, so child instances are eligible on their own: no root-only
+    // filter
     final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
-    assertThat(usedFilter.parentProcessInstanceKeyOperations()).contains(Operation.exists(false));
+    assertThat(usedFilter.parentProcessInstanceKeyOperations()).isEmpty();
     assertThat(usedFilter.stateOperations()).contains(Operation.eq("ACTIVE"));
     assertThat(usedFilter.partitionId()).isEqualTo(1);
   }
@@ -89,8 +91,10 @@ class ItemProviderFactoryTest {
     assertThat(itemProvider).isNotNull();
     assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
 
+    // resumption does not cascade, so child instances are eligible on their own: no root-only
+    // filter
     final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
-    assertThat(usedFilter.parentProcessInstanceKeyOperations()).contains(Operation.exists(false));
+    assertThat(usedFilter.parentProcessInstanceKeyOperations()).isEmpty();
     assertThat(usedFilter.stateOperations()).contains(Operation.eq("SUSPENDED"));
     assertThat(usedFilter.partitionId()).isEqualTo(1);
   }

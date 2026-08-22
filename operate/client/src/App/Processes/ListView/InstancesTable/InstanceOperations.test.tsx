@@ -69,13 +69,18 @@ describe('InstanceOperations', () => {
     });
   });
 
-  it('should not allow suspending an active child instance', () => {
+  it('should allow suspending an active child instance independently of its parent', async () => {
     const activeChildInstance = createProcessInstance({
       state: 'ACTIVE',
       parentProcessInstanceKey: '111111111',
     });
+    mockSuspendProcessInstance().withSuccess(null);
+    mockFetchProcessInstance().withSuccess({
+      ...activeChildInstance,
+      state: 'SUSPENDED',
+    });
 
-    render(
+    const {user} = render(
       <InstanceOperations
         processInstance={activeChildInstance}
         activeOperations={[]}
@@ -83,9 +88,15 @@ describe('InstanceOperations', () => {
       {wrapper: getWrapper()},
     );
 
-    expect(
-      screen.queryByRole('button', {name: /Suspend Instance/}),
-    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: /Suspend Instance/}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'info',
+        title: 'Instance suspended',
+        isDismissable: true,
+      });
+    });
     expect(
       screen.getByRole('button', {name: /Cancel Instance/}),
     ).toBeInTheDocument();
@@ -182,13 +193,18 @@ describe('InstanceOperations', () => {
     });
   });
 
-  it('should only allow cancellation for a suspended child instance', () => {
+  it('should allow resuming a suspended child instance independently of its parent', async () => {
     const suspendedChildInstance = createProcessInstance({
       state: 'SUSPENDED',
       parentProcessInstanceKey: '111111111',
     });
+    mockResumeProcessInstance().withSuccess(null);
+    mockFetchProcessInstance().withSuccess({
+      ...suspendedChildInstance,
+      state: 'ACTIVE',
+    });
 
-    render(
+    const {user} = render(
       <InstanceOperations
         processInstance={suspendedChildInstance}
         activeOperations={[]}
@@ -196,9 +212,15 @@ describe('InstanceOperations', () => {
       {wrapper: getWrapper()},
     );
 
-    expect(
-      screen.queryByRole('button', {name: /Resume Instance/}),
-    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: /Resume Instance/}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'info',
+        title: 'Instance resumed',
+        isDismissable: true,
+      });
+    });
     expect(
       screen.getByRole('button', {name: /Cancel Instance/}),
     ).toBeInTheDocument();
