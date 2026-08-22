@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
 import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
@@ -77,12 +76,6 @@ public final class NoOpPartitionAdminAccess implements PartitionAdminAccess {
 
   @Override
   public ActorFuture<FlowControlLimits> getFlowControlConfiguration() {
-    logCall();
-    return CompletableActorFuture.completed(null);
-  }
-
-  @Override
-  public ActorFuture<ExporterPhase> getExporterPhase() {
     logCall();
     return CompletableActorFuture.completed(null);
   }
