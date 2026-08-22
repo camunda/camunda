@@ -21,6 +21,7 @@ import {useWaitStateStatistics} from 'modules/queries/waitStateStatistics/useWai
 import {hasProcessLevelWaitState} from 'modules/utils/waitStates';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {modificationsStore} from 'modules/stores/modifications';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 function useSelectionAwareIncidentsCount(
   processInstanceKey: string,
@@ -57,7 +58,9 @@ function useSelectionAwareIncidentsCount(
 const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
   isHistoryTabVisible,
 }) => {
-  const {hasSelection} = useProcessInstanceElementSelection();
+  const {hasSelection, selectedElementId} =
+    useProcessInstanceElementSelection();
+  const {data: businessObjects} = useBusinessObjects();
   const {data: processInstance, isLoading: isProcessInstanceLoading} =
     useProcessInstance();
   const {data: waitStateStatistics, isLoading: isWaitStateLoading} =
@@ -74,15 +77,20 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
   const navigate = useNavigate();
   const hasIncident = processInstance?.hasIncident === true;
 
-  const prevHasSelectionRef = useRef(hasSelection);
+  const prevSelectedElementIdRef = useRef(selectedElementId);
   useLayoutEffect(() => {
-    // Switches to the default element tab when users
-    // select an element without a previous selection.
-    const prevHasSelection = prevHasSelectionRef.current;
-    prevHasSelectionRef.current = hasSelection;
+    if (
+      isProcessInstanceLoading ||
+      (!hasIncident && businessObjects === undefined)
+    ) {
+      return;
+    }
+
+    const prevSelectedElementId = prevSelectedElementIdRef.current;
+    prevSelectedElementIdRef.current = selectedElementId;
     if (
       !hasSelection ||
-      prevHasSelection ||
+      selectedElementId === prevSelectedElementId ||
       modificationsStore.isModificationModeEnabled
     ) {
       return;
@@ -90,9 +98,22 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
 
     const pathname = hasIncident
       ? Paths.processInstanceIncidents({processInstanceId})
-      : Paths.processInstanceDetails({processInstanceId});
+      : businessObjects?.[selectedElementId ?? '']?.$type ===
+          'bpmn:CallActivity'
+        ? Paths.processInstanceDetails({processInstanceId})
+        : Paths.processInstanceVariables({processInstanceId});
+
     navigate({pathname, search: location.search}, {replace: true});
-  }, [hasSelection, hasIncident, processInstanceId, location.search, navigate]);
+  }, [
+    hasSelection,
+    selectedElementId,
+    hasIncident,
+    isProcessInstanceLoading,
+    businessObjects,
+    processInstanceId,
+    location.search,
+    navigate,
+  ]);
 
   const incidentsCount = useSelectionAwareIncidentsCount(
     processInstanceId ?? '',
