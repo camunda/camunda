@@ -397,6 +397,9 @@ make typical   # 50 instances/s, 6 workers, typical_process BPMN
 make realistic # Realistic multi-instance benchmark (values from camunda-load-tests-helm)
 make max       # 300 instances/s — maximum stress, also disables consistency check overhead
 make archiver  # Multi-instance archiver scenario (no workers)
+make zeebe-secrets   # Benchmarks the secrets API against a file-based secret store (no process load).
+               # Requires scaffolding with LOAD_TEST_PLATFORM_CHART_GIT_REF=main (unreleased
+               # orchestration.secretStore.file); see load-tests/docs/zeebe-secrets-benchmark.md.
 ```
 
 You can also pass `scenario=` directly to combine with additional overrides:

@@ -27,6 +27,9 @@ public class LoadTesterProperties {
 
   @NestedConfigurationProperty private OptimizeProperties optimize = new OptimizeProperties();
 
+  @NestedConfigurationProperty
+  private ZeebeSecretsDriverProperties zeebeSecrets = new ZeebeSecretsDriverProperties();
+
   public boolean isMonitorDataAvailability() {
     return monitorDataAvailability;
   }
@@ -91,5 +94,13 @@ public class LoadTesterProperties {
 
   public void setOptimize(final OptimizeProperties optimize) {
     this.optimize = optimize;
+  }
+
+  public ZeebeSecretsDriverProperties getZeebeSecrets() {
+    return zeebeSecrets;
+  }
+
+  public void setZeebeSecrets(final ZeebeSecretsDriverProperties zeebeSecrets) {
+    this.zeebeSecrets = zeebeSecrets;
   }
 }

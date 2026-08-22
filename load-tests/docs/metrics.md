@@ -386,3 +386,11 @@ Number of filesystem write operations per second.
 sum by (pod, container) (rate(container_fs_writes_total{namespace=~"$namespace", container!=""}[$__rate_interval]))
 ```
 
+---
+
+## Secrets API benchmark
+
+The secret-resolution API (`POST /v2/secrets/resolve`, `POST /v2/secrets/list`) is benchmarked by
+the `zeebe-secrets` scenario, which has its own driver metrics (`zeebe_secrets_request_latency_seconds`,
+`zeebe_secrets_requests_submitted_total`), scenarios, targets and regression thresholds. See
+[zeebe-secrets-benchmark.md](zeebe-secrets-benchmark.md).
