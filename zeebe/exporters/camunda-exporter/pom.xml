@@ -300,6 +300,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>sts</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>jakarta.json</groupId>
       <artifactId>jakarta.json-api</artifactId>
     </dependency>
@@ -315,6 +320,11 @@
           <ignoredNonTestScopedDependencies>
             <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-core</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
+          <ignoredUnusedDeclaredDependencies>
+            <!-- This dependency is indirectly used by the awssk auth plugin. It requires these
+                 classes on the classpath in order to resolve the AWS credentials -->
+            <dep>software.amazon.awssdk:sts</dep>
+          </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
 
