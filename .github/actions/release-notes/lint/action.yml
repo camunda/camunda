@@ -1,0 +1,42 @@
+name: Release-notes PR-gate lint
+description: >
+  Validates that a PR links a tracked issue (or ticks the opt-out) and that its
+  title is a conventional commit, using the shared release-notes reference
+  parser. Metadata-only — it reads the PR through the API and never checks out or
+  executes PR code.
+inputs:
+  token:
+    description: >
+      Token used to read issue/PR metadata and — when can-write is true — post
+      the sticky comment and sync the no-issue label. Pass GITHUB_TOKEN; the job
+      needs `pull-requests: write` for the comment and label, plus `issues:
+      write` so a deleted no-issue label can be recreated.
+    required: true
+  pr-number:
+    description: The pull request to evaluate, e.g. github.event.pull_request.number.
+    required: true
+  can-write:
+    description: >
+      Whether the token can write to this PR. Pass false for fork PRs, where
+      GitHub issues a read-only token regardless of the requested permissions:
+      the gate still evaluates and reports to the job summary, but skips the
+      comment and label instead of failing on a 403. Defaults to false so a
+      caller that forgets it degrades to read-only rather than erroring.
+    required: false
+    default: 'false'
+  enforce:
+    description: When 'true', a failing check exits non-zero. Warn-only otherwise.
+    required: false
+    default: 'false'
+outputs:
+  outcome:
+    description: pass | fail (combined across all checks)
+  delivery-path:
+    description: direct | backportHop — how the PR-issue link was satisfied.
+  failed-checks:
+    description: Comma-separated labels of the checks that failed (empty on pass).
+  label-action:
+    description: added | removed | noop — what the no-issue label sync did.
+runs:
+  using: node24
+  main: dist/index.js

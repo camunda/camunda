@@ -1,0 +1,93 @@
+# Release-notes PR-gate (epic #53605, work unit #53593).
+#
+# SECURITY MODEL (v3) — read before editing:
+#   * Runs on plain `pull_request`. There is NO `pull_request_target` here, and
+#     none may be added: it is denied repo-wide by
+#     .github/conftest-gha-best-practices.rego.
+#   * On `pull_request` this workflow and the local action resolve from the PR
+#     head, so a PR can edit the code that judges it. That is the same trust
+#     model as every other lint in ci.yml (actionlint, spotless, commitlint), and
+#     it is acceptable because this check is ADVISORY: it is not a required
+#     status check, so it is not a security boundary. `.github/**` is
+#     CODEOWNERS-gated, so a tampering diff still needs review.
+#     ⚠ BEFORE MAKING THIS CHECK REQUIRED, resolve that: a PR could then pass
+#     itself by editing the action. See epic #53605.
+#   * No privileged token. The gate itself runs on GITHUB_TOKEN alone — no Vault,
+#     no App token. (The observe-build-status step reads Vault for CI health
+#     metrics, like every other job in the repo; it is continue-on-error and
+#     plays no part in the verdict.) Fork PRs get a read-only token from GitHub
+#     whatever `permissions:` asks for, which is why the action takes `can-write`
+#     and skips its two writes rather than 403-ing.
+#   * Metadata-only: the action reads the PR through the API. Nothing checks out
+#     or executes PR code, on any trigger.
+#   * Warn-only during rollout (enforce=false). The job reports red on failure
+#     from day one but is NOT a required check, so it blocks nobody. The flip to
+#     enforce + required status check happens later via branch protection.
+#
+# The gate is deliberately NOT part of Unified CI: ci.yml does not listen to
+# `edited`, and a PR body edit is the primary way an author fixes a gate
+# failure. This is a PR-metadata policy check, not CI on code changes — the same
+# shape as reject-updates-using-merge-commit.yml.
+#
+# type: CI Helper
+# owner: @camunda/engineering-operations
+---
+name: Release-notes PR-gate
+
+on:
+  pull_request:
+    # The branches whose release notes this gate governs.
+    branches: [main, 'stable/**']
+    # `edited` is load-bearing: a body edit is how an author fixes a gate
+    # failure, and it is also how a passing PR could silently lose its issue
+    # link. Without it the gate's verdict can go stale against the current body.
+    types: [opened, edited, synchronize, reopened]
+
+# One run per PR; a newer event supersedes an in-flight one.
+concurrency:
+  group: release-notes-pr-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  pr-issue-link:
+    name: PR-issue link
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # checkout, for the local action
+      pull-requests: write # sticky comment + no-issue label (internal PRs only)
+      issues: write # recreate the no-issue label if it was deleted
+    env:
+      TEST_OWNER: '@camunda/engineering-operations'
+      TEST_PRODUCT: Orchestration Cluster
+      TEST_TYPE: CI Helper
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - name: Lint PR-issue link
+        uses: ./.github/actions/release-notes/lint
+        with:
+          token: ${{ github.token }}
+          pr-number: ${{ github.event.pull_request.number }}
+          # False on fork PRs: GitHub withholds write access there, so the gate
+          # evaluates and reports to the job summary but skips its two writes.
+          can-write: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+          enforce: 'false' # warn-only during rollout
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
