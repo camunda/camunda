@@ -554,11 +554,22 @@ public class ExporterMigrationTestHelper {
   public static Optional<String> findLatestReleaseCandidate(
       final List<DockerHubTag> allTags, final String previousMinorVersion) {
     return allTags.stream()
-        .filter(t -> t.name().startsWith(previousMinorVersion))
+        .filter(t -> hasMinorPrefix(t.name(), previousMinorVersion))
         .filter(t -> RC_SUFFIX_PATTERN.matcher(t.name()).matches())
         .filter(t -> t.lastPushed() != null)
         .max(Comparator.comparing(t -> Instant.parse(t.lastPushed())))
         .map(DockerHubTag::name);
+  }
+
+  /**
+   * A plain {@code startsWith} would also match a different minor sharing the same digits, e.g.
+   * "8.80.0-rc1" starts with "8.8". The character right after the prefix must not continue the
+   * minor number itself.
+   */
+  private static boolean hasMinorPrefix(final String tagName, final String minorVersion) {
+    return tagName.startsWith(minorVersion)
+        && (tagName.length() == minorVersion.length()
+            || !Character.isDigit(tagName.charAt(minorVersion.length())));
   }
 
   /**
@@ -632,7 +643,7 @@ public class ExporterMigrationTestHelper {
 
     final List<String> allVersions = new ArrayList<>();
     for (final DockerHubTag tag : allTags) {
-      if (!tag.name().startsWith(PREVIOUS_MINOR_VERSION)) {
+      if (!hasMinorPrefix(tag.name(), PREVIOUS_MINOR_VERSION)) {
         continue;
       }
 

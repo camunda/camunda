@@ -47,20 +47,20 @@ class ExporterMigrationTestHelperTest {
   }
 
   @Test
-  void shouldPickTagWithLatestPushTimestampNotHighestNameOrRcNumber() {
+  void shouldPickTagWithLatestPushTimestampNotHighestRcNumber() {
     // given
-    // "8.8.0-rc9" sorts after "8.8.0-rc10" both lexicographically and by parsed rc-number, but was
-    // pushed earlier — only a timestamp-based comparison picks the actually latest tag.
+    // "8.8.0-rc10" has the higher rc number, but "8.8.0-rc9" was pushed later — only a
+    // timestamp-based comparison picks the actually latest tag.
     final List<DockerHubTag> tags =
         List.of(
-            new DockerHubTag("8.8.0-rc9", "2026-01-01T00:00:00Z"),
-            new DockerHubTag("8.8.0-rc10", "2026-04-01T00:00:00Z"));
+            new DockerHubTag("8.8.0-rc10", "2026-01-01T00:00:00Z"),
+            new DockerHubTag("8.8.0-rc9", "2026-04-01T00:00:00Z"));
 
     // when
     final var latestRc = ExporterMigrationTestHelper.findLatestReleaseCandidate(tags, "8.8");
 
     // then
-    assertThat(latestRc).contains("8.8.0-rc10");
+    assertThat(latestRc).contains("8.8.0-rc9");
   }
 
   @Test
@@ -69,6 +69,22 @@ class ExporterMigrationTestHelperTest {
     final List<DockerHubTag> tags =
         List.of(
             new DockerHubTag("8.7.0-rc1", "2026-05-01T00:00:00Z"),
+            new DockerHubTag("8.8.0-rc1", "2026-01-01T00:00:00Z"));
+
+    // when
+    final var latestRc = ExporterMigrationTestHelper.findLatestReleaseCandidate(tags, "8.8");
+
+    // then
+    assertThat(latestRc).contains("8.8.0-rc1");
+  }
+
+  @Test
+  void shouldIgnoreTagsSharingOnlyANumericPrefixWithTheMinor() {
+    // given
+    // "8.80.0-rc1" starts with "8.8" but belongs to a different minor entirely.
+    final List<DockerHubTag> tags =
+        List.of(
+            new DockerHubTag("8.80.0-rc1", "2026-05-01T00:00:00Z"),
             new DockerHubTag("8.8.0-rc1", "2026-01-01T00:00:00Z"));
 
     // when
