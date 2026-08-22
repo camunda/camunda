@@ -36,10 +36,12 @@ import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.similarity.EmbeddingModelAdapter;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
+import io.camunda.process.test.impl.cleanup.CleanupStrategy;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
+import io.camunda.process.test.impl.deployment.DeploymentCollector;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.TestCaseRunnerProxy;
@@ -91,6 +93,8 @@ public class ExecutionListenerTest {
   @Mock private CamundaProcessTestResultCollector camundaProcessTestResultCollector;
   @Mock private CamundaClientBuilderFactory camundaClientBuilderFactory;
   @Mock private CamundaClientProperties camundaClientProperties;
+  @Mock private CleanupStrategy cleanupStrategy;
+  @Mock private DeploymentCollector deploymentCollector;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private CamundaClientBuilder camundaClientBuilder;
@@ -159,6 +163,10 @@ public class ExecutionListenerTest {
     lenient()
         .when(applicationContext.getBeansOfType(EmbeddingModelAdapter.class))
         .thenReturn(Map.of());
+    lenient().when(applicationContext.getBean(CleanupStrategy.class)).thenReturn(cleanupStrategy);
+    lenient()
+        .when(applicationContext.getBean(DeploymentCollector.class))
+        .thenReturn(deploymentCollector);
   }
 
   @Test
@@ -364,7 +372,7 @@ public class ExecutionListenerTest {
   }
 
   @Test
-  void shouldPurgeTheClusterInBetweenTests() throws Exception {
+  void shouldCleanupDataInBetweenTests() throws Exception {
     // given
     final CamundaProcessTestExecutionListener listener =
         new CamundaProcessTestExecutionListener(
@@ -374,13 +382,11 @@ public class ExecutionListenerTest {
     listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
 
-    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
-    // it from trying to execute real code (the HTTP call will fail).
-    setManagementClientDummy(listener);
     listener.afterTestMethod(testContext);
 
     // then
-    verify(camundaManagementClient).purgeCluster();
+    verify(deploymentCollector).getDeploymentEvents();
+    verify(cleanupStrategy).cleanup(any(), any(), any(), any());
   }
 
   @Test
@@ -432,7 +438,7 @@ public class ExecutionListenerTest {
     // given
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         new CamundaProcessTestRuntimeConfiguration();
-    runtimeConfiguration.setDataDeletionEnabled(false);
+    runtimeConfiguration.setDataDeletionMode(DataDeletionMode.NONE);
     when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
         .thenReturn(runtimeConfiguration);
 

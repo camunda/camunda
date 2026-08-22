@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.runtime;
 
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.api.DataDeletionMode;
 import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
 import io.camunda.process.test.impl.runtime.properties.JudgeProperties;
 import io.camunda.process.test.impl.runtime.properties.SemanticSimilarityProperties;
@@ -91,7 +92,7 @@ public class CamundaProcessTestRuntimeDefaults {
 
   public static final boolean MULTI_TENANCY_ENABLED = PROPERTIES_UTIL.isMultiTenancyEnabled();
   public static final boolean CLOCK_RESET_ENABLED = PROPERTIES_UTIL.isClockResetEnabled();
-  public static final boolean DATA_DELETION_ENABLED = PROPERTIES_UTIL.isDataDeletionEnabled();
+  public static final DataDeletionMode DATA_DELETION_MODE = PROPERTIES_UTIL.getDataDeletionMode();
 
   public static final String COVERAGE_REPORT_DIRECTORY =
       PROPERTIES_UTIL.getCoverageReportProperties().getCoverageReportDirectory();
