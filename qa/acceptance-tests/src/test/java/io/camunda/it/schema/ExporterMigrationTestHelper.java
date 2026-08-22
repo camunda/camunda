@@ -57,7 +57,17 @@ import tools.jackson.databind.ObjectMapper;
 public class ExporterMigrationTestHelper {
 
   private static final Logger LOG = LoggerFactory.getLogger(ExporterMigrationTestHelper.class);
-  private static final Pattern RC_SUFFIX_PATTERN = Pattern.compile(".*-rc\\d+$");
+
+  /**
+   * Matches Docker Hub's actual pre-release tag shapes for camunda/camunda: plain alpha ({@code
+   * 8.10.0-alpha4}, optionally with a sub-patch suffix like {@code -alpha4.1}), alpha plus rc
+   * ({@code 8.10.0-alpha4-rc2}), or a final rc with no alpha stage ({@code 8.10.0-rc1}).
+   * Deliberately a positive allow-list rather than "not GA and not snapshot" — Docker Hub tags are
+   * external data, and a variant/build tag we don't know about yet must not be picked up as if it
+   * were a genuine pre-release stage.
+   */
+  private static final Pattern PRE_RELEASE_PATTERN =
+      Pattern.compile("^\\d+\\.\\d+\\.\\d+-(alpha\\d+(\\.\\d+)?(-rc\\d+)?|rc\\d+)$");
 
   private static final String CONTAINER_DATA_PATH = "/usr/local/camunda/data";
   private static final String HTTP_PREFIX = "http://";
@@ -551,11 +561,17 @@ public class ExporterMigrationTestHelper {
     return List.of(allVersions.get(latestReleaseIndex));
   }
 
-  public static Optional<String> findLatestReleaseCandidate(
+  /**
+   * Picks the most recently pushed pre-release (alpha and/or rc) tag for the minor. Alpha/rc stages
+   * are strictly sequential within one target release (alpha1 -> alpha1-rcN -> alpha2 -> ... -> rc1
+   * -> ... -> GA), so the most recently pushed tag is always the most mature one — no separate
+   * "prefer final rc over alpha" tiering is needed on top of the timestamp.
+   */
+  public static Optional<String> findLatestPreRelease(
       final List<DockerHubTag> allTags, final String previousMinorVersion) {
     return allTags.stream()
         .filter(t -> hasMinorPrefix(t.name(), previousMinorVersion))
-        .filter(t -> RC_SUFFIX_PATTERN.matcher(t.name()).matches())
+        .filter(t -> PRE_RELEASE_PATTERN.matcher(t.name()).matches())
         .filter(t -> t.lastPushed() != null)
         .max(Comparator.comparing(t -> Instant.parse(t.lastPushed())))
         .map(DockerHubTag::name);
@@ -570,6 +586,19 @@ public class ExporterMigrationTestHelper {
     return tagName.startsWith(minorVersion)
         && (tagName.length() == minorVersion.length()
             || !Character.isDigit(tagName.charAt(minorVersion.length())));
+  }
+
+  private static boolean isGaVersionTag(final String tagName) {
+    final String[] components = tagName.split("\\.");
+    if (components.length != 3) {
+      return false;
+    }
+    try {
+      Integer.parseInt(components[2]);
+      return true;
+    } catch (final NumberFormatException ignored) {
+      return false;
+    }
   }
 
   /**
@@ -643,18 +672,7 @@ public class ExporterMigrationTestHelper {
 
     final List<String> allVersions = new ArrayList<>();
     for (final DockerHubTag tag : allTags) {
-      if (!hasMinorPrefix(tag.name(), PREVIOUS_MINOR_VERSION)) {
-        continue;
-      }
-
-      final String[] components = tag.name().split("\\.");
-      if (components.length != 3) {
-        continue;
-      }
-
-      try {
-        Integer.parseInt(components[2]);
-      } catch (final NumberFormatException ignored) {
+      if (!hasMinorPrefix(tag.name(), PREVIOUS_MINOR_VERSION) || !isGaVersionTag(tag.name())) {
         continue;
       }
 
@@ -662,16 +680,16 @@ public class ExporterMigrationTestHelper {
     }
 
     if (allVersions.isEmpty()) {
-      final Optional<String> latestRc = findLatestReleaseCandidate(allTags, PREVIOUS_MINOR_VERSION);
-      if (latestRc.isEmpty()) {
+      final Optional<String> latestPreRelease =
+          findLatestPreRelease(allTags, PREVIOUS_MINOR_VERSION);
+      if (latestPreRelease.isEmpty()) {
         throw new NoSuchElementException("No release images found for " + PREVIOUS_MINOR_VERSION);
       }
       LOG.warn(
-          "No stable release found for previous minor {}, falling back to latest release"
-              + " candidate {}",
+          "No stable release found for previous minor {}, falling back to latest pre-release {}",
           PREVIOUS_MINOR_VERSION,
-          latestRc.get());
-      allVersions.add(latestRc.get());
+          latestPreRelease.get());
+      allVersions.add(latestPreRelease.get());
     } else {
       allVersions.sort(ExporterMigrationTestHelper::comparePatches);
     }
