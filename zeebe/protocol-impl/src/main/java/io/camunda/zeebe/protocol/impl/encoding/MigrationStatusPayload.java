@@ -11,7 +11,8 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Encodes/decodes a {@link PartitionMigrationStatus} into the {@code payload} byte blob of an
- * {@code AdminRequest}/{@code AdminResponse} ({@code GET_MIGRATION_STATUS}).
+ * {@code AdminRequest}/{@code AdminResponse} ({@code GET_MIGRATION_STATUS}, {@code
+ * GET_EXPORTING_MIGRATION_STATUS}).
  */
 public final class MigrationStatusPayload {
 

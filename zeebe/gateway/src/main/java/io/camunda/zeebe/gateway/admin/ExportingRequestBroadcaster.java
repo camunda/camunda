@@ -7,13 +7,10 @@
  */
 package io.camunda.zeebe.gateway.admin;
 
-import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -67,7 +64,7 @@ public class ExportingRequestBroadcaster {
         topology.getPartitions().stream()
             .flatMap(
                 partitionId ->
-                    membersOfPartition(topology, partitionId).stream()
+                    PartitionReplicas.allOf(topology, partitionId).stream()
                         .map(
                             brokerId -> {
                               final var request = new BrokerAdminRequest();
@@ -113,7 +110,7 @@ public class ExportingRequestBroadcaster {
       final Integer partitionId,
       final Consumer<BrokerAdminRequest> configureRequest) {
 
-    final var members = membersOfPartition(topology, partitionId);
+    final var members = PartitionReplicas.allOf(topology, partitionId);
 
     final var requests =
         members.stream()
@@ -130,27 +127,6 @@ public class ExportingRequestBroadcaster {
                 })
             .toArray(CompletableFuture<?>[]::new);
     return CompletableFuture.allOf(requests);
-  }
-
-  /**
-   * Every member holding a copy of the partition: its leader, its followers and its inactive
-   * members. Inactive members are included because they are only temporarily unhealthy -- they keep
-   * their partition data and become active again after recovering, so their exporter phase is as
-   * relevant as any other replica's, both when pausing and when reporting the status.
-   */
-  private Set<BrokerMemberId> membersOfPartition(
-      final BrokerClusterState topology, final Integer partitionId) {
-    final var leader = topology.getLeaderForPartition(partitionId);
-    final var followers = topology.getFollowersForPartition(partitionId);
-    final var inactive = topology.getInactiveNodesForPartition(partitionId);
-
-    final var members = new HashSet<BrokerMemberId>(topology.getReplicationFactor());
-    if (leader != null) {
-      members.add(leader);
-    }
-    members.addAll(followers);
-    members.addAll(inactive);
-    return members;
   }
 
   /**
