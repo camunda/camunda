@@ -265,6 +265,68 @@ public class ProcessDefinitionStatisticsIT {
   }
 
   @Test
+  void shouldGetStatisticsAndFilterByErrorMessagePrefix() {
+    // given
+    final var processDefinitionKey =
+        TestHelper.deployResource(camundaClient, "process/incident_process_v1.bpmn")
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
+    waitForProcessInstances(
+        camundaClient, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true), 2);
+
+    // then
+    Awaitility.await("should return element statistics with an incident error-message prefix")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var exactMatch =
+                  camundaClient
+                      .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+                      .filter(f -> f.errorMessage(INCIDENT_ERROR_MESSAGE_V1))
+                      .send()
+                      .join();
+              final var prefixMatch =
+                  camundaClient
+                      .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+                      .filter(f -> f.errorMessage("Expected result of the expression"))
+                      .send()
+                      .join();
+
+              assertThat(prefixMatch).isNotEmpty().containsExactlyInAnyOrderElementsOf(exactMatch);
+            });
+  }
+
+  @Test
+  void shouldGetStatisticsWhenErrorMessageDoesNotExist() {
+    // given
+    final var processDefinitionKey = deployCompleteBPMN();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
+    waitForProcessInstances(
+        camundaClient,
+        f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED),
+        2);
+
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(f -> f.errorMessage(b -> b.exists(false)))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 2L));
+  }
+
+  @Test
   void shouldGetStatisticsAndFilterByIncidentHashCodeOrFilters() {
     // given
     final var processDefinitionKey =
