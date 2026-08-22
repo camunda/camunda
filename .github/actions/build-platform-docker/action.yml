@@ -105,7 +105,7 @@ runs:
       # if that's still true when its pin next bumps.
       uses: Wandalen/wretry.action@71a909ebf09f3ffdc6f42a17bd54ecb43481da49 # v3.8.0_js_action
       with:
-        action: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        action: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
         # wretry cannot inspect the wrapped action's error -- `retry_condition` only sees contexts
         # captured before the step ran -- so this retries any failure, not just a 5xx. A genuine
         # error therefore costs up to 3 attempts before reporting red.
