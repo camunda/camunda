@@ -243,6 +243,41 @@ histogram_quantile(0.99, sum by (le) (rate(starter_response_latency_seconds_buck
 
 ---
 
+### Worker message-publish latency
+
+Time the worker spends on the synchronous message publication it issues while handling a job, from
+sending the command until the response arrives. Tagged by `outcome` (`success`, `timeout`, `error`).
+Measured in the Worker, so it includes authentication and authorization overhead on the gateway.
+
+- **Unit:** seconds (quantiles)
+- **Measurement:** p50, p90, p99
+
+```promql
+histogram_quantile(0.99, sum by (le) (rate(worker_publish_duration_seconds_bucket{namespace=~"$namespace", outcome="success"}[$__rate_interval])))
+```
+
+---
+
+### Worker job-handling duration
+
+Total time a worker thread is occupied by a single job: the message publication, the configured
+completion delay and the dispatch of the complete command. Recorded on every path, including the
+one where the publication failed and the job is left to time out.
+
+Since a worker can only handle `capacity` jobs concurrently, this bounds achievable throughput at
+`capacity / p50`. Compare it against the configured completion delay (300 ms by default): the excess
+above that floor is added per-job latency, and it is what turns into lost PI/s when the worker
+concurrency is low.
+
+- **Unit:** seconds (quantiles)
+- **Measurement:** p50, p90, p99
+
+```promql
+histogram_quantile(0.99, sum by (le) (rate(worker_handle_duration_seconds_bucket{namespace=~"$namespace"}[$__rate_interval])))
+```
+
+---
+
 ## Resources
 
 The following metrics apply to all running applications (Camunda and secondary storage). Replace
