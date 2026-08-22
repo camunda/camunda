@@ -15,6 +15,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
+import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIndeterminateException;
+import io.camunda.db.rdbms.exception.RdbmsSchemaVersionUnreadableException;
 import io.camunda.zeebe.util.migration.CurrentSchemaVersion.Kind;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -103,8 +105,9 @@ class RdbmsSchemaVersionStoreTest {
   @Test
   void shouldAbortWhenVersionCheckIsIndeterminate() {
     // given: stored schema version is not a valid semantic version → Indeterminate result
+    // then: an operator has to correct the stored value, so this must not read as retryable
     assertThatThrownBy(versionStore("not-a-semver", "8.10.0")::checkCompatibility)
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(RdbmsSchemaVersionIndeterminateException.class)
         .hasMessageContaining("Cannot determine version compatibility");
   }
 
@@ -115,7 +118,7 @@ class RdbmsSchemaVersionStoreTest {
 
     // when / then
     assertThatThrownBy(store::checkCompatibility)
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(RdbmsSchemaVersionIndeterminateException.class)
         .hasMessageContaining("applicationVersion is not configured");
   }
 
@@ -126,7 +129,7 @@ class RdbmsSchemaVersionStoreTest {
 
     // when / then
     assertThatThrownBy(store::checkCompatibility)
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(RdbmsSchemaVersionIndeterminateException.class)
         .hasMessageContaining("dataSource is not configured");
   }
 
@@ -137,9 +140,10 @@ class RdbmsSchemaVersionStoreTest {
     when(dataSource.getConnection()).thenThrow(new RuntimeException("DB connection refused"));
     final var store = new RdbmsSchemaVersionStore(dataSource, "", "8.10.0");
 
-    // when / then - unexpected error must not be swallowed
+    // when / then - unexpected error must not be swallowed, and must stay retryable: a refused
+    // connection is repaired without an operator touching the schema
     assertThatThrownBy(store::checkCompatibility)
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(RdbmsSchemaVersionUnreadableException.class)
         .hasMessageContaining("Failed to determine current schema version");
   }
 
@@ -152,9 +156,9 @@ class RdbmsSchemaVersionStoreTest {
     when(dataSource.getConnection()).thenThrow(new RuntimeException("DB write refused"));
     final var store = new RdbmsSchemaVersionStore(dataSource, "", "8.10.0");
 
-    // when / then
+    // when / then - retryable: re-running the initialization records the version again
     assertThatThrownBy(store::recordCurrentVersion)
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(RdbmsSchemaVersionUnreadableException.class)
         .hasMessageContaining("Failed to update schema version");
   }
 

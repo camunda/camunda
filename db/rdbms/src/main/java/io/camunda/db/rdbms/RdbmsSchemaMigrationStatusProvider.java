@@ -34,7 +34,7 @@ public final class RdbmsSchemaMigrationStatusProvider implements MigrationStatus
 
   /**
    * Builds a provider from the per-physical-tenant {@link PerTenantSchemaConfig} map — the same
-   * input {@link DefaultRdbmsSchemaManagerRegistry#fromConfigs} consumes.
+   * input {@link RdbmsSchemaManagers#fromConfigs} consumes.
    */
   public static RdbmsSchemaMigrationStatusProvider fromConfigs(
       final Map<String, PerTenantSchemaConfig> physicalTenantConfigs,

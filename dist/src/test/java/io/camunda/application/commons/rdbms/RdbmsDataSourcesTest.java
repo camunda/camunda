@@ -20,9 +20,15 @@ import io.camunda.configuration.RdbmsConnectionPool;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -31,6 +37,21 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
 class RdbmsDataSourcesTest {
+
+  /**
+   * A url naming no vendor this application ships properties for. jTDS and the proxy wrappers are
+   * the real instances; a made-up prefix stands in for them so that the test does not need their
+   * drivers on the classpath, and nothing is listening at the address either way.
+   */
+  private static final String UNRECOGNIZED_URL = "jdbc:unmapped-proxy://localhost:1/camunda";
+
+  private static Rdbms unrecognizedUrlRdbms() {
+    final var rdbms = new Rdbms();
+    rdbms.setUrl(UNRECOGNIZED_URL);
+    rdbms.setUsername("camunda");
+    rdbms.setPassword("camunda");
+    return rdbms;
+  }
 
   private static Rdbms h2Rdbms() {
     final var rdbms = new Rdbms();
@@ -125,6 +146,98 @@ class RdbmsDataSourcesTest {
     }
   }
 
+  static Stream<Arguments> vendorsResolvableFromTheirUrl() {
+    return Stream.of(
+        Arguments.of("h2", "jdbc:h2:mem:camunda", "h2"),
+        Arguments.of("postgresql", "jdbc:postgresql://localhost:5432/camunda", "postgresql"),
+        Arguments.of("oracle", "jdbc:oracle:thin:@localhost:1521/camunda", "oracle"),
+        Arguments.of("mariadb", "jdbc:mariadb://localhost:3306/camunda", "mariadb"),
+        Arguments.of("mysql", "jdbc:mysql://localhost:3306/camunda", "mysql"),
+        Arguments.of("mssql", "jdbc:sqlserver://localhost:1433;databaseName=camunda", "mssql"),
+        Arguments.of(
+            "postgresql behind the AWS JDBC wrapper",
+            "jdbc:aws-wrapper:postgresql://localhost:5432/camunda",
+            "postgresql"));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("vendorsResolvableFromTheirUrl")
+  void shouldResolveVendorPropertiesWithoutReachingTheDatabase(
+      final String vendorName, final String url, final String expectedDatabaseId) throws Exception {
+    // given - a physical tenant whose database is not listening on that address at all
+    final var rdbms = new Rdbms();
+    rdbms.setUrl(url);
+    rdbms.setUsername("camunda");
+    rdbms.setPassword("camunda");
+
+    // when
+    try (final var registry =
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms),
+            new SimpleMeterRegistry())) {
+
+      // then - the registry is built anyway, which is what lets one tenant's outage degrade that
+      // tenant alone instead of failing the whole context refresh
+      assertThat(
+              registry
+                  .vendorPropertiesFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                  .databaseId())
+          .isEqualTo(expectedDatabaseId);
+    }
+  }
+
+  @Test
+  void shouldWarnWhenATenantsVendorHasToBeReadFromItsDatabaseBesideOtherTenants() {
+    // given - two tenants, one behind a url this application cannot classify, with nothing
+    // listening at that address either
+    final var configs = new LinkedHashMap<String, Rdbms>();
+    configs.put(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, unrecognizedUrlRdbms());
+    configs.put("tenant-b", h2Rdbms());
+
+    try (final var logs = new LogCapturer(RdbmsDataSources.class.getName())) {
+      // when / then - a configuration error rather than a degraded tenant: without a vendor id
+      // there is no SqlSessionFactory, and so no tenant to degrade
+      assertThatThrownBy(() -> RdbmsDataSources.of(configs, new SimpleMeterRegistry()))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Cannot determine the database vendor")
+          .hasMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+          .hasMessageContaining(UNRECOGNIZED_URL)
+          .hasMessageContaining(RdbmsVendorIdProvider.VENDOR_ID_PROPERTY)
+          .hasMessageContaining("h2, postgresql, oracle, mariadb, mysql, mssql");
+
+      // and - the warning is what tells the operator that this one tenant now decides whether
+      // every tenant on the node starts
+      assertThat(logs.eventsAt(Level.WARN))
+          .anySatisfy(
+              event ->
+                  assertThat(event)
+                      .contains(RdbmsVendorIdProvider.VENDOR_ID_PROPERTY)
+                      .contains("fails startup for every physical tenant"));
+    }
+  }
+
+  @Test
+  void shouldNotWarnAboutReadingTheVendorFromTheDatabaseOnASingleTenantNode() {
+    // given - the same deployment with nobody to take down but itself
+    try (final var logs = new LogCapturer(RdbmsDataSources.class.getName())) {
+
+      // when
+      assertThatThrownBy(
+              () ->
+                  RdbmsDataSources.of(
+                      Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, unrecognizedUrlRdbms()),
+                      new SimpleMeterRegistry()))
+          .isInstanceOf(IllegalArgumentException.class);
+
+      // then - still reported, but at a level that does not fire on every start of a deployment
+      // with no isolation to lose
+      assertThat(logs.eventsAt(Level.WARN)).isEmpty();
+      assertThat(logs.eventsAt(Level.DEBUG))
+          .anySatisfy(
+              event -> assertThat(event).contains(RdbmsVendorIdProvider.VENDOR_ID_PROPERTY));
+    }
+  }
+
   @Test
   void shouldThrowWhenLookingUpUnknownPhysicalTenantDataSource() throws Exception {
     try (final var registry =
@@ -173,63 +286,54 @@ class RdbmsDataSourcesTest {
         new BatchRewritingCase(
             "mysql enabled by default",
             "jdbc:mysql://localhost:3306/testdb",
-            "mysql",
             true,
             "rewriteBatchedStatements",
             "true"),
         new BatchRewritingCase(
             "mariadb enabled by default",
             "jdbc:mariadb://localhost:3306/testdb",
-            "mariadb",
             true,
             "useBulkStmts",
             "true"),
         new BatchRewritingCase(
             "mysql disabled via config",
             "jdbc:mysql://localhost:3306/testdb",
-            "mysql",
             false,
             "rewriteBatchedStatements",
             null),
         new BatchRewritingCase(
             "mysql behind AWS JDBC wrapper",
             "jdbc:aws-wrapper:mysql://localhost:3306/testdb",
-            "mysql",
             true,
             "rewriteBatchedStatements",
             "true"),
         new BatchRewritingCase(
             "mariadb behind AWS JDBC wrapper",
             "jdbc:aws-wrapper:mariadb://localhost:3306/testdb",
-            "mariadb",
             true,
             "useBulkStmts",
             "true"),
         new BatchRewritingCase(
             "mysql url already sets the property explicitly",
             "jdbc:mysql://localhost:3306/testdb?rewriteBatchedStatements=false",
-            "mysql",
             true,
             "rewriteBatchedStatements",
             null),
         new BatchRewritingCase(
             "mariadb url already sets the property explicitly",
             "jdbc:mariadb://localhost:3306/testdb?useBulkStmts=false",
-            "mariadb",
             true,
             "useBulkStmts",
             null),
         new BatchRewritingCase(
             "mysql url already sets the property explicitly to true",
             "jdbc:mysql://localhost:3306/testdb?rewriteBatchedStatements=true",
-            "mysql",
             true,
             "rewriteBatchedStatements",
             null),
         new BatchRewritingCase(
             "mariadb url already sets the property explicitly to true",
             "jdbc:mariadb://localhost:3306/testdb?useBulkStmts=true",
-            "mariadb",
             true,
             "useBulkStmts",
             null));
@@ -243,7 +347,6 @@ class RdbmsDataSourcesTest {
     rdbms.setUrl(testCase.url());
     rdbms.setUsername("sa");
     rdbms.setPassword("");
-    rdbms.setDatabaseVendorId(testCase.databaseVendorId());
     rdbms.setRewriteBatchedStatements(testCase.rewriteBatchedStatements());
 
     // when
@@ -262,22 +365,21 @@ class RdbmsDataSourcesTest {
 
   static Stream<Arguments> otherVendors() {
     return Stream.of(
-        Arguments.of("h2", h2Rdbms().getUrl(), "h2"),
-        Arguments.of("postgresql", "jdbc:postgresql://localhost:5432/testdb", "postgresql"),
-        Arguments.of("oracle", "jdbc:oracle:thin:@localhost:1521/testdb", "oracle"),
-        Arguments.of("mssql", "jdbc:sqlserver://localhost:1433;databaseName=testdb", "mssql"));
+        Arguments.of("h2", h2Rdbms().getUrl()),
+        Arguments.of("postgresql", "jdbc:postgresql://localhost:5432/testdb"),
+        Arguments.of("oracle", "jdbc:oracle:thin:@localhost:1521/testdb"),
+        Arguments.of("mssql", "jdbc:sqlserver://localhost:1433;databaseName=testdb"));
   }
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("otherVendors")
-  void shouldNotSetBatchRewritingPropertyForOtherVendors(
-      final String vendorName, final String url, final String databaseVendorId) throws Exception {
+  void shouldNotSetBatchRewritingPropertyForOtherVendors(final String vendorName, final String url)
+      throws Exception {
     // given
     final var rdbms = new Rdbms();
     rdbms.setUrl(url);
     rdbms.setUsername("sa");
     rdbms.setPassword("");
-    rdbms.setDatabaseVendorId(databaseVendorId);
 
     // when
     try (final var registry =
@@ -298,7 +400,7 @@ class RdbmsDataSourcesTest {
     try (final MockedStatic<RdbmsDataSources> spy =
         mockStatic(RdbmsDataSources.class, CALLS_REAL_METHODS)) {
       // given: tenant-a initialises normally; tenant-b carries an invalid databaseVendorId so that
-      // RdbmsDatabaseIdProvider.getDatabaseId throws, triggering the cleanup path.
+      // RdbmsVendorIdProvider rejects it, triggering the cleanup path.
       final var tenantBRdbms = h2Rdbms();
       tenantBRdbms.setDatabaseVendorId("unsupported");
 
@@ -321,10 +423,53 @@ class RdbmsDataSourcesTest {
     }
   }
 
+  /**
+   * Captures a logger's events; without a log4j2 config the root level would drop them. The level
+   * it raises is restored on close, so a later test in the same fork neither inherits DEBUG output
+   * from this one nor depends on having run after it.
+   */
+  private static final class LogCapturer implements AutoCloseable {
+
+    private final ListAppender appender = new ListAppender("RdbmsDataSourcesTestAppender");
+    private final String loggerName;
+
+    /** Non-null: {@link org.apache.logging.log4j.Logger#getLevel()} answers the effective level. */
+    private final Level previousLevel;
+
+    private LogCapturer(final String loggerName) {
+      this.loggerName = loggerName;
+      appender.start();
+      previousLevel = LogManager.getLogger(loggerName).getLevel();
+      Configurator.setLevel(loggerName, Level.DEBUG);
+      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
+      context
+          .getConfiguration()
+          .getLoggerConfig(loggerName)
+          .addAppender(appender, Level.DEBUG, null);
+      context.updateLoggers();
+    }
+
+    private List<String> eventsAt(final Level level) {
+      // the appender has no layout, so formatted strings live in getEvents(), not getMessages()
+      return appender.getEvents().stream()
+          .filter(event -> event.getLevel() == level)
+          .map(event -> event.getMessage().getFormattedMessage())
+          .toList();
+    }
+
+    @Override
+    public void close() {
+      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
+      context.getConfiguration().getLoggerConfig(loggerName).removeAppender(appender.getName());
+      Configurator.setLevel(loggerName, previousLevel);
+      context.updateLoggers();
+      appender.stop();
+    }
+  }
+
   private record BatchRewritingCase(
       String name,
       String url,
-      String databaseVendorId,
       boolean rewriteBatchedStatements,
       String expectedPropertyName,
       String expectedPropertyValue) {
