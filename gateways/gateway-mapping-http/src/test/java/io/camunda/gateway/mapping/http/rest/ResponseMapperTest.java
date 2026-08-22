@@ -419,6 +419,15 @@ class ResponseMapperTest {
                           "User task properties should be null for TASK_LISTENER jobs with no headers")
                       .isNull()),
           new ActivatedJobWithUserTaskPropsCase(
+              "TASK_LISTENER job with headers but no action",
+              JobKind.TASK_LISTENER,
+              Map.of(Protocol.USER_TASK_KEY_HEADER_NAME, "100"),
+              props ->
+                  assertThat(props)
+                      .as(
+                          "User task properties should be null for TASK_LISTENER jobs with no action")
+                      .isNull()),
+          new ActivatedJobWithUserTaskPropsCase(
               "BPMN_ELEMENT with no user task properties",
               JobKind.BPMN_ELEMENT,
               Collections.singletonMap("someHeader", "someValue"),

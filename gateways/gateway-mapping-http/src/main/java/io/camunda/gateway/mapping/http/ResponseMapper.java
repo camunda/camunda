@@ -270,6 +270,11 @@ public final class ResponseMapper {
     }
 
     final var headers = job.getCustomHeaders();
+    final var action = headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME);
+    if (action == null) {
+      return null;
+    }
+
     return UserTaskProperties.Builder.create()
         .candidateGroups(
             mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME)))
@@ -277,7 +282,7 @@ public final class ResponseMapper {
             mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME)))
         .changedAttributes(
             mapStringToList(headers.get(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME)))
-        .action(requireNonNull(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME), "action"))
+        .action(action)
         .assignee(headers.get(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME))
         .dueDate(headers.get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME))
         .followUpDate(headers.get(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME))
