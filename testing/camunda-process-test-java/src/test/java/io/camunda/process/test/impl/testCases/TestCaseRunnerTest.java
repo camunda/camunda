@@ -25,12 +25,15 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.assertions.IncidentAssert;
+import io.camunda.process.test.api.testCases.ImmutableIncidentSelector;
 import io.camunda.process.test.api.testCases.ImmutableProcessDefinitionSelector;
 import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.ImmutableTestCase;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
+import io.camunda.process.test.api.testCases.instructions.ImmutableAssertIncidentInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstance.ProcessInstanceState;
@@ -49,6 +52,7 @@ public class TestCaseRunnerTest {
   private CamundaClient camundaClient;
 
   @Mock private AssertionFacade assertionFacade;
+  @Mock private IncidentAssert incidentAssert;
 
   @Test
   void shouldExecuteInstruction() {
@@ -70,6 +74,25 @@ public class TestCaseRunnerTest {
 
     // then
     verify(camundaClient).newCreateInstanceCommand();
+  }
+
+  @Test
+  void shouldExecuteAssertIncidentInstruction() {
+    // given
+    final TestCaseRunner runner = new CamundaTestCaseRunner(processTestContext, assertionFacade);
+    when(processTestContext.createClient()).thenReturn(camundaClient);
+    when(assertionFacade.assertThatIncident(any())).thenReturn(incidentAssert);
+
+    final TestCase testCase =
+        createTestCase(
+            ImmutableAssertIncidentInstruction.builder()
+                .incidentSelector(
+                    ImmutableIncidentSelector.builder().elementId("payment-task").build())
+                .build());
+
+    // when / then
+    assertThatCode(() -> runner.run(testCase)).doesNotThrowAnyException();
+    verify(assertionFacade).assertThatIncident(any());
   }
 
   @Test

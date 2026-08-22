@@ -84,6 +84,60 @@ public class SchemaValidationTest {
   }
 
   @Test
+  void shouldValidateAssertIncidentInstruction() {
+    // given
+    final String json =
+        "{\"testCases\":[{\"name\":\"assert incident\",\"instructions\":[{"
+            + "\"type\":\"ASSERT_INCIDENT\","
+            + "\"incidentSelector\":{\"elementId\":\"payment-task\"},"
+            + "\"state\":\"IS_ACTIVE\","
+            + "\"errorType\":\"JOB_NO_RETRIES\","
+            + "\"errorMessage\":\"Payment worker failed\","
+            + "\"elementId\":\"payment-task\""
+            + "}]}]}";
+
+    // when
+    final List<Error> errors = jsonSchema.validate(json, InputFormat.JSON);
+
+    // then
+    assertThat(errors).isEmpty();
+  }
+
+  @Test
+  void shouldRejectAssertIncidentWithoutSelector() {
+    // given
+    final String json =
+        "{\"testCases\":[{\"name\":\"assert incident\",\"instructions\":[{"
+            + "\"type\":\"ASSERT_INCIDENT\","
+            + "\"state\":\"IS_ACTIVE\""
+            + "}]}]}";
+
+    // when
+    final List<Error> errors = jsonSchema.validate(json, InputFormat.JSON);
+
+    // then
+    assertThat(errors).isNotEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"\"state\":\"INVALID\"", "\"errorType\":\"INVALID\""})
+  void shouldRejectAssertIncidentWithInvalidEnum(final String invalidProperty) {
+    // given
+    final String json =
+        "{\"testCases\":[{\"name\":\"assert incident\",\"instructions\":[{"
+            + "\"type\":\"ASSERT_INCIDENT\","
+            + "\"incidentSelector\":{\"elementId\":\"payment-task\"},"
+            + invalidProperty
+            + "}]}]}";
+
+    // when
+    final List<Error> errors = jsonSchema.validate(json, InputFormat.JSON);
+
+    // then
+    assertThat(errors).isNotEmpty();
+  }
+
+  @Test
   void shouldRejectConditionalBehaviorWithEmptyActions() throws IOException {
     // given
     final String json =
