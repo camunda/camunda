@@ -1,6 +1,6 @@
 testcontainers:
   elasticsearch: "docker.elastic.co/elasticsearch/elasticsearch:8.19.16"
-  opensearch: "opensearchproject/opensearch:2.19.5"
+  opensearch: "opensearchproject/opensearch:2.19.6"
 
 # Unified Configuration
 camunda:
