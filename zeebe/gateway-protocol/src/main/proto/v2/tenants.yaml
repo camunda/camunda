@@ -1064,12 +1064,17 @@ components:
       type: object
       properties:
         field:
-          description: The field to sort by.
+          description: >-
+            The field to sort by. `key` is deprecated and should not be used
+            anymore.
           type: string
           enum:
             - key
             - name
             - tenantId
+          x-deprecated-enum-members:
+            - name: key
+              deprecatedInVersion: "8.10.0"
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
