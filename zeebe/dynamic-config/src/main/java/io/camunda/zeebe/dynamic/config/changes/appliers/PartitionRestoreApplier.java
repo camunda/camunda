@@ -21,6 +21,13 @@ import java.util.function.UnaryOperator;
  * New-model applier for {@code
  * PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation}. Mirrors the legacy
  * {@code PartitionRestoreApplier} in {@code changes/}, which this does not replace or modify.
+ *
+ * <p>Writes nothing to the {@link PartitionGroupConfiguration}: reloading a partition from backup
+ * touches only that broker's local disk, so both {@link #init} and {@link #apply()} return {@link
+ * UnaryOperator#identity()}. {@code RestoreRequestTransformer} relies on this to make each {@code
+ * (broker, partition)} pair an independent chain, so one broker may reload a partition while a peer
+ * is still wiping its own copy of it. A configuration write added here would need dependency edges
+ * there to order it against the other operations writing the same field.
  */
 public final class PartitionRestoreApplier implements PartitionGroupConfigurationChangeApplier {
 
