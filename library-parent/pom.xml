@@ -63,7 +63,7 @@
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-utils</artifactId>
-        <version>3.6.1</version>
+        <version>3.6.2</version>
       </dependency>
       <!-- Re-import these here so they expand with this POM's OSS version.* properties (nearest
       wins), replacing the ancestor's HeroDevs NES tags that only resolve from Camunda's Nexus. -->
