@@ -117,7 +117,7 @@
     <version.feel-scala>1.22.0</version.feel-scala>
     <version.dmn-scala>1.12.2</version.dmn-scala>
     <version.rest-assured>6.0.1</version.rest-assured>
-    <version.spring>7.0.8</version.spring>
+    <version.spring>7.0.9</version.spring>
     <version.spring-security>7.1.0</version.spring-security>
     <version.spring-boot>4.1.0</version.spring-boot>
     <version.spring-ai>2.0.0-M7</version.spring-ai>
