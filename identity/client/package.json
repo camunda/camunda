@@ -28,7 +28,7 @@
     "@tanstack/react-query": "^5.100.14",
     "date-fns": "4.4.0",
     "fuse.js": "7.5.0",
-    "i18next": "26.3.6",
+    "i18next": "26.4.0",
     "lucide-react": "1.33.0",
     "mobx": "6.16.1",
     "mobx-react-lite": "4.1.1",
