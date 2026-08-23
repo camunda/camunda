@@ -65,7 +65,7 @@
     "monaco-editor": "0.55.1",
     "prettier": "3.9.4",
     "rollup-plugin-sbom": "4.0.0",
-    "sass": "1.102.0",
+    "sass": "1.103.0",
     "tailwindcss": "4.3.0",
     "tailwindcss-scoped-preflight": "4.0.6",
     "typescript": "5.9.3",
