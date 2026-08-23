@@ -107,7 +107,7 @@
     "prettier": "3.9.4",
     "resize-observer-polyfill": "1.5.1",
     "rollup-plugin-sbom": "4.0.0",
-    "sass": "1.102.0",
+    "sass": "1.103.0",
     "typescript": "5.9.3",
     "typescript-eslint": "8.67.0",
     "vite": "8.2.1",
