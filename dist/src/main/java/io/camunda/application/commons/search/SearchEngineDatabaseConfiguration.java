@@ -9,7 +9,6 @@ package io.camunda.application.commons.search;
 
 import static io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled.AnyHttpGatewayEnabledCondition.isAnyHttpGatewayEnabled;
 
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
@@ -47,16 +46,10 @@ public class SearchEngineDatabaseConfiguration {
       @Autowired(required = false)
           final Broker broker // if present, then it will ensure that the broker is started first
       ) {
-    final boolean healthCheckEnabled =
-        searchEngineConfigurationsByTenant
-            .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
-            .schemaManager()
-            .isHealthCheckEnabled();
     return new SearchEngineSchemaInitializer(
         searchEngineConfigurationsByTenant,
         physicalTenantScopedIndexDescriptors,
         meterRegistry,
-        isAnyHttpGatewayEnabled(environment),
-        healthCheckEnabled);
+        isAnyHttpGatewayEnabled(environment));
   }
 }

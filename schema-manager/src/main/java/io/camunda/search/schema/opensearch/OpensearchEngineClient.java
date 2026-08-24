@@ -378,7 +378,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
                 + "The Camunda readiness probe will not pass until this is resolved. "
                 + "To fix: grant the 'monitor' cluster privilege to the service account, "
                 + "or disable the check by setting "
-                + "'camunda.database.schema-manager.health-check-enabled=false'.",
+                + "'camunda.data.secondary-storage.opensearch.health-check-enabled=false'.",
             e);
       }
       LOG.warn(

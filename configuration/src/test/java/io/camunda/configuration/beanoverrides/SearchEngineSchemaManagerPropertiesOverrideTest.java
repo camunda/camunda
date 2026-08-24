@@ -45,13 +45,14 @@ class SearchEngineSchemaManagerPropertiesOverrideTest {
   }
 
   @Test
-  void shouldApplyPerformCleanupAndCreateSchemaForElasticsearch() {
+  void shouldApplyPerformCleanupCreateSchemaAndHealthCheckForElasticsearch() {
     // given
     final Camunda camunda = new Camunda();
     final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
     secondaryStorage.setType(SecondaryStorageType.elasticsearch);
     secondaryStorage.getElasticsearch().setPerformCleanup(true);
     secondaryStorage.getElasticsearch().setCreateSchema(false);
+    secondaryStorage.getElasticsearch().setHealthCheckEnabled(false);
 
     final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
 
@@ -61,16 +62,18 @@ class SearchEngineSchemaManagerPropertiesOverrideTest {
     // then
     assertThat(override.isPerformCleanup()).isTrue();
     assertThat(override.isCreateSchema()).isFalse();
+    assertThat(override.isHealthCheckEnabled()).isFalse();
   }
 
   @Test
-  void shouldApplyPerformCleanupAndCreateSchemaForOpensearch() {
+  void shouldApplyPerformCleanupCreateSchemaAndHealthCheckForOpensearch() {
     // given
     final Camunda camunda = new Camunda();
     final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
     secondaryStorage.setType(SecondaryStorageType.opensearch);
     secondaryStorage.getOpensearch().setPerformCleanup(true);
     secondaryStorage.getOpensearch().setCreateSchema(false);
+    secondaryStorage.getOpensearch().setHealthCheckEnabled(false);
 
     final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
 
@@ -80,10 +83,11 @@ class SearchEngineSchemaManagerPropertiesOverrideTest {
     // then
     assertThat(override.isPerformCleanup()).isTrue();
     assertThat(override.isCreateSchema()).isFalse();
+    assertThat(override.isHealthCheckEnabled()).isFalse();
   }
 
   @Test
-  void shouldNotTouchPerformCleanupOrCreateSchemaForRdbms() {
+  void shouldNotTouchDocumentBasedSchemaSettingsForRdbms() {
     // given
     final Camunda camunda = new Camunda();
     final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
@@ -93,6 +97,7 @@ class SearchEngineSchemaManagerPropertiesOverrideTest {
     final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
     override.setPerformCleanup(true);
     override.setCreateSchema(false);
+    override.setHealthCheckEnabled(false);
 
     // when
     SearchEngineSchemaManagerPropertiesOverride.applyTo(camunda, override);
@@ -100,6 +105,7 @@ class SearchEngineSchemaManagerPropertiesOverrideTest {
     // then RDBMS is not a document-based database, so these fields are left untouched
     assertThat(override.isPerformCleanup()).isTrue();
     assertThat(override.isCreateSchema()).isFalse();
+    assertThat(override.isHealthCheckEnabled()).isFalse();
   }
 
   @Test

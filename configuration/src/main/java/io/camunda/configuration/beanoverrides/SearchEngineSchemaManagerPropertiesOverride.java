@@ -77,6 +77,7 @@ public class SearchEngineSchemaManagerPropertiesOverride {
             secondaryStorage -> {
               override.setPerformCleanup(secondaryStorage.isPerformCleanup());
               override.setCreateSchema(secondaryStorage.isCreateSchema());
+              override.setHealthCheckEnabled(secondaryStorage.isHealthCheckEnabled());
             });
 
     override.setHealthCheckEnabled(

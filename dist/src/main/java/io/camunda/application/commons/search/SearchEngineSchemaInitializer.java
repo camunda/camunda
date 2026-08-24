@@ -39,7 +39,6 @@ public class SearchEngineSchemaInitializer
   private final Map<String, IndexDescriptors> descriptors;
   private final MeterRegistry meterRegistry;
   private final boolean holdsStartup;
-  private final boolean healthCheckEnabled;
   private final PerTenantSchemaInitialization initialization;
 
   /**
@@ -60,13 +59,11 @@ public class SearchEngineSchemaInitializer
       final Map<String, SearchEngineConfiguration> configsByTenant,
       final Map<String, IndexDescriptors> descriptorsByTenant,
       final MeterRegistry meterRegistry,
-      final boolean holdsStartup,
-      final boolean healthCheckEnabled) {
+      final boolean holdsStartup) {
     configs = configsByTenant;
     descriptors = descriptorsByTenant;
     this.meterRegistry = meterRegistry;
     this.holdsStartup = holdsStartup;
-    this.healthCheckEnabled = healthCheckEnabled;
     initialization =
         new PerTenantSchemaInitialization(
             configs.keySet(),
@@ -161,7 +158,7 @@ public class SearchEngineSchemaInitializer
       schemaManager.startupOnce();
     }
     if (configuration.schemaManager().isCreateSchema()
-        && healthCheckEnabled
+        && configuration.schemaManager().isHealthCheckEnabled()
         && !clientAdapter.getSearchEngineClient().isHealthy()) {
       // Not terminal: a red/unreachable cluster right after schema creation may still turn
       // yellow/green shortly after, so this attempt is retried like any other storage failure.
