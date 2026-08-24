@@ -597,9 +597,9 @@ businessValue:
   overviewRefreshInterval: ${CAMUNDA_OPTIMIZE_BUSINESS_VALUE_OVERVIEW_REFRESH_INTERVAL:86400}
   # Kill switch for the background overview computation. Set to false to stop the sweep without
   # taking the dashboard down: existing rows stay readable and the endpoint keeps serving, the
-  # numbers simply stop advancing until it is re-enabled. Takes effect on the next tick, no restart
-  # required. Scoped to the sweep only — it does not affect the overview or target endpoints, nor
-  # the dashboard tiles, which are evaluated per request.
+  # numbers simply stop advancing until it is re-enabled. Requires an Optimize restart to take
+  # effect, as configuration is read once at startup. Scoped to the sweep only — it does not affect
+  # the overview or target endpoints, nor the dashboard tiles, which are evaluated per request.
   overviewComputeEnabled: ${CAMUNDA_OPTIMIZE_BUSINESS_VALUE_OVERVIEW_COMPUTE_ENABLED:true}
 
 export:
