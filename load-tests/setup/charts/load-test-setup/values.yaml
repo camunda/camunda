@@ -376,7 +376,7 @@ postgresql:
   image:
     registry: europe-west1-docker.pkg.dev/camunda-benchmark
     repository: dockerhub/postgres
-    tag: "18.4"
+    tag: "18.6"
 
   # -- The UID and GID used by the PostgreSQL container.
   # This should match the UID/GID in use by the specified Docker image.
