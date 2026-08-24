@@ -49,23 +49,6 @@ import java.util.Map;
 @ExcludeAuthorizationCheck
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
 
-  // named distinctly from BpmnIncidentBehavior#SECRET_INJECTION_FAILED_MESSAGE: same error type,
-  // different cause-neutral fallback text, and reached only when this path's own FailedInjectionJob
-  // carries no path/placeholder. Now that the job-push path also names the mismatch (#60404), the
-  // two cause-neutral fallbacks - and this path's named-mismatch message alongside the job-push
-  // one (BpmnIncidentBehavior#SECRET_REFERENCE_UNRESOLVED_MESSAGE) - are candidates to merge
-  // (#60405)
-  private static final String SECRET_INJECTION_UNKNOWN_CAUSE_MESSAGE =
-      "The job with key '%s' can not be activated, because injecting its secret values "
-          + "failed. Resolve the incident, or use process instance modification to "
-          + "reactivate the element and create a fresh job.";
-
-  private static final String SECRET_REFERENCE_UNRESOLVED_MESSAGE =
-      "The job with key '%s' can not be activated, because the secret reference '%s' "
-          + "could not be resolved at '%s'. Fix the variable's value or the input "
-          + "mapping that sets it, then resolve the incident, or use process instance "
-          + "modification to reactivate the element and create a fresh job.";
-
   /** Scratch copy of the batch that carries the injected secret values to the response only. */
   private final JobBatchRecord responseValue = new JobBatchRecord();
 
@@ -342,29 +325,17 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   /**
-   * Raises an incident for a job whose secret value injection failed. When the mismatched reference
-   * is known, the message names its placeholder and JSON pointer path - never the secret's value,
-   * and never anything from the exception's own (log-only) message; an unrelated failure (e.g.
-   * invalid msgpack) has neither, so the message stays cause-neutral instead of naming a mismatch
-   * that was never established. The job-push path names the same detail from the {@link
-   * io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretPointerMismatchException}
-   * directly; this path draws it from the {@link FailedInjectionJob} instead, and keeps its own
-   * cause-neutral fallback ({@link #SECRET_INJECTION_UNKNOWN_CAUSE_MESSAGE}) rather than the
-   * job-push one - the two named messages and the two fallbacks are candidates to merge (#60405).
-   * The job is also excluded from activation until this incident is resolved (see
-   * IncidentCreatedV2Applier's SECRET_RESOLUTION_ERROR handling), so it does not loop through
-   * repeated failing injections.
+   * Raises an incident for a job whose secret value injection failed, with the message {@link
+   * JobSecretInjectionIncident} gives both activation paths. The job is also excluded from
+   * activation until this incident is resolved (see IncidentCreatedV2Applier's
+   * SECRET_RESOLUTION_ERROR handling), so it does not loop through repeated failing injections.
    */
   private void raiseIncidentJobSecretInjectionFailed(final FailedInjectionJob failed) {
-    final String message =
-        failed.path() == null
-            ? String.format(SECRET_INJECTION_UNKNOWN_CAUSE_MESSAGE, failed.jobKey())
-            : String.format(
-                SECRET_REFERENCE_UNRESOLVED_MESSAGE,
-                failed.jobKey(),
-                failed.placeholder(),
-                failed.path());
-    raiseJobIncident(failed.jobKey(), failed.job(), ErrorType.SECRET_RESOLUTION_ERROR, message);
+    raiseJobIncident(
+        failed.jobKey(),
+        failed.job(),
+        ErrorType.SECRET_RESOLUTION_ERROR,
+        JobSecretInjectionIncident.messageFor(failed));
   }
 
   private void raiseMessageSizeExceededIncident(
