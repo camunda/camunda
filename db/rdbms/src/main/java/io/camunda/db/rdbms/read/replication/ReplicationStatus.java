@@ -7,10 +7,7 @@
  */
 package io.camunda.db.rdbms.read.replication;
 
-/**
- * Common shape shared by {@link ReplicationLsnStatus} and {@link ReplicationLagStatus}, so metrics
- * recording can treat both uniformly without depending on which replication mechanism is in use.
- */
+/** Common shape shared by {@link ReplicationLsnStatus} and {@link ReplicationLagStatus}. */
 public interface ReplicationStatus {
 
   String replicaId();

@@ -10,10 +10,8 @@ package io.camunda.db.rdbms.read.replication;
 import java.util.List;
 
 /**
- * Provides replication log status for tracking async replication state. The primary's current
- * position is captured after each flush to know what has been committed. Replica statuses are
- * polled periodically to determine what each replica has applied, together with the DB-reported
- * replication lag per replica.
+ * Provides LSN-based replication status: the primary's current log-sequence position, and each
+ * replica's applied position, stable identifier, and reported replication lag.
  */
 public interface ReplicationLsnProvider {
 

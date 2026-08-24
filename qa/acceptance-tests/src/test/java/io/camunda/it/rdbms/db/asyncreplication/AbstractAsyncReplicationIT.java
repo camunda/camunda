@@ -57,8 +57,8 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
 
   /**
    * The async-replication mechanism under test. Defaults to LSN-based tracking; override to
-   * exercise {@code TimeMonitoringReplicationController} (lag-based) against the same cluster and
-   * test scenarios instead.
+   * exercise {@code TimeMonitoringReplicationSignalStrategy} (lag-based) against the same cluster
+   * and test scenarios instead.
    */
   protected ReplicationType getReplicationType() {
     return ReplicationType.LOG_SEQ;

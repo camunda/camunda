@@ -11,11 +11,9 @@ import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 import java.util.List;
 
 /**
- * AWS Aurora Global Database implementation using {@code aurora_global_db_instance_status()}. The
+ * AWS Aurora Global Database implementation using {@code aurora_global_db_instance_status()}: the
  * primary is the row with {@code session_id = 'MASTER_SESSION_ID'}; each secondary region reports
- * its own {@code durable_lsn} and {@code visibility_lag_in_msec}. Aurora always presents itself as
- * PostgreSQL to JDBC clients, so this provider is selected at runtime by {@link
- * ReplicationLsnProviderFactory} when the Aurora-specific function is detected in {@code pg_proc}.
+ * its own {@code durable_lsn} and {@code visibility_lag_in_msec}.
  */
 public final class AuroraReplicationLsnProvider implements ReplicationLsnProvider {
 
