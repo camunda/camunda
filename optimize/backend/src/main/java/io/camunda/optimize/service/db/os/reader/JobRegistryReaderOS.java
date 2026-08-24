@@ -110,7 +110,7 @@ public class JobRegistryReaderOS implements JobRegistryReader {
     if (searchResponse.hits().hits().isEmpty()) {
       return Optional.empty();
     }
-    return Optional.ofNullable(searchResponse.hits().hits().get(0).source());
+    return Optional.ofNullable(searchResponse.hits().hits().getFirst().source());
   }
 
   @Override
