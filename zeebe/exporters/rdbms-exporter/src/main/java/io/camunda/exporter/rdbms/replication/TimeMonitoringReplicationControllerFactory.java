@@ -36,7 +36,8 @@ public class TimeMonitoringReplicationControllerFactory implements ReplicationCo
 
   @Override
   public ReplicationController createReplicationController(final Controller controller) {
-    return new TimeMonitoringReplicationController(
-        controller, statusProvider, config, partitionId, clock, metrics);
+    final var strategy = new TimeMonitoringReplicationSignalStrategy(statusProvider, config);
+    return new DefaultReplicationController(
+        controller, strategy, config, partitionId, clock, metrics);
   }
 }
