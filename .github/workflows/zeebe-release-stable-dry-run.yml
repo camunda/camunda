@@ -87,6 +87,7 @@ jobs:
       # Uses fake tag for dry run testing without affecting real releases
       releaseVersion: 0.0.0-dryrun-810
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
+      # 8.10 is the latest stable minor, so it is the only one flagged as latest
       isLatest: true
       dryRun: true
       includeOptimize: true
@@ -102,7 +103,8 @@ jobs:
       # Uses fake tag for dry run testing without affecting real releases
       releaseVersion: 0.0.0-dryrun-89
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
-      isLatest: true
+      # Only the latest stable minor is the latest release; older minors set false
+      isLatest: false
       dryRun: true
       includeOptimize: true
   dry-run-release-88:
@@ -117,7 +119,8 @@ jobs:
       # Uses fake tag for dry run testing without affecting real releases
       releaseVersion: 0.0.0-dryrun-88
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
-      isLatest: true
+      # Only the latest stable minor is the latest release; older minors set false
+      isLatest: false
       dryRun: true
       includeOptimize: true
   dry-run-release-87:
@@ -132,7 +135,8 @@ jobs:
       # Uses fake tag for dry run testing without affecting real releases
       releaseVersion: 0.0.0-dryrun-87
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
-      isLatest: true
+      # Only the latest stable minor is the latest release; older minors set false
+      isLatest: false
       dryRun: true
   # Always run cleanup. Delete refs for successful dry runs and keep failed
   # ones available for targeted reruns.
