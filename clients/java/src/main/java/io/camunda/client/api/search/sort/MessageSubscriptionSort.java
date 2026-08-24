@@ -19,6 +19,8 @@ import io.camunda.client.api.search.request.TypedSortableRequest.SearchRequestSo
 
 public interface MessageSubscriptionSort extends SearchRequestSort<MessageSubscriptionSort> {
 
+  MessageSubscriptionSort businessId();
+
   MessageSubscriptionSort messageSubscriptionKey();
 
   MessageSubscriptionSort processDefinitionId();
