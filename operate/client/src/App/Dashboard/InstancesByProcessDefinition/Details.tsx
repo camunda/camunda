@@ -19,13 +19,14 @@ import {InlineLoading} from '@carbon/react';
 import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.9';
 import {DEFAULT_TENANT} from 'modules/constants';
 import {getClientConfig} from 'modules/utils/getClientConfig';
-import {useDrainingProcessDefinitions} from 'modules/queries/processDefinitions/useDrainingProcessDefinitions';
+import type {DrainingLookup} from 'modules/queries/processDefinitions/useDrainingProcessDefinitions';
 import {DRAINING_MESSAGES} from 'modules/utils/draining';
 
 type Props = {
   processDefinitionId: string;
   processName: string;
   tenantId: string;
+  drainingDefinitionKeys?: DrainingLookup['byKey'];
   tabIndex?: number;
 };
 
@@ -33,6 +34,7 @@ const Details: React.FC<Props> = ({
   processDefinitionId,
   processName,
   tenantId,
+  drainingDefinitionKeys,
   tabIndex,
 }) => {
   const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
@@ -62,8 +64,6 @@ const Details: React.FC<Props> = ({
             },
           },
   });
-
-  const {data: draining} = useDrainingProcessDefinitions();
 
   if (result.status === 'pending' && !result.data) {
     return (
@@ -163,7 +163,9 @@ const Details: React.FC<Props> = ({
                   }}
                   incidentsCount={activeInstancesWithIncidentCount}
                   activeInstancesCount={activeInstancesWithoutIncidentCount}
-                  isDraining={!!draining?.byKey.has(processDefinitionKey)}
+                  isDraining={
+                    !!drainingDefinitionKeys?.has(processDefinitionKey)
+                  }
                   drainingDescription={DRAINING_MESSAGES.version}
                   size="small"
                 />

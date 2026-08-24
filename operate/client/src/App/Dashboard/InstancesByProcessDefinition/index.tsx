@@ -166,6 +166,7 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
                 processDefinitionId={processDefinitionId}
                 processName={latestProcessDefinitionName || processDefinitionId}
                 tenantId={normalizedTenantId}
+                drainingDefinitionKeys={draining?.byKey}
               />
             );
           }
@@ -174,7 +175,7 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
         },
         {},
       ),
-    [items],
+    [items, draining?.byKey],
   );
 
   if (status === 'pending') {
