@@ -161,6 +161,7 @@ runs:
     id: harbor-secrets
     uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
     with:
+      exportEnv: false
       url: ${{ inputs.vault-address }}
       method: approle
       roleId: ${{ inputs.vault-role-id }}
