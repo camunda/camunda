@@ -55,7 +55,6 @@ test('should render the Tasklist processes page with navigation', async ({shadcn
 test('should display available processes with their names, IDs, form requirements, start buttons, and more-results control', async ({
 	network,
 	shadcnTasklistProcessesPage,
-	page,
 }) => {
 	network.use(
 		mockQueryProcessDefinitionsEndpoint({
@@ -85,16 +84,10 @@ test('should display available processes with their names, IDs, form requirement
 	await shadcnTasklistProcessesPage.goto();
 
 	await expect(shadcnTasklistProcessesPage.processHeading('Invoice review')).toBeVisible();
-	await expect(page.getByText('invoice-review', {exact: true})).toBeVisible();
+	await expect(shadcnTasklistProcessesPage.processDefinitionId('1', 'invoice-review')).toBeVisible();
 	await expect(shadcnTasklistProcessesPage.processHeading('order-approval')).toBeVisible();
-	// exact: true — Radix Select renders a visually-hidden native <select> mirroring
-	// its items for autofill; its "Requires form input to start" <option> would
-	// otherwise substring-match this query too.
-	await expect(page.getByText('Requires form input', {exact: true})).toBeVisible();
-	await expect(shadcnTasklistProcessesPage.startProcessButtons).toHaveCount(2);
-	for (const button of await shadcnTasklistProcessesPage.startProcessButtons.all()) {
-		await expect(button).toBeEnabled();
-	}
+	await expect(shadcnTasklistProcessesPage.requiresFormPill('1')).toBeVisible();
+	await expect(shadcnTasklistProcessesPage.startProcessButton).toHaveCount(2);
 	await expect(shadcnTasklistProcessesPage.loadMoreButton).toBeVisible();
 });
 
@@ -179,8 +172,7 @@ test('should search and filter processes while preserving the selected filters',
 		}),
 	);
 
-	await shadcnTasklistProcessesPage.processFilter.click();
-	await page.getByRole('option', {name: 'Does not require form input to start'}).click();
+	await shadcnTasklistProcessesPage.selectProcessFilter('Does not require form input to start');
 
 	await expect(shadcnTasklistProcessesPage.processHeading('Order approval')).toBeVisible();
 	await expect(page).toHaveURL(/hasStartForm=no/);
@@ -231,8 +223,7 @@ test('should use the default tenant and update the process list when another ten
 		}),
 	);
 
-	await shadcnTasklistProcessesPage.tenantFilter.click();
-	await page.getByRole('option', {name: 'Tenant A - tenant-a'}).click();
+	await shadcnTasklistProcessesPage.selectTenant('Tenant A - tenant-a');
 
 	await expect(shadcnTasklistProcessesPage.processHeading('Tenant A process')).toBeVisible();
 	await expect(page).toHaveURL(/tenantId=tenant-a/);

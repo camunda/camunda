@@ -30,7 +30,7 @@ class ShadcnTasklistProcessesPage extends BasePage {
 		return this.page.getByText('Browse and run processes published by your organization.');
 	}
 
-	get startProcessButtons() {
+	get startProcessButton() {
 		return this.page.getByRole('button', {name: 'Start process'});
 	}
 
@@ -44,6 +44,10 @@ class ShadcnTasklistProcessesPage extends BasePage {
 
 	get tenantFilter() {
 		return this.page.getByRole('combobox', {name: 'Tenant'});
+	}
+
+	tenantFilterOption(option: string) {
+		return this.page.getByRole('option', {name: option});
 	}
 
 	get unpublishedProcessesHeading() {
@@ -60,6 +64,30 @@ class ShadcnTasklistProcessesPage extends BasePage {
 
 	processHeading(name: string) {
 		return this.page.getByRole('heading', {name});
+	}
+
+	processTile(processDefinitionKey: string) {
+		return this.page.getByTestId(`process-tile-${processDefinitionKey}`);
+	}
+
+	processDefinitionId(processDefinitionKey: string, processDefinitionId: string) {
+		return this.processTile(processDefinitionKey).getByText(processDefinitionId);
+	}
+
+	requiresFormPill(processDefinitionKey: string) {
+		return this.processTile(processDefinitionKey).getByText('Requires form input');
+	}
+
+	async selectProcessFilter(
+		option: 'All Processes' | 'Requires form input to start' | 'Does not require form input to start',
+	) {
+		await this.processFilter.click();
+		await this.page.getByRole('option', {name: option}).click();
+	}
+
+	async selectTenant(option: string) {
+		await this.tenantFilter.click();
+		await this.tenantFilterOption(option).click();
 	}
 }
 

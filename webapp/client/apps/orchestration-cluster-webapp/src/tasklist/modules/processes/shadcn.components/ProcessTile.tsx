@@ -20,7 +20,7 @@ const ProcessTile: React.FC<Props> = ({process}) => {
 	const displayName = process.name ?? process.processDefinitionId;
 
 	return (
-		<Card className="h-full">
+		<Card className="h-full" data-testid={`process-tile-${process.processDefinitionKey}`}>
 			{/* One flat content area, no CardFooter — its border-t/bg-neutral-background-medium
 			    draws a visible seam around the button that the prototype's tile doesn't have. */}
 			{/* Section spacing is done with `gap`/`justify-between` on flex containers, not
