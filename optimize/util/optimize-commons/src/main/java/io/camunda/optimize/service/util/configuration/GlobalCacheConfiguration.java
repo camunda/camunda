@@ -16,6 +16,7 @@ public class GlobalCacheConfiguration {
   private CloudUserCacheConfiguration cloudUsers;
   private CacheConfiguration cloudTenantAuthorizations;
   private CacheConfiguration users;
+  private DeletedProcessDefinitionCacheConfiguration deletedProcessDefinitions;
 
   public GlobalCacheConfiguration() {}
 
@@ -59,6 +60,15 @@ public class GlobalCacheConfiguration {
     this.users = users;
   }
 
+  public DeletedProcessDefinitionCacheConfiguration getDeletedProcessDefinitions() {
+    return deletedProcessDefinitions;
+  }
+
+  public void setDeletedProcessDefinitions(
+      final DeletedProcessDefinitionCacheConfiguration deletedProcessDefinitions) {
+    this.deletedProcessDefinitions = deletedProcessDefinitions;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof GlobalCacheConfiguration;
   }
@@ -73,13 +83,19 @@ public class GlobalCacheConfiguration {
         && Objects.equals(definitionEngines, that.definitionEngines)
         && Objects.equals(cloudUsers, that.cloudUsers)
         && Objects.equals(cloudTenantAuthorizations, that.cloudTenantAuthorizations)
-        && Objects.equals(users, that.users);
+        && Objects.equals(users, that.users)
+        && Objects.equals(deletedProcessDefinitions, that.deletedProcessDefinitions);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        definitions, definitionEngines, cloudUsers, cloudTenantAuthorizations, users);
+        definitions,
+        definitionEngines,
+        cloudUsers,
+        cloudTenantAuthorizations,
+        users,
+        deletedProcessDefinitions);
   }
 
   @Override
@@ -94,6 +110,8 @@ public class GlobalCacheConfiguration {
         + getCloudTenantAuthorizations()
         + ", users="
         + getUsers()
+        + ", deletedProcessDefinitions="
+        + getDeletedProcessDefinitions()
         + ")";
   }
 }

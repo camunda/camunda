@@ -7,9 +7,6 @@
  */
 package io.camunda.optimize.service.db.writer;
 
-import io.camunda.optimize.dto.optimize.query.job.EntityType;
-import io.camunda.optimize.dto.optimize.query.job.JobType;
-import io.camunda.optimize.service.db.reader.JobRegistryReader;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -24,10 +21,11 @@ public class DeletedProcessDefinitionFilter {
 
   private static final Logger LOG = LoggerFactory.getLogger(DeletedProcessDefinitionFilter.class);
 
-  private final JobRegistryReader jobRegistryReader;
+  private final DeletedProcessDefinitionCache deletedProcessDefinitionCache;
 
-  public DeletedProcessDefinitionFilter(final JobRegistryReader jobRegistryReader) {
-    this.jobRegistryReader = jobRegistryReader;
+  public DeletedProcessDefinitionFilter(
+      final DeletedProcessDefinitionCache deletedProcessDefinitionCache) {
+    this.deletedProcessDefinitionCache = deletedProcessDefinitionCache;
   }
 
   /**
@@ -38,8 +36,9 @@ public class DeletedProcessDefinitionFilter {
     if (processDefinitionIds.isEmpty()) {
       return Set.of();
     }
-    return jobRegistryReader.findEntityIdsWithJob(
-        JobType.DELETE, EntityType.PROCESS_DEFINITION, processDefinitionIds);
+    return processDefinitionIds.stream()
+        .filter(deletedProcessDefinitionCache::isSuppressed)
+        .collect(Collectors.toSet());
   }
 
   /**
@@ -61,7 +60,7 @@ public class DeletedProcessDefinitionFilter {
         entries.stream()
             .filter(entry -> !suppressedIds.contains(processDefinitionIdExtractor.apply(entry)))
             .toList();
-    LOG.info(
+    LOG.debug(
         "Suppressing import of {} entries for process definition ids {} with a deletion job.",
         entries.size() - filteredEntries.size(),
         suppressedIds);

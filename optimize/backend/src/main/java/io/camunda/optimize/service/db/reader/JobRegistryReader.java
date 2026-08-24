@@ -36,4 +36,11 @@ public interface JobRegistryReader {
    */
   Set<String> findEntityIdsWithJob(
       JobType jobType, EntityType entityType, Collection<String> entityIds);
+
+  /**
+   * Returns the distinct entityIds of up to {@code limit} job registry entries for the given
+   * jobType and entityType regardless of the status, ordered newest-created first. At most one (the
+   * newest) entry per entityId is considered.
+   */
+  List<String> findNewestEntityIds(JobType jobType, EntityType entityType, int limit);
 }
