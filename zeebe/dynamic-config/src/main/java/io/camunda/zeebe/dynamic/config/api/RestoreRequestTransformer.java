@@ -16,9 +16,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.OperationId;
@@ -117,26 +115,6 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
     } catch (final Exception e) {
       return Either.left(mapFailure(e));
     }
-  }
-
-  /**
-   * The brokers to restore, each mapped to the partitions it holds, ordered by broker id. On the
-   * legacy model recovery is a broker-wide state, so every recovering broker takes part — including
-   * one holding no partition, which contributes no partition operation but still has to exit
-   * recovery, since entering it transitioned that broker too.
-   */
-  private static SortedMap<MemberId, Set<Integer>> recoveringMembers(
-      final ClusterConfiguration clusterConfiguration) {
-    final SortedMap<MemberId, Set<Integer>> partitionsPerMember = new TreeMap<>();
-    clusterConfiguration
-        .members()
-        .forEach(
-            (memberId, member) -> {
-              if (member.state() == State.RECOVERING) {
-                partitionsPerMember.put(memberId, member.partitions().keySet());
-              }
-            });
-    return partitionsPerMember;
   }
 
   /**
@@ -269,16 +247,6 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
     partitions.forEach(
         partitionId -> union.addAll(operationsPerPartition.getOrDefault(partitionId, Set.of())));
     return union;
-  }
-
-  /** Whether every initialized broker of the cluster is in recovery. */
-  private static boolean isClusterRecovering(final ClusterConfiguration clusterConfiguration) {
-    final var initializedMembers =
-        clusterConfiguration.members().values().stream()
-            .filter(member -> member.state() != State.UNINITIALIZED && member.state() != State.LEFT)
-            .toList();
-    return !initializedMembers.isEmpty()
-        && initializedMembers.stream().allMatch(member -> member.state() == State.RECOVERING);
   }
 
   /**

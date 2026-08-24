@@ -64,9 +64,7 @@ public final class ClusterRestoreRequestTransformer implements ConfigurationChan
       if (result.isLeft()) {
         return Either.left(result.getLeft());
       }
-      if (!result.get().isEmpty()) {
-        graphsPerTenant.put(physicalTenantId, result.get());
-      }
+      graphsPerTenant.put(physicalTenantId, result.get());
     }
     if (graphsPerTenant.isEmpty()) {
       return Either.right(List.of());
