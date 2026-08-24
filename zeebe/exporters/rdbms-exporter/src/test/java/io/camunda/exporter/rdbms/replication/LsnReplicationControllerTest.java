@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -54,6 +55,9 @@ class LsnReplicationControllerTest {
     replicationConfig.setMaxLag(MAX_LAG);
     replicationConfig.setMinSyncReplicas(MIN_SYNC_REPLICAS);
     replicationConfig.setPauseOnMaxLagExceeded(true);
+    // disabled by default so existing tests get one queue entry per onFlush call; dedicated tests
+    // below set a non-zero value to exercise debouncing itself
+    replicationConfig.setQueueDebounceTime(Duration.ZERO);
 
     scheduledTask = mock(ScheduledTask.class);
     clock = mock(InstantSource.class);
@@ -105,18 +109,18 @@ class LsnReplicationControllerTest {
 
   @Test
   void shouldDropEntryOnFullQueue() {
-    // given – create a controller with queue that is already full
+    // given – create a controller with a queue that is already full
+    replicationConfig.setQueueCapacity(3);
     final var replicationController = createController();
     when(lsnProvider.getCurrent()).thenReturn(1L);
-    when(clock.millis()).thenReturn(0L);
-
-    // fill the queue completely
-    for (int i = 0; i < LsnReplicationController.DEFAULT_QUEUE_CAPACITY; i++) {
+    for (int i = 0; i < 3; i++) {
+      when(clock.millis()).thenReturn((long) i);
       replicationController.onFlush(i);
     }
 
     // when – one more flush that should be silently dropped
-    replicationController.onFlush(LsnReplicationController.DEFAULT_QUEUE_CAPACITY + 1);
+    when(clock.millis()).thenReturn(3L);
+    replicationController.onFlush(4);
 
     // then – isReplicationInSync still returns true (no exception, no crash)
     assertThat(replicationController.isReplicationInSync()).isTrue();
@@ -409,7 +413,7 @@ class LsnReplicationControllerTest {
   }
 
   // -----------------------------------------------------------------------
-  // Unit tests for removeConfirmedLsnEntries()
+  // Unit tests for drainConfirmed()
   // -----------------------------------------------------------------------
 
   @Nested
@@ -421,7 +425,7 @@ class LsnReplicationControllerTest {
       final var replicationController = createController();
 
       // when
-      final var result = replicationController.removeConfirmedLsnEntries(100L);
+      final var result = replicationController.drainConfirmed(entry -> entry.lsn() <= 100L);
 
       // then
       assertThat(result).isNull();
@@ -438,7 +442,7 @@ class LsnReplicationControllerTest {
       replicationController.onFlush(200L); // lsn=20
 
       // when – confirmedLsn=5 is below all entries
-      final var result = replicationController.removeConfirmedLsnEntries(5L);
+      final var result = replicationController.drainConfirmed(entry -> entry.lsn() <= 5L);
 
       // then
       assertThat(result).isNull();
@@ -455,7 +459,7 @@ class LsnReplicationControllerTest {
       }
 
       // when – confirm up to lsn=30 → removes entries with lsn 10, 20, 30
-      final var result = replicationController.removeConfirmedLsnEntries(30L);
+      final var result = replicationController.drainConfirmed(entry -> entry.lsn() <= 30L);
 
       // then – the returned entry is the last confirmed one (lsn=30, position=300)
       assertThat(result).isNotNull();
@@ -474,12 +478,64 @@ class LsnReplicationControllerTest {
       }
 
       // when – confirmedLsn exceeds max lsn (50)
-      final var result = replicationController.removeConfirmedLsnEntries(9999L);
+      final var result = replicationController.drainConfirmed(entry -> entry.lsn() <= 9999L);
 
       // then
       assertThat(result).isNotNull();
       assertThat(result.lsn()).isEqualTo(50L);
       assertThat(result.position()).isEqualTo(500L);
+    }
+  }
+
+  @Nested
+  class QueueDebounceTest {
+
+    @Test
+    void shouldDebounceFlushesWithinDebounceWindow() {
+      // given - flushes 1s and 4s after the first, both within a 5s debounce window
+      replicationConfig.setQueueDebounceTime(Duration.ofSeconds(5));
+      final var replicationController = createController();
+      when(lsnProvider.getCurrent()).thenReturn(10L);
+      replicationController.onFlush(100L); // queued at t=0
+      when(clock.millis()).thenReturn(1_000L);
+      when(lsnProvider.getCurrent()).thenReturn(20L);
+      replicationController.onFlush(200L); // debounced
+      when(clock.millis()).thenReturn(4_000L);
+      when(lsnProvider.getCurrent()).thenReturn(30L);
+      replicationController.onFlush(300L); // debounced
+
+      // when - the replica confirms every emitted lsn, well after the debounce window
+      when(clock.millis()).thenReturn(10_000L);
+      when(lsnProvider.getReplicationStatuses())
+          .thenReturn(List.of(new ReplicationLsnStatus(30L, "replica-1", 0L)));
+      replicationController.checkReplication();
+
+      // then - only the first, actually-queued entry is acknowledged
+      verify(controller).updateLastExportedRecordPosition(100L);
+      verify(controller, never()).updateLastExportedRecordPosition(200L);
+      verify(controller, never()).updateLastExportedRecordPosition(300L);
+    }
+
+    @Test
+    void shouldQueueNewEntryOnceDebounceWindowElapses() {
+      // given
+      replicationConfig.setQueueDebounceTime(Duration.ofSeconds(5));
+      final var replicationController = createController();
+      when(lsnProvider.getCurrent()).thenReturn(10L);
+      replicationController.onFlush(100L); // queued at t=0
+
+      // when - next flush happens after the debounce window has elapsed
+      when(clock.millis()).thenReturn(6_000L);
+      when(lsnProvider.getCurrent()).thenReturn(20L);
+      replicationController.onFlush(200L); // queued at t=6000
+
+      when(clock.millis()).thenReturn(20_000L);
+      when(lsnProvider.getReplicationStatuses())
+          .thenReturn(List.of(new ReplicationLsnStatus(20L, "replica-1", 0L)));
+      replicationController.checkReplication();
+
+      // then - both entries were queued, so the latest is acknowledged
+      verify(controller).updateLastExportedRecordPosition(200L);
     }
   }
 
