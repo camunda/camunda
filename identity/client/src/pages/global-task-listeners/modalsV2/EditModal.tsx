@@ -30,6 +30,7 @@ import {
   getExecutionOrderOptions,
   LISTENER_TYPE_PATTERN,
   syncAllEventType,
+  toFormValues,
   toRequestEventTypes,
 } from "src/pages/global-task-listeners/utility";
 import type {
@@ -54,27 +55,13 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
 
   const { control, handleSubmit, reset } =
     useForm<CreateGlobalTaskListenerRequestBody>({
-      defaultValues: {
-        id: entity.id,
-        type: entity.type,
-        eventTypes: entity.eventTypes,
-        retries: entity.retries ?? undefined,
-        afterNonGlobal: entity.afterNonGlobal ?? undefined,
-        priority: entity.priority ?? undefined,
-      },
+      defaultValues: toFormValues(entity),
       mode: "all",
     });
 
   // Reset form when entity changes
   useEffect(() => {
-    reset({
-      id: entity.id,
-      type: entity.type,
-      eventTypes: entity.eventTypes,
-      retries: entity.retries ?? undefined,
-      afterNonGlobal: entity.afterNonGlobal ?? undefined,
-      priority: entity.priority ?? undefined,
-    });
+    reset(toFormValues(entity));
   }, [entity, reset]);
 
   const onSubmit = (data: CreateGlobalTaskListenerRequestBody) => {
@@ -181,9 +168,11 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
       <Controller
         name="retries"
         control={control}
+        rules={{ min: { value: 1, message: t("retriesMin") } }}
         render={({ field, fieldState }) => (
           <NumberField
             label={t("retries")}
+            helperText={t("retriesHelperText")}
             min={1}
             step={1}
             value={field.value}
@@ -227,6 +216,7 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
       <Controller
         name="priority"
         control={control}
+        rules={{ min: { value: 0, message: t("priorityMin") } }}
         render={({ field, fieldState }) => (
           <NumberField
             label={t("priority")}

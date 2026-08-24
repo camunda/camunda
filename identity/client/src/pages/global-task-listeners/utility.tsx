@@ -7,6 +7,7 @@
  */
 
 import type {
+  CreateGlobalTaskListenerRequestBody,
   GlobalTaskListener,
   GlobalTaskListenerEventType,
 } from "@camunda/camunda-api-zod-schemas/8.10";
@@ -94,3 +95,32 @@ export const toRequestEventTypes = (
   eventTypes.includes("all")
     ? ["all"]
     : eventTypes.filter((eventType) => eventType !== "all");
+
+/**
+ * Counterpart to `toRequestEventTypes`: a listener stored as `["all"]` is
+ * expanded into every event type, because that is the state the form keeps
+ * once "All events" is checked — see {@link syncAllEventType}.
+ *
+ * Without expanding, the loaded state differs from the one any interaction
+ * produces: the dropdown shows "All events" alone, and checking a single event
+ * on top of it drops "all" and leaves that one event as the whole selection.
+ */
+export const toFormEventTypes = (
+  eventTypes: GlobalTaskListenerEventType[],
+): GlobalTaskListenerEventType[] =>
+  eventTypes.includes("all")
+    ? [...LISTENER_EVENT_TYPES]
+    : LISTENER_EVENT_TYPES.filter((eventType) =>
+        eventTypes.includes(eventType),
+      );
+
+export const toFormValues = (
+  listener: GlobalTaskListener,
+): CreateGlobalTaskListenerRequestBody => ({
+  id: listener.id,
+  type: listener.type,
+  eventTypes: toFormEventTypes(listener.eventTypes),
+  retries: listener.retries ?? undefined,
+  afterNonGlobal: listener.afterNonGlobal ?? undefined,
+  priority: listener.priority ?? undefined,
+});
