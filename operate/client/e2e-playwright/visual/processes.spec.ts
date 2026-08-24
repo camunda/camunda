@@ -223,6 +223,48 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('operation confirmation modal', async ({page, processesPage}) => {
+    await page.setViewportSize({width: 1600, height: 1068});
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processDefinitions: mockProcessDefinitions,
+        batchOperations: mockBatchOperations,
+        processInstances: mockProcessInstances,
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
+        statistics: mockStatistics,
+        processXml: mockProcessXml,
+      }),
+    );
+
+    await processesPage.gotoProcessesPage({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+        completed: 'true',
+        canceled: 'true',
+      },
+    });
+
+    await page
+      .getByRole('button', {name: /Cancel Instance/})
+      .first()
+      .click();
+
+    await expect(
+      page.getByRole('dialog', {name: 'Apply Operation'}),
+    ).toBeVisible();
+    await expect(page).toHaveScreenshot();
+  });
+
   test('optional filters visible (part 1)', async ({
     page,
     processesPage,
