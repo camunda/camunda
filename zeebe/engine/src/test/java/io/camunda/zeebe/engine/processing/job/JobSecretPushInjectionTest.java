@@ -326,9 +326,8 @@ public final class JobSecretPushInjectionTest {
         RecordingExporter.incidentRecords(IncidentIntent.CREATED).withJobKey(jobKey).getFirst();
     assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.SECRET_RESOLUTION_ERROR);
     assertThat(incident.getValue().getErrorMessage())
-        .contains("camunda.secrets.tokenB")
-        .contains("/authToken")
-        .contains("could not be resolved at")
+        .contains(
+            "the secret reference 'camunda.secrets.tokenB' could not be resolved at '/authToken'")
         .contains("Fix the variable's value or the input mapping that sets it");
 
     // and - the job is not pushed, and no exported record leaks the resolved value

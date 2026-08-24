@@ -17,10 +17,10 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReferen
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.job.JobSecretInjectionIncident;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
-import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretPointerMismatchException;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.job.LeaseTokens;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -43,7 +43,6 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.HashSet;
@@ -298,10 +297,8 @@ public class BpmnJobActivationBehavior {
    * belongs. Raising that incident also takes the job out of the activation until an operator
    * resolves it, so a failing injection cannot be retried on every activation (see {@code
    * IncidentCreatedV2Applier}). The failure details are only logged, since the exception may quote
-   * the variables document. When the failure is a {@link SecretPointerMismatchException}, the
-   * incident names the mismatched placeholder and JSON pointer (never the secret's value), the same
-   * detail the batch path gives; any other failure falls back to the cause-neutral {@link
-   * BpmnIncidentBehavior#SECRET_INJECTION_FAILED_MESSAGE}.
+   * the variables document; the incident itself carries the message that {@link
+   * JobSecretInjectionIncident} gives both activation paths.
    */
   private boolean injectSecretValues(
       final long jobKey, final JobRecord pushableJobRecord, final SecretCheckResult secrets) {
@@ -326,24 +323,9 @@ public class BpmnJobActivationBehavior {
           jobKey,
           pushableJobRecord,
           ErrorType.SECRET_RESOLUTION_ERROR,
-          secretInjectionIncidentMessage(jobKey, e));
+          JobSecretInjectionIncident.messageFor(jobKey, e));
       return false;
     }
-  }
-
-  /**
-   * Builds the message for a failed secret injection incident: when the failure identifies the
-   * mismatched reference, it names that reference's placeholder and JSON pointer; otherwise it
-   * falls back to the cause-neutral message. Only the placeholder and path are read from the
-   * exception, never its own message, which may quote the variables document.
-   */
-  @VisibleForTesting
-  static String secretInjectionIncidentMessage(final long jobKey, final Exception failure) {
-    if (failure instanceof final SecretPointerMismatchException mismatch) {
-      return BpmnIncidentBehavior.SECRET_REFERENCE_UNRESOLVED_MESSAGE.formatted(
-          jobKey, mismatch.placeholder(), mismatch.path());
-    }
-    return BpmnIncidentBehavior.SECRET_INJECTION_FAILED_MESSAGE.formatted(jobKey);
   }
 
   public void notifyJobAvailableAsSideEffect(final JobRecord jobRecord) {

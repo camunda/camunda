@@ -300,10 +300,11 @@ public final class JobSecretLookup {
    * exists but doesn't address a text leaf of an object, or addresses one whose content doesn't
    * contain the expected placeholder, and no sibling reference at the same path resolved it either.
    * Both activation paths inspect {@link #path()} and {@link #placeholder()} to name the mismatch
-   * in a {@code SECRET_RESOLUTION_ERROR} incident: the batch path via {@link JobSecretInjector},
-   * the job-push path in {@code BpmnJobActivationBehavior}, which is why this is public. Only the
-   * placeholder and JSON pointer are ever read out; this exception's own message is log-only and
-   * never persisted, since it may quote the variables document.
+   * in the {@code SECRET_RESOLUTION_ERROR} incident they share ({@link
+   * JobSecretInjectionIncident}): the batch path via {@link JobSecretInjector}, the job-push path
+   * in {@code BpmnJobActivationBehavior}, which is why this is public. Only the placeholder and
+   * JSON pointer are ever read out; this exception's own message is log-only and never persisted,
+   * since it may quote the variables document.
    */
   public static final class SecretPointerMismatchException extends RuntimeException {
     private final String path;

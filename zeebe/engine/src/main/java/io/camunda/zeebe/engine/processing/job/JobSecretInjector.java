@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,9 +57,8 @@ import org.slf4j.LoggerFactory;
  *
  * <p>The job-push path injects the same values into the job it streams, see {@code
  * BpmnJobActivationBehavior#publishWork}; it shares {@link JobSecretLookup}, so it tolerates the
- * same shapes, but reports a failed injection with a generic incident message rather than naming
- * the mismatched pointer (tracked in <a
- * href="https://github.com/camunda/camunda/issues/60404">#60404</a>).
+ * same shapes, and {@link JobSecretInjectionIncident}, so it reports a failed injection with the
+ * same message.
  */
 public final class JobSecretInjector {
 
@@ -219,7 +219,7 @@ public final class JobSecretInjector {
    * Drops the job whose injection failed and every job after it from both batches, and returns it
    * for an incident, so the job cannot loop through activation with a failing injection. The
    * exception's own message is only logged; only its placeholder and JSON pointer are carried out
-   * for the incident message (see JobBatchActivateProcessor#raiseIncidentJobSecretInjectionFailed).
+   * for the incident message (see {@link JobSecretInjectionIncident}).
    */
   private static FailedInjectionJob dropJobsWhoseInjectionFailed(
       final JobBatchRecord responseBatch,
@@ -303,7 +303,8 @@ public final class JobSecretInjector {
    * {@code placeholder} identify the secret whose pointer didn't match, or are both {@code null}
    * for an unrelated failure (e.g. the job's variables are not valid msgpack).
    */
-  public record FailedInjectionJob(long jobKey, JobRecord job, String path, String placeholder)
+  public record FailedInjectionJob(
+      long jobKey, JobRecord job, @Nullable String path, @Nullable String placeholder)
       implements DroppedJob {}
 
   /** A registered job: its index in the batch, the job, and its cached secrets. */
