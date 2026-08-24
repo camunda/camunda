@@ -8,6 +8,7 @@
 
 import {useLocation, useNavigate} from 'react-router-dom';
 import {getSortParams} from 'modules/utils/filter';
+import {cn} from 'modules/utils/cn';
 import {Header, TableHeader} from '@carbon/react';
 
 const INITIAL_SORT_ORDER = 'desc';
@@ -31,6 +32,7 @@ function toggleSorting(
 }
 
 type Props = {
+  columnKey: string;
   label: string | React.ReactNode;
   sortKey: string;
   isDefault?: boolean;
@@ -39,8 +41,10 @@ type Props = {
 } & React.ComponentProps<typeof Header>;
 
 const ColumnHeader: React.FC<Props> = ({
+  columnKey,
   sortKey,
   label,
+  className,
   isDefault = false,
   isDisabled = false,
   onSort,
@@ -66,6 +70,7 @@ const ColumnHeader: React.FC<Props> = ({
   return (
     <TableHeader
       {...rest}
+      className={cn(className, `sortable-table-column-${columnKey}`)}
       onClick={() => {
         onSort?.(sortKey);
         navigate({

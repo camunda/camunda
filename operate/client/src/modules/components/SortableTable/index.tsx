@@ -17,6 +17,7 @@ import {
   TableExpandRow,
   TableHeadRow,
   TableExpandedRow,
+  ColumnHeader,
 } from './styled';
 
 import {
@@ -29,7 +30,6 @@ import {
   TableSelectRow,
   TableExpandHeader,
 } from '@carbon/react';
-import {ColumnHeader} from './ColumnHeader';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {EmptyMessage} from '../EmptyMessage';
 import {ErrorMessage} from '../ErrorMessage';
@@ -56,6 +56,7 @@ interface Props<_ extends Record<string, unknown>, ColTypes extends unknown[]> {
   checkIsIndeterminate?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
   columnsWithNoContentPadding?: string[];
+  stickyRightColumn?: string;
   batchOperationKey?: string;
   isExpandable?: boolean;
   expandedContent?: Record<string, React.ReactNode>;
@@ -88,6 +89,7 @@ const SortableTable = <
   onVerticalScrollStartReach,
   onVerticalScrollEndReach,
   columnsWithNoContentPadding,
+  stickyRightColumn,
   batchOperationKey,
   isExpandable = false,
   expandedContent,
@@ -176,11 +178,13 @@ const SortableTable = <
                       <ColumnHeader
                         {...props}
                         key={key}
+                        columnKey={header.key}
                         label={header.header}
                         sortKey={headerColumns[index]?.sortKey ?? header.key}
                         isDefault={headerColumns[index]?.isDefault}
                         isDisabled={headerColumns[index]?.isDisabled}
                         onSort={onSort}
+                        $stickyRight={stickyRightColumn === header.key}
                       />
                     );
                   })}
@@ -246,10 +250,14 @@ const SortableTable = <
                             {row.cells.map((cell) => (
                               <TableCell
                                 key={cell.id}
+                                data-column-key={cell.info.header}
                                 data-testid={`cell-${cell.info.header}`}
                                 $hideCellPadding={columnsWithNoContentPadding?.includes(
                                   cell.info.header,
                                 )}
+                                $stickyRight={
+                                  stickyRightColumn === cell.info.header
+                                }
                               >
                                 {cell.value}
                               </TableCell>
