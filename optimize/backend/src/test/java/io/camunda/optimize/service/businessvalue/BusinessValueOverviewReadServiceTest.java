@@ -55,6 +55,7 @@ class BusinessValueOverviewReadServiceTest {
   private DefinitionService definitionService;
   private BusinessValueOverviewComputeService computeService;
   private BusinessValueOverviewReadService readService;
+  private BusinessValueConfiguration businessValueConfiguration;
 
   @BeforeEach
   void setUp() {
@@ -63,7 +64,7 @@ class BusinessValueOverviewReadServiceTest {
     definitionService = mock(DefinitionService.class);
     computeService = mock(BusinessValueOverviewComputeService.class);
     final ConfigurationService configurationService = mock(ConfigurationService.class);
-    final BusinessValueConfiguration businessValueConfiguration = new BusinessValueConfiguration();
+    businessValueConfiguration = new BusinessValueConfiguration();
     businessValueConfiguration.setOverviewRefreshInterval(REFRESH_INTERVAL_SECONDS);
     when(configurationService.getBusinessValueConfiguration())
         .thenReturn(businessValueConfiguration);
@@ -376,6 +377,29 @@ class BusinessValueOverviewReadServiceTest {
     Awaitility.await()
         .untilAsserted(
             () -> verify(computeService).computeOverviewRows(eq(List.of(MetricRange.values()))));
+  }
+
+  @Test
+  void shouldNotFireTheBackstopWhenComputeIsDisabled() {
+    // given a stale row that would otherwise trigger a recompute, and the sweep switched off
+    businessValueConfiguration.setOverviewComputeEnabled(false);
+    final BusinessValueOverviewDto staleRow =
+        stamp(
+            row(TENANT_A, "proc-stale", cyc(6_000L, 8_000L, true), autoNull(), 1, 1),
+            NOW.minusSeconds(3L * REFRESH_INTERVAL_SECONDS));
+    when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any()))
+        .thenReturn(List.of(staleRow));
+    stubCurrentDefinitions(new DefKey(TENANT_A, "proc-stale"));
+
+    // when
+    final BusinessValueOverviewResponseDto response =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then no recompute is queued — otherwise disabling the sweep would still let every read spawn
+    // the work it was disabled to prevent — and the read still serves its (now frozen) rows
+    verify(computeService, never()).computeOverviewRows(any());
+    assertThat(response).isNotNull();
+    assertThat(response.getCoverage().getTotalProcesses()).isEqualTo(1);
   }
 
   @Test

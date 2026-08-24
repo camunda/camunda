@@ -595,6 +595,12 @@ businessValue:
   # How often the business-value overview index is refreshed for all definitions and all range
   # presets (7d, 30d, 3m, 6m). The given number is the interval in seconds. Default: 24h.
   overviewRefreshInterval: ${CAMUNDA_OPTIMIZE_BUSINESS_VALUE_OVERVIEW_REFRESH_INTERVAL:86400}
+  # Kill switch for the background overview computation. Set to false to stop the sweep without
+  # taking the dashboard down: existing rows stay readable and the endpoint keeps serving, the
+  # numbers simply stop advancing until it is re-enabled. Takes effect on the next tick, no restart
+  # required. Scoped to the sweep only — it does not affect the overview or target endpoints, nor
+  # the dashboard tiles, which are evaluated per request.
+  overviewComputeEnabled: ${CAMUNDA_OPTIMIZE_BUSINESS_VALUE_OVERVIEW_COMPUTE_ENABLED:true}
 
 export:
   csv:
