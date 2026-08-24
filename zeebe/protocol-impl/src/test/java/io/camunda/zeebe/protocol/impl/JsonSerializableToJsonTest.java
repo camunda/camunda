@@ -1475,6 +1475,7 @@ final class JsonSerializableToJsonTest {
               final String correlationKey = "key";
               final long messageKey = 3L;
               final int storageOrdinalKey = 8;
+              final long subscriptionKey = 42L;
 
               return new MessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
@@ -1489,7 +1490,8 @@ final class JsonSerializableToJsonTest {
                   .setElementId("catch-1")
                   .setRootProcessInstanceKey(99L)
                   .setStorageOrdinalKey(storageOrdinalKey)
-                  .setElementType(BpmnElementType.RECEIVE_TASK);
+                  .setElementType(BpmnElementType.RECEIVE_TASK)
+                  .setSubscriptionKey(subscriptionKey);
             },
         """
                 {
@@ -1509,7 +1511,8 @@ final class JsonSerializableToJsonTest {
                   "elementId": "catch-1",
                   "rootProcessInstanceKey": 99,
                   "storageOrdinalKey": 8,
-                  "elementType": "RECEIVE_TASK"
+                  "elementType": "RECEIVE_TASK",
+                  "subscriptionKey": 42
                 }
                 """
       },
@@ -1544,7 +1547,8 @@ final class JsonSerializableToJsonTest {
                   "elementId": "",
                   "rootProcessInstanceKey": -1,
                   "storageOrdinalKey": 0,
-                  "elementType": "UNSPECIFIED"
+                  "elementType": "UNSPECIFIED",
+                  "subscriptionKey": -1
                 }
                 """
       },
@@ -1568,6 +1572,7 @@ final class JsonSerializableToJsonTest {
               final String correlationKey = "key";
               final long rootProcessInstanceKey = 5678L;
               final int storageOrdinalKey = 8;
+              final long subscriptionKey = 42L;
 
               return new ProcessMessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
@@ -1583,7 +1588,8 @@ final class JsonSerializableToJsonTest {
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
                   .setBusinessId("biz-42")
                   .setStorageOrdinalKey(storageOrdinalKey)
-                  .setElementType(BpmnElementType.RECEIVE_TASK);
+                  .setElementType(BpmnElementType.RECEIVE_TASK)
+                  .setSubscriptionKey(subscriptionKey);
             },
         """
                 {
@@ -1603,7 +1609,8 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": 5678,
                   "businessId": "biz-42",
                   "storageOrdinalKey": 8,
-                  "elementType": "RECEIVE_TASK"
+                  "elementType": "RECEIVE_TASK",
+                  "subscriptionKey": 42
                 }
                 """
       },
@@ -1640,7 +1647,8 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": -1,
                   "businessId": "",
                   "storageOrdinalKey": 0,
-                  "elementType": "UNSPECIFIED"
+                  "elementType": "UNSPECIFIED",
+                  "subscriptionKey": -1
                 }
                 """
       },

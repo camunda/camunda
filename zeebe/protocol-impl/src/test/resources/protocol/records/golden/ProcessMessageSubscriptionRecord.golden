@@ -47,6 +47,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
+  private static final StringValue SUBSCRIPTION_KEY_KEY = new StringValue("subscriptionKey");
 
   private final IntegerProperty subscriptionPartitionIdProp =
       new IntegerProperty(SUBSCRIPTION_PARTITION_ID_KEY);
@@ -70,9 +71,10 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
   private final EnumProperty<BpmnElementType> elementTypeProp =
       new EnumProperty<>(ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
+  private final LongProperty subscriptionKeyProp = new LongProperty(SUBSCRIPTION_KEY_KEY, -1L);
 
   public ProcessMessageSubscriptionRecord() {
-    super(16);
+    super(17);
     declareProperty(subscriptionPartitionIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -88,7 +90,8 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(storageOrdinalKeyProp)
         .declareProperty(businessIdProp)
-        .declareProperty(elementTypeProp);
+        .declareProperty(elementTypeProp)
+        .declareProperty(subscriptionKeyProp);
   }
 
   public void wrap(final ProcessMessageSubscriptionRecord record) {
@@ -108,6 +111,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     setStorageOrdinalKey(record.getStorageOrdinalKey());
     setBusinessId(record.getBusinessIdBuffer());
     setElementType(record.getElementType());
+    setSubscriptionKey(record.getSubscriptionKey());
   }
 
   @JsonIgnore
@@ -302,6 +306,16 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   public ProcessMessageSubscriptionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
     storageOrdinalKeyProp.setValue(storageOrdinalKey);
+    return this;
+  }
+
+  @Override
+  public long getSubscriptionKey() {
+    return subscriptionKeyProp.getValue();
+  }
+
+  public ProcessMessageSubscriptionRecord setSubscriptionKey(final long subscriptionKey) {
+    subscriptionKeyProp.setValue(subscriptionKey);
     return this;
   }
 }
