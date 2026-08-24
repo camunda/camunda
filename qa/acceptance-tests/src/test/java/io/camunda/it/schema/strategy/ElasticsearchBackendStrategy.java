@@ -130,6 +130,42 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
             "zeebe.broker.exporters.elasticsearch.args.authentication.password", ADMIN_PASSWORD);
   }
 
+  /**
+   * Declares {@code tenantId} as a physical tenant with its own index prefix and its own
+   * Elasticsearch exporter, so that a schema manager run has per-tenant work to do. Kept here
+   * rather than in the test so the container credentials stay encapsulated.
+   *
+   * @param tenantUrl the tenant's storage URL, which a caller can point somewhere unreachable to
+   *     exercise a failing tenant
+   */
+  public void configurePhysicalTenant(
+      final TestStandaloneSchemaManager schemaManager,
+      final String tenantId,
+      final String tenantUrl,
+      final String indexPrefix) {
+    final String tenant = "camunda.physical-tenants." + tenantId + ".";
+    schemaManager
+        .withProperty(tenant + "data.secondary-storage.type", "elasticsearch")
+        .withProperty(tenant + "data.secondary-storage.elasticsearch.url", tenantUrl)
+        .withProperty(tenant + "data.secondary-storage.elasticsearch.username", ADMIN_USER)
+        .withProperty(tenant + "data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD)
+        .withProperty(tenant + "data.secondary-storage.elasticsearch.index-prefix", indexPrefix)
+        .withProperty(
+            tenant + "data.exporters.elasticsearch.class-name",
+            ElasticsearchExporter.class.getName())
+        .withProperty(tenant + "data.exporters.elasticsearch.args.url", tenantUrl)
+        .withProperty(
+            tenant + "data.exporters.elasticsearch.args.authentication.username", ADMIN_USER)
+        .withProperty(
+            tenant + "data.exporters.elasticsearch.args.authentication.password", ADMIN_PASSWORD)
+        .withProperty(tenant + "data.exporters.elasticsearch.args.index.prefix", indexPrefix)
+        // A physical tenant must either declare its own security initialization or opt out of
+        // authorization; the schema manager creates indices and has no use for either.
+        .withProperty(tenant + "security.authorizations.enabled", "false")
+        // Declaring a generic exporter obliges the tenant to state which ones run for it.
+        .withProperty(tenant + "data.exporters-assigned[0]", "elasticsearch");
+  }
+
   @Override
   public void configureStandaloneBackupManager(
       final TestStandaloneBackupManager backupManager, final String repositoryName) {
