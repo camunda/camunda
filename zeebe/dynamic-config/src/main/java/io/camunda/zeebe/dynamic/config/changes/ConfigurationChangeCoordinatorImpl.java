@@ -439,13 +439,28 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
       final GlobalConfigurationChangeAppliers globalSimulator,
       final PartitionGroupConfigurationChangeAppliers groupSimulator,
       final ActorFuture<CurrentClusterConfiguration> simulationCompleted) {
-    if (!config.globalConfiguration().hasPendingChanges()) {
+    final var plan = config.globalConfiguration().pendingChanges().orElse(null);
+    if (plan == null || !plan.hasPendingChanges()) {
       advancePhaseAndContinueSimulation(
           config, planId, globalSimulator, groupSimulator, simulationCompleted);
       return;
     }
-    final var operation =
-        (GlobalChangeOperation) config.globalConfiguration().nextPendingOperation();
+
+    final var next =
+        plan.operations().keySet().stream().filter(plan::isRunnable).findFirst().orElse(null);
+    if (next == null) {
+      // Every remaining operation is blocked, yet none has completed — only reachable if the graph
+      // has a cycle, which construction rejects. Fail loudly rather than spin.
+      failFuture(
+          simulationCompleted,
+          new InvalidRequest(
+              new IllegalStateException(
+                  "Cluster-wide change cannot make progress; outstanding operations are blocked on %s"
+                      .formatted(plan.blockedBy()))));
+      return;
+    }
+
+    final var operation = (GlobalChangeOperation) plan.operation(next);
     final var applier = globalSimulator.getApplier(operation);
     final var result = applier.init(config);
     if (result.isLeft()) {
@@ -463,7 +478,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
               }
               final var advanced =
                   configWithInit.updateGlobalConfiguration(
-                      g -> g.advanceConfigurationChange(transformer));
+                      g -> g.completeOperation(next, transformer).completeGraphChangeIfDrained());
               simulateGlobalPhase(
                   advanced, planId, globalSimulator, groupSimulator, simulationCompleted);
             });

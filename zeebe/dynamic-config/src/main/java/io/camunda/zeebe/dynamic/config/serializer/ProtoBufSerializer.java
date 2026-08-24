@@ -1959,7 +1959,7 @@ public class ProtoBufSerializer
             config -> builder.setPartitionDistributor(encodePartitionDistributorConfig(config)));
     configuration
         .pendingChanges()
-        .ifPresent(changePlan -> builder.setPendingChanges(encodeChangePlan(changePlan)));
+        .ifPresent(plan -> builder.setPendingChanges(encodeDependencyChangePlan(plan)));
     configuration
         .lastChange()
         .ifPresent(lastChange -> builder.setLastChange(encodeCompletedChange(lastChange)));
@@ -1978,9 +1978,9 @@ public class ProtoBufSerializer
         proto.hasPartitionDistributor()
             ? decodePartitionDistributorConfig(proto.getPartitionDistributor())
             : Optional.empty();
-    final Optional<ClusterChangePlan> pendingChanges =
+    final Optional<DependencyChangePlan> pendingChanges =
         proto.hasPendingChanges()
-            ? Optional.of(decodeChangePlan(proto.getPendingChanges()))
+            ? Optional.of(decodeDependencyChangePlan(proto.getPendingChanges()))
             : Optional.empty();
     final Optional<io.camunda.zeebe.dynamic.config.state.CompletedChange> lastChange =
         proto.hasLastChange()
@@ -2027,11 +2027,14 @@ public class ProtoBufSerializer
         .forEach(
             (operationId, planned) -> {
               final var operation =
-                  Topology.PlannedOperation.newBuilder()
-                      .setId(operationId.value())
-                      .setOperation(
-                          encodePartitionGroupChangeOperation(
-                              (PartitionGroupOperation) planned.operation()));
+                  Topology.PlannedOperation.newBuilder().setId(operationId.value());
+              switch (planned.operation()) {
+                case final PartitionGroupOperation groupOperation ->
+                    operation.setPartitionGroupOperation(
+                        encodePartitionGroupChangeOperation(groupOperation));
+                case final GlobalChangeOperation globalOperation ->
+                    operation.setGlobalOperation(encodeGlobalChangeOperation(globalOperation));
+              }
               planned.dependsOn().forEach(dependency -> operation.addDependsOn(dependency.value()));
               builder.addOperations(operation.build());
             });
@@ -2048,13 +2051,31 @@ public class ProtoBufSerializer
               planned.getDependsOnList().forEach(id -> dependsOn.add(OperationId.of(id)));
               operations.put(
                   OperationId.of(planned.getId()),
-                  new OperationGraph.PlannedOperation(
-                      decodePartitionGroupChangeOperation(planned.getOperation()), dependsOn));
+                  new OperationGraph.PlannedOperation(decodePlannedOperation(planned), dependsOn));
             });
     // OperationGraph.of, not the bare constructor: acyclicity is not an invariant of the
     // constructor, only of this factory, and this graph came off the wire -- corruption or a
     // future encoding bug is exactly the source a decode path has to distrust.
     return OperationGraph.of(operations);
+  }
+
+  /**
+   * An unset oneof is rejected rather than skipped: a planned operation with no operation in it is
+   * a corrupt or forward-versioned encoding, and dropping it silently would hand back a graph
+   * missing a step — which executes to completion and reports success without having done that
+   * step.
+   */
+  private ClusterConfigurationChangeOperation decodePlannedOperation(
+      final Topology.PlannedOperation planned) {
+    return switch (planned.getOperationCase()) {
+      case PARTITIONGROUPOPERATION ->
+          decodePartitionGroupChangeOperation(planned.getPartitionGroupOperation());
+      case GLOBALOPERATION -> decodeGlobalChangeOperation(planned.getGlobalOperation());
+      case OPERATION_NOT_SET ->
+          throw new IllegalStateException(
+              "Expected planned operation %d to carry an operation, but it carries none"
+                  .formatted(planned.getId()));
+    };
   }
 
   private Topology.DependencyChangePlan encodeDependencyChangePlan(

@@ -13,6 +13,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
@@ -47,10 +48,24 @@ final class PlanAdvancerTest {
 
   private final TestConcurrencyControl executor = new TestConcurrencyControl();
 
+  /**
+   * Completes every operation of the global phase's change and clears the drained plan — what the
+   * broker applying them would leave behind, without any of their effects on member state. The plan
+   * has to be cleared too, not merely drained: {@code isCurrentPhaseComplete} treats a drained but
+   * still-present plan as incomplete.
+   */
   private static CurrentClusterConfiguration drainCurrentPhase(
       final CurrentClusterConfiguration config) {
-    return config.updateGlobalConfiguration(
-        g -> g.advanceConfigurationChange(UnaryOperator.identity()));
+    var current = config;
+    while (current.globalConfiguration().hasPendingChanges()) {
+      final var plan = current.globalConfiguration().pendingChanges().orElseThrow();
+      final var next =
+          plan.operations().keySet().stream().filter(plan::isRunnable).findFirst().orElseThrow();
+      current =
+          current.updateGlobalConfiguration(
+              g -> g.completeOperation(next, UnaryOperator.identity()));
+    }
+    return current.updateGlobalConfiguration(GlobalConfiguration::completeGraphChangeIfDrained);
   }
 
   @Test

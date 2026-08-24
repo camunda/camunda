@@ -7,20 +7,23 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
-import io.atomix.cluster.MemberId;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents the ongoing cluster configuration changes. The pendingOperations are executed
- * sequentially. Only after completing one operation, the next operation is started. Once an
- * operation is completed, it should be removed from the plan, so that the next operation can be
- * picked up.
+ * A change as the legacy single-group configuration represents it: a queue of pending operations,
+ * run one at a time, plus the ones already completed.
  *
- * <p>version starts at 1 and increments every time an operation is completed and removed from the
- * pending operations. This helps to choose the latest state of the configuration change when
- * receiving gossip update out of order.
+ * <p><b>Nothing executes this any more.</b> Every scope — the global configuration and every
+ * partition group — runs a {@link DependencyChangePlan} instead, so what survives here is the shape
+ * the legacy {@code ClusterTopology} message can carry, and only that: a broker without the graph
+ * model reads that message from gossip and from a v1 configuration file, and its {@code
+ * currentChange} field is typed as this record. A live change is rendered into it by {@link
+ * #flatten(ChangePlan)} at that encode, and decoding it is the only way one comes back.
+ *
+ * <p>{@code version} starts at 1 and increments once per completed operation, which is what a
+ * broker on that legacy path merges by ({@link #merge}) to choose between two copies it sees out of
+ * order.
  */
 public record ClusterChangePlan(
     long id,
@@ -83,21 +86,6 @@ public record ClusterChangePlan(
     return id == RESTORE_CHANGE_ID;
   }
 
-  /** To be called when the first operation is completed. */
-  ClusterChangePlan advance() {
-    // List#subList hold on to the original list. Make a copy to prevent a potential memory leak.
-    final var nextPendingOperations =
-        List.copyOf(pendingOperations.subList(1, pendingOperations.size()));
-    final var newCompletedOperations = new ArrayList<>(completedOperations);
-    newCompletedOperations.add(new CompletedOperation(pendingOperations.get(0), Instant.now()));
-    return new ClusterChangePlan(
-        id, version + 1, status, startedAt(), newCompletedOperations, nextPendingOperations);
-  }
-
-  CompletedChange completed() {
-    return new CompletedChange(id, Status.COMPLETED, startedAt(), Instant.now());
-  }
-
   public ClusterChangePlan merge(final ClusterChangePlan other) {
     // Pick the highest version
     if (other == null) {
@@ -109,18 +97,12 @@ public record ClusterChangePlan(
     return this;
   }
 
-  public boolean hasPendingChangesFor(final MemberId memberId) {
-    return !pendingOperations.isEmpty() && pendingOperations.get(0).memberId().equals(memberId);
-  }
-
-  public ClusterConfigurationChangeOperation nextPendingOperation() {
-    return pendingOperations().get(0);
-  }
-
+  @Override
   public boolean hasPendingChanges() {
     return !pendingOperations().isEmpty();
   }
 
+  @Override
   public CompletedChange cancel() {
     return new CompletedChange(id, Status.CANCELLED, startedAt(), Instant.now());
   }

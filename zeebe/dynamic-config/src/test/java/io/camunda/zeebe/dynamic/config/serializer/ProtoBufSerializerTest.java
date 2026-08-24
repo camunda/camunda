@@ -8,8 +8,10 @@
 package io.camunda.zeebe.dynamic.config.serializer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
@@ -40,6 +42,7 @@ import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -852,6 +855,62 @@ final class ProtoBufSerializerTest {
               // the queue's version is what an old broker merges by: one per completed operation
               assertThat(plan.version()).isEqualTo(2);
             });
+  }
+
+  @Test
+  void shouldEncodeAndDecodeAClusterWideGraphChange() {
+    // given — the global configuration running a change, whose operations are cluster-wide and so
+    // travel through the other arm of PlannedOperation's oneof than a partition group's do
+    final var builder = OperationGraph.builder();
+    final var first = builder.add(new MemberLeaveOperation(MemberId.from("1")));
+    builder.add(new MemberLeaveOperation(MemberId.from("2")), Set.of(first));
+    final var plan =
+        new DependencyChangePlan(
+            9,
+            Status.IN_PROGRESS,
+            Instant.ofEpochSecond(1_700_000_000),
+            builder.build(),
+            new TreeMap<>(Map.of(first, Instant.ofEpochSecond(1_700_000_005))));
+    final var globalConfiguration =
+        new GlobalConfiguration(
+            3,
+            Optional.of("cluster-x"),
+            Map.of(MemberId.from("1"), new BrokerState(1, Instant.EPOCH, BrokerState.State.ACTIVE)),
+            Optional.empty(),
+            Optional.of(plan),
+            Optional.empty());
+
+    // when
+    final var decoded =
+        protoBufSerializer.decodeGlobalConfiguration(
+            protoBufSerializer.encodeGlobalConfiguration(globalConfiguration));
+
+    // then — the graph comes back with its operations, edges and completions intact
+    assertThat(decoded).isEqualTo(globalConfiguration);
+  }
+
+  @Test
+  void shouldRejectADecodedPlannedOperationCarryingNoOperation() {
+    // given — a planned operation with neither arm of the oneof set, which no encoder produces; it
+    // reaches decode only through corruption or a future encoding this build does not know
+    final var proto =
+        Topology.GlobalConfiguration.newBuilder()
+            .setVersion(1)
+            .setPendingChanges(
+                Topology.DependencyChangePlan.newBuilder()
+                    .setId(1)
+                    .setStatus(Topology.ChangeStatus.IN_PROGRESS)
+                    .setStartedAt(Timestamp.newBuilder().build())
+                    .setGraph(
+                        Topology.OperationGraph.newBuilder()
+                            .addOperations(Topology.PlannedOperation.newBuilder().setId(0))))
+            .build();
+
+    // when / then — rejected rather than skipped: a graph silently missing a step would execute to
+    // completion and report success without that step ever having run
+    assertThatThrownBy(() -> protoBufSerializer.decodeGlobalConfiguration(proto))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("carries none");
   }
 
   @Test

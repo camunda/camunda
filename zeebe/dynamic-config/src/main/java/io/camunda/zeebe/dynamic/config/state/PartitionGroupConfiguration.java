@@ -46,10 +46,9 @@ import org.jspecify.annotations.Nullable;
  * @param members per-broker partition state within this group
  * @param routingState routing state scoped to this group, if any
  * @param pendingChanges the ongoing change plan for this group, if any. Always a {@link
- *     DependencyChangePlan}: a group's operations carry their own dependencies, and the
- *     one-at-a-time queue ({@link ClusterChangePlan}) that groups used before it is gone. The queue
- *     survives only where there is nothing to depend on — {@link GlobalConfiguration}, whose
- *     operations are broker lifecycle steps taken cluster-wide, one at a time by construction.
+ *     DependencyChangePlan}, as every sub-configuration's is: the one-at-a-time queue ({@link
+ *     ClusterChangePlan}) no longer executes anything, and survives only as the shape the legacy
+ *     single-group configuration is encoded as on the wire.
  * @param lastChange the last completed change plan for this group, if any
  * @param availability whether this tenant is currently disabled; carries its own version,
  *     independent of {@code version} — see {@link TenantAvailability}

@@ -620,16 +620,15 @@ public record CurrentClusterConfiguration(
    * sub-configuration it targets (the global configuration for a {@link GlobalPhase}, or each named
    * partition group for a {@link PartitionGroupPhase}) has no pending changes left.
    *
-   * <p>For a {@link PartitionGroupPhase}, "no pending changes left" means the group's {@code
-   * pendingChanges} is gone entirely, not merely that every operation in it has completed. Those
-   * two are different moments: {@link PartitionGroupConfiguration#hasPendingChanges()} reads the
-   * plan's own content and goes {@code false} the instant the last operation completes, while
-   * clearing the plan itself is a separate, later step ({@link
-   * PartitionGroupConfiguration#completeGraphChangeIfDrained()}), run by whichever broker's
-   * reconcile or gossip round gets there first. Treating "drained" as "complete" here would let
-   * this plan be archived into history while the group still carries a fully drained but not yet
-   * cleared plan — which is exactly the state a decoder without this phase to consult can no longer
-   * tell apart from an actually-still-running one.
+   * <p>"No pending changes left" means the sub-configuration's {@code pendingChanges} is gone
+   * entirely, not merely that every operation in it has completed. Those two are different moments:
+   * {@code hasPendingChanges()} reads the plan's own content and goes {@code false} the instant the
+   * last operation completes, while clearing the plan itself is a separate, later step ({@code
+   * completeGraphChangeIfDrained()}), run by whichever broker's reconcile or gossip round gets
+   * there first. Treating "drained" as "complete" here would let this plan be archived into history
+   * while the sub-configuration still carries a fully drained but not yet cleared plan — which is
+   * exactly the state a decoder without this phase to consult can no longer tell apart from an
+   * actually-still-running one.
    *
    * @throws IllegalStateException if no plan {@code planId} is pending
    */
@@ -640,7 +639,7 @@ public record CurrentClusterConfiguration(
           "Cannot check phase completion: no plan '%d' is pending".formatted(planId));
     }
     return switch (plan.currentPhase()) {
-      case final GlobalPhase ignored -> !globalConfiguration.hasPendingChanges();
+      case final GlobalPhase ignored -> globalConfiguration.pendingChanges().isEmpty();
       case final PartitionGroupPhase groupPhase ->
           groupPhase.groupGraphs().keySet().stream()
               .map(this::partitionGroup)
@@ -714,7 +713,7 @@ public record CurrentClusterConfiguration(
       case final GlobalPhase globalPhase ->
           updateGlobalConfiguration(
               global -> {
-                if (global.hasPendingChanges()) {
+                if (global.pendingChanges().isPresent()) {
                   throw new IllegalStateException(
                       "Cannot activate global phase: global configuration already has pending changes");
                 }

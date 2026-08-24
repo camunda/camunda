@@ -30,7 +30,7 @@ message GlobalConfiguration {
   string clusterId = 2;
   map<string, BrokerState> members = 3;
   PartitionDistributorConfig partitionDistributor = 4;
-  ClusterChangePlan pendingChanges = 5;
+  DependencyChangePlan pendingChanges = 5;
   CompletedChange lastChange = 6;
 }
 
@@ -63,8 +63,11 @@ message OperationGraph {
 
 message PlannedOperation {
   int32 id = 1;
-  PartitionGroupChangeOperation operation = 2;
   repeated int32 dependsOn = 3;
+  oneof operation {
+    PartitionGroupChangeOperation partitionGroupOperation = 2;
+    GlobalChangeOperation globalOperation = 4;
+  }
 }
 
 message OperationCompletion {

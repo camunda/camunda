@@ -235,8 +235,9 @@ public final class ClusterTopologyDomain extends DomainContextBase {
     // clusterId must be non-empty: the serializer treats the empty string as "absent".
     final var clusterId = Arbitraries.strings().ofMinLength(1).ofMaxLength(50).optional();
     final var members = Arbitraries.maps(memberIds(), brokerStates()).ofMaxSize(6);
-    final var pendingChanges =
-        Arbitraries.forType(ClusterChangePlan.class).enableRecursion().optional();
+    // Cluster-wide changes run as graphs too, so this is the only plan shape generated here.
+    final Arbitrary<Optional<DependencyChangePlan>> pendingChanges =
+        globalDependencyChangePlans().optional();
     final var lastChange = Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
     return Combinators.combine(
             version, clusterId, members, partitionDistributorConfigs(), pendingChanges, lastChange)
@@ -368,8 +369,23 @@ public final class ClusterTopologyDomain extends DomainContextBase {
         .flatMap(ClusterTopologyDomain::operationGraphOf);
   }
 
+  /**
+   * Graphs of cluster-wide operations, which is what {@link GlobalConfiguration} runs. Generated
+   * separately from {@link #operationGraphs()} because the two operation kinds are encoded through
+   * different arms of {@code PlannedOperation}'s oneof, and a round-trip property fed only
+   * partition-group operations would never exercise the other one.
+   */
+  @Provide
+  Arbitrary<OperationGraph> globalOperationGraphs() {
+    return globalChangeOperations()
+        .list()
+        .ofMinSize(1)
+        .ofMaxSize(4)
+        .flatMap(ClusterTopologyDomain::operationGraphOf);
+  }
+
   private static Arbitrary<OperationGraph> operationGraphOf(
-      final List<PartitionGroupOperation> operations) {
+      final List<? extends ClusterConfigurationChangeOperation> operations) {
     final List<Arbitrary<Set<Integer>>> dependsOnPerIndex = new ArrayList<>();
     for (int i = 0; i < operations.size(); i++) {
       dependsOnPerIndex.add(
@@ -403,9 +419,19 @@ public final class ClusterTopologyDomain extends DomainContextBase {
    */
   @Provide
   Arbitrary<DependencyChangePlan> dependencyChangePlans() {
+    return dependencyChangePlansOver(operationGraphs());
+  }
+
+  @Provide
+  Arbitrary<DependencyChangePlan> globalDependencyChangePlans() {
+    return dependencyChangePlansOver(globalOperationGraphs());
+  }
+
+  private Arbitrary<DependencyChangePlan> dependencyChangePlansOver(
+      final Arbitrary<OperationGraph> graphs) {
     final var id = Arbitraries.longs().between(0, 500);
     final var status = Arbitraries.of(ClusterChangePlan.Status.values());
-    return Combinators.combine(id, status, nanoPrecisionInstants(), operationGraphs())
+    return Combinators.combine(id, status, nanoPrecisionInstants(), graphs)
         .as(PartialDependencyChangePlan::new)
         .flatMap(ClusterTopologyDomain::withCompletedOperations);
   }

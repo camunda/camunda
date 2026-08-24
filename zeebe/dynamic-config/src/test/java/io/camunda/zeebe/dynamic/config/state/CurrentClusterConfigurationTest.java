@@ -84,6 +84,24 @@ class CurrentClusterConfigurationTest {
   }
 
   /**
+   * Completes every operation of the global configuration's pending change and clears the drained
+   * plan — what the broker applying them would leave behind, without any of their effects on member
+   * state.
+   */
+  private static CurrentClusterConfiguration drainGlobal(final CurrentClusterConfiguration config) {
+    var current = config;
+    while (current.globalConfiguration().hasPendingChanges()) {
+      final var plan = current.globalConfiguration().pendingChanges().orElseThrow();
+      final var next =
+          plan.operations().keySet().stream().filter(plan::isRunnable).findFirst().orElseThrow();
+      current =
+          current.updateGlobalConfiguration(
+              g -> g.completeOperation(next, UnaryOperator.identity()));
+    }
+    return current.updateGlobalConfiguration(GlobalConfiguration::completeGraphChangeIfDrained);
+  }
+
+  /**
    * Completes every operation of {@code groupId}'s pending change, one runnable operation at a
    * time, and finishes the change — what the broker applying the operations would leave behind,
    * without any of their effects on member state.
@@ -1277,9 +1295,7 @@ class CurrentClusterConfigurationTest {
           CurrentClusterConfiguration.init()
               .initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_0)))));
       final var planId = config.phasedChangeState().onlyPending().id();
-      final var drained =
-          config.updateGlobalConfiguration(
-              g -> g.advanceConfigurationChange(UnaryOperator.identity()));
+      final var drained = drainGlobal(config);
 
       // then
       assertThat(drained.isCurrentPhaseComplete(planId)).isTrue();
