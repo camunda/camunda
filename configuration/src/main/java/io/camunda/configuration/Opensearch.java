@@ -27,6 +27,7 @@ public class Opensearch extends DocumentBasedSecondaryStorageDatabase {
         BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
         Set.of(
             "camunda.database.awsEnabled",
+            "camunda.tasklist.opensearch.awsEnabled",
             "camunda.operate.opensearch.awsEnabled",
             "zeebe.broker.exporters.camundaexporter.args.connect.awsEnabled"));
   }

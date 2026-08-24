@@ -158,7 +158,7 @@ class PhysicalTenantOverridablePropertiesGoldenTest {
       }
       final String section = name.getElement(1, ConfigurationPropertyName.Form.DASHED);
       if ("physical-tenants".equals(section) || !rootSections.contains(section)) {
-        // outside the Camunda override surface (e.g. legacy camunda.operate.*)
+        // outside the Camunda override surface (e.g. legacy camunda.operate.*, camunda.tasklist.*)
         continue;
       }
       final ConfigurationPropertyName relative = name.subName(1);

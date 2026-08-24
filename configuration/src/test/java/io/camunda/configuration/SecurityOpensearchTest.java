@@ -111,14 +111,17 @@ public class SecurityOpensearchTest {
         // certificate path
         "camunda.data.secondary-storage.opensearch.security.certificate-path=certificatePath",
         "camunda.database.security.certificatePath=certificatePath",
+        "camunda.tasklist.opensearch.ssl.certificatePath=certificatePath",
         "camunda.operate.opensearch.ssl.certificatePath=certificatePath",
         // verify hostname
         "camunda.data.secondary-storage.opensearch.security.verify-hostname=false",
         "camunda.database.security.verifyHostname=false",
+        "camunda.tasklist.opensearch.ssl.verifyHostname=false",
         "camunda.operate.opensearch.ssl.verifyHostname=false",
         // self signed
         "camunda.data.secondary-storage.opensearch.security.self-signed=true",
         "camunda.database.security.selfSigned=true",
+        "camunda.tasklist.opensearch.ssl.selfSigned=true",
         "camunda.operate.opensearch.ssl.selfSigned=true"
       })
   class WithNewAndLegacySet {
