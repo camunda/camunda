@@ -612,6 +612,13 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
             });
   }
 
+  /**
+   * The global arm is belt-and-braces while a cluster-wide graph is a chain: its last operation
+   * records and clears in one transition, and operation N only becomes runnable once N-1 is
+   * complete locally, so no broker observes the change drained but unfinished. It is here because
+   * "finish a drained change" is a property of the execution model, not of a scope, and the first
+   * cluster-wide change that declares two independent operations would need it.
+   */
   private static CurrentClusterConfiguration completeDrainedGraphChanges(
       final CurrentClusterConfiguration config) {
     var result =

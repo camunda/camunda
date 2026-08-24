@@ -530,6 +530,46 @@ class GlobalConfigurationTest {
     }
 
     @Test
+    void shouldConvergeWhenTwoBrokersFinishTheSameDrainedChange() {
+      // given — a change with two unordered operations, and a member on its way out. Built with the
+      // canonical constructor because startConfigurationChange only builds chains, and what is
+      // under test is what happens when two brokers each record a different operation.
+      final var builder = OperationGraph.builder();
+      final var first = builder.add(new MemberLeaveOperation(MEMBER_1));
+      final var second = builder.add(new MemberJoinOperation(MEMBER_0));
+      final var config =
+          new GlobalConfiguration(
+              4,
+              Optional.empty(),
+              Map.of(MEMBER_0, broker(0, State.ACTIVE), MEMBER_1, broker(0, State.LEAVING)),
+              Optional.empty(),
+              Optional.of(
+                  new DependencyChangePlan(
+                      5, Status.IN_PROGRESS, Instant.EPOCH, builder.build(), new TreeMap<>())),
+              Optional.empty());
+
+      // when — each broker records one operation, and gossip unions the two
+      final var onOneBroker =
+          config.completeOperation(
+              first, c -> c.updateMember(MEMBER_1, b -> b.setState(State.LEFT)));
+      final var onTheOther = config.completeOperation(second, UnaryOperator.identity());
+      final var converged = onOneBroker.merge(onTheOther);
+
+      // and — both then observe it drained and finish it independently, with no coordinator
+      final var finishedHere = converged.completeGraphChangeIfDrained();
+      final var finishedThere = converged.completeGraphChangeIfDrained();
+
+      // then — the two results are identical, which is what makes moving completion off the
+      // last-operation broker safe: the record is stamped from the last operation's own completion
+      // time, not from each broker's clock, so there is nothing left to disagree about. The LEFT
+      // member is pruned on both.
+      assertThat(finishedHere).isEqualTo(finishedThere);
+      assertThat(finishedHere.hasMember(MEMBER_1)).isFalse();
+      assertThat(finishedHere.pendingChanges()).isEmpty();
+      assertThat(finishedHere.lastChange()).isPresent();
+    }
+
+    @Test
     void shouldLeaveAnUndrainedChangeAlone() {
       // given — two operations, one recorded
       final var config =
