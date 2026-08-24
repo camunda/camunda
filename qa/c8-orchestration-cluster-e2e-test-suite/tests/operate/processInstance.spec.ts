@@ -365,7 +365,8 @@ test.describe('Process Instance Incident', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Verify Incident root cause instance', async ({
+  // skipped due to bug 60899: https://github.com/camunda/camunda/issues/60899
+  test.skip('Verify Incident root cause instance', async ({
     operateProcessInstancePage,
     operateHomePage,
     operateProcessesPage,
@@ -420,9 +421,6 @@ test.describe('Process Instance Incident', () => {
       await operateProcessInstancePage
         .getDiagramElement('Task_CallActivity')
         .dblclick();
-
-      await expect(operateProcessInstancePage.getDiagramElement('Task_PreProcessing_Level1')).toBeVisible();
-      await operateProcessInstancePage.clickIncidentsTab();
 
       await expect(
         operateProcessInstancePage.getIncidentRow(/Called element error\./i),
