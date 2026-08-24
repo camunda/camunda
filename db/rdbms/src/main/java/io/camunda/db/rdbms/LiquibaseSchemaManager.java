@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import javax.sql.DataSource;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
@@ -26,6 +27,7 @@ import liquibase.integration.spring.SpringLiquibase;
 import liquibase.lockservice.LockService;
 import liquibase.lockservice.LockServiceFactory;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,11 +79,15 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
 
   private final RdbmsSchemaVersionStore versionStore;
 
+  /** Reads "now"; replaced in tests so probe spacing can be asserted without waiting for it. */
+  private final Supplier<Instant> clock;
+
   /**
-   * When the stale-lock probe last <em>completed</em>, so it can be spaced by {@code
-   * ddl-lock-wait-timeout}. Null until the first attempt, which always probes.
+   * The earliest instant the stale-lock probe may run again, or null before the first probe, which
+   * always runs. Derived from the locks the last probe saw rather than from when it ran, so a lock
+   * that has just become stale is not made to wait another {@code ddl-lock-wait-timeout}.
    */
-  private volatile Instant lastStaleLockProbe;
+  private volatile @Nullable Instant nextStaleLockProbe;
 
   public LiquibaseSchemaManager(
       final PerTenantSchemaConfig config, final String applicationVersion) {
@@ -97,6 +103,16 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
       final PerTenantSchemaConfig config,
       final String applicationVersion,
       final RdbmsSchemaVersionStore versionStore) {
+    this(config, applicationVersion, versionStore, Instant::now);
+  }
+
+  @VisibleForTesting
+  LiquibaseSchemaManager(
+      final PerTenantSchemaConfig config,
+      final String applicationVersion,
+      final RdbmsSchemaVersionStore versionStore,
+      final Supplier<Instant> clock) {
+    this.clock = clock;
     dataSource = config.dataSource();
     vendorDatabaseProperties = config.vendorDatabaseProperties();
     prefix = StringUtils.trimToEmpty(config.prefix());
@@ -126,23 +142,30 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
    * like a crashed one. That was tolerable while {@link #initialize()} ran once per node start, but
    * it is now also driven by a per-tenant retry loop that calls it every few seconds — which would
    * force-release a live peer's lock over and over and let two changelog runs execute against one
-   * schema. Spacing the probe by the same timeout keeps the recovery it exists for, at a cadence no
-   * worse than the restarting node this used to be.
+   * schema.
    */
   private boolean staleLockProbeIsDue() {
-    final var lastProbe = lastStaleLockProbe;
-    return lastProbe == null || lastProbe.plus(ddlLockWaitTimeout).isBefore(Instant.now());
+    final var nextProbe = nextStaleLockProbe;
+    return nextProbe == null || !nextProbe.isAfter(clock.get());
   }
 
   /**
-   * Whether a probe got far enough to be worth spacing. Only a probe that read the lock table can
-   * have released anything, so only that one has to be spaced; a probe that could not reach the
-   * database at all released nothing. Recording that one too would hold off the release for the
-   * rest of the interval, which is exactly the tenant whose database has just come back and whose
+   * Spaces the next probe by what the last one saw, not by when it ran. A lock that was seen and is
+   * not yet stale becomes stale at {@code lockGranted + ddl-lock-wait-timeout}, and that is when it
+   * is worth looking again — spacing from the probe instead would leave a peer that crashed just
+   * after being observed holding its lock for up to twice the timeout. With no lock left to watch,
+   * nothing acquired from now on can be stale before a full timeout has passed either way.
+   *
+   * <p>A probe that could not reach the database does not call this at all: it released nothing, so
+   * spacing it would hold off the release for a tenant whose database has just come back and whose
    * peer left a stale lock behind — the recovery this whole path exists for.
+   *
+   * @param oldestLiveLock the oldest lock seen that was not stale, or null if none was left behind
    */
-  private void recordCompletedStaleLockProbe() {
-    lastStaleLockProbe = Instant.now();
+  private void scheduleNextStaleLockProbe(
+      final Instant probedAt, final @Nullable Instant oldestLiveLock) {
+    nextStaleLockProbe =
+        (oldestLiveLock == null ? probedAt : oldestLiveLock).plus(ddlLockWaitTimeout);
   }
 
   @VisibleForTesting
@@ -250,10 +273,15 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
       final var database = openDatabase(connection, prefix + "DATABASECHANGELOGLOCK");
       try {
         final var lockService = getLockService(database);
-        final var threshold = Instant.now().minus(ddlLockWaitTimeout);
+        final var probedAt = clock.get();
+        final var threshold = probedAt.minus(ddlLockWaitTimeout);
+        Instant oldestLiveLock = null;
         for (final var lock : lockService.listLocks()) {
-          if (lock.getLockGranted() != null
-              && lock.getLockGranted().toInstant().isBefore(threshold)) {
+          if (lock.getLockGranted() == null) {
+            continue;
+          }
+          final var grantedAt = lock.getLockGranted().toInstant();
+          if (grantedAt.isBefore(threshold)) {
             LOG.warn(
                 "[RDBMS Schema] Detected stale Liquibase lock for prefix '{}' acquired at {} by '{}' "
                     + "(older than configured ddl-lock-wait-timeout of {}). Releasing lock to allow "
@@ -266,10 +294,14 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
             LOG.info(
                 "[RDBMS Schema] Stale Liquibase lock released successfully for prefix '{}'.",
                 prefix);
+            oldestLiveLock = null;
             break;
           }
+          if (oldestLiveLock == null || grantedAt.isBefore(oldestLiveLock)) {
+            oldestLiveLock = grantedAt;
+          }
         }
-        recordCompletedStaleLockProbe();
+        scheduleNextStaleLockProbe(probedAt, oldestLiveLock);
       } finally {
         database.close();
       }

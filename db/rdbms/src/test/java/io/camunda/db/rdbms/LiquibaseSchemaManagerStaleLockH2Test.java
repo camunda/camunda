@@ -34,8 +34,15 @@ class LiquibaseSchemaManagerStaleLockH2Test {
 
   private JdbcDataSource dataSource;
 
+  /**
+   * The instant the schema manager under test reads as "now", so probe spacing can be asserted
+   * without waiting out a {@code ddl-lock-wait-timeout}.
+   */
+  private Instant clockNow;
+
   @BeforeEach
   void setUp() throws Exception {
+    clockNow = Instant.now();
     dataSource = new JdbcDataSource();
     dataSource.setURL(DB_URL + ";MODE=LEGACY");
     dataSource.setUser("sa");
@@ -95,6 +102,24 @@ class LiquibaseSchemaManagerStaleLockH2Test {
   }
 
   @Test
+  void shouldProbeAgainAsSoonAsAnObservedLockCouldHaveBecomeStale() throws Exception {
+    // given - a peer's lock a minute short of the ten-minute staleness threshold, so the first
+    // probe reads the lock table and correctly leaves it alone
+    final var schemaManager = buildSchemaManager(Duration.ofMinutes(10));
+    insertLock(clockNow.minus(Duration.ofMinutes(9)), "peer-about-to-crash");
+    schemaManager.releaseStaleLockIfPresent();
+    assertThat(isLockHeld()).isTrue();
+
+    // when - that peer dies and the retry loop comes round just after its lock turned stale
+    advanceClock(Duration.ofMinutes(1).plusSeconds(1));
+    schemaManager.releaseStaleLockIfPresent();
+
+    // then - the lock is released now rather than a further ddl-lock-wait-timeout later: spacing
+    // the next probe from the last read would double the outage a crashed peer causes
+    assertThat(isLockHeld()).isFalse();
+  }
+
+  @Test
   void shouldProbeAgainAfterOneThatCouldNotReachTheDatabase() throws Exception {
     // given - a crashed peer's stale lock, and a database that is unreachable when the tenant's
     // first attempt probes for it
@@ -139,7 +164,15 @@ class LiquibaseSchemaManagerStaleLockH2Test {
 
   private LiquibaseSchemaManager buildSchemaManager(final Duration ddlLockWaitTimeout)
       throws Exception {
-    return new LiquibaseSchemaManager(configFor(ddlLockWaitTimeout), "8.10.0");
+    return new LiquibaseSchemaManager(
+        configFor(ddlLockWaitTimeout),
+        "8.10.0",
+        new RdbmsSchemaVersionStore(dataSource, "", "8.10.0"),
+        () -> clockNow);
+  }
+
+  private void advanceClock(final Duration by) {
+    clockNow = clockNow.plus(by);
   }
 
   private PerTenantSchemaConfig configFor(final Duration ddlLockWaitTimeout) throws Exception {
