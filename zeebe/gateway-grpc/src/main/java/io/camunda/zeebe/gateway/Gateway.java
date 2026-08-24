@@ -285,10 +285,34 @@ public final class Gateway implements CloseableSilently {
       throw new IllegalArgumentException("maxMessageSize must be positive");
     }
 
-    return NettyServerBuilder.forAddress(new InetSocketAddress(cfg.getHost(), cfg.getPort()))
-        .maxInboundMessageSize(maxMessageSize)
-        .permitKeepAliveTime(minKeepAliveInterval.toMillis(), TimeUnit.MILLISECONDS)
-        .permitKeepAliveWithoutCalls(false);
+    final var serverBuilder =
+        NettyServerBuilder.forAddress(new InetSocketAddress(cfg.getHost(), cfg.getPort()))
+            .maxInboundMessageSize(maxMessageSize)
+            .permitKeepAliveTime(minKeepAliveInterval.toMillis(), TimeUnit.MILLISECONDS)
+            .permitKeepAliveWithoutCalls(false);
+
+    applyMaxConnectionAge(serverBuilder, cfg);
+
+    return serverBuilder;
+  }
+
+  /**
+   * Configures grpc-java's server-side {@code maxConnectionAge}/{@code maxConnectionAgeGrace},
+   * which forces periodic GOAWAY-driven client reconnects. This is disabled by default (both
+   * durations {@code null}), leaving grpc-java's own defaults (unbounded connection age) untouched.
+   */
+  static void applyMaxConnectionAge(final NettyServerBuilder serverBuilder, final NetworkCfg cfg) {
+    final Duration maxConnectionAge = cfg.getMaxConnectionAge();
+    if (maxConnectionAge == null || !maxConnectionAge.isPositive()) {
+      return;
+    }
+
+    serverBuilder.maxConnectionAge(maxConnectionAge.toMillis(), TimeUnit.MILLISECONDS);
+
+    final Duration maxConnectionAgeGrace = cfg.getMaxConnectionAgeGrace();
+    if (maxConnectionAgeGrace != null && maxConnectionAgeGrace.isPositive()) {
+      serverBuilder.maxConnectionAgeGrace(maxConnectionAgeGrace.toMillis(), TimeUnit.MILLISECONDS);
+    }
   }
 
   private void setSecurityConfig(

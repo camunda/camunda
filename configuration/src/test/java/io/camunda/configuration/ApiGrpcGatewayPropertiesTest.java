@@ -35,6 +35,8 @@ public class ApiGrpcGatewayPropertiesTest {
         "camunda.api.grpc.port=27900",
         "camunda.api.grpc.min-keep-alive-interval=40s",
         "camunda.api.grpc.management-threads=5",
+        "camunda.api.grpc.max-connection-age=2h",
+        "camunda.api.grpc.max-connection-age-grace=45s",
       })
   class WithOnlyUnifiedConfigSet {
     final GatewayBasedProperties gatewayCfg;
@@ -62,6 +64,17 @@ public class ApiGrpcGatewayPropertiesTest {
     @Test
     void shouldSetManagementThreads() {
       assertThat(gatewayCfg.getThreads().getManagementThreads()).isEqualTo(5);
+    }
+
+    @Test
+    void shouldSetMaxConnectionAge() {
+      assertThat(gatewayCfg.getNetwork().getMaxConnectionAge()).isEqualTo(Duration.ofHours(2));
+    }
+
+    @Test
+    void shouldSetMaxConnectionAgeGrace() {
+      assertThat(gatewayCfg.getNetwork().getMaxConnectionAgeGrace())
+          .isEqualTo(Duration.ofSeconds(45));
     }
   }
 
@@ -153,6 +166,8 @@ public class ApiGrpcGatewayPropertiesTest {
         "camunda.api.grpc.port=27900",
         "camunda.api.grpc.min-keep-alive-interval=40s",
         "camunda.api.grpc.management-threads=5",
+        "camunda.api.grpc.max-connection-age=2h",
+        "camunda.api.grpc.max-connection-age-grace=45s",
         // legacy broker configuration
         "zeebe.broker.gateway.network.host=198.0.0.1",
         "zeebe.broker.gateway.network.port=38900",
@@ -191,6 +206,17 @@ public class ApiGrpcGatewayPropertiesTest {
     @Test
     void shouldSetManagementThreads() {
       assertThat(gatewayCfg.getThreads().getManagementThreads()).isEqualTo(5);
+    }
+
+    @Test
+    void shouldSetMaxConnectionAgeFromNew() {
+      assertThat(gatewayCfg.getNetwork().getMaxConnectionAge()).isEqualTo(Duration.ofHours(2));
+    }
+
+    @Test
+    void shouldSetMaxConnectionAgeGraceFromNew() {
+      assertThat(gatewayCfg.getNetwork().getMaxConnectionAgeGrace())
+          .isEqualTo(Duration.ofSeconds(45));
     }
   }
 }

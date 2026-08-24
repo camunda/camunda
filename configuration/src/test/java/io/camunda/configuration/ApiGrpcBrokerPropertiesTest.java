@@ -38,6 +38,8 @@ public class ApiGrpcBrokerPropertiesTest {
         "camunda.api.grpc.min-keep-alive-interval=40s",
         "camunda.api.grpc.max-message-size=40MB",
         "camunda.api.grpc.management-threads=5",
+        "camunda.api.grpc.max-connection-age=2h",
+        "camunda.api.grpc.max-connection-age-grace=45s",
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -65,6 +67,18 @@ public class ApiGrpcBrokerPropertiesTest {
     @Test
     void shouldSetManagementThreads() {
       assertThat(brokerCfg.getGateway().getThreads().getManagementThreads()).isEqualTo(5);
+    }
+
+    @Test
+    void shouldSetMaxConnectionAge() {
+      assertThat(brokerCfg.getGateway().getNetwork().getMaxConnectionAge())
+          .isEqualTo(Duration.ofHours(2));
+    }
+
+    @Test
+    void shouldSetMaxConnectionAgeGrace() {
+      assertThat(brokerCfg.getGateway().getNetwork().getMaxConnectionAgeGrace())
+          .isEqualTo(Duration.ofSeconds(45));
     }
   }
 
@@ -167,6 +181,8 @@ public class ApiGrpcBrokerPropertiesTest {
         "camunda.api.grpc.min-keep-alive-interval=40s",
         "camunda.api.grpc.max-message-size=40MB",
         "camunda.api.grpc.management-threads=5",
+        "camunda.api.grpc.max-connection-age=2h",
+        "camunda.api.grpc.max-connection-age-grace=45s",
         // legacy gateway configuration
         "zeebe.gateway.network.host=198.0.0.1",
         "zeebe.gateway.network.port=38900",
@@ -178,7 +194,7 @@ public class ApiGrpcBrokerPropertiesTest {
         "zeebe.broker.gateway.network.port=28900",
         "zeebe.broker.gateway.network.minKeepAliveInterval=60s",
         "zeebe.broker.gateway.network.maxMessageSize=60MB",
-        "zeebe.broker.gateway.threads.managementThreads=6"
+        "zeebe.broker.gateway.threads.managementThreads=6",
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -206,6 +222,18 @@ public class ApiGrpcBrokerPropertiesTest {
     @Test
     void shouldSetManagementThreads() {
       assertThat(brokerCfg.getGateway().getThreads().getManagementThreads()).isEqualTo(5);
+    }
+
+    @Test
+    void shouldSetMaxConnectionAgeFromNew() {
+      assertThat(brokerCfg.getGateway().getNetwork().getMaxConnectionAge())
+          .isEqualTo(Duration.ofHours(2));
+    }
+
+    @Test
+    void shouldSetMaxConnectionAgeGraceFromNew() {
+      assertThat(brokerCfg.getGateway().getNetwork().getMaxConnectionAgeGrace())
+          .isEqualTo(Duration.ofSeconds(45));
     }
   }
 }

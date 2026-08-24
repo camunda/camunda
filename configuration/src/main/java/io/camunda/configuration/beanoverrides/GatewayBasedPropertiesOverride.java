@@ -105,6 +105,8 @@ public class GatewayBasedPropertiesOverride {
     networkCfg.setHost(grpc.getAddress());
     networkCfg.setPort(grpc.getPort());
     networkCfg.setMinKeepAliveInterval(grpc.getMinKeepAliveInterval());
+    networkCfg.setMaxConnectionAge(grpc.getMaxConnectionAge());
+    networkCfg.setMaxConnectionAgeGrace(grpc.getMaxConnectionAgeGrace());
 
     final var ucNetwork =
         unifiedConfiguration.getCamunda().getCluster().getNetwork().withGatewayNetworkProperties();
