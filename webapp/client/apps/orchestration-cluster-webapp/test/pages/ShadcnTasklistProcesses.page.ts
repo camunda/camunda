@@ -22,6 +22,10 @@ class ShadcnTasklistProcessesPage extends BasePage {
 		return this.page.goto(`/shadcn/tasklist/processes${search}`);
 	}
 
+	async gotoStartForm(processDefinitionKey: string, search = '') {
+		return this.page.goto(`/shadcn/tasklist/processes/${processDefinitionKey}/start${search}`);
+	}
+
 	get heading() {
 		return this.page.getByRole('heading', {name: 'Processes', exact: true});
 	}
@@ -32,6 +36,30 @@ class ShadcnTasklistProcessesPage extends BasePage {
 
 	get startProcessButton() {
 		return this.page.getByRole('button', {name: 'Start process'});
+	}
+
+	get startProcessButton() {
+		return this.page.getByRole('button', {name: 'Start process'});
+	}
+
+	get startProcessDialog() {
+		return this.page.getByRole('dialog', {name: /Start process/});
+	}
+
+	get cancelStartProcessButton() {
+		return this.startProcessDialog.getByRole('button', {name: 'Cancel'});
+	}
+
+	get startProcessFormButton() {
+		return this.startProcessDialog.getByRole('button', {name: 'Start process'});
+	}
+
+	get startProcessFormError() {
+		return this.startProcessDialog.getByRole('alert');
+	}
+
+	get waitingForTasksStatus() {
+		return this.page.getByText('Waiting for tasks...');
 	}
 
 	get searchInput() {
