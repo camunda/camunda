@@ -21,6 +21,21 @@ public final class NetworkCfg {
   private Duration minKeepAliveInterval = Duration.ofSeconds(30);
   private DataSize maxMessageSize = DataSize.ofMegabytes(4);
 
+  /**
+   * Maximum age of a gRPC connection before the server proactively closes it (via GOAWAY), forcing
+   * the client to reconnect. Set to {@link Duration#ZERO} (the default) to disable, i.e. keep
+   * grpc-java's own default of unbounded connection age.
+   */
+  private Duration maxConnectionAge = Duration.ZERO;
+
+  /**
+   * Grace period, after {@link #maxConnectionAge} elapses, during which existing calls on the
+   * connection may finish before it is forcibly terminated. Only takes effect when {@link
+   * #maxConnectionAge} is set. Set to {@link Duration#ZERO} (the default) to disable, i.e. keep
+   * grpc-java's own default of an infinite grace period.
+   */
+  private Duration maxConnectionAgeGrace = Duration.ZERO;
+
   public void init(final String defaultHost) {
     if (host == null) {
       host = defaultHost;
@@ -63,13 +78,32 @@ public final class NetworkCfg {
     return this;
   }
 
+  public Duration getMaxConnectionAge() {
+    return maxConnectionAge;
+  }
+
+  public NetworkCfg setMaxConnectionAge(final Duration maxConnectionAge) {
+    this.maxConnectionAge = maxConnectionAge;
+    return this;
+  }
+
+  public Duration getMaxConnectionAgeGrace() {
+    return maxConnectionAgeGrace;
+  }
+
+  public NetworkCfg setMaxConnectionAgeGrace(final Duration maxConnectionAgeGrace) {
+    this.maxConnectionAgeGrace = maxConnectionAgeGrace;
+    return this;
+  }
+
   public InetSocketAddress toSocketAddress() {
     return new InetSocketAddress(host, port);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(host, port, minKeepAliveInterval, maxMessageSize);
+    return Objects.hash(
+        host, port, minKeepAliveInterval, maxMessageSize, maxConnectionAge, maxConnectionAgeGrace);
   }
 
   @Override
@@ -84,7 +118,9 @@ public final class NetworkCfg {
     return port == that.port
         && Objects.equals(host, that.host)
         && Objects.equals(minKeepAliveInterval, that.minKeepAliveInterval)
-        && Objects.equals(maxMessageSize, that.maxMessageSize);
+        && Objects.equals(maxMessageSize, that.maxMessageSize)
+        && Objects.equals(maxConnectionAge, that.maxConnectionAge)
+        && Objects.equals(maxConnectionAgeGrace, that.maxConnectionAgeGrace);
   }
 
   @Override
