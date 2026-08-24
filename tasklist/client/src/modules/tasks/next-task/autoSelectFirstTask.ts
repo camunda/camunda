@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {action, makeObservable, observable} from 'mobx';
+import {actionBound, makeObservable, observable} from 'mobx';
 import {getStateLocally, storeStateLocally} from 'modules/local-storage';
 
 class AutoSelectFirstTask {
@@ -15,8 +15,8 @@ class AutoSelectFirstTask {
   constructor() {
     makeObservable(this, {
       enabled: observable,
-      enable: action.bound,
-      disable: action.bound,
+      enable: actionBound,
+      disable: actionBound,
     });
     this.enabled = getStateLocally('autoSelectNextTask') ?? false;
   }
