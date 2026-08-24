@@ -22,11 +22,7 @@ const Container = styled.section`
   }
 
   td[data-column-key='operations'] {
-    text-align: center;
-
-    li:not(:has(*)) {
-      display: none;
-    }
+    text-align: start;
   }
 `;
 
