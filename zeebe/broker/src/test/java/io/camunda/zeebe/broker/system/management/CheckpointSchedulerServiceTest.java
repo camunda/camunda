@@ -457,6 +457,52 @@ public class CheckpointSchedulerServiceTest {
     verify(scheduler, never()).submitActor(argThat(BackupRetention.class::isInstance), any());
   }
 
+  @Test
+  void shouldStartRetentionJobWithoutCheckpointOrBackupSchedule() {
+    // given — an ES/OS style setup: retention only, no checkpoint interval and no backup schedule
+    backupCfgByTenant.put(DEFAULT_PHYSICAL_TENANT_ID, retentionOnlyBackupCfg("retention-only"));
+    schedulingService = createSchedulingService();
+    doReturn(Set.of(member1)).when(membershipService).getMembers();
+    doReturn(member1).when(membershipService).getLocalMember();
+
+    // when
+    schedulingService.onActorStarting();
+    schedulingService.onActorStarted();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(scheduler, times(1))
+                    .submitActor(
+                        argThat(BackupRetention.class::isInstance), eq(SchedulingHints.IO_BOUND)));
+    verify(scheduler, never()).submitActor(argThat(CheckpointScheduler.class::isInstance), any());
+  }
+
+  @Test
+  void shouldRelocateStandaloneRetentionJobOnMembershipChange() {
+    // given — retention only, and this broker is not the lowest member
+    backupCfgByTenant.put(DEFAULT_PHYSICAL_TENANT_ID, retentionOnlyBackupCfg("retention-only"));
+    schedulingService = createSchedulingService();
+    doReturn(member2).when(membershipService).getLocalMember();
+    doReturn(Set.of(member2, member3)).when(membershipService).getMembers();
+    schedulingService.onActorStarting();
+    schedulingService.onActorStarted();
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(scheduler, times(1))
+                    .submitActor(
+                        argThat(BackupRetention.class::isInstance), eq(SchedulingHints.IO_BOUND)));
+
+    // when — a lower member joins
+    doReturn(Set.of(member1, member2, member3)).when(membershipService).getMembers();
+    schedulingService.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, member1));
+
+    // then
+    assertThat(schedulingService.schedulerActors()).allMatch(Actor::isActorClosed);
+  }
+
   private CheckpointSchedulingService createSchedulingService() {
     return new CheckpointSchedulingService(
         membershipService, scheduler, backupCfgByTenant, brokerClient, meterRegistry);
@@ -474,6 +520,15 @@ public class CheckpointSchedulerServiceTest {
     backupCfg.getRetention().setWindow(Duration.ofHours(1L));
     backupCfg.setStore(BackupStoreType.FILESYSTEM);
     backupCfg.getFilesystem().setBasePath(basePath);
+    return backupCfg;
+  }
+
+  /** Retention configured on its own, as an Elasticsearch/OpenSearch installation would have it. */
+  private BackupCfg retentionOnlyBackupCfg(final String basePath) {
+    final var backupCfg = backupCfg(basePath);
+    backupCfg.setContinuous(false);
+    backupCfg.setSchedule(null);
+    backupCfg.setCheckpointInterval(null);
     return backupCfg;
   }
 
