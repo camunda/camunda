@@ -42,9 +42,10 @@ ADR for that domain is written.
   (camunda/camunda#57738).
 - `management/005-per-physical-tenant-schema-initialization.md` — per-tenant
   secondary-storage schema initialization: concurrent per-tenant init with
-  background retry, a gateway-only startup gate released once every tenant has
-  settled and one is serviceable, and a context abort only when every tenant
-  fails terminally (camunda/camunda#57025).
+  background retry, a startup gate released once every tenant has settled and
+  one is serviceable (held on gateway nodes for Elasticsearch/OpenSearch, on
+  every node for RDBMS), and a context abort only when every tenant fails
+  terminally (camunda/camunda#57025, camunda/camunda#54299).
 - `clients/0001-unify-spring-starter-on-multi-client-config-path.md` — collapse
   the `camunda-spring-boot-starter` onto a single (multi-client) auto-config
   path, remapping `camunda.client.*` to `camunda.clients.default.*`, with a

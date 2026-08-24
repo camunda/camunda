@@ -19,10 +19,10 @@ import io.micrometer.core.instrument.Tags;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
-import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.jdbc.DatabaseDriver;
@@ -32,8 +32,9 @@ import org.springframework.boot.jdbc.DatabaseDriver;
  * VendorDatabaseProperties}.
  *
  * <p>Each entry is built from a physical-tenant-scoped {@link Rdbms} configuration (URL,
- * credentials, connection-pool tuning). Vendor properties are detected once at construction time
- * from the physical tenant's connection.
+ * credentials, connection-pool tuning). Vendor properties are resolved once at construction time,
+ * through {@link RdbmsVendorIdProvider} — from configuration or the JDBC URL where it can be, so
+ * that constructing this registry does not depend on any tenant's database being reachable.
  *
  * <p>While the per-physical-tenant configuration surface (see {@code camunda.physical-tenants.*})
  * is being delivered as a separate prerequisite, this class is wired with a single {@code default}
@@ -49,7 +50,6 @@ public final class RdbmsDataSources implements AutoCloseable {
   private final Map<String, HikariDataSource> dataSources = new LinkedHashMap<>();
   private final Map<String, MeterRegistry> tenantMeterRegistries = new LinkedHashMap<>();
   private final Map<String, VendorDatabaseProperties> vendorProperties = new LinkedHashMap<>();
-  private final Map<String, DatabaseIdProvider> databaseIdProviders = new LinkedHashMap<>();
 
   private RdbmsDataSources() {}
 
@@ -72,13 +72,8 @@ public final class RdbmsDataSources implements AutoCloseable {
             result.registerTenantMeterRegistry(currentPhysicalTenantId, meterRegistry);
         final var ds = buildDataSource(currentPhysicalTenantId, rdbms, tenantMeterRegistry);
         result.dataSources.put(currentPhysicalTenantId, ds);
-        final var databaseIdProvider = new RdbmsDatabaseIdProvider(rdbms.getDatabaseVendorId());
-        result.databaseIdProviders.put(currentPhysicalTenantId, databaseIdProvider);
-        final var databaseId = databaseIdProvider.getDatabaseId(ds);
-        LOGGER.info(
-            "Detected databaseId '{}' for physical tenant '{}'",
-            databaseId,
-            currentPhysicalTenantId);
+        final var databaseId =
+            vendorIdFor(currentPhysicalTenantId, rdbms, ds, physicalTenantConfigs.size());
         result.vendorProperties.put(
             currentPhysicalTenantId, VendorDatabasePropertiesLoader.load(databaseId));
       } catch (final IOException | RuntimeException e) {
@@ -91,6 +86,56 @@ public final class RdbmsDataSources implements AutoCloseable {
       }
     }
     return result;
+  }
+
+  /**
+   * The tenant's vendor id, from configuration or its JDBC URL where either settles it, and only
+   * otherwise from its database.
+   *
+   * <p>Reading it from the database is the one step of building a tenant that needs that database
+   * to be up, so it is reported before it is attempted rather than after it succeeds — what costs
+   * the isolation is the attempt, not its outcome. It is a warning only where there is isolation to
+   * lose: on a single-tenant node the tenant has nobody to take down but itself, so the same line
+   * goes to debug rather than firing on every start of a deployment that is doing nothing wrong.
+   */
+  private static String vendorIdFor(
+      final String physicalTenantId,
+      final Rdbms rdbms,
+      final DataSource dataSource,
+      final int physicalTenantCount) {
+    final var fromConfiguration = RdbmsVendorIdProvider.resolve(physicalTenantId, rdbms);
+    if (fromConfiguration.isPresent()) {
+      return fromConfiguration.get();
+    }
+
+    final var report =
+        "The JDBC URL of physical tenant '{}' does not name a database vendor, so it is read from"
+            + " the database itself. Set {} so that it resolves from configuration instead: while"
+            + " it is read over a connection, this tenant's database being unreachable fails"
+            + " startup for every physical tenant on this node.";
+    if (physicalTenantCount > 1) {
+      LOGGER.warn(report, physicalTenantId, RdbmsVendorIdProvider.VENDOR_ID_PROPERTY);
+    } else {
+      LOGGER.debug(report, physicalTenantId, RdbmsVendorIdProvider.VENDOR_ID_PROPERTY);
+    }
+
+    final Optional<String> detected;
+    try {
+      detected = RdbmsVendorIdProvider.fromDatabaseProductName(dataSource);
+    } catch (final RuntimeException notReached) {
+      throw RdbmsVendorIdProvider.unresolvable(
+          physicalTenantId,
+          rdbms.getUrl(),
+          "and connecting to its database to detect it failed",
+          notReached);
+    }
+    return detected.orElseThrow(
+        () ->
+            RdbmsVendorIdProvider.unresolvable(
+                physicalTenantId,
+                rdbms.getUrl(),
+                "or from the database product name it reports",
+                null));
   }
 
   private MeterRegistry registerTenantMeterRegistry(
@@ -126,15 +171,6 @@ public final class RdbmsDataSources implements AutoCloseable {
           "No VendorDatabaseProperties configured for physical tenant " + physicalTenantId);
     }
     return props;
-  }
-
-  public DatabaseIdProvider databaseIdProviderFor(final String physicalTenantId) {
-    final var databaseIdProvider = databaseIdProviders.get(physicalTenantId);
-    if (databaseIdProvider == null) {
-      throw new IllegalArgumentException(
-          "No DatabaseIdProvider configured for physical tenant " + physicalTenantId);
-    }
-    return databaseIdProvider;
   }
 
   @Override
@@ -178,7 +214,7 @@ public final class RdbmsDataSources implements AutoCloseable {
   private static void enableVendorBatchStatements(
       final Rdbms rdbms, final DatabaseDriver driver, final HikariDataSource ds) {
     if (rdbms.isRewriteBatchedStatements()) {
-      final var vendor = unwrapVendorDriver(driver, rdbms.getUrl());
+      final var vendor = RdbmsVendorIdProvider.unwrapVendorDriver(driver, rdbms.getUrl());
       if (vendor == DatabaseDriver.MYSQL
           && !urlSpecifiesProperty(rdbms.getUrl(), MYSQL_REWRITE_BATCHED_STATEMENTS_PROPERTY)) {
         ds.addDataSourceProperty(MYSQL_REWRITE_BATCHED_STATEMENTS_PROPERTY, "true");
@@ -187,20 +223,6 @@ public final class RdbmsDataSources implements AutoCloseable {
         ds.addDataSourceProperty(MARIADB_USE_BULK_STMTS_PROPERTY, "true");
       }
     }
-  }
-
-  /**
-   * Resolves the underlying database vendor for driver-specific connection properties, unwrapping
-   * the AWS Advanced JDBC Wrapper's {@code jdbc:aws-wrapper:<vendor>://...} URL scheme. Without
-   * this, {@link DatabaseDriver#fromJdbcUrl} resolves such URLs to {@link
-   * DatabaseDriver#AWS_WRAPPER} rather than the wrapped vendor, so vendor-specific properties like
-   * batch statement rewriting would never be applied for Aurora failover-aware connections.
-   */
-  private static DatabaseDriver unwrapVendorDriver(final DatabaseDriver driver, final String url) {
-    if (driver != DatabaseDriver.AWS_WRAPPER) {
-      return driver;
-    }
-    return DatabaseDriver.fromJdbcUrl(url.replaceFirst("(?i)^jdbc:aws-wrapper:", "jdbc:"));
   }
 
   /**

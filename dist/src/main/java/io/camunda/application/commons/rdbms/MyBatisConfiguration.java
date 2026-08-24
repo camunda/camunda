@@ -8,9 +8,9 @@
 package io.camunda.application.commons.rdbms;
 
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.db.rdbms.DefaultRdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.PerTenantSchemaConfig;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
+import io.camunda.db.rdbms.RdbmsSchemaManagers;
 import io.camunda.db.rdbms.RdbmsSchemaMigrationStatusProvider;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.OffsetDateTimeTypeHandler;
@@ -37,15 +36,21 @@ public class MyBatisConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MyBatisConfiguration.class);
 
+  /**
+   * The registry every consumer of "is this tenant's schema ready" resolves — the RDBMS exporter,
+   * the request-time rejection path and the per-tenant readiness gauge — and, on a multi-tenant
+   * node, the bean that initializes each tenant's schema in isolation.
+   */
   @Bean
   public RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry(
       final RdbmsDataSources rdbmsDataSources,
       final PhysicalTenantResolver physicalTenantResolver) {
     // VersionUtil.getVersion() may not be a valid semantic version during local development;
     // the schema-version check is skipped in that case.
-    return DefaultRdbmsSchemaManagerRegistry.fromConfigs(
-        physicalTenantSchemaConfigs(rdbmsDataSources, physicalTenantResolver),
-        VersionUtil.getVersion());
+    return new RdbmsSchemaInitializer(
+        RdbmsSchemaManagers.fromConfigs(
+            physicalTenantSchemaConfigs(rdbmsDataSources, physicalTenantResolver),
+            VersionUtil.getVersion()));
   }
 
   /**
@@ -119,7 +124,6 @@ public class MyBatisConfiguration {
           tenantId,
           buildSqlSessionFactory(
               rdbmsDataSources.dataSourceFor(tenantId),
-              rdbmsDataSources.databaseIdProviderFor(tenantId),
               rdbmsDataSources.vendorPropertiesFor(tenantId),
               prefix));
     }
@@ -146,18 +150,20 @@ public class MyBatisConfiguration {
 
   private SqlSessionFactory buildSqlSessionFactory(
       final DataSource dataSource,
-      final DatabaseIdProvider databaseIdProvider,
       final VendorDatabaseProperties databaseProperties,
       final String prefix)
       throws Exception {
     final var configuration = new org.apache.ibatis.session.Configuration();
     configuration.setJdbcTypeForNull(JdbcType.NULL);
     configuration.getTypeHandlerRegistry().register(OffsetDateTimeTypeHandler.class);
+    // Which vendor's mapper statements apply is already settled in the vendor properties, so it is
+    // set here rather than handed to a DatabaseIdProvider that would look it up over a connection
+    // a second time. SqlSessionFactoryBean would only call setDatabaseId on this same object.
+    configuration.setDatabaseId(databaseProperties.databaseId());
 
     final SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
     factoryBean.setConfiguration(configuration);
     factoryBean.setDataSource(dataSource);
-    factoryBean.setDatabaseIdProvider(databaseIdProvider);
     factoryBean.addMapperLocations(
         new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/*.xml"));
 
