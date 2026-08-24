@@ -84,7 +84,7 @@ import org.junit.jupiter.api.io.TempDir;
  * <p>It does not prove the operations then <em>overlap</em> in time. The cluster-admin API carries
  * no per-operation timestamps, so overlap cannot be asserted through it. Overlap is covered where
  * it is observable: {@code RestoreRequestTransformerTest} pins the dependency edges that permit it,
- * and {@code ClusterConfigurationManagerImplNewConfigTest} pins that a broker starts every runnable
+ * and {@code ClusterConfigurationManagerImplTest} pins that a broker starts every runnable
  * operation rather than one per round.
  */
 @Timeout(600)
