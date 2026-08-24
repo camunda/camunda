@@ -120,20 +120,19 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
   @Override
   protected void onActorCloseRequested() {
     membershipService.removeListener(this);
-    if (isSchedulerActive()) {
-      final List<ActorFuture<Void>> shutdownFutures = new ArrayList<>();
-      shutdownFutures.add(checkpointScheduler.closeAsync());
-      if (backupRetentionJob != null) {
-        shutdownFutures.add(backupRetentionJob.closeAsync());
+    final List<ActorFuture<Void>> shutdownFutures = new ArrayList<>();
+    for (final var schedulerActor : schedulerActors()) {
+      if (!schedulerActor.isActorClosed()) {
+        shutdownFutures.add(schedulerActor.closeAsync());
       }
-      actor.runOnCompletion(
-          shutdownFutures,
-          (error) -> {
-            if (error != null) {
-              LOG.error("Failed to close checkpoint creator actor", error);
-            }
-          });
     }
+    actor.runOnCompletion(
+        shutdownFutures,
+        (error) -> {
+          if (error != null) {
+            LOG.error("Failed to close checkpoint scheduling actors", error);
+          }
+        });
   }
 
   @Override
@@ -154,29 +153,36 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
   }
 
   private void checkedStopScheduler() {
-    if (shouldStopSchedulers() && isSchedulerActive()) {
-      checkpointScheduler.close();
-      if (backupRetentionJob != null) {
-        backupRetentionJob.close();
+    if (!shouldStopSchedulers()) {
+      return;
+    }
+    for (final var schedulerActor : schedulerActors()) {
+      if (!schedulerActor.isActorClosed()) {
+        schedulerActor.close();
       }
     }
   }
 
   private void checkedStartScheduler() {
-    if (shouldStartSchedulers() && isSchedulerInactive()) {
-      actorScheduler.submitActor(checkpointScheduler, SchedulingHints.ioBound());
-      if (backupRetentionJob != null) {
-        actorScheduler.submitActor(backupRetentionJob, SchedulingHints.ioBound());
+    if (!shouldStartSchedulers()) {
+      return;
+    }
+    for (final var schedulerActor : schedulerActors()) {
+      if (schedulerActor.isActorClosed()) {
+        actorScheduler.submitActor(schedulerActor, SchedulingHints.ioBound());
       }
     }
   }
 
-  private boolean isSchedulerActive() {
-    return checkpointScheduler != null && !checkpointScheduler.isActorClosed();
-  }
-
-  private boolean isSchedulerInactive() {
-    return checkpointScheduler != null && checkpointScheduler.isActorClosed();
+  private List<Actor> schedulerActors() {
+    final List<Actor> actors = new ArrayList<>(2);
+    if (checkpointScheduler != null) {
+      actors.add(checkpointScheduler);
+    }
+    if (backupRetentionJob != null) {
+      actors.add(backupRetentionJob);
+    }
+    return actors;
   }
 
   private boolean shouldStartSchedulers() {
