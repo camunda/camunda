@@ -29,15 +29,17 @@
     SELECT (EXTRACT(EPOCH FROM clock_timestamp()) * 1000)::bigint
   </select>
 
-  <!-- replicatedUntilMs is left NULL (not coalesced) when replay_lag is NULL, so an unmeasured
-       replica is never mistaken for one that is perfectly caught up. -->
+  <!-- Neither replicationLagMs nor replicatedUntilMs is coalesced when replay_lag is NULL, so an
+       unmeasured replica (e.g. missing the pg_monitor grant - see hasRequiredPrivileges below) is
+       never mistaken for one that is perfectly caught up; the Java-side null handling in
+       TimeMonitoringReplicationSignalStrategy treats a null replicationLagMs as worst-case. -->
   <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="postgresql">
-    SELECT COALESCE(pg_wal_lsn_diff(replay_lsn, '0/0'), 0)::bigint      AS logStatus,
-           pid::text                                                    AS replicaId,
-           COALESCE((EXTRACT(EPOCH FROM replay_lag) * 1000)::bigint, 0) AS replicationLagMs,
+    SELECT COALESCE(pg_wal_lsn_diff(replay_lsn, '0/0'), 0)::bigint AS logStatus,
+           pid::text                                               AS replicaId,
+           (EXTRACT(EPOCH FROM replay_lag) * 1000)::bigint         AS replicationLagMs,
            (EXTRACT(EPOCH FROM (clock_timestamp() - replay_lag)) * 1000)::bigint
-                                                                         AS replicatedUntilMs
+                                                                    AS replicatedUntilMs
     FROM pg_stat_replication
     WHERE pid IS NOT NULL;
   </select>
@@ -193,16 +195,17 @@
 
   <!--
     Returns per-replica replication status for Aurora Global Database (PostgreSQL). Each non-primary
-    instance reports its durable_lsn together with visibility_lag_in_msec; replicatedUntilMs is the
-    database's own current time minus that lag, left NULL when the lag itself is NULL.
+    instance reports its durable_lsn together with visibility_lag_in_msec; neither replicationLagMs
+    nor replicatedUntilMs (the database's own current time minus that lag) is coalesced when the lag
+    itself is NULL, so an unmeasured replica is never mistaken for one that is perfectly caught up.
   -->
   <select id="getAuroraReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="postgresql">
-    SELECT COALESCE(durable_lsn, 0)            AS logStatus,
-           server_id                           AS replicaId,
-           COALESCE(visibility_lag_in_msec, 0) AS replicationLagMs,
+    SELECT COALESCE(durable_lsn, 0) AS logStatus,
+           server_id                AS replicaId,
+           visibility_lag_in_msec   AS replicationLagMs,
            (EXTRACT(EPOCH FROM clock_timestamp()) * 1000 - visibility_lag_in_msec)::bigint
-                                                AS replicatedUntilMs
+                                     AS replicatedUntilMs
     FROM aurora_global_db_instance_status()
     WHERE session_id != 'MASTER_SESSION_ID'
   </select>
@@ -210,15 +213,16 @@
   <!--
     Returns per-replica replication status for Aurora Global Database (MySQL). Reads from
     information_schema.aurora_global_db_instance_status (table, not function on MySQL);
-    replicatedUntilMs mirrors the PostgreSQL variant above.
+    replicationLagMs/replicatedUntilMs mirror the PostgreSQL variant above, including leaving
+    both un-coalesced when the lag itself is NULL.
   -->
   <select id="getAuroraReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="mysql">
-    SELECT COALESCE(DURABLE_LSN, 0)            AS logStatus,
-           SERVER_ID                           AS replicaId,
-           COALESCE(VISIBILITY_LAG_IN_MSEC, 0) AS replicationLagMs,
+    SELECT COALESCE(DURABLE_LSN, 0) AS logStatus,
+           SERVER_ID                AS replicaId,
+           VISIBILITY_LAG_IN_MSEC   AS replicationLagMs,
            CAST(UNIX_TIMESTAMP(NOW(3)) * 1000 AS SIGNED) - VISIBILITY_LAG_IN_MSEC
-                                                AS replicatedUntilMs
+                                     AS replicatedUntilMs
     FROM information_schema.aurora_global_db_instance_status
     WHERE SESSION_ID != 'MASTER_SESSION_ID'
   </select>
