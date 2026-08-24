@@ -30,6 +30,22 @@ class ShadcnTasklistProcessesPage extends BasePage {
 		return this.page.getByRole('heading', {name: 'Processes', exact: true});
 	}
 
+	get firstTimeWarningDialog() {
+		return this.page.getByRole('dialog', {name: 'Start your process on demand'});
+	}
+
+	get continueFromFirstTimeWarningButton() {
+		return this.firstTimeWarningDialog.getByRole('button', {name: 'Continue'});
+	}
+
+	get cancelFirstTimeWarningButton() {
+		return this.firstTimeWarningDialog.getByRole('button', {name: 'Cancel'});
+	}
+
+	get genericErrorHeading() {
+		return this.page.getByRole('heading', {name: 'Something went wrong'});
+	}
+
 	get description() {
 		return this.page.getByText('Browse and run processes published by your organization.');
 	}

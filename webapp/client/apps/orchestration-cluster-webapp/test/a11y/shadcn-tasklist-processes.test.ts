@@ -10,6 +10,8 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetProcessDefinitionEndpoint,
+	mockGetProcessStartFormEndpoint,
 	mockLicenseEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -18,11 +20,16 @@ import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {
+	createGetProcessDefinitionResponse,
 	createProcessDefinition,
+	createProcessStartFormResponse,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, page}) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('tasklist.hasConsentedToStartProcess', JSON.stringify(true));
+	});
 	network.use(
 		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 		mockSystemConfigurationEndpoint({
@@ -103,5 +110,68 @@ test('should have no accessibility violations in the filtered empty state with t
 	await expect(shadcnTasklistProcessesPage.tenantFilter).toBeVisible();
 
 	const accessibilityScanResults = await makeAxeBuilder().analyze();
+	expect(accessibilityScanResults.violations).toEqual([]);
+});
+
+test('should have no accessibility violations in the start-process form modal', async ({
+	network,
+	shadcnTasklistProcessesPage,
+	makeAxeBuilder,
+}) => {
+	const processDefinitionKey = '2251799813685279';
+	network.use(
+		mockGetProcessDefinitionEndpoint({
+			successResponse: HttpResponse.json(
+				createGetProcessDefinitionResponse({name: 'Invoice review', processDefinitionKey}),
+			),
+		}),
+		mockGetProcessStartFormEndpoint({
+			successResponse: HttpResponse.json(createProcessStartFormResponse()),
+		}),
+	);
+
+	await shadcnTasklistProcessesPage.gotoStartForm(processDefinitionKey);
+	await expect(
+		shadcnTasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}),
+	).toBeVisible();
+
+	// CamundaFormRenderer still renders form-js with its Carbon styles (not yet
+	// migrated to the design system, tracked separately) — its label/help-text
+	// colors aren't wired to the DS's dark-mode tokens, so `.fjs-container` fails
+	// dark-mode contrast checks here even though Carbon's own dark theme (which
+	// form-js *is* styled for) passes the same scenario. Exclude it until the
+	// form renderer itself is migrated; the rest of the modal is still scanned.
+	const accessibilityScanResults = await makeAxeBuilder().exclude('.fjs-container').analyze();
+	expect(accessibilityScanResults.violations).toEqual([]);
+});
+
+test('should have no accessibility violations in the start-process form error states', async ({
+	network,
+	shadcnTasklistProcessesPage,
+	makeAxeBuilder,
+}) => {
+	const processDefinitionKey = '2251799813685279';
+	network.use(
+		mockGetProcessDefinitionEndpoint({
+			successResponse: HttpResponse.json(createGetProcessDefinitionResponse({processDefinitionKey})),
+		}),
+		mockGetProcessStartFormEndpoint({successResponse: new HttpResponse(null, {status: 500})}),
+	);
+
+	await shadcnTasklistProcessesPage.gotoStartForm(processDefinitionKey);
+	await expect(shadcnTasklistProcessesPage.startProcessFormError).toBeVisible();
+
+	let accessibilityScanResults = await makeAxeBuilder().analyze();
+	expect(accessibilityScanResults.violations).toEqual([]);
+
+	network.use(
+		mockGetProcessStartFormEndpoint({
+			successResponse: HttpResponse.json(createProcessStartFormResponse({schema: '{ invalid schema'})),
+		}),
+	);
+	await shadcnTasklistProcessesPage.startProcessDialog.getByRole('button', {name: 'Try again'}).click();
+	await expect(shadcnTasklistProcessesPage.startProcessFormError).toContainText('We were not able to render the form.');
+
+	accessibilityScanResults = await makeAxeBuilder().analyze();
 	expect(accessibilityScanResults.violations).toEqual([]);
 });
