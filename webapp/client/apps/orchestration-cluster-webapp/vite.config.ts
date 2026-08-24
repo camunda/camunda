@@ -103,13 +103,21 @@ const config = defineConfig(({mode}) => ({
 		outputFile: process.env['CI'] ? {junit: 'TEST-unit.xml'} : undefined,
 		browser: {
 			enabled: true,
-			screenshotFailures: false,
+			// A failing browser test is otherwise undiagnosable after the fact: CI keeps no
+			// record of what the page looked like. Traces carry the DOM snapshot and the
+			// action timeline, which is what identifies a userEvent action that hung.
+			screenshotFailures: Boolean(process.env['CI']),
+			screenshotDirectory: 'test-artifacts/screenshots',
+			trace: process.env['CI'] ? {mode: 'retain-on-failure', tracesDir: 'test-artifacts/traces'} : 'off',
 			headless: true,
 			viewport: {
 				width: 1280,
 				height: 720,
 			},
-			provider: playwright(),
+			// Playwright waits forever for an unactionable element by default, so a hung
+			// userEvent surfaces only as a bare "test timed out" with no locator named.
+			// Expire below the test timeout so the action reports which element it gave up on.
+			provider: playwright({actionTimeout: 10_000}),
 			instances: [
 				{
 					browser: 'chromium',
