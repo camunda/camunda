@@ -30,15 +30,6 @@ import org.springframework.core.env.Environment;
 })
 public class SearchEngineDatabaseConfiguration {
 
-  // Still required as an unqualified bean: io.camunda.operate.management.IndicesCheck autowires
-  // a plain SearchEngineConfiguration for the default physical tenant.
-  @Bean
-  public SearchEngineConfiguration searchEngineConfiguration(
-      @Qualifier("searchEngineConfigurationsByTenant")
-          final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant) {
-    return searchEngineConfigurationsByTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-  }
-
   /**
    * The initializer exists on every node, but only a node with an HTTP gateway holds startup until
    * a physical tenant is serviceable, hence a flag rather than a bean condition. The flag comes
