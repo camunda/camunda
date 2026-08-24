@@ -22,6 +22,7 @@ import io.camunda.client.api.command.CreateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep2;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep3;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep4;
+import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep5;
 import io.camunda.client.api.response.CreateAgentInstanceResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -40,7 +41,8 @@ public class CreateAgentInstanceCommandImpl
     implements CreateAgentInstanceCommandStep1,
         CreateAgentInstanceCommandStep2,
         CreateAgentInstanceCommandStep3,
-        CreateAgentInstanceCommandStep4 {
+        CreateAgentInstanceCommandStep4,
+        CreateAgentInstanceCommandStep5 {
 
   private final AgentInstanceCreationRequest request;
   private final JsonMapper jsonMapper;
@@ -69,7 +71,7 @@ public class CreateAgentInstanceCommandImpl
   }
 
   @Override
-  public CreateAgentInstanceCommandStep3 jobLease(final String jobLease) {
+  public CreateAgentInstanceCommandStep4 jobLease(final String jobLease) {
     ArgumentUtil.ensureNotNull("jobLease", jobLease);
     if (jobLease.trim().isEmpty()) {
       throw new IllegalArgumentException("jobLease must not be blank");
@@ -79,7 +81,7 @@ public class CreateAgentInstanceCommandImpl
   }
 
   @Override
-  public CreateAgentInstanceCommandStep4 history(final List<AgentInstanceHistoryItem> history) {
+  public CreateAgentInstanceCommandStep5 history(final List<AgentInstanceHistoryItem> history) {
     ArgumentUtil.ensureNotNull("history", history);
     if (history.isEmpty()) {
       throw new IllegalArgumentException("history must not be empty");
@@ -97,7 +99,7 @@ public class CreateAgentInstanceCommandImpl
   }
 
   @Override
-  public CreateAgentInstanceCommandStep4 requestTimeout(final Duration requestTimeout) {
+  public CreateAgentInstanceCommandStep5 requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }

@@ -22,6 +22,7 @@ import io.camunda.client.api.command.AgentInstanceUpdateStatus;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.UpdateAgentInstanceCommandStep2;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.UpdateAgentInstanceCommandStep3;
+import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.UpdateAgentInstanceCommandStep4;
 import io.camunda.client.api.response.UpdateAgentInstanceResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -39,7 +40,8 @@ import org.apache.hc.client5.http.config.RequestConfig;
 public class UpdateAgentInstanceCommandImpl
     implements UpdateAgentInstanceCommandStep1,
         UpdateAgentInstanceCommandStep2,
-        UpdateAgentInstanceCommandStep3 {
+        UpdateAgentInstanceCommandStep3,
+        UpdateAgentInstanceCommandStep4 {
 
   private final AgentInstanceUpdateRequest request;
   private final JsonMapper jsonMapper;
@@ -78,7 +80,7 @@ public class UpdateAgentInstanceCommandImpl
   }
 
   @Override
-  public UpdateAgentInstanceCommandStep3 jobLease(final String jobLease) {
+  public UpdateAgentInstanceCommandStep4 jobLease(final String jobLease) {
     ArgumentUtil.ensureNotNull("jobLease", jobLease);
     if (jobLease.trim().isEmpty()) {
       throw new IllegalArgumentException("jobLease must not be blank");
@@ -88,7 +90,7 @@ public class UpdateAgentInstanceCommandImpl
   }
 
   @Override
-  public UpdateAgentInstanceCommandStep3 history(final List<AgentInstanceHistoryItem> history) {
+  public UpdateAgentInstanceCommandStep4 history(final List<AgentInstanceHistoryItem> history) {
     ArgumentUtil.ensureNotNull("history", history);
     final List<io.camunda.client.protocol.rest.AgentInstanceHistoryItem> protocolHistory =
         new ArrayList<>(history.size());
@@ -103,7 +105,7 @@ public class UpdateAgentInstanceCommandImpl
   }
 
   @Override
-  public UpdateAgentInstanceCommandStep3 requestTimeout(final Duration requestTimeout) {
+  public UpdateAgentInstanceCommandStep4 requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }

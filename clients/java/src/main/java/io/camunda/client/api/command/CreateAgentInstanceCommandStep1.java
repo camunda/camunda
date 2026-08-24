@@ -68,17 +68,19 @@ public interface CreateAgentInstanceCommandStep1 {
   interface CreateAgentInstanceCommandStep3 {
 
     /**
-     * Sets the opaque job lease token received from the job activation response. Optional —
-     * activating the job with leasing enabled (see the job worker's {@code withLease} option, off
-     * by default) is what produces a token; omit this call when the job was activated without one.
-     * The lease disambiguates this activation from any other activation of the same job: if the job
-     * is later retried, history items submitted under a superseded lease are discarded rather than
-     * committed.
+     * Sets the opaque job lease token received from the job activation response. Always required —
+     * agent-instance creation requires the job to have been activated with leasing enabled (see the
+     * job worker's {@code withLease} option). The lease disambiguates this activation from any
+     * other activation of the same job: if the job is later retried, history items submitted under
+     * a superseded lease are discarded rather than committed.
      *
      * @param jobLease the lease token. Must not be null or blank.
-     * @return this builder for method chaining
+     * @return the next step of the builder
      */
-    CreateAgentInstanceCommandStep3 jobLease(String jobLease);
+    CreateAgentInstanceCommandStep4 jobLease(String jobLease);
+  }
+
+  interface CreateAgentInstanceCommandStep4 {
 
     /**
      * Sets the batch of conversation history items to append to the agent instance at creation.
@@ -89,8 +91,8 @@ public interface CreateAgentInstanceCommandStep1 {
      *     must not be null.
      * @return the next step of the builder
      */
-    CreateAgentInstanceCommandStep4 history(List<AgentInstanceHistoryItem> history);
+    CreateAgentInstanceCommandStep5 history(List<AgentInstanceHistoryItem> history);
   }
 
-  interface CreateAgentInstanceCommandStep4 extends FinalCommandStep<CreateAgentInstanceResponse> {}
+  interface CreateAgentInstanceCommandStep5 extends FinalCommandStep<CreateAgentInstanceResponse> {}
 }
