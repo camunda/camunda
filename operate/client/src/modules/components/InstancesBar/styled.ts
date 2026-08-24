@@ -113,14 +113,15 @@ const BarContainer = styled.div`
 
 const RightControls = styled.div`
   margin-left: auto;
+  padding-inline-start: var(--cds-spacing-05);
   display: flex;
   align-items: center;
+  gap: var(--cds-spacing-03);
 `;
 
 const DrainingIndicator = styled.div`
   display: flex;
   align-items: center;
-  margin-right: var(--cds-spacing-03);
   color: var(--cds-support-error);
 `;
 
