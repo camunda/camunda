@@ -275,16 +275,16 @@
     },
     {
       "name": "camunda.client.cluster-variables.global",
-      "type": "java.util.Map",
-      "description": "Deprecated globally-scoped cluster variables to set at startup as key-value pairs.",
+      "type": "java.util.Map<java.lang.String,java.lang.Object>",
+      "sourceType": "io.camunda.client.spring.properties.CamundaClientClusterVariablesProperties",
       "deprecation": {
         "replacement": "camunda.client.cluster-variables.variables"
       }
     },
     {
       "name": "camunda.client.cluster-variables.tenant",
-      "type": "java.util.Map",
-      "description": "Deprecated tenant-scoped cluster variables to set at startup, keyed by tenant ID.",
+      "type": "java.util.Map<java.lang.String,java.lang.Object>",
+      "sourceType": "io.camunda.client.spring.properties.CamundaClientClusterVariablesProperties",
       "deprecation": {
         "replacement": "camunda.client.cluster-variables.variables"
       }
