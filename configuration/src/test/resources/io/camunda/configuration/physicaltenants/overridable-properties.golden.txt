@@ -90,6 +90,7 @@ data.secondary-storage.elasticsearch.decision-requirements-cache.cache-name
 data.secondary-storage.elasticsearch.decision-requirements-cache.database-name
 data.secondary-storage.elasticsearch.form-cache.cache-name
 data.secondary-storage.elasticsearch.form-cache.database-name
+data.secondary-storage.elasticsearch.health-check-enabled
 data.secondary-storage.elasticsearch.history.archive-by-id-enabled
 data.secondary-storage.elasticsearch.history.archive-by-id-max-retry-attempts
 data.secondary-storage.elasticsearch.history.archive-by-id-retry-delay-ms
@@ -148,6 +149,7 @@ data.secondary-storage.opensearch.decision-requirements-cache.cache-name
 data.secondary-storage.opensearch.decision-requirements-cache.database-name
 data.secondary-storage.opensearch.form-cache.cache-name
 data.secondary-storage.opensearch.form-cache.database-name
+data.secondary-storage.opensearch.health-check-enabled
 data.secondary-storage.opensearch.history.archive-by-id-enabled
 data.secondary-storage.opensearch.history.archive-by-id-max-retry-attempts
 data.secondary-storage.opensearch.history.archive-by-id-retry-delay-ms

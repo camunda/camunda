@@ -11,6 +11,7 @@ import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SchemaManagerContainer;
+import io.camunda.search.schema.SearchEngineHealthCheckPermissionException;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
@@ -34,7 +35,6 @@ public class SearchEngineSchemaInitializer
     implements InitializingBean, DisposableBean, SchemaManagerContainer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
-
   private final Map<String, SearchEngineConfiguration> configs;
   private final Map<String, IndexDescriptors> descriptors;
   private final MeterRegistry meterRegistry;
@@ -157,6 +157,19 @@ public class SearchEngineSchemaInitializer
             new SchemaManagerMetrics(meterRegistry, physicalTenantId))) {
       schemaManager.startupOnce();
     }
+    if (configuration.schemaManager().isCreateSchema()
+        && configuration.schemaManager().isHealthCheckEnabled()
+        && !clientAdapter.getSearchEngineClient().isHealthy()) {
+      // Not terminal: a red/unreachable cluster right after schema creation may still turn
+      // yellow/green shortly after, so this attempt is retried like any other storage failure.
+      // A missing 'monitor' privilege is the one health-check failure classified terminal, in
+      // isTerminal() below.
+      throw new SchemaNotReadyException(
+          "Cluster health check failed for physical tenant '"
+              + physicalTenantId
+              + "' after schema"
+              + " initialization.");
+    }
     releaseClientOf(physicalTenantId);
   }
 
@@ -199,14 +212,16 @@ public class SearchEngineSchemaInitializer
 
   /**
    * A schema that the running version cannot migrate stays incompatible however often it is
-   * retried, so this is terminal too. Everything else — an unreachable cluster, a rejected request,
-   * a mapping the current attempt could not validate — is retried, because it may be repaired
-   * without restarting the node.
+   * retried, so this is terminal too. A missing 'monitor' cluster privilege is also terminal: no
+   * amount of retrying grants the permission. Everything else — an unreachable cluster, a rejected
+   * request, a mapping the current attempt could not validate, a cluster that has not yet turned
+   * yellow/green — is retried, because it may be repaired without restarting the node.
    */
   @VisibleForTesting
   static boolean isTerminal(final Throwable failure) {
     return failure instanceof IncompatibleVersionException
-        || failure instanceof TerminalSchemaInitializationException;
+        || failure instanceof TerminalSchemaInitializationException
+        || failure instanceof SearchEngineHealthCheckPermissionException;
   }
 
   /**
@@ -242,6 +257,14 @@ public class SearchEngineSchemaInitializer
 
     TerminalSchemaInitializationException(final String message, final Throwable cause) {
       super(message, cause);
+    }
+  }
+
+  /** A retryable failure: the cluster health check did not pass after schema initialization. */
+  static final class SchemaNotReadyException extends RuntimeException {
+
+    SchemaNotReadyException(final String message) {
+      super(message);
     }
   }
 }
