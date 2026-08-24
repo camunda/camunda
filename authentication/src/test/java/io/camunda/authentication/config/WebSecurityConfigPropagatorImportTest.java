@@ -56,7 +56,18 @@ class WebSecurityConfigPropagatorImportTest {
   @Nested
   @SpringBootTest(
       classes = WebSecurityConfigTestContext.class,
-      properties = "camunda.security.authentication.method=oidc")
+      properties = {
+        "camunda.security.authentication.method=oidc",
+        // The scoped API chain for the implicit "default" physical tenant builds its own
+        // issuer-aware decoder from this config, separately from the mocked JwtDecoder and dummy
+        // ClientRegistrationRepository below (which only satisfy the cluster chain). A provider
+        // must be declared, with a well-formed but unreachable URI; resolution is lazy, so nothing
+        // is fetched. See SessionAuthenticationRefreshTest for the same fixture shape.
+        "camunda.security.authentication.oidc.client-id=example",
+        "camunda.security.authentication.oidc.authorization-uri=https://authorization.example.com",
+        "camunda.security.authentication.oidc.token-uri=https://token.example.com",
+        "camunda.security.authentication.oidc.jwk-set-uri=https://jwks.example.com"
+      })
   @ActiveProfiles("consolidated-auth")
   class OidcAuthTest extends BaseTest {
     @TestBean private ClientRegistrationRepository clientRegistrationRepository;
