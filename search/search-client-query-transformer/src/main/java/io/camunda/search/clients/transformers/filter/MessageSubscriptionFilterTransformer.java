@@ -15,6 +15,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperatio
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.BUSINESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.DATE_TIME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.EVENT_SOURCE_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_ID;
@@ -64,7 +65,8 @@ public class MessageSubscriptionFilterTransformer
         stringOperations(PROCESS_DEFINITION_NAME, filter.processDefinitionNameOperations()),
         intOperations(PROCESS_DEFINITION_VERSION, filter.processDefinitionVersionOperations()),
         stringOperations(TOOL_NAME, filter.toolNameOperations()),
-        stringOperations(INBOUND_CONNECTOR_TYPE, filter.inboundConnectorTypeOperations()));
+        stringOperations(INBOUND_CONNECTOR_TYPE, filter.inboundConnectorTypeOperations()),
+        stringOperations(BUSINESS_ID, filter.businessIdOperations()));
   }
 
   @Override
