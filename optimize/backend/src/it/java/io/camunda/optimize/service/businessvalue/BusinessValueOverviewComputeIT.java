@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.businessvalue;
 
+import static io.camunda.optimize.BusinessValueInstanceFixtures.bvdInstanceWithDuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
@@ -27,11 +28,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Verifies the scheduler compute path end to end: after persisting one process definition (with the
- * "not defined" tenant surfaced as {@code null} alongside a real tenant) and writing a target,
- * invoking the compute service produces one overview row per range preset for the real-tenant
- * definition — the null-tenant bucket is skipped rather than crashing the sweep, and the row's
- * target block matches the caller-scoped tenant instead of leaking across tenants.
+ * Verifies the scheduler compute path end to end, across two concerns.
+ *
+ * <p><strong>Row materialization.</strong> After persisting one process definition (with the "not
+ * defined" tenant surfaced as {@code null} alongside a real tenant) and writing a target, invoking
+ * the compute service produces one overview row per range preset for the real-tenant definition —
+ * the null-tenant bucket is skipped rather than crashing the sweep, and the row's target block
+ * matches the caller-scoped tenant instead of leaking across tenants.
+ *
+ * <p><strong>Values produced by the fanned-in evaluation.</strong> Per-tenant isolation on a shared
+ * process key, distinct values for definitions resolved by a single evaluation, and a
+ * deployed-but-never-run definition neither disturbing its neighbours nor losing its row.
  */
 class BusinessValueOverviewComputeIT extends AbstractBrokerlessZeebeCCSMIT {
 
@@ -161,6 +168,111 @@ class BusinessValueOverviewComputeIT extends AbstractBrokerlessZeebeCCSMIT {
               assertThat(r.getAutomationRate().getTarget()).isNull();
               assertThat(r.getTargetsSet()).isZero();
             });
+  }
+
+  /**
+   * Guards per-tenant scoping of the computed values, which nothing else does — {@link
+   * #shouldNotLeakTargetsAcrossTenantsOnSameProcessKey} asserts on targets, and those come from the
+   * target index rather than from report evaluation, so it stays green however evaluation behaves.
+   *
+   * <p>Note the failure mode if the {@code businessValueReport} flag stopped being cleared: the
+   * evaluation handler would resolve definitions for a user, this sweep has none, and the sweep
+   * would fail with {@code ForbiddenException("userId is null")} — so this test would go red on an
+   * exception rather than on a blended average. Either way the pinned tenant scope is gone.
+   */
+  @Test
+  void shouldComputeTenantScopedValuesForTheSameProcessKey() {
+    // given the same process key on two tenants with clearly separated cycle times. Unique per-test
+    // identifiers keep this independent of the other tests that use PROCESS_KEY.
+    final String processKey = PROCESS_KEY + "-tenant-scoped";
+    final String tenantA = DEFAULT_TENANT;
+    final String otherTenant = "tenant-scoped-b";
+    persistProcessInstances(
+        List.of(
+            bvdInstanceWithDuration(processKey, 1_000L).build(),
+            bvdInstanceWithDuration(processKey, 1_000L).build()));
+    persistProcessInstances(
+        List.of(
+            bvdInstanceWithDuration(processKey, 9_000L).tenantId(otherTenant).build(),
+            bvdInstanceWithDuration(processKey, 9_000L).tenantId(otherTenant).build()));
+    // persistProcessInstances derives its definitions on the default tenant only, so the
+    // other tenant's definition has to be written explicitly for it to enter the sweep
+    persistProcessDefinitions(List.of(bvdDefinition(processKey, otherTenant)));
+
+    // when compute runs for the 7d preset
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then each tenant's row carries its own average, not the 5_000 blend of the two
+    assertThat(overviewRepository.getByKey(tenantA, processKey, MetricRange.SEVEN_DAYS))
+        .isPresent()
+        .hasValueSatisfying(r -> assertThat(r.getCycleTime().getValue()).isEqualTo(1_000L));
+    assertThat(overviewRepository.getByKey(otherTenant, processKey, MetricRange.SEVEN_DAYS))
+        .isPresent()
+        .hasValueSatisfying(r -> assertThat(r.getCycleTime().getValue()).isEqualTo(9_000L));
+  }
+
+  @Test
+  void shouldComputeDistinctValuesForDefinitionsSharingOneEvaluation() {
+    // given three definitions on one tenant, all resolved by a single fanned-in evaluation
+    final String slow = PROCESS_KEY + "-slow";
+    final String mid = PROCESS_KEY + "-mid";
+    final String fast = PROCESS_KEY + "-fast";
+    persistProcessInstances(
+        List.of(
+            bvdInstanceWithDuration(slow, 10_000L).build(),
+            bvdInstanceWithDuration(mid, 5_000L).build(),
+            bvdInstanceWithDuration(fast, 1_000L).build()));
+
+    // when compute runs for the 7d preset
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then every definition takes its own value out of the shared result map
+    assertThat(overviewRepository.getByKey(DEFAULT_TENANT, slow, MetricRange.SEVEN_DAYS))
+        .isPresent()
+        .hasValueSatisfying(r -> assertThat(r.getCycleTime().getValue()).isEqualTo(10_000L));
+    assertThat(overviewRepository.getByKey(DEFAULT_TENANT, mid, MetricRange.SEVEN_DAYS))
+        .isPresent()
+        .hasValueSatisfying(r -> assertThat(r.getCycleTime().getValue()).isEqualTo(5_000L));
+    assertThat(overviewRepository.getByKey(DEFAULT_TENANT, fast, MetricRange.SEVEN_DAYS))
+        .isPresent()
+        .hasValueSatisfying(r -> assertThat(r.getCycleTime().getValue()).isEqualTo(1_000L));
+  }
+
+  @Test
+  void shouldStillComputeNeighboursWhenADefinitionHasNeverRun() {
+    // given one definition with instances and one that was deployed but never ran, so it has no
+    // process instance index at all
+    final String neverRun = PROCESS_KEY + "-never-run";
+    persistProcessInstances(List.of(bvdInstanceWithDuration(PROCESS_KEY, 4_000L).build()));
+    persistProcessDefinitions(List.of(bvdDefinition(neverRun, DEFAULT_TENANT)));
+
+    // when compute runs for the 7d preset
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then the definition with data is unaffected. Without the pre-filter the missing index would
+    // fail the search and the interpreter would retry against the instance multi alias — correct
+    // results, but every instance index in the cluster opened. The never-run definition still gets
+    // a
+    // row, with no value.
+    assertThat(overviewRepository.getByKey(DEFAULT_TENANT, PROCESS_KEY, MetricRange.SEVEN_DAYS))
+        .isPresent()
+        .hasValueSatisfying(r -> assertThat(r.getCycleTime().getValue()).isEqualTo(4_000L));
+    assertThat(overviewRepository.getByKey(DEFAULT_TENANT, neverRun, MetricRange.SEVEN_DAYS))
+        .isPresent()
+        .hasValueSatisfying(r -> assertThat(r.getCycleTime().getValue()).isNull());
+  }
+
+  private static ProcessDefinitionOptimizeDto bvdDefinition(
+      final String key, final String tenantId) {
+    return ProcessDefinitionOptimizeDto.builder()
+        .id(key + "-" + tenantId)
+        .key(key)
+        .version("1")
+        .name(key)
+        .dataSource(new ZeebeDataSourceDto("test", 1))
+        .tenantId(tenantId)
+        .bpmn20Xml("<definitions/>")
+        .build();
   }
 
   @Test
