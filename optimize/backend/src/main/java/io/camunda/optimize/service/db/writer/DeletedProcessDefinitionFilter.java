@@ -57,16 +57,14 @@ public class DeletedProcessDefinitionFilter {
     if (suppressedIds.isEmpty()) {
       return entries;
     }
-    final long suppressedCount =
+    final List<T> filteredEntries =
         entries.stream()
-            .filter(entry -> suppressedIds.contains(processDefinitionIdExtractor.apply(entry)))
-            .count();
+            .filter(entry -> !suppressedIds.contains(processDefinitionIdExtractor.apply(entry)))
+            .toList();
     LOG.info(
         "Suppressing import of {} entries for process definition ids {} with a deletion job.",
-        suppressedCount,
+        entries.size() - filteredEntries.size(),
         suppressedIds);
-    return entries.stream()
-        .filter(entry -> !suppressedIds.contains(processDefinitionIdExtractor.apply(entry)))
-        .toList();
+    return filteredEntries;
   }
 }
