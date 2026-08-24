@@ -179,7 +179,6 @@ public class PartitionStartupAndTransitionContextImpl
   public PartitionAdminControl getPartitionAdminControl() {
     return new PartitionAdminControlImpl(
         () -> getPartitionContext().getStreamProcessor(),
-        () -> getPartitionContext().getExporterDirector(),
         () -> snapshotDirector,
         () -> partitionProcessingState,
         () -> zeebeDb,

@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.system.partitions;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -40,7 +39,6 @@ import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Inc
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.function.Function;
 import org.slf4j.Logger;
 
 class ZeebePartitionAdminAccess implements PartitionAdminAccess {
@@ -91,43 +89,6 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
           }
         });
 
-    return completed;
-  }
-
-  @Override
-  public ActorFuture<Void> pauseExporting() {
-    return applyToDirector(ExporterDirector::pauseExporting);
-  }
-
-  @Override
-  public ActorFuture<Void> softPauseExporting() {
-    return applyToDirector(ExporterDirector::softPauseExporting);
-  }
-
-  @Override
-  public ActorFuture<Void> resumeExporting() {
-    return applyToDirector(ExporterDirector::resumeExporting);
-  }
-
-  /**
-   * Applies an exporting-state change to the live director, if one is currently open on this
-   * replica. Dynamic cluster configuration is the durable record of the target state; there is
-   * nothing else to persist locally, so a replica with no live director simply has nothing to do
-   * here — it will open with the correct phase once it does start (see {@code
-   * ExporterDirectorPartitionTransitionStep}).
-   */
-  private ActorFuture<Void> applyToDirector(
-      final Function<ExporterDirector, ActorFuture<Void>> operation) {
-    final ActorFuture<Void> completed = concurrencyControl.createFuture();
-    concurrencyControl.run(
-        () -> {
-          final var director = adminControl.getExporterDirector();
-          if (director != null) {
-            operation.apply(director).onComplete(completed);
-          } else {
-            completed.complete(null);
-          }
-        });
     return completed;
   }
 
