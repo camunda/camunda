@@ -7,13 +7,7 @@
  */
 
 import { FC } from "react";
-import {
-  SkeletonText,
-  StructuredListBody,
-  StructuredListRow,
-  StructuredListWrapper,
-} from "@carbon/react";
-import { cssSize } from "src/utility/style";
+import { Skeleton as SkeletonBlock } from "@camunda/design-system";
 import { Cell, HeadCell } from "./components";
 
 type SkeletonProps = {
@@ -21,20 +15,21 @@ type SkeletonProps = {
 };
 
 const Skeleton: FC<SkeletonProps> = ({ entries = 2 }) => (
-  <StructuredListWrapper>
-    <StructuredListBody>
-      {new Array(entries).fill(undefined).map((_, i) => (
-        <StructuredListRow key={`list-skeleton-row-${i}`}>
-          <HeadCell head noWrap>
-            <SkeletonText heading width={cssSize(20)} />
-          </HeadCell>
-          <Cell>
-            <SkeletonText />
-          </Cell>
-        </StructuredListRow>
-      ))}
-    </StructuredListBody>
-  </StructuredListWrapper>
+  <dl className="m-0 flex flex-col">
+    {new Array(entries).fill(undefined).map((_, i) => (
+      <div
+        key={`list-skeleton-row-${i}`}
+        className="flex gap-4 py-3 shadow-[inset_0_-1px_0_var(--border)]"
+      >
+        <HeadCell>
+          <SkeletonBlock className="h-3 w-48" />
+        </HeadCell>
+        <Cell>
+          <SkeletonBlock className="h-3 w-full" />
+        </Cell>
+      </div>
+    ))}
+  </dl>
 );
 
 export default Skeleton;
