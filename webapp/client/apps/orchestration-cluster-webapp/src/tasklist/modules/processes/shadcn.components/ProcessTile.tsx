@@ -23,9 +23,7 @@ const ProcessTile: React.FC<Props> = ({process}) => {
 		<Card className="h-full" data-testid={`process-tile-${process.processDefinitionKey}`}>
 			<CardContent className="flex h-full min-w-0 flex-col justify-between gap-6">
 				<div className="flex min-w-0 flex-col gap-1">
-					<h2 className="truncate text-base leading-6 font-semibold">
-						{displayName}
-					</h2>
+					<h2 className="truncate text-base leading-6 font-semibold">{displayName}</h2>
 					<span
 						className="block min-h-4 truncate text-xs leading-4 text-neutral-foreground-subtle"
 						title={process.processDefinitionId}
