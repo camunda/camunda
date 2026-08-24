@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, SubmitEvent, useState } from "react";
+import { useState } from "react";
 import { Alert } from "@camunda/design-system";
 import {
   ApiError,
@@ -19,7 +19,7 @@ type FormModalProps = {
   error?: ApiError | Error | ErrorResponse<"detailed"> | null;
 } & ModalProps;
 
-const FormModal: FC<FormModalProps> = ({
+const FormModal: React.FC<FormModalProps> = ({
   children,
   onSubmit,
   error,
@@ -37,7 +37,7 @@ const FormModal: FC<FormModalProps> = ({
     onSubmit?.();
   };
 
-  const formSubmitHandler = (e: SubmitEvent) => {
+  const formSubmitHandler = (e: React.SubmitEvent) => {
     e.preventDefault();
     submit();
   };

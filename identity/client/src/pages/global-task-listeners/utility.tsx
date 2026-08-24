@@ -105,7 +105,7 @@ export const toRequestEventTypes = (
  * produces: the dropdown shows "All events" alone, and checking a single event
  * on top of it drops "all" and leaves that one event as the whole selection.
  */
-export const toFormEventTypes = (
+const toFormEventTypes = (
   eventTypes: GlobalTaskListenerEventType[],
 ): GlobalTaskListenerEventType[] =>
   eventTypes.includes("all")
