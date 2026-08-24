@@ -6,12 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {EmptyState} from '@camunda/design-system';
 import {Outlet} from '@tanstack/react-router';
-import {Search} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
+import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+import {AvailableTasks} from '#/tasklist/modules/available-tasks/shadcn.components/AvailableTasks';
 
-const TasksLayoutPage: React.FC = () => {
+type Props = {
+	tasks: UserTask[];
+	currentUser: CurrentUser;
+	hasNextPage: boolean;
+	hasPreviousPage: boolean;
+	onScrollDown: () => Promise<UserTask[]>;
+	onScrollUp: () => Promise<UserTask[]>;
+};
+
+const TasksLayoutPage: React.FC<Props> = ({
+	tasks,
+	currentUser,
+	hasNextPage,
+	hasPreviousPage,
+	onScrollDown,
+	onScrollUp,
+}) => {
 	const {t} = useTranslation();
 
 	return (
@@ -22,19 +38,20 @@ const TasksLayoutPage: React.FC = () => {
 			>
 				<header className="flex items-center border-b border-border px-4">
 					<h1 className="sr-only">{t('tasklist.headerNavItemTasks')}</h1>
+					<h2 className="text-sm font-medium">{t('tasklist.taskFiltersAllOpenTasks')}</h2>
 				</header>
-				<div className="overflow-auto p-4">
-					<EmptyState
-						size="sm"
-						icon={<Search aria-hidden />}
-						heading={t('tasklist.availableTasksNoTasksFoundInfo')}
-						description={t('tasklist.availableTasksNoTasksMatchingCriteriaInfo')}
-					/>
-				</div>
+				<AvailableTasks
+					tasks={tasks}
+					currentUser={currentUser}
+					hasNextPage={hasNextPage}
+					hasPreviousPage={hasPreviousPage}
+					onScrollDown={onScrollDown}
+					onScrollUp={onScrollUp}
+				/>
 			</section>
-			<section className="overflow-auto border-l border-border" aria-label={t('tasklist.taskDetailsDetailsLabel')}>
+			<div className="overflow-auto border-l border-border">
 				<Outlet />
-			</section>
+			</div>
 		</main>
 	);
 };
