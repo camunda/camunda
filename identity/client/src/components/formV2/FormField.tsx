@@ -63,20 +63,15 @@ const FormField: FC<FormFieldProps> = ({
         "aria-invalid": error ? true : undefined,
         "aria-describedby": describedBy,
       })}
-      {error ? (
+      {error || showHelperText ? (
         <Text
           as="p"
           variant="helper"
-          id={errorId}
-          role="alert"
-          className="text-danger-action-default"
+          id={error ? errorId : helperId}
+          role={error ? "alert" : undefined}
+          className={error ? "text-danger-action-default" : undefined}
         >
-          {error}
-        </Text>
-      ) : null}
-      {showHelperText ? (
-        <Text as="p" variant="helper" id={helperId}>
-          {helperText}
+          {error || helperText}
         </Text>
       ) : null}
       {footer?.(footerId)}
