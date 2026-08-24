@@ -252,6 +252,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     final String tenantId = "tenantId";
     final String messageName = "messageName";
     final String correlationKey = "correlationKey";
+    final String businessId = "businessId";
     final Intent intent = ProcessMessageSubscriptionIntent.CREATED;
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
@@ -264,6 +265,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
             .withTenantId(tenantId)
             .withMessageName(messageName)
             .withCorrelationKey(correlationKey)
+            .withBusinessId(businessId)
             .build();
     final Record<ProcessMessageSubscriptionRecordValue> record =
         factory.generateRecord(
@@ -297,7 +299,41 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     assertThat(entity.getPositionProcessMessageSubscription()).isEqualTo(position);
     assertThat(entity.getMetadata().getMessageName()).isEqualTo(messageName);
     assertThat(entity.getMetadata().getCorrelationKey()).isEqualTo(correlationKey);
+    assertThat(entity.getBusinessId()).isEqualTo(businessId);
     assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+  }
+
+  @Test
+  public void shouldMapEmptyBusinessIdToNull() {
+    // given
+    final long recordKey = 789;
+    final var recordValue =
+        ImmutableProcessMessageSubscriptionRecordValue.builder()
+            .withProcessInstanceKey(123)
+            .withElementInstanceKey(456)
+            .withProcessDefinitionKey(555)
+            .withElementId("elementId")
+            .withBpmnProcessId("bpmnProcessId")
+            .withTenantId("tenantId")
+            .withMessageName("messageName")
+            .withCorrelationKey("correlationKey")
+            .withBusinessId("")
+            .build();
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r ->
+                r.withIntent(ProcessMessageSubscriptionIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValue(recordValue));
+
+    // when
+    final var ids = underTest.generateIds(record);
+    final MessageSubscriptionEntity entity = underTest.createNewEntity(ids.getFirst());
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getBusinessId()).isNull();
   }
 
   @Test
