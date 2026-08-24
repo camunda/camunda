@@ -1980,7 +1980,8 @@ public class ProtoBufSerializer
             : Optional.empty();
     final Optional<DependencyChangePlan> pendingChanges =
         proto.hasPendingChanges()
-            ? Optional.of(decodeDependencyChangePlan(proto.getPendingChanges()))
+            ? Optional.of(
+                decodeDependencyChangePlan(GlobalChangeOperation.class, proto.getPendingChanges()))
             : Optional.empty();
     final Optional<io.camunda.zeebe.dynamic.config.state.CompletedChange> lastChange =
         proto.hasLastChange()
@@ -2042,7 +2043,9 @@ public class ProtoBufSerializer
     return builder.build();
   }
 
-  private OperationGraph decodeOperationGraph(final Topology.OperationGraph proto) {
+  private OperationGraph decodeOperationGraph(
+      final Class<? extends ClusterConfigurationChangeOperation> expectedKind,
+      final Topology.OperationGraph proto) {
     final SortedMap<OperationId, OperationGraph.PlannedOperation> operations = new TreeMap<>();
     proto
         .getOperationsList()
@@ -2060,7 +2063,7 @@ public class ProtoBufSerializer
               operations.put(
                   OperationId.of(planned.getId()),
                   new OperationGraph.PlannedOperation(
-                      decodePlannedOperation(planned), dependsOn, groupId));
+                      decodePlannedOperation(expectedKind, planned), dependsOn, groupId));
             });
     // OperationGraph.of, not the bare constructor: acyclicity is not an invariant of the
     // constructor, only of this factory, and this graph came off the wire -- corruption or a
@@ -2075,16 +2078,27 @@ public class ProtoBufSerializer
    * step.
    */
   private ClusterConfigurationChangeOperation decodePlannedOperation(
+      final Class<? extends ClusterConfigurationChangeOperation> expectedKind,
       final Topology.PlannedOperation planned) {
-    return switch (planned.getOperationCase()) {
-      case PARTITIONGROUPOPERATION ->
-          decodePartitionGroupChangeOperation(planned.getPartitionGroupOperation());
-      case GLOBALOPERATION -> decodeGlobalChangeOperation(planned.getGlobalOperation());
-      case OPERATION_NOT_SET ->
-          throw new IllegalStateException(
-              "Expected planned operation %d to carry an operation, but it carries none"
-                  .formatted(planned.getId()));
-    };
+    final ClusterConfigurationChangeOperation operation =
+        switch (planned.getOperationCase()) {
+          case PARTITIONGROUPOPERATION ->
+              decodePartitionGroupChangeOperation(planned.getPartitionGroupOperation());
+          case GLOBALOPERATION -> decodeGlobalChangeOperation(planned.getGlobalOperation());
+          case OPERATION_NOT_SET ->
+              throw new IllegalStateException(
+                  "Expected planned operation %d to carry an operation, but it carries none"
+                      .formatted(planned.getId()));
+        };
+    // The oneof lets either kind travel in either sub-configuration's graph, but only one of them
+    // can run there: the reconciler casts to the kind its scope applies. Rejected here rather than
+    // there, so corrupt or forward-versioned state never reaches the execution loop.
+    if (!expectedKind.isInstance(operation)) {
+      throw new IllegalStateException(
+          "Expected planned operation %d to be a %s, but it is %s"
+              .formatted(planned.getId(), expectedKind.getSimpleName(), operation));
+    }
+    return operation;
   }
 
   private Topology.DependencyChangePlan encodeDependencyChangePlan(
@@ -2107,6 +2121,7 @@ public class ProtoBufSerializer
   }
 
   private DependencyChangePlan decodeDependencyChangePlan(
+      final Class<? extends ClusterConfigurationChangeOperation> expectedKind,
       final Topology.DependencyChangePlan proto) {
     final SortedMap<OperationId, Instant> completed = new TreeMap<>();
     proto
@@ -2123,7 +2138,7 @@ public class ProtoBufSerializer
         proto.getId(),
         toChangeStatus(proto.getStatus()),
         Instant.ofEpochSecond(proto.getStartedAt().getSeconds(), proto.getStartedAt().getNanos()),
-        decodeOperationGraph(proto.getGraph()),
+        decodeOperationGraph(expectedKind, proto.getGraph()),
         completed);
   }
 
@@ -2138,7 +2153,9 @@ public class ProtoBufSerializer
         proto.hasRoutingState() ? decodeRoutingState(proto.getRoutingState()) : Optional.empty();
     final Optional<DependencyChangePlan> pendingChanges =
         proto.hasPendingChanges()
-            ? Optional.of(decodeDependencyChangePlan(proto.getPendingChanges()))
+            ? Optional.of(
+                decodeDependencyChangePlan(
+                    PartitionGroupOperation.class, proto.getPendingChanges()))
             : Optional.empty();
     final Optional<io.camunda.zeebe.dynamic.config.state.CompletedChange> lastChange =
         proto.hasLastChange()
@@ -2310,7 +2327,9 @@ public class ProtoBufSerializer
           new PartitionGroupPhase(
               proto.getPartitionGroupGraphPhase().getGroupGraphsMap().entrySet().stream()
                   .collect(
-                      Collectors.toMap(Entry::getKey, e -> decodeOperationGraph(e.getValue()))));
+                      Collectors.toMap(
+                          Entry::getKey,
+                          e -> decodeOperationGraph(PartitionGroupOperation.class, e.getValue()))));
       // Decode-only: nothing writes this variant since the queue phase and the graph phase became
       // one type, but a configuration persisted or gossiped before that still carries it. A flat
       // operation list is exactly a sequential graph, so it decodes without loss.

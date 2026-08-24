@@ -958,6 +958,38 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
+  void shouldRejectADecodedGraphWhoseOperationCannotRunInItsSubConfiguration() {
+    // given — a partition group's graph carrying a cluster-wide operation. The oneof lets either
+    // kind travel in either scope, but a group cannot run a broker lifecycle step.
+    final var proto =
+        Topology.PartitionGroupConfiguration.newBuilder()
+            .setVersion(2)
+            .setIncarnationNumber(0)
+            .setPendingChanges(
+                Topology.DependencyChangePlan.newBuilder()
+                    .setId(11)
+                    .setStatus(Topology.ChangeStatus.IN_PROGRESS)
+                    .setStartedAt(Timestamp.newBuilder().build())
+                    .setGraph(
+                        Topology.OperationGraph.newBuilder()
+                            .addOperations(
+                                Topology.PlannedOperation.newBuilder()
+                                    .setId(0)
+                                    .setGlobalOperation(
+                                        Topology.GlobalChangeOperation.newBuilder()
+                                            .setMemberId("1")
+                                            .setMemberJoin(
+                                                Topology.MemberJoinOperation.newBuilder())))))
+            .build();
+
+    // when / then — rejected at decode, not later at the reconciler's cast, so corrupt or
+    // forward-versioned state never reaches the execution loop
+    assertThatThrownBy(() -> protoBufSerializer.decodePartitionGroupConfiguration(proto))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("to be a PartitionGroupOperation");
+  }
+
+  @Test
   void shouldRejectADecodedPlannedOperationCarryingNoOperation() {
     // given — a planned operation with neither arm of the oneof set, which no encoder produces; it
     // reaches decode only through corruption or a future encoding this build does not know
