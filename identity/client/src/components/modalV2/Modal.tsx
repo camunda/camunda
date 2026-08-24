@@ -66,38 +66,6 @@ const Modal: FC<ModalProps> = ({
 }) => {
   const { t } = useTranslate("components");
 
-  const footer = (() => {
-    if (buttons !== undefined) {
-      // Carbon's `ButtonSet` has no design system counterpart, and none is
-      // needed: `DialogFooter` is itself the flex row. Carbon's equal-width
-      // split (`flex: 0 1 50%`, stretched to 100% here) is deliberately not
-      // reproduced — the design system footer right-aligns buttons at their
-      // natural width. No call site passes `buttons` today, so this branch is
-      // untested surface.
-      return <DialogFooter>{buttons}</DialogFooter>;
-    }
-
-    if (passiveModal) return null;
-
-    return (
-      <DialogFooter>
-        <Button variant="secondary" onClick={onClose}>
-          {t("cancel")}
-        </Button>
-        <Button
-          variant={danger ? "destructive" : "default"}
-          // `loading` already blocks clicks via `aria-disabled` while keeping
-          // the button focusable, so it must not be folded into `disabled`.
-          loading={loading}
-          disabled={submitDisabled}
-          onClick={() => onSubmit()}
-        >
-          {loading ? loadingDescription || t("loading") : confirmLabel}
-        </Button>
-      </DialogFooter>
-    );
-  })();
-
   return (
     <Dialog
       open={open}
@@ -115,7 +83,27 @@ const Modal: FC<ModalProps> = ({
           <DialogTitle>{headline}</DialogTitle>
         </DialogHeader>
         <DialogBody>{children}</DialogBody>
-        {footer}
+        {passiveModal ? null : (
+          <DialogFooter>
+            {buttons !== undefined ? (
+              buttons
+            ) : (
+              <>
+                <Button variant="secondary" onClick={onClose}>
+                  {t("cancel")}
+                </Button>
+                <Button
+                  variant={danger ? "destructive" : "default"}
+                  loading={loading}
+                  disabled={submitDisabled}
+                  onClick={() => onSubmit()}
+                >
+                  {loading ? loadingDescription || t("loading") : confirmLabel}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
