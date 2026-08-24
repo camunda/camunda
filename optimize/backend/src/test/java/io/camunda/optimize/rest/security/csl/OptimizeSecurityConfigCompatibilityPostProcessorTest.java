@@ -641,10 +641,10 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
         .isEqualTo(backend + "/protocol/openid-connect/token");
     assertThat(env.getProperty(OIDC + "jwk-set-uri"))
         .isEqualTo(backend + "/protocol/openid-connect/certs");
-    // CSL requests UserInfo during login by default; without the endpoint the call is skipped
-    // and the claims it contributes are lost.
-    assertThat(env.getProperty(OIDC + "user-info-uri"))
-        .isEqualTo(backend + "/protocol/openid-connect/userinfo");
+    // Never derive a UserInfo endpoint: CSL builds the registration without a
+    // userNameAttributeName, so as soon as Spring knows the endpoint every login fails with
+    // 'missing_user_name_attribute'. Deriving it here regressed SM 8.10 Optimize login (#60834).
+    assertThat(env.getProperty(OIDC + "user-info-uri")).isNull();
   }
 
   @Test
