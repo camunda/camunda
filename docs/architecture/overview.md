@@ -7,7 +7,9 @@ at scale, for both self-managed and SaaS deployments. The monorepo contains the 
 (process engine), Operate (process monitoring), Tasklist (human task management),
 Identity (authentication and authorization), and Optimize (process analytics), plus shared
 libraries, gateways, and supporting infrastructure. Java backend built with Maven; React/Carbon
-frontends. `dist/` wires the components into deployable Spring Boot application variants (e.g.
+frontends, with Tasklist living in
+`webapp/client/apps/orchestration-cluster-webapp/src/tasklist/`. `dist/` wires the components into
+deployable Spring Boot application variants (e.g.
 `StandaloneBroker`, `StandaloneCamunda`); components can also be deployed independently.
 
 ## Runtime topology
@@ -148,7 +150,8 @@ only through this contract; never read from RocksDB directly.
 All templates use `"dynamic": "strict"` — new fields must be explicitly added to the template
 definitions before the exporter writes them. Fields are additive-only; never change or remove a
 field once deployed — strict mapping will reject mistyped documents from the exporter, and any
-query in `search/` referencing the field breaks, surfacing in `operate/` and `tasklist/`. Never
+query in `search/` referencing the field breaks, surfacing in `operate/` and the Tasklist area of
+the orchestration-cluster webapp. Never
 query ES/OS indices directly from application code; always go through `search/`.
 
 **ES/OS exporter index templates** (`zeebe/exporters/elasticsearch-exporter/src/main/resources`,
@@ -159,8 +162,8 @@ the impact on existing index mappings.
 **`service/` as the REST-to-engine bridge**\
 All REST commands must flow through `service/` before reaching Zeebe. REST controllers in
 `zeebe/gateway-rest` must not call the Zeebe gRPC gateway directly. An interface change here breaks
-`zeebe/gateway-rest` at compile time; `operate/` and `tasklist/` are indirect consumers via the
-REST API and will break at runtime.
+`zeebe/gateway-rest` at compile time; `operate/` and the orchestration-cluster webapp are indirect
+consumers via the REST API and will break at runtime.
 
 **RDBMS schema** (`db/rdbms-schema`)\
 Schema changes are versioned Liquibase changesets and must be additive-only (new tables or columns).
@@ -199,4 +202,3 @@ from OIDC tokens. Update all consumers before changing the mapping.
 - Zeebe internals: `docs/zeebe/`
 - Module-specific architecture: `<module>/docs/architecture.md` (where present)
 - Module-specific behavioral rules: `<module>/AGENTS.md`
-

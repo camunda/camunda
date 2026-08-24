@@ -1,6 +1,6 @@
 ---
 name: "frontend-agent"
-description: "Frontend development specialist for the orchestration cluster webapp and legacy Operate frontend. Helps build features, write tests, debug UI issues, migrate code from legacy Operate/Tasklist frontends, maintain the legacy Operate frontend at operate/client/, and follow project conventions."
+description: "Frontend development specialist for the orchestration cluster webapp and legacy Operate frontend. Helps build features, write tests, debug UI issues, migrate code from the legacy Operate frontend, maintain operate/client/, and follow project conventions."
 tools:
   [
     "edit",
@@ -93,7 +93,7 @@ For detailed guidance, consult the frontend docs:
 
 ## Migration from Legacy Frontends
 
-When migrating code from `operate/client/` or `tasklist/client/` to the orchestration cluster webapp, consult the migration skill for pattern transformations:
+When migrating code from `operate/client/` to the orchestration cluster webapp, consult the migration skill for pattern transformations:
 
 - `.claude/skills/frontend-migrator/` — maps legacy patterns (React Router, MobX stores, styled-components, jsdom tests) to target patterns (TanStack Router, TanStack Query, SCSS modules, Vitest browser mode)
 - `references/pattern-mapping.md` — side-by-side code examples for every transformation

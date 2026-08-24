@@ -14,8 +14,9 @@ on:
         required: true
         type: string
       tasklist_mode:
-        description: "Tasklist UI mode to test: v1 or v2"
-        required: true
+        description: "Tasklist UI mode for stable 8.7-8.9 compatibility testing: v1 or v2"
+        required: false
+        default: ""
         type: string
 
 permissions:
@@ -26,7 +27,7 @@ env:
 
 jobs:
   nightly-e2e-tests:
-    name: E2E Tests (${{ inputs.branch }} - Tasklist ${{ inputs.tasklist_mode }} mode)
+    name: E2E Tests (${{ inputs.branch }}${{ inputs.tasklist_mode && format(' - Tasklist {0} mode', inputs.tasklist_mode) || '' }})
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -80,11 +81,9 @@ jobs:
           else
             echo "Using standalone camunda container"
             services=(camunda)
-            if [[ "${{ inputs.tasklist_mode }}" == "v1" ]]; then
+            if [[ ("${{ inputs.branch }}" == "stable/8.8" || "${{ inputs.branch }}" == "stable/8.9") && "${{ inputs.tasklist_mode }}" == "v1" ]]; then
               echo "Starting with Tasklist V1 mode enabled"
               up_env+=(CAMUNDA_TASKLIST_V2_MODE_ENABLED=false)
-            else
-              echo "Starting with default Tasklist V2 mode"
             fi
           fi
 
@@ -326,7 +325,6 @@ jobs:
           INCLUDE_SLACK_REPORTER: true
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ inputs.branch }}
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ inputs.tasklist_mode == 'v2' && 'true' || 'false' }}
           OPTIMIZE_BASE_URL: "http://localhost:8083"
         run: |
           if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
@@ -349,11 +347,12 @@ jobs:
             echo "Optimize container not running; optimize-startup project will be skipped."
           fi
 
-          if [[ "${{ inputs.tasklist_mode }}" == "v2" ]]; then
-            if [[ "${{ inputs.branch }}" == "main" ]]; then
-              echo "Running all tests in V2 mode on main"
-              npm run test -- --project=chromium $OPTIMIZE_ARGS
-            elif [[ "${{ inputs.branch }}" == "stable/8.9" ]]; then
+          if [[ "${{ inputs.branch }}" == "main" ]]; then
+            echo "Running all tests on main"
+            npm run test -- --project=chromium $OPTIMIZE_ARGS
+          elif [[ "${{ inputs.tasklist_mode }}" == "v2" ]]; then
+            export CAMUNDA_TASKLIST_V2_MODE_ENABLED=true
+            if [[ "${{ inputs.branch }}" == "stable/8.9" ]]; then
               echo "Running all tests in V2 mode on ${{ inputs.branch }}, excluding V1-specific tests"
               npm run test -- --project=chromium $OPTIMIZE_ARGS --grep-invert "tests/(common-flows/v1|tasklist/v1)/"
             else
@@ -361,6 +360,9 @@ jobs:
               npm run test -- --project=chromium $OPTIMIZE_ARGS --grep-invert "@v1-only"
             fi
           else
+            if [[ "${{ inputs.branch }}" == "stable/8.8" || "${{ inputs.branch }}" == "stable/8.9" ]]; then
+              export CAMUNDA_TASKLIST_V2_MODE_ENABLED=false
+            fi
             if [[ "${{ inputs.branch }}" == "stable/8.9" ]]; then
               echo "Running V1 specific tests only: common-flows/v1/ and tests/tasklist/v1/"
               npm run test -- --project=chromium tests/common-flows/v1/ tests/tasklist/v1/
@@ -391,7 +393,7 @@ jobs:
             --key "$TESTRAIL_KEY" \
             --batch-size 500 \
             parse_junit --suite-id 17050 \
-            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME (Tasklist ${{ inputs.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME${{ inputs.tasklist_mode && format(' (Tasklist {0} mode)', inputs.tasklist_mode) || '' }} - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
@@ -408,7 +410,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: json-report-nightly-e2e-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.tasklist_mode }}
+          name: json-report-nightly-e2e-${{ steps.sanitize.outputs.safe_branch }}${{ inputs.tasklist_mode && format('-{0}', inputs.tasklist_mode) || '' }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
           retention-days: 60
 
@@ -416,7 +418,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: html-report-nightly-e2e-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.tasklist_mode }}
+          name: html-report-nightly-e2e-${{ steps.sanitize.outputs.safe_branch }}${{ inputs.tasklist_mode && format('-{0}', inputs.tasklist_mode) || '' }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report/**
           retention-days: 60
 
@@ -425,7 +427,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "c8-orchestration-cluster-e2e-nightly-tests/${{ inputs.branch }}/${{ inputs.tasklist_mode }}"
+          job_name: "c8-orchestration-cluster-e2e-nightly-tests/${{ inputs.branch }}${{ inputs.tasklist_mode && format('/{0}', inputs.tasklist_mode) || '' }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

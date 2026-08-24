@@ -21,7 +21,6 @@ public class SecondaryStorage {
       Set.of(
           "camunda.database.type",
           "camunda.operate.database",
-          "camunda.tasklist.database",
           "zeebe.broker.exporters.camundaexporter.args.connect.type");
 
   /**

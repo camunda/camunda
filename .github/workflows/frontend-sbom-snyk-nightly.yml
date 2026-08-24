@@ -135,6 +135,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   tasklist-fe-sbom-snyk:
+    if: inputs.branch == 'stable/8.8' || inputs.branch == 'stable/8.9'
     name: "Tasklist / Front End - Snyk SBOM (${{ inputs.branch }})"
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -289,7 +290,9 @@ jobs:
             echo "*Branch:* \`${branch}\`"
             echo "$(icon "$identity") *Identity* — ${identity}"
             echo "$(icon "$operate") *Operate* — ${operate}"
-            echo "$(icon "$tasklist") *Tasklist* — ${tasklist}"
+            if [[ "$tasklist" != "skipped" ]]; then
+              echo "$(icon "$tasklist") *Tasklist* — ${tasklist}"
+            fi
             echo "$(icon "$optimize") *Optimize* — ${optimize}"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"

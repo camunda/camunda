@@ -46,7 +46,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `engine-expert`                | Implement or fix capabilities in the Zeebe workflow engine (`zeebe/engine/`)                  |
 | `frontend-feature`             | Build new pages, components, or features in the orchestration cluster webapp                  |
 | `frontend-integration-test`    | Write or debug Playwright-based integration, visual, and accessibility tests in the OC webapp |
-| `frontend-migrator`            | Migrate or port frontend code from `operate/client/` or `tasklist/client/` to the OC webapp   |
+| `frontend-migrator`            | Migrate or port legacy frontend code to the OC webapp                                        |
 | `frontend-operate-migrator`    | Operate-specific overrides, migration loop protocol, and per-page context for OC webapp ports |
 | `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp             |
 | `operate-frontend`             | Fix bugs or make changes in the Operate legacy frontend at `operate/client/`                  |

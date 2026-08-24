@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.operate.OperatePropertiesOverride;
-import io.camunda.tasklist.TasklistPropertiesOverride;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -28,10 +27,8 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               // DB type
               "camunda.database.type=opensearch",
               "camunda.operate.database=opensearch",
-              "camunda.tasklist.database=opensearch",
               // DB url
               "camunda.database.url=http://url-for-exporter:4321",
-              "camunda.tasklist.opensearch.url=http://url-for-exporter:4321",
               "camunda.operate.opensearch.url=http://url-for-exporter:4321");
 
   private final ApplicationContextRunner operateRunner =
@@ -43,38 +40,7 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
           .withPropertyValues(
               "camunda.database.type=elasticsearch",
               "camunda.operate.database=elasticsearch",
-              "camunda.tasklist.database=elasticsearch",
               "camunda.database.url=http://some-legacy-url:/1234");
-
-  private final ApplicationContextRunner tasklistRunner =
-      new ApplicationContextRunner()
-          .withUserConfiguration(
-              UnifiedConfiguration.class,
-              UnifiedConfigurationHelper.class,
-              TasklistPropertiesOverride.class)
-          .withPropertyValues(
-              "camunda.database.type=elasticsearch",
-              "camunda.operate.database=elasticsearch",
-              "camunda.tasklist.database=elasticsearch",
-              "camunda.database.url=http://some-legacy-url:/1234");
-
-  private final ApplicationContextRunner tasklistRunnerWithMismatchingConfigs =
-      new ApplicationContextRunner()
-          .withUserConfiguration(
-              UnifiedConfiguration.class,
-              UnifiedConfigurationHelper.class,
-              TasklistPropertiesOverride.class)
-          .withPropertyValues(
-              // type
-              "camunda.data.secondary-storage.type=elasticsearch",
-              "camunda.database.type=elasticsearch",
-              "camunda.operate.database=elasticsearch",
-              "camunda.tasklist.database=elasticsearch",
-              // url
-              "camunda.data.secondary-storage.elasticsearch.url=http://new-mismatching-url:4321",
-              "camunda.database.url=http://legacy-mismatching-url:4321",
-              "camunda.tasklist.elasticsearch.url=http://legacy-mismatching-url:4321",
-              "camunda.operate.elasticsearch.url=http://legacy-mismatching-url:4321");
 
   @Test
   void testBrokerShouldFailWhenUsingLegacyDatabaseProperties() {
@@ -92,32 +58,6 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
   @Test
   void testOperateShouldFailWhenUsingLegacyDatabaseProperties() {
     operateRunner.run(
-        context -> {
-          assertThat(context).hasFailed();
-          assertThat(context.getStartupFailure())
-              .hasRootCauseInstanceOf(UnifiedConfigurationException.class)
-              .rootCause()
-              .hasMessageContaining("Ambiguous configuration")
-              .hasMessageContaining("conflicts");
-        });
-  }
-
-  @Test
-  void testTasklistshouldFailWhenUsingLegacyDatabaseProperties() {
-    tasklistRunner.run(
-        context -> {
-          assertThat(context).hasFailed();
-          assertThat(context.getStartupFailure())
-              .hasRootCauseInstanceOf(UnifiedConfigurationException.class)
-              .rootCause()
-              .hasMessageContaining("Ambiguous configuration")
-              .hasMessageContaining("conflicts");
-        });
-  }
-
-  @Test
-  void testTasklistshouldFailWhenUsingLegacyDatabasePropertiesDontMatchNewProperties() {
-    tasklistRunnerWithMismatchingConfigs.run(
         context -> {
           assertThat(context).hasFailed();
           assertThat(context.getStartupFailure())

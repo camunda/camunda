@@ -29,9 +29,9 @@ import org.springframework.test.json.JsonCompareMode;
 
 /**
  * Tests that the controller correctly reads cloud config from the injected WebappConfiguration
- * bean. Legacy property fallback (camunda.operate.* / camunda.tasklist.*) is now handled by
- * WebappPropertiesOverride in the configuration module; the controller itself simply reads the
- * already-resolved WebappConfiguration.
+ * bean. Legacy Operate property fallback is handled by WebappPropertiesOverride in the
+ * configuration module; the controller itself simply reads the already-resolved
+ * WebappConfiguration.
  */
 @WebMvcTest(SystemController.class)
 @Import(SystemControllerLegacyPropertyTest.WebappConfigTestConfig.class)

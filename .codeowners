@@ -264,9 +264,6 @@ mwnw*                       @camunda/engineering-operations
 /operate/common/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java @camunda/core-features
 /operate/webapp/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java @camunda/core-features
 
-# Tasklist
-/tasklist/                  @camunda/core-features
-
 # Optimize
 /optimize/                  @camunda/core-features
 /optimize-distro/           @camunda/core-features
@@ -308,10 +305,8 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/assign-urgency-to-issue* @camunda/core-features
 /.github/workflows/operate-playwright.yml @camunda/core-features
 /.github/workflows/ci-operate.yml @camunda/core-features
-/.github/workflows/ci-tasklist.yml @camunda/core-features
 /.github/workflows/ci-webapp-client.yml @camunda/core-features
 /.github/workflows/ci-webapp-run-ut-reuseable.yml @camunda/core-features
-/.github/workflows/tasklist* @camunda/core-features
 /.github/workflows/ci-optimize.yml @camunda/core-features
 /.github/workflows/optimize-*.yml @camunda/core-features
 /.github/workflows/ci-zeebe.yml @camunda/core-features
@@ -374,13 +369,6 @@ optimize.Dockerfile         @camunda/core-features
 /operate/schema/            @camunda/data-layer
 /operate/common/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java @camunda/data-layer
 /operate/webapp/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java @camunda/data-layer
-
-# Tasklist data processing
-/tasklist/archiver/         @camunda/data-layer
-/tasklist/importer/         @camunda/data-layer
-/tasklist/importer-860/     @camunda/data-layer
-/tasklist/importer-870/     @camunda/data-layer
-/tasklist/importer-common/  @camunda/data-layer
 
 # Acceptance tests
 # Note: trailing /* (wildcard) not trailing / (globstar) — ensures these override the broad

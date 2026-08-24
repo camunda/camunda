@@ -94,25 +94,6 @@ public class DataBackupOperatePropertiesTest {
     @Nested
     @TestPropertySource(
         properties = {
-          "camunda.tasklist.backup.repositoryName=repositoryNameTasklist",
-        })
-    class WithOnlyTasklistLegacySet {
-      final OperateProperties operateProperties;
-
-      WithOnlyTasklistLegacySet(@Autowired final OperateProperties operateProperties) {
-        this.operateProperties = operateProperties;
-      }
-
-      @Test
-      void shouldSetRepositoryNameFromTasklist() {
-        assertThat(operateProperties.getBackup().getRepositoryName())
-            .isEqualTo("repositoryNameTasklist");
-      }
-    }
-
-    @Nested
-    @TestPropertySource(
-        properties = {
           "camunda.operate.backup.repositoryName=repositoryNameOperate",
           "camunda.operate.backup.snapshotTimeout=5",
           "camunda.operate.backup.incompleteCheckTimeoutInSeconds=180",
@@ -145,25 +126,6 @@ public class DataBackupOperatePropertiesTest {
     @Nested
     @TestPropertySource(
         properties = {
-          "camunda.operate.backup.repositoryName=repositoryName",
-          "camunda.tasklist.backup.repositoryName=repositoryName",
-        })
-    class WithOperateAndTasklistLegacySet {
-      final OperateProperties operateProperties;
-
-      WithOperateAndTasklistLegacySet(@Autowired final OperateProperties operateProperties) {
-        this.operateProperties = operateProperties;
-      }
-
-      @Test
-      void shouldSetRepositoryNameIfLegacyMatch() {
-        assertThat(operateProperties.getBackup().getRepositoryName()).isEqualTo("repositoryName");
-      }
-    }
-
-    @Nested
-    @TestPropertySource(
-        properties = {
           // new
           "camunda.data.secondary-storage.opensearch.backup.repository-name=repositoryName",
           "camunda.data.secondary-storage.opensearch.backup.snapshot-timeout=5",
@@ -172,8 +134,6 @@ public class DataBackupOperatePropertiesTest {
           "camunda.data.backup.repository-name=repositoryName",
           "camunda.data.backup.snapshot-timeout=2",
           "camunda.data.backup.incomplete-check-timeout=3m",
-          // legacy configuration tasklist
-          "camunda.tasklist.backup.repositoryName=repositoryName",
           // legacy configuration operate
           "camunda.operate.backup.repositoryName=repositoryName",
           "camunda.operate.backup.snapshotTimeout=2",
@@ -363,25 +323,6 @@ public class DataBackupOperatePropertiesTest {
     @Nested
     @TestPropertySource(
         properties = {
-          "camunda.tasklist.backup.repositoryName=repositoryNameTasklist",
-        })
-    class WithOnlyTasklistLegacySet {
-      final OperateProperties operateProperties;
-
-      WithOnlyTasklistLegacySet(@Autowired final OperateProperties operateProperties) {
-        this.operateProperties = operateProperties;
-      }
-
-      @Test
-      void shouldSetRepositoryNameFromTasklist() {
-        assertThat(operateProperties.getBackup().getRepositoryName())
-            .isEqualTo("repositoryNameTasklist");
-      }
-    }
-
-    @Nested
-    @TestPropertySource(
-        properties = {
           "camunda.operate.backup.repositoryName=repositoryNameOperate",
           "camunda.operate.backup.snapshotTimeout=5",
           "camunda.operate.backup.incompleteCheckTimeoutInSeconds=180",
@@ -414,25 +355,6 @@ public class DataBackupOperatePropertiesTest {
     @Nested
     @TestPropertySource(
         properties = {
-          "camunda.operate.backup.repositoryName=repositoryName",
-          "camunda.tasklist.backup.repositoryName=repositoryName",
-        })
-    class WithOperateAndTasklistLegacySet {
-      final OperateProperties operateProperties;
-
-      WithOperateAndTasklistLegacySet(@Autowired final OperateProperties operateProperties) {
-        this.operateProperties = operateProperties;
-      }
-
-      @Test
-      void shouldSetRepositoryNameIfLegacyMatch() {
-        assertThat(operateProperties.getBackup().getRepositoryName()).isEqualTo("repositoryName");
-      }
-    }
-
-    @Nested
-    @TestPropertySource(
-        properties = {
           // new
           "camunda.data.secondary-storage.elasticsearch.backup.repository-name=repositoryName",
           "camunda.data.secondary-storage.elasticsearch.backup.snapshot-timeout=5",
@@ -441,8 +363,6 @@ public class DataBackupOperatePropertiesTest {
           "camunda.data.backup.repository-name=repositoryName",
           "camunda.data.backup.snapshot-timeout=2",
           "camunda.data.backup.incomplete-check-timeout=1m",
-          // legacy configuration tasklist
-          "camunda.tasklist.backup.repositoryName=repositoryName",
           // legacy configuration operate
           "camunda.operate.backup.repositoryName=repositoryName",
           "camunda.operate.backup.snapshotTimeout=1",

@@ -55,7 +55,7 @@ class PersistentWebSessionPropertiesPostProcessorTest {
   void shouldMapToFalseWhenLegacyKeyIsFalse() {
     // given
     final var environment =
-        environmentWith(Map.of("camunda.tasklist.persistent.sessions.enabled", "false"));
+        environmentWith(Map.of("camunda.operate.persistent.sessions.enabled", "false"));
 
     // when
     processor.postProcessEnvironment(environment, null);
@@ -71,7 +71,7 @@ class PersistentWebSessionPropertiesPostProcessorTest {
         environmentWith(
             Map.of(
                 "camunda.operate.persistent.sessions.enabled", "false",
-                "camunda.tasklist.persistent.sessions.enabled", "true"));
+                "camunda.persistent.sessions.enabled", "true"));
 
     // when
     processor.postProcessEnvironment(environment, null);

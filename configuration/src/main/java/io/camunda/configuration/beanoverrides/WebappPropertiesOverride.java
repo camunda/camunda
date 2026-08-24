@@ -21,16 +21,11 @@ import org.springframework.core.env.ConfigurableEnvironment;
 
 /**
  * Produces the authoritative {@link WebappProperties} bean used by the REST layer. Unified {@code
- * camunda.webapp.*} keys take precedence; when absent, legacy per-app keys from Operate and
- * Tasklist are used as fallbacks so existing deployments require no config changes.
+ * camunda.webapp.*} keys take precedence; when absent, legacy Operate keys are used as fallbacks.
  */
 @Configuration
 @Profile("!restore")
-@EnableConfigurationProperties({
-  WebappProperties.class,
-  LegacyOperateProperties.class,
-  LegacyTasklistProperties.class
-})
+@EnableConfigurationProperties({WebappProperties.class, LegacyOperateProperties.class})
 @DependsOn("unifiedConfigurationHelper")
 public class WebappPropertiesOverride {
 
@@ -38,17 +33,14 @@ public class WebappPropertiesOverride {
 
   private final WebappProperties webappProperties;
   private final LegacyOperateProperties legacyOperateProperties;
-  private final LegacyTasklistProperties legacyTasklistProperties;
   private final ConfigurableEnvironment environment;
 
   public WebappPropertiesOverride(
       final WebappProperties webappProperties,
       final LegacyOperateProperties legacyOperateProperties,
-      final LegacyTasklistProperties legacyTasklistProperties,
       final ConfigurableEnvironment environment) {
     this.webappProperties = webappProperties;
     this.legacyOperateProperties = legacyOperateProperties;
-    this.legacyTasklistProperties = legacyTasklistProperties;
     this.environment = environment;
   }
 
@@ -63,7 +55,6 @@ public class WebappPropertiesOverride {
 
     applyEnterpriseFallback(resolved);
     applyLoginDelegatedFallback(resolved);
-    applyCloudFallbacks(resolved);
     resolved.setActiveComponents(computeActiveComponents());
 
     return resolved;
@@ -74,14 +65,15 @@ public class WebappPropertiesOverride {
   }
 
   private boolean isComponentUiEnabled(final String name) {
-    return environment.getProperty("camunda." + name + ".webappEnabled", Boolean.class, true)
+    return ("tasklist".equals(name)
+            || environment.getProperty("camunda." + name + ".webappEnabled", Boolean.class, true))
         && environment.getProperty("camunda.webapps." + name + ".enabled", Boolean.class, true)
         && environment.getProperty("camunda.webapps." + name + ".ui-enabled", Boolean.class, true);
   }
 
   private void applyEnterpriseFallback(final WebappProperties target) {
     if (environment.getProperty("camunda.webapp.enterprise") == null
-        && (legacyOperateProperties.isEnterprise() || legacyTasklistProperties.isEnterprise())) {
+        && legacyOperateProperties.isEnterprise()) {
       target.setEnterprise(true);
     }
   }
@@ -90,14 +82,6 @@ public class WebappPropertiesOverride {
     if (environment.getProperty("camunda.webapp.login-delegated") == null) {
       target.setLoginDelegated(
           environment.getProperty("camunda.webapps.login-delegated", Boolean.class, false));
-    }
-  }
-
-  private void applyCloudFallbacks(final WebappProperties target) {
-    final Cloud cloud = target.getCloud();
-
-    if (cloud.getStage() == null && legacyTasklistProperties.getCloud().getStage() != null) {
-      cloud.setStage(legacyTasklistProperties.getCloud().getStage());
     }
   }
 }

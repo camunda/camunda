@@ -55,8 +55,6 @@ jobs:
       zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
       operate-backend-changes: ${{ steps.filter.outputs.operate-backend-changes }}
       operate-frontend-changes: ${{ steps.filter.outputs.operate-frontend-changes }}
-      tasklist-frontend-changes: ${{ steps.filter.outputs.tasklist-frontend-changes }}
-      tasklist-backend-changes: ${{ steps.filter.outputs.tasklist-backend-changes }}
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
       optimize-dockerfile-changes: ${{ steps.filter.outputs.optimize-dockerfile-changes }}
@@ -640,7 +638,7 @@ jobs:
       ZEEBE_CLIENT_MODULES: ${{ steps.set-constants.outputs.client }}
       # Extra modules for skipping in general-unit-tests, these modules are used in ZEEBE_EXPORTER_MODULES instead
       GENERAL_UT_EXTRA_SKIP_MODULES: ${{ steps.set-constants.outputs.general_ut_extra_skip }}
-      # Zeebe, Operate, Tasklist, Optimize modules that are required for a successful build
+      # Zeebe, Operate, and Optimize modules that are required for a successful build
       GENERAL_UT_DO_NOT_SKIP_MODULES: ${{ steps.set-constants.outputs.general_ut_do_not_skip }}
       # Integration test module constants (computed dynamically from UT constants)
       # IT Distributed = ZEEBE_DISTRIBUTED_MODULES + ZEEBE_BACKUP_MODULES
@@ -677,7 +675,7 @@ jobs:
 
           # General UT configuration
           GENERAL_UT_EXTRA_SKIP="camunda-exporter rdbms-exporter"
-          GENERAL_UT_DO_NOT_SKIP="zeebe-bom zeebe-build-tools zeebe-parent zeebe-qa zeebe-qa-util zeebe-qa-integration-tests zeebe-qa-update-tests zeebe-root operate-qa operate-qa-data-generator operate-qa-it-tests tasklist-qa tasklist-qa-util tasklist-it-tests tasklist-test-coverage"
+          GENERAL_UT_DO_NOT_SKIP="zeebe-bom zeebe-build-tools zeebe-parent zeebe-qa zeebe-qa-util zeebe-qa-integration-tests zeebe-qa-update-tests zeebe-root operate-qa operate-qa-data-generator operate-qa-it-tests"
 
           # ============================================================================
           # Integration Test Module Constants (computed from UT constants)
@@ -922,7 +920,7 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-  # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-tests
+  # Runs unit tests for all modules that are not Operate, Optimize, or Zeebe. This test will run any new modules that are added and are not included in setup-tests
   general-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "General / Unit - Back End"
@@ -956,7 +954,7 @@ jobs:
           bash .ci/scripts/ci/setup-general-ut.sh "${{ needs.setup-tests.outputs.GENERAL_UT_DO_NOT_SKIP_MODULES}}" "${{ needs.setup-tests.outputs.GENERAL_UT_EXTRA_SKIP_MODULES}}"
       - name: Maven Test Build Unit
         shell: bash
-        # Modules in zeebe, operate, tasklist, and optimize are skipped as they have dedicated unit test jobs
+        # Modules in zeebe, operate, and optimize are skipped as they have dedicated unit test jobs
         #
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
@@ -2351,22 +2349,6 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  tasklist-ci:
-    if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
-    name: "Tasklist"
-    needs: [ detect-changes, build-distball ]
-    uses: ./.github/workflows/ci-tasklist.yml
-    secrets: inherit
-    permissions:
-      contents: read
-      id-token: write  # granted through to the reusable back-end UT's WIF GCS auth
-    with:
-      runFeTests: ${{ needs.detect-changes.outputs.tasklist-frontend-changes  == 'true' }}
-      runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
-      # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
-      # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
-      use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
-
   operate-ci:
     if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
     name: "Operate"
@@ -2800,7 +2782,6 @@ jobs:
       - scripts-tests
       - setup-tests
       - shell-script-tests
-      - tasklist-ci
       - validate-pom-metadata
       - webapp-client
       - zeebe-ci

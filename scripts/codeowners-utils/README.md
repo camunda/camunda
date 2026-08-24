@@ -207,7 +207,6 @@ Each file is classified with:
 - `qa/` → integration
 - `zeebe/qa/` → integration
 - `operate/qa/` → integration
-- `tasklist/qa/` → integration
 - **Overrides previous testType** - Location-based rules take precedence
 
 **Characteristics**:
@@ -268,7 +267,7 @@ npm run collect-tests -- --strategies naming,annotation,location
 
 ### ⚠️ IMPORTANT: QA Modules
 
-**In `qa/`, `zeebe/qa/`, `operate/qa/`, and `tasklist/qa/` modules:**
+**In `qa/`, `zeebe/qa/`, and `operate/qa/` modules:**
 
 - **Surefire is SKIPPED** (no unit tests run via surefire)
 - **ALL tests run via Failsafe** (integration test plugin)
@@ -602,4 +601,3 @@ static final ArchRule integration_tests_should_follow_naming_convention =
 - **External Tools**: Requires `codeowners-cli` for ownership resolution
 - **Pattern**: Strategy pattern with enrichment chain
 - **Node Version**: Requires Node.js 18+ (for native test runner)
-

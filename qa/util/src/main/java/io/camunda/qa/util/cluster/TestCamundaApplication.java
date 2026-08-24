@@ -25,7 +25,7 @@ import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
-import io.camunda.tasklist.TasklistModuleConfiguration;
+import io.camunda.webapp.WebappModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -64,7 +64,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     super(
         CommonsModuleConfiguration.class,
         OperateModuleConfiguration.class,
-        TasklistModuleConfiguration.class,
+        WebappModuleConfiguration.class,
         IdentityModuleConfiguration.class,
         WebappsModuleConfiguration.class,
         BrokerModuleConfiguration.class,

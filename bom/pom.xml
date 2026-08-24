@@ -289,7 +289,6 @@
                 <excludes>
                   <exclude>zeebe/load-tests/load-tester/**/*</exclude>
                   <exclude>operate/**/*</exclude>
-                  <exclude>tasklist/**/*</exclude>
                 </excludes>
               </licenseSet>
             </licenseSets>

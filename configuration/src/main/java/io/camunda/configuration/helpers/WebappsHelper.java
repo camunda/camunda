@@ -41,7 +41,9 @@ public class WebappsHelper {
 
   private static boolean isWebappEnabled(
       final ConfigurableEnvironment environment, final String webappName) {
-    return environment.getProperty("camunda." + webappName + ".webappEnabled", Boolean.class, true)
+    return (TASKLIST.equals(webappName)
+            || environment.getProperty(
+                "camunda." + webappName + ".webappEnabled", Boolean.class, true))
         && environment.getProperty(
             "camunda.webapps." + webappName + ".enabled", Boolean.class, true);
   }

@@ -17,9 +17,6 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.operate.OperatePropertiesOverride;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.SecurityConfiguration;
-import io.camunda.tasklist.TasklistPropertiesOverride;
-import io.camunda.tasklist.property.SslProperties;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
@@ -35,7 +32,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   UnifiedConfigurationHelper.class,
   SearchEngineConnectPropertiesOverride.class,
   BrokerBasedPropertiesOverride.class,
-  TasklistPropertiesOverride.class,
   OperatePropertiesOverride.class,
 })
 public class SecurityElasticsearchTest {
@@ -64,17 +60,14 @@ public class SecurityElasticsearchTest {
   class WithOnlyUnifiedConfigSet {
     final SearchEngineConnectProperties searchEngineConnectProperties;
     final BrokerBasedProperties brokerBasedProperties;
-    final TasklistProperties tasklistProperties;
     final OperateProperties operateProperties;
 
     WithOnlyUnifiedConfigSet(
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final OperateProperties operateProperties) {
       this.searchEngineConnectProperties = searchEngineConnectProperties;
       this.brokerBasedProperties = brokerBasedProperties;
-      this.tasklistProperties = tasklistProperties;
       this.operateProperties = operateProperties;
     }
 
@@ -97,14 +90,6 @@ public class SecurityElasticsearchTest {
           .returns("certificatePath", SecurityConfiguration::getCertificatePath)
           .returns(false, SecurityConfiguration::isVerifyHostname)
           .returns(true, SecurityConfiguration::isSelfSigned);
-    }
-
-    @Test
-    void testCamundaTasklistProperties() {
-      assertThat(tasklistProperties.getElasticsearch().getSsl())
-          .returns("certificatePath", SslProperties::getCertificatePath)
-          .returns(false, SslProperties::isVerifyHostname)
-          .returns(true, SslProperties::isSelfSigned);
     }
 
     @Test
@@ -126,33 +111,27 @@ public class SecurityElasticsearchTest {
         // certificate path
         "camunda.data.secondary-storage.elasticsearch.security.certificate-path=certificatePath",
         "camunda.database.security.certificatePath=certificatePath",
-        "camunda.tasklist.elasticsearch.ssl.certificatePath=certificatePath",
         "camunda.operate.elasticsearch.ssl.certificatePath=certificatePath",
         // verify hostname
         "camunda.data.secondary-storage.elasticsearch.security.verify-hostname=false",
         "camunda.database.security.verifyHostname=false",
-        "camunda.tasklist.elasticsearch.ssl.verifyHostname=false",
         "camunda.operate.elasticsearch.ssl.verifyHostname=false",
         // self signed
         "camunda.data.secondary-storage.elasticsearch.security.self-signed=true",
         "camunda.database.security.selfSigned=true",
-        "camunda.tasklist.elasticsearch.ssl.selfSigned=true",
         "camunda.operate.elasticsearch.ssl.selfSigned=true"
       })
   class WithNewAndLegacySet {
     final SearchEngineConnectProperties searchEngineConnectProperties;
     final BrokerBasedProperties brokerBasedProperties;
-    final TasklistProperties tasklistProperties;
     final OperateProperties operateProperties;
 
     WithNewAndLegacySet(
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final OperateProperties operateProperties) {
       this.searchEngineConnectProperties = searchEngineConnectProperties;
       this.brokerBasedProperties = brokerBasedProperties;
-      this.tasklistProperties = tasklistProperties;
       this.operateProperties = operateProperties;
     }
 
@@ -175,14 +154,6 @@ public class SecurityElasticsearchTest {
           .returns("certificatePath", SecurityConfiguration::getCertificatePath)
           .returns(false, SecurityConfiguration::isVerifyHostname)
           .returns(true, SecurityConfiguration::isSelfSigned);
-    }
-
-    @Test
-    void testCamundaTasklistProperties() {
-      assertThat(tasklistProperties.getElasticsearch().getSsl())
-          .returns("certificatePath", SslProperties::getCertificatePath)
-          .returns(false, SslProperties::isVerifyHostname)
-          .returns(true, SslProperties::isSelfSigned);
     }
 
     @Test

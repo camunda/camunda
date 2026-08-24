@@ -24,7 +24,6 @@
     <module>build-tools</module>
     <module>zeebe</module>
     <module>operate</module>
-    <module>tasklist</module>
     <module>identity</module>
     <module>webapp</module>
     <module>webapps-common</module>
@@ -79,7 +78,6 @@
             <excludes>
               <exclude>**/target/**/*.md</exclude>
               <exclude>**/node_modules/**/*.md</exclude>
-              <exclude>tasklist/client/**/*</exclude>
               <exclude>operate/client/**/*</exclude>
               <exclude>optimize/client/**/*.md</exclude>
               <exclude>webapp/client/**/*</exclude>

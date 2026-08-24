@@ -23,6 +23,8 @@ public class ConditionalOnWebappEnabledTest {
   private static final String TEST_WEBAPP_NAME = "testwebapp";
   private static final String LEGACY_PROPERTY = "camunda." + TEST_WEBAPP_NAME + ".webapp-enabled";
   private static final String UNIFIED_PROPERTY = "camunda.webapps." + TEST_WEBAPP_NAME + ".enabled";
+  private static final String TASKLIST_LEGACY_PROPERTY = "camunda.tasklist.webapp-enabled";
+  private static final String TASKLIST_UNIFIED_PROPERTY = "camunda.webapps.tasklist.enabled";
 
   private OnWebappEnabledCondition condition;
   private ConditionContext context;
@@ -78,5 +80,15 @@ public class ConditionalOnWebappEnabledTest {
 
     // then
     assertThat(result).isFalse();
+  }
+
+  @Test
+  void shouldIgnoreTasklistLegacyProperty() {
+    when(metadata.getAnnotationAttributes(condition.getConditionalClassName()))
+        .thenReturn(Map.of("value", new String[] {"tasklist"}));
+    when(environment.getProperty(TASKLIST_UNIFIED_PROPERTY, Boolean.class, true)).thenReturn(true);
+
+    assertThat(condition.matches(context, metadata)).isTrue();
+    verify(environment, never()).getProperty(TASKLIST_LEGACY_PROPERTY, Boolean.class, true);
   }
 }
