@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
@@ -403,9 +402,12 @@ final class ClusterConfigurationModifierTest {
       final var config =
           ClusterConfiguration.builder()
               .from(withTwoMembers(LOCAL_MEMBER_ID, member1))
+              // A queue on purpose: what this test proves is that a plan carrying an
+              // UpdateRoutingState but *not* the restore sentinel id is not treated as
+              // post-restore, and isAfterRestore only reaches that id check for a queue.
               .pendingChanges(
                   Optional.of(
-                      DependencyChangePlan.sequential(
+                      ClusterChangePlan.init(
                           2, List.of(new UpdateRoutingState(LOCAL_MEMBER_ID, Optional.empty())))))
               .build();
 
