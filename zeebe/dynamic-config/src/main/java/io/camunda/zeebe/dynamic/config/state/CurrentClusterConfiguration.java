@@ -729,7 +729,10 @@ public record CurrentClusterConfiguration(
               result.updatePartitionGroupConfig(
                   groupId,
                   group -> {
-                    if (group.hasPendingChanges()) {
+                    // isPresent(), not hasPendingChanges(): matches what
+                    // startGraphConfigurationChange rejects on, so a drained-but-uncleared plan
+                    // fails here with this message rather than one frame down with a vaguer one.
+                    if (group.pendingChanges().isPresent()) {
                       throw new IllegalStateException(
                           "Cannot activate partition-group phase for %s: group already has pending changes"
                               .formatted(groupId));
