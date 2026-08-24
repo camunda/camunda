@@ -121,6 +121,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
+          .jobLease(JOB_LEASE)
           .execute();
 
       // then
@@ -128,7 +129,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
       assertThat(body.getElementInstanceKey()).isEqualTo(String.valueOf(ELEMENT_INSTANCE_KEY));
       assertThat(body.getJobKey()).isEqualTo(String.valueOf(JOB_KEY));
-      assertThat(body.getJobLease()).isNull();
+      assertThat(body.getJobLease()).isEqualTo(JOB_LEASE);
       assertThat(body.getStatus()).isNull();
       assertThat(body.getHistory()).isNull();
     }
