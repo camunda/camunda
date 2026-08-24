@@ -29,11 +29,11 @@ public class HealthCheck {
   /**
    * Does not catch failures itself: on connectivity issues or timeouts, {@code
    * newStatusRequest().execute()} throws (e.g. {@code ClientException}/{@code
-   * ClientStatusException}), and this method lets that propagate. This relies on the caller
-   * mapping the failure to a degraded status instead of surfacing it as-is — e.g. Spring Boot's
-   * {@code AbstractHealthIndicator.health()} catches any exception from {@code doHealthCheck} and
-   * reports {@code DOWN} with the exception recorded as the {@code error} detail. Callers that do
-   * not offer that safety net must handle the exception themselves.
+   * ClientStatusException}), and this method lets that propagate. This relies on the caller mapping
+   * the failure to a degraded status instead of surfacing it as-is — e.g. Spring Boot's {@code
+   * AbstractHealthIndicator.health()} catches any exception from {@code doHealthCheck} and reports
+   * {@code DOWN} with the exception recorded as the {@code error} detail. Callers that do not offer
+   * that safety net must handle the exception themselves.
    *
    * @throws RuntimeException if the status request fails
    */
