@@ -52,6 +52,19 @@ final class GatewayNetworkConfigTest {
   }
 
   @Test
+  void shouldNotConfigureMaxConnectionAgeWhenExplicitlyNull() {
+    // given
+    final var cfg = new NetworkCfg().setMaxConnectionAge(null).setMaxConnectionAgeGrace(null);
+    final var serverBuilder = mock(NettyServerBuilder.class);
+
+    // when
+    Gateway.applyMaxConnectionAge(serverBuilder, cfg);
+
+    // then
+    verifyNoInteractions(serverBuilder);
+  }
+
+  @Test
   void shouldConfigureMaxConnectionAgeAndGraceWhenSet() {
     // given
     final var maxConnectionAge = Duration.ofMinutes(30);

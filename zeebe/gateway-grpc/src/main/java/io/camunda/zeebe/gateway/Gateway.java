@@ -299,8 +299,7 @@ public final class Gateway implements CloseableSilently {
   /**
    * Configures grpc-java's server-side {@code maxConnectionAge}/{@code maxConnectionAgeGrace},
    * which forces periodic GOAWAY-driven client reconnects. This is disabled by default (both
-   * durations {@link Duration#isZero() zero}), leaving grpc-java's own defaults (unbounded
-   * connection age) untouched.
+   * durations {@code null}), leaving grpc-java's own defaults (unbounded connection age) untouched.
    */
   static void applyMaxConnectionAge(final NettyServerBuilder serverBuilder, final NetworkCfg cfg) {
     final Duration maxConnectionAge = cfg.getMaxConnectionAge();

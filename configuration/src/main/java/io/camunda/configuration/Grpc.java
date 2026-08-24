@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 public class Grpc implements Cloneable {
   private static final String PREFIX = "camunda.api.grpc";
@@ -59,18 +60,18 @@ public class Grpc implements Cloneable {
 
   /**
    * Sets the maximum age of a gRPC connection before the gateway proactively closes it (via
-   * GOAWAY), forcing the client to reconnect. Defaults to zero, i.e. disabled, keeping grpc-java's
+   * GOAWAY), forcing the client to reconnect. Defaults to unset, i.e. disabled, keeping grpc-java's
    * own default of an unbounded connection age.
    */
-  private Duration maxConnectionAge = Duration.ZERO;
+  private @Nullable Duration maxConnectionAge;
 
   /**
    * Sets the grace period, after the maximum connection age elapses, during which existing calls on
    * the connection may finish before it is forcibly terminated. Only takes effect when the maximum
-   * connection age is set. Defaults to zero, i.e. disabled, keeping grpc-java's own default of an
+   * connection age is set. Defaults to unset, i.e. disabled, keeping grpc-java's own default of an
    * infinite grace period.
    */
-  private Duration maxConnectionAgeGrace = Duration.ZERO;
+  private @Nullable Duration maxConnectionAgeGrace;
 
   public String getAddress() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -132,19 +133,19 @@ public class Grpc implements Cloneable {
     this.managementThreads = managementThreads;
   }
 
-  public Duration getMaxConnectionAge() {
+  public @Nullable Duration getMaxConnectionAge() {
     return maxConnectionAge;
   }
 
-  public void setMaxConnectionAge(final Duration maxConnectionAge) {
+  public void setMaxConnectionAge(final @Nullable Duration maxConnectionAge) {
     this.maxConnectionAge = maxConnectionAge;
   }
 
-  public Duration getMaxConnectionAgeGrace() {
+  public @Nullable Duration getMaxConnectionAgeGrace() {
     return maxConnectionAgeGrace;
   }
 
-  public void setMaxConnectionAgeGrace(final Duration maxConnectionAgeGrace) {
+  public void setMaxConnectionAgeGrace(final @Nullable Duration maxConnectionAgeGrace) {
     this.maxConnectionAgeGrace = maxConnectionAgeGrace;
   }
 

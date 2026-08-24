@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.unit.DataSize;
 
 public final class NetworkCfg {
@@ -23,18 +24,18 @@ public final class NetworkCfg {
 
   /**
    * Maximum age of a gRPC connection before the server proactively closes it (via GOAWAY), forcing
-   * the client to reconnect. Set to {@link Duration#ZERO} (the default) to disable, i.e. keep
-   * grpc-java's own default of unbounded connection age.
+   * the client to reconnect. Set to {@code null} (the default) to disable, i.e. keep grpc-java's
+   * own default of unbounded connection age.
    */
-  private Duration maxConnectionAge = Duration.ZERO;
+  private @Nullable Duration maxConnectionAge;
 
   /**
    * Grace period, after {@link #maxConnectionAge} elapses, during which existing calls on the
    * connection may finish before it is forcibly terminated. Only takes effect when {@link
-   * #maxConnectionAge} is set. Set to {@link Duration#ZERO} (the default) to disable, i.e. keep
-   * grpc-java's own default of an infinite grace period.
+   * #maxConnectionAge} is set. Set to {@code null} (the default) to disable, i.e. keep grpc-java's
+   * own default of an infinite grace period.
    */
-  private Duration maxConnectionAgeGrace = Duration.ZERO;
+  private @Nullable Duration maxConnectionAgeGrace;
 
   public void init(final String defaultHost) {
     if (host == null) {
@@ -78,20 +79,20 @@ public final class NetworkCfg {
     return this;
   }
 
-  public Duration getMaxConnectionAge() {
+  public @Nullable Duration getMaxConnectionAge() {
     return maxConnectionAge;
   }
 
-  public NetworkCfg setMaxConnectionAge(final Duration maxConnectionAge) {
+  public NetworkCfg setMaxConnectionAge(final @Nullable Duration maxConnectionAge) {
     this.maxConnectionAge = maxConnectionAge;
     return this;
   }
 
-  public Duration getMaxConnectionAgeGrace() {
+  public @Nullable Duration getMaxConnectionAgeGrace() {
     return maxConnectionAgeGrace;
   }
 
-  public NetworkCfg setMaxConnectionAgeGrace(final Duration maxConnectionAgeGrace) {
+  public NetworkCfg setMaxConnectionAgeGrace(final @Nullable Duration maxConnectionAgeGrace) {
     this.maxConnectionAgeGrace = maxConnectionAgeGrace;
     return this;
   }
