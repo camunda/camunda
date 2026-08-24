@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -33,7 +35,8 @@ import java.time.InstantSource;
  */
 @ExcludeAuthorizationCheck
 public final class MessageSubscriptionCorrelateRetryProcessor
-    implements TypedRecordProcessor<MessageSubscriptionRecord> {
+    implements TypedRecordProcessor<MessageSubscriptionRecord>,
+        SuspensionAware<MessageSubscriptionRecord> {
 
   private static final String NOTHING_TO_RETRY_MESSAGE =
       "Expected to retry correlation for subscription with element key '%d' and message name '%s', "
@@ -55,6 +58,14 @@ public final class MessageSubscriptionCorrelateRetryProcessor
     messageCorrelator =
         new MessageCorrelator(
             partitionId, messageState, commandSender, writers.state(), writers.sideEffect(), clock);
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(
+      final TypedRecord<MessageSubscriptionRecord> record) {
+    // Runs on the message partition; SuspensionState is partition-local so cross-partition PIs
+    // are never visible here. This command is the resume re-poll and must always execute.
+    return SuspensionBehavior.PROCESS;
   }
 
   @Override

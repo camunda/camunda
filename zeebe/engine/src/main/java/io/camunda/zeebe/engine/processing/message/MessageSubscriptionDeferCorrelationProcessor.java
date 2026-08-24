@@ -12,6 +12,8 @@ import static io.camunda.zeebe.engine.Engine.ERROR_MESSAGE_SUSPENDED_PI;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -52,7 +54,8 @@ import org.agrona.collections.MutableBoolean;
  */
 @ExcludeAuthorizationCheck
 public final class MessageSubscriptionDeferCorrelationProcessor
-    implements TypedRecordProcessor<MessageSubscriptionRecord> {
+    implements TypedRecordProcessor<MessageSubscriptionRecord>,
+        SuspensionAware<MessageSubscriptionRecord> {
 
   private static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to defer correlation for subscription with element key '%d' and message name '%s', "
@@ -82,6 +85,14 @@ public final class MessageSubscriptionDeferCorrelationProcessor
     correlationResponse =
         new DeferredMessageStartCorrelationResponse(
             stateWriter, writers.response(), messageCorrelationState, messageState, metrics);
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(
+      final TypedRecord<MessageSubscriptionRecord> record) {
+    // Runs on the message partition where SuspensionState has no entries for cross-partition PIs;
+    // this command is sent only after the PI partition already gated the correlation.
+    return SuspensionBehavior.PROCESS;
   }
 
   @Override
