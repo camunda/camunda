@@ -15,10 +15,7 @@ import java.util.List;
  */
 public interface ReplicationLagProvider {
 
-  /**
-   * Returns the primary's own clock, read directly from the database, for a caller to tag a flushed
-   * position with.
-   */
+  /** Returns the primary's own clock, read directly from the database. */
   long getCurrentDbTime();
 
   /**

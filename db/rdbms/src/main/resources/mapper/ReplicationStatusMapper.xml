@@ -31,8 +31,7 @@
 
   <!-- Neither replicationLagMs nor replicatedUntilMs is coalesced when replay_lag is NULL, so an
        unmeasured replica (e.g. missing the pg_monitor grant - see hasRequiredPrivileges below) is
-       never mistaken for one that is perfectly caught up; the Java-side null handling in
-       TimeMonitoringReplicationSignalStrategy treats a null replicationLagMs as worst-case. -->
+       never mistaken for one that is perfectly caught up. -->
   <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="postgresql">
     SELECT COALESCE(pg_wal_lsn_diff(replay_lsn, '0/0'), 0)::bigint AS logStatus,

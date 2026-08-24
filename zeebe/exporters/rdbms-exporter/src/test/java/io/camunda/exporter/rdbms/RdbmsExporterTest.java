@@ -38,7 +38,8 @@ import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
-import io.camunda.exporter.rdbms.replication.LsnReplicationController;
+import io.camunda.exporter.rdbms.replication.DefaultReplicationController;
+import io.camunda.exporter.rdbms.replication.LsnReplicationSignalStrategy;
 import io.camunda.exporter.rdbms.replication.ReplicationController;
 import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -614,11 +615,11 @@ class RdbmsExporterTest {
 
   @Test
   void shouldNotAckBrokerPastUnconfirmedReplicationWithRealLsnControllerOnOpen() {
-    // given - broker (100) is behind the RDBMS position (150) and a REAL LsnReplicationController
-    // is
-    // wired in instead of a mock. Its replicas report no confirmed LSN, so nothing is replication-
-    // confirmed. This exercises the end-to-end #51588 guard: mocking the controller only proves the
-    // exporter delegates to onFlush; this proves the LSN controller then holds the broker back.
+    // given - broker (100) is behind the RDBMS position (150) and a REAL LSN-backed
+    // DefaultReplicationController is wired in instead of a mock. Its replicas report no confirmed
+    // LSN, so nothing is replication-confirmed. This exercises the end-to-end #51588 guard: mocking
+    // the controller only proves the exporter delegates to onFlush; this proves the LSN-backed
+    // controller then holds the broker back.
     final long brokerPosition = 100L;
     final long rdbmsPosition = 150L;
     createExporterWithRdbmsPosition(brokerPosition, rdbmsPosition);
@@ -632,8 +633,10 @@ class RdbmsExporterTest {
     replicationConfig.setMinSyncReplicas(1);
     final var clock = mock(InstantSource.class);
     when(clock.millis()).thenReturn(0L);
+    final var strategy = new LsnReplicationSignalStrategy(lsnProvider, replicationConfig);
     final var realLsnController =
-        new LsnReplicationController(controller, lsnProvider, replicationConfig, 0, clock, metrics);
+        new DefaultReplicationController(
+            controller, strategy, replicationConfig, 0, clock, metrics);
     when(replicationControllerFactory.createReplicationController(any()))
         .thenReturn(realLsnController);
 
@@ -662,7 +665,7 @@ class RdbmsExporterTest {
     createExporter(b -> b.withHandler(ValueType.JOB, jobHandler), true, true, initialRdbmsPosition);
 
     // this instance flushes further than what gets acked to the broker - e.g. under async
-    // LSN-based replication (LsnReplicationController), acking is intentionally delayed until
+    // LSN-based replication (LsnReplicationSignalStrategy), acking is intentionally delayed until
     // replication is confirmed, so the broker position lags this instance's real progress
     final long instanceFlushedPosition = 1000L;
     exporter.export(mockRecord(ValueType.JOB, instanceFlushedPosition));
