@@ -417,18 +417,22 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.type=opensearch",
         "camunda.database.type=opensearch",
         "camunda.operate.database=opensearch",
+        "camunda.tasklist.database=opensearch",
         // url
         "camunda.data.secondary-storage.opensearch.url=http://matching-url:4321",
         "camunda.database.url=http://matching-url:4321",
+        "camunda.tasklist.opensearch.url=http://matching-url:4321",
         "camunda.operate.opensearch.url=http://matching-url:4321",
         // username
         "camunda.data.secondary-storage.opensearch.username=" + EXPECTED_USERNAME,
         "camunda.database.username=" + EXPECTED_USERNAME,
         "camunda.operate.opensearch.username=" + EXPECTED_USERNAME,
+        "camunda.tasklist.opensearch.username=" + EXPECTED_USERNAME,
         // password
         "camunda.data.secondary-storage.opensearch.password=" + EXPECTED_PASSWORD,
         "camunda.database.password=" + EXPECTED_PASSWORD,
         "camunda.operate.opensearch.password=" + EXPECTED_PASSWORD,
+        "camunda.tasklist.opensearch.password=" + EXPECTED_PASSWORD,
 
         // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
         //  it is default with StandaloneCamunda. Any attempt of configuration will fail unless
@@ -437,17 +441,20 @@ public class SecondaryStorageOpensearchTest {
         // cluster name
         "camunda.data.secondary-storage.opensearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
         "camunda.data.clusterName=" + EXPECTED_CLUSTER_NAME,
+        "camunda.tasklist.opensearch.clusterName=" + EXPECTED_CLUSTER_NAME,
         "camunda.operate.opensearch.clusterName=" + EXPECTED_CLUSTER_NAME,
         "camunda.operate.opensearch.url=http://matching-url:4321",
         // date format
         "camunda.data.secondary-storage.opensearch.date-format=" + EXPECTED_DATE_FORMAT,
         "camunda.data.dateFormat=" + EXPECTED_DATE_FORMAT,
+        "camunda.tasklist.opensearch.dateFormat=" + EXPECTED_DATE_FORMAT,
         "camunda.operate.opensearch.dateFormat=" + EXPECTED_DATE_FORMAT,
         // socket timeout
         "camunda.data.secondary-storage.opensearch.socket-timeout="
             + EXPECTED_SOCKET_TIMEOUT
             + "ms",
         "camunda.data.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.tasklist.opensearch.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
         "camunda.operate.opensearch.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
         // connection timeout
         "camunda.data.secondary-storage.opensearch.connection-timeout="
@@ -457,6 +464,7 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.max-connections-per-route="
             + EXPECTED_MAX_CONNECTIONS_PER_ROUTE,
         "camunda.data.socketConnectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "camunda.tasklist.opensearch.connectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
         "camunda.operate.opensearch.connectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
 
         // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
@@ -466,6 +474,7 @@ public class SecondaryStorageOpensearchTest {
         // index prefix
         "camunda.data.secondary-storage.opensearch.index-prefix=" + EXPECTED_INDEX_PREFIX,
         "camunda.database.indexPrefix=" + EXPECTED_INDEX_PREFIX,
+        "camunda.tasklist.opensearch.indexPrefix=" + EXPECTED_INDEX_PREFIX,
         "camunda.operate.opensearch.indexPrefix=" + EXPECTED_INDEX_PREFIX,
 
         // number of shards
@@ -502,6 +511,7 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.backup.snapshot-timeout="
             + EXPECTED_BACKUP_SNAPSHOT_TIMEOUT,
         "camunda.data.secondary-storage.opensearch.backup.incomplete-check-timeout=10s",
+        "camunda.tasklist.backup.repositoryName=" + EXPECTED_BACKUP_REPOSITORY_NAME,
         "camunda.operate.backup.repositoryName=" + EXPECTED_BACKUP_REPOSITORY_NAME,
         "camunda.operate.backup.snapshotTimeout=" + EXPECTED_BACKUP_SNAPSHOT_TIMEOUT,
         "camunda.operate.backup.incompleteCheckTimeoutInSeconds=10",

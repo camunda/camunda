@@ -22,7 +22,7 @@ public class DocumentBasedSecondaryStorageBackup implements Cloneable {
   private static final Set<String> LEGACY_UNIFIED_CONFIG_INCOMPLETE_CHECK_TIMEOUT =
       Set.of("camunda.data.backup.incomplete-check-timeout");
   private static final Set<String> LEGACY_REPOSITORY_NAME_PROPERTIES =
-      Set.of("camunda.operate.backup.repositoryName");
+      Set.of("camunda.tasklist.backup.repositoryName", "camunda.operate.backup.repositoryName");
   private static final Set<Set<String>> LEGACY_UNIFIED_REPOSITORY_NAME_PROPERTIES =
       LinkedHashSet.newLinkedHashSet(2);
   private static final Duration INCOMPLETE_CHECK_TIMEOUT_DEFAULT = Duration.ofMinutes(5);

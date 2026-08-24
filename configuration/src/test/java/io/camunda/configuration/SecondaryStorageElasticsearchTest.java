@@ -422,18 +422,22 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.type=elasticsearch",
         "camunda.database.type=elasticsearch",
         "camunda.operate.database=elasticsearch",
+        "camunda.tasklist.database=elasticsearch",
         // url
         "camunda.data.secondary-storage.elasticsearch.url=http://matching-url:4321",
         "camunda.database.url=http://matching-url:4321",
+        "camunda.tasklist.elasticsearch.url=http://matching-url:4321",
         "camunda.operate.elasticsearch.url=http://matching-url:4321",
         // username
         "camunda.data.secondary-storage.elasticsearch.username=" + EXPECTED_USERNAME,
         "camunda.database.username=" + EXPECTED_USERNAME,
         "camunda.operate.elasticsearch.username=" + EXPECTED_USERNAME,
+        "camunda.tasklist.elasticsearch.username=" + EXPECTED_USERNAME,
         // password
         "camunda.data.secondary-storage.elasticsearch.password=" + EXPECTED_PASSWORD,
         "camunda.database.password=" + EXPECTED_PASSWORD,
         "camunda.operate.elasticsearch.password=" + EXPECTED_PASSWORD,
+        "camunda.tasklist.elasticsearch.password=" + EXPECTED_PASSWORD,
 
         // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
         //  it is default with StandaloneCamunda. Any attempt of configuration will fail unless
@@ -442,17 +446,20 @@ public class SecondaryStorageElasticsearchTest {
         // cluster name
         "camunda.data.secondary-storage.elasticsearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
         "camunda.data.clusterName=" + EXPECTED_CLUSTER_NAME,
+        "camunda.tasklist.elasticsearch.clusterName=" + EXPECTED_CLUSTER_NAME,
         "camunda.operate.elasticsearch.clusterName=" + EXPECTED_CLUSTER_NAME,
         "camunda.operate.elasticsearch.url=http://matching-url:4321",
         // date format
         "camunda.data.secondary-storage.elasticsearch.date-format=" + EXPECTED_DATE_FORMAT,
         "camunda.data.dateFormat=" + EXPECTED_DATE_FORMAT,
+        "camunda.tasklist.elasticsearch.dateFormat=" + EXPECTED_DATE_FORMAT,
         "camunda.operate.elasticsearch.dateFormat=" + EXPECTED_DATE_FORMAT,
         // socket timeout
         "camunda.data.secondary-storage.elasticsearch.socket-timeout="
             + EXPECTED_SOCKET_TIMEOUT
             + "ms",
         "camunda.data.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.tasklist.elasticsearch.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
         "camunda.operate.elasticsearch.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
         // connection timeout
         "camunda.data.secondary-storage.elasticsearch.connection-timeout="
@@ -462,6 +469,7 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.max-connections-per-route="
             + EXPECTED_MAX_CONNECTIONS_PER_ROUTE,
         "camunda.data.connectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "camunda.tasklist.elasticsearch.connectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
         "camunda.operate.elasticsearch.connectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
 
         // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
@@ -471,6 +479,7 @@ public class SecondaryStorageElasticsearchTest {
         // index prefix
         "camunda.data.secondary-storage.elasticsearch.index-prefix=" + EXPECTED_INDEX_PREFIX,
         "camunda.database.indexPrefix=" + EXPECTED_INDEX_PREFIX,
+        "camunda.tasklist.elasticsearch.indexPrefix=" + EXPECTED_INDEX_PREFIX,
         "camunda.operate.elasticsearch.indexPrefix=" + EXPECTED_INDEX_PREFIX,
 
         // number of shards
@@ -510,6 +519,7 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.backup.snapshot-timeout="
             + EXPECTED_BACKUP_SNAPSHOT_TIMEOUT,
         "camunda.data.secondary-storage.elasticsearch.backup.incomplete-check-timeout=10s",
+        "camunda.tasklist.backup.repositoryName=" + EXPECTED_BACKUP_REPOSITORY_NAME,
         "camunda.operate.backup.repositoryName=" + EXPECTED_BACKUP_REPOSITORY_NAME,
         "camunda.operate.backup.snapshotTimeout=" + EXPECTED_BACKUP_SNAPSHOT_TIMEOUT,
         "camunda.operate.backup.incompleteCheckTimeoutInSeconds=10",

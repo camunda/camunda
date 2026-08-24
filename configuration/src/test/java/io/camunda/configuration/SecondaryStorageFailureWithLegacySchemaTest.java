@@ -27,8 +27,10 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               // DB type
               "camunda.database.type=opensearch",
               "camunda.operate.database=opensearch",
+              "camunda.tasklist.database=opensearch",
               // DB url
               "camunda.database.url=http://url-for-exporter:4321",
+              "camunda.tasklist.opensearch.url=http://url-for-exporter:4321",
               "camunda.operate.opensearch.url=http://url-for-exporter:4321");
 
   private final ApplicationContextRunner operateRunner =
@@ -40,6 +42,7 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
           .withPropertyValues(
               "camunda.database.type=elasticsearch",
               "camunda.operate.database=elasticsearch",
+              "camunda.tasklist.database=elasticsearch",
               "camunda.database.url=http://some-legacy-url:/1234");
 
   @Test

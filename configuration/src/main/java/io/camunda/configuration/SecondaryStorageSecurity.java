@@ -95,6 +95,7 @@ public class SecondaryStorageSecurity {
   private Set<String> legacyCertificatePathProperties() {
     return Set.of(
         "camunda.database.security.certificatePath",
+        "camunda.tasklist." + databaseName + ".ssl.certificatePath",
         "camunda.operate." + databaseName + ".ssl.certificatePath",
         "zeebe.broker.exporters.camundaexporter.args.connect.security.certificatePath");
   }
@@ -102,6 +103,7 @@ public class SecondaryStorageSecurity {
   private Set<String> legacyVerifyHostnameProperties() {
     return Set.of(
         "camunda.database.security.verifyHostname",
+        "camunda.tasklist." + databaseName + ".ssl.verifyHostname",
         "camunda.operate." + databaseName + ".ssl.verifyHostname",
         "zeebe.broker.exporters.camundaexporter.args.connect.security.verifyHostname");
   }
@@ -109,6 +111,7 @@ public class SecondaryStorageSecurity {
   private Set<String> legacySelfSignedProperties() {
     return Set.of(
         "camunda.database.security.selfSigned",
+        "camunda.tasklist." + databaseName + ".ssl.selfSigned",
         "camunda.operate." + databaseName + ".ssl.selfSigned",
         "zeebe.broker.exporters.camundaexporter.args.connect.security.selfSigned");
   }

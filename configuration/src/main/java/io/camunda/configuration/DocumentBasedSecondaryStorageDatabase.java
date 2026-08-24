@@ -548,6 +548,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     return Set.of(
         "camunda.database.url",
         "camunda.operate." + dbName + ".url",
+        "camunda.tasklist." + dbName + ".url",
         "zeebe.broker.exporters.camundaexporter.args.connect.url");
   }
 
@@ -556,6 +557,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     return Set.of(
         "camunda.database.clusterName",
         "camunda.operate." + dbName + ".clusterName",
+        "camunda.tasklist." + dbName + ".clusterName",
         "zeebe.broker.exporters.camundaexporter.args.connect.clusterName");
   }
 
@@ -564,6 +566,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     return Set.of(
         "camunda.database.username",
         "camunda.operate." + dbName + ".username",
+        "camunda.tasklist." + dbName + ".username",
         "zeebe.broker.exporters.camundaexporter.args.connect.username");
   }
 
@@ -572,6 +575,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     return Set.of(
         "camunda.database.password",
         "camunda.operate." + dbName + ".password",
+        "camunda.tasklist." + dbName + ".password",
         "zeebe.broker.exporters.camundaexporter.args.connect.password");
   }
 
@@ -579,6 +583,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     final String dbName = databaseName().toLowerCase();
     return Set.of(
         "camunda.database.indexPrefix",
+        "camunda.tasklist." + dbName + ".indexPrefix",
         "camunda.operate." + dbName + ".indexPrefix",
         "zeebe.broker.exporters.camundaexporter.args.index.indexPrefix");
   }
@@ -594,6 +599,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     return Set.of(
         "camunda.database.dateFormat",
         "camunda.operate." + dbName + ".dateFormat",
+        "camunda.tasklist." + dbName + ".dateFormat",
         "zeebe.broker.exporters.camundaexporter.args.connect.dateFormat");
   }
 
@@ -602,6 +608,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     return Set.of(
         "camunda.database.socketTimeout",
         "camunda.operate." + dbName + ".socketTimeout",
+        "camunda.tasklist." + dbName + ".socketTimeout",
         "zeebe.broker.exporters.camundaexporter.args.connect.socketTimeout");
   }
 
@@ -610,6 +617,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     return Set.of(
         "camunda.database.connectionTimeout",
         "camunda.operate." + dbName + ".connectionTimeout",
+        "camunda.tasklist." + dbName + ".connectionTimeout",
         "zeebe.broker.exporters.camundaexporter.args.connect.connectionTimeout");
   }
 
