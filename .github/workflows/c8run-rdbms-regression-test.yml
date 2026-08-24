@@ -67,16 +67,6 @@ jobs:
         with:
           go-version: '>=1.23.1'
 
-      # c8run on this branch resolves its own JVM from JAVA_HOME at runtime, so the default
-      # (last-listed) version here is what actually launches c8run/Camunda under test. Java 25
-      # is installed alongside only so the pinned ijhttp CLI below has a JVM new enough to load.
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
-        with:
-          distribution: 'temurin'
-          java-version: |
-            25
-            21
-
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
@@ -123,7 +113,7 @@ jobs:
         run: |
           curl -f -L -o ijhttp.zip "https://download.jetbrains.com/resources/intellij/http-client/262.7132.23/intellij-http-client.zip"
           unzip ijhttp.zip
-          JAVA_HOME="$JAVA_HOME_25_X64" ijhttp/ijhttp qa/http/c8run-tests/c8run-tests.http --private-env-file qa/http/http-client.private.env.json --env ${{ matrix.env }} --report -t 60000
+          ijhttp/ijhttp qa/http/c8run-tests/c8run-tests.http --private-env-file qa/http/http-client.private.env.json --env ${{ matrix.env }} --report -t 60000
 
       - name: Cleanup
         shell: bash
