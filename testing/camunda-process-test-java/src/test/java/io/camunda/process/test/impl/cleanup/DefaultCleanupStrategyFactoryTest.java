@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.process.test.api.DataDeletionMode;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -33,9 +34,20 @@ class DefaultCleanupStrategyFactoryTest {
     assertThat(strategy).isInstanceOf(expectedType);
   }
 
+  @Test
+  void shouldCreateNoneCleanupStrategyIfDeletionModeIsNull() {
+    // given
+
+    // when
+    final CleanupStrategy strategy = factory.create(null);
+
+    // then
+    assertThat(strategy).isInstanceOf(NoneCleanupStrategy.class);
+  }
+
   private static Stream<Arguments> dataDeletionModes() {
     return Stream.of(
         Arguments.of(DataDeletionMode.CLUSTER_PURGE, ClusterPurgeCleanupStrategy.class),
-        Arguments.of(DataDeletionMode.NONE, NoOpCleanupStrategy.class));
+        Arguments.of(DataDeletionMode.NONE, NoneCleanupStrategy.class));
   }
 }
