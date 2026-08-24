@@ -83,9 +83,6 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 	const debouncedHandleSubmit = useDebounce(handleSubmit, SUBMIT_DEBOUNCE);
 
 	return (
-		// gap-3 (0.75rem) and a compact, capped search width match the DS
-		// ProjectDetailPage reference: filters sit together on the left as a
-		// packed row, not stretched across a wide grid the way Carbon's Search did.
 		<div className="flex flex-wrap items-center gap-3">
 			<Label htmlFor="process-search" className="sr-only">
 				{t('tasklist.processesFilterFieldLabel')}
@@ -94,9 +91,6 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 				{({input}) => (
 					<SearchInput
 						id="process-search"
-						// `className` sizes the whole search affordance per the component's own
-						// contract (search-input.js) — a compact, capped width matching the DS
-						// ProjectDetailPage reference, not a plain wrapper div around it.
 						className="min-w-48 max-w-sm flex-1"
 						placeholder={t('tasklist.processesFilterFieldLabel')}
 						clearLabel={t('tasklist.processesClearFilterFieldButtonLabel')}

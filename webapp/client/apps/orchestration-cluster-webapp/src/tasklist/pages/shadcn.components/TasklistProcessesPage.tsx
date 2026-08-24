@@ -35,9 +35,6 @@ const TasklistProcessesPage: React.FC<Props> = ({
 
 	return (
 		<PageLayout>
-			{/* Section spacing is done with `gap` on flex containers, not padding/margin utilities —
-			    a legacy global CSS reset (from an unrelated Carbon dependency still loaded app-wide)
-			    unconditionally zeroes padding/margin on plain elements, but leaves `gap` alone. */}
 			<div className="flex flex-col gap-6">
 				<PageHeader title={t('tasklist.headerNavItemProcesses')} description={t('tasklist.processesSubtitle')} />
 
