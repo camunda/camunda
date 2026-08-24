@@ -24,26 +24,6 @@ import {getClientConfig} from '#/shared/config/getClientConfig';
 
 const SUBMIT_DEBOUNCE = 500;
 
-const DEFAULT_PROCESS_FILTER = {
-	id: 'all',
-	translationKey: 'tasklist.processFiltersAllProcesses',
-	hasStartForm: undefined,
-} as const;
-
-const PROCESS_FILTERS = [
-	DEFAULT_PROCESS_FILTER,
-	{
-		id: 'requires-form',
-		translationKey: 'tasklist.processesFormFilterRequiresForm',
-		hasStartForm: 'yes',
-	} as const,
-	{
-		id: 'requires-no-form',
-		translationKey: 'tasklist.processesFormFilterRequiresNoForm',
-		hasStartForm: 'no',
-	} as const,
-];
-
 type FilterValues = {
 	search: string;
 	hasStartForm?: 'yes' | 'no';
@@ -107,66 +87,64 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 				)}
 			</Field>
 			<div className="min-w-0">
-				<Label htmlFor="process-filters" className="sr-only">
-					{t('tasklist.processesFilterDropdownLabel')}
-				</Label>
-				<Field<FilterValues['hasStartForm']> name="hasStartForm">
+				<Field<FilterValues['hasStartForm']> name="hasStartForm" format={(value) => value}>
 					{({input}) => {
-						const selected =
-							PROCESS_FILTERS.find(({hasStartForm}) => hasStartForm === input.value) ?? DEFAULT_PROCESS_FILTER;
-
 						return (
-							<Select
-								value={selected.id}
-								onValueChange={(id) => {
-									const nextSelected = PROCESS_FILTERS.find((filter) => filter.id === id) ?? DEFAULT_PROCESS_FILTER;
-									input.onChange(nextSelected.hasStartForm);
-									handleSubmit();
-								}}
-							>
-								<SelectTrigger id="process-filters" aria-label={t('tasklist.processesFilterDropdownLabel')}>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									{PROCESS_FILTERS.map((filter) => (
-										<SelectItem key={filter.id} value={filter.id}>
-											{t(filter.translationKey)}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+							<>
+								<Label htmlFor={input.name} className="sr-only">
+									{t('tasklist.processesFilterDropdownLabel')}
+								</Label>
+								<Select
+									defaultValue="all"
+									value={input.value ?? 'all'}
+									onValueChange={(value) => {
+										input.onChange(value === 'all' ? undefined : value);
+										handleSubmit();
+									}}
+								>
+									<SelectTrigger id={input.name} aria-label={t('tasklist.processesFilterDropdownLabel')}>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="all">{t('tasklist.processFiltersAllProcesses')}</SelectItem>
+										<SelectItem value="yes">{t('tasklist.processesFormFilterRequiresForm')}</SelectItem>
+										<SelectItem value="no">{t('tasklist.processesFormFilterRequiresNoForm')}</SelectItem>
+									</SelectContent>
+								</Select>
+							</>
 						);
 					}}
 				</Field>
 			</div>
 			{isMultiTenancyEnabled ? (
 				<div className="min-w-0">
-					<Label htmlFor="tenant-filter" className="sr-only">
-						{t('tasklist.multiTenancyDropdownLabel')}
-					</Label>
 					<Field<FilterValues['tenantId']> name="tenantId" initialValue={tenants[0]?.tenantId}>
 						{({input}) => {
-							const selectedTenantId = (tenants.find(({tenantId}) => tenantId === input.value) ?? tenants[0])?.tenantId;
-
 							return (
-								<Select
-									value={selectedTenantId}
-									onValueChange={(tenantId) => {
-										input.onChange(tenantId);
-										handleSubmit();
-									}}
-								>
-									<SelectTrigger id="tenant-filter" aria-label={t('tasklist.multiTenancyDropdownLabel')}>
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										{tenants.map((tenant) => (
-											<SelectItem key={tenant.tenantId} value={tenant.tenantId}>
-												{tenant.name} - {tenant.tenantId}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
+								<>
+									<Label htmlFor={input.name} className="sr-only">
+										{t('tasklist.multiTenancyDropdownLabel')}
+									</Label>
+									<Select
+										defaultValue={tenants[0]?.tenantId}
+										value={input.value}
+										onValueChange={(tenantId) => {
+											input.onChange(tenantId);
+											handleSubmit();
+										}}
+									>
+										<SelectTrigger id={input.name} aria-label={t('tasklist.multiTenancyDropdownLabel')}>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											{tenants.map((tenant) => (
+												<SelectItem key={tenant.tenantId} value={tenant.tenantId}>
+													{tenant.name} - {tenant.tenantId}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</>
 							);
 						}}
 					</Field>
