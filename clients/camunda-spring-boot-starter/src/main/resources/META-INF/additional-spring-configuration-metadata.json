@@ -278,7 +278,8 @@
       "type": "java.util.Map<java.lang.String,java.lang.Object>",
       "sourceType": "io.camunda.client.spring.properties.CamundaClientClusterVariablesProperties",
       "deprecation": {
-        "replacement": "camunda.client.cluster-variables.variables"
+        "replacement": "camunda.client.cluster-variables.variables",
+        "reason": "Cluster variables are now set in a single list instead of separate maps for global and tenant variables."
       }
     },
     {
@@ -286,7 +287,8 @@
       "type": "java.util.Map<java.lang.String,java.lang.Object>",
       "sourceType": "io.camunda.client.spring.properties.CamundaClientClusterVariablesProperties",
       "deprecation": {
-        "replacement": "camunda.client.cluster-variables.variables"
+        "replacement": "camunda.client.cluster-variables.variables",
+        "reason": "Cluster variables are now set in a single list instead of separate maps for global and tenant variables."
       }
     },
     {
