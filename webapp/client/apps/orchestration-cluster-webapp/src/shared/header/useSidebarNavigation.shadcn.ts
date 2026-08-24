@@ -46,7 +46,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 							key: 'tasks',
 							label: t('tasklist.headerNavItemTasks'),
 							icon: ListTodo,
-							isActive: !isProcessesRoute && hasRouteMatch('/shadcn/tasklist'),
+							isActive: !isProcessesRoute && hasRouteMatch('/shadcn/tasklist', '/shadcn/tasklist/$userTaskKey'),
 							linkProps: {
 								to: tabRoutes['tasklistIndex'],
 								activeOptions: {
