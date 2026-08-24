@@ -240,14 +240,15 @@ jobs:
           timeout_minutes: "3"
       - name: Unit tests
         run: npm run test:unit
-      - name: Upload blob report
-        if: ${{ !cancelled() }}
+      - name: Upload failure artifacts
+        if: ${{ failure() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: webapp-client-unit-blob-report
-          path: webapp/client/apps/orchestration-cluster-webapp/.vitest-reports/*
+          name: webapp-client-unit-artifacts
+          path: webapp/client/apps/orchestration-cluster-webapp/test-artifacts/**
           include-hidden-files: true
-          retention-days: 1
+          retention-days: 7
+          if-no-files-found: warn
       - name: Observe build status
         if: always()
         continue-on-error: true
