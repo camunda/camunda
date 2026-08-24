@@ -75,23 +75,23 @@ class BasicAuthBeansConfigurationConverterWiringTest {
     PhysicalTenantContext.setPhysicalTenantId(request, "tenant-a");
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
-    final Map<String, String> tenantSeenBy = new HashMap<>();
+    final Map<String, String> tenantSeenByLookup = new HashMap<>();
     when(membershipPort.groupIds(any()))
         .thenAnswer(
             invocation -> {
-              tenantSeenBy.put("groupIds", PhysicalTenantContext.current());
+              tenantSeenByLookup.put("groupIds", PhysicalTenantContext.current());
               return List.of("group-1");
             });
     when(membershipPort.roleIds(any()))
         .thenAnswer(
             invocation -> {
-              tenantSeenBy.put("roleIds", PhysicalTenantContext.current());
+              tenantSeenByLookup.put("roleIds", PhysicalTenantContext.current());
               return List.of("role-1");
             });
     when(membershipPort.tenantIds(any()))
         .thenAnswer(
             invocation -> {
-              tenantSeenBy.put("tenantIds", PhysicalTenantContext.current());
+              tenantSeenByLookup.put("tenantIds", PhysicalTenantContext.current());
               return List.of("tenant-1");
             });
 
@@ -110,7 +110,7 @@ class BasicAuthBeansConfigurationConverterWiringTest {
     assertThat(authentication.authenticatedGroupIds()).containsExactly("group-1");
     assertThat(authentication.authenticatedRoleIds()).containsExactly("role-1");
     assertThat(authentication.authenticatedTenantIds()).containsExactly("tenant-1");
-    assertThat(tenantSeenBy)
+    assertThat(tenantSeenByLookup)
         .containsEntry("groupIds", "tenant-a")
         .containsEntry("roleIds", "tenant-a")
         .containsEntry("tenantIds", "tenant-a");
