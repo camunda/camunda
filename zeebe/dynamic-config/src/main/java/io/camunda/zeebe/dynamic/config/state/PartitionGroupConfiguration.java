@@ -133,8 +133,13 @@ public record PartitionGroupConfiguration(
    *
    * <p>If the versions differ, the higher version wins wholesale. If equal, the result merges:
    * {@code members} field-by-field by per-member version (which also carries each broker's
-   * operating mode); {@code pendingChanges} by plan-internal version; {@code routingState} by the
-   * higher version; and {@code incarnationNumber} via {@link Math#max}.
+   * operating mode); {@code pendingChanges} by unioning the two copies' completed operations;
+   * {@code routingState} by the higher version; and {@code incarnationNumber} via {@link Math#max}.
+   *
+   * <p>{@code lastChange} is merged by {@link CompletedChange#merge}: every other equal-version
+   * field above is resolved by keeping the receiver's copy, safe because it either only ever has
+   * one writer or is itself independently mergeable (members, pendingChanges), and {@code
+   * lastChange} for a graph change is neither.
    *
    * <p>{@code availability} is always merged by its own version ({@link
    * TenantAvailability#merge(TenantAvailability)}), independently of which branch above is taken —
@@ -191,42 +196,8 @@ public record PartitionGroupConfiguration(
         mergedMembers,
         mergedRoutingState,
         mergedChanges,
-        mergeLastChange(lastChange, other.lastChange),
+        CompletedChange.merge(lastChange, other.lastChange),
         mergedAvailability);
-  }
-
-  /**
-   * Merges two {@code lastChange} records seen by different brokers, both stamped for the same
-   * completed change.
-   *
-   * <p>Every other equal-version field above is resolved by keeping the receiver's copy, safe
-   * because it either only ever has one writer or is itself independently mergeable (members,
-   * pendingChanges). {@code lastChange} for a graph change is neither: {@link
-   * #completeGraphChangeIfDrained()} runs on every broker with no coordinator gate, and each mints
-   * its own {@link CompletedChange} from its own view of when the last operation completed. Two
-   * brokers minting a moment apart can disagree on {@code completedAt} for the very same change, at
-   * the very same group version, and keeping "the receiver's own" would leave that disagreement
-   * standing forever — see {@code DependencyChangePlan#toCompletedChange}'s own javadoc for why.
-   *
-   * <p>Resolved the same way {@link DependencyChangePlan#merge} already resolves the analogous case
-   * for individual operation completions: same change id, earliest {@code completedAt} wins;
-   * different change id (a genuinely later, unrelated completion on this group), the higher id
-   * wins, since ids are monotonic and a higher one is always the newer change.
-   */
-  private static Optional<CompletedChange> mergeLastChange(
-      final Optional<CompletedChange> mine, final Optional<CompletedChange> theirs) {
-    if (mine.isEmpty()) {
-      return theirs;
-    }
-    if (theirs.isEmpty()) {
-      return mine;
-    }
-    final var mineChange = mine.orElseThrow();
-    final var theirsChange = theirs.orElseThrow();
-    if (mineChange.id() != theirsChange.id()) {
-      return mineChange.id() > theirsChange.id() ? mine : theirs;
-    }
-    return mineChange.completedAt().isBefore(theirsChange.completedAt()) ? mine : theirs;
   }
 
   /**
