@@ -17,6 +17,7 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.filter.UserTaskFilterBase;
 import io.camunda.client.api.search.filter.VariableValueFilter;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
@@ -31,6 +32,7 @@ import io.camunda.client.impl.search.filter.builder.UserTaskStatePropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.impl.util.TagUtil;
+import io.camunda.client.impl.util.UserTaskFilterMapper;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -317,6 +319,20 @@ public class UserTaskFilterImpl
     final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
     filter.setDueDate(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilterBase orFilters(final List<Consumer<UserTaskFilterBase>> fns) {
+    for (final Consumer<UserTaskFilterBase> fn : fns) {
+      final UserTaskFilterImpl orFilter = new UserTaskFilterImpl();
+      fn.accept(orFilter);
+      final io.camunda.client.protocol.rest.UserTaskFilter protocolFilter =
+          orFilter.getSearchRequestProperty();
+      final io.camunda.client.protocol.rest.UserTaskFilterFields protocolFilterFields =
+          UserTaskFilterMapper.from(protocolFilter);
+      filter.add$OrItem(protocolFilterFields);
+    }
     return this;
   }
 

@@ -986,6 +986,31 @@ public class SearchQueryFilterMapper {
 
   static Either<List<String>, UserTaskFilter> toUserTaskFilter(
       final io.camunda.gateway.protocol.model.@Nullable UserTaskFilter filter) {
+    final List<String> validationErrors = new ArrayList<>();
+
+    final Either<List<String>, UserTaskFilter.Builder> builder = toUserTaskFilterFields(filter);
+    if (builder.isLeft()) {
+      validationErrors.addAll(builder.getLeft());
+    }
+
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final io.camunda.gateway.protocol.model.UserTaskFilterFields or : filter.get$Or()) {
+        final var orBuilder = toUserTaskFilterFields(or);
+        if (orBuilder.isLeft()) {
+          validationErrors.addAll(orBuilder.getLeft());
+        } else if (builder.isRight()) {
+          builder.get().addOrOperation(orBuilder.get().build());
+        }
+      }
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.get().build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, UserTaskFilter.Builder> toUserTaskFilterFields(
+      final io.camunda.gateway.protocol.model.@Nullable UserTaskFilterFields filter) {
     final var builder = FilterBuilders.userTask();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -1070,9 +1095,7 @@ public class SearchQueryFilterMapper {
       }
     }
 
-    return validationErrors.isEmpty()
-        ? Either.right(builder.build())
-        : Either.left(validationErrors);
+    return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
   }
 
   static UserFilter toUserFilter(

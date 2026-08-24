@@ -1121,6 +1121,67 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
         .isInstanceOfSatisfying(SearchBoolQuery.class, t -> assertThat(t.must()).hasSize(3));
   }
 
+  @Test
+  public void shouldQueryWithOrConditions() {
+    // given - assignee plus an $or over candidateGroup and candidateUser
+    final var filter =
+        FilterBuilders.userTask(
+            f ->
+                f.assignees("user1")
+                    .addOrOperation(new Builder().candidateGroups("groupA").build())
+                    .addOrOperation(new Builder().candidateUsers("user2").build()));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    final SearchBoolQuery outerBool = (SearchBoolQuery) queryVariant;
+
+    // assignee, the two clauses that always scope the query to Zeebe user tasks, and the OR clause
+    assertThat(outerBool.must()).hasSize(4);
+    assertSearchTermQuery(outerBool.must().get(0).queryOption(), "assignee", "user1");
+
+    assertThat(outerBool.must().get(3).queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            orBool -> {
+              assertThat(orBool.should()).hasSize(2);
+              assertSearchTermQuery(
+                  orBool.should().get(0).queryOption(), "candidateGroups", "groupA");
+              assertSearchTermQuery(
+                  orBool.should().get(1).queryOption(), "candidateUsers", "user2");
+            });
+  }
+
+  @Test
+  public void shouldNotAddOrClauseWhenOrFiltersIsNull() {
+    // given
+    final var filter = FilterBuilders.userTask(f -> f.assignees("user1"));
+
+    // then
+    assertThat(filter.orFilters()).isNull();
+  }
+
+  @Test
+  public void shouldNotAddOrClauseWhenOrFiltersIsEmpty() {
+    // given
+    final var filter = FilterBuilders.userTask(f -> f.assignees("user1").orFilters(List.of()));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then - assignee plus the two always-on clauses, with no OR wrapper appended
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            t -> {
+              assertThat(t.must()).hasSize(3);
+              assertSearchTermQuery(t.must().get(0).queryOption(), "assignee", "user1");
+            });
+  }
+
   private static void assertSearchTermQuery(
       final SearchQueryOption query, final String field, final Object expectedValue) {
     assertThat(query)

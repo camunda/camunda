@@ -20,6 +20,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
@@ -1889,6 +1890,88 @@ class UserTaskSearchIT {
                       .join();
               assertThat(resultComplete.items()).hasSize(1);
             });
+  }
+
+  @Test
+  public void shouldRetrieveTasksByOrFilter() {
+    // given - two element ids identifying disjoint subsets of tasks
+    final long element2Count = countUserTasks(f -> f.elementId("test-2"));
+    final long element3Count = countUserTasks(f -> f.elementId("test-3"));
+
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(sub -> sub.elementId("test-2"), sub -> sub.elementId("test-3"))))
+            .send()
+            .join();
+
+    // then - the union equals the sum of the two disjoint subsets
+    assertThat(result.page().totalItems()).isPositive().isEqualTo(element2Count + element3Count);
+    assertThat(result.items())
+        .allMatch(ut -> "test-2".equals(ut.getElementId()) || "test-3".equals(ut.getElementId()));
+  }
+
+  @Test
+  public void shouldCombineTopLevelFilterAndOrFilterWithAnd() {
+    // given
+    final long element2Count = countUserTasks(f -> f.elementId("test-2"));
+
+    // when - the top-level element id excludes one of the two $or alternatives
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(
+                f ->
+                    f.elementId("test-2")
+                        .orFilters(
+                            List.of(
+                                sub -> sub.elementId("test-2"), sub -> sub.elementId("test-3"))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.page().totalItems()).isEqualTo(element2Count);
+    assertThat(result.items()).isNotEmpty().allMatch(ut -> "test-2".equals(ut.getElementId()));
+  }
+
+  @Test
+  public void shouldRetrieveTasksByOrFilterOnLocalVariables() {
+    // given - no single task carries both variables, see
+    // shouldNotRetrieveTaskIfNotAllLocalVariablesMatch
+    final long task02Count = countUserTasks(f -> f.localVariables(Map.of("task02", "1")));
+    final long task01Count = countUserTasks(f -> f.localVariables(Map.of("task01", "\"test\"")));
+
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(
+                            sub -> sub.localVariables(Map.of("task02", "1")),
+                            sub -> sub.localVariables(Map.of("task01", "\"test\"")))))
+            .send()
+            .join();
+
+    // then
+    assertThat(task02Count).isPositive();
+    assertThat(task01Count).isPositive();
+    assertThat(result.page().totalItems()).isEqualTo(task02Count + task01Count);
+  }
+
+  private static long countUserTasks(final Consumer<UserTaskFilter> filter) {
+    return camundaClient
+        .newUserTaskSearchRequest()
+        .filter(filter)
+        .send()
+        .join()
+        .page()
+        .totalItems();
   }
 
   /**
