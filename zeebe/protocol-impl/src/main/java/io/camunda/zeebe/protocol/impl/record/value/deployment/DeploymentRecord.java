@@ -51,7 +51,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
       new ArrayProperty<>("resourceMetadata", ResourceMetadataRecord::new);
 
   /**
-   * Agent definitions minted at deploy time for elements carrying a recognized agent marker (see
+   * Agent definitions created at deploy time for elements carrying a recognized agent marker (see
    * {@code AgentElementTypeTransformer}). Internal-only: unlike the other metadata arrays, this is
    * not exposed on the public {@link DeploymentRecordValue} interface, since agent definitions are
    * a deploy-time engine concern rather than a deployment result reported to clients.
@@ -113,7 +113,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   }
 
   /**
-   * @return the mutable list of agent definitions minted for this deployment. Internal-only,
+   * @return the mutable list of agent definitions created for this deployment. Internal-only,
    *     populated by {@code AgentDefinitionTransformer}; not part of the public {@link
    *     DeploymentRecordValue} interface.
    */

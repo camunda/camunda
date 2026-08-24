@@ -434,7 +434,7 @@ public class MigrateAgentInstanceTest {
   public void shouldReResolveAgentDefinitionKeyWhenElementIsRemapped() {
     // given — an agent-marked service task "A" is remapped to an agent-marked service task "A2" in
     // a different target process definition, so the target element has its own, distinct agent
-    // definition minted at deploy time
+    // definition created at deploy time
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
@@ -509,7 +509,7 @@ public class MigrateAgentInstanceTest {
   @Test
   public void shouldReResolveAgentDefinitionKeyWhenElementKeepsItsId() {
     // given — an agent-marked service task "A" is migrated to another process definition that keeps
-    // the same element id "A" (a self-mapping); the target still mints its own agent definition
+    // the same element id "A" (a self-mapping); the target still creates its own agent definition
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 

@@ -14,8 +14,8 @@ import org.agrona.DirectBuffer;
 public interface AgentDefinitionState {
 
   /**
-   * @return the agent definition key minted for the given process definition and element, or {@code
-   *     null} if no agent definition has been created for it
+   * @return the agent definition key generated for the given process definition and element, or
+   *     {@code null} if no agent definition has been created for it
    */
   Long getAgentDefinitionKey(long processDefinitionKey, DirectBuffer elementId);
 
@@ -26,7 +26,7 @@ public interface AgentDefinitionState {
   AgentDefinitionRecord getAgentDefinition(long agentDefinitionKey);
 
   /**
-   * Invokes {@code callback} with the agent definition key of each agent definition minted for the
+   * Invokes {@code callback} with the agent definition key of each agent definition created for the
    * given process definition.
    */
   void forEachAgentDefinitionKey(long processDefinitionKey, LongConsumer callback);
