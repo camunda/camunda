@@ -24,31 +24,35 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks')({
 			() => getTasksRequestBody(tasklistIndexSearchDefaults, {currentUsername: currentUser.username}),
 			[currentUser.username],
 		);
-		const {data, fetchNextPage, fetchPreviousPage, hasNextPage, hasPreviousPage} = useSuspenseInfiniteQuery({
+		const {
+			data,
+			fetchNextPage,
+			fetchPreviousPage,
+			hasNextPage,
+			hasPreviousPage,
+			isFetchingNextPage,
+			isFetchingPreviousPage,
+		} = useSuspenseInfiniteQuery({
 			...queries.queryUserTasks(requestBody),
 			refetchInterval: 5000,
 		});
-		const tasks = useMemo(() => data.pages.flatMap((page) => page.items), [data]);
 		const onScrollDown = useCallback(async () => {
-			const result = await fetchNextPage();
-			const pages = result.data?.pages ?? [];
-
-			return pages[pages.length - 1]?.items ?? [];
+			await fetchNextPage();
 		}, [fetchNextPage]);
 		const onScrollUp = useCallback(async () => {
-			const result = await fetchPreviousPage();
-
-			return result.data?.pages[0]?.items ?? [];
+			await fetchPreviousPage();
 		}, [fetchPreviousPage]);
 
 		return (
 			<TasksLayoutPage
-				tasks={tasks}
+				pages={data.pages}
 				currentUser={currentUser}
 				hasNextPage={hasNextPage}
 				hasPreviousPage={hasPreviousPage}
 				onScrollDown={onScrollDown}
 				onScrollUp={onScrollUp}
+				isFetchingNextPage={isFetchingNextPage}
+				isFetchingPreviousPage={isFetchingPreviousPage}
 			/>
 		);
 	},

@@ -11,11 +11,11 @@ import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {describe, expect, vi} from 'vitest';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
-import {createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
+import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 import {AvailableTasks} from './AvailableTasks';
 
 const currentUser = createCurrentUser({username: 'demo'});
-const noop = vi.fn().mockResolvedValue([]);
+const noop = vi.fn().mockResolvedValue(undefined);
 
 describe('<AvailableTasks />', () => {
 	it('should render the list of tasks', async () => {
@@ -28,7 +28,7 @@ describe('<AvailableTasks />', () => {
 			() => (
 				<TooltipProvider>
 					<AvailableTasks
-						tasks={tasks}
+						pages={[createQueryUserTasksResponse({items: tasks})]}
 						currentUser={currentUser}
 						hasNextPage={false}
 						hasPreviousPage={false}
@@ -48,7 +48,7 @@ describe('<AvailableTasks />', () => {
 		const screen = await renderWithRouter(
 			() => (
 				<AvailableTasks
-					tasks={[]}
+					pages={[createQueryUserTasksResponse()]}
 					currentUser={currentUser}
 					hasNextPage={false}
 					hasPreviousPage={false}
