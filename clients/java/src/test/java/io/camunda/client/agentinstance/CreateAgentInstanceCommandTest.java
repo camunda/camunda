@@ -165,28 +165,6 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
         .hasMessage("jobKey must be greater than 0");
   }
 
-  @Test
-  void shouldRejectHistoryWithoutJobKey() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newCreateAgentInstanceCommand()
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .history(
-                        Collections.singletonList(
-                            new AgentInstanceHistoryItem()
-                                .historyItemId("item-1")
-                                .loopIteration(1)
-                                .role(AgentInstanceHistoryRole.USER)
-                                .content(
-                                    Collections.singletonList(
-                                        AgentInstanceHistoryContent.text("hello")))
-                                .producedAt(PRODUCED_AT)))
-                    .execute())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("jobKey must be set when history is not empty");
-  }
-
   // ── Argument validation: jobLease ─────────────────────────────────────────
 
   @Test
@@ -196,6 +174,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
                 client
                     .newCreateAgentInstanceCommand()
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                    .jobKey(JOB_KEY)
                     .jobLease(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("jobLease must not be null");
@@ -209,6 +188,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
                 client
                     .newCreateAgentInstanceCommand()
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                    .jobKey(JOB_KEY)
                     .jobLease(jobLease))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("jobLease must not be blank");
@@ -275,6 +255,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
                     .newCreateAgentInstanceCommand()
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
+                    .jobLease(JOB_LEASE)
                     .history(
                         Collections.singletonList(
                             new AgentInstanceHistoryItem()
@@ -299,6 +280,8 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
                 client
                     .newCreateAgentInstanceCommand()
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                    .jobKey(JOB_KEY)
+                    .jobLease(JOB_LEASE)
                     .history(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("history must not be null");
@@ -312,6 +295,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
                     .newCreateAgentInstanceCommand()
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
+                    .jobLease(JOB_LEASE)
                     .history(Collections.emptyList())
                     .execute())
         .isInstanceOf(IllegalArgumentException.class)
@@ -326,6 +310,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
                     .newCreateAgentInstanceCommand()
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
+                    .jobLease(JOB_LEASE)
                     .history(Collections.singletonList(null)))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("history must not contain null elements");
