@@ -8,15 +8,13 @@
 
 import { ReactNode, useEffect } from "react";
 import {
-  Tab,
-  TabList,
-  TabPanel as CarbonTabPanel,
-  TabPanels,
-  Tabs as CarbonTabs,
-} from "@carbon/react";
+  Tabs as DSTabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import { useNavigate } from "react-router-dom";
-import styled from "styled-components";
 
 export type TabsProps<
   T extends { key: string; label: string; content: ReactNode },
@@ -25,11 +23,6 @@ export type TabsProps<
   tabs: readonly T[];
   selectedTabKey: string;
 };
-
-const TabPanel = styled(CarbonTabPanel)`
-  padding-left: 0;
-  padding-right: 0;
-`;
 
 const Tabs = <T extends { key: string; label: string; content: ReactNode }>({
   path,
@@ -40,6 +33,7 @@ const Tabs = <T extends { key: string; label: string; content: ReactNode }>({
   const { t } = useTranslate("components");
 
   const selectedTabIndex = tabs.findIndex(({ key }) => key === selectedTabKey);
+  const activeTabKey = selectedTabIndex > -1 ? selectedTabKey : tabs[0].key;
 
   useEffect(() => {
     if (selectedTabIndex === -1) {
@@ -48,23 +42,25 @@ const Tabs = <T extends { key: string; label: string; content: ReactNode }>({
   }, [navigate, path, selectedTabIndex, tabs]);
 
   return (
-    <CarbonTabs
-      selectedIndex={selectedTabIndex > -1 ? selectedTabIndex : 0}
-      onChange={({ selectedIndex }: { selectedIndex: number }) =>
-        navigate(`${path}/${tabs[selectedIndex].key}`)
-      }
+    <DSTabs
+      value={activeTabKey}
+      onValueChange={(key) => {
+        void navigate(`${path}/${key}`);
+      }}
     >
-      <TabList aria-label={t("Tabs")}>
+      <TabsList variant="line" aria-label={t("Tabs")}>
         {tabs.map(({ key, label }) => (
-          <Tab key={`tab-${key}`}>{label}</Tab>
+          <TabsTrigger key={`tab-${key}`} value={key}>
+            {label}
+          </TabsTrigger>
         ))}
-      </TabList>
-      <TabPanels>
-        {tabs.map(({ key, content }) => (
-          <TabPanel key={`tab-panel-${key}`}>{content}</TabPanel>
-        ))}
-      </TabPanels>
-    </CarbonTabs>
+      </TabsList>
+      {tabs.map(({ key, content }) => (
+        <TabsContent key={`tab-panel-${key}`} value={key}>
+          {content}
+        </TabsContent>
+      ))}
+    </DSTabs>
   );
 };
 
