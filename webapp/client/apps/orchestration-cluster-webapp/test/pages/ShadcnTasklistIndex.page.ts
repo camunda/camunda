@@ -26,6 +26,14 @@ class ShadcnTasklistIndexPage extends BasePage {
 		return this.page.getByRole('region', {name: 'Tasks side panel'});
 	}
 
+	tasksPanelHeading(filterName: 'All open tasks') {
+		return this.page.getByRole('heading', {name: filterName});
+	}
+
+	taskItem(name: string) {
+		return this.page.getByRole('link', {name: new RegExp(`task.*:.*${name}`, 'i')});
+	}
+
 	get noTasksMessage() {
 		return this.page.getByRole('heading', {name: 'No tasks found'});
 	}
