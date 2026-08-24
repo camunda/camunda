@@ -25,6 +25,12 @@ import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefiniti
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockDeleteResource} from 'modules/mocks/api/v2/resource/deleteResource';
 import {notificationsStore} from 'modules/stores/notifications';
+import {mockServer} from 'modules/mock-server/node';
+import {http, HttpResponse} from 'msw';
+import {
+  endpoints,
+  type QueryProcessDefinitionsRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -62,6 +68,25 @@ describe('<ListView /> - operations', () => {
       items: [],
     });
     mockMe().withSuccess(createUser());
+
+    // Draining polls process-definitions on the same endpoint the list uses;
+    // answer only that query (empty) and let the list's searches fall through.
+    mockServer.use(
+      http.post(
+        endpoints.queryProcessDefinitions.getUrl(),
+        async ({request}) => {
+          const body = (await request
+            .clone()
+            .json()) as QueryProcessDefinitionsRequestBody;
+
+          if (body?.filter?.state !== 'DRAINING') {
+            return undefined;
+          }
+
+          return HttpResponse.json(searchResult([]));
+        },
+      ),
+    );
   });
 
   it('should show delete button when version is selected', async () => {
