@@ -114,6 +114,7 @@ public class AgentInstanceSearchIT {
         .elementInstanceKey(ei1)
         .status(AgentInstanceUpdateStatus.THINKING)
         .jobKey(created1.jobKey())
+        .jobLease(created1.jobLease())
         .send()
         .join();
 
@@ -179,6 +180,7 @@ public class AgentInstanceSearchIT {
             .newActivateJobsCommand()
             .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
             .maxJobsToActivate(1)
+            .withLease(true)
             .timeout(Duration.ofMinutes(5))
             .send()
             .join()
@@ -190,6 +192,7 @@ public class AgentInstanceSearchIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(activatedJob.getKey())
+            .jobLease(activatedJob.getLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -205,7 +208,8 @@ public class AgentInstanceSearchIT {
             .join()
             .getAgentInstanceKey();
 
-    return new CreatedAgentInstance(agentInstanceKey, activatedJob.getKey());
+    return new CreatedAgentInstance(
+        agentInstanceKey, activatedJob.getKey(), activatedJob.getLeaseToken());
   }
 
   private static long fetchAgentDefinitionKey(final long agentInstanceKey) {
@@ -526,5 +530,5 @@ public class AgentInstanceSearchIT {
     assertThat(page1Keys).doesNotContainAnyElementsOf(page2Keys);
   }
 
-  private record CreatedAgentInstance(long agentInstanceKey, long jobKey) {}
+  private record CreatedAgentInstance(long agentInstanceKey, long jobKey, String jobLease) {}
 }

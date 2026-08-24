@@ -48,7 +48,7 @@ public class AgentHistoryCommitLifecycleIT {
     final long processInstanceKey = deployAndStartProcessInstance();
     final long elementInstanceKey = getServiceTaskElementInstanceKey(processInstanceKey);
     final long agentInstanceKey = createAgentInstance(elementInstanceKey);
-    final var activatedJob = activateAgenticJob(processInstanceKey, false);
+    final var activatedJob = activateAgenticJob(processInstanceKey, true);
     final long historyItemKey1 =
         createHistoryItem(
             agentInstanceKey,
@@ -90,7 +90,7 @@ public class AgentHistoryCommitLifecycleIT {
     final long processInstanceKey = deployAndStartProcessInstance();
     final long elementInstanceKey = getServiceTaskElementInstanceKey(processInstanceKey);
     final long agentInstanceKey = createAgentInstance(elementInstanceKey);
-    final var activatedJob = activateAgenticJob(processInstanceKey, false);
+    final var activatedJob = activateAgenticJob(processInstanceKey, true);
     final long historyItemKey1 =
         createHistoryItem(
             agentInstanceKey,
@@ -237,7 +237,7 @@ public class AgentHistoryCommitLifecycleIT {
             .newActivateJobsCommand()
             .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
             .maxJobsToActivate(1)
-            .withLease(false)
+            .withLease(true)
             .timeout(Duration.ofMinutes(5))
             .send()
             .join()
@@ -249,6 +249,7 @@ public class AgentHistoryCommitLifecycleIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(activatedJob.getKey())
+            .jobLease(activatedJob.getLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -300,23 +301,24 @@ public class AgentHistoryCommitLifecycleIT {
       final String text,
       final OffsetDateTime producedAt,
       final int loopIteration) {
-    final var commandStep =
-        camundaClient
-            .newUpdateAgentInstanceCommand(agentInstanceKey)
-            .elementInstanceKey(elementInstanceKey)
-            .jobKey(activatedJob.getKey())
-            .history(
-                List.of(
-                    new AgentInstanceHistoryItem()
-                        .historyItemId(UUID.randomUUID().toString())
-                        .loopIteration(loopIteration)
-                        .role(role)
-                        .content(List.of(AgentInstanceHistoryContent.text(text)))
-                        .producedAt(producedAt)));
-    if (activatedJob.getLeaseToken() != null) {
-      commandStep.jobLease(activatedJob.getLeaseToken());
-    }
-    return commandStep.send().join().getCreatedHistory().getFirst().getHistoryItemKey();
+    return camundaClient
+        .newUpdateAgentInstanceCommand(agentInstanceKey)
+        .elementInstanceKey(elementInstanceKey)
+        .jobKey(activatedJob.getKey())
+        .jobLease(activatedJob.getLeaseToken())
+        .history(
+            List.of(
+                new AgentInstanceHistoryItem()
+                    .historyItemId(UUID.randomUUID().toString())
+                    .loopIteration(loopIteration)
+                    .role(role)
+                    .content(List.of(AgentInstanceHistoryContent.text(text)))
+                    .producedAt(producedAt)))
+        .send()
+        .join()
+        .getCreatedHistory()
+        .getFirst()
+        .getHistoryItemKey();
   }
 
   /**
