@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.read.replication;
 
 import java.util.List;
 
+/** Derives replication lag from an LSN provider, for databases that report both. */
 public final class LsnBackedReplicationLagProvider implements ReplicationLagProvider {
 
   private final ReplicationLsnProvider lsnProvider;
