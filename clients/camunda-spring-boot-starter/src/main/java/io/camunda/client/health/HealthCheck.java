@@ -17,11 +17,8 @@ package io.camunda.client.health;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.StatusResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class HealthCheck {
-  private static final Logger LOG = LoggerFactory.getLogger(HealthCheck.class);
 
   private final CamundaClient camundaClient;
 
@@ -29,20 +26,18 @@ public class HealthCheck {
     this.camundaClient = camundaClient;
   }
 
-  public CheckResult health() {
-    try {
-      final StatusResponse status = camundaClient.newStatusRequest().send().join();
-      return status.getStatus() == StatusResponse.Status.UP ? CheckResult.UP : CheckResult.DOWN;
-    } catch (final RuntimeException e) {
-      // send().join() throws ClientException/ClientStatusException on connectivity issues or
-      // timeouts; the health endpoint must report DOWN rather than surface an error response.
-      LOG.warn("Failed to determine health status", e);
-      return CheckResult.DOWN;
-    }
-  }
-
-  public enum CheckResult {
-    UP,
-    DOWN
+  /**
+   * Does not catch failures itself: on connectivity issues or timeouts, {@code
+   * newStatusRequest().execute()} throws (e.g. {@code ClientException}/{@code
+   * ClientStatusException}), and this method lets that propagate. This relies on the caller
+   * mapping the failure to a degraded status instead of surfacing it as-is — e.g. Spring Boot's
+   * {@code AbstractHealthIndicator.health()} catches any exception from {@code doHealthCheck} and
+   * reports {@code DOWN} with the exception recorded as the {@code error} detail. Callers that do
+   * not offer that safety net must handle the exception themselves.
+   *
+   * @throws RuntimeException if the status request fails
+   */
+  public StatusResponse.Status health() {
+    return camundaClient.newStatusRequest().execute().getStatus();
   }
 }

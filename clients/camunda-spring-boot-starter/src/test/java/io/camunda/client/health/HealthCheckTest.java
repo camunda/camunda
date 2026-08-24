@@ -16,15 +16,14 @@
 package io.camunda.client.health;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.response.StatusResponse;
-import io.camunda.client.health.HealthCheck.CheckResult;
 import io.grpc.Status;
 import org.junit.jupiter.api.Test;
 
@@ -35,19 +34,17 @@ final class HealthCheckTest {
     // given
     final CamundaClient camundaClient = mock(CamundaClient.class);
     final StatusRequestStep1 statusRequestStep1 = mock(StatusRequestStep1.class);
-    final CamundaFuture<StatusResponse> future = mock(CamundaFuture.class);
     final StatusResponse statusResponse = mock(StatusResponse.class);
     when(camundaClient.newStatusRequest()).thenReturn(statusRequestStep1);
-    when(statusRequestStep1.send()).thenReturn(future);
-    when(future.join()).thenReturn(statusResponse);
+    when(statusRequestStep1.execute()).thenReturn(statusResponse);
     when(statusResponse.getStatus()).thenReturn(StatusResponse.Status.UP);
     final HealthCheck healthCheck = new HealthCheck(camundaClient);
 
     // when
-    final CheckResult result = healthCheck.health();
+    final StatusResponse.Status result = healthCheck.health();
 
     // then
-    assertThat(result).isEqualTo(CheckResult.UP);
+    assertThat(result).isEqualTo(StatusResponse.Status.UP);
   }
 
   @Test
@@ -55,39 +52,32 @@ final class HealthCheckTest {
     // given
     final CamundaClient camundaClient = mock(CamundaClient.class);
     final StatusRequestStep1 statusRequestStep1 = mock(StatusRequestStep1.class);
-    final CamundaFuture<StatusResponse> future = mock(CamundaFuture.class);
     final StatusResponse statusResponse = mock(StatusResponse.class);
     when(camundaClient.newStatusRequest()).thenReturn(statusRequestStep1);
-    when(statusRequestStep1.send()).thenReturn(future);
-    when(future.join()).thenReturn(statusResponse);
+    when(statusRequestStep1.execute()).thenReturn(statusResponse);
     when(statusResponse.getStatus()).thenReturn(StatusResponse.Status.DOWN);
     final HealthCheck healthCheck = new HealthCheck(camundaClient);
 
     // when
-    final CheckResult result = healthCheck.health();
+    final StatusResponse.Status result = healthCheck.health();
 
     // then
-    assertThat(result).isEqualTo(CheckResult.DOWN);
+    assertThat(result).isEqualTo(StatusResponse.Status.DOWN);
   }
 
   @Test
-  void shouldReportDownWhenStatusRequestFailsWithConnectivityIssue() {
+  void shouldPropagateExceptionWhenStatusRequestFailsWithConnectivityIssue() {
     // given
     final CamundaClient camundaClient = mock(CamundaClient.class);
     final StatusRequestStep1 statusRequestStep1 = mock(StatusRequestStep1.class);
-    final CamundaFuture<StatusResponse> future = mock(CamundaFuture.class);
+    final ClientStatusException failure =
+        new ClientStatusException(
+            Status.UNAVAILABLE.withDescription("unreachable"), new RuntimeException());
     when(camundaClient.newStatusRequest()).thenReturn(statusRequestStep1);
-    when(statusRequestStep1.send()).thenReturn(future);
-    when(future.join())
-        .thenThrow(
-            new ClientStatusException(
-                Status.UNAVAILABLE.withDescription("unreachable"), new RuntimeException()));
+    when(statusRequestStep1.execute()).thenThrow(failure);
     final HealthCheck healthCheck = new HealthCheck(camundaClient);
 
-    // when
-    final CheckResult result = healthCheck.health();
-
-    // then
-    assertThat(result).isEqualTo(CheckResult.DOWN);
+    // when then
+    assertThatThrownBy(healthCheck::health).isSameAs(failure);
   }
 }
