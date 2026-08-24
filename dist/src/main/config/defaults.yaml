@@ -625,6 +625,8 @@ camunda: # Type: io.camunda.configuration.Camunda
           cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_FORMCACHE_CACHENAME
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_FORMCACHE_DATABASENAME
 
+        # Whether to verify the cluster health of the search engine
+        health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HEALTHCHECKENABLED
         history: # Type: io.camunda.configuration.DocumentBasedHistory
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_DATABASENAME
 
@@ -719,6 +721,8 @@ camunda: # Type: io.camunda.configuration.Camunda
           cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_FORMCACHE_CACHENAME
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_FORMCACHE_DATABASENAME
 
+        # Whether to verify the cluster health of the search engine
+        health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HEALTHCHECKENABLED
         history: # Type: io.camunda.configuration.DocumentBasedHistory
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_DATABASENAME
 
@@ -961,6 +965,7 @@ camunda: # Type: io.camunda.configuration.Camunda
 
     schema-manager: # Type: io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties
       create-schema: null # Type: Boolean, Env: CAMUNDA_DATABASE_SCHEMAMANAGER_CREATESCHEMA
+      health-check-enabled: null # Type: Boolean, Env: CAMUNDA_DATABASE_SCHEMAMANAGER_HEALTHCHECKENABLED
       perform-cleanup: null # Type: Boolean, Env: CAMUNDA_DATABASE_SCHEMAMANAGER_PERFORMCLEANUP
       retry: # Type: io.camunda.search.schema.config.SchemaManagerConfiguration$SchemaManagerRetryConfiguration
         max-retries: null # Type: Integer, Env: CAMUNDA_DATABASE_SCHEMAMANAGER_RETRY_MAXRETRIES

@@ -266,11 +266,7 @@ class SearchEngineSchemaInitializerTest {
   private SearchEngineSchemaInitializer initializerFor(
       final PhysicalTenantResolver resolver, final boolean holdsStartup) {
     return new SearchEngineSchemaInitializer(
-        configsFor(resolver),
-        descriptorsFor(resolver),
-        new SimpleMeterRegistry(),
-        holdsStartup,
-        true);
+        configsFor(resolver), descriptorsFor(resolver), new SimpleMeterRegistry(), holdsStartup);
   }
 
   /**
@@ -284,7 +280,7 @@ class SearchEngineSchemaInitializerTest {
     final Map<String, SearchEngineConfiguration> configs = configsFor(resolver);
     configs.get(DEFAULT_TENANT).connect().setType(DatabaseType.RDBMS.toString());
     return new SearchEngineSchemaInitializer(
-        configs, descriptorsFor(resolver), new SimpleMeterRegistry(), holdsStartup, true);
+        configs, descriptorsFor(resolver), new SimpleMeterRegistry(), holdsStartup);
   }
 
   /**
