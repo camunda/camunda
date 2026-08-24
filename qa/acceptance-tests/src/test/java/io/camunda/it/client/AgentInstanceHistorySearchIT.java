@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
 import io.camunda.client.api.command.AgentInstanceHistoryContent.ObjectContent;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.AgentInstanceHistoryMetrics;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.search.response.AgentInstanceHistory;
@@ -28,6 +29,7 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -44,6 +46,8 @@ public class AgentInstanceHistorySearchIT {
   private static long agentInstanceKey;
   private static long elementInstanceKey;
   private static long jobKey;
+  private static String jobLease;
+  private static long historyItemKey0;
   private static long historyItemKey1;
   private static long historyItemKey2;
   private static long historyItemKey3;
@@ -79,24 +83,12 @@ public class AgentInstanceHistorySearchIT {
             .getFirst()
             .getElementInstanceKey();
 
-    agentInstanceKey =
-        camundaClient
-            .newCreateAgentInstanceCommand()
-            .elementInstanceKey(elementInstanceKey)
-            .model("gpt-4o")
-            .provider("openai")
-            .systemPrompt("You are a helpful assistant.")
-            .send()
-            .join()
-            .getAgentInstanceKey();
-
-    waitForAgentInstanceToBeIndexed(camundaClient, agentInstanceKey);
-
     final var activatedJobs =
         camundaClient
             .newActivateJobsCommand()
             .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
             .maxJobsToActivate(1)
+            .withLease(true)
             .timeout(Duration.ofMinutes(5))
             .send()
             .join()
@@ -105,61 +97,92 @@ public class AgentInstanceHistorySearchIT {
         .as("expected to activate one agent job for process instance %d", processInstanceKey)
         .isNotEmpty();
     jobKey = activatedJobs.get(0).getKey();
+    jobLease = activatedJobs.get(0).getLeaseToken();
+
+    // The initial CONFIGURATION history item establishing model/provider/systemPrompt is
+    // produced before the USER/ASSISTANT/TOOL_RESULT items added below, so give it an earlier
+    // timestamp to keep producedAt-ascending ordering deterministic across all 4 items.
+    final var createResponse =
+        camundaClient
+            .newCreateAgentInstanceCommand()
+            .elementInstanceKey(elementInstanceKey)
+            .jobKey(jobKey)
+            .jobLease(jobLease)
+            .history(
+                List.of(
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.CONFIGURATION)
+                        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T09:59:00Z"))
+                        .model("gpt-4o")
+                        .provider("openai")
+                        .systemPrompt(
+                            List.of(
+                                AgentInstanceHistoryContent.text("You are a helpful assistant.")))))
+            .send()
+            .join();
+    agentInstanceKey = createResponse.getAgentInstanceKey();
+    historyItemKey0 = createResponse.getCreatedHistory().getFirst().getHistoryItemKey();
+
+    waitForAgentInstanceToBeIndexed(camundaClient, agentInstanceKey);
 
     // Create 3 history items with different roles
-    historyItemKey1 =
+    final var createdHistory =
         camundaClient
-            .newCreateAgentHistoryItemCommand(agentInstanceKey)
+            .newUpdateAgentInstanceCommand(agentInstanceKey)
             .elementInstanceKey(elementInstanceKey)
             .jobKey(jobKey)
-            .role(AgentInstanceHistoryRole.USER)
-            .content(List.of(AgentInstanceHistoryContent.text("Hello, what can you do?")))
-            .producedAt(OffsetDateTime.parse("2025-06-01T10:00:00Z"))
-            .send()
-            .join()
-            .getHistoryItemKey();
-
-    historyItemKey2 =
-        camundaClient
-            .newCreateAgentHistoryItemCommand(agentInstanceKey)
-            .elementInstanceKey(elementInstanceKey)
-            .jobKey(jobKey)
-            .role(AgentInstanceHistoryRole.ASSISTANT)
-            .content(List.of(AgentInstanceHistoryContent.text("I can help with many tasks.")))
-            .producedAt(OffsetDateTime.parse("2025-06-01T10:01:00Z"))
-            .metrics(
-                new AgentInstanceHistoryMetrics()
-                    .inputTokens(512L)
-                    .outputTokens(148L)
-                    .durationMs(1200L))
-            .send()
-            .join()
-            .getHistoryItemKey();
-
-    historyItemKey3 =
-        camundaClient
-            .newCreateAgentHistoryItemCommand(agentInstanceKey)
-            .elementInstanceKey(elementInstanceKey)
-            .jobKey(jobKey)
-            .role(AgentInstanceHistoryRole.TOOL_RESULT)
-            .content(
+            .jobLease(jobLease)
+            .history(
                 List.of(
-                    AgentInstanceHistoryContent.object(
-                        Arrays.asList(Map.of("id", 1), Map.of("id", 2))),
-                    AgentInstanceHistoryContent.object(Arrays.asList(10, 20, 30)),
-                    AgentInstanceHistoryContent.object(42),
-                    AgentInstanceHistoryContent.object(true),
-                    AgentInstanceHistoryContent.object("search-complete")))
-            .producedAt(OffsetDateTime.parse("2025-06-01T10:02:00Z"))
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.USER)
+                        .content(
+                            List.of(AgentInstanceHistoryContent.text("Hello, what can you do?")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T10:00:00Z")),
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.ASSISTANT)
+                        .content(
+                            List.of(
+                                AgentInstanceHistoryContent.text("I can help with many tasks.")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T10:01:00Z"))
+                        .metrics(
+                            new AgentInstanceHistoryMetrics()
+                                .inputTokens(512L)
+                                .outputTokens(148L)
+                                .durationMs(1200L)),
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.TOOL_RESULT)
+                        .content(
+                            List.of(
+                                AgentInstanceHistoryContent.object(
+                                    Arrays.asList(Map.of("id", 1), Map.of("id", 2))),
+                                AgentInstanceHistoryContent.object(Arrays.asList(10, 20, 30)),
+                                AgentInstanceHistoryContent.object(42),
+                                AgentInstanceHistoryContent.object(true),
+                                AgentInstanceHistoryContent.object("search-complete")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T10:02:00Z"))))
             .send()
             .join()
-            .getHistoryItemKey();
+            .getCreatedHistory();
+
+    historyItemKey1 = createdHistory.get(0).getHistoryItemKey();
+    historyItemKey2 = createdHistory.get(1).getHistoryItemKey();
+    historyItemKey3 = createdHistory.get(2).getHistoryItemKey();
 
     // Complete the job so JobCompleteProcessor emits AGENT_HISTORY:COMMIT,
     // causing history items to transition to COMMITTED and become searchable.
-    camundaClient.newCompleteCommand(jobKey).execute();
+    camundaClient.newCompleteCommand(jobKey).withLeaseToken(jobLease).execute();
 
-    waitForHistoryItemsToBeIndexed(camundaClient, agentInstanceKey, 3);
+    waitForHistoryItemsToBeIndexed(camundaClient, agentInstanceKey, 4);
   }
 
   @Test
@@ -171,7 +194,8 @@ public class AgentInstanceHistorySearchIT {
     // then
     assertThat(response.items())
         .extracting(AgentInstanceHistory::getHistoryItemKey)
-        .containsExactlyInAnyOrder(historyItemKey1, historyItemKey2, historyItemKey3);
+        .containsExactlyInAnyOrder(
+            historyItemKey0, historyItemKey1, historyItemKey2, historyItemKey3);
   }
 
   @Test
@@ -218,10 +242,10 @@ public class AgentInstanceHistorySearchIT {
             .sort(s -> s.producedAt().asc())
             .execute();
 
-    // then — items should come back in producedAt order: item1 < item2 < item3
+    // then — items should come back in producedAt order: item0 < item1 < item2 < item3
     assertThat(response.items())
         .extracting(AgentInstanceHistory::getHistoryItemKey)
-        .containsExactly(historyItemKey1, historyItemKey2, historyItemKey3);
+        .containsExactly(historyItemKey0, historyItemKey1, historyItemKey2, historyItemKey3);
   }
 
   @Test

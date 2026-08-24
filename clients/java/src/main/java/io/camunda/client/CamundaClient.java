@@ -36,7 +36,6 @@ import io.camunda.client.api.command.CancelBatchOperationStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
@@ -3599,10 +3598,10 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    *   CreateAgentInstanceResponse response = camundaClient
    *       .newCreateAgentInstanceCommand()
-   *       .elementInstanceKey(2251799813685248)
-   *       .model("gpt-4o")
-   *       .provider("openai")
-   *       .systemPrompt("You are a helpful assistant.")
+   *       .elementInstanceKey(2251799813685248L)
+   *       .jobKey(jobKey)
+   *       .jobLease(jobLease)
+   *       .history(List.of(configurationHistoryItem))
    *       .send()
    *       .join();
    * </pre>
@@ -3612,27 +3611,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   CreateAgentInstanceCommandStep1 newCreateAgentInstanceCommand();
 
   /**
-   * Creates a command to append a conversation history item to an agent instance.
-   *
-   * <pre>
-   *   CreateAgentHistoryItemResponse response = camundaClient
-   *       .newCreateAgentHistoryItemCommand(agentInstanceKey)
-   *       .elementInstanceKey(elementInstanceKey)
-   *       .jobKey(jobKey)
-   *       .jobLease(jobLease)
-   *       .role(AgentInstanceHistoryRole.ASSISTANT)
-   *       .content(contentList)
-   *       .producedAt(OffsetDateTime.now())
-   *       .send()
-   *       .join();
-   * </pre>
-   *
-   * @param agentInstanceKey the key of the agent instance
-   * @return a builder for creating an agent history item
-   */
-  CreateAgentHistoryItemCommandStep1 newCreateAgentHistoryItemCommand(long agentInstanceKey);
-
-  /**
    * Creates a command to update an existing agent instance.
    *
    * <pre>
@@ -3640,6 +3618,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *       .newUpdateAgentInstanceCommand(agentInstanceKey)
    *       .elementInstanceKey(elementInstanceKey)
    *       .status(AgentInstanceUpdateStatus.THINKING)
+   *       .jobKey(jobKey)
+   *       .jobLease(jobLease)
    *       .send()
    *       .join();
    * </pre>

@@ -114,11 +114,9 @@ paths:
         - basicAuth: []
       summary: Update agent instance
       description: |
-        Updates the mutable fields of an agent instance (status, metric counters, and
-        tools) and appends a batch of history items to its conversation history. Metric
-        values are treated as deltas and applied immediately to the aggregate counters.
-        Tool updates replace the existing tool list. Each history item created for this
-        request is echoed back in the response.
+        Updates the status of an agent instance and appends a batch of history items
+        to its conversation history. Each history item created for this request is
+        echoed back in the response.
       parameters:
         - name: agentInstanceKey
           in: path
@@ -192,68 +190,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-added-in-version: "8.10"
-
-  /agent-instances/{agentInstanceKey}/history:
-    post:
-      x-eventually-consistent: false
-      security:
-        - bearerAuth: []
-        - basicAuth: []
-      tags:
-        - Agent instance
-      operationId: createAgentInstanceHistoryItem
-      x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
-      summary: Create agent instance history item
-      description: |
-        Appends a single history item to an agent instance's conversation history.
-        The created item has commitStatus PENDING until the job identified by jobLease
-        completes successfully, at which point it transitions to COMMITTED. If the job
-        fails or is superseded by a retry, the item is marked DISCARDED.
-      x-semantic-establishes:
-        kind: AgentInstanceLoopIteration
-        identifiedBy:
-          - { in: body, name: loopIteration, semanticType: LoopIterationId }
-      parameters:
-        - name: agentInstanceKey
-          in: path
-          required: true
-          description: The key of the agent instance to append the history item to.
-          schema:
-            $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AgentInstanceHistoryItemRequest'
-      responses:
-        "201":
-          description: The history item was created.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AgentInstanceHistoryItemCreationResult'
-        "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
-        "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
-        "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
-        "404":
-          description: |
-            The agent instance with the given key was not found, or the specified
-            jobKey does not correspond to an active job.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
-        "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-        "503":
-          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
 
   /agent-instances/{agentInstanceKey}/history/search:
@@ -545,28 +481,6 @@ components:
             allOf:
                 - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
 
-    AgentInstanceDefinition:
-      description: |
-        The definition of an agent instance, as submitted at creation. The systemPrompt is a plain
-        string here for backwards compatibility with existing create requests; the read side
-        (AgentInstanceDefinitionResult) exposes it as content blocks instead. This write-side
-        string is deprecated and will be removed as part of #58795.
-      type: object
-      required:
-        - model
-        - provider
-        - systemPrompt
-      properties:
-        model:
-          type: string
-          description: The LLM model identifier (for example, gpt-4o).
-        provider:
-          type: string
-          description: The LLM provider (for example, openai or anthropic).
-        systemPrompt:
-          type: string
-          description: The system prompt configured for this agent instance.
-
     AgentInstanceDefinitionResult:
       description: |
         The definition of an agent instance. Set at creation, but can change later via a
@@ -683,6 +597,9 @@ components:
       type: object
       required:
         - elementInstanceKey
+        - jobKey
+        - jobLease
+        - history
       properties:
         elementInstanceKey:
           description: |
@@ -691,27 +608,10 @@ components:
             processDefinitionKey, and tenantId.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
-        definition:
-          description: |
-            The agent's initial definition; model, provider, and systemPrompt can
-            all be changed later via a CONFIGURATION history item. Required when
-            history is empty or omitted. Must be omitted when history is
-            non-empty — supply model, provider, and systemPrompt through a
-            CONFIGURATION item in history instead.
-          allOf:
-            - $ref: '#/components/schemas/AgentInstanceDefinition'
-        limits:
-          description: |
-            Limits for the agent execution. When omitted, all limits default to -1
-            (no limit). Must be omitted when history is non-empty — supply limits
-            through a CONFIGURATION item in history instead, if needed.
-          allOf:
-            - $ref: '#/components/schemas/AgentInstanceLimits'
         jobKey:
           description: |
             The key of the job activation during which this creation is being made.
-            Required whenever history is non-empty.
-          nullable: true
+            A creation must always be attributed to the active job that produced it.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
         jobLease:
@@ -720,18 +620,16 @@ components:
             this activation from any other activation of the same job: if the job is
             later retried, history items submitted under a superseded lease are discarded
             rather than committed.
-          nullable: true
           type: string
         history:
           description: |
             A batch of history items to append to the agent instance's conversation
             history, in request order. Each created item is echoed back in the
-            response's createdHistory, positionally correlated. When non-empty,
-            model, provider, and systemPrompt (and, if needed, limits) must be
-            established through a CONFIGURATION item in this batch instead of the
-            top-level definition/limits, which must then be omitted.
-          nullable: true
+            response's createdHistory, positionally correlated. Must include a
+            CONFIGURATION item establishing model, provider, and systemPrompt (and,
+            if needed, limits).
           type: array
+          minItems: 1
           items:
             $ref: '#/components/schemas/AgentInstanceHistoryItem'
 
@@ -751,38 +649,9 @@ components:
         createdHistory:
           description: |
             One entry per history item submitted in the request, in request order.
-            Empty when no history items were submitted.
           type: array
           items:
             $ref: '#/components/schemas/AgentInstanceCreatedHistoryItem'
-
-    AgentInstanceMetricsDelta:
-      description: |
-        Metric increments to apply to the agent instance aggregate counters. The engine
-        accumulates these deltas into running totals on each UPDATED event. All fields
-        are optional; omit a field to leave the corresponding counter unchanged.
-      type: object
-      properties:
-        inputTokens:
-          type: integer
-          format: int64
-          minimum: 0
-          description: Increment to apply to the total input token counter.
-        outputTokens:
-          type: integer
-          format: int64
-          minimum: 0
-          description: Increment to apply to the total output token counter.
-        modelCalls:
-          type: integer
-          format: int32
-          minimum: 0
-          description: Increment to apply to the total model call counter.
-        toolCalls:
-          type: integer
-          format: int32
-          minimum: 0
-          description: Increment to apply to the total tool call counter.
 
     AgentInstanceUpdateRequest:
       description: |
@@ -790,6 +659,8 @@ components:
       type: object
       required:
         - elementInstanceKey
+        - jobKey
+        - jobLease
       properties:
         elementInstanceKey:
           nullable: false
@@ -805,24 +676,10 @@ components:
           description: The new status of the agent instance.
           allOf:
             - $ref: '#/components/schemas/AgentInstanceUpdateStatusEnum'
-        metrics:
-          description: Metric increments to apply to the aggregate counters.
-          allOf:
-            - $ref: '#/components/schemas/AgentInstanceMetricsDelta'
-        tools:
-          description: |
-            The complete list of tools available to the agent, replacing any previously
-            stored tools. When provided, the engine replaces the existing tool list with
-            this value.
-          nullable: true
-          type: array
-          items:
-            $ref: '#/components/schemas/AgentTool'
         jobKey:
           description: |
             The key of the job activation during which this update is being made.
-            Required whenever history is provided.
-          nullable: true
+            An update must always be attributed to the active job that produced it.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
         jobLease:
@@ -831,7 +688,6 @@ components:
             this activation from any other activation of the same job: if the job is
             later retried, history items submitted under a superseded lease are discarded
             rather than committed.
-          nullable: true
           type: string
         history:
           description: |
@@ -922,65 +778,6 @@ components:
 
     ## History schemas
 
-    AgentInstanceHistoryItemRequest:
-      description: Request to append a single history item to an agent instance's conversation history.
-      type: object
-      required:
-        - elementInstanceKey
-        - jobKey
-        - jobLease
-        - role
-        - content
-        - producedAt
-      properties:
-        elementInstanceKey:
-          description: |
-            The key of the currently-active element instance.
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
-        jobKey:
-          description: The key of the current job activation during which this history item was produced.
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/JobKey'
-        jobLease:
-          description: Opaque lease token received from the job activation response.
-          type: string
-        loopIteration:
-          description: |
-            The loop iteration this item belongs to. Omit if not grouping items by
-            loopIteration.
-          nullable: true
-          allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/LoopIterationId'
-        role:
-          description: The role of this history item in the conversation.
-          allOf:
-            - $ref: '#/components/schemas/AgentInstanceHistoryRoleEnum'
-        content:
-          description: The content blocks of this history item.
-          type: array
-          items:
-            $ref: '#/components/schemas/AgentInstanceMessageContent'
-        toolCalls:
-          description: |
-            Tool calls associated with this history item.
-            For ASSISTANT items: tool calls dispatched by this LLM response.
-            For TOOL_RESULT items: single-entry array referencing the originating tool call.
-            Omit for USER items.
-          type: array
-          nullable: true
-          items:
-            $ref: '#/components/schemas/AgentInstanceToolCall'
-        metrics:
-          description: Per-call token and latency metrics. Present on ASSISTANT items only.
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/AgentInstanceHistoryItemMetrics'
-        producedAt:
-          description: The agent-side timestamp of when this message was produced.
-          type: string
-          format: date-time
-
     AgentInstanceHistoryItem:
       description: |
         A single history item to append to the agent instance's conversation history,
@@ -1065,19 +862,6 @@ components:
           nullable: true
           items:
             $ref: '#/components/schemas/AgentInstanceMessageContent'
-
-    AgentInstanceHistoryItemCreationResult:
-      description: Response returned after successfully appending a history item.
-      type: object
-      x-semantic-provider:
-        - historyItemKey
-      required:
-        - historyItemKey
-      properties:
-        historyItemKey:
-          description: The system-generated key for the created history item.
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/AgentHistoryItemKey'
 
     AgentInstanceHistorySearchQuerySortRequest:
       type: object

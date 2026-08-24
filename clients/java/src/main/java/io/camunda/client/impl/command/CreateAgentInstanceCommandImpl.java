@@ -20,15 +20,16 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep2;
+import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep3;
+import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep4;
+import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep5;
 import io.camunda.client.api.response.CreateAgentInstanceResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateAgentInstanceResponseImpl;
 import io.camunda.client.protocol.rest.AgentInstanceCreationRequest;
 import io.camunda.client.protocol.rest.AgentInstanceCreationResult;
-import io.camunda.client.protocol.rest.AgentInstanceDefinition;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryRoleEnum;
-import io.camunda.client.protocol.rest.AgentInstanceLimits;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +38,11 @@ import java.util.stream.Collectors;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class CreateAgentInstanceCommandImpl
-    implements CreateAgentInstanceCommandStep1, CreateAgentInstanceCommandStep2 {
+    implements CreateAgentInstanceCommandStep1,
+        CreateAgentInstanceCommandStep2,
+        CreateAgentInstanceCommandStep3,
+        CreateAgentInstanceCommandStep4,
+        CreateAgentInstanceCommandStep5 {
 
   private final AgentInstanceCreationRequest request;
   private final JsonMapper jsonMapper;
@@ -59,56 +64,14 @@ public class CreateAgentInstanceCommandImpl
   }
 
   @Override
-  public CreateAgentInstanceCommandStep2 model(final String model) {
-    ArgumentUtil.ensureNotNullNorEmpty("model", model);
-    ensureDefinition().model(model);
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep2 provider(final String provider) {
-    ArgumentUtil.ensureNotNullNorEmpty("provider", provider);
-    ensureDefinition().provider(provider);
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep2 systemPrompt(final String systemPrompt) {
-    ArgumentUtil.ensureNotNullNorEmpty("systemPrompt", systemPrompt);
-    ensureDefinition().systemPrompt(systemPrompt);
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep2 maxTokens(final long maxTokens) {
-    ArgumentUtil.ensureGreaterThan("maxTokens", maxTokens, -2);
-    ensureLimits().maxTokens(maxTokens);
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep2 maxModelCalls(final int maxModelCalls) {
-    ArgumentUtil.ensureGreaterThan("maxModelCalls", maxModelCalls, -2);
-    ensureLimits().maxModelCalls(maxModelCalls);
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep2 maxToolCalls(final int maxToolCalls) {
-    ArgumentUtil.ensureGreaterThan("maxToolCalls", maxToolCalls, -2);
-    ensureLimits().maxToolCalls(maxToolCalls);
-    return this;
-  }
-
-  @Override
-  public CreateAgentInstanceCommandStep2 jobKey(final long jobKey) {
+  public CreateAgentInstanceCommandStep3 jobKey(final long jobKey) {
     ArgumentUtil.ensureGreaterThan("jobKey", jobKey, 0);
     request.jobKey(String.valueOf(jobKey));
     return this;
   }
 
   @Override
-  public CreateAgentInstanceCommandStep2 jobLease(final String jobLease) {
+  public CreateAgentInstanceCommandStep4 jobLease(final String jobLease) {
     ArgumentUtil.ensureNotNull("jobLease", jobLease);
     if (jobLease.trim().isEmpty()) {
       throw new IllegalArgumentException("jobLease must not be blank");
@@ -118,8 +81,11 @@ public class CreateAgentInstanceCommandImpl
   }
 
   @Override
-  public CreateAgentInstanceCommandStep2 history(final List<AgentInstanceHistoryItem> history) {
+  public CreateAgentInstanceCommandStep5 history(final List<AgentInstanceHistoryItem> history) {
     ArgumentUtil.ensureNotNull("history", history);
+    if (history.isEmpty()) {
+      throw new IllegalArgumentException("history must not be empty");
+    }
     final List<io.camunda.client.protocol.rest.AgentInstanceHistoryItem> protocolHistory =
         new ArrayList<>(history.size());
     for (final AgentInstanceHistoryItem item : history) {
@@ -133,36 +99,14 @@ public class CreateAgentInstanceCommandImpl
   }
 
   @Override
-  public CreateAgentInstanceCommandStep2 requestTimeout(final Duration requestTimeout) {
+  public CreateAgentInstanceCommandStep5 requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public CamundaFuture<CreateAgentInstanceResponse> send() {
-    final boolean hasHistory = request.getHistory() != null && !request.getHistory().isEmpty();
-
-    if (hasHistory) {
-      if (request.getJobKey() == null) {
-        throw new IllegalArgumentException("jobKey must be set when history is not empty");
-      }
-      if (request.getDefinition() != null) {
-        throw new IllegalArgumentException(
-            "model, provider, and systemPrompt must not be set when history is not empty");
-      }
-      if (request.getLimits() != null) {
-        throw new IllegalArgumentException(
-            "maxTokens, maxModelCalls, and maxToolCalls must not be set when history is not"
-                + " empty");
-      }
-      ensureConfigurationEstablishesDefinition(request.getHistory());
-    } else if (request.getDefinition() == null
-        || request.getDefinition().getModel() == null
-        || request.getDefinition().getProvider() == null
-        || request.getDefinition().getSystemPrompt() == null) {
-      throw new IllegalArgumentException(
-          "model, provider, and systemPrompt must be set when history is empty");
-    }
+    ensureConfigurationEstablishesDefinition(request.getHistory());
 
     final HttpCamundaFuture<CreateAgentInstanceResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
@@ -173,20 +117,6 @@ public class CreateAgentInstanceCommandImpl
         CreateAgentInstanceResponseImpl::new,
         result);
     return result;
-  }
-
-  private AgentInstanceDefinition ensureDefinition() {
-    if (request.getDefinition() == null) {
-      request.definition(new AgentInstanceDefinition());
-    }
-    return request.getDefinition();
-  }
-
-  private AgentInstanceLimits ensureLimits() {
-    if (request.getLimits() == null) {
-      request.limits(new AgentInstanceLimits());
-    }
-    return request.getLimits();
   }
 
   private void ensureConfigurationEstablishesDefinition(

@@ -208,24 +208,6 @@ const agentInstanceHistoryFilterSchema = z
 	.partial();
 type AgentInstanceHistoryFilter = z.infer<typeof agentInstanceHistoryFilterSchema>;
 
-const createAgentInstanceHistoryItemRequestBodySchema = z.object({
-	elementInstanceKey: z.string(),
-	jobKey: z.string(),
-	jobLease: z.string(),
-	loopIteration: z.number().int().nullable().optional(),
-	role: agentInstanceHistoryRoleSchema,
-	content: z.array(agentInstanceMessageContentSchema),
-	toolCalls: z.array(agentInstanceToolCallSchema).nullable().optional(),
-	metrics: agentInstanceHistoryItemMetricsSchema.nullable().optional(),
-	producedAt: z.string(),
-});
-type CreateAgentInstanceHistoryItemRequestBody = z.infer<typeof createAgentInstanceHistoryItemRequestBodySchema>;
-
-const createAgentInstanceHistoryItemResponseBodySchema = z.object({
-	historyItemKey: z.string(),
-});
-type CreateAgentInstanceHistoryItemResponseBody = z.infer<typeof createAgentInstanceHistoryItemResponseBodySchema>;
-
 const queryAgentInstanceHistoryRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['producedAt', 'historyItemKey', 'loopIteration'] as const,
 	filter: agentInstanceHistoryFilterSchema,
@@ -244,11 +226,6 @@ const queryAgentInstances = {
 	method: 'POST',
 	getUrl: () => `/${API_VERSION}/agent-instances/search` as const,
 } as const satisfies Endpoint;
-
-const createAgentInstanceHistoryItem = {
-	method: 'POST',
-	getUrl: ({agentInstanceKey}) => `/${API_VERSION}/agent-instances/${agentInstanceKey}/history` as const,
-} as const satisfies Endpoint<{agentInstanceKey: string}>;
 
 const queryAgentInstanceHistory = {
 	method: 'POST',
@@ -276,13 +253,10 @@ export {
 	agentInstanceHistoryItemMetricsSchema,
 	agentInstanceHistoryItemSchema,
 	agentInstanceHistoryFilterSchema,
-	createAgentInstanceHistoryItemRequestBodySchema,
-	createAgentInstanceHistoryItemResponseBodySchema,
 	queryAgentInstanceHistoryRequestBodySchema,
 	queryAgentInstanceHistoryResponseBodySchema,
 	getAgentInstance,
 	queryAgentInstances,
-	createAgentInstanceHistoryItem,
 	queryAgentInstanceHistory,
 };
 export type {
@@ -306,8 +280,6 @@ export type {
 	AgentInstanceHistoryItemMetrics,
 	AgentInstanceHistoryItem,
 	AgentInstanceHistoryFilter,
-	CreateAgentInstanceHistoryItemRequestBody,
-	CreateAgentInstanceHistoryItemResponseBody,
 	QueryAgentInstanceHistoryRequestBody,
 	QueryAgentInstanceHistoryResponseBody,
 };

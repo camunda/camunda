@@ -17,11 +17,18 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.response.Process;
+import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -69,7 +76,7 @@ public class AgentInstanceMigrationIT {
 
     final var processInstanceKey =
         startProcessInstance(client, sourceProcess.getBpmnProcessId()).getProcessInstanceKey();
-    final var agentInstanceKey = createAgentInstance(processInstanceKey, sourceElementId);
+    final var agentInstanceKey = createAgentInstance(processInstanceKey, sourceElementId, true);
     final long sourceAgentDefinitionKey =
         client.newAgentInstanceGetRequest(agentInstanceKey).execute().getAgentDefinitionKey();
 
@@ -125,7 +132,7 @@ public class AgentInstanceMigrationIT {
 
     final var processInstanceKey =
         startProcessInstance(client, sourceProcess.getBpmnProcessId()).getProcessInstanceKey();
-    final var agentInstanceKey = createAgentInstance(processInstanceKey, sourceElementId);
+    final var agentInstanceKey = createAgentInstance(processInstanceKey, sourceElementId, false);
     final long sourceAgentDefinitionKey =
         client.newAgentInstanceGetRequest(agentInstanceKey).execute().getAgentDefinitionKey();
 
@@ -144,7 +151,10 @@ public class AgentInstanceMigrationIT {
         agentInstanceKey, targetProcess, targetElementId, sourceAgentDefinitionKey);
   }
 
-  private long createAgentInstance(final long processInstanceKey, final String elementId) {
+  private long createAgentInstance(
+      final long processInstanceKey,
+      final String elementId,
+      final boolean releaseJobForReactivation) {
     waitForElementInstances(
         client, f -> f.elementId(elementId).processInstanceKey(processInstanceKey), 1);
     final var elementInstanceKey =
@@ -156,17 +166,51 @@ public class AgentInstanceMigrationIT {
             .getFirst()
             .getElementInstanceKey();
 
+    // CREATE now requires a jobKey backed by an actual activation of the agentic job.
+    final var activatedJob =
+        client
+            .newActivateJobsCommand()
+            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .maxJobsToActivate(1)
+            .timeout(Duration.ofMinutes(5))
+            .send()
+            .join()
+            .getJobs()
+            .getFirst();
+
     final var agentInstanceKey =
         client
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
-            .model("gpt-4o")
-            .provider("openai")
-            .systemPrompt("You are a helpful assistant.")
+            .jobKey(activatedJob.getKey())
+            .jobLease("test-job-lease")
+            .history(
+                List.of(
+                    configurationHistoryItem("gpt-4o", "openai", "You are a helpful assistant.")))
             .execute()
             .getAgentInstanceKey();
+
+    if (releaseJobForReactivation) {
+      // Fail it straight back (no backoff) so it stays available for callers that still need
+      // to activate/complete it later.
+      client.newFailCommand(activatedJob).retries(1).execute();
+    }
+
     waitForAgentInstanceToBeIndexed(client, agentInstanceKey);
     return agentInstanceKey;
+  }
+
+  private static AgentInstanceHistoryItem configurationHistoryItem(
+      final String model, final String provider, final String systemPrompt) {
+    return new AgentInstanceHistoryItem()
+        .historyItemId(UUID.randomUUID().toString())
+        .loopIteration(1)
+        .role(AgentInstanceHistoryRole.CONFIGURATION)
+        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+        .producedAt(OffsetDateTime.now())
+        .model(model)
+        .provider(provider)
+        .systemPrompt(List.of(AgentInstanceHistoryContent.text(systemPrompt)));
   }
 
   private void assertAgentInstanceMigratedTo(

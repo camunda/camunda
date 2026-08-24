@@ -18,9 +18,6 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateAgentHistoryRequest;
-import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
-import java.util.concurrent.CompletableFuture;
 
 public final class AgentHistoryServices
     extends SearchQueryService<
@@ -42,11 +39,6 @@ public final class AgentHistoryServices
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.agentHistorySearchClient = agentHistorySearchClient;
-  }
-
-  public CompletableFuture<AgentHistoryRecord> createAgentHistoryItem(
-      final AgentHistoryRecord record, final CamundaAuthentication authentication) {
-    return sendBrokerRequest(new BrokerCreateAgentHistoryRequest(record), authentication);
   }
 
   @Override

@@ -16,7 +16,6 @@ import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemMetrics;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
 import io.camunda.gateway.protocol.model.AgentInstanceLimits;
 import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
-import io.camunda.gateway.protocol.model.AgentInstanceMetricsDelta;
 import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
 import io.camunda.gateway.protocol.model.AgentInstanceToolCall;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
@@ -36,6 +35,7 @@ class AgentInstanceMapperTest {
   private static final String AGENT_INSTANCE_KEY = "9007199254741017";
   private static final String ELEMENT_INSTANCE_KEY = "2251799813685248";
   private static final String JOB_KEY = "2251799813685249";
+  private static final String JOB_LEASE = "lease-token-1";
 
   private final AgentInstanceMapper mapper =
       new AgentInstanceMapper(new AgentInstanceRequestValidator());
@@ -72,6 +72,8 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
       request.setStatus(AgentInstanceUpdateStatusEnum.THINKING);
 
@@ -85,60 +87,6 @@ class AgentInstanceMapperTest {
       assertThat(record.getStatus().name()).isEqualTo("THINKING");
       assertThat(record.getChangedAttributes()).containsExactly("status");
     }
-
-    @Test
-    void shouldMapMetricsOntoRecord() {
-      // given
-      final var request =
-          AgentInstanceUpdateRequest.Builder.create()
-              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-              .build();
-      request.setMetrics(AgentInstanceMetricsDelta.Builder.create().build());
-      request.getMetrics().setInputTokens(1000L);
-      request.getMetrics().setOutputTokens(500L);
-      request.getMetrics().setModelCalls(3);
-      request.getMetrics().setToolCalls(7);
-
-      // when
-      final Either<ProblemDetail, AgentInstanceRecord> result =
-          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
-
-      // then
-      assertThat(result.isRight()).isTrue();
-      final var record = result.get();
-      assertThat(record.getMetrics().getInputTokens()).isEqualTo(1000L);
-      assertThat(record.getMetrics().getOutputTokens()).isEqualTo(500L);
-      assertThat(record.getMetrics().getModelCalls()).isEqualTo(3);
-      assertThat(record.getMetrics().getToolCalls()).isEqualTo(7);
-      assertThat(record.getChangedAttributes()).containsExactly("metrics");
-    }
-
-    @Test
-    void shouldMapToolsOntoRecord() {
-      // given
-      final var request =
-          AgentInstanceUpdateRequest.Builder.create()
-              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-              .build();
-      request.setTools(
-          List.of(
-              AgentTool.Builder.create()
-                  .name("searchDatabase")
-                  .description("Searches the database")
-                  .elementId(null)
-                  .build()));
-
-      // when
-      final Either<ProblemDetail, AgentInstanceRecord> result =
-          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
-
-      // then
-      assertThat(result.isRight()).isTrue();
-      final var record = result.get();
-      assertThat(record.getTools()).hasSize(1);
-      assertThat(record.getTools().get(0).getName()).isEqualTo("searchDatabase");
-      assertThat(record.getChangedAttributes()).containsExactly("tools");
-    }
   }
 
   @Nested
@@ -150,8 +98,9 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hello"),
@@ -179,8 +128,9 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       final var toolCall =
           AgentInstanceToolCall.Builder.create()
               .toolCallId("tc-001")
@@ -228,9 +178,9 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease("lease-abc")
               .build();
-      request.setJobKey(JOB_KEY);
-      request.setJobLease("lease-abc");
       request.setHistory(List.of(historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hi")));
 
       // when
@@ -250,8 +200,9 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       final var item =
           AgentInstanceHistoryItem.Builder.create()
               .historyItemId("item-1")
@@ -311,8 +262,9 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(List.of(historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hi")));
 
       // when
@@ -338,8 +290,9 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       final var item = historyItem("item-1", AgentInstanceHistoryRoleEnum.CONFIGURATION, "hi");
       item.tools(List.of());
       request.setHistory(List.of(item));
@@ -361,8 +314,9 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       final var itemIterationTwo =
           historyItem("item-1", 2, AgentInstanceHistoryRoleEnum.USER, "hi");
       final var itemIterationThree =
@@ -390,23 +344,23 @@ class AgentInstanceMapperTest {
       final var request =
           AgentInstanceCreationRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease("lease-abc")
+              .history(
+                  List.of(
+                      AgentInstanceHistoryItem.Builder.create()
+                          .historyItemId("item-0")
+                          .loopIteration(1)
+                          .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                          .content(List.of(textContent("configuration")))
+                          .producedAt("2025-06-01T12:00:00Z")
+                          .build()
+                          .model("gpt-4o")
+                          .provider("openai")
+                          .systemPrompt(List.of(textContent("You are a helpful assistant."))),
+                      historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hello"),
+                      historyItem("item-2", AgentInstanceHistoryRoleEnum.ASSISTANT, "hi there")))
               .build();
-      request.setJobKey(JOB_KEY);
-      request.setJobLease("lease-abc");
-      request.setHistory(
-          List.of(
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-0")
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
-                  .content(List.of(textContent("configuration")))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build()
-                  .model("gpt-4o")
-                  .provider("openai")
-                  .systemPrompt(List.of(textContent("You are a helpful assistant."))),
-              historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hello"),
-              historyItem("item-2", AgentInstanceHistoryRoleEnum.ASSISTANT, "hi there")));
 
       // when
       final Either<ProblemDetail, AgentInstanceRecord> result =
@@ -424,67 +378,32 @@ class AgentInstanceMapperTest {
     }
 
     @Test
-    void shouldLeaveDefinitionAndLimitsUnsetWhenNotProvidedAlongsideHistory() {
-      // given
-      final var request =
-          AgentInstanceCreationRequest.Builder.create()
-              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-              .build();
-      request.setJobKey(JOB_KEY);
-      request.setHistory(
-          List.of(
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-0")
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
-                  .content(List.of(textContent("configuration")))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build()
-                  .model("gpt-4o")
-                  .provider("openai")
-                  .systemPrompt(List.of(textContent("You are a helpful assistant.")))));
-
-      // when
-      final Either<ProblemDetail, AgentInstanceRecord> result =
-          mapper.toCreateAgentInstanceRecord(request);
-
-      // then
-      assertThat(result.isRight()).isTrue();
-      final var record = result.get();
-      assertThat(record.getDefinition().getModel()).isEmpty();
-      assertThat(record.getDefinition().getProvider()).isEmpty();
-      assertThat(record.getDefinition().getSystemPrompt()).isEmpty();
-      assertThat(record.getLimits().getMaxTokens()).isEqualTo(-1L);
-      assertThat(record.getLimits().getMaxModelCalls()).isEqualTo(-1);
-      assertThat(record.getLimits().getMaxToolCalls()).isEqualTo(-1);
-    }
-
-    @Test
     void shouldMapConfigurationLimitsOnCreateUsingGranularChangedAttributes() {
       // given
       final var request =
           AgentInstanceCreationRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
+              .history(
+                  List.of(
+                      AgentInstanceHistoryItem.Builder.create()
+                          .historyItemId("item-0")
+                          .loopIteration(1)
+                          .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                          .content(List.of(textContent("configuration")))
+                          .producedAt("2025-06-01T12:00:00Z")
+                          .build()
+                          .model("gpt-4o")
+                          .provider("openai")
+                          .systemPrompt(List.of(textContent("You are a helpful assistant.")))
+                          .limits(
+                              AgentInstanceLimits.Builder.create()
+                                  .maxModelCalls(10)
+                                  .maxTokens(1000L)
+                                  .maxToolCalls(5)
+                                  .build())))
               .build();
-      request.setJobKey(JOB_KEY);
-      request.setHistory(
-          List.of(
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-0")
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
-                  .content(List.of(textContent("configuration")))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build()
-                  .model("gpt-4o")
-                  .provider("openai")
-                  .systemPrompt(List.of(textContent("You are a helpful assistant.")))
-                  .limits(
-                      AgentInstanceLimits.Builder.create()
-                          .maxModelCalls(10)
-                          .maxTokens(1000L)
-                          .maxToolCalls(5)
-                          .build())));
 
       // when
       final Either<ProblemDetail, AgentInstanceRecord> result =
@@ -566,23 +485,15 @@ class AgentInstanceMapperTest {
   class CombinedFieldMappingTest {
 
     @Test
-    void shouldMapStatusMetricsToolsAndHistoryTogetherWithoutLosingAny() {
+    void shouldMapStatusAndHistoryTogetherWithoutLosingAny() {
       // given
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
       request.setStatus(AgentInstanceUpdateStatusEnum.IDLE);
-      request.setMetrics(AgentInstanceMetricsDelta.Builder.create().build());
-      request.getMetrics().setInputTokens(10L);
-      request.setTools(
-          List.of(
-              AgentTool.Builder.create()
-                  .name("searchDatabase")
-                  .description(null)
-                  .elementId(null)
-                  .build()));
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hello"),
@@ -596,13 +507,10 @@ class AgentInstanceMapperTest {
       assertThat(result.isRight()).isTrue();
       final var record = result.get();
       assertThat(record.getStatus().name()).isEqualTo("IDLE");
-      assertThat(record.getMetrics().getInputTokens()).isEqualTo(10L);
-      assertThat(record.getTools()).hasSize(1);
-      assertThat(record.getTools().get(0).getName()).isEqualTo("searchDatabase");
       assertThat(record.getHistory()).hasSize(2);
       assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-1");
       assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-2");
-      assertThat(record.getChangedAttributes()).containsExactly("status", "metrics", "tools");
+      assertThat(record.getChangedAttributes()).containsExactly("status");
     }
   }
 }

@@ -20,16 +20,25 @@ import static org.assertj.core.groups.Tuple.tuple;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.ProblemDetail;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
+import io.camunda.client.api.command.AgentInstanceHistoryMetrics;
+import io.camunda.client.api.command.AgentInstanceHistoryToolCall;
+import io.camunda.client.api.command.AgentInstanceLimits;
 import io.camunda.client.api.command.AgentInstanceUpdateStatus;
 import io.camunda.client.api.command.AgentTool;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.search.enums.AgentInstanceStatus;
 import io.camunda.client.api.search.response.AgentInstance.Tool;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -81,13 +90,26 @@ public class AgentInstanceFetchIT {
             .getFirst()
             .getElementInstanceKey();
 
+    final var activatedJob1 = activateAgenticJob();
     agentInstanceKey1 =
         camundaClient
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(ei1)
-            .model("gpt-4o")
-            .provider("openai")
-            .systemPrompt("You are a helpful assistant.")
+            .jobKey(activatedJob1.getKey())
+            .jobLease("test-job-lease")
+            .history(
+                List.of(
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.CONFIGURATION)
+                        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+                        .producedAt(OffsetDateTime.now())
+                        .model("gpt-4o")
+                        .provider("openai")
+                        .systemPrompt(
+                            List.of(
+                                AgentInstanceHistoryContent.text("You are a helpful assistant.")))))
             .send()
             .join()
             .getAgentInstanceKey();
@@ -108,38 +130,100 @@ public class AgentInstanceFetchIT {
             .getFirst()
             .getElementInstanceKey();
 
+    final var activatedJob2 = activateAgenticJob();
     agentInstanceKey2 =
         camundaClient
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(ei2)
-            .model("gpt-4o")
-            .provider("openai")
-            .systemPrompt("You are a helpful assistant.")
-            .maxTokens(5000L)
-            .maxModelCalls(10)
-            .maxToolCalls(20)
+            .jobKey(activatedJob2.getKey())
+            .jobLease("test-job-lease")
+            .history(
+                List.of(
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.CONFIGURATION)
+                        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+                        .producedAt(OffsetDateTime.now())
+                        .model("gpt-4o")
+                        .provider("openai")
+                        .systemPrompt(
+                            List.of(
+                                AgentInstanceHistoryContent.text("You are a helpful assistant.")))
+                        .limits(AgentInstanceLimits.of(5000L, 10, 20))
+                        .tools(
+                            List.of(
+                                AgentTool.of("search", "Search the web", "searchTask"),
+                                AgentTool.of("summarize")))))
             .send()
             .join()
             .getAgentInstanceKey();
 
+    // metrics.modelCalls counts ASSISTANT items, so 3 distinct ASSISTANT items are needed to
+    // land modelCalls=3; toolCalls and token metrics sum across those same items.
     camundaClient
         .newUpdateAgentInstanceCommand(agentInstanceKey2)
         .elementInstanceKey(ei2)
         .status(AgentInstanceUpdateStatus.THINKING)
-        .tools(
+        .jobKey(activatedJob2.getKey())
+        .jobLease("test-job-lease")
+        .history(
             List.of(
-                AgentTool.of("search", "Search the web", "searchTask"), AgentTool.of("summarize")))
-        .inputTokens(150L)
-        .outputTokens(300L)
-        .modelCalls(3)
-        .toolCalls(2)
+                new AgentInstanceHistoryItem()
+                    .historyItemId(UUID.randomUUID().toString())
+                    .loopIteration(1)
+                    .role(AgentInstanceHistoryRole.ASSISTANT)
+                    .content(List.of(AgentInstanceHistoryContent.text("Searching the web.")))
+                    .producedAt(OffsetDateTime.now())
+                    .toolCalls(
+                        List.of(
+                            new AgentInstanceHistoryToolCall()
+                                .toolCallId(UUID.randomUUID().toString())
+                                .toolName("search")
+                                .elementId("searchTask")))
+                    .metrics(new AgentInstanceHistoryMetrics().inputTokens(50L).outputTokens(100L)),
+                new AgentInstanceHistoryItem()
+                    .historyItemId(UUID.randomUUID().toString())
+                    .loopIteration(2)
+                    .role(AgentInstanceHistoryRole.ASSISTANT)
+                    .content(List.of(AgentInstanceHistoryContent.text("Summarizing results.")))
+                    .producedAt(OffsetDateTime.now())
+                    .toolCalls(
+                        List.of(
+                            new AgentInstanceHistoryToolCall()
+                                .toolCallId(UUID.randomUUID().toString())
+                                .toolName("summarize")))
+                    .metrics(new AgentInstanceHistoryMetrics().inputTokens(50L).outputTokens(100L)),
+                new AgentInstanceHistoryItem()
+                    .historyItemId(UUID.randomUUID().toString())
+                    .loopIteration(3)
+                    .role(AgentInstanceHistoryRole.ASSISTANT)
+                    .content(List.of(AgentInstanceHistoryContent.text("Done.")))
+                    .producedAt(OffsetDateTime.now())
+                    .metrics(
+                        new AgentInstanceHistoryMetrics().inputTokens(50L).outputTokens(100L))))
         .send()
         .join();
+    camundaClient.newCompleteCommand(activatedJob2).execute();
 
     // Wait until both are indexed
     waitForAgentInstanceToBeIndexed(camundaClient, agentInstanceKey1);
     waitForAgentInstanceWithStatusToBeIndexed(
         camundaClient, agentInstanceKey2, AgentInstanceStatus.THINKING);
+  }
+
+  private static ActivatedJob activateAgenticJob() {
+    final var activatedJobs =
+        camundaClient
+            .newActivateJobsCommand()
+            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .maxJobsToActivate(1)
+            .timeout(Duration.ofMinutes(5))
+            .send()
+            .join()
+            .getJobs();
+    assertThat(activatedJobs).as("expected to activate one agent job").isNotEmpty();
+    return activatedJobs.getFirst();
   }
 
   @Test
