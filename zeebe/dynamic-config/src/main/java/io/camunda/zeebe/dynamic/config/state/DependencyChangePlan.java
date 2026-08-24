@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -132,6 +133,60 @@ public record DependencyChangePlan(
               }
             });
     return List.copyOf(pending);
+  }
+
+  /**
+   * The operations still to run, ordered so that every operation follows the ones it depends on — a
+   * valid sequential execution of this change.
+   *
+   * <p>{@link #pendingOperations()} orders by operation id, which is topological for every graph
+   * {@link OperationGraph.Builder} produces (it only lets an operation depend on ids already
+   * issued) but not for one built by hand or decoded from the wire, where the ids are whatever the
+   * sender wrote. Reading a change is fine with id order; <em>executing</em> it in id order is not,
+   * and {@link ClusterChangePlan#flatten} hands the result to a broker that will execute it.
+   *
+   * <p>Ties are broken by ascending id rather than left to iteration order, because two brokers
+   * flattening the same plan must produce the same queue: the result is gossiped into the legacy
+   * field and merged there by a version that says nothing about which ordering produced it.
+   *
+   * <p>A dependency that has already completed does not constrain anything, so only incomplete
+   * operations are counted — which is what makes the result executable from the current state
+   * rather than from the start of the change.
+   */
+  public List<ClusterConfigurationChangeOperation> pendingOperationsInDependencyOrder() {
+    final var outstanding = new TreeMap<OperationId, SortedSet<OperationId>>();
+    graph
+        .operations()
+        .forEach(
+            (operationId, planned) -> {
+              if (isComplete(operationId)) {
+                return;
+              }
+              final var blockers = new TreeSet<OperationId>();
+              planned.dependsOn().stream().filter(d -> !isComplete(d)).forEach(blockers::add);
+              outstanding.put(operationId, blockers);
+            });
+
+    final var ordered = new ArrayList<ClusterConfigurationChangeOperation>();
+    while (!outstanding.isEmpty()) {
+      final var next =
+          outstanding.entrySet().stream()
+              .filter(entry -> entry.getValue().isEmpty())
+              .map(Map.Entry::getKey)
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "Cannot order the outstanding operations of change %d: every one is"
+                                  .formatted(id)
+                              + " blocked, which means a dependency cycle OperationGraph should"
+                              + " have rejected: "
+                              + outstanding));
+      outstanding.remove(next);
+      outstanding.values().forEach(blockers -> blockers.remove(next));
+      ordered.add(operation(next));
+    }
+    return List.copyOf(ordered);
   }
 
   /** The operations already run, in operation-id order. See {@link #pendingOperations()}. */

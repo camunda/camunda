@@ -73,13 +73,18 @@ public record ClusterChangePlan(
     if (plan instanceof final ClusterChangePlan queue) {
       return queue;
     }
+    // Dependency order, not id order: the receiver executes this queue head-first, so an id
+    // ordering that happens not to be topological would make it run an operation before one the
+    // graph says it waits for. Every graph the builder produces is already in topological id
+    // order; one decoded from the wire is whatever the sender wrote.
+    final var graph = (DependencyChangePlan) plan;
     return new ClusterChangePlan(
-        plan.id(),
-        plan.version(),
-        plan.status(),
-        plan.startedAt(),
-        plan.completedOperations(),
-        plan.pendingOperations());
+        graph.id(),
+        graph.version(),
+        graph.status(),
+        graph.startedAt(),
+        graph.completedOperations(),
+        graph.pendingOperationsInDependencyOrder());
   }
 
   public boolean isRestore() {

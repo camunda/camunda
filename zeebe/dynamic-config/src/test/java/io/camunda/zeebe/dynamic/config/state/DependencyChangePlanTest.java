@@ -418,6 +418,51 @@ final class DependencyChangePlanTest {
   class GraphValidation {
 
     @Test
+    void shouldFlattenIntoDependencyOrderRatherThanIdOrder() {
+      // given — a graph whose ids run against its edges: operation 0 waits for operation 1. The
+      // builder cannot produce this (it only lets an operation depend on ids already issued), but a
+      // graph decoded from the wire carries whatever ids the sender wrote.
+      final var operations = new TreeMap<OperationId, PlannedOperation>();
+      operations.put(
+          OperationId.of(0),
+          new PlannedOperation(
+              new UpdateIncarnationNumberOperation(member(0)),
+              new java.util.TreeSet<>(Set.of(OperationId.of(1)))));
+      operations.put(
+          OperationId.of(1),
+          new PlannedOperation(
+              new UpdateIncarnationNumberOperation(member(1)), new java.util.TreeSet<>()));
+      final var plan = DependencyChangePlan.init(PLAN_ID, OperationGraph.of(operations));
+
+      // when / then — the queue a broker without the graph model executes head-first must respect
+      // the edge. Id order would run operation 0 before the operation it waits for.
+      assertThat(ClusterChangePlan.flatten(plan).pendingOperations())
+          .containsExactly(
+              new UpdateIncarnationNumberOperation(member(1)),
+              new UpdateIncarnationNumberOperation(member(0)));
+    }
+
+    @Test
+    void shouldOrderOnlyWhatIsOutstandingWhenFlattening() {
+      // given — a chain whose first operation has completed, so its edge no longer constrains
+      final var builder = OperationGraph.builder();
+      final var first = builder.add(new UpdateIncarnationNumberOperation(member(0)));
+      builder.add(new UpdateIncarnationNumberOperation(member(1)), Set.of(first));
+      final var plan =
+          new DependencyChangePlan(
+              PLAN_ID,
+              Status.IN_PROGRESS,
+              Instant.EPOCH,
+              builder.build(),
+              new TreeMap<>(Map.of(first, Instant.EPOCH)));
+
+      // when / then — a completed dependency is already satisfied, so the remaining operation is
+      // runnable and appears alone
+      assertThat(ClusterChangePlan.flatten(plan).pendingOperations())
+          .containsExactly(new UpdateIncarnationNumberOperation(member(1)));
+    }
+
+    @Test
     void shouldDefaultAnOperationsTargetToTheEnclosingSubConfiguration() {
       // given / when — every adopter today builds a graph that lives inside the sub-configuration
       // it acts on, so no node names a group
