@@ -17,7 +17,6 @@ import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
-import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapp.WebappModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
@@ -50,7 +49,6 @@ public class StandaloneCamunda {
             .sources(
                 CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,
-                TasklistModuleConfiguration.class,
                 IdentityModuleConfiguration.class,
                 WebappModuleConfiguration.class,
                 WebappsModuleConfiguration.class,

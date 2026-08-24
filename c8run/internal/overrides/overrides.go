@@ -21,7 +21,6 @@ func SetEnvVars() error {
 		"CAMUNDA_OPERATE_CSRFPREVENTIONENABLED":  "false",
 		"CAMUNDA_OPERATE_IMPORTER_READERBACKOFF": "1000",
 		"CAMUNDA_REST_QUERY_ENABLED":             "true",
-		"CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED": "false",
 	}
 
 	for key, value := range envVars {

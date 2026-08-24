@@ -1,12 +1,12 @@
 # Legacy components
 
-The legacy frontends still ship independently and will eventually be
-integrated into the unified orchestration-cluster webapp.
+The remaining legacy frontends still ship independently and will eventually be
+integrated into the unified orchestration-cluster webapp. Tasklist already lives in
+`webapp/client/apps/orchestration-cluster-webapp/src/tasklist/`.
 
 ## Projects
 
 - **`operate/client`**: process monitoring.
-- **`tasklist/client`**: user task management.
 - **`identity/client`** (also known as Admin): authentication,
   authorization and general cluster admin features.
 

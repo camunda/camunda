@@ -2,7 +2,7 @@
 
 ## Overview / What it is
 
-The Unified Configuration system is a Spring Boot-based configuration mechanism that centralizes the configuration for the Camunda components (former standalone apps) under a common `camunda.*` property namespace. It replaces legacy, scattered properties (e.g., `zeebe.broker.*`) with a unified structure where each section is named after the logical role of the component, rather than the application-specific name (e.g., `camunda.data.secondary-storage.*` instead of the legacy `camunda.tasklist.elasticsearch.*`).
+The Unified Configuration system is a Spring Boot-based configuration mechanism that centralizes the configuration for the Camunda components (former standalone apps) under a common `camunda.*` property namespace. It replaces legacy, scattered properties (e.g., `zeebe.broker.*`) with a unified structure where each section is named after the logical role of the component, rather than the application-specific name.
 
 ## What problems it solves
 
@@ -12,8 +12,6 @@ As the former standalone applications (Zeebe, Tasklist, Operate, Identity) have 
 
 ```
 camunda.database.url=<url>
-camunda.tasklist.elasticsearch.url=<url>
-camunda.tasklist.zeebeElasticsearch.url=<url>
 camunda.operate.elasticsearch.url=<url>
 camunda.operate.zeebeElasticsearch.url=<url>
 zeebe.broker.exporters.camundaexporter.args.connect.url=<url>
@@ -181,4 +179,3 @@ public String getNewProperty() {              // replace String with the wanted 
         Set.of("key1", "key2", ...));         // legacy keys here
 }
 ```
-

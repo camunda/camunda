@@ -33,8 +33,6 @@ public class PersistentWebSessionPropertiesPostProcessor implements EnvironmentP
   static final List<String> LEGACY_PROPERTIES =
       List.of(
           "camunda.persistent.sessions.enabled",
-          "camunda.tasklist.persistent.sessions.enabled",
-          "camunda.tasklist.persistentSessionsEnabled",
           "camunda.operate.persistent.sessions.enabled",
           "camunda.operate.persistentSessionsEnabled");
 

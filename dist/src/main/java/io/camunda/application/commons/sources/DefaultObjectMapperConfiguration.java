@@ -24,7 +24,6 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
  * <ul>
  *   <li>{@code StandardJackson2ObjectMapperBuilderCustomizer}
  *   <li>{@code operateObjectMapperCustomizer}
- *   <li>{@code tasklistObjectMapperCustomizer}
  *   <li>{@code gatewayRestObjectMapperCustomizer}
  * </ul>
  *
@@ -46,8 +45,6 @@ public class DefaultObjectMapperConfiguration {
   public ObjectMapper defaultObjectMapper(
       @Qualifier("operateObjectMapperCustomizer")
           final Optional<Consumer<Jackson2ObjectMapperBuilder>> operateCustomizer,
-      @Qualifier("tasklistObjectMapperCustomizer")
-          final Optional<Consumer<Jackson2ObjectMapperBuilder>> tasklistCustomizer,
       @Qualifier("gatewayRestObjectMapperCustomizer")
           final Optional<Consumer<Jackson2ObjectMapperBuilder>> gatewayRestCustomizer) {
 
@@ -55,7 +52,6 @@ public class DefaultObjectMapperConfiguration {
     // Configure proper date/time serialization for date types
     builder.featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     // Apply optional customizers
-    tasklistCustomizer.ifPresent(c -> c.accept(builder));
     operateCustomizer.ifPresent(c -> c.accept(builder));
     gatewayRestCustomizer.ifPresent(c -> c.accept(builder));
     return builder.build();

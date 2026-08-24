@@ -1,5 +1,5 @@
 ---
-applyTo: "operate/client/**,tasklist/client/**,identity/client/**,optimize/client/**,webapp/client/**"
+applyTo: "operate/client/**,identity/client/**,optimize/client/**,webapp/client/**"
 ---
 
 # Frontend Development Conventions
@@ -7,27 +7,27 @@ applyTo: "operate/client/**,tasklist/client/**,identity/client/**,optimize/clien
 The frontends live under `client/` directories. The orchestration cluster webapp at `webapp/client/`
 is the unified frontend replacing the legacy apps. Read `webapp/client/README.md` and
 `docs/monorepo-docs/frontend/frontend.md` before working on the unified app. For the legacy apps
-(Operate, Tasklist, Identity, Optimize), read the module's `client/README.md` before making changes.
+(Operate, Identity, Optimize), read the module's `client/README.md` before making changes.
 
 ## Tech Stack
 
 - React, TypeScript, Vite, Carbon Design System (`@carbon/react`). Check each app's `package.json` for current versions.
-- Testing: Vitest (Operate, Tasklist), react-scripts (Optimize legacy). Identity has no unit test framework.
-- Linting: ESLint, Prettier; Tasklist also uses Stylelint
+- Testing: Vitest (Operate), react-scripts (Optimize legacy). Identity has no unit test framework.
+- Linting: ESLint, Prettier
 - E2E: Playwright — cross-app E2E tests in `qa/c8-orchestration-cluster-e2e-test-suite/`, visual regression tests in each app's `client/` directory
-- Package manager: npm (Operate, Tasklist, Identity), Yarn (Optimize)
+- Package manager: npm (Operate, Identity), Yarn (Optimize)
 
 ## Common Commands
 
 Run these from the respective `client/` directory.
 
-### Operate, Tasklist (npm)
+### Operate (npm)
 
 ```bash
 npm ci                # Install dependencies
 npm run build         # Build for production
 npm run test          # Run unit tests
-npm run lint          # Lint (TypeScript + ESLint + Prettier check; runs Stylelint in tasklist)
+npm run lint          # Lint (TypeScript + ESLint + Prettier check)
 npm run format        # Auto-format with Prettier
 npm run start         # Start dev server
 ```
@@ -55,9 +55,8 @@ yarn start            # Start dev server
 ## Conventions
 
 - Use Carbon Design System components; do not introduce alternative UI component libraries.
-- Follow existing patterns in each app — Operate, Tasklist, and Identity have different
+- Follow existing patterns in each app — Operate and Identity have different
   conventions despite sharing the same tech stack.
-- Tasklist uses Stylelint for CSS/SCSS; run `npm run stylelint` before committing style changes.
 - Frontends are built as part of the Maven build by default. Skip with `-PskipFrontendBuild`.
 
 ## Orchestration Cluster Webapp (npm)
@@ -85,4 +84,4 @@ npm run test:visual       # Playwright visual regression (needs Docker)
 - Playwright tests (integration, visual, a11y) use MSW via `@msw/playwright`. See `.claude/skills/frontend-integration-test/`.
 - Follow the pod areas + shared + routes architecture. See `.claude/skills/frontend-feature/`.
 - For Tasklist pod work in `src/tasklist/`, see `.claude/skills/tasklist-frontend/`.
-- For migrating legacy Operate/Tasklist code to the unified app, see `.claude/skills/frontend-migrator/`.
+- For migrating legacy Operate code to the unified app, see `.claude/skills/frontend-migrator/`.
