@@ -14,11 +14,11 @@ import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.qa.util.restapi.ExportingRestClient;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
@@ -42,6 +42,8 @@ import org.junit.jupiter.api.Timeout;
 final class ExportingPauseIT {
   private static final int PARTITIONS_COUNT = 2;
   private static final int MAX_CREATION_ATTEMPTS = 10 * PARTITIONS_COUNT;
+  private static final String CLUSTER_ADMIN_USER = "cluster-operator";
+  private static final String CLUSTER_ADMIN_PASSWORD = "cluster-secret";
 
   @TestZeebe
   private final TestCluster cluster =
@@ -54,15 +56,24 @@ final class ExportingPauseIT {
           // We have to stop a broker in the test. So use a standalone gateway to avoid potentially
           // accessing an unavailable broker
           .withGatewaysCount(1)
+          .withNodeConfig(
+              node ->
+                  node.withProperty(
+                          "camunda.security.cluster-admin.basic.users[0].name", CLUSTER_ADMIN_USER)
+                      .withProperty(
+                          "camunda.security.cluster-admin.basic.users[0].password",
+                          CLUSTER_ADMIN_PASSWORD))
           .build();
 
   @AutoClose private CamundaClient client;
-  private ExportingActuator actuator;
+  private ExportingRestClient exportingClient;
 
   @BeforeEach
   void setup() {
     client = cluster.newClientBuilder().build();
-    actuator = ExportingActuator.of(cluster.availableGateway());
+    exportingClient =
+        ExportingRestClient.of(
+            cluster.availableGateway(), CLUSTER_ADMIN_USER, CLUSTER_ADMIN_PASSWORD);
 
     final var deploymentKey =
         client
@@ -81,7 +92,7 @@ final class ExportingPauseIT {
     // given
     generateEventsOnAllPartitions();
 
-    actuator.pause();
+    exportingClient.pause();
 
     final var recordsBeforeLeaderChange =
         Awaitility.await()
