@@ -51,6 +51,7 @@ const api = {
       ...BASE_REQUEST_OPTIONS,
       method: 'POST',
     }),
+  sessionHeartbeatUrl: () => getFullURL('/session/heartbeat').toString(),
   getCurrentUser: () =>
     new Request(getFullURL(endpoints.getCurrentUser.getUrl()), {
       ...BASE_REQUEST_OPTIONS,
