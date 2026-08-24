@@ -45,30 +45,37 @@
   <!--
     MSSQL: last_commit_lsn are numeric(25,0) in sys.dm_hadr_database_replica_states,
     directly comparable as bigint for a test/dev database where LSN values stay small.
+    database_id = DB_ID() scopes this to the database the exporter's own connection is using -
+    sys.dm_hadr_database_replica_states returns one row per database participating in an AG on
+    this instance, so without this filter a SQL Server hosting more than one database in the same
+    AG would make this query return multiple rows for a single-value result.
   -->
   <select id="getCurrentLogStatus" resultType="java.lang.Long" databaseId="mssql">
     SELECT CONVERT(bigint, last_commit_lsn) AS last_lsn
     FROM sys.dm_hadr_database_replica_states
-    WHERE is_local = 1
+    WHERE is_local = 1 AND database_id = DB_ID()
   </select>
 
   <!--
     Reads the primary's OWN last_commit_time (is_local = 1), not GETDATE(), so it comes from the
     same MSSQL commit-time bookkeeping as the secondary's last_commit_time it's later compared
     against (see getReplicationStatus below) - avoiding skew between the exporter's clock and the
-    database's.
+    database's. database_id = DB_ID() scopes this to the exporter's own database - see
+    getCurrentLogStatus above for why that's necessary.
   -->
   <select id="getCurrentDbTime" resultType="java.lang.Long" databaseId="mssql">
     SELECT DATEDIFF_BIG(millisecond, '19700101', last_commit_time)
     FROM sys.dm_hadr_database_replica_states
-    WHERE is_local = 1
+    WHERE is_local = 1 AND database_id = DB_ID()
   </select>
 
   <!--
     MSSQL: replicationLagMs is the gap between the primary's and the secondary's last_commit_time,
     both read from sys.dm_hadr_database_replica_states and correlated via group_database_id (a
     GUID identifying the same AG-member database across replicas, unlike database_id which is a
-    replica-local id).
+    replica-local id). pri.database_id = DB_ID() scopes the primary side to the exporter's own
+    database - see getCurrentLogStatus above for why that's necessary; the secondary side is then
+    already correctly scoped transitively via the group_database_id join.
       -->
   <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap" databaseId="mssql">
     SELECT CONVERT(bigint, ISNULL(secondary.last_commit_lsn, 0)) AS logStatus,
@@ -79,6 +86,7 @@
            JOIN sys.dm_hadr_database_replica_states pri
                 ON secondary.group_database_id = pri.group_database_id
                   AND pri.is_local = 1
+                  AND pri.database_id = DB_ID()
     WHERE secondary.is_local = 0
       AND secondary.last_commit_time IS NOT NULL
   </select>
