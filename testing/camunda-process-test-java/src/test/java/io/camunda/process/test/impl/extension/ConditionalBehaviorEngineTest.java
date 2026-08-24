@@ -475,18 +475,23 @@ class ConditionalBehaviorEngineTest {
 
   @Test
   void shouldApplyBackoffOnRepeatedActionFailures() {
-    final AtomicInteger failureAttempts = new AtomicInteger(0);
+    final List<Long> failureTimestampsNanos = new CopyOnWriteArrayList<>();
 
     engine
         .when(() -> {})
         .then(
             () -> {
-              failureAttempts.incrementAndGet();
+              failureTimestampsNanos.add(System.nanoTime());
               throw new RuntimeException("repeated failure");
             });
 
     await()
         .atMost(3, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(failureAttempts.get()).isGreaterThanOrEqualTo(2));
+        .untilAsserted(() -> assertThat(failureTimestampsNanos).hasSizeGreaterThanOrEqualTo(2));
+
+    final long gapMillis =
+        TimeUnit.NANOSECONDS.toMillis(failureTimestampsNanos.get(1) - failureTimestampsNanos.get(0));
+    // First backoff is 2x pollInterval (200ms)
+    assertThat(gapMillis).isGreaterThanOrEqualTo(150);
   }
 }

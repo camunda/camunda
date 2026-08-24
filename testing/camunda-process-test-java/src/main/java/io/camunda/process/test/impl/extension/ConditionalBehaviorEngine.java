@@ -275,11 +275,11 @@ public class ConditionalBehaviorEngine {
                 pollInterval.toMillis() * Math.min(32, (1L << Math.min(failures, 6))));
         nextAllowedFireTimeMillis.set(System.currentTimeMillis() + backoffMillis);
         LOGGER.warn(
-            "Behavior '{}' action threw an exception (attempt {}), backoff for {}ms: {}",
+            "Behavior '{}' action threw an exception (attempt {}), backoff for {}ms",
             name,
             failures,
             backoffMillis,
-            t.getMessage());
+            t);
         return false;
       }
       actionIndex.set(clampToLastAction(actionIndex.get() + 1));
