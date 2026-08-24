@@ -864,6 +864,7 @@ public class SearchQuerySortRequestMapper {
         case PROCESS_DEFINITION_VERSION -> builder.processDefinitionVersion();
         case TOOL_NAME -> builder.toolName();
         case INBOUND_CONNECTOR_TYPE -> builder.inboundConnectorType();
+        case BUSINESS_ID -> builder.businessId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
