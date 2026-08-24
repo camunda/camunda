@@ -392,6 +392,58 @@ public class CheckpointSchedulerServiceTest {
     verify(scheduler, never()).submitActor(argThat(BackupRetention.class::isInstance), any());
   }
 
+  @Test
+  void shouldStartRetentionJobWithoutCheckpointOrBackupSchedule() {
+    // given — an ES/OS style setup: retention only, no checkpoint interval and no backup schedule
+    brokerConfig.getData().getBackup().setContinuous(false);
+    brokerConfig.getData().getBackup().setSchedule(null);
+    brokerConfig.getData().getBackup().setCheckpointInterval(null);
+    doReturn(Set.of(member1)).when(membershipService).getMembers();
+    doReturn(member1).when(membershipService).getLocalMember();
+
+    // when
+    schedulingService.onActorStarting();
+    schedulingService.onActorStarted();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(scheduler, times(1))
+                    .submitActor(
+                        argThat(BackupRetention.class::isInstance),
+                        argThat(arg -> arg.equals(SchedulingHints.IO_BOUND))));
+    verify(scheduler, never()).submitActor(argThat(CheckpointScheduler.class::isInstance), any());
+  }
+
+  @Test
+  void shouldRelocateStandaloneRetentionJobOnMembershipChange()
+      throws NoSuchFieldException, IllegalAccessException {
+    // given — retention only, and this broker is not the lowest member
+    brokerConfig.getData().getBackup().setContinuous(false);
+    brokerConfig.getData().getBackup().setSchedule(null);
+    brokerConfig.getData().getBackup().setCheckpointInterval(null);
+    doReturn(member2).when(membershipService).getLocalMember();
+    doReturn(Set.of(member2, member3)).when(membershipService).getMembers();
+    schedulingService.onActorStarting();
+    schedulingService.onActorStarted();
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(scheduler, times(1))
+                    .submitActor(
+                        argThat(BackupRetention.class::isInstance),
+                        argThat(arg -> arg.equals(SchedulingHints.IO_BOUND))));
+    final var retentionJobSpy = getRetentionJob(schedulingService);
+
+    // when — a lower member joins
+    doReturn(Set.of(member1, member2, member3)).when(membershipService).getMembers();
+    schedulingService.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, member1));
+
+    // then
+    assertThat(retentionJobSpy.isActorClosed()).isTrue();
+  }
+
   private CheckpointScheduler getCheckpointCreator(
       final CheckpointSchedulingService schedulingService)
       throws NoSuchFieldException, IllegalAccessException {
