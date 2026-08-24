@@ -78,7 +78,7 @@ class PhysicalTenantScopedChainStartupIT {
             ctx -> {
               assertThat(ctx).hasNotFailed();
               assertThat(matchesAnyChain(ctx, SCOPED_LOGIN))
-                  .as("no chain may serve the scoped login path when the webapp is disabled")
+                  .as("no scoped chain may serve the scoped login path when the webapp is disabled")
                   .isFalse();
             });
   }
