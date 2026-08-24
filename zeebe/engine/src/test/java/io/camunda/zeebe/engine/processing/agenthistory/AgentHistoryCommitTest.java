@@ -167,8 +167,8 @@ public class AgentHistoryCommitTest {
    * <p>This test proves the runtime half of that resolution — that a completed job on such an
    * element commits its agent history. {@link
    * io.camunda.zeebe.engine.processing.deployment.AgentDefinitionMultiInstanceDeploymentTest}
-   * proves the deploy-time half: that the {@code AgentDefinition} is minted for the inner activity,
-   * not the wrapping body.
+   * proves the deploy-time half: that the {@code AgentDefinition} is created for the inner
+   * activity, not the wrapping body.
    */
   @Test
   public void shouldCommitAgentHistoryWhenExternalAgentMultiInstanceServiceTaskJobCompletes() {

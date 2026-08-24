@@ -669,7 +669,7 @@ public final class ProcessInstanceMigrationPreconditions {
       return AgentDefinitionType.UNSPECIFIED;
     }
     // the agent definition marker sits on the job worker element itself; unwrap a multi-instance
-    // body to reach it, mirroring how the agent definition is minted at deploy time
+    // body to reach it, mirroring how the agent definition is created at deploy time
     final ExecutableFlowElement activity =
         element instanceof final ExecutableMultiInstanceBody multiInstanceBody
             ? multiInstanceBody.getInnerActivity()

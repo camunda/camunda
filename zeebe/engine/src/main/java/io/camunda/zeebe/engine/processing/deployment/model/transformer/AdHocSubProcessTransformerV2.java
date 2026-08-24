@@ -162,8 +162,7 @@ public final class AdHocSubProcessTransformerV2
   private void setAgentDefinitionType(
       final ExecutableAdHocSubProcess executableAdHocSubProcess, final AdHocSubProcess element) {
     final var agentDefinition = element.getSingleExtensionElement(ZeebeAgentDefinition.class);
-    agentElementTypeTransformer.transform(
-        executableAdHocSubProcess, agentDefinition, element.getModelerTemplate());
+    agentElementTypeTransformer.transform(executableAdHocSubProcess, agentDefinition);
   }
 
   private void setAdHocActivitiesMetadata(

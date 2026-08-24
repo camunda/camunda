@@ -38,10 +38,9 @@ public interface ExecutableJobWorkerElement extends ExecutableFlowElement {
   Map<String, Set<ClusterVariableReference>> getClusterVariableReferences();
 
   /**
-   * Returns the agent definition type detected at deploy time, either from the explicit {@code
-   * zeebe:agentDefinition} marker or, when absent, derived from a recognized {@code
-   * zeebe:modelerTemplate} value. Defaults to {@link AgentDefinitionType#UNSPECIFIED} when this
-   * element is not an agent element.
+   * Returns the agent definition type detected at deploy time from the explicit {@code
+   * zeebe:agentDefinition} marker. Defaults to {@link AgentDefinitionType#UNSPECIFIED} when the
+   * marker is absent.
    */
   default AgentDefinitionType getAgentDefinitionType() {
     return AgentDefinitionType.UNSPECIFIED;

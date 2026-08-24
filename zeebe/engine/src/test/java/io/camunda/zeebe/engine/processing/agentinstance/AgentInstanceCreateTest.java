@@ -215,7 +215,7 @@ public class AgentInstanceCreateTest {
 
   @Test
   public void shouldStampAgentDefinitionKeyResolvedFromAgentDefinition() {
-    // given -- a service task carrying an agent marker mints an AgentDefinition at deploy time,
+    // given -- a service task carrying an agent marker creates an AgentDefinition at deploy time,
     // keyed by (processDefinitionKey, elementId) in the AgentDefinitionState column family.
     final var processMetadata =
         ENGINE
@@ -251,7 +251,7 @@ public class AgentInstanceCreateTest {
 
   @Test
   public void shouldRejectWhenElementHasNoAgentDefinition() {
-    // given -- a plain service task with no agent marker mints no AgentDefinition at deploy time,
+    // given -- a plain service task with no agent marker creates no AgentDefinition at deploy time,
     // so there is nothing to attach an agent instance to.
     ENGINE
         .deployment()
