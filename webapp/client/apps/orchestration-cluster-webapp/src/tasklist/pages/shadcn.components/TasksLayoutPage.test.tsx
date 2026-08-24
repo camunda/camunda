@@ -10,17 +10,18 @@ import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {describe, expect, vi} from 'vitest';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
 import {TasksLayoutPage} from './TasksLayoutPage';
 
 const currentUser = createCurrentUser({username: 'demo'});
-const noop = vi.fn().mockResolvedValue([]);
+const noop = vi.fn().mockResolvedValue(undefined);
 
 describe('<TasksLayoutPage />', () => {
 	it('should display the tasks panel empty state', async () => {
 		const screen = await renderWithRouter(
 			() => (
 				<TasksLayoutPage
-					tasks={[]}
+					pages={[createQueryUserTasksResponse()]}
 					currentUser={currentUser}
 					hasNextPage={false}
 					hasPreviousPage={false}
