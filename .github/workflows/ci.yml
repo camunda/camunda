@@ -2315,20 +2315,27 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   tasklist-ci:
-    if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
+    if: >-
+      always() &&
+      needs.build-distball.result == 'success' &&
+      (needs.build-camunda-docker-test-image.result == 'success' ||
+       needs.build-camunda-docker-test-image.result == 'skipped') &&
+      (needs.detect-changes.outputs.java-code-changes == 'true' ||
+       needs.detect-changes.outputs.frontend-changes == 'true')
     name: "Tasklist"
-    needs: [ detect-changes, build-distball ]
+    needs: [ detect-changes, build-distball, build-camunda-docker-test-image ]
     uses: ./.github/workflows/ci-tasklist.yml
     secrets: inherit
     permissions:
       contents: read
-      id-token: write  # granted through to the reusable back-end UT's WIF GCS auth
+      id-token: write  # granted through to the reusable back-end UT and Docker IT WIF GCS auth
     with:
       runFeTests: ${{ needs.detect-changes.outputs.tasklist-frontend-changes  == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
+      use-shared-docker-test-image: ${{ github.event.pull_request.head.repo.fork != true && needs.build-camunda-docker-test-image.result == 'success' }}
 
   operate-ci:
     if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'

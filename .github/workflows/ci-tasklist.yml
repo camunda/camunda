@@ -21,6 +21,11 @@ on:
         type: boolean
         required: false
         default: false
+      use-shared-docker-test-image:
+        description: "Load the Camunda Docker test image from the run-scoped GCS build-cache instead of building it locally. Set by ci.yml only; leave false for standalone workflow_dispatch."
+        type: boolean
+        required: false
+        default: false
   workflow_call:
     inputs:
       runFeTests:
@@ -36,6 +41,11 @@ on:
         type: boolean
         required: false
         default: false
+      use-shared-docker-test-image:
+        description: "Load the Camunda Docker test image from the run-scoped GCS build-cache instead of building it locally. Set by ci.yml only; leave false for standalone workflow_dispatch."
+        type: boolean
+        required: false
+        default: false
 
 defaults:
   run:
@@ -48,6 +58,7 @@ env:
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_PRODUCT: Tasklist
   CLIENT_DIR: tasklist/client
+  GCS_BUILD_CACHE_BUCKET: camunda-monorepo-ci-artifacts
 
 jobs:
   # run this test every time the workflow is triggered
@@ -470,7 +481,9 @@ jobs:
     name: "Integration / Docker ITs"
     runs-on: gcp-core-4-default
     timeout-minutes: 30
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     env:
       TEST_TYPE: Integration
       TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
@@ -498,11 +511,37 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
+      - name: Authenticate to GCS build-cache
+        if: inputs.use-shared-docker-test-image
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/restore-shared-m2
+        if: inputs.use-shared-docker-test-image
       - id: build-backend
+        if: ${{ !inputs.use-shared-docker-test-image }}
         uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -D skip.fe.build -D skipOptimize
+      - name: Load shared camunda docker test image
+        if: inputs.use-shared-docker-test-image
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 10
+          timeout_minutes: 3
+          shell: bash
+          command: |
+            set -euo pipefail
+            gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-docker-test-image.tar.gz" "${RUNNER_TEMP}/"
+            docker load -i "${RUNNER_TEMP}/camunda-docker-test-image.tar.gz"
+            docker tag "camunda/camunda:${TASKLIST_TEST_DOCKER_IMAGE_TAG}" "${TASKLIST_TEST_DOCKER_IMAGE}:${TASKLIST_TEST_DOCKER_IMAGE_TAG}"
+            docker push "${TASKLIST_TEST_DOCKER_IMAGE}:${TASKLIST_TEST_DOCKER_IMAGE_TAG}"
       - uses: ./.github/actions/build-platform-docker
+        if: ${{ !inputs.use-shared-docker-test-image }}
         with:
           repository: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
           version: ${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
