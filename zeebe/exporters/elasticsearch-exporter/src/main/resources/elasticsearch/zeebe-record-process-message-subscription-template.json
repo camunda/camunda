@@ -60,6 +60,10 @@
             },
             "elementType": {
               "type": "keyword"
+            },
+            "subscriptionKey": {
+              "type": "long",
+              "index": false
             }
           }
         }

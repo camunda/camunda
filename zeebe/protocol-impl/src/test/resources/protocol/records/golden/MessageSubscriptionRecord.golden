@@ -46,6 +46,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
       new StringValue("rootProcessInstanceKey");
   private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
   private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
+  private static final StringValue SUBSCRIPTION_KEY_KEY = new StringValue("subscriptionKey");
 
   private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final LongProperty elementInstanceKeyProp = new LongProperty(ELEMENT_INSTANCE_KEY_KEY);
@@ -68,9 +69,10 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
       new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
   private final EnumProperty<BpmnElementType> elementTypeProp =
       new EnumProperty<>(ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
+  private final LongProperty subscriptionKeyProp = new LongProperty(SUBSCRIPTION_KEY_KEY, -1L);
 
   public MessageSubscriptionRecord() {
-    super(15);
+    super(16);
     declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
@@ -85,7 +87,8 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(elementIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(storageOrdinalKeyProp)
-        .declareProperty(elementTypeProp);
+        .declareProperty(elementTypeProp)
+        .declareProperty(subscriptionKeyProp);
   }
 
   public void wrap(final MessageSubscriptionRecord record) {
@@ -104,6 +107,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     setRootProcessInstanceKey(record.getRootProcessInstanceKey());
     setStorageOrdinalKey(record.getStorageOrdinalKey());
     setElementType(record.getElementType());
+    setSubscriptionKey(record.getSubscriptionKey());
   }
 
   @JsonIgnore
@@ -293,6 +297,16 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
 
   public MessageSubscriptionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
     storageOrdinalKeyProp.setValue(storageOrdinalKey);
+    return this;
+  }
+
+  @Override
+  public long getSubscriptionKey() {
+    return subscriptionKeyProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setSubscriptionKey(final long subscriptionKey) {
+    subscriptionKeyProp.setValue(subscriptionKey);
     return this;
   }
 }

@@ -114,4 +114,19 @@ public interface MessageSubscriptionRecordValue
    * @since 8.10
    */
   BpmnElementType getElementType();
+
+  /**
+   * Returns the generation key of the message-side subscription, assigned when the subscription is
+   * created on the message partition. Used to guard delete commands against stale races: a delete
+   * that quotes an old key is rejected rather than deleting a freshly re-created subscription.
+   *
+   * <p>This is a per-generation key, not a stable identity. {@code -1} means "unset": a
+   * subscription created before this field was introduced, or a CREATE command record before {@code
+   * MessageSubscriptionCreateProcessor} assigns the key. Do not interpret {@code -1} as
+   * legacy-only.
+   *
+   * @return the subscription key, or {@code -1} if unset
+   * @since 8.10
+   */
+  long getSubscriptionKey();
 }
