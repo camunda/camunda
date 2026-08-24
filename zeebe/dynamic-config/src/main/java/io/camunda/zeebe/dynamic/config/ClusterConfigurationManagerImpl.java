@@ -8,8 +8,8 @@
 package io.camunda.zeebe.dynamic.config;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.ScopeReconciler.Operation;
-import io.camunda.zeebe.dynamic.config.ScopeReconciler.Operations;
+import io.camunda.zeebe.dynamic.config.GraphScopeReconciler.Operation;
+import io.camunda.zeebe.dynamic.config.GraphScopeReconciler.Scope;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeApplier;
 import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeAppliers;
@@ -18,8 +18,12 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChange
 import io.camunda.zeebe.dynamic.config.changes.appliers.RemovePhysicalTenantApplier;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
+import io.camunda.zeebe.dynamic.config.state.OperationId;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
@@ -41,6 +45,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,11 +83,10 @@ import org.slf4j.LoggerFactory;
  * key's failures cannot delay another's:
  *
  * <ul>
- *   <li>One {@link ScopeReconciler} applies the local member's next pending operation on {@link
- *       io.camunda.zeebe.dynamic.config.state.GlobalConfiguration}, whose change is a queue.
- *   <li>A {@link GraphScopeReconciler} per partition group applies whichever of that group's
- *       operations the local member may run right now — several at once, since a group's change is
- *       a dependency graph.
+ *   <li>A {@link GraphScopeReconciler} per scope — the global configuration, plus one per partition
+ *       group — applies whichever of that scope's operations the local member may run right now.
+ *       Several at once where the scope's graph allows it; the global configuration's graph is
+ *       sequential, so there it is one at a time.
  *   <li>A {@link PlanAdvancer} per pending plan id advances that plan to its next phase, or
  *       completes it, once its current phase has fully drained.
  * </ul>
@@ -107,10 +112,9 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       partitionGroupChangeAppliers = new HashMap<>();
   private final Duration minRetryDelay;
   private final Duration maxRetryDelay;
-  private @Nullable ScopeReconciler globalScopeReconciler;
-  // Not a ScopeReconciler: a graph runs several of a group's operations at once, so it cannot share
-  // ScopeReconciler's single-in-flight-operation contract. Keyed by group id, since a graph change
-  // only ever belongs to a partition group.
+  private @Nullable GraphScopeReconciler globalScopeReconciler;
+  // Keyed by group id; the global configuration's reconciler is held separately above, since it is
+  // created once and outlives any group.
   private final Map<String, GraphScopeReconciler> graphReconcilers = new HashMap<>();
   // Keyed by plan id, since multiple plans can be advancing (and independently retrying) at once.
   private final Map<Long, PlanAdvancer> planAdvancers = new HashMap<>();
@@ -591,10 +595,11 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
    */
   private void maybeCompleteGraphChanges(final CurrentClusterConfiguration config) {
     final var drained =
-        config.partitionGroups().values().stream()
-            .anyMatch(
-                group ->
-                    group.pendingChanges().filter(plan -> !plan.hasPendingChanges()).isPresent());
+        Stream.concat(
+                Stream.of(config.globalConfiguration().pendingChanges()),
+                config.partitionGroups().values().stream()
+                    .map(PartitionGroupConfiguration::pendingChanges))
+            .anyMatch(plan -> plan.filter(p -> !p.hasPendingChanges()).isPresent());
     if (!drained) {
       return;
     }
@@ -607,9 +612,17 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
             });
   }
 
+  /**
+   * The global arm is belt-and-braces while a cluster-wide graph is a chain: its last operation
+   * records and clears in one transition, and operation N only becomes runnable once N-1 is
+   * complete locally, so no broker observes the change drained but unfinished. It is here because
+   * "finish a drained change" is a property of the execution model, not of a scope, and the first
+   * cluster-wide change that declares two independent operations would need it.
+   */
   private static CurrentClusterConfiguration completeDrainedGraphChanges(
       final CurrentClusterConfiguration config) {
-    var result = config;
+    var result =
+        config.updateGlobalConfiguration(GlobalConfiguration::completeGraphChangeIfDrained);
     for (final String groupId : List.copyOf(config.partitionGroups().keySet())) {
       result =
           result.updatePartitionGroupConfig(
@@ -630,23 +643,19 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         completedChangeHistoryLimit);
   }
 
-  private ScopeReconciler newGlobalScopeReconciler() {
-    return new ScopeReconciler(
-        new GlobalScopeOperations(),
-        persistedCurrentConfiguration::getConfiguration,
-        this::updateLocalCurrentConfiguration,
-        executor,
-        topologyMetrics,
-        minRetryDelay,
-        maxRetryDelay);
+  private GraphScopeReconciler newGlobalScopeReconciler() {
+    return newScopeReconciler(new GlobalScope());
   }
 
   private GraphScopeReconciler newGraphScopeReconciler(final String groupId) {
+    return newScopeReconciler(new PartitionGroupScope(groupId));
+  }
+
+  private GraphScopeReconciler newScopeReconciler(final Scope scope) {
     return new GraphScopeReconciler(
-        groupId,
+        scope,
         localMemberId,
         persistedCurrentConfiguration::getConfiguration,
-        operation -> applierFor(operation, partitionGroupChangeAppliers.get(groupId)),
         this::updateLocalCurrentConfiguration,
         executor,
         topologyMetrics,
@@ -674,9 +683,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     return Optional.ofNullable(appliers).map(a -> a.getApplier(operation));
   }
 
-  private record GlobalOperation(
-      GlobalChangeOperation operation, GlobalConfigurationChangeApplier applier)
-      implements Operation {
+  private record GlobalOperation(GlobalConfigurationChangeApplier applier) implements Operation {
 
     @Override
     public Either<Exception, CurrentClusterConfiguration> initialize(
@@ -685,7 +692,8 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     }
 
     @Override
-    public ActorFuture<UnaryOperator<CurrentClusterConfiguration>> apply() {
+    public ActorFuture<UnaryOperator<CurrentClusterConfiguration>> apply(
+        final @NonNull OperationId operationId) {
       return applier
           .apply()
           .thenApply(
@@ -693,24 +701,54 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
                   (UnaryOperator<CurrentClusterConfiguration>)
                       config ->
                           config.updateGlobalConfiguration(
-                              g -> g.advanceConfigurationChange(transformer)));
+                              g ->
+                                  g.completeOperation(operationId, transformer)
+                                      .completeGraphChangeIfDrained()));
     }
   }
 
-  /** {@link ScopeReconciler.Operations} for the global configuration. */
-  private final class GlobalScopeOperations implements Operations {
+  private record PartitionGroupOperationApplication(
+      String groupId, PartitionGroupConfigurationChangeApplier applier) implements Operation {
 
     @Override
-    public Optional<Operation> nextOperation(final CurrentClusterConfiguration config) {
-      if (globalChangeAppliers == null) {
-        return Optional.empty();
+    public Either<Exception, CurrentClusterConfiguration> initialize(
+        final CurrentClusterConfiguration config) {
+      final var group = config.partitionGroup(groupId);
+      if (group == null) {
+        return Either.left(
+            new IllegalStateException(
+                "Expected to apply an operation of partition group '%s', but it does not exist"
+                    .formatted(groupId)));
       }
-      return config
-          .globalConfiguration()
-          .pendingChangesFor(localMemberId)
-          .map(
-              operation ->
-                  new GlobalOperation(operation, globalChangeAppliers.getApplier(operation)));
+      return applier
+          .init(config.globalConfiguration(), group)
+          .map(transformer -> config.updatePartitionGroupConfig(groupId, transformer));
+    }
+
+    @Override
+    public ActorFuture<UnaryOperator<CurrentClusterConfiguration>> apply(
+        final OperationId operationId) {
+      return applier
+          .apply()
+          .thenApply(
+              transformer ->
+                  (UnaryOperator<CurrentClusterConfiguration>)
+                      config ->
+                          config.updatePartitionGroupConfig(
+                              groupId,
+                              group ->
+                                  group
+                                      .completeOperation(operationId, transformer)
+                                      .completeGraphChangeIfDrained()));
+    }
+  }
+
+  /** {@link GraphScopeReconciler.Scope} for the global configuration. */
+  private final class GlobalScope implements Scope {
+
+    @Override
+    public @Nullable DependencyChangePlan plan(final CurrentClusterConfiguration config) {
+      return config.globalConfiguration().pendingChanges().orElse(null);
     }
 
     @Override
@@ -720,7 +758,50 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
 
     @Override
     public String describe() {
-      return "global";
+      return "global configuration";
+    }
+
+    @Override
+    public Optional<Operation> operationFor(final ClusterConfigurationChangeOperation operation) {
+      if (globalChangeAppliers == null) {
+        return Optional.empty();
+      }
+      final var globalOperation = (GlobalChangeOperation) operation;
+      return Optional.of(new GlobalOperation(globalChangeAppliers.getApplier(globalOperation)));
+    }
+  }
+
+  /** {@link GraphScopeReconciler.Scope} for one partition group. */
+  private final class PartitionGroupScope implements Scope {
+
+    private final String groupId;
+
+    private PartitionGroupScope(final String groupId) {
+      this.groupId = groupId;
+    }
+
+    @Override
+    public @Nullable DependencyChangePlan plan(final CurrentClusterConfiguration config) {
+      final var group = config.partitionGroup(groupId);
+      return group == null ? null : group.pendingChanges().orElse(null);
+    }
+
+    @Override
+    public long versionOf(final CurrentClusterConfiguration config) {
+      final var group = config.partitionGroup(groupId);
+      return group == null ? -1 : group.version();
+    }
+
+    @Override
+    public String describe() {
+      return "partition group '%s'".formatted(groupId);
+    }
+
+    @Override
+    public Optional<Operation> operationFor(final ClusterConfigurationChangeOperation operation) {
+      return applierFor(
+              (PartitionGroupOperation) operation, partitionGroupChangeAppliers.get(groupId))
+          .map(applier -> new PartitionGroupOperationApplication(groupId, applier));
     }
   }
 }

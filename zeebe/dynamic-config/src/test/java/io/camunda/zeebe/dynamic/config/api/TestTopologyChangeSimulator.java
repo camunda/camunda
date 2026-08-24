@@ -90,13 +90,29 @@ final class TestTopologyChangeSimulator {
     }
   }
 
+  /**
+   * Drains the global phase by running whatever the cluster-wide graph declares runnable, in
+   * operation-id order. That graph is sequential, so this takes one operation per round — but it is
+   * read from the graph rather than assumed, so the helper keeps working if a cluster-wide change
+   * ever declares two independent operations.
+   */
   private static CurrentClusterConfiguration drainGlobalPhase(
       final CurrentClusterConfiguration configuration,
       final GlobalConfigurationChangeAppliers appliers) {
     var current = configuration;
     while (current.globalConfiguration().hasPendingChanges()) {
-      final var operation =
-          (GlobalChangeOperation) current.globalConfiguration().nextPendingOperation();
+      final var plan = current.globalConfiguration().pendingChanges().orElseThrow();
+      final var next =
+          plan.operations().keySet().stream()
+              .filter(plan::isRunnable)
+              .findFirst()
+              .orElseGet(
+                  () ->
+                      fail(
+                          "Cluster-wide change cannot make progress; outstanding operations are"
+                              + " blocked on '%s'",
+                          plan.blockedBy()));
+      final var operation = (GlobalChangeOperation) plan.operation(next);
       final var applier = appliers.getApplier(operation);
       final var init = applier.init(current);
       if (init.isLeft()) {
@@ -106,7 +122,9 @@ final class TestTopologyChangeSimulator {
       current =
           current
               .updateGlobalConfiguration(init.get())
-              .updateGlobalConfiguration(global -> global.advanceConfigurationChange(transformer));
+              .updateGlobalConfiguration(
+                  global ->
+                      global.completeOperation(next, transformer).completeGraphChangeIfDrained());
     }
     return current;
   }

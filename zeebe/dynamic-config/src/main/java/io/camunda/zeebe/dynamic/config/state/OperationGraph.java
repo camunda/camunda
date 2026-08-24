@@ -12,6 +12,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -171,12 +173,52 @@ public record OperationGraph(SortedMap<OperationId, PlannedOperation> operations
     }
   }
 
-  /** One operation and what it waits for. */
+  /**
+   * One operation, what it waits for, and — for an operation of a partition group — which group it
+   * targets.
+   *
+   * <h4>Why the group id sits here and not on the operation</h4>
+   *
+   * <p>A graph today lives inside one sub-configuration, so every node's target is implied by where
+   * the graph is stored: the enclosing {@code PartitionGroupConfiguration}, or the {@code
+   * GlobalConfiguration}. Collapsing {@link PhasedChangePlan}'s phase boundaries into the graph
+   * itself — a phase boundary is expressible as "every operation in phase B depends on every
+   * operation in phase A" — needs nodes that name their own target instead, because such a graph
+   * spans sub-configurations and an edge may cross from one to another.
+   *
+   * <p>ADR-0002 costs that prerequisite as "adding {@code groupId()} to every {@link
+   * PartitionGroupOperation}", which is 20 record types and several hundred construction sites. It
+   * is cheaper here and means the same thing: the operation's own sealed type already says
+   * <em>whether</em> it targets a group or the global configuration ({@link
+   * PartitionGroupOperation} versus {@link GlobalChangeOperation}), so the only information missing
+   * from a node is <em>which</em> group.
+   *
+   * @param groupId the partition group this operation targets, or empty to mean "the
+   *     sub-configuration holding this graph" — which is every operation today, and is why adding
+   *     this field changed no existing call site. A present value is only meaningful for a {@link
+   *     PartitionGroupOperation}: a cluster-wide operation has no group to target, and pairing one
+   *     with a group id is rejected below rather than silently ignored.
+   */
   public record PlannedOperation(
-      ClusterConfigurationChangeOperation operation, SortedSet<OperationId> dependsOn) {
+      ClusterConfigurationChangeOperation operation,
+      SortedSet<OperationId> dependsOn,
+      Optional<String> groupId) {
 
     public PlannedOperation {
       dependsOn = Collections.unmodifiableSortedSet(new TreeSet<>(dependsOn));
+      Objects.requireNonNull(groupId, "groupId must not be null");
+      if (groupId.isPresent() && !(operation instanceof PartitionGroupOperation)) {
+        throw new IllegalArgumentException(
+            "Operation %s targets no partition group, but is planned against group '%s'"
+                .formatted(operation, groupId.orElseThrow()));
+      }
+    }
+
+    /** A node whose target is the sub-configuration holding the graph. */
+    public PlannedOperation(
+        final ClusterConfigurationChangeOperation operation,
+        final SortedSet<OperationId> dependsOn) {
+      this(operation, dependsOn, Optional.empty());
     }
 
     public static PlannedOperation of(final ClusterConfigurationChangeOperation operation) {
@@ -197,8 +239,21 @@ public record OperationGraph(SortedMap<OperationId, PlannedOperation> operations
 
     public OperationId add(
         final ClusterConfigurationChangeOperation operation, final Set<OperationId> dependsOn) {
+      return add(operation, dependsOn, Optional.empty());
+    }
+
+    /**
+     * Adds an operation that names the partition group it targets, for a graph spanning more than
+     * one sub-configuration. See {@link PlannedOperation#groupId()}; every adopter today omits it,
+     * because a graph today lives inside the sub-configuration it acts on.
+     */
+    public OperationId add(
+        final ClusterConfigurationChangeOperation operation,
+        final Set<OperationId> dependsOn,
+        final Optional<String> groupId) {
       final var operationId = OperationId.of(nextId++);
-      operations.put(operationId, new PlannedOperation(operation, new TreeSet<>(dependsOn)));
+      operations.put(
+          operationId, new PlannedOperation(operation, new TreeSet<>(dependsOn), groupId));
       return operationId;
     }
 

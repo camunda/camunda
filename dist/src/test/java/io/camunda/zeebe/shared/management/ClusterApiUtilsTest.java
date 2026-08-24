@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
@@ -1063,9 +1064,9 @@ final class ClusterApiUtilsTest {
         Named.of(
             "Disabling Exporters",
             new ExporterConfigParam(
-                getConfigWithTwoPartitions(State.ENABLED)
-                    .startConfigurationChange(
-                        List.of(new PartitionDisableExporterOperation(member(1), 1, "exporter-1")))
+                withPendingChange(
+                        getConfigWithTwoPartitions(State.ENABLED),
+                        new PartitionDisableExporterOperation(member(1), 1, "exporter-1"))
                     .updateMember(
                         member(2),
                         m -> updateExporterState(m, e -> e.disableExporter("exporter-1"))),
@@ -1079,11 +1080,10 @@ final class ClusterApiUtilsTest {
         Named.of(
             "Enabling Exporters",
             new ExporterConfigParam(
-                getConfigWithTwoPartitions(State.DISABLED)
-                    .startConfigurationChange(
-                        List.of(
-                            new PartitionEnableExporterOperation(
-                                member(1), 1, "exporter-1", Optional.empty())))
+                withPendingChange(
+                        getConfigWithTwoPartitions(State.DISABLED),
+                        new PartitionEnableExporterOperation(
+                            member(1), 1, "exporter-1", Optional.empty()))
                     .updateMember(
                         member(2),
                         m -> updateExporterState(m, e -> e.enableExporter("exporter-1", 2))),
@@ -1445,6 +1445,21 @@ final class ClusterApiUtilsTest {
     final var body = (Error) response.getBody();
     assertThat(body).isNotNull();
     assertThat(body.getMessage()).contains("999");
+  }
+
+  /**
+   * A legacy configuration carrying a pending change, as a projection of a live sub-configuration
+   * would. Built here rather than started on the configuration: nothing executes a change through
+   * the legacy single-group type, so it has no method that would start one.
+   */
+  private static ClusterConfiguration withPendingChange(
+      final ClusterConfiguration config, final ClusterConfigurationChangeOperation... operations) {
+    return ClusterConfiguration.builder()
+        .from(config)
+        .version(config.version() + 1)
+        .pendingChanges(
+            Optional.of(DependencyChangePlan.sequential(config.version() + 1, List.of(operations))))
+        .build();
   }
 
   private record ExporterConfigParam(

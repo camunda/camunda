@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus.PartitionRestoreState;
+import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
@@ -245,8 +246,7 @@ final class RestoreStatusTest {
   }
 
   private static ClusterConfiguration configurationWith(
-      final Optional<CompletedChange> lastChange,
-      final Optional<ClusterChangePlan> pendingChanges) {
+      final Optional<CompletedChange> lastChange, final Optional<ChangePlan> pendingChanges) {
     return new ClusterConfiguration(
         2,
         Map.of(),

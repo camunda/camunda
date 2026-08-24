@@ -138,9 +138,15 @@ final class CurrentClusterConfigurationSerializerTest {
                 Topology.ModeChangeOperation.newBuilder().setMode(Topology.Mode.MODE_PROCESSING))
             .build();
     final var plannedA =
-        Topology.PlannedOperation.newBuilder().setId(0).setOperation(operationA).addDependsOn(1);
+        Topology.PlannedOperation.newBuilder()
+            .setId(0)
+            .setPartitionGroupOperation(operationA)
+            .addDependsOn(1);
     final var plannedB =
-        Topology.PlannedOperation.newBuilder().setId(1).setOperation(operationA).addDependsOn(0);
+        Topology.PlannedOperation.newBuilder()
+            .setId(1)
+            .setPartitionGroupOperation(operationA)
+            .addDependsOn(0);
     final var graph =
         Topology.OperationGraph.newBuilder()
             .addOperations(plannedA)

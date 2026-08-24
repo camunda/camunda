@@ -30,7 +30,7 @@ message GlobalConfiguration {
   string clusterId = 2;
   map<string, BrokerState> members = 3;
   PartitionDistributorConfig partitionDistributor = 4;
-  ClusterChangePlan pendingChanges = 5;
+  DependencyChangePlan pendingChanges = 5;
   CompletedChange lastChange = 6;
 }
 
@@ -63,8 +63,18 @@ message OperationGraph {
 
 message PlannedOperation {
   int32 id = 1;
-  PartitionGroupChangeOperation operation = 2;
   repeated int32 dependsOn = 3;
+  oneof operation {
+    PartitionGroupChangeOperation partitionGroupOperation = 2;
+    GlobalChangeOperation globalOperation = 4;
+  }
+  // The partition group this operation targets. Empty means the sub-configuration
+  // holding the graph, which is every operation today: a graph currently lives
+  // inside the sub-configuration it acts on. It is named per node so that a graph
+  // spanning sub-configurations -- what collapsing PhasedChangePlan's phase
+  // boundaries into the graph requires -- is expressible. Empty is therefore also
+  // what a graph written before this field carried, and means the same thing.
+  string groupId = 5;
 }
 
 message OperationCompletion {

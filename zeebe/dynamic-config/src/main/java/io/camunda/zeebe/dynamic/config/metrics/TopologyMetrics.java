@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.metrics;
 
 import static io.camunda.zeebe.dynamic.config.metrics.TopologyMetricsDoc.*;
 
+import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -57,22 +58,14 @@ public final class TopologyMetrics {
     changeStatus.state(
         topology
             .pendingChanges()
-            .map(ClusterChangePlan::status)
+            .map(ChangePlan::status)
             .or(() -> topology.lastChange().map(CompletedChange::status))
             .orElse(Status.COMPLETED));
-    changeId.set(topology.pendingChanges().map(ClusterChangePlan::id).orElse(0L));
-    changeVersion.set(topology.pendingChanges().map(ClusterChangePlan::version).orElse(0));
+    changeId.set(topology.pendingChanges().map(ChangePlan::id).orElse(0L));
+    changeVersion.set(topology.pendingChanges().map(ChangePlan::version).orElse(0));
     pendingOperations.set(
-        topology
-            .pendingChanges()
-            .map(ClusterChangePlan::pendingOperations)
-            .map(List::size)
-            .orElse(0));
+        topology.pendingChanges().map(ChangePlan::pendingOperations).map(List::size).orElse(0));
     completedOperations.set(
-        topology
-            .pendingChanges()
-            .map(ClusterChangePlan::completedOperations)
-            .map(List::size)
-            .orElse(0));
+        topology.pendingChanges().map(ChangePlan::completedOperations).map(List::size).orElse(0));
   }
 }

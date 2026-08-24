@@ -42,21 +42,24 @@ broker applying an operation must be the only writer of the entry it writes — 
 (`MemberRemoveOperation`, `PartitionForceReconfigureOperation`) are named there as out of scope for
 concurrent execution until write-set validation exists or the merge rule changes.
 
-**D3. Scope the graph to one partition group's plan; leave phase sequencing and the single-group
-queue model untouched.**
-`PartitionGroupOperation` carries `memberId()` and, for some operations, `partitionId()`, but no
-`groupId()` — a group's identity exists only as `PartitionGroupPhase`'s map key. Because of that,
-collapsing `PhasedChangePlan`'s phase boundaries into the graph itself (a phase boundary is
-expressible as "every operation in phase B depends on every operation in phase A") is possible in
-principle but needs two things this change does not do: adding `groupId()` to every
-`PartitionGroupOperation`, and a wire migration from the phase-shaped format to a flat one that has
-not been investigated. Doing that here would mean designing and shipping an unrelated data-model
-change and an unscoped wire migration alongside the execution model change. `ClusterChangePlan` —
-the queue model — is left as it is for the same reason, in the two places it still backs: the
-single-group `ClusterConfiguration`, which is scheduled for removal on its own timeline, and
-`GlobalConfiguration`, whose operations are cluster-wide broker lifecycle steps taken one at a time
-by construction. Neither needs graph semantics: the first because it is going, the second because
-its operations have nothing to depend on.
+**D3. Every sub-configuration runs a graph; phase sequencing stays.**
+`GlobalConfiguration` runs a `DependencyChangePlan` too, so nothing executes the queue model. The
+gain is not parallelism — a cluster-wide change has none to declare — but that one execution model
+means one plan lifecycle, one merge path and one driver, instead of a class of bug where a check
+written for one model silently does the wrong thing for the other.
+
+Phase boundaries are *not* collapsed into the graph. A boundary is expressible as "every operation
+in phase B depends on every operation in phase A", but such a graph spans sub-configurations, and
+progress lives in each sub-configuration's own pending change — which is also its unit of merge and
+of versioning. Collapsing therefore means moving progress up to the plan, and with it the merge
+semantics, the driver's staleness anchor, phase advancement and the dry-run: its own change, with
+its own ADR. Its one prerequisite is done — a graph node names the partition group it targets, so a
+graph spanning sub-configurations is expressible.
+
+`ClusterChangePlan` survives as data, not as an executor: it is the shape the pre-8.10
+`ClusterTopology` message carries, which the single-group `ClusterConfiguration` is encoded as for a
+broker without the graph model. That configuration is scheduled for removal on its own timeline, and
+the queue model goes with it.
 
 ## Alternatives considered
 
@@ -74,28 +77,38 @@ its operations have nothing to depend on.
 
 ## Consequences
 
-- `PhasedChangePlan.Phase` stays `GlobalPhase | PartitionGroupPhase`, and `ChangePlan` becomes a
-  sealed interface over `ClusterChangePlan` and `DependencyChangePlan`. The two never meet in one
-  place: a partition group's pending change is always a `DependencyChangePlan`, the global
-  configuration's is always a `ClusterChangePlan`. The interface exists so the legacy projection and
-  the reporting views can take either — not so a group's execution path can decide which model it is
-  running. Carrying both on a group would have meant two plan lifecycles, two merge paths and two
-  reconcilers per group, plus a class of bug where a check written for one silently does the wrong
-  thing for the other. The group-scoped queue reconciler is gone with it, and `ScopeReconciler` now
-  serves the global configuration only.
+- `PhasedChangePlan.Phase` stays `GlobalPhase | PartitionGroupPhase`, and `ChangePlan` is a sealed
+  interface over `ClusterChangePlan` and `DependencyChangePlan`. Every sub-configuration's pending
+  change is a `DependencyChangePlan`; the interface exists so the legacy projection and the
+  reporting views can take either, not so an execution path can decide which model it is running.
+  `GlobalPhase` still carries a flat operation list, converted to a sequential graph on activation,
+  so a cluster-wide change cannot yet *declare* parallelism even though the driver would run it.
+- One driver serves every scope. `GraphScopeReconciler` takes a `Scope` supplying what differs —
+  where the plan lives, which applier runs an operation, how a completion is recorded — and the
+  queue-shaped `ScopeReconciler` is gone. The global graph is sequential and so only ever offers one
+  operation, but it runs through the same machinery deliberately: a driver that assumed one would
+  need rewriting the first time a cluster-wide change declares two independent operations, and two
+  drivers for one execution model is how the subtle parts — re-entrancy, per-operation backoff,
+  reclaiming state from a cancelled plan — drift apart.
 - Every partition-group transformer emits a graph. Those with no parallelism to declare call
   `OperationGraph.sequential(...)` and execute exactly as they did as queues, including
   `PhysicalTenantProvisioningInitializer`, which starts a change directly on a group it has just
   created rather than through a phase.
-- The legacy single-group view renders a graph as a queue via
-  `CurrentClusterConfiguration.toQueueProjection`, which is lossy — it cannot express that several
-  operations are running at once — by nature of the queue model it renders into, not a defect in the
-  projection. It is also not purely a reporting view: `toLegacyDefault()` is dual-written into the
-  legacy gossip field, so on a mixed-version cluster the synthetic plan version minted here is a
-  live input to an old broker's `ClusterChangePlan#merge`, and that broker would execute the
-  flattened queue sequentially.
-- Wire format: `PartitionGroupConfiguration`'s pending-change field keeps its tag and changes type
-  from `ClusterChangePlan` to `DependencyChangePlan`. That is a breaking change, taken deliberately
+- The legacy single-group view carries whichever model the sub-configuration it projects is
+  running, so a consumer reading it in-process sees the real change. It is rendered as a queue only
+  where the wire demands one — `ClusterChangePlan.flatten`, when the legacy `ClusterTopology`
+  message is encoded — and that rendering is lossy by nature of the queue model, not by defect: it
+  cannot express that several operations are running at once. It is also not a reporting view:
+  `toLegacyDefault()` is dual-written into the legacy gossip field, so on a mixed-version cluster
+  the synthetic plan version minted there is a live input to an old broker's
+  `ClusterChangePlan#merge`, and that broker executes the flattened queue head-first — which is why
+  the flattening orders operations by dependency rather than by operation id.
+- Wire format: `PartitionGroupConfiguration`'s and `GlobalConfiguration`'s pending-change fields
+  keep their tags and change type from `ClusterChangePlan` to `DependencyChangePlan`, and
+  `PlannedOperation`'s operation becomes a `oneof` over both operation kinds so a graph can carry
+  cluster-wide operations — field 2 keeps its tag and type, so graphs written before that still
+  decode. Because either kind can now travel in either scope's graph, the decoder validates the kind
+  against the enclosing sub-configuration rather than letting it fail later at the driver's cast. That is a breaking change, taken deliberately
   because the graph model has not been released, so no persisted or gossiped configuration carries
   the old type on that tag. Compatibility *within* this change lives one level up instead, in
   `PhasedChangePlanPhase`: the pre-merge `PartitionGroupParallelPhase` is kept as a decode-only arm,

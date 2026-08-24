@@ -928,12 +928,12 @@ final class ClusterApiUtils {
         .completedAt(mapInstantToDateTime(completedChange.completedAt()));
   }
 
-  private static TopologyChange mapOngoingChange(final ClusterChangePlan clusterChangePlan) {
+  private static TopologyChange mapOngoingChange(final ChangePlan changePlan) {
     return new TopologyChange()
-        .id(clusterChangePlan.id())
-        .status(mapChangeStatus(clusterChangePlan.status()))
-        .pending(mapOperations(clusterChangePlan.pendingOperations()))
-        .completed(mapCompletedOperations(clusterChangePlan.completedOperations()));
+        .id(changePlan.id())
+        .status(mapChangeStatus(changePlan.status()))
+        .pending(mapOperations(changePlan.pendingOperations()))
+        .completed(mapCompletedOperations(changePlan.completedOperations()));
   }
 
   private static io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum

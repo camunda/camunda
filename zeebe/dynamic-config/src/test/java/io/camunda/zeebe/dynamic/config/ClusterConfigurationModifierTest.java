@@ -400,9 +400,16 @@ final class ClusterConfigurationModifierTest {
       // given — pending ops that are not post restore
       final var member1 = MemberId.from("1");
       final var config =
-          withTwoMembers(LOCAL_MEMBER_ID, member1)
-              .startConfigurationChange(
-                  List.of(new UpdateRoutingState(LOCAL_MEMBER_ID, Optional.empty())));
+          ClusterConfiguration.builder()
+              .from(withTwoMembers(LOCAL_MEMBER_ID, member1))
+              // A queue on purpose: what this test proves is that a plan carrying an
+              // UpdateRoutingState but *not* the restore sentinel id is not treated as
+              // post-restore, and isAfterRestore only reaches that id check for a queue.
+              .pendingChanges(
+                  Optional.of(
+                      ClusterChangePlan.init(
+                          2, List.of(new UpdateRoutingState(LOCAL_MEMBER_ID, Optional.empty())))))
+              .build();
 
       // when
       final var result =

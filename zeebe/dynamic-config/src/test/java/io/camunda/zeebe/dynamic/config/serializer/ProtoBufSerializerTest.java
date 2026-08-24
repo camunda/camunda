@@ -8,8 +8,10 @@
 package io.camunda.zeebe.dynamic.config.serializer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
@@ -40,15 +42,20 @@ import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
@@ -56,6 +63,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -68,6 +76,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -805,6 +814,203 @@ final class ProtoBufSerializerTest {
 
     // then
     assertThat(deserialized.state()).isEqualTo(ExportingState.UNKNOWN);
+  }
+
+  @Test
+  void shouldEncodeAGraphChangeOnTheLegacyConfigurationAsAQueue() {
+    // given — a legacy configuration carrying a dependency-graph change, which is what projecting a
+    // partition group produces, with one operation already completed
+    final var startedAt = Instant.ofEpochSecond(1_700_000_000);
+    final var builder = OperationGraph.builder();
+    final var first = builder.add(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
+    builder.add(new PartitionJoinOperation(MemberId.from("2"), 1, 1));
+    final var graph =
+        new DependencyChangePlan(
+            7,
+            Status.IN_PROGRESS,
+            startedAt,
+            builder.build(),
+            new TreeMap<>(Map.of(first, startedAt.plusSeconds(5))));
+    final var configuration =
+        ClusterConfiguration.builder()
+            .version(3)
+            .members(Map.of(MemberId.from("1"), MemberState.initializeAsActive(Map.of())))
+            .pendingChanges(Optional.of(graph))
+            .build();
+
+    // when
+    final var encoded = protoBufSerializer.encode(configuration);
+    final var decoded = protoBufSerializer.decodeClusterTopology(encoded, 0, encoded.length);
+
+    // then — the legacy message can only carry a queue, so the graph is flattened into one on the
+    // way out. A broker without the graph model reads this field, and would execute the queue one
+    // operation at a time.
+    assertThat(decoded.pendingChanges()).contains(ClusterChangePlan.flatten(graph));
+    assertThat(decoded.pendingChanges().orElseThrow())
+        .isInstanceOf(ClusterChangePlan.class)
+        .satisfies(
+            plan -> {
+              assertThat(plan.pendingOperations()).isEqualTo(graph.pendingOperations());
+              assertThat(plan.completedOperations()).isEqualTo(graph.completedOperations());
+              assertThat(plan.id()).isEqualTo(7);
+              // the queue's version is what an old broker merges by: one per completed operation
+              assertThat(plan.version()).isEqualTo(2);
+            });
+  }
+
+  @Test
+  void shouldRoundTripAGraphWhoseNodesNameDifferentPartitionGroups() {
+    // given — a graph spanning two groups, which is what collapsing phase boundaries into the graph
+    // needs and what the per-node group id exists for. Nothing produces one yet; this pins that the
+    // wire can carry it, so the follow-up is not blocked on a format change.
+    final var builder = OperationGraph.builder();
+    final var inTenantA =
+        builder.add(
+            new UpdateIncarnationNumberOperation(MemberId.from("1")),
+            Set.of(),
+            Optional.of("tenant-a"));
+    builder.add(
+        new UpdateIncarnationNumberOperation(MemberId.from("1")),
+        Set.of(inTenantA),
+        Optional.of("tenant-b"));
+    final var graph = builder.build();
+    final var plan =
+        new DependencyChangePlan(
+            11, Status.IN_PROGRESS, Instant.ofEpochSecond(1_700_000_000), graph, new TreeMap<>());
+    final var group =
+        new PartitionGroupConfiguration(
+            2, 0, Map.of(), Optional.empty(), Optional.of(plan), Optional.empty());
+
+    // when
+    final var decoded =
+        protoBufSerializer.decodePartitionGroupConfiguration(
+            protoBufSerializer.encodePartitionGroupConfiguration(group));
+
+    // then — each node keeps its own target, and the crossing edge survives
+    assertThat(decoded).isEqualTo(group);
+  }
+
+  @Test
+  void shouldDecodeAGraphWithoutGroupIdsAsTargetingItsEnclosingSubConfiguration() {
+    // given — a graph as written before the per-node group id existed: the field is absent, which
+    // means "the sub-configuration holding this graph". Absent must stay absent rather than being
+    // guessed at, or such a graph would come back claiming a target it never named.
+    final var proto =
+        Topology.PartitionGroupConfiguration.newBuilder()
+            .setVersion(2)
+            .setIncarnationNumber(0)
+            .setPendingChanges(
+                Topology.DependencyChangePlan.newBuilder()
+                    .setId(11)
+                    .setStatus(Topology.ChangeStatus.IN_PROGRESS)
+                    .setStartedAt(Timestamp.newBuilder().build())
+                    .setGraph(
+                        Topology.OperationGraph.newBuilder()
+                            .addOperations(
+                                Topology.PlannedOperation.newBuilder()
+                                    .setId(0)
+                                    .setPartitionGroupOperation(
+                                        Topology.PartitionGroupChangeOperation.newBuilder()
+                                            .setMemberId("1")
+                                            .setUpdateIncarnationNumber(
+                                                Topology.UpdateIncarnationNumberOperation
+                                                    .newBuilder())))))
+            .build();
+
+    // when
+    final var decoded = protoBufSerializer.decodePartitionGroupConfiguration(proto);
+
+    // then
+    assertThat(decoded.pendingChanges().orElseThrow().graph().operations().values())
+        .allSatisfy(planned -> assertThat(planned.groupId()).isEmpty());
+  }
+
+  @Test
+  void shouldEncodeAndDecodeAClusterWideGraphChange() {
+    // given — the global configuration running a change, whose operations are cluster-wide and so
+    // travel through the other arm of PlannedOperation's oneof than a partition group's do
+    final var builder = OperationGraph.builder();
+    final var first = builder.add(new MemberLeaveOperation(MemberId.from("1")));
+    builder.add(new MemberLeaveOperation(MemberId.from("2")), Set.of(first));
+    final var plan =
+        new DependencyChangePlan(
+            9,
+            Status.IN_PROGRESS,
+            Instant.ofEpochSecond(1_700_000_000),
+            builder.build(),
+            new TreeMap<>(Map.of(first, Instant.ofEpochSecond(1_700_000_005))));
+    final var globalConfiguration =
+        new GlobalConfiguration(
+            3,
+            Optional.of("cluster-x"),
+            Map.of(MemberId.from("1"), new BrokerState(1, Instant.EPOCH, BrokerState.State.ACTIVE)),
+            Optional.empty(),
+            Optional.of(plan),
+            Optional.empty());
+
+    // when
+    final var decoded =
+        protoBufSerializer.decodeGlobalConfiguration(
+            protoBufSerializer.encodeGlobalConfiguration(globalConfiguration));
+
+    // then — the graph comes back with its operations, edges and completions intact
+    assertThat(decoded).isEqualTo(globalConfiguration);
+  }
+
+  @Test
+  void shouldRejectADecodedGraphWhoseOperationCannotRunInItsSubConfiguration() {
+    // given — a partition group's graph carrying a cluster-wide operation. The oneof lets either
+    // kind travel in either scope, but a group cannot run a broker lifecycle step.
+    final var proto =
+        Topology.PartitionGroupConfiguration.newBuilder()
+            .setVersion(2)
+            .setIncarnationNumber(0)
+            .setPendingChanges(
+                Topology.DependencyChangePlan.newBuilder()
+                    .setId(11)
+                    .setStatus(Topology.ChangeStatus.IN_PROGRESS)
+                    .setStartedAt(Timestamp.newBuilder().build())
+                    .setGraph(
+                        Topology.OperationGraph.newBuilder()
+                            .addOperations(
+                                Topology.PlannedOperation.newBuilder()
+                                    .setId(0)
+                                    .setGlobalOperation(
+                                        Topology.GlobalChangeOperation.newBuilder()
+                                            .setMemberId("1")
+                                            .setMemberJoin(
+                                                Topology.MemberJoinOperation.newBuilder())))))
+            .build();
+
+    // when / then — rejected at decode, not later at the reconciler's cast, so corrupt or
+    // forward-versioned state never reaches the execution loop
+    assertThatThrownBy(() -> protoBufSerializer.decodePartitionGroupConfiguration(proto))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("to be a PartitionGroupOperation");
+  }
+
+  @Test
+  void shouldRejectADecodedPlannedOperationCarryingNoOperation() {
+    // given — a planned operation with neither arm of the oneof set, which no encoder produces; it
+    // reaches decode only through corruption or a future encoding this build does not know
+    final var proto =
+        Topology.GlobalConfiguration.newBuilder()
+            .setVersion(1)
+            .setPendingChanges(
+                Topology.DependencyChangePlan.newBuilder()
+                    .setId(1)
+                    .setStatus(Topology.ChangeStatus.IN_PROGRESS)
+                    .setStartedAt(Timestamp.newBuilder().build())
+                    .setGraph(
+                        Topology.OperationGraph.newBuilder()
+                            .addOperations(Topology.PlannedOperation.newBuilder().setId(0))))
+            .build();
+
+    // when / then — rejected rather than skipped: a graph silently missing a step would execute to
+    // completion and report success without that step ever having run
+    assertThatThrownBy(() -> protoBufSerializer.decodeGlobalConfiguration(proto))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("carries none");
   }
 
   @Test
