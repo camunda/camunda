@@ -78,11 +78,11 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   @Autowired CamundaAuthenticationProvider authenticationProvider;
 
+  @Autowired(required = false)
+  ProcessStore processStore;
+
   @Autowired private SecurityConfiguration securityConfiguration;
   private boolean shutdown = false;
-
-  @Autowired(required = false)
-  private ProcessStore processStore;
 
   @PostConstruct
   private void startDataGenerator() {
