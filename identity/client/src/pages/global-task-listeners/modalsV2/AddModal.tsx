@@ -170,9 +170,11 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       <Controller
         name="retries"
         control={control}
+        rules={{ min: { value: 1, message: t("retriesMin") } }}
         render={({ field, fieldState }) => (
           <NumberField
             label={t("retries")}
+            helperText={t("retriesHelperText")}
             min={1}
             step={1}
             value={field.value}
@@ -211,6 +213,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       <Controller
         name="priority"
         control={control}
+        rules={{ min: { value: 0, message: t("priorityMin") } }}
         render={({ field, fieldState }) => (
           <NumberField
             label={t("priority")}
