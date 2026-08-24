@@ -413,6 +413,9 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
       jobRegistryWriter.updateJobStatus(jobEntry.getId(), jobStatus, null);
     }
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    // the suppression filter reads from an in-memory cache refreshed on a periodic schedule
+    // rather than the job registry directly, so force a refresh instead of waiting on the timer
+    embeddedOptimizeExtension.getDeletedProcessDefinitionCache().run();
     waitUntilNumberOfDefinitionsExported(1);
 
     // when
@@ -437,6 +440,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
         EntityType.PROCESS_DEFINITION,
         String.valueOf(suppressedProcess.getProcessDefinitionKey()));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.getDeletedProcessDefinitionCache().run();
     waitUntilNumberOfDefinitionsExported(2);
 
     // when

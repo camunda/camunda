@@ -152,6 +152,50 @@ public class JobRegistryReaderOS implements JobRegistryReader {
         .collect(Collectors.toSet());
   }
 
+  @Override
+  public List<String> findNewestEntityIds(
+      final JobType jobType, final EntityType entityType, final int limit) {
+    LOG.debug(
+        "Fetching up to [{}] newest job registry entityIds for [{}] entity type [{}].",
+        limit,
+        jobType,
+        entityType);
+
+    final BoolQuery.Builder boolQueryBuilder = jobTypeAndEntityTypeQuery(jobType, entityType);
+
+    final SearchRequest.Builder searchReqBuilder =
+        new SearchRequest.Builder()
+            .index(JOB_REGISTRY_INDEX_NAME)
+            .size(limit)
+            .query(boolQueryBuilder.build().toQuery())
+            .sort(
+                List.of(
+                    new SortOptions.Builder()
+                        .field(f -> f.field(JobRegistryIndex.CREATED_AT).order(SortOrder.Desc))
+                        .build(),
+                    // tiebreaker
+                    new SortOptions.Builder()
+                        .field(f -> f.field(JobRegistryIndex.ID).order(SortOrder.Desc))
+                        .build()))
+            .source(QueryDSL.sourceInclude(JobRegistryIndex.ENTITY_ID))
+            // a retried deletion can leave more than one entry for the same entityId; collapse
+            // so a duplicate doesn't consume a slot that another id needs
+            .collapse(c -> c.field(JobRegistryIndex.ENTITY_ID));
+
+    final String errorMessage =
+        String.format(
+            "Was not able to fetch newest job registry entityIds for [%s] entity type [%s].",
+            jobType, entityType);
+    final SearchResponse<JobRegistryEntryDto> searchResponse =
+        osClient.search(searchReqBuilder, JobRegistryEntryDto.class, errorMessage);
+
+    return searchResponse.hits().hits().stream()
+        .map(Hit::source)
+        .filter(Objects::nonNull)
+        .map(JobRegistryEntryDto::getEntityId)
+        .toList();
+  }
+
   private BoolQuery.Builder jobTypeAndEntityTypeQuery(
       final JobType jobType, final EntityType entityType) {
     return new BoolQuery.Builder()

@@ -727,6 +727,12 @@ caches:
     # This cache is used to hold users in a CCSM environment
     maxSize: ${CAMUNDA_OPTIMIZE_CACHES_USERS_MAX_SIZE:10000}
     defaultTtlMillis: ${CAMUNDA_OPTIMIZE_CACHES_USERS_DEFAULT_TTL_MILLIS:600000}
+  # This cache tracks process definitions that have a pending or completed delete job, so Zeebe
+  # import can suppress writes for them without a database round trip per import batch.
+  deletedProcessDefinitions:
+    maxSize: ${CAMUNDA_OPTIMIZE_DELETED_PROCESS_DEFINITION_CACHE_MAX_SIZE:10000}
+    # how often (in seconds) the cache re-fetches the newest matching job registry entries
+    refreshIntervalSeconds: ${CAMUNDA_OPTIMIZE_DELETED_PROCESS_DEFINITION_CACHE_REFRESH_INTERVAL_SECONDS:5}
 
 externalVariable:
   import:

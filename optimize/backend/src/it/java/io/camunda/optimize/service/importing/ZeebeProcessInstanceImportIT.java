@@ -1144,6 +1144,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
       jobRegistryWriter.updateJobStatus(jobEntry.getId(), jobStatus, null);
     }
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.getDeletedProcessDefinitionCache().run();
 
     // when
     waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
@@ -1168,6 +1169,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
         EntityType.PROCESS_DEFINITION,
         String.valueOf(suppressedInstance.getProcessDefinitionKey()));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.getDeletedProcessDefinitionCache().run();
 
     // when
     waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(

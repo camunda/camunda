@@ -8,16 +8,10 @@
 package io.camunda.optimize.service.db.writer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.optimize.dto.optimize.query.job.EntityType;
-import io.camunda.optimize.dto.optimize.query.job.JobType;
-import io.camunda.optimize.service.db.reader.JobRegistryReader;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -26,44 +20,40 @@ import org.junit.jupiter.api.Test;
 
 class DeletedProcessDefinitionFilterTest {
 
-  private JobRegistryReader jobRegistryReader;
+  private DeletedProcessDefinitionCache deletedProcessDefinitionCache;
   private DeletedProcessDefinitionFilter filter;
 
   @BeforeEach
   void setUp() {
-    jobRegistryReader = mock(JobRegistryReader.class);
-    filter = new DeletedProcessDefinitionFilter(jobRegistryReader);
+    deletedProcessDefinitionCache = mock(DeletedProcessDefinitionCache.class);
+    filter = new DeletedProcessDefinitionFilter(deletedProcessDefinitionCache);
   }
 
   @Test
-  void shouldReturnEmptySetForEmptyInputWithoutQueryingReader() {
+  void shouldReturnEmptySetForEmptyInputWithoutQueryingCache() {
     // when
     final Set<String> result = filter.suppressedDefinitionIds(List.of());
 
     // then
     assertThat(result).isEmpty();
-    verifyNoInteractions(jobRegistryReader);
+    verifyNoInteractions(deletedProcessDefinitionCache);
   }
 
   @Test
-  void shouldDelegateToReaderAndReturnItsResult() {
+  void shouldReturnOnlyIdsThatAreSuppressedInCache() {
     // given
     final List<String> candidateIds = List.of("1", "2", "3");
-    when(jobRegistryReader.findEntityIdsWithJob(
-            any(JobType.class), any(EntityType.class), anyCollection()))
-        .thenReturn(Set.of("2"));
+    when(deletedProcessDefinitionCache.isSuppressed("2")).thenReturn(true);
 
     // when
     final Set<String> result = filter.suppressedDefinitionIds(candidateIds);
 
     // then
     assertThat(result).containsExactly("2");
-    verify(jobRegistryReader)
-        .findEntityIdsWithJob(JobType.DELETE, EntityType.PROCESS_DEFINITION, candidateIds);
   }
 
   @Test
-  void shouldReturnSameListForEmptyInputWithoutQueryingReader() {
+  void shouldReturnSameListForEmptyInputWithoutQueryingCache() {
     // given
     final List<String> entries = List.of();
 
@@ -72,15 +62,12 @@ class DeletedProcessDefinitionFilterTest {
 
     // then
     assertThat(result).isSameAs(entries);
-    verifyNoInteractions(jobRegistryReader);
+    verifyNoInteractions(deletedProcessDefinitionCache);
   }
 
   @Test
   void shouldReturnAllEntriesWhenNoneAreSuppressed() {
     // given
-    when(jobRegistryReader.findEntityIdsWithJob(
-            any(JobType.class), any(EntityType.class), anyCollection()))
-        .thenReturn(Set.of());
     final List<String> entries = List.of("1", "2");
 
     // when
@@ -93,9 +80,7 @@ class DeletedProcessDefinitionFilterTest {
   @Test
   void shouldFilterOutOnlySuppressedEntries() {
     // given
-    when(jobRegistryReader.findEntityIdsWithJob(
-            any(JobType.class), any(EntityType.class), anyCollection()))
-        .thenReturn(Set.of("2"));
+    when(deletedProcessDefinitionCache.isSuppressed("2")).thenReturn(true);
     final List<String> entries = List.of("1", "2", "3");
 
     // when
@@ -108,9 +93,7 @@ class DeletedProcessDefinitionFilterTest {
   @Test
   void shouldReturnEmptyListWhenAllEntriesAreSuppressed() {
     // given
-    when(jobRegistryReader.findEntityIdsWithJob(
-            any(JobType.class), any(EntityType.class), anyCollection()))
-        .thenReturn(Set.of("1"));
+    when(deletedProcessDefinitionCache.isSuppressed("1")).thenReturn(true);
     final List<String> entries = List.of("1");
 
     // when
