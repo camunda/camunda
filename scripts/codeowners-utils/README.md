@@ -601,3 +601,4 @@ static final ArchRule integration_tests_should_follow_naming_convention =
 - **External Tools**: Requires `codeowners-cli` for ownership resolution
 - **Pattern**: Strategy pattern with enrichment chain
 - **Node Version**: Requires Node.js 18+ (for native test runner)
+

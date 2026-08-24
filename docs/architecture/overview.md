@@ -202,3 +202,4 @@ from OIDC tokens. Update all consumers before changing the mapping.
 - Zeebe internals: `docs/zeebe/`
 - Module-specific architecture: `<module>/docs/architecture.md` (where present)
 - Module-specific behavioral rules: `<module>/AGENTS.md`
+
