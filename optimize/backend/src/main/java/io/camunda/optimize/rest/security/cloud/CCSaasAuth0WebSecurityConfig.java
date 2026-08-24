@@ -86,24 +86,15 @@ public class CCSaasAuth0WebSecurityConfig {
             .jwkSetUri(
                 String.format(
                     URL_TEMPLATE, getAuth0Configuration().getDomain(), AUTH0_JWKS_ENDPOINT))
-            // Auth0 login id_tokens carry this as their `iss` claim (trailing slash required); used
-            // by CCSaaSSecurityConfigurerAdapter's idTokenDecoderFactory to validate it.
-            .issuerUri(buildAuth0IssuerUri());
+            // Auth0 login id_tokens carry the custom domain (the one the authorization endpoint
+            // above also uses) as their `iss` claim; used by CCSaaSSecurityConfigurerAdapter's
+            // idTokenDecoderFactory to validate it.
+            .issuerUri(buildAuth0CustomDomainUrl("/"));
     return new InMemoryClientRegistrationRepository(List.of(builder.build()));
   }
 
   private String buildAuth0DomainUrl(final String path) {
     return String.format(URL_TEMPLATE, getAuth0Configuration().getDomain(), path);
-  }
-
-  // Strips any operator-configured trailing slash off domain first: an unstripped "domain/" would
-  // otherwise produce "https://domain//", which fails OidcIdTokenValidator's strict iss match even
-  // though the other endpoints built from domain tolerate the double slash.
-  private String buildAuth0IssuerUri() {
-    final String domain = getAuth0Configuration().getDomain();
-    final String normalizedDomain =
-        domain.endsWith("/") ? domain.substring(0, domain.length() - 1) : domain;
-    return String.format(URL_TEMPLATE, normalizedDomain, "/");
   }
 
   private String buildAuth0CustomDomainUrl(final String path) {

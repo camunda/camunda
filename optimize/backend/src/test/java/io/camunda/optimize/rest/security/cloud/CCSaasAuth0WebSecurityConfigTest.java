@@ -14,10 +14,9 @@ import static org.mockito.Mockito.when;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import io.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -26,49 +25,53 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 @ExtendWith(MockitoExtension.class)
 class CCSaasAuth0WebSecurityConfigTest {
 
+  // Distinct on purpose: distinguishes which of the two the issuer/JWKS URI is built from, rather
+  // than passing accidentally because both configured values happen to match.
+  private static final String BACKEND_DOMAIN = "tenant.eu.auth0.com";
+  private static final String CUSTOM_DOMAIN = "weblogin.example.com";
+
   @Mock private ConfigurationService configurationService;
   @Mock private AuthConfiguration authConfiguration;
   @Mock private CloudAuthConfiguration cloudAuthConfiguration;
 
-  @ParameterizedTest
-  @ValueSource(strings = {"tenant.auth0.com", "tenant.auth0.com/"})
-  void shouldBuildIssuerUriWithoutDoubleSlashRegardlessOfTrailingSlashOnDomain(
-      final String domain) {
-    stubCloudAuthConfiguration(domain);
+  @Test
+  void shouldBuildIssuerUriFromCustomDomainNotBackendDomain() {
+    stubCloudAuthConfiguration();
 
-    final CCSaasAuth0WebSecurityConfig config =
-        new CCSaasAuth0WebSecurityConfig(configurationService);
-    final ClientRegistrationRepository repository = config.clientRegistrationRepository();
-    final ClientRegistration registration =
-        repository.findByRegistrationId(CCSaasAuth0WebSecurityConfig.AUTH_0_CLIENT_REGISTRATION_ID);
+    final ClientRegistration registration = registration();
 
     assertThat(registration.getProviderDetails().getIssuerUri())
-        .isEqualTo("https://tenant.auth0.com/");
+        .isEqualTo("https://" + CUSTOM_DOMAIN + "/");
   }
 
   @Test
-  void shouldBuildJwksUriUnaffectedByIssuerNormalization() {
-    stubCloudAuthConfiguration("tenant.auth0.com");
+  void shouldBuildJwksUriFromBackendDomainNotCustomDomain() {
+    stubCloudAuthConfiguration();
 
+    final ClientRegistration registration = registration();
+
+    assertThat(registration.getProviderDetails().getJwkSetUri())
+        .isEqualTo("https://" + BACKEND_DOMAIN + "/.well-known/jwks.json");
+  }
+
+  private ClientRegistration registration() {
     final CCSaasAuth0WebSecurityConfig config =
         new CCSaasAuth0WebSecurityConfig(configurationService);
     final ClientRegistrationRepository repository = config.clientRegistrationRepository();
-    final ClientRegistration registration =
-        repository.findByRegistrationId(CCSaasAuth0WebSecurityConfig.AUTH_0_CLIENT_REGISTRATION_ID);
-
-    assertThat(registration.getProviderDetails().getJwkSetUri())
-        .isEqualTo("https://tenant.auth0.com/.well-known/jwks.json");
+    return repository.findByRegistrationId(
+        CCSaasAuth0WebSecurityConfig.AUTH_0_CLIENT_REGISTRATION_ID);
   }
 
-  private void stubCloudAuthConfiguration(final String domain) {
+  private void stubCloudAuthConfiguration() {
     when(configurationService.getAuthConfiguration()).thenReturn(authConfiguration);
     when(authConfiguration.getCloudAuthConfiguration()).thenReturn(cloudAuthConfiguration);
-    when(cloudAuthConfiguration.getDomain()).thenReturn(domain);
+    when(cloudAuthConfiguration.getDomain()).thenReturn(BACKEND_DOMAIN);
+    when(cloudAuthConfiguration.getCustomDomain()).thenReturn(CUSTOM_DOMAIN);
     when(cloudAuthConfiguration.getClientId()).thenReturn("optimize-client-id");
     when(cloudAuthConfiguration.getClientSecret()).thenReturn("client-secret");
     lenient().when(cloudAuthConfiguration.getClusterId()).thenReturn("cluster-1");
     lenient()
         .when(cloudAuthConfiguration.getUserAccessTokenAudience())
-        .thenReturn(java.util.Optional.empty());
+        .thenReturn(Optional.empty());
   }
 }

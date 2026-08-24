@@ -8,6 +8,7 @@
 package io.camunda.optimize.rest.security.cloud;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
@@ -20,6 +21,7 @@ import io.camunda.optimize.service.util.configuration.security.CloudAuthConfigur
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,7 +30,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 
@@ -36,7 +37,12 @@ import org.springframework.security.oauth2.jwt.Jwt;
 class CCSaaSSecurityConfigurerAdapterTest {
 
   private static final String CLIENT_ID = "optimize-client-id";
-  private static final String ISSUER = "https://tenant.auth0.com/";
+  // Deliberately distinct from CUSTOM_DOMAIN below: if CCSaasAuth0WebSecurityConfig ever derives
+  // the issuer from the wrong one of the two configured domains, only using a real (not
+  // hand-built) ClientRegistration in this test lets that mixup fail here.
+  private static final String BACKEND_DOMAIN = "tenant.eu.auth0.com";
+  private static final String CUSTOM_DOMAIN = "weblogin.example.com";
+  private static final String ISSUER = "https://" + CUSTOM_DOMAIN + "/";
   private static final String ORGANIZATION_ID = "org-1";
 
   @Mock private ConfigurationService configurationService;
@@ -50,12 +56,21 @@ class CCSaaSSecurityConfigurerAdapterTest {
   @Mock private CloudAuthConfiguration cloudAuthConfiguration;
 
   private CCSaaSSecurityConfigurerAdapter adapter;
+  private ClientRegistration clientRegistration;
 
   @BeforeEach
   void setUp() {
     when(configurationService.getAuthConfiguration()).thenReturn(authConfiguration);
     when(authConfiguration.getCloudAuthConfiguration()).thenReturn(cloudAuthConfiguration);
     when(cloudAuthConfiguration.getOrganizationId()).thenReturn(ORGANIZATION_ID);
+    when(cloudAuthConfiguration.getDomain()).thenReturn(BACKEND_DOMAIN);
+    when(cloudAuthConfiguration.getCustomDomain()).thenReturn(CUSTOM_DOMAIN);
+    when(cloudAuthConfiguration.getClientId()).thenReturn(CLIENT_ID);
+    when(cloudAuthConfiguration.getClientSecret()).thenReturn("client-secret");
+    lenient().when(cloudAuthConfiguration.getClusterId()).thenReturn("cluster-1");
+    lenient()
+        .when(cloudAuthConfiguration.getUserAccessTokenAudience())
+        .thenReturn(Optional.empty());
 
     adapter =
         new CCSaaSSecurityConfigurerAdapter(
@@ -66,10 +81,17 @@ class CCSaaSSecurityConfigurerAdapterTest {
             clientRegistrationRepository,
             oAuth2AuthorizedClientService,
             userIdMigrationService);
+
+    // The real registration built by the sibling config class, not a hand-built one, so the two
+    // classes are exercised together and a domain/customDomain mixup in either would surface here.
+    clientRegistration =
+        new CCSaasAuth0WebSecurityConfig(configurationService)
+            .clientRegistrationRepository()
+            .findByRegistrationId(CCSaasAuth0WebSecurityConfig.AUTH_0_CLIENT_REGISTRATION_ID);
   }
 
   private OAuth2TokenValidator<Jwt> validator() {
-    return adapter.createIdTokenValidators(clientRegistration());
+    return adapter.createIdTokenValidators(clientRegistration);
   }
 
   @Test
@@ -109,18 +131,6 @@ class CCSaaSSecurityConfigurerAdapterTest {
 
     assertThat(validator.validate(idToken(ISSUER, CLIENT_ID, "some-other-org")).hasErrors())
         .isTrue();
-  }
-
-  private static ClientRegistration clientRegistration() {
-    return ClientRegistration.withRegistrationId("auth0")
-        .clientId(CLIENT_ID)
-        .clientSecret("secret")
-        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-        .redirectUri("{baseUrl}/sso-callback")
-        .authorizationUri("https://custom.auth0.com/authorize")
-        .tokenUri("https://tenant.auth0.com/oauth/token")
-        .issuerUri(ISSUER)
-        .build();
   }
 
   private static Jwt idToken(
