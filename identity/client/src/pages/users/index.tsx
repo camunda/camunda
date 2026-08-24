@@ -12,6 +12,7 @@ import { ListPageFallback as ListPageFallbackV2 } from "src/components/fallbacks
 import PageRoutes from "src/components/router/PageRoutes";
 import { IS_NEW_DESIGN_SYSTEM_ENABLED } from "src/feature-flags";
 import Detail from "src/pages/users/detail";
+import DetailV2 from "src/pages/users/detailV2";
 
 const List = lazy(() =>
   IS_NEW_DESIGN_SYSTEM_ENABLED ? import("./ListV2") : import("./List"),
@@ -32,7 +33,7 @@ const Users: FC = () => (
         <List />
       </Suspense>
     }
-    detailElement={<Detail />}
+    detailElement={IS_NEW_DESIGN_SYSTEM_ENABLED ? <DetailV2 /> : <Detail />}
   />
 );
 
