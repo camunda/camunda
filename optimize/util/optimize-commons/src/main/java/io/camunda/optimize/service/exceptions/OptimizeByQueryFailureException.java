@@ -16,4 +16,8 @@ public class OptimizeByQueryFailureException extends OptimizeRuntimeException {
   public OptimizeByQueryFailureException(final String detailedErrorMessage) {
     super(detailedErrorMessage);
   }
+
+  public OptimizeByQueryFailureException(final String detailedErrorMessage, final Throwable e) {
+    super(detailedErrorMessage, e);
+  }
 }
