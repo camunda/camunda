@@ -2103,6 +2103,7 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": 9999,
                   "storageOrdinalKey": 6,
                   "businessId": "business-id-123",
+                  "resumeFromJobKey": -1,
                   "elementInstanceKey": -1
                 }
                 """
@@ -2136,6 +2137,7 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": -1,
                   "storageOrdinalKey": 0,
                   "businessId": "",
+                  "resumeFromJobKey": -1,
                   "elementInstanceKey": -1
                 }
                 """
@@ -2971,6 +2973,7 @@ final class JsonSerializableToJsonTest {
                     "rootProcessInstanceKey": -1,
                     "storageOrdinalKey": 0,
                     "businessId": "",
+                    "resumeFromJobKey": -1,
                     "elementInstanceKey": -1
                   }
                 }
