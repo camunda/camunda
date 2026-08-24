@@ -21,7 +21,8 @@ import org.springframework.core.env.ConfigurableEnvironment;
 
 /**
  * Produces the authoritative {@link WebappProperties} bean used by the REST layer. Unified {@code
- * camunda.webapp.*} keys take precedence; when absent, legacy Operate keys are used as fallbacks.
+ * camunda.webapp.*} keys take precedence; when absent, legacy per-app keys from Operate and
+ * Tasklist are used as fallbacks so existing deployments require no config changes.
  */
 @Configuration
 @Profile("!restore")
@@ -55,6 +56,7 @@ public class WebappPropertiesOverride {
 
     applyEnterpriseFallback(resolved);
     applyLoginDelegatedFallback(resolved);
+    applyCloudFallbacks(resolved);
     resolved.setActiveComponents(computeActiveComponents());
 
     return resolved;
@@ -65,15 +67,15 @@ public class WebappPropertiesOverride {
   }
 
   private boolean isComponentUiEnabled(final String name) {
-    return ("tasklist".equals(name)
-            || environment.getProperty("camunda." + name + ".webappEnabled", Boolean.class, true))
+    return environment.getProperty("camunda." + name + ".webappEnabled", Boolean.class, true)
         && environment.getProperty("camunda.webapps." + name + ".enabled", Boolean.class, true)
         && environment.getProperty("camunda.webapps." + name + ".ui-enabled", Boolean.class, true);
   }
 
   private void applyEnterpriseFallback(final WebappProperties target) {
     if (environment.getProperty("camunda.webapp.enterprise") == null
-        && legacyOperateProperties.isEnterprise()) {
+        && (legacyOperateProperties.isEnterprise()
+            || environment.getProperty("camunda.tasklist.enterprise", Boolean.class, false))) {
       target.setEnterprise(true);
     }
   }
@@ -82,6 +84,13 @@ public class WebappPropertiesOverride {
     if (environment.getProperty("camunda.webapp.login-delegated") == null) {
       target.setLoginDelegated(
           environment.getProperty("camunda.webapps.login-delegated", Boolean.class, false));
+    }
+  }
+
+  private void applyCloudFallbacks(final WebappProperties target) {
+    final Cloud cloud = target.getCloud();
+    if (cloud.getStage() == null) {
+      cloud.setStage(environment.getProperty("camunda.tasklist.cloud.stage"));
     }
   }
 }

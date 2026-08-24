@@ -111,14 +111,17 @@ public class SecurityElasticsearchTest {
         // certificate path
         "camunda.data.secondary-storage.elasticsearch.security.certificate-path=certificatePath",
         "camunda.database.security.certificatePath=certificatePath",
+        "camunda.tasklist.elasticsearch.ssl.certificatePath=certificatePath",
         "camunda.operate.elasticsearch.ssl.certificatePath=certificatePath",
         // verify hostname
         "camunda.data.secondary-storage.elasticsearch.security.verify-hostname=false",
         "camunda.database.security.verifyHostname=false",
+        "camunda.tasklist.elasticsearch.ssl.verifyHostname=false",
         "camunda.operate.elasticsearch.ssl.verifyHostname=false",
         // self signed
         "camunda.data.secondary-storage.elasticsearch.security.self-signed=true",
         "camunda.database.security.selfSigned=true",
+        "camunda.tasklist.elasticsearch.ssl.selfSigned=true",
         "camunda.operate.elasticsearch.ssl.selfSigned=true"
       })
   class WithNewAndLegacySet {
