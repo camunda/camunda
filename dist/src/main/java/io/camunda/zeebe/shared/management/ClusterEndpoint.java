@@ -29,6 +29,8 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
+import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationJsonSerializer;
+import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
@@ -59,7 +61,9 @@ import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -134,6 +138,51 @@ public class ClusterEndpoint {
   public ResponseEntity<?> listConfigurationChanges() {
     try {
       return withCurrentConfiguration(ClusterApiUtils::mapConfigurationChangesResponse);
+    } catch (final Exception error) {
+      return ClusterApiUtils.mapError(error);
+    }
+  }
+
+  /**
+   * Dumps the configuration the cluster gossips and persists, bypassing the mapping to the
+   * published API types that every other endpoint here applies. Meant for debugging: when a
+   * response from those endpoints looks wrong, this shows whether the configuration or the mapping
+   * is at fault.
+   *
+   * <p>The shape is the configuration model's own, so it changes whenever the model does.
+   * Deliberately absent from {@code api/cluster/cluster-api.yaml} for that reason: a debugging aid
+   * rather than a contract.
+   */
+  @GetMapping(path = "/dump", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<?> dumpConfigurationAsJson() {
+    try {
+      return withCurrentConfiguration(
+          configuration ->
+              ResponseEntity.ok()
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .body(ClusterConfigurationJsonSerializer.toJson(configuration)));
+    } catch (final Exception error) {
+      return ClusterApiUtils.mapError(error);
+    }
+  }
+
+  /**
+   * The same configuration as {@link #dumpConfigurationAsJson()}, in the binary protobuf encoding
+   * the cluster actually gossips and persists. Decodable with {@code protoc --decode
+   * topology_protocol.CurrentClusterConfiguration}.
+   */
+  @GetMapping(path = "/dump", produces = MediaType.APPLICATION_PROTOBUF_VALUE)
+  public ResponseEntity<?> dumpConfigurationAsProtobuf() {
+    try {
+      return withCurrentConfiguration(
+          configuration ->
+              ResponseEntity.ok()
+                  .contentType(MediaType.APPLICATION_PROTOBUF)
+                  // Keeps a bare `curl` from spraying binary into the terminal, and makes
+                  // `curl -OJ` write a file instead.
+                  .header(
+                      HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"cluster-config.pb\"")
+                  .body(new ProtoBufSerializer().encodeCurrentClusterConfiguration(configuration)));
     } catch (final Exception error) {
       return ClusterApiUtils.mapError(error);
     }
