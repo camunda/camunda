@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
@@ -164,13 +163,12 @@ final class ClusterConfigurationJsonSerializerTest {
             Map.of(MEMBER_0, new BrokerState(3, TIMESTAMP, BrokerState.State.ACTIVE)),
             Optional.of(distributor),
             Optional.of(
-                new ClusterChangePlan(
+                new DependencyChangePlan(
                     9,
-                    2,
                     Status.IN_PROGRESS,
                     TIMESTAMP,
-                    List.of(),
-                    List.of(new MemberJoinOperation(MEMBER_1)))),
+                    OperationGraph.sequential(List.of(new MemberJoinOperation(MEMBER_1))),
+                    new TreeMap<>())),
             Optional.empty());
 
     final var partitionGroup =
