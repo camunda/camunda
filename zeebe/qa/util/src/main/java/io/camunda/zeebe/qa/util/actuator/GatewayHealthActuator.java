@@ -68,7 +68,7 @@ public interface GatewayHealthActuator extends HealthActuator {
   }
 
   @Override
-  @RequestLine("GET /")
+  @RequestLine("GET /readiness")
   void ready();
 
   @Override
