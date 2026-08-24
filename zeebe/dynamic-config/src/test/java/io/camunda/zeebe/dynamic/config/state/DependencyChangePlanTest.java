@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph.PlannedOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncar
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import org.junit.jupiter.api.Nested;
@@ -414,6 +416,56 @@ final class DependencyChangePlanTest {
 
   @Nested
   class GraphValidation {
+
+    @Test
+    void shouldDefaultAnOperationsTargetToTheEnclosingSubConfiguration() {
+      // given / when — every adopter today builds a graph that lives inside the sub-configuration
+      // it acts on, so no node names a group
+      final var builder = OperationGraph.builder();
+      builder.add(new UpdateIncarnationNumberOperation(member(0)));
+
+      // then — absent, which is what makes adding the field cost no existing call site
+      assertThat(builder.build().operations().values())
+          .allSatisfy(planned -> assertThat(planned.groupId()).isEmpty());
+    }
+
+    @Test
+    void shouldLetANodeNameThePartitionGroupItTargets() {
+      // given — the prerequisite for collapsing phase boundaries into the graph: a graph spanning
+      // sub-configurations, where a node's target is not implied by where the graph is stored
+      final var builder = OperationGraph.builder();
+      final var inTenantA =
+          builder.add(
+              new UpdateIncarnationNumberOperation(member(0)), Set.of(), Optional.of("tenant-a"));
+      final var inTenantB =
+          builder.add(
+              new UpdateIncarnationNumberOperation(member(0)),
+              Set.of(inTenantA),
+              Optional.of("tenant-b"));
+
+      // when
+      final var graph = builder.build();
+
+      // then — both nodes carry their own target, and the edge crosses between them
+      assertThat(graph.operations().get(inTenantA).groupId()).contains("tenant-a");
+      assertThat(graph.operations().get(inTenantB).groupId()).contains("tenant-b");
+      assertThat(graph.operations().get(inTenantB).dependsOn()).containsExactly(inTenantA);
+    }
+
+    @Test
+    void shouldRejectAClusterWideOperationTargetingAGroup() {
+      // given / when / then — a cluster-wide operation has no group to target, so pairing one with
+      // a group id is a planning mistake. Rejected rather than ignored: silently dropping the id
+      // would let a graph claim a target it does not act on.
+      assertThatThrownBy(
+              () ->
+                  new PlannedOperation(
+                      new MemberJoinOperation(member(0)),
+                      new java.util.TreeSet<>(),
+                      Optional.of("tenant-a")))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("targets no partition group");
+    }
 
     @Test
     void shouldRejectADependencyCycle() {

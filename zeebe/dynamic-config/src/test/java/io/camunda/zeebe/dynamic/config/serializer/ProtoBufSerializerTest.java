@@ -63,6 +63,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -855,6 +856,73 @@ final class ProtoBufSerializerTest {
               // the queue's version is what an old broker merges by: one per completed operation
               assertThat(plan.version()).isEqualTo(2);
             });
+  }
+
+  @Test
+  void shouldRoundTripAGraphWhoseNodesNameDifferentPartitionGroups() {
+    // given — a graph spanning two groups, which is what collapsing phase boundaries into the graph
+    // needs and what the per-node group id exists for. Nothing produces one yet; this pins that the
+    // wire can carry it, so the follow-up is not blocked on a format change.
+    final var builder = OperationGraph.builder();
+    final var inTenantA =
+        builder.add(
+            new UpdateIncarnationNumberOperation(MemberId.from("1")),
+            Set.of(),
+            Optional.of("tenant-a"));
+    builder.add(
+        new UpdateIncarnationNumberOperation(MemberId.from("1")),
+        Set.of(inTenantA),
+        Optional.of("tenant-b"));
+    final var graph = builder.build();
+    final var plan =
+        new DependencyChangePlan(
+            11, Status.IN_PROGRESS, Instant.ofEpochSecond(1_700_000_000), graph, new TreeMap<>());
+    final var group =
+        new PartitionGroupConfiguration(
+            2, 0, Map.of(), Optional.empty(), Optional.of(plan), Optional.empty());
+
+    // when
+    final var decoded =
+        protoBufSerializer.decodePartitionGroupConfiguration(
+            protoBufSerializer.encodePartitionGroupConfiguration(group));
+
+    // then — each node keeps its own target, and the crossing edge survives
+    assertThat(decoded).isEqualTo(group);
+  }
+
+  @Test
+  void shouldDecodeAGraphWithoutGroupIdsAsTargetingItsEnclosingSubConfiguration() {
+    // given — a graph as written before the per-node group id existed: the field is absent, which
+    // means "the sub-configuration holding this graph". Absent must stay absent rather than being
+    // guessed at, or such a graph would come back claiming a target it never named.
+    final var proto =
+        Topology.PartitionGroupConfiguration.newBuilder()
+            .setVersion(2)
+            .setIncarnationNumber(0)
+            .setPendingChanges(
+                Topology.DependencyChangePlan.newBuilder()
+                    .setId(11)
+                    .setStatus(Topology.ChangeStatus.IN_PROGRESS)
+                    .setStartedAt(Timestamp.newBuilder().build())
+                    .setGraph(
+                        Topology.OperationGraph.newBuilder()
+                            .addOperations(
+                                Topology.PlannedOperation.newBuilder()
+                                    .setId(0)
+                                    .setPartitionGroupOperation(
+                                        Topology.PartitionGroupChangeOperation.newBuilder()
+                                            .setMemberId("1")
+                                            .setUpdateIncarnationNumber(
+                                                Topology.UpdateIncarnationNumberOperation
+                                                    .newBuilder())))))
+            .build();
+
+    // when
+    final var decoded = protoBufSerializer.decodePartitionGroupConfiguration(proto);
+
+    // then
+    assertThat(decoded.pendingChanges().orElseThrow().graph().operations().values())
+        .allSatisfy(planned -> assertThat(planned.groupId()).isEmpty());
   }
 
   @Test

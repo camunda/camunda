@@ -2035,6 +2035,7 @@ public class ProtoBufSerializer
                 case final GlobalChangeOperation globalOperation ->
                     operation.setGlobalOperation(encodeGlobalChangeOperation(globalOperation));
               }
+              planned.groupId().ifPresent(operation::setGroupId);
               planned.dependsOn().forEach(dependency -> operation.addDependsOn(dependency.value()));
               builder.addOperations(operation.build());
             });
@@ -2049,9 +2050,17 @@ public class ProtoBufSerializer
             planned -> {
               final var dependsOn = new TreeSet<OperationId>();
               planned.getDependsOnList().forEach(id -> dependsOn.add(OperationId.of(id)));
+              // An empty groupId means "the sub-configuration holding this graph", which is both
+              // what every graph carries today and what a graph written before the field existed
+              // meant — so absent decodes to absent rather than being guessed at.
+              final var groupId =
+                  planned.getGroupId().isEmpty()
+                      ? Optional.<String>empty()
+                      : Optional.of(planned.getGroupId());
               operations.put(
                   OperationId.of(planned.getId()),
-                  new OperationGraph.PlannedOperation(decodePlannedOperation(planned), dependsOn));
+                  new OperationGraph.PlannedOperation(
+                      decodePlannedOperation(planned), dependsOn, groupId));
             });
     // OperationGraph.of, not the bare constructor: acyclicity is not an invariant of the
     // constructor, only of this factory, and this graph came off the wire -- corruption or a

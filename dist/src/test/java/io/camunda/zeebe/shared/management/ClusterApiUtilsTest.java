@@ -1464,5 +1464,4 @@ final class ClusterApiUtilsTest {
 
   private record ExporterConfigParam(
       ClusterConfiguration configuration, List<ExporterStatus> expectedResult) {}
-
 }
