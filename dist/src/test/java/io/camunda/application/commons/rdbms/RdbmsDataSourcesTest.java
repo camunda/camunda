@@ -17,18 +17,14 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Rdbms;
 import io.camunda.configuration.RdbmsConnectionPool;
+import io.camunda.zeebe.test.util.logging.LogCapturer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -194,7 +190,7 @@ class RdbmsDataSourcesTest {
     configs.put(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, unrecognizedUrlRdbms());
     configs.put("tenant-b", h2Rdbms());
 
-    try (final var logs = new LogCapturer(RdbmsDataSources.class.getName())) {
+    try (final var logs = LogCapturer.capturing(RdbmsDataSources.class, Level.DEBUG)) {
       // when / then - a configuration error rather than a degraded tenant: without a vendor id
       // there is no SqlSessionFactory, and so no tenant to degrade
       assertThatThrownBy(() -> RdbmsDataSources.of(configs, new SimpleMeterRegistry()))
@@ -207,7 +203,7 @@ class RdbmsDataSourcesTest {
 
       // and - the warning is what tells the operator that this one tenant now decides whether
       // every tenant on the node starts
-      assertThat(logs.eventsAt(Level.WARN))
+      assertThat(logs.messagesAt(Level.WARN))
           .anySatisfy(
               event ->
                   assertThat(event)
@@ -219,7 +215,7 @@ class RdbmsDataSourcesTest {
   @Test
   void shouldNotWarnAboutReadingTheVendorFromTheDatabaseOnASingleTenantNode() {
     // given - the same deployment with nobody to take down but itself
-    try (final var logs = new LogCapturer(RdbmsDataSources.class.getName())) {
+    try (final var logs = LogCapturer.capturing(RdbmsDataSources.class, Level.DEBUG)) {
 
       // when
       assertThatThrownBy(
@@ -231,8 +227,8 @@ class RdbmsDataSourcesTest {
 
       // then - still reported, but at a level that does not fire on every start of a deployment
       // with no isolation to lose
-      assertThat(logs.eventsAt(Level.WARN)).isEmpty();
-      assertThat(logs.eventsAt(Level.DEBUG))
+      assertThat(logs.messagesAt(Level.WARN)).isEmpty();
+      assertThat(logs.messagesAt(Level.DEBUG))
           .anySatisfy(
               event -> assertThat(event).contains(RdbmsVendorIdProvider.VENDOR_ID_PROPERTY));
     }
@@ -420,50 +416,6 @@ class RdbmsDataSourcesTest {
             .as("opened HikariDataSource should be closed on failure")
             .isTrue();
       }
-    }
-  }
-
-  /**
-   * Captures a logger's events; without a log4j2 config the root level would drop them. The level
-   * it raises is restored on close, so a later test in the same fork neither inherits DEBUG output
-   * from this one nor depends on having run after it.
-   */
-  private static final class LogCapturer implements AutoCloseable {
-
-    private final ListAppender appender = new ListAppender("RdbmsDataSourcesTestAppender");
-    private final String loggerName;
-
-    /** Non-null: {@link org.apache.logging.log4j.Logger#getLevel()} answers the effective level. */
-    private final Level previousLevel;
-
-    private LogCapturer(final String loggerName) {
-      this.loggerName = loggerName;
-      appender.start();
-      previousLevel = LogManager.getLogger(loggerName).getLevel();
-      Configurator.setLevel(loggerName, Level.DEBUG);
-      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-      context
-          .getConfiguration()
-          .getLoggerConfig(loggerName)
-          .addAppender(appender, Level.DEBUG, null);
-      context.updateLoggers();
-    }
-
-    private List<String> eventsAt(final Level level) {
-      // the appender has no layout, so formatted strings live in getEvents(), not getMessages()
-      return appender.getEvents().stream()
-          .filter(event -> event.getLevel() == level)
-          .map(event -> event.getMessage().getFormattedMessage())
-          .toList();
-    }
-
-    @Override
-    public void close() {
-      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-      context.getConfiguration().getLoggerConfig(loggerName).removeAppender(appender.getName());
-      Configurator.setLevel(loggerName, previousLevel);
-      context.updateLoggers();
-      appender.stop();
     }
   }
 

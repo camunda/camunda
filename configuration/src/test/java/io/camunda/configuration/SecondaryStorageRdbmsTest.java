@@ -21,14 +21,11 @@ import io.camunda.tasklist.TasklistPropertiesOverride;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.ValidatorsCfg;
+import io.camunda.zeebe.test.util.logging.LogCapturer;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -268,7 +265,7 @@ public class SecondaryStorageRdbmsTest {
     @Test
     void shouldIgnoreUnifiedRdbmsExporterConfig() {
       try (final LogCapturer logs =
-          new LogCapturer(BrokerBasedPropertiesOverride.class.getName())) {
+          LogCapturer.capturing(BrokerBasedPropertiesOverride.class, Level.WARN)) {
         runnerWith("camunda.data.exporters.rdbms.args.queue-size=0")
             .run(
                 context -> {
@@ -294,7 +291,7 @@ public class SecondaryStorageRdbmsTest {
     @Test
     void shouldIgnoreLegacyRdbmsExporterConfig() {
       try (final LogCapturer logs =
-          new LogCapturer(BrokerBasedPropertiesOverride.class.getName())) {
+          LogCapturer.capturing(BrokerBasedPropertiesOverride.class, Level.WARN)) {
         runnerWith(
                 "zeebe.broker.exporters.rdbms.class-name=io.camunda.exporter.rdbms.RdbmsExporter")
             .run(
@@ -323,7 +320,7 @@ public class SecondaryStorageRdbmsTest {
       final BrokerBasedProperties props;
       final boolean warned;
       try (final LogCapturer logs =
-          new LogCapturer(BrokerBasedPropertiesOverride.class.getName())) {
+          LogCapturer.capturing(BrokerBasedPropertiesOverride.class, Level.WARN)) {
         props = BrokerBasedPropertiesOverride.convert(perTenant);
         warned = logs.contains(RESERVED_WARNING);
       }
@@ -338,46 +335,6 @@ public class SecondaryStorageRdbmsTest {
           .isEqualTo(1000);
       // the ignored config must be surfaced to the user as a warning, not silently
       assertThat(warned).isTrue();
-    }
-  }
-
-  /**
-   * Captures log events emitted for a given logger via a log4j2 {@link ListAppender}, so tests can
-   * assert on messages that are logged instead of thrown (see {@link ReservedExporterIgnored}).
-   */
-  private static final class LogCapturer implements AutoCloseable {
-    private final ListAppender appender;
-    private final String loggerName;
-
-    private LogCapturer(final String loggerName) {
-      this.loggerName = loggerName;
-      appender = new ListAppender("TestAppender");
-      appender.start();
-      // Ensure a dedicated logger config exists at a level that lets WARN through; without a log4j2
-      // config file the default root level is ERROR, which would drop the warning before the
-      // appender sees it.
-      Configurator.setLevel(loggerName, Level.WARN);
-      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-      context
-          .getConfiguration()
-          .getLoggerConfig(loggerName)
-          .addAppender(appender, Level.WARN, null);
-      context.updateLoggers();
-    }
-
-    private boolean contains(final String message) {
-      // the appender has no layout, so formatted strings live in getEvents(), not getMessages()
-      return appender.getEvents().stream()
-          .anyMatch(e -> e.getMessage().getFormattedMessage().contains(message));
-    }
-
-    @Override
-    public void close() {
-      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-      context.getConfiguration().getLoggerConfig(loggerName).removeAppender("TestAppender");
-      context.updateLoggers();
-      appender.stop();
-      appender.clear();
     }
   }
 

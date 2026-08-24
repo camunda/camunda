@@ -120,10 +120,7 @@ public class RdbmsSchemaInitializer
 
     initialization.start();
 
-    LOG.info(
-        "Holding startup until a physical tenant is serviceable, so that nothing reaches this node"
-            + " before it can answer and so that a node whose every tenant is terminal still exits"
-            + " non-zero.");
+    LOG.info("Holding startup until a physical tenant's RDBMS schema is initialized.");
     initialization.awaitGate();
   }
 

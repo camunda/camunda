@@ -8,14 +8,17 @@
 package io.camunda.db.rdbms.exception;
 
 /**
- * Thrown when a physical tenant's RDBMS schema version cannot be determined at all: the data source
- * or the application version is absent, or the value already stored in {@code RDBMS_SCHEMA_VERSION}
- * is not a semantic version.
+ * Thrown when a physical tenant's RDBMS schema version cannot be determined at all. In practice
+ * that means the value stored in {@code RDBMS_SCHEMA_VERSION} is not a semantic version: it is data
+ * in the tenant's own database rather than configuration, so no amount of startup validation can
+ * rule it out ahead of time. An absent data source or application version raises it too, but those
+ * are defensive — neither is reachable through the Spring wiring, which resolves the version from
+ * {@code VersionUtil}.
  *
  * <p>Distinct from {@link RdbmsSchemaVersionUnreadableException} because the two need opposite
- * treatment from the schema-initialization retry loop. Nothing here is repaired by trying again — a
- * wiring defect and an invalid stored value both need an operator — so this is classified terminal,
- * which stops that tenant retrying and logs once instead of a stack trace every backoff interval.
+ * treatment from the schema-initialization retry loop. Nothing here is repaired by trying again, so
+ * this is classified terminal, which stops that tenant retrying and logs once instead of a stack
+ * trace every backoff interval.
  *
  * <p>Extends {@link IllegalStateException}, which every one of these sites threw before the split,
  * so that callers and tests keyed on that type are unaffected.
