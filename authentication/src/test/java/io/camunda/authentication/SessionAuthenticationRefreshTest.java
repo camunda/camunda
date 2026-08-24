@@ -276,6 +276,14 @@ public class SessionAuthenticationRefreshTest {
       classes = {WebSecurityConfigTestContext.class, WebSecurityConfig.class},
       properties = {
         "camunda.security.authentication.method=oidc",
+        // The per-scope chains build their own issuer-aware decoder from the descriptor's config,
+        // so the mocked JwtDecoder and dummy ClientRegistrationRepository below — which satisfy the
+        // cluster chain — do not cover them. A provider must be declared, with a well-formed but
+        // unreachable URI; resolution is lazy, so nothing is fetched.
+        "camunda.security.authentication.oidc.client-id=example",
+        "camunda.security.authentication.oidc.authorization-uri=https://authorization.example.com",
+        "camunda.security.authentication.oidc.token-uri=https://token.example.com",
+        "camunda.security.authentication.oidc.jwk-set-uri=https://jwks.example.com",
         "camunda.security.authentication.authentication-refresh-interval=PT1S"
       })
   @AutoConfigureMockMvc

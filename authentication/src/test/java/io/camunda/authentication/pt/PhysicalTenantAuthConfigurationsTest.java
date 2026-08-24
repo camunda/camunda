@@ -15,7 +15,13 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.mock.env.MockEnvironment;
 
 /**
@@ -766,6 +772,43 @@ class PhysicalTenantAuthConfigurationsTest {
 
     // then — the public cross-module accessor returns an unmodifiable map
     assertThat(result).isUnmodifiable();
+  }
+
+  static Stream<Arguments> clusterShapesWithoutPhysicalTenants() {
+    return Stream.of(
+        Arguments.of(
+            "oidc with a flat slot and a named provider",
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root",
+                "camunda.security.authentication.oidc.audiences[0]", "root-aud",
+                "camunda.security.authentication.providers.oidc.extra.client-id", "extra-client",
+                "camunda.security.authentication.providers.oidc.extra.issuer-uri",
+                    "http://idp/extra")),
+        Arguments.of("basic", Map.of("camunda.security.authentication.method", "basic")),
+        Arguments.of(
+            "no method declared",
+            Map.of("camunda.security.authentication.unprotected-api", "true")));
+  }
+
+  @ParameterizedTest(name = "[{index}] {0}")
+  @MethodSource("clusterShapesWithoutPhysicalTenants")
+  void shouldResolveDefaultTenantIdenticallyToRawClusterBindWhenNoPhysicalTenantsConfigured(
+      final String shape, final Map<String, String> properties) {
+    // given
+    final var env = env(properties);
+
+    // when
+    final var clusterConfig =
+        Binder.get(env)
+            .bind("camunda.security.authentication", Bindable.of(AuthenticationConfiguration.class))
+            .orElseGet(AuthenticationConfiguration::new);
+    final var defaultTenantConfig =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("default", env);
+
+    // then
+    assertThat(defaultTenantConfig).usingRecursiveComparison().isEqualTo(clusterConfig);
   }
 
   // -------------------------------------------------------------------------
