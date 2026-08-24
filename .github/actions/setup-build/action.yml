@@ -165,6 +165,7 @@ runs:
       method: approle
       roleId: ${{ inputs.vault-role-id }}
       secretId: ${{ inputs.vault-secret-id }}
+      exportEnv: false
       secrets: |
         secret/data/products/camunda/ci/harbor username | harbor-username;
         secret/data/products/camunda/ci/harbor password | harbor-password
