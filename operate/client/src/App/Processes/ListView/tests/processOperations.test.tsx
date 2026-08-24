@@ -27,7 +27,10 @@ import {mockDeleteResource} from 'modules/mocks/api/v2/resource/deleteResource';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockServer} from 'modules/mock-server/node';
 import {http, HttpResponse} from 'msw';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
+import {
+  endpoints,
+  type QueryProcessDefinitionsRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -72,15 +75,15 @@ describe('<ListView /> - operations', () => {
       http.post(
         endpoints.queryProcessDefinitions.getUrl(),
         async ({request}) => {
-          const body = (await request.clone().json()) as {
-            filter?: {state?: string};
-          };
+          const body = (await request
+            .clone()
+            .json()) as QueryProcessDefinitionsRequestBody;
 
           if (body?.filter?.state !== 'DRAINING') {
             return undefined;
           }
 
-          return HttpResponse.json({items: [], page: {totalItems: 0}});
+          return HttpResponse.json(searchResult([]));
         },
       ),
     );
