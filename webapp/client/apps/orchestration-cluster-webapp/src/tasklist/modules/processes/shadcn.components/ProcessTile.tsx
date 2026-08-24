@@ -21,24 +21,11 @@ const ProcessTile: React.FC<Props> = ({process}) => {
 
 	return (
 		<Card className="h-full" data-testid={`process-tile-${process.processDefinitionKey}`}>
-			{/* One flat content area, no CardFooter — its border-t/bg-neutral-background-medium
-			    draws a visible seam around the button that the prototype's tile doesn't have. */}
-			{/* Section spacing is done with `gap`/`justify-between` on flex containers, not
-			    padding/margin utilities — a legacy global CSS reset (from an unrelated Carbon
-			    dependency still loaded app-wide) unconditionally zeroes padding/margin on plain
-			    elements, but leaves `gap` and flex alignment alone. */}
 			<CardContent className="flex h-full min-w-0 flex-col justify-between gap-6">
 				<div className="flex min-w-0 flex-col gap-1">
-					{/* Real heading element, not CardTitle (a styled div with no `as` prop) —
-					    keeps tile titles reachable via heading-level a11y navigation. Classes are
-					    the native `heading-sm` type token (typographyVariants in typography.js) —
-					    the same one CardTitle itself uses — spelled out since Heading requires
-					    `as` to be a literal type, not a runtime h2/h3 variable. */}
 					<h2 className="truncate text-base leading-6 font-semibold" title={displayName}>
 						{displayName}
 					</h2>
-					{/* Native `helper` type token: text-xs/leading-4/font-normal with its built-in
-					    muted color, the DS's own secondary-text style. */}
 					<span
 						className="block min-h-4 truncate text-xs leading-4 text-neutral-foreground-subtle"
 						title={process.processDefinitionId}
@@ -46,8 +33,6 @@ const ProcessTile: React.FC<Props> = ({process}) => {
 						{displayName === process.processDefinitionId ? '' : process.processDefinitionId}
 					</span>
 				</div>
-				{/* Button first, packed to the left with the badge beside it — not spread
-				    across the row with justify-between. */}
 				<div className="flex flex-wrap items-center gap-2">
 					<Button
 						type="button"
