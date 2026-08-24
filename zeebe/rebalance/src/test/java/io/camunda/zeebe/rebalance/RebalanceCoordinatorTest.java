@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.ConfigurationChangeInProgressException;
@@ -596,13 +597,20 @@ final class RebalanceCoordinatorTest {
   }
 
   private void configurationWithAPendingChange(final RebalanceCoordinator coordinator) {
+    final var members =
+        ClusterConfiguration.init()
+            .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))
+            .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of()));
     coordinator.onClusterConfigurationUpdated(
         CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))
-                .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of()))
-                .startConfigurationChange(
-                    List.of(new PartitionLeaveOperation(OTHER_MEMBER, 1, 1)))));
+            ClusterConfiguration.builder()
+                .from(members)
+                .pendingChanges(
+                    Optional.of(
+                        DependencyChangePlan.sequential(
+                            members.version() + 1,
+                            List.of(new PartitionLeaveOperation(OTHER_MEMBER, 1, 1)))))
+                .build()));
   }
 
   private void configurationWithANewLowestIdMember(final RebalanceCoordinator coordinator) {

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
+import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -38,10 +38,10 @@ import org.jspecify.annotations.Nullable;
  * restore in flight at any time.
  */
 @NullMarked
-public record RestoreStatus(ClusterChangePlan plan, List<BrokerRestoreStatus> brokers) {
+public record RestoreStatus(ChangePlan plan, List<BrokerRestoreStatus> brokers) {
 
   /** Derives {@code brokers} from the plan once, rather than recomputing it on every access. */
-  public RestoreStatus(final ClusterChangePlan plan) {
+  public RestoreStatus(final ChangePlan plan) {
     this(plan, mapBrokers(plan));
   }
 
@@ -64,7 +64,7 @@ public record RestoreStatus(ClusterChangePlan plan, List<BrokerRestoreStatus> br
     return plan.startedAt();
   }
 
-  private static boolean isRestoreInProgress(final ClusterChangePlan plan) {
+  private static boolean isRestoreInProgress(final ChangePlan plan) {
     final var pending = plan.pendingOperations();
     if (pending.stream().anyMatch(RestoreStatus::isRestoreOperation)) {
       return true;
@@ -91,7 +91,7 @@ public record RestoreStatus(ClusterChangePlan plan, List<BrokerRestoreStatus> br
     };
   }
 
-  private static List<BrokerRestoreStatus> mapBrokers(final ClusterChangePlan plan) {
+  private static List<BrokerRestoreStatus> mapBrokers(final ChangePlan plan) {
     // Sorted by broker, then by partition, so the report has a stable order.
     final SortedMap<String, SortedMap<Integer, PartitionAccumulator>> brokerPartitionMap =
         new TreeMap<>();

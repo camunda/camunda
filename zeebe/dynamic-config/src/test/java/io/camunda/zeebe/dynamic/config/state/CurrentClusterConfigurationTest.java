@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph.PlannedOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
@@ -24,6 +25,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -140,6 +143,149 @@ class CurrentClusterConfigurationTest {
       assertThat(defaultGroup.members()).containsOnlyKeys(MEMBER_0);
       assertThat(defaultGroup.getMember(MEMBER_0).mode()).isEqualTo(Mode.PROCESSING);
       assertThat(defaultGroup.incarnationNumber()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldMigrateAGraphChangeKeepingItsEdges() {
+      // given — a legacy view carrying a graph change, which is what projecting a partition group
+      // in-process produces: one operation waits for the first, the third for nothing
+      final var builder = OperationGraph.builder();
+      final var first = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
+      builder.add(new PartitionLeaveOperation(MEMBER_0, 2, 1), Set.of(first));
+      builder.add(new PartitionJoinOperation(MEMBER_1, 1, 1));
+      final var graph = builder.build();
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(2)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(DependencyChangePlan.init(4, graph)))
+              .build();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
+
+      // then — the change is migrated as the graph it is, edges and all. Flattening it into a
+      // sequential phase would order the third operation behind the other two, which nothing in
+      // the change asked for.
+      final var phase = migrated.phasedChangeState().onlyPending().currentPhase();
+      assertThat(phase)
+          .isEqualTo(
+              new PartitionGroupPhase(Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, graph)));
+    }
+
+    @Test
+    void shouldMigrateAClusterWideGraphChangeAsAGlobalPhase() {
+      // given — a legacy view carrying a graph of cluster-wide operations, which is what projecting
+      // the global configuration produces while it is running a change
+      final var builder = OperationGraph.builder();
+      final var first = builder.add(new MemberJoinOperation(MEMBER_0));
+      builder.add(new MemberLeaveOperation(MEMBER_1), Set.of(first));
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(2)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(DependencyChangePlan.init(4, builder.build())))
+              .build();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
+
+      // then — the operations go into a global phase, in the order the graph runs them. Putting
+      // them in a partition-group phase instead would hand cluster-wide operations to a group,
+      // which cannot run them at all.
+      assertThat(migrated.phasedChangeState().onlyPending().currentPhase())
+          .isEqualTo(
+              new GlobalPhase(
+                  List.of(new MemberJoinOperation(MEMBER_0), new MemberLeaveOperation(MEMBER_1))));
+    }
+
+    @Test
+    void shouldRejectMigratingAGraphMixingClusterWideAndGroupOperations() {
+      // given — a graph holding one of each kind. No sub-configuration can produce this: the global
+      // configuration holds only cluster-wide operations and a group only its own.
+      final var builder = OperationGraph.builder();
+      builder.add(new MemberJoinOperation(MEMBER_0));
+      builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(2)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(DependencyChangePlan.init(4, builder.build())))
+              .build();
+
+      // when / then — rejected rather than split across two phases, which would invent an ordering
+      // between the two kinds that the graph never declared
+      assertThatThrownBy(() -> CurrentClusterConfiguration.fromLegacy(legacy))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("partly cluster-wide");
+    }
+
+    @Test
+    void shouldMigrateOnlyWhatIsLeftOfAGraphChange() {
+      // given — a graph change whose first operation has already completed
+      final var builder = OperationGraph.builder();
+      final var first = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
+      final var second = builder.add(new PartitionLeaveOperation(MEMBER_0, 2, 1), Set.of(first));
+      final var plan =
+          new DependencyChangePlan(
+              4,
+              ClusterChangePlan.Status.IN_PROGRESS,
+              Instant.EPOCH,
+              builder.build(),
+              new TreeMap<>(Map.of(first, Instant.EPOCH)));
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(2)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(plan))
+              .build();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
+
+      // then — only the outstanding operation is migrated, with its dependency on the completed one
+      // dropped. A phase carries no progress, so carrying the completed operation over would put it
+      // back on the queue to run a second time, and keeping the edge would name an operation the
+      // migrated graph no longer contains.
+      final var phase = migrated.phasedChangeState().onlyPending().currentPhase();
+      assertThat(phase)
+          .isEqualTo(
+              new PartitionGroupPhase(
+                  Map.of(
+                      CurrentClusterConfiguration.DEFAULT_GROUP,
+                      OperationGraph.of(
+                          new TreeMap<>(
+                              Map.of(
+                                  second,
+                                  PlannedOperation.of(
+                                      new PartitionLeaveOperation(MEMBER_0, 2, 1))))))));
+    }
+
+    @Test
+    void shouldMigrateNoPlanWhenAGraphChangeHasFullyDrained() {
+      // given — a graph change with every operation completed but the plan not yet cleared
+      final var builder = OperationGraph.builder();
+      final var only = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
+      final var plan =
+          new DependencyChangePlan(
+              4,
+              ClusterChangePlan.Status.IN_PROGRESS,
+              Instant.EPOCH,
+              builder.build(),
+              new TreeMap<>(Map.of(only, Instant.EPOCH)));
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(2)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(plan))
+              .build();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
+
+      // then — nothing is left to run, so no plan is migrated rather than an empty graph, which
+      // OperationGraph rejects outright
+      assertThat(migrated.phasedChangeState().pending()).isEmpty();
     }
 
     @Test
@@ -1334,6 +1480,48 @@ class CurrentClusterConfigurationTest {
       final var projected = config.toLegacyDefault();
       assertThat(projected.members()).isEmpty();
       assertThat(projected.hasPendingChanges()).isFalse();
+    }
+
+    @Test
+    void shouldProjectAGroupsChangeAsTheGraphItIsRunning() {
+      // given — the default group is running a change whose two operations have no edge between
+      // them, so they may run at the same time
+      final var graph = OperationGraph.builder();
+      graph.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
+      graph.add(new PartitionJoinOperation(MEMBER_1, 1, 1));
+      final var groupId = CurrentClusterConfiguration.DEFAULT_GROUP;
+      final var config =
+          config(
+                  global(1, Map.of(MEMBER_0, broker(1, BrokerState.State.ACTIVE))),
+                  Map.of(groupId, group(1, Map.of(MEMBER_0, brokerPartition(1)))),
+                  PhasedChangeState.empty())
+              .initPlan(List.of(new PartitionGroupPhase(Map.of(groupId, graph.build()))));
+
+      // when
+      final var projected = config.toLegacyDefault();
+
+      // then — the projection carries the group's plan itself, not a queue standing in for it: a
+      // consumer reading it in-process can still see that both operations are runnable now
+      assertThat(projected.pendingChanges())
+          .contains(config.partitionGroup(groupId).pendingChanges().orElseThrow());
+    }
+
+    @Test
+    void shouldProjectTheGlobalConfigurationsChangeAsTheModelItIsRunning() {
+      // given — the global configuration is running a change
+      final var config =
+          config(
+                  global(1, Map.of(MEMBER_0, broker(1, BrokerState.State.ACTIVE))),
+                  Map.of(),
+                  PhasedChangeState.empty())
+              .initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_1)))));
+
+      // when
+      final var projected = config.toLegacyDefault();
+
+      // then
+      assertThat(projected.pendingChanges())
+          .contains(config.globalConfiguration().pendingChanges().orElseThrow());
     }
 
     @Test

@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.state;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.InitializableClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph.PlannedOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -26,6 +27,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
@@ -347,16 +351,21 @@ public record CurrentClusterConfiguration(
             (memberId, brokerState) ->
                 members.put(memberId, toLegacyMemberState(brokerState, group.getMember(memberId))));
 
-    // The single-group projection carries whichever model the group is running; both expose the
-    // same read API, and a dependency-graph change flattens into the sequential ordering it
-    // degrades to for a reader that predates it.
-    final Optional<ClusterChangePlan> pendingChanges =
+    // The projection carries whichever model the sub-configuration it comes from is running, so a
+    // reader in this process sees the real change — including that several of its operations may be
+    // running at once. It is flattened to a queue only where the wire demands one, when the legacy
+    // ClusterTopology message is encoded (see ClusterChangePlan#flatten).
+    final Optional<ChangePlan> pendingChanges =
         globalConfiguration
             .pendingChanges()
             .<ChangePlan>map(plan -> plan)
             .filter(ChangePlan::hasPendingChanges)
-            .or(() -> group.pendingChanges().filter(ChangePlan::hasPendingChanges))
-            .map(CurrentClusterConfiguration::toQueueProjection);
+            .or(
+                () ->
+                    group
+                        .pendingChanges()
+                        .<ChangePlan>map(plan -> plan)
+                        .filter(ChangePlan::hasPendingChanges));
 
     final Optional<CompletedChange> lastChange =
         phasedChangeState.lastChange().map(CurrentClusterConfiguration::toLegacyCompletedChange);
@@ -809,44 +818,6 @@ public record CurrentClusterConfiguration(
         .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().desiredLeaders()));
   }
 
-  /**
-   * Projects whichever execution model a change uses onto the queue shape the single-group {@link
-   * ClusterConfiguration} exposes.
-   *
-   * <p>A queue projects as itself. A dependency graph flattens into its pending and completed
-   * operations in plan order — a valid, merely slower, sequential reading of the same change — with
-   * the version taken as one per completed operation, which is the contract that field has always
-   * had.
-   *
-   * <p>The projection is necessarily lossy: it cannot express that several operations are running
-   * at once, and a reader that merges by this version alone would keep only one of two concurrent
-   * completions. That is a property of the queue model, not something the projection can repair, so
-   * nothing here tries to.
-   *
-   * <p><b>This is not only a reporting view.</b> {@link #toLegacyDefault()} — which calls this — is
-   * dual-written by {@code ClusterConfigurationGossiper} into the legacy gossip field a broker
-   * without the new model reads, and a receiver on that path merges it with {@code
-   * ClusterChangePlan#merge}, using the synthetic version minted here. During a graph change that
-   * synthetic version differs per broker by completed-operation count, so on a mixed-version
-   * cluster it is a live input to that merge, not just something rendered for an operator to read.
-   * An old broker on that path would also try to execute the flattened queue sequentially. Believed
-   * out of scope for today's two graph adopters, but callers should not read "for reporting" as
-   * "never on the wire."
-   */
-  private static ClusterChangePlan toQueueProjection(final ChangePlan plan) {
-    if (plan instanceof final ClusterChangePlan queue) {
-      return queue;
-    }
-    final var completed = plan.completedOperations();
-    return new ClusterChangePlan(
-        plan.id(),
-        1 + completed.size(),
-        plan.status(),
-        plan.startedAt(),
-        completed,
-        plan.pendingOperations());
-  }
-
   private static PhasedChangeState toPhasedChangeState(final ClusterConfiguration legacy) {
     final Optional<CompletedPhasedChange> lastChange =
         legacy.lastChange().map(CurrentClusterConfiguration::toCompletedPhasedChange);
@@ -880,17 +851,28 @@ public record CurrentClusterConfiguration(
    * PhasedChangePlan#RESTORED_PLAN_ID}, and the second migration would only fail downstream in
    * {@link PhasedChangeState}'s id-monotonicity check with no restore-specific context.
    *
+   * <p>Only what is left to run is migrated, in both models: a phase is a template with no progress
+   * of its own, so an operation that has already completed has nowhere to be recorded and would
+   * come back as pending if it were carried over. A queue therefore migrates its pending
+   * operations, and a graph the subgraph of its incomplete ones (see {@link
+   * #remainingGraph(DependencyChangePlan)}).
+   *
    * @throws IllegalStateException if a legacy restore plan is migrated alongside a prior completed
    *     change, which would violate the assumption above
    */
   private static Optional<PhasedChangePlan> toPhasedChangePlan(
-      final ClusterChangePlan plan, final long lastChangeId) {
-    final var phases = toPhases(plan.pendingOperations());
+      final ChangePlan plan, final long lastChangeId) {
+    final var phases =
+        switch (plan) {
+          case final ClusterChangePlan queue -> toPhases(queue.pendingOperations());
+          case final DependencyChangePlan graph ->
+              remainingGraph(graph).map(CurrentClusterConfiguration::toPhase).stream().toList();
+        };
     if (phases.isEmpty()) {
       return Optional.empty();
     }
 
-    if (plan.isRestore()) {
+    if (plan instanceof final ClusterChangePlan queue && queue.isRestore()) {
       if (lastChangeId != 0) {
         throw new IllegalStateException(
             "Cannot migrate a legacy restore plan: expected no prior completed change "
@@ -902,6 +884,60 @@ public record CurrentClusterConfiguration(
     }
     final long id = plan.id() > 0 && plan.id() > lastChangeId ? plan.id() : lastChangeId + 1;
     return Optional.of(new PhasedChangePlan(id, 0, phases, plan.startedAt()));
+  }
+
+  /**
+   * The phase a graph change belongs in, taken from the operations it holds: cluster-wide ones make
+   * a {@link GlobalPhase}, a partition group's a {@link PartitionGroupPhase} targeting the default
+   * group — which is the only group a single-group projection can be describing.
+   *
+   * <p>A group's graph keeps its edges, so the concurrency it was planned with survives the round
+   * trip. A cluster-wide one cannot: {@link GlobalPhase} carries a flat list. That loses nothing
+   * today, because {@link GlobalConfiguration#startConfigurationChange} only ever builds a
+   * sequential graph and {@link OperationGraph#inOrder()} reproduces exactly that order — but a
+   * cluster-wide change that one day declares two independent operations would need {@code
+   * GlobalPhase} to carry a graph before this could migrate it faithfully.
+   *
+   * <p>A graph mixing both kinds has no phase to go in, and no sub-configuration can produce one:
+   * each holds operations of a single kind. It is rejected rather than split across two phases,
+   * which would invent an ordering between them that the graph never declared.
+   */
+  private static Phase toPhase(final OperationGraph graph) {
+    final var operations = graph.inOrder();
+    if (operations.stream().allMatch(GlobalChangeOperation.class::isInstance)) {
+      return new GlobalPhase(operations.stream().map(GlobalChangeOperation.class::cast).toList());
+    }
+    if (operations.stream().allMatch(PartitionGroupOperation.class::isInstance)) {
+      return new PartitionGroupPhase(Map.of(DEFAULT_GROUP, graph));
+    }
+    throw new IllegalStateException(
+        "Cannot migrate a change whose operations are partly cluster-wide and partly a partition"
+            + " group's: "
+            + operations);
+  }
+
+  /**
+   * The part of a graph change that has not run yet: its incomplete operations, keeping every edge
+   * between two of them and dropping the ones pointing at an operation that has already completed —
+   * a dependency that is already satisfied constrains nothing, and leaving it in would name an
+   * operation the graph no longer contains.
+   *
+   * <p>Empty when every operation has completed, which is a change with nothing left to migrate
+   * rather than a graph with no operations — {@link OperationGraph} rejects the latter.
+   */
+  private static Optional<OperationGraph> remainingGraph(final DependencyChangePlan plan) {
+    final SortedMap<OperationId, PlannedOperation> remaining = new TreeMap<>();
+    plan.operations()
+        .forEach(
+            (operationId, planned) -> {
+              if (plan.isComplete(operationId)) {
+                return;
+              }
+              final SortedSet<OperationId> outstanding = new TreeSet<>(planned.dependsOn());
+              outstanding.removeIf(plan::isComplete);
+              remaining.put(operationId, new PlannedOperation(planned.operation(), outstanding));
+            });
+    return remaining.isEmpty() ? Optional.empty() : Optional.of(new OperationGraph(remaining));
   }
 
   /**

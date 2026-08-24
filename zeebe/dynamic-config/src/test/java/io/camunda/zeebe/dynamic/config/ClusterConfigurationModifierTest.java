@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
@@ -400,9 +401,13 @@ final class ClusterConfigurationModifierTest {
       // given — pending ops that are not post restore
       final var member1 = MemberId.from("1");
       final var config =
-          withTwoMembers(LOCAL_MEMBER_ID, member1)
-              .startConfigurationChange(
-                  List.of(new UpdateRoutingState(LOCAL_MEMBER_ID, Optional.empty())));
+          ClusterConfiguration.builder()
+              .from(withTwoMembers(LOCAL_MEMBER_ID, member1))
+              .pendingChanges(
+                  Optional.of(
+                      DependencyChangePlan.sequential(
+                          2, List.of(new UpdateRoutingState(LOCAL_MEMBER_ID, Optional.empty())))))
+              .build();
 
       // when
       final var result =

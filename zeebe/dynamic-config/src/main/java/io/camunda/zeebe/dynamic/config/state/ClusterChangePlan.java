@@ -49,6 +49,36 @@ public record ClusterChangePlan(
     return init(RESTORE_CHANGE_ID, operations);
   }
 
+  /**
+   * Renders any change as this queue. A queue is returned as itself; a {@link DependencyChangePlan}
+   * flattens into its pending and completed operations in plan order — a valid, merely slower,
+   * sequential reading of the same change.
+   *
+   * <p>Necessarily lossy: a queue cannot express that several operations are running at once, and a
+   * reader that merges by {@link #version()} alone would keep only one of two concurrent
+   * completions. That is a property of this model, not something the flattening can repair, so
+   * nothing here tries to.
+   *
+   * <p><b>Only call this where the queue shape is actually required</b> — today that is encoding
+   * the legacy {@code ClusterTopology} message, which a broker without the graph model reads from
+   * gossip and from a v1 configuration file, and whose {@code currentChange} field is typed as this
+   * record. A receiver on that path merges what it decodes with {@link #merge}, using the version
+   * above, and would execute the flattened queue one operation at a time. Every consumer that only
+   * reads a change should take a {@link ChangePlan} instead and see the real one.
+   */
+  public static ClusterChangePlan flatten(final ChangePlan plan) {
+    if (plan instanceof final ClusterChangePlan queue) {
+      return queue;
+    }
+    return new ClusterChangePlan(
+        plan.id(),
+        plan.version(),
+        plan.status(),
+        plan.startedAt(),
+        plan.completedOperations(),
+        plan.pendingOperations());
+  }
+
   public boolean isRestore() {
     return id == RESTORE_CHANGE_ID;
   }

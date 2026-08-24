@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
+import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
@@ -520,8 +521,7 @@ public class RecoveryControllerTest extends RestControllerTest {
   }
 
   private void stubTopology(
-      final Optional<CompletedChange> lastChange,
-      final Optional<ClusterChangePlan> pendingChanges) {
+      final Optional<CompletedChange> lastChange, final Optional<ChangePlan> pendingChanges) {
     final var configuration =
         new ClusterConfiguration(
             2,

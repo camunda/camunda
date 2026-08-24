@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.util;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
+import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -82,7 +83,10 @@ public final class ClusterTopologyDomain extends DomainContextBase {
     final var arbitraryCompletedChange =
         Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
     final var arbitraryChangePlan =
-        Arbitraries.forType(ClusterChangePlan.class).enableRecursion().optional();
+        Arbitraries.forType(ClusterChangePlan.class)
+            .enableRecursion()
+            .<ChangePlan>map(plan -> plan)
+            .optional();
     final var arbitraryRoutingState = routingStates().optional();
     final var arbitraryClusterId = Arbitraries.strings().ofMinLength(1).ofMaxLength(50).optional();
     final var arbitraryIncarnationNumber = Arbitraries.longs().greaterOrEqual(0);

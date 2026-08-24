@@ -27,6 +27,7 @@ import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationJsonSerial
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
@@ -345,8 +346,15 @@ final class ClusterEndpointTest {
     // ClusterConfiguration.init() starts at version 1, so a change started from it always gets
     // changeId 2 (version + 1); tests below query that fixed id.
     private static ClusterConfiguration configWithPendingChange() {
-      return ClusterConfiguration.init()
-          .startConfigurationChange(List.of(new MemberJoinOperation(MemberId.from("1"))));
+      final var config = ClusterConfiguration.init();
+      return ClusterConfiguration.builder()
+          .from(config)
+          .version(config.version() + 1)
+          .pendingChanges(
+              Optional.of(
+                  DependencyChangePlan.sequential(
+                      config.version() + 1, List.of(new MemberJoinOperation(MemberId.from("1"))))))
+          .build();
     }
 
     @Test

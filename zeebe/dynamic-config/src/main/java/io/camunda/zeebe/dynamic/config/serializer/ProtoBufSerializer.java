@@ -49,6 +49,7 @@ import io.camunda.zeebe.dynamic.config.protocol.Topology.CompletedChange;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.PartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
+import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -225,7 +226,8 @@ public class ProtoBufSerializer
         encodedClusterTopology.hasLastChange()
             ? Optional.of(decodeCompletedChange(encodedClusterTopology.getLastChange()))
             : Optional.empty();
-    final Optional<ClusterChangePlan> currentChange =
+    // Always a queue: it is the only shape the legacy message can carry.
+    final Optional<ChangePlan> currentChange =
         encodedClusterTopology.hasCurrentChange()
             ? Optional.of(decodeChangePlan(encodedClusterTopology.getCurrentChange()))
             : Optional.empty();
@@ -278,9 +280,14 @@ public class ProtoBufSerializer
     clusterConfiguration
         .lastChange()
         .ifPresent(lastChange -> builder.setLastChange(encodeCompletedChange(lastChange)));
+    // The legacy message's currentChange field can only carry a queue, so a dependency-graph change
+    // is flattened into one here. This is the only place that shape is required, and the only place
+    // the flattening happens: a consumer reading the configuration in-process sees the real change.
     clusterConfiguration
         .pendingChanges()
-        .ifPresent(changePlan -> builder.setCurrentChange(encodeChangePlan(changePlan)));
+        .ifPresent(
+            changePlan ->
+                builder.setCurrentChange(encodeChangePlan(ClusterChangePlan.flatten(changePlan))));
     clusterConfiguration
         .routingState()
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
