@@ -14,7 +14,7 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.session.Configuration;
@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 class ProcessDefinitionMapperTest {
 
   private static final String MAPPER_DIRECTORY = "src/main/resources/mapper";
+  private static final List<String> REQUIRED_MAPPER_FILES =
+      List.of("Commons.xml", "ProcessDefinitionMapper.xml");
   private static final String FLOW_NODE_STATISTICS_STATEMENT =
       "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.flowNodeStatistics";
 
@@ -146,11 +148,8 @@ class ProcessDefinitionMapperTest {
     properties.setProperty("escapeChar", "'\\\\'");
     configuration.setVariables(properties);
 
-    final var mapperFiles =
-        new File(MAPPER_DIRECTORY).listFiles((dir, name) -> name.endsWith(".xml"));
-    assertThat(mapperFiles).isNotNull();
-
-    for (final var mapperFile : Arrays.stream(mapperFiles).sorted().toList()) {
+    for (final var mapperFileName : REQUIRED_MAPPER_FILES) {
+      final var mapperFile = new File(MAPPER_DIRECTORY, mapperFileName);
       try (var inputStream = new FileInputStream(mapperFile)) {
         new XMLMapperBuilder(
                 inputStream, configuration, mapperFile.getPath(), configuration.getSqlFragments())
