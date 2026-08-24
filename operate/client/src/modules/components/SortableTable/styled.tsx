@@ -237,7 +237,7 @@ const TableHead = styled(BaseTableHead)<TableHeadProps>`
         css`
           position: sticky;
           top: 0;
-          z-index: 1;
+          z-index: 2;
         `
       }
     `;

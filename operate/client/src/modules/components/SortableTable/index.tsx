@@ -56,7 +56,7 @@ interface Props<_ extends Record<string, unknown>, ColTypes extends unknown[]> {
   checkIsIndeterminate?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
   columnsWithNoContentPadding?: string[];
-  columnsWithStickyRight?: string[];
+  stickyRightColumn?: string;
   batchOperationKey?: string;
   isExpandable?: boolean;
   expandedContent?: Record<string, React.ReactNode>;
@@ -89,7 +89,7 @@ const SortableTable = <
   onVerticalScrollStartReach,
   onVerticalScrollEndReach,
   columnsWithNoContentPadding,
-  columnsWithStickyRight,
+  stickyRightColumn,
   batchOperationKey,
   isExpandable = false,
   expandedContent,
@@ -184,9 +184,7 @@ const SortableTable = <
                         isDefault={headerColumns[index]?.isDefault}
                         isDisabled={headerColumns[index]?.isDisabled}
                         onSort={onSort}
-                        $stickyRight={columnsWithStickyRight?.includes(
-                          header.key,
-                        )}
+                        $stickyRight={stickyRightColumn === header.key}
                       />
                     );
                   })}
@@ -257,9 +255,9 @@ const SortableTable = <
                                 $hideCellPadding={columnsWithNoContentPadding?.includes(
                                   cell.info.header,
                                 )}
-                                $stickyRight={columnsWithStickyRight?.includes(
-                                  cell.info.header,
-                                )}
+                                $stickyRight={
+                                  stickyRightColumn === cell.info.header
+                                }
                               >
                                 {cell.value}
                               </TableCell>

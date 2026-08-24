@@ -129,7 +129,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
           state={state}
           stickyHeader
           columnsWithNoContentPadding={['operations']}
-          columnsWithStickyRight={['operations']}
+          stickyRightColumn="operations"
           selectionType="checkbox"
           onSelectAll={processInstancesSelectionStore.selectAll}
           onSelect={(rowId) => {
