@@ -119,6 +119,29 @@ class PhysicalTenantDefaultAliasChainIT {
             });
   }
 
+  @Test
+  void unknownPhysicalTenantShouldReturn404WhenNoPhysicalTenantsConfigured() {
+    // The default alias is the only scoped chain on this cluster; an unrelated tenant id must still
+    // fall through to the catch-all rather than matching it.
+    buildRunner()
+        .run(
+            ctx -> {
+              // given
+              final var proxy = new FilterChainProxy(buildChains(ctx, rootOnlyEnv()));
+              final var request =
+                  new MockHttpServletRequest("GET", "/physical-tenants/nonexistent/v2/resource");
+              final var response = new MockHttpServletResponse();
+
+              // when
+              proxy.doFilter(request, response, new MockFilterChain());
+
+              // then
+              assertThat(response.getStatus())
+                  .as("an unconfigured physical tenant must be rejected by the catch-all")
+                  .isEqualTo(404);
+            });
+  }
+
   // =========================================================================
   // Chain assembly helpers
   // =========================================================================
