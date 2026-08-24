@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Exporting state managed exclusively through dynamic cluster configuration | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-60737/adr/management/exporting-state-via-dynamic-config/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Exporting state managed exclusively through dynamic cluster configuration | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Deepthi Akkoorath"><meta data-rh="true" property="og:description" content="DRI: Deepthi Akkoorath"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-60737/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-60737/adr/management/exporting-state-via-dynamic-config/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-60737/adr/management/exporting-state-via-dynamic-config/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-60737/adr/management/exporting-state-via-dynamic-config/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-60737/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-60737/assets/js/runtime~main.d2128ef6.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-60737/assets/js/main.4b7ac314.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-60737/assets/js/runtime~main.f22a77b7.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-60737/assets/js/main.bc332890.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -25,8 +25,7 @@ truth.</p>
 <p><strong>Audience</strong>: Engineers working on exporting control, broker startup, or the management endpoints.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">Context<a href="#context" class="hash-link" aria-label="Direct link to Context" title="Direct link to Context" translate="no">​</a></h2>
 <p>Tracking issue: #39743 (&quot;Manage exporting status via dynamic config&quot;).</p>
-<p>Before this change, exporting pause/resume/status existed on three independent surfaces that could
-disagree with each other:</p>
+<p>Before this change, exporting pause/resume/status existed on three independent surfaces</p>
 <ol>
 <li class=""><strong><code>/actuator/exporting</code></strong> and <strong><code>/v2/exporting</code> / <code>/cluster/v2/exporting</code></strong> — broadcast a raw wire
 request (<code>ExportingRequestBroadcaster</code>) to every replica of every partition, independently and
@@ -37,39 +36,9 @@ broadcast-and-forget pattern, exposed as one operation among several partition-a
 (snapshot, stream processing, exporting).</li>
 <li class=""><strong>The raw admin wire protocol</strong> (<code>AdminApiRequestHandler</code>, <code>AdminRequestType.PAUSE_EXPORTING</code> /
 <code>SOFT_PAUSE_EXPORTING</code> / <code>RESUME_EXPORTING</code> / <code>GET_EXPORTING_STATE</code>) — what (1) and (2) actually send
-over the wire, routed straight to <code>PartitionAdminAccess</code> on the receiving broker. Bypasses dynamic
-config entirely.</li>
+over the wire, routed straight to <code>PartitionAdminAccess</code> on the receiving broker which is backed by a
+plain persisted file. This method provided no observability.</li>
 </ol>
-<p>None of these three write to dynamic cluster configuration. A separate, already-existing mechanism —
-<code>PartitionConfigurationManager.setExportingState</code> — <em>does</em> apply an exporting-state change from dynamic
-config to a live director, but nothing fed it from these legacy entry points, and the exporter
-director&#x27;s restart path (<code>ExporterDirectorPartitionTransitionStep.openExporter</code>) sourced its phase from a
-legacy per-partition marker file (<code>.exporterPaused</code>, in <code>PartitionProcessingState</code>) rather than from
-dynamic config. So even where a legacy entry point happened to pause every live replica successfully,
-the pause did not survive a broker restart.</p>
-<p><code>PR #60541</code> and <code>PR #60577</code> (already merged/in review) built the replacement: <code>ExportingStateController</code>
-(per-tenant <code>ByTenant</code> and cluster-wide <code>ClusterWide</code>), backed by <code>DynamicConfigExportingStateController</code>,
-which submits an <code>ExportingStateChangeRequest</code> through the dynamic-config coordinator and awaits its
-resolution (<code>ClusterConfigurationChangeAwaiter</code>). This is a single, durable, gossiped state that every
-replica converges on, including newly joined or restarted ones.</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="was-routing-the-legacy-wire-protocol-through-dynamic-config-considered">Was routing the legacy wire protocol through dynamic config considered?<a href="#was-routing-the-legacy-wire-protocol-through-dynamic-config-considered" class="hash-link" aria-label="Direct link to Was routing the legacy wire protocol through dynamic config considered?" title="Direct link to Was routing the legacy wire protocol through dynamic config considered?" translate="no">​</a></h3>
-<p>Yes — evaluated and rejected as infeasible without invasive changes:</p>
-<ul>
-<li class="">No <code>ClusterConfigurationManagementRequestSender</code> (or coordinator-submission path) exists inside
-<code>zeebe/broker</code>; it is only wired at the application-assembly layer (<code>dist</code>). <code>AdminApiRequestHandler</code>
-runs inside the broker itself.</li>
-<li class="">The legacy broadcaster calls every replica of every partition of a tenant concurrently and
-independently. Forwarding each call into dynamic config would submit N racing per-tenant-scope change
-requests; the coordinator&#x27;s admission rule rejects a new request whose scope overlaps an
-already-pending plan. Most of those concurrent forwards would fail with an error the legacy caller
-never expected from what looks like &quot;pause this one replica.&quot;</li>
-<li class="">There is no existing precedent for a broker-side handler <em>submitting</em> into the dynamic-config
-coordinator — every existing broker-side touch point is an <em>applier</em>, reacting to a plan the
-coordinator already decided.</li>
-</ul>
-<p>Rejecting outright during a rolling upgrade is safer than accepting requests that only partially apply,
-or that race with a concurrently-submitted dynamic-config change and leave the cluster in a state neither
-caller intended.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d1-brokeradminservice-no-longer-supports-exporting-operations">D1. <code>BrokerAdminService</code> no longer supports exporting operations<a href="#d1-brokeradminservice-no-longer-supports-exporting-operations" class="hash-link" aria-label="Direct link to d1-brokeradminservice-no-longer-supports-exporting-operations" title="Direct link to d1-brokeradminservice-no-longer-supports-exporting-operations" translate="no">​</a></h3>
 <p><code>pauseExporting()</code>, <code>softPauseExporting()</code>, <code>resumeExporting()</code> on <code>BrokerAdminService</code> /
@@ -79,7 +48,7 @@ is not adapted to delegate to dynamic config — the operation is simply no long
 surface, so callers migrate to the endpoints that are backed by dynamic config.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d2-the-raw-admin-wire-protocol-no-longer-supports-exporting-operations">D2. The raw admin wire protocol no longer supports exporting operations<a href="#d2-the-raw-admin-wire-protocol-no-longer-supports-exporting-operations" class="hash-link" aria-label="Direct link to D2. The raw admin wire protocol no longer supports exporting operations" title="Direct link to D2. The raw admin wire protocol no longer supports exporting operations" translate="no">​</a></h3>
 <p><code>AdminApiRequestHandler</code>&#x27;s <code>PAUSE_EXPORTING</code> / <code>SOFT_PAUSE_EXPORTING</code> / <code>RESUME_EXPORTING</code> /
-<code>GET_EXPORTING_STATE</code> requests are rejected (see &quot;Was routing... considered?&quot; above). Nothing in this
+<code>GET_EXPORTING_STATE</code> requests are rejected. Nothing in this
 codebase issues these requests once <code>ExportingRequestBroadcaster</code> and its callers
 (<code>ExportingServices</code>, <code>ClusterExportingServices</code>, <code>ExportingEndpoint</code>) are migrated to
 <code>ExportingStateController</code> (D4); the handler cases are kept only long enough to reject cleanly during a
@@ -113,10 +82,9 @@ keep their existing paths and response contracts.</li>
 <li class=""><code>/actuator/partitions</code>&#x27;s exporting operations, and the raw admin-wire exporting requests, stop working
 and return an explicit error instead of silently doing nothing durable. Any caller still depending on
 them (internal tooling, tests) must move to the dynamic-config-backed endpoints.</li>
-<li class="">A broker pause now survives restarts and is visible to every replica through gossiped configuration,
-closing the gap that #39743 exists to close.</li>
 <li class="">The legacy <code>.exporterPaused</code> file and <code>ExportingRequestBroadcaster</code> become dead code once every caller
 is migrated, and are removed in the same change rather than left as unused fallback paths.</li>
-</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/adr/management/006-exporting-state-via-dynamic-config.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a><ul><li><a href="#was-routing-the-legacy-wire-protocol-through-dynamic-config-considered" class="table-of-contents__link toc-highlight">Was routing the legacy wire protocol through dynamic config considered?</a></li></ul></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a><ul><li><a href="#d1-brokeradminservice-no-longer-supports-exporting-operations" class="table-of-contents__link toc-highlight">D1. <code>BrokerAdminService</code> no longer supports exporting operations</a></li><li><a href="#d2-the-raw-admin-wire-protocol-no-longer-supports-exporting-operations" class="table-of-contents__link toc-highlight">D2. The raw admin wire protocol no longer supports exporting operations</a></li><li><a href="#d3-the-exporter-directors-restart-path-sources-its-phase-from-dynamic-config-not-the-legacy-file" class="table-of-contents__link toc-highlight">D3. The exporter director&#39;s restart path sources its phase from dynamic config, not the legacy file</a></li><li><a href="#d4-clusterexportingservices-submits-one-cluster-wide-change-not-one-per-tenant" class="table-of-contents__link toc-highlight">D4. <code>ClusterExportingServices</code> submits one cluster-wide change, not one per tenant</a></li></ul></li><li><a href="#consequences" class="table-of-contents__link toc-highlight">Consequences</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+<li class="">Exposing pause/resume/softpause operations fail during rolling upgrade from 8.9 to 8.10.</li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/adr/management/006-exporting-state-via-dynamic-config.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a><ul><li><a href="#d1-brokeradminservice-no-longer-supports-exporting-operations" class="table-of-contents__link toc-highlight">D1. <code>BrokerAdminService</code> no longer supports exporting operations</a></li><li><a href="#d2-the-raw-admin-wire-protocol-no-longer-supports-exporting-operations" class="table-of-contents__link toc-highlight">D2. The raw admin wire protocol no longer supports exporting operations</a></li><li><a href="#d3-the-exporter-directors-restart-path-sources-its-phase-from-dynamic-config-not-the-legacy-file" class="table-of-contents__link toc-highlight">D3. The exporter director&#39;s restart path sources its phase from dynamic config, not the legacy file</a></li><li><a href="#d4-clusterexportingservices-submits-one-cluster-wide-change-not-one-per-tenant" class="table-of-contents__link toc-highlight">D4. <code>ClusterExportingServices</code> submits one cluster-wide change, not one per tenant</a></li></ul></li><li><a href="#consequences" class="table-of-contents__link toc-highlight">Consequences</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
 </body>
 </html>
