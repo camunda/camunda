@@ -136,7 +136,8 @@ public final class RdbmsExporter {
     // lastFlushedPosition is still -1, so this is exactly the broker position, matching what a
     // fresh restart would use. On an in-process reopen, this instance may have already flushed
     // further than what's been acknowledged - e.g. under async LSN-based replication
-    // (LsnReplicationController), acking is intentionally delayed until replication is confirmed.
+    // (LsnReplicationSignalStrategy), acking is intentionally delayed until replication is
+    // confirmed.
     lastPosition = Math.max(controller.getLastExportedRecordPosition(), lastFlushedPosition);
     replicationController = replicationControllerFactory.createReplicationController(controller);
     if (exporterRdbmsPosition.lastExportedPosition() > -1) {

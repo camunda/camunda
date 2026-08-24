@@ -722,17 +722,19 @@ public class ExporterConfiguration {
                 "asyncReplication.minSyncReplicas must be greater 0 but was %d", minSyncReplicas));
       }
 
-      if (type == ReplicationType.LOG_SEQ) {
-        checkPositiveDuration(pollingInterval, "asyncReplication.pollingInterval", errors);
-        checkPositiveDuration(maxLag, "asyncReplication.maxLag", errors);
-      } else if (type == ReplicationType.DELAY) {
+      // queueCapacity, queueDebounceTime, pollingInterval, and maxLag apply to every
+      // replication type, so they are validated unconditionally.
+      checkNonNegativeDuration(queueDebounceTime, "asyncReplication.queueDebounceTime", errors);
+      if (queueCapacity <= 0) {
+        errors.add(
+            String.format(
+                "asyncReplication.queueCapacity must be greater 0 but was %d", queueCapacity));
+      }
+      checkPositiveDuration(pollingInterval, "asyncReplication.pollingInterval", errors);
+      checkPositiveDuration(maxLag, "asyncReplication.maxLag", errors);
+
+      if (type == ReplicationType.DELAY) {
         checkPositiveDuration(delay, "asyncReplication.delay", errors);
-        checkNonNegativeDuration(queueDebounceTime, "asyncReplication.queueDebounceTime", errors);
-        if (queueCapacity <= 0) {
-          errors.add(
-              String.format(
-                  "asyncReplication.queueCapacity must be greater 0 but was %d", queueCapacity));
-        }
       }
       return errors;
     }
@@ -746,6 +748,7 @@ public class ExporterConfiguration {
 
     public enum ReplicationType {
       LOG_SEQ,
+      TIME_LAG,
       DELAY
     }
   }

@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.Iterables;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
 import io.camunda.it.rdbms.db.util.ReplicationClusterContainer;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc;
@@ -54,6 +55,15 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
     return DEFAULT_MAX_LAG;
   }
 
+  /**
+   * The async-replication mechanism under test. Defaults to LSN-based tracking; override to
+   * exercise {@code TimeMonitoringReplicationSignalStrategy} (lag-based) against the same cluster
+   * and test scenarios instead.
+   */
+  protected ReplicationType getReplicationType() {
+    return ReplicationType.LOG_SEQ;
+  }
+
   @BeforeAll
   void beforeAll() {
     cluster = createCluster();
@@ -76,6 +86,11 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
                       .getRdbms()
                       .getAsyncReplication()
                       .setEnabled(true);
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setType(getReplicationType());
                   cfg.getData()
                       .getSecondaryStorage()
                       .getRdbms()

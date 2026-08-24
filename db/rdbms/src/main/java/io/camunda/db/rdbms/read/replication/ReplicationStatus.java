@@ -7,4 +7,10 @@
  */
 package io.camunda.db.rdbms.read.replication;
 
-public record ReplicationLogStatus(Long logStatus, String replicaId, Long replicationLagMs) {}
+/** Common shape shared by {@link ReplicationLsnStatus} and {@link ReplicationLagStatus}. */
+public interface ReplicationStatus {
+
+  String replicaId();
+
+  Long replicationLagMs();
+}

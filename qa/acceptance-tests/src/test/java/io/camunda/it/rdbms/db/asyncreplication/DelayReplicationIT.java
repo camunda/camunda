@@ -35,7 +35,8 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestMethodOrder;
 
 /**
- * Integration test for {@link io.camunda.exporter.rdbms.replication.DelayReplicationController}.
+ * Integration test for {@link
+ * io.camunda.exporter.rdbms.replication.DelayReplicationSignalStrategy}.
  *
  * <p>Verifies that exported positions are withheld from acknowledgment until the configured delay
  * elapses, and that they are acknowledged afterwards. Uses H2 in-memory database (vendor-agnostic)
