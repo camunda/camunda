@@ -96,6 +96,7 @@ public class AgentInstanceFetchIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(ei1)
             .jobKey(activatedJob1.getKey())
+            .jobLease("test-job-lease")
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -135,6 +136,7 @@ public class AgentInstanceFetchIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(ei2)
             .jobKey(activatedJob2.getKey())
+            .jobLease("test-job-lease")
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -162,8 +164,9 @@ public class AgentInstanceFetchIT {
     camundaClient
         .newUpdateAgentInstanceCommand(agentInstanceKey2)
         .elementInstanceKey(ei2)
-        .jobKey(activatedJob2.getKey())
         .status(AgentInstanceUpdateStatus.THINKING)
+        .jobKey(activatedJob2.getKey())
+        .jobLease("test-job-lease")
         .history(
             List.of(
                 new AgentInstanceHistoryItem()

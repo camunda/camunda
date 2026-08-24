@@ -64,6 +64,7 @@ public final class CreateAgentInstanceTest {
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKey)
                         .jobKey(1L)
+                        .jobLease("test-job-lease")
                         .history(
                             List.of(
                                 configurationHistoryItem(
@@ -92,6 +93,7 @@ public final class CreateAgentInstanceTest {
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(nonExistingKey)
                         .jobKey(1L)
+                        .jobLease("test-job-lease")
                         .history(
                             List.of(
                                 configurationHistoryItem(
@@ -144,6 +146,7 @@ public final class CreateAgentInstanceTest {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(jobKey)
+            .jobLease("test-job-lease")
             .history(
                 List.of(
                     configurationHistoryItem(
@@ -160,6 +163,7 @@ public final class CreateAgentInstanceTest {
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKey)
                         .jobKey(jobKey)
+                        .jobLease("test-job-lease")
                         .history(
                             List.of(
                                 configurationHistoryItem(

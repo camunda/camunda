@@ -105,6 +105,7 @@ public class AgentInstanceTenancyIT {
         .newUpdateAgentInstanceCommand(agentInstanceKeyA)
         .elementInstanceKey(elementInstanceKeyA)
         .jobKey(jobKeyA)
+        .jobLease("test-job-lease")
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
@@ -127,6 +128,7 @@ public class AgentInstanceTenancyIT {
         .newUpdateAgentInstanceCommand(agentInstanceKeyB)
         .elementInstanceKey(elementInstanceKeyB)
         .jobKey(jobKeyB)
+        .jobLease("test-job-lease")
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
@@ -229,6 +231,7 @@ public class AgentInstanceTenancyIT {
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKeyB)
                         .jobKey(1L)
+                        .jobLease("test-job-lease")
                         .history(
                             List.of(
                                 configurationHistoryItem(
@@ -256,6 +259,8 @@ public class AgentInstanceTenancyIT {
                     camundaClient
                         .newUpdateAgentInstanceCommand(agentInstanceKeyB)
                         .elementInstanceKey(elementInstanceKeyB)
+                        .jobKey(1L)
+                        .jobLease("test-job-lease")
                         .execute())
             .actual();
 
@@ -319,6 +324,7 @@ public class AgentInstanceTenancyIT {
                         .newUpdateAgentInstanceCommand(agentInstanceKeyB)
                         .elementInstanceKey(elementInstanceKeyB)
                         .jobKey(jobKeyB)
+                        .jobLease("test-job-lease")
                         .history(
                             List.of(
                                 new AgentInstanceHistoryItem()
@@ -411,6 +417,7 @@ public class AgentInstanceTenancyIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(jobKey)
+            .jobLease("test-job-lease")
             .history(
                 List.of(
                     configurationHistoryItem("gpt-4o", "openai", "You are a helpful assistant.")))

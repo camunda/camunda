@@ -124,6 +124,7 @@ class AgentInstanceAuthorizationIT {
         .newUpdateAgentInstanceCommand(agentInstanceKey1)
         .elementInstanceKey(elementInstanceKey1)
         .jobKey(jobKey1)
+        .jobLease("test-job-lease")
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
@@ -233,6 +234,7 @@ class AgentInstanceAuthorizationIT {
                 .newCreateAgentInstanceCommand()
                 .elementInstanceKey(elementInstanceKey1)
                 .jobKey(1L)
+                .jobLease("test-job-lease")
                 .history(
                     List.of(
                         configurationHistoryItem(
@@ -263,6 +265,7 @@ class AgentInstanceAuthorizationIT {
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKey3)
                         .jobKey(jobKey3)
+                        .jobLease("test-job-lease")
                         .history(
                             List.of(
                                 configurationHistoryItem(
@@ -289,6 +292,8 @@ class AgentInstanceAuthorizationIT {
             camundaClient
                 .newUpdateAgentInstanceCommand(agentInstanceKey1)
                 .elementInstanceKey(elementInstanceKey1)
+                .jobKey(1L)
+                .jobLease("test-job-lease")
                 .execute();
 
     // then
@@ -310,6 +315,8 @@ class AgentInstanceAuthorizationIT {
                 camundaClient
                     .newUpdateAgentInstanceCommand(agentInstanceKey3)
                     .elementInstanceKey(elementInstanceKey3)
+                    .jobKey(jobKey3)
+                    .jobLease("test-job-lease")
                     .execute());
   }
 
@@ -325,6 +332,7 @@ class AgentInstanceAuthorizationIT {
                 .newUpdateAgentInstanceCommand(agentInstanceKey1)
                 .elementInstanceKey(elementInstanceKey1)
                 .jobKey(jobKey1)
+                .jobLease("test-job-lease")
                 .history(
                     List.of(
                         new AgentInstanceHistoryItem()
@@ -354,6 +362,7 @@ class AgentInstanceAuthorizationIT {
                     .newUpdateAgentInstanceCommand(agentInstanceKey3)
                     .elementInstanceKey(elementInstanceKey3)
                     .jobKey(jobKey3)
+                    .jobLease("test-job-lease")
                     .history(
                         List.of(
                             new AgentInstanceHistoryItem()
@@ -451,6 +460,7 @@ class AgentInstanceAuthorizationIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(jobKey)
+            .jobLease("test-job-lease")
             .history(
                 List.of(
                     configurationHistoryItem("gpt-4o", "openai", "You are a helpful assistant.")))

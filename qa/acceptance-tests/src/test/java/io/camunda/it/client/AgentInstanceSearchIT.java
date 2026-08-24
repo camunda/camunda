@@ -113,6 +113,7 @@ public class AgentInstanceSearchIT {
         .newUpdateAgentInstanceCommand(agentInstanceKey1)
         .elementInstanceKey(ei1)
         .status(AgentInstanceUpdateStatus.THINKING)
+        .jobKey(created1.jobKey())
         .send()
         .join();
 

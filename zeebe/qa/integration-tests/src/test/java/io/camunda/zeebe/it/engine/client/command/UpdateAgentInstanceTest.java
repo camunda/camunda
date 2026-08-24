@@ -46,7 +46,12 @@ public final class UpdateAgentInstanceTest {
 
     // when
     final var responseFuture =
-        client.newUpdateAgentInstanceCommand(agentInstanceKey).elementInstanceKey(1L).send();
+        client
+            .newUpdateAgentInstanceCommand(agentInstanceKey)
+            .elementInstanceKey(1L)
+            .jobKey(1L)
+            .jobLease("test-job-lease")
+            .send();
 
     // then
     assertThatThrownBy(responseFuture::join)
@@ -64,7 +69,12 @@ public final class UpdateAgentInstanceTest {
 
     // when
     final var responseFuture =
-        client.newUpdateAgentInstanceCommand(nonExistingKey).elementInstanceKey(1L).send();
+        client
+            .newUpdateAgentInstanceCommand(nonExistingKey)
+            .elementInstanceKey(1L)
+            .jobKey(1L)
+            .jobLease("test-job-lease")
+            .send();
 
     // then
     assertThatThrownBy(responseFuture::join)
