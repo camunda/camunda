@@ -30,6 +30,13 @@ import java.util.List;
  *       .status(AgentInstanceUpdateStatus.THINKING)
  *       .jobKey(jobKey)
  *       .jobLease(jobLease)
+ *       .history(List.of(
+ *           new AgentInstanceHistoryItem()
+ *               .historyItemId("item-1")
+ *               .loopIteration(1)
+ *               .role(AgentInstanceHistoryRole.ASSISTANT)
+ *               .content(List.of(AgentInstanceHistoryContent.text("Looking that up now.")))
+ *               .producedAt(OffsetDateTime.now())))
  *       .send()
  *       .join();
  * </pre>
@@ -47,7 +54,7 @@ public interface UpdateAgentInstanceCommandStep1 {
    */
   UpdateAgentInstanceCommandStep2 elementInstanceKey(long elementInstanceKey);
 
-  interface UpdateAgentInstanceCommandStep2 extends FinalCommandStep<UpdateAgentInstanceResponse> {
+  interface UpdateAgentInstanceCommandStep2 {
 
     /**
      * Sets the new status of the agent instance.
@@ -62,30 +69,33 @@ public interface UpdateAgentInstanceCommandStep1 {
      * required — an update must always be attributed to the active job that produced it.
      *
      * @param jobKey the key of the active job. Must be greater than 0.
-     * @return this builder for method chaining
+     * @return the next step of the builder
      */
-    UpdateAgentInstanceCommandStep2 jobKey(long jobKey);
+    UpdateAgentInstanceCommandStep3 jobKey(long jobKey);
+  }
+
+  interface UpdateAgentInstanceCommandStep3 extends FinalCommandStep<UpdateAgentInstanceResponse> {
 
     /**
-     * Sets the opaque job lease token received from the job activation response. Always required —
-     * activate the job with leasing enabled (see the job worker's {@code withLease} option, off by
-     * default) and pass the returned token here. The lease disambiguates this activation from any
-     * other activation of the same job: if the job is later retried, history items submitted under
-     * a superseded lease are discarded rather than committed.
+     * Sets the opaque job lease token received from the job activation response. Optional —
+     * activating the job with leasing enabled (see the job worker's {@code withLease} option, off
+     * by default) is what produces a token; omit this call when the job was activated without one.
+     * The lease disambiguates this activation from any other activation of the same job: if the job
+     * is later retried, history items submitted under a superseded lease are discarded rather than
+     * committed.
      *
      * @param jobLease the lease token. Must not be null or blank.
      * @return this builder for method chaining
      */
-    UpdateAgentInstanceCommandStep2 jobLease(String jobLease);
+    UpdateAgentInstanceCommandStep3 jobLease(String jobLease);
 
     /**
      * Replaces the full batch of conversation history items to append to the agent instance.
-     * Requires {@link #jobKey(long)} to also be set.
      *
      * @param history the history items to append, in order. Must not be null; elements must not be
      *     null.
      * @return this builder for method chaining
      */
-    UpdateAgentInstanceCommandStep2 history(List<AgentInstanceHistoryItem> history);
+    UpdateAgentInstanceCommandStep3 history(List<AgentInstanceHistoryItem> history);
   }
 }

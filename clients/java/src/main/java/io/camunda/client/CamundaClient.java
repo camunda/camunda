@@ -3601,7 +3601,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *       .elementInstanceKey(2251799813685248L)
    *       .jobKey(jobKey)
    *       .jobLease(jobLease)
-   *       .history(List.of(configurationItem))
+   *       .history(List.of(configurationHistoryItem))
    *       .send()
    *       .join();
    * </pre>
@@ -3618,6 +3618,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *       .newUpdateAgentInstanceCommand(agentInstanceKey)
    *       .elementInstanceKey(elementInstanceKey)
    *       .status(AgentInstanceUpdateStatus.THINKING)
+   *       .jobKey(jobKey)
+   *       .jobLease(jobLease)
    *       .send()
    *       .join();
    * </pre>
