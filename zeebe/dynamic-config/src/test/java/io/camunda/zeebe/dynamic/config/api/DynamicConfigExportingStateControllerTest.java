@@ -247,6 +247,103 @@ final class DynamicConfigExportingStateControllerTest {
         .hasCauseInstanceOf(ClusterConfigurationRequestFailedException.NotFound.class);
   }
 
+  @ParameterizedTest
+  @MethodSource("clusterWideOperations")
+  void shouldSubmitClusterWideOperationsWithNoPhysicalTenant(
+      final Function<ExportingStateController.ClusterWide, CompletableFuture<Void>> operation,
+      final ExportingState expectedState) {
+    // given
+    final var captor = ArgumentCaptor.forClass(ExportingStateChangeRequest.class);
+    when(requestSender.changeExportingState(captor.capture())).thenReturn(emptyPlan());
+
+    // when
+    operation.apply(exportingStateController.clusterWide()).join();
+
+    // then — one atomic request, unscoped, rather than one request per tenant
+    assertThat(captor.getValue().state()).isEqualTo(expectedState);
+    assertThat(captor.getValue().physicalTenantId()).isEmpty();
+  }
+
+  @Test
+  void shouldAggregateClusterWideStatusAcrossEveryActiveTenant() {
+    // given
+    when(requestSender.getTopology())
+        .thenReturn(
+            topology(
+                Map.of(
+                    DEFAULT_PHYSICAL_TENANT_ID,
+                    Map.of(MemberId.from("0"), ExportingState.PAUSED),
+                    OTHER_TENANT,
+                    Map.of(MemberId.from("1"), ExportingState.PAUSED))));
+
+    // when
+    final var status = exportingStateController.clusterWide().getExportingStatus();
+
+    // then
+    assertThat(status).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(ExportingStatus.PAUSED);
+  }
+
+  @Test
+  void shouldReportMixedClusterWideStatusWhenTenantsDisagree() {
+    // given
+    when(requestSender.getTopology())
+        .thenReturn(
+            topology(
+                Map.of(
+                    DEFAULT_PHYSICAL_TENANT_ID,
+                    Map.of(MemberId.from("0"), ExportingState.PAUSED),
+                    OTHER_TENANT,
+                    Map.of(MemberId.from("1"), ExportingState.EXPORTING))));
+
+    // when
+    final var status = exportingStateController.clusterWide().getExportingStatus();
+
+    // then
+    assertThat(status).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(ExportingStatus.MIXED);
+  }
+
+  @Test
+  void shouldExcludeADisabledTenantFromTheClusterWideStatus() {
+    // given — tenant-b is disabled and paused; only the default tenant's exporting state should
+    // count towards the cluster-wide aggregate
+    final var disabledGroup = group(Map.of(MemberId.from("1"), ExportingState.PAUSED)).disable();
+    when(requestSender.getTopology())
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.right(
+                    new CurrentClusterConfiguration(
+                        CurrentClusterConfiguration.INITIAL_VERSION,
+                        GlobalConfiguration.init(),
+                        Map.of(
+                            DEFAULT_PHYSICAL_TENANT_ID,
+                            group(Map.of(MemberId.from("0"), ExportingState.EXPORTING)),
+                            OTHER_TENANT,
+                            disabledGroup),
+                        PhasedChangeState.empty()))));
+
+    // when
+    final var status = exportingStateController.clusterWide().getExportingStatus();
+
+    // then
+    assertThat(status).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(ExportingStatus.EXPORTING);
+  }
+
+  private static Stream<Arguments> clusterWideOperations() {
+    return Stream.of(
+        Arguments.of(
+            (Function<ExportingStateController.ClusterWide, CompletableFuture<Void>>)
+                ExportingStateController.ClusterWide::pauseExporting,
+            ExportingState.PAUSED),
+        Arguments.of(
+            (Function<ExportingStateController.ClusterWide, CompletableFuture<Void>>)
+                ExportingStateController.ClusterWide::softPauseExporting,
+            ExportingState.SOFT_PAUSED),
+        Arguments.of(
+            (Function<ExportingStateController.ClusterWide, CompletableFuture<Void>>)
+                ExportingStateController.ClusterWide::resumeExporting,
+            ExportingState.EXPORTING));
+  }
+
   private static CompletableFuture<Either<ErrorResponse, CurrentClusterConfiguration>> topology(
       final Map<String, Map<MemberId, ExportingState>> statesByTenantAndMember) {
     final Map<String, PartitionGroupConfiguration> partitionGroups =

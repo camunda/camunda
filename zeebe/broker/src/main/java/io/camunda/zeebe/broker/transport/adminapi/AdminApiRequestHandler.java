@@ -26,7 +26,6 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 public class AdminApiRequestHandler
     extends AsyncApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
@@ -73,13 +72,11 @@ public class AdminApiRequestHandler
       case STEP_DOWN_IF_NOT_PRIMARY ->
           CompletableActorFuture.completed(
               stepDownIfNotPrimary(responseWriter, partitionId, errorWriter));
-      case PAUSE_EXPORTING -> pauseExporting(responseWriter, partitionId, errorWriter);
-      case SOFT_PAUSE_EXPORTING -> softPauseExporting(responseWriter, partitionId, errorWriter);
-      case RESUME_EXPORTING -> resumeExporting(responseWriter, partitionId, errorWriter);
+      case PAUSE_EXPORTING, SOFT_PAUSE_EXPORTING, RESUME_EXPORTING, GET_EXPORTING_STATE ->
+          exportingControlRemoved(errorWriter);
       case BAN_INSTANCE -> banInstance(requestReader, responseWriter, partitionId, errorWriter);
       case GET_FLOW_CONTROL -> getFlowControl(responseWriter, errorWriter);
       case SET_FLOW_CONTROL -> setFlowControl(requestReader, responseWriter, errorWriter);
-      case GET_EXPORTING_STATE -> getExportingState(responseWriter, partitionId, errorWriter);
       case GET_MIGRATION_STATUS -> getMigrationStatus(responseWriter, partitionId, errorWriter);
       default -> unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
     };
@@ -146,38 +143,9 @@ public class AdminApiRequestHandler
     return result;
   }
 
-  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> getExportingState(
-      final ApiResponseWriter responseWriter,
-      final int partitionId,
+  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> exportingControlRemoved(
       final ErrorResponseWriter errorWriter) {
-    final var partitionAdminAccess = adminAccess.forPartition(partitionId);
-    if (partitionAdminAccess.isEmpty()) {
-      return CompletableActorFuture.completed(
-          Either.left(
-              errorWriter.internalError(
-                  "Partition %s failed to report its exporting state. Could not find the partition.",
-                  partitionId)));
-    }
-
-    final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
-    partitionAdminAccess
-        .orElseThrow()
-        .getExporterPhase()
-        .onComplete(
-            (phase, t) -> {
-              if (t == null) {
-                responseWriter.setPayload(phase.name().getBytes(StandardCharsets.UTF_8));
-                result.complete(Either.right(responseWriter));
-              } else {
-                LOG.error("Failed to get the exporting state on partition {}", partitionId, t);
-                result.complete(
-                    Either.left(
-                        errorWriter.internalError(
-                            "Failed to get the exporting state on partition %s", partitionId)));
-              }
-            });
-
-    return result;
+    return CompletableActorFuture.completed(Either.left(errorWriter.exportingControlRemoved()));
   }
 
   private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> getMigrationStatus(
@@ -244,105 +212,6 @@ public class AdminApiRequestHandler
       final ErrorResponseWriter errorWriter, final AdminRequestType type) {
     errorWriter.unsupportedMessage(type, AdminRequestType.values());
     return CompletableActorFuture.completed(Either.left(errorWriter));
-  }
-
-  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> pauseExporting(
-      final ApiResponseWriter responseWriter,
-      final int partitionId,
-      final ErrorResponseWriter errorWriter) {
-    final var partitionAdminAccess = adminAccess.forPartition(partitionId);
-    if (partitionAdminAccess.isEmpty()) {
-      return CompletableActorFuture.completed(
-          Either.left(
-              errorWriter.internalError(
-                  "Partition %s failed to pause exporting. Could not find the partition.",
-                  partitionId)));
-    }
-
-    final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
-    partitionAdminAccess
-        .orElseThrow()
-        .pauseExporting()
-        .onComplete(
-            (r, t) -> {
-              if (t == null) {
-                result.complete(Either.right(responseWriter));
-              } else {
-                LOG.error("Failed to pause exporting on partition {}", partitionId, t);
-                result.complete(
-                    Either.left(
-                        errorWriter.internalError(
-                            "Partition %s failed to pause exporting", partitionId)));
-              }
-            });
-
-    return result;
-  }
-
-  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> softPauseExporting(
-      final ApiResponseWriter responseWriter,
-      final int partitionId,
-      final ErrorResponseWriter errorWriter) {
-    final var partitionAdminAccess = adminAccess.forPartition(partitionId);
-    if (partitionAdminAccess.isEmpty()) {
-      return CompletableActorFuture.completed(
-          Either.left(
-              errorWriter.internalError(
-                  "Partition %s failed to soft pause exporting. Could not find the partition.",
-                  partitionId)));
-    }
-
-    final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
-    partitionAdminAccess
-        .orElseThrow()
-        .softPauseExporting()
-        .onComplete(
-            (r, t) -> {
-              if (t == null) {
-                result.complete(Either.right(responseWriter));
-              } else {
-                LOG.error("Failed to soft pause exporting on partition {}", partitionId, t);
-                result.complete(
-                    Either.left(
-                        errorWriter.internalError(
-                            "Partition %s failed to soft pause exporting", partitionId)));
-              }
-            });
-
-    return result;
-  }
-
-  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> resumeExporting(
-      final ApiResponseWriter responseWriter,
-      final int partitionId,
-      final ErrorResponseWriter errorWriter) {
-    final var partitionAdminAccess = adminAccess.forPartition(partitionId);
-    if (partitionAdminAccess.isEmpty()) {
-      return CompletableActorFuture.completed(
-          Either.left(
-              errorWriter.internalError(
-                  "Partition %s failed to resume exporting. Could not find the partition.",
-                  partitionId)));
-    }
-
-    final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
-    partitionAdminAccess
-        .orElseThrow()
-        .resumeExporting()
-        .onComplete(
-            (r, t) -> {
-              if (t == null) {
-                result.complete(Either.right(responseWriter));
-              } else {
-                LOG.error("Failed to resume exporting on partition {}", partitionId, t);
-                result.complete(
-                    Either.left(
-                        errorWriter.internalError(
-                            "Partition %s failed to resume exporting", partitionId)));
-              }
-            });
-
-    return result;
   }
 
   private Either<ErrorResponseWriter, ApiResponseWriter> stepDownIfNotPrimary(

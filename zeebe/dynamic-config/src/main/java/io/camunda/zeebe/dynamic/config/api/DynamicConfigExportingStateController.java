@@ -53,11 +53,16 @@ public final class DynamicConfigExportingStateController implements ExportingSta
     return new TenantController(physicalTenantId);
   }
 
+  @Override
+  public ExportingStateController.ClusterWide clusterWide() {
+    return new ClusterWideController();
+  }
+
   private CompletableFuture<Void> changeState(
-      final String physicalTenantId, final ExportingState targetState) {
+      final Optional<String> physicalTenantId, final ExportingState targetState) {
     return changeAwaiter.awaitCompletion(
         requestSender.changeExportingState(
-            new ExportingStateChangeRequest(targetState, Optional.of(physicalTenantId), false)));
+            new ExportingStateChangeRequest(targetState, physicalTenantId, false)));
   }
 
   private CompletableFuture<ExportingStatus> queryStatus(final String physicalTenantId) {
@@ -69,6 +74,18 @@ public final class DynamicConfigExportingStateController implements ExportingSta
                 throw topology.getLeft().toException();
               }
               return aggregateStatus(physicalTenantId, topology.get());
+            });
+  }
+
+  private CompletableFuture<ExportingStatus> queryClusterWideStatus() {
+    return requestSender
+        .getTopology()
+        .thenApply(
+            topology -> {
+              if (topology.isLeft()) {
+                throw topology.getLeft().toException();
+              }
+              return aggregateClusterWideStatus(topology.get());
             });
   }
 
@@ -97,6 +114,26 @@ public final class DynamicConfigExportingStateController implements ExportingSta
   }
 
   /**
+   * Aggregates the exporting status of every active (non-disabled) physical tenant's partition
+   * replicas into one status. Unlike {@link #aggregateStatus}, there is no single tenant to reject
+   * as {@link NotFound}; an empty active set (not reachable on a running cluster — there is always
+   * at least the default tenant) reports {@code MIXED} rather than a vacuously "converged" status.
+   */
+  private static ExportingStatus aggregateClusterWideStatus(
+      final CurrentClusterConfiguration configuration) {
+    final var activeGroups = configuration.activePartitionGroups();
+    if (activeGroups.isEmpty()) {
+      return ExportingStatus.MIXED;
+    }
+    return ExportingStatus.aggregate(
+        activeGroups.values().stream()
+            .flatMap(group -> group.members().values().stream())
+            .flatMap(member -> member.partitions().values().stream())
+            .map(DynamicConfigExportingStateController::exportingStateOf)
+            .toList());
+  }
+
+  /**
    * A partition's {@code exporting} config is {@code null} until something initializes it (e.g.
    * {@code ExporterStateInitializer} on the local member after restart, or the receiving side of a
    * gossip update from a peer that has not run that initializer yet, or a peer still on a wire
@@ -119,22 +156,45 @@ public final class DynamicConfigExportingStateController implements ExportingSta
 
     @Override
     public CompletableFuture<Void> pauseExporting() {
-      return changeState(physicalTenantId, ExportingState.PAUSED);
+      return changeState(Optional.of(physicalTenantId), ExportingState.PAUSED);
     }
 
     @Override
     public CompletableFuture<Void> softPauseExporting() {
-      return changeState(physicalTenantId, ExportingState.SOFT_PAUSED);
+      return changeState(Optional.of(physicalTenantId), ExportingState.SOFT_PAUSED);
     }
 
     @Override
     public CompletableFuture<Void> resumeExporting() {
-      return changeState(physicalTenantId, ExportingState.EXPORTING);
+      return changeState(Optional.of(physicalTenantId), ExportingState.EXPORTING);
     }
 
     @Override
     public CompletableFuture<ExportingStatus> getExportingStatus() {
       return queryStatus(physicalTenantId);
+    }
+  }
+
+  private final class ClusterWideController implements ExportingStateController.ClusterWide {
+
+    @Override
+    public CompletableFuture<Void> pauseExporting() {
+      return changeState(Optional.empty(), ExportingState.PAUSED);
+    }
+
+    @Override
+    public CompletableFuture<Void> softPauseExporting() {
+      return changeState(Optional.empty(), ExportingState.SOFT_PAUSED);
+    }
+
+    @Override
+    public CompletableFuture<Void> resumeExporting() {
+      return changeState(Optional.empty(), ExportingState.EXPORTING);
+    }
+
+    @Override
+    public CompletableFuture<ExportingStatus> getExportingStatus() {
+      return queryClusterWideStatus();
     }
   }
 }
