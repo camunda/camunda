@@ -694,7 +694,7 @@ class ExporterConfigurationTest {
                   r.setQueueCapacity(-1);
                 },
             "asyncReplication.queueCapacity must be greater 0"),
-        // queueCapacity/queueDebounceTime back AbstractReplicationController's queue for LOG_SEQ
+        // queueCapacity/queueDebounceTime back DefaultReplicationController's queue for LOG_SEQ
         // and TIME_LAG too, not just DELAY - a misconfiguration there must fail validate() the
         // same way, instead of surfacing as an uncaught exception when the controller is created.
         Arguments.of(
@@ -716,6 +716,28 @@ class ExporterConfigurationTest {
                   r.setMaxLag(Duration.ofMinutes(5));
                   r.setQueueDebounceTime(Duration.ofMillis(-1));
                 },
-            "asyncReplication.queueDebounceTime must be a non-negative duration"));
+            "asyncReplication.queueDebounceTime must be a non-negative duration"),
+        // pollingInterval/maxLag back DefaultReplicationController's scheduling and pause
+        // decision for DELAY too, not just LOG_SEQ/TIME_LAG - a misconfiguration there must fail
+        // validate() the same way, instead of surfacing as an uncaught exception at controller
+        // construction time.
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ofMinutes(10));
+                  r.setPollingInterval(Duration.ZERO);
+                },
+            "asyncReplication.pollingInterval must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ofMinutes(10));
+                  r.setMaxLag(Duration.ofMillis(-1000));
+                },
+            "asyncReplication.maxLag must be a positive duration"));
   }
 }
