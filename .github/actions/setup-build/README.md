@@ -40,7 +40,7 @@ Vault/WIF hang (see that action's README).
 | camunda-nexus            | Use Camunda Nexus as a Maven mirror (disabled for fork PRs)        | false    | `"true"`  |
 | dockerhub                | Log into DockerHub with a CI account (disabled for fork PRs)       | false    | `"false"` |
 | dockerhub-readonly       | Log into DockerHub with a read-only account to avoid rate limits   | false    | `"false"` |
-| harbor                   | Log into Harbor with a CI account (disabled for fork PRs)          | false    | `"false"` |
+| harbor                   | Log into Harbor with a Harbor robot account (disabled for fork PRs) | false    | `"false"` |
 | minimus                  | Log into Minimus with a CI account (disabled for fork PRs)         | false    | `"false"` |
 | java-distribution        | Java distribution to install                                       | false    | `temurin` |
 | java-version             | JDK version to install                                             | false    | `"21"`    |
@@ -63,6 +63,7 @@ None.
 - The Vault path for the DockerHub account is inferred from the calling workflow's
   file name (`operate-*`, `optimize-*`, `tasklist-*`, `zeebe-*`), defaulting to
   `camunda`.
+- Harbor credentials are read from `secret/data/products/camunda/ci/harbor`.
 
 ## Example
 
@@ -85,4 +86,3 @@ jobs:
 To also share the run-scoped distball / m2 tarball via the GCS build-cache, call
 [`gcs-build-cache-auth`](../gcs-build-cache-auth) directly alongside this action —
 see its README.
-
