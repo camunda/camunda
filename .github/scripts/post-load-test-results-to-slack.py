@@ -22,7 +22,8 @@ Optional:
   QUERIES_YAML        Path to queries.yaml. Default:
                       load-tests/docs/scripts/queries.yaml
   FLAMEGRAPH_LINKS    Pre-rendered Slack mrkdwn links to this run's flamegraph
-                      artifacts (e.g. "<url|name> · <url|name>"), built by the
+                      artifacts, one bullet per line (e.g.
+                      "• <url|name>\n• <url|name>"), built by the
                       `List flamegraph artifacts` step in the calling job via
                       actions/github-script + listWorkflowRunArtifacts. Empty
                       or unset omits the flamegraphs line.
@@ -124,7 +125,7 @@ if flamegraph_links:
         'type': 'section',
         'text': {
             'type': 'mrkdwn',
-            'text': f':fire: *Flamegraphs:* {flamegraph_links}',
+            'text': f':fire: *Flamegraphs:*\n{flamegraph_links}',
         },
     })
 

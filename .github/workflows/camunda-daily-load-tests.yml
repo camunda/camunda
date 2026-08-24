@@ -302,8 +302,8 @@ jobs:
             const runURL = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const links = data.artifacts
               .filter(a => a.name.startsWith('flamegraph-'))
-              .map(a => `<${runURL}/artifacts/${a.id}|${a.name}>`)
-              .join(' · ');
+              .map(a => `• <${runURL}/artifacts/${a.id}|${a.name}>`)
+              .join('\n');
             core.setOutput('links', links);
       - name: Import Slack webhook from Vault
         id: slack-secrets
