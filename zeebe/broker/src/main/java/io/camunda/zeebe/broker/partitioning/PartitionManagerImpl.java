@@ -595,7 +595,7 @@ public final class PartitionManagerImpl
                   .formatted(partitionId)));
     }
     LOGGER.trace("Setting exporting state {} on partition {}", exportingState, partitionId);
-    return partition.zeebePartition().getAdminAccess().setExportingState(exportingState);
+    return partition.zeebePartition().setExportingState(exportingState);
   }
 
   private void disableExporter(
