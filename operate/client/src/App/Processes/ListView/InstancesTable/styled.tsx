@@ -12,6 +12,22 @@ const Container = styled.section`
   height: 100%;
   display: flex;
   flex-direction: column;
+
+  th[data-column-key='operations'] {
+    text-align: center;
+
+    .cds--table-header-label {
+      text-align: center;
+    }
+  }
+
+  td[data-column-key='operations'] {
+    text-align: center;
+
+    li:not(:has(*)) {
+      display: none;
+    }
+  }
 `;
 
 const ProcessName = styled.div`

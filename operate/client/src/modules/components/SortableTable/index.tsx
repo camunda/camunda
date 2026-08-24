@@ -178,6 +178,7 @@ const SortableTable = <
                       <ColumnHeader
                         {...props}
                         key={key}
+                        data-column-key={header.key}
                         label={header.header}
                         sortKey={headerColumns[index]?.sortKey ?? header.key}
                         isDefault={headerColumns[index]?.isDefault}
@@ -251,6 +252,7 @@ const SortableTable = <
                             {row.cells.map((cell) => (
                               <TableCell
                                 key={cell.id}
+                                data-column-key={cell.info.header}
                                 data-testid={`cell-${cell.info.header}`}
                                 $hideCellPadding={columnsWithNoContentPadding?.includes(
                                   cell.info.header,

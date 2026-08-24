@@ -189,9 +189,10 @@ type TableCellProps = {
 // background and can no longer rely on the row's background showing through
 const stickyRightCellStyles = css`
   position: sticky;
-  right: 0;
+  inset-inline-end: 0;
   z-index: 1;
   background-color: var(--cds-layer);
+  border-inline-start: 1px solid var(--cds-border-subtle);
 
   tr:hover & {
     background-color: var(--cds-layer-hover);
@@ -270,9 +271,15 @@ const ColumnHeader = styled(BaseColumnHeader)<{$stickyRight?: boolean}>`
     $stickyRight &&
     css`
       position: sticky;
-      right: 0;
+
+      &&:last-of-type {
+        position: sticky;
+      }
+
+      inset-inline-end: 0;
       z-index: 2;
       background-color: var(--cds-layer-accent);
+      border-inline-start: 1px solid var(--cds-border-subtle);
     `}
 `;
 
