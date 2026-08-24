@@ -13,6 +13,7 @@ import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.security.configuration.SecurityConfiguration;
 import jakarta.annotation.PostConstruct;
@@ -110,8 +111,8 @@ public abstract class AbstractDataGenerator implements DataGenerator {
       try {
         exists = processStore.count() > 0;
       } catch (final IOException e) {
-        LOGGER.warn("Error occurred when counting processes.", e);
-        return false;
+        // a failed count says nothing about whether data exists, so let createZeebeDataAsync retry
+        throw new OperateRuntimeException("Error occurred when counting processes.", e);
       }
       if (exists) {
         // data already exists
