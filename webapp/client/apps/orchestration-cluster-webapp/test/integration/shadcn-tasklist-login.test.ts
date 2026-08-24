@@ -12,11 +12,13 @@ import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
 	mockLoginEndpoint,
+	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -26,12 +28,16 @@ test.beforeEach(({network}) => {
 			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['tasklist']}})),
 		}),
 		mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		mockQueryUserTasksEndpoint({
+			successResponse: HttpResponse.json(createQueryUserTasksResponse({items: []})),
+		}),
 	);
 });
 
 test('should redirect the Tasklist index to Tasklist login and return after login', async ({
 	network,
 	page,
+	shadcnTasklistIndexPage,
 	shadcnTasklistLoginPage,
 }) => {
 	await shadcnTasklistLoginPage.gotoTasklist();
@@ -46,10 +52,15 @@ test('should redirect the Tasklist index to Tasklist login and return after logi
 	await shadcnTasklistLoginPage.submitButton.click();
 
 	await expect(page).toHaveURL('/shadcn/tasklist');
-	await expect(page.getByText('Hello "/shadcn/tasklist"!')).toBeVisible();
+	await expect(shadcnTasklistIndexPage.noTasksMessage).toBeVisible();
 });
 
-test('should preserve a Tasklist URL through login', async ({network, page, shadcnTasklistLoginPage}) => {
+test('should preserve a Tasklist URL through login', async ({
+	network,
+	page,
+	shadcnTasklistIndexPage,
+	shadcnTasklistLoginPage,
+}) => {
 	await shadcnTasklistLoginPage.gotoTasklist('?filter=assigned');
 
 	await expect(page).toHaveURL((url) => {
@@ -66,7 +77,7 @@ test('should preserve a Tasklist URL through login', async ({network, page, shad
 	await shadcnTasklistLoginPage.submitButton.click();
 
 	await expect(page).toHaveURL('/shadcn/tasklist?filter=assigned');
-	await expect(page.getByText('Hello "/shadcn/tasklist"!')).toBeVisible();
+	await expect(shadcnTasklistIndexPage.noTasksMessage).toBeVisible();
 });
 
 test('should show an error for wrong credentials', async ({network, shadcnTasklistLoginPage}) => {

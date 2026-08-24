@@ -11,11 +11,13 @@ import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
+	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -28,6 +30,9 @@ test.beforeEach(({network}) => {
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
 		}),
+		mockQueryUserTasksEndpoint({
+			successResponse: HttpResponse.json(createQueryUserTasksResponse({items: []})),
+		}),
 	);
 });
 
@@ -35,7 +40,7 @@ test.describe('Tasklist index page', () => {
 	test('should render Tasklist index page with navigation', async ({shadcnTasklistIndexPage}) => {
 		await shadcnTasklistIndexPage.goto();
 
-		await expect(shadcnTasklistIndexPage.content).toBeVisible();
+		await expect(shadcnTasklistIndexPage.tasksPanel).toBeVisible();
 		await expect(shadcnTasklistIndexPage.header.branding).toBeVisible();
 		await expect(shadcnTasklistIndexPage.header.tasksNavItem).toBeVisible();
 		await expect(shadcnTasklistIndexPage.header.processesNavItem).toBeVisible();
@@ -47,6 +52,14 @@ test.describe('Tasklist index page', () => {
 		await shadcnTasklistIndexPage.header.processesNavItem.click();
 
 		await expect(page).toHaveURL('/shadcn/tasklist/processes');
+	});
+});
+
+test.describe('Tasks panel', () => {
+	test('should show the empty state', async ({shadcnTasklistIndexPage}) => {
+		await shadcnTasklistIndexPage.goto();
+
+		await expect(shadcnTasklistIndexPage.noTasksMessage).toBeVisible();
 	});
 });
 

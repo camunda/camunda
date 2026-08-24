@@ -336,6 +336,7 @@
 			"taskEmptyDetail2": "a través de su diagrama BPMN y formularios.",
 			"taskEmptyTaskAvailablePrompt": "Seleccione una tarea para ver sus detalles.",
 			"taskEmptyTutorial": "Siga nuestro tutorial para <2>aprender a crear tareas.</2>",
+			"taskEmptyTutorialCta": "Ver tutorial",
 			"taskFiltersHeaderAria": "Filtros",
 			"taskFiltersCustomFilter": "Filtro personalizado",
 			"taskFiltersUnassigned": "No asignada",
