@@ -491,11 +491,10 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY)),
-            "No CONFIGURATION history item sets 'model'; when history is provided, it must be"
-                + " set there instead of on definition. No CONFIGURATION history item sets"
-                + " 'provider'; when history is provided, it must be set there instead of on"
-                + " definition. No CONFIGURATION history item sets 'systemPrompt'; when history"
-                + " is provided, it must be set there instead of on definition."));
+            "No CONFIGURATION history item sets 'model'; add a CONFIGURATION history item that"
+                + " sets it. No CONFIGURATION history item sets 'provider'; add a CONFIGURATION"
+                + " history item that sets it. No CONFIGURATION history item sets"
+                + " 'systemPrompt'; add a CONFIGURATION history item that sets it."));
   }
 
   @Test
