@@ -31,4 +31,4 @@ function useDrainingProcessDefinitions() {
   });
 }
 
-export {useDrainingProcessDefinitions};
+export {useDrainingProcessDefinitions, type DrainingLookup};
