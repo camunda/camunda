@@ -9,6 +9,7 @@ package io.camunda.authentication.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.authentication.config.controllers.DummyOidcClientRegistration;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.service.PhysicalTenantMembershipContextPropagator;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
@@ -17,10 +18,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.convention.TestBean;
@@ -65,16 +63,7 @@ class WebSecurityConfigPropagatorImportTest {
     @MockitoBean private JwtDecoder jwtDecoder;
 
     static ClientRegistrationRepository clientRegistrationRepository() {
-      final var dummyRegistration =
-          ClientRegistration.withRegistrationId("test")
-              .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-              .clientId("test-client")
-              .redirectUri("{baseUrl}/sso-callback")
-              .authorizationUri("https://example.com/authorize")
-              .tokenUri("https://example.com/token")
-              .issuerUri("https://example.com")
-              .build();
-      return new InMemoryClientRegistrationRepository(dummyRegistration);
+      return DummyOidcClientRegistration.repository();
     }
   }
 }
