@@ -36,6 +36,7 @@ import io.camunda.optimize.service.db.repository.SearchLimitsRepository;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.db.writer.BusinessValueOverviewWriter;
 import io.camunda.optimize.service.report.ReportService;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -102,6 +103,7 @@ public class BusinessValueOverviewComputeService {
   private final PlainReportEvaluationHandler reportEvaluationHandler;
   private final MappingMetadataRepository mappingMetadataRepository;
   private final SearchLimitsRepository searchLimitsRepository;
+  private final ConfigurationService configurationService;
 
   public BusinessValueOverviewComputeService(
       final BusinessValueTargetRepository targetRepository,
@@ -110,7 +112,8 @@ public class BusinessValueOverviewComputeService {
       final ReportService reportService,
       final PlainReportEvaluationHandler reportEvaluationHandler,
       final MappingMetadataRepository mappingMetadataRepository,
-      final SearchLimitsRepository searchLimitsRepository) {
+      final SearchLimitsRepository searchLimitsRepository,
+      final ConfigurationService configurationService) {
     this.targetRepository = targetRepository;
     this.overviewWriter = overviewWriter;
     this.definitionService = definitionService;
@@ -118,11 +121,22 @@ public class BusinessValueOverviewComputeService {
     this.reportEvaluationHandler = reportEvaluationHandler;
     this.mappingMetadataRepository = mappingMetadataRepository;
     this.searchLimitsRepository = searchLimitsRepository;
+    this.configurationService = configurationService;
   }
 
   public void computeOverviewRows(final List<MetricRange> ranges) {
     if (ranges == null || ranges.isEmpty()) {
       throw new IllegalArgumentException("ranges must not be null or empty");
+    }
+
+    // Guarded here rather than at the call sites so every caller is covered — the scheduler tick,
+    // the stale-read backstop, and whatever calls in next — and so flipping the flag takes effect
+    // on the next invocation without a restart, which is the point of having it during an incident.
+    if (!configurationService.getBusinessValueConfiguration().isOverviewComputeEnabled()) {
+      LOG.info(
+          "Business-value overview compute is disabled by configuration; skipping. "
+              + "Existing rows remain readable but will not advance until it is re-enabled.");
+      return;
     }
 
     final List<DefinitionEntry> definitions = resolveDefinitions();

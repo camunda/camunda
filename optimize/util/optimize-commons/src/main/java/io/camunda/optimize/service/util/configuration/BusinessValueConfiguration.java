@@ -12,6 +12,7 @@ import java.util.Objects;
 public class BusinessValueConfiguration {
 
   private Long overviewRefreshInterval;
+  private Boolean overviewComputeEnabled;
 
   public BusinessValueConfiguration() {}
 
@@ -23,9 +24,29 @@ public class BusinessValueConfiguration {
     this.overviewRefreshInterval = overviewRefreshInterval;
   }
 
+  /**
+   * Whether the business-value overview sweep may run. Turning it off stops the background
+   * computation without taking the dashboard down: existing rows stay readable, they simply stop
+   * advancing.
+   *
+   * <p>Absent configuration reads as enabled. A kill switch that failed closed would silently
+   * disable the feature on a configuration mistake, which is the opposite of what it is for.
+   */
+  public boolean isOverviewComputeEnabled() {
+    return overviewComputeEnabled == null || overviewComputeEnabled;
+  }
+
+  public Boolean getOverviewComputeEnabled() {
+    return overviewComputeEnabled;
+  }
+
+  public void setOverviewComputeEnabled(final Boolean overviewComputeEnabled) {
+    this.overviewComputeEnabled = overviewComputeEnabled;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(overviewRefreshInterval);
+    return Objects.hash(overviewRefreshInterval, overviewComputeEnabled);
   }
 
   @Override
@@ -37,13 +58,16 @@ public class BusinessValueConfiguration {
       return false;
     }
     final BusinessValueConfiguration that = (BusinessValueConfiguration) o;
-    return Objects.equals(overviewRefreshInterval, that.overviewRefreshInterval);
+    return Objects.equals(overviewRefreshInterval, that.overviewRefreshInterval)
+        && Objects.equals(overviewComputeEnabled, that.overviewComputeEnabled);
   }
 
   @Override
   public String toString() {
     return "BusinessValueConfiguration(overviewRefreshInterval="
         + getOverviewRefreshInterval()
+        + ", overviewComputeEnabled="
+        + getOverviewComputeEnabled()
         + ")";
   }
 }
