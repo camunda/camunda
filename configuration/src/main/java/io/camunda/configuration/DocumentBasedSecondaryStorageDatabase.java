@@ -81,6 +81,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** Whether to schedule the cleanup of legacy indexes */
   private boolean performCleanup = false;
 
+  /** Whether to verify the cluster health of the search engine */
+  private boolean healthCheckEnabled = true;
+
   @NestedConfigurationProperty
   private IncidentNotifier incidentNotifier = new IncidentNotifier(databaseName());
 
@@ -194,6 +197,19 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public void setPerformCleanup(final boolean performCleanup) {
     this.performCleanup = performCleanup;
+  }
+
+  public boolean isHealthCheckEnabled() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        prefix() + ".health-check-enabled",
+        healthCheckEnabled,
+        Boolean.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        getLegacyHealthCheckEnabledProperties());
+  }
+
+  public void setHealthCheckEnabled(final boolean healthCheckEnabled) {
+    this.healthCheckEnabled = healthCheckEnabled;
   }
 
   public Cache getBatchOperationCache() {
@@ -617,5 +633,13 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     return Set.of(
         "zeebe.broker.exporters.camundaexporter.args.createSchema",
         "camunda.database.schema-manager.create-schema");
+  }
+
+  private Set<String> getLegacyHealthCheckEnabledProperties() {
+    final String dbName = databaseName().toLowerCase();
+    return Set.of(
+        "camunda.operate." + dbName + ".healthCheckEnabled",
+        "camunda.tasklist." + dbName + ".healthCheckEnabled",
+        "camunda.database.schema-manager.health-check-enabled");
   }
 }

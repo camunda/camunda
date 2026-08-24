@@ -14,12 +14,6 @@
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-webapp</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>tasklist-common</artifactId>
       <scope>test</scope>
     </dependency>
@@ -91,18 +85,6 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-micrometer-metrics-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-health</artifactId>
       <scope>test</scope>
     </dependency>
 

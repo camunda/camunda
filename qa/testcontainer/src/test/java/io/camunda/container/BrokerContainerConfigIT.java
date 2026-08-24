@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.container.cluster.CamundaPort;
 import java.io.InputStream;
@@ -47,10 +48,10 @@ class BrokerContainerConfigIT {
                 cfg.getCluster().setName(CUSTOM_CLUSTER_NAME);
                 cfg.getCluster().setPartitionCount(CUSTOM_PARTITION_COUNT);
                 cfg.getCluster().setReplicationFactor(CUSTOM_REPLICATION_FACTOR);
+                cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
                 cfg.getProcessing().setMaxCommandsInBatch(200);
               })
           .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
-          .withEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false")
           .withProperty("zeebe.broker.gateway.enable", true);
 
   @Test
