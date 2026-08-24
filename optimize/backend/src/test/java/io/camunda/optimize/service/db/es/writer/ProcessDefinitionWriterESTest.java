@@ -9,7 +9,6 @@ package io.camunda.optimize.service.db.es.writer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
@@ -19,12 +18,11 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import io.camunda.optimize.service.db.reader.JobRegistryReader;
 import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
+import io.camunda.optimize.service.db.writer.DeletedProcessDefinitionCache;
 import io.camunda.optimize.service.db.writer.DeletedProcessDefinitionFilter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -34,7 +32,7 @@ class ProcessDefinitionWriterESTest {
   private OptimizeElasticsearchClient esClient;
   private ConfigurationService configurationService;
   private TaskRepositoryES taskRepositoryES;
-  private JobRegistryReader jobRegistryReader;
+  private DeletedProcessDefinitionCache deletedProcessDefinitionCache;
   private ProcessDefinitionWriterES writer;
 
   @BeforeEach
@@ -42,21 +40,19 @@ class ProcessDefinitionWriterESTest {
     esClient = mock(OptimizeElasticsearchClient.class);
     configurationService = mock(ConfigurationService.class);
     taskRepositoryES = mock(TaskRepositoryES.class);
-    jobRegistryReader = mock(JobRegistryReader.class);
+    deletedProcessDefinitionCache = mock(DeletedProcessDefinitionCache.class);
     writer =
         new ProcessDefinitionWriterES(
             esClient,
             new ObjectMapper(),
             configurationService,
             taskRepositoryES,
-            new DeletedProcessDefinitionFilter(jobRegistryReader));
+            new DeletedProcessDefinitionFilter(deletedProcessDefinitionCache));
   }
 
   @Test
   void shouldImportAllDefinitionsWhenNoDeletionJobEntryExists() {
     // given
-    when(jobRegistryReader.findEntityIdsWithJob(any(), any(), anyCollection()))
-        .thenReturn(Set.of());
     final ProcessDefinitionOptimizeDto definitionA = definition("1");
     final ProcessDefinitionOptimizeDto definitionB = definition("2");
 
@@ -76,8 +72,7 @@ class ProcessDefinitionWriterESTest {
     // given
     final ProcessDefinitionOptimizeDto suppressed = definition("deletedDefinitionId");
     final ProcessDefinitionOptimizeDto kept = definition("keptDefinitionId");
-    when(jobRegistryReader.findEntityIdsWithJob(any(), any(), anyCollection()))
-        .thenReturn(Set.of("deletedDefinitionId"));
+    when(deletedProcessDefinitionCache.isSuppressed("deletedDefinitionId")).thenReturn(true);
 
     // when
     writer.importProcessDefinitions(List.of(suppressed, kept));
@@ -94,8 +89,7 @@ class ProcessDefinitionWriterESTest {
   void shouldWriteNothingWhenAllDefinitionsAreDeleted() {
     // given
     final ProcessDefinitionOptimizeDto definitionA = definition("1");
-    when(jobRegistryReader.findEntityIdsWithJob(any(), any(), anyCollection()))
-        .thenReturn(Set.of("1"));
+    when(deletedProcessDefinitionCache.isSuppressed("1")).thenReturn(true);
 
     // when
     writer.importProcessDefinitions(List.of(definitionA));

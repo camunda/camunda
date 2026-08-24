@@ -9,7 +9,6 @@ package io.camunda.optimize.service.db.writer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -22,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.service.db.helper.ImportRequestDtoFactory;
-import io.camunda.optimize.service.db.reader.JobRegistryReader;
 import io.camunda.optimize.service.db.repository.IndexRepository;
 import io.camunda.optimize.service.db.repository.ProcessInstanceRepository;
 import java.util.ArrayList;
@@ -37,7 +35,7 @@ class ProcessInstanceWriterTest {
   private IndexRepository indexRepository;
   private ImportRequestDtoFactory importRequestDtoFactory;
   private ProcessInstanceRepository processInstanceRepository;
-  private JobRegistryReader jobRegistryReader;
+  private DeletedProcessDefinitionCache deletedProcessDefinitionCache;
   private ProcessInstanceWriter writer;
 
   @BeforeEach
@@ -45,14 +43,14 @@ class ProcessInstanceWriterTest {
     indexRepository = mock(IndexRepository.class);
     importRequestDtoFactory = mock(ImportRequestDtoFactory.class);
     processInstanceRepository = mock(ProcessInstanceRepository.class);
-    jobRegistryReader = mock(JobRegistryReader.class);
+    deletedProcessDefinitionCache = mock(DeletedProcessDefinitionCache.class);
     writer =
         new ProcessInstanceWriter(
             indexRepository,
             new ObjectMapper(),
             importRequestDtoFactory,
             processInstanceRepository,
-            new DeletedProcessDefinitionFilter(jobRegistryReader));
+            new DeletedProcessDefinitionFilter(deletedProcessDefinitionCache));
     when(importRequestDtoFactory.createImportRequestForProcessInstance(
             any(ProcessInstanceDto.class), anySet(), any(String.class)))
         .thenAnswer(
@@ -65,8 +63,6 @@ class ProcessInstanceWriterTest {
   @Test
   void shouldImportNormallyWhenNoDeletionJobEntryExists() {
     // given
-    when(jobRegistryReader.findEntityIdsWithJob(any(), any(), anyCollection()))
-        .thenReturn(Set.of());
     final ProcessInstanceDto instanceA = instance("definitionKeyA", "definitionIdA", "instance-1");
     final ProcessInstanceDto instanceB = instance("definitionKeyB", "definitionIdB", "instance-2");
 
@@ -87,8 +83,7 @@ class ProcessInstanceWriterTest {
     final ProcessInstanceDto suppressed =
         instance("sharedKey", "deletedDefinitionId", "instance-1");
     final ProcessInstanceDto kept = instance("sharedKey", "keptDefinitionId", "instance-2");
-    when(jobRegistryReader.findEntityIdsWithJob(any(), any(), anyCollection()))
-        .thenReturn(Set.of("deletedDefinitionId"));
+    when(deletedProcessDefinitionCache.isSuppressed("deletedDefinitionId")).thenReturn(true);
 
     // when
     final List<ImportRequestDto> requests =
@@ -104,8 +99,7 @@ class ProcessInstanceWriterTest {
   void shouldSuppressEntireBatchWhenAllDefinitionsAreDeleted() {
     // given
     final ProcessInstanceDto instanceA = instance("definitionKeyA", "definitionIdA", "instance-1");
-    when(jobRegistryReader.findEntityIdsWithJob(any(), any(), anyCollection()))
-        .thenReturn(Set.of("definitionIdA"));
+    when(deletedProcessDefinitionCache.isSuppressed("definitionIdA")).thenReturn(true);
 
     // when
     final List<ImportRequestDto> requests =
@@ -122,8 +116,7 @@ class ProcessInstanceWriterTest {
     final ProcessInstanceDto suppressed =
         instance("sharedKey", "deletedDefinitionId", "instance-1");
     final ProcessInstanceDto kept = instance("sharedKey", "keptDefinitionId", "instance-2");
-    when(jobRegistryReader.findEntityIdsWithJob(any(), any(), anyCollection()))
-        .thenReturn(Set.of("deletedDefinitionId"));
+    when(deletedProcessDefinitionCache.isSuppressed("deletedDefinitionId")).thenReturn(true);
 
     // when
     final List<ImportRequestDto> requests =
@@ -141,8 +134,7 @@ class ProcessInstanceWriterTest {
     final ProcessInstanceDto suppressed =
         instance("sharedKey", "deletedDefinitionId", "instance-1");
     final ProcessInstanceDto kept = instance("sharedKey", "keptDefinitionId", "instance-2");
-    when(jobRegistryReader.findEntityIdsWithJob(any(), any(), anyCollection()))
-        .thenReturn(Set.of("deletedDefinitionId"));
+    when(deletedProcessDefinitionCache.isSuppressed("deletedDefinitionId")).thenReturn(true);
 
     // when
     final List<ImportRequestDto> requests =
@@ -160,7 +152,7 @@ class ProcessInstanceWriterTest {
     writer.deleteByIds("someDefinitionKey", List.of("instance-1"));
 
     // then
-    verifyNoInteractions(jobRegistryReader);
+    verifyNoInteractions(deletedProcessDefinitionCache);
   }
 
   private ProcessInstanceDto instance(
