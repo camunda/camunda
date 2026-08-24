@@ -13,13 +13,17 @@ public final class DefaultCleanupStrategyFactory implements CleanupStrategyFacto
 
   @Override
   public CleanupStrategy create(final DataDeletionMode dataDeletionMode) {
+    if (dataDeletionMode == null) {
+      return new NoneCleanupStrategy();
+    }
+
     switch (dataDeletionMode) {
       case CLUSTER_PURGE:
         return new ClusterPurgeCleanupStrategy();
       case NONE:
-        return new NoOpCleanupStrategy();
+        return new NoneCleanupStrategy();
       default:
-        return new NoOpCleanupStrategy();
+        return new NoneCleanupStrategy();
     }
   }
 }

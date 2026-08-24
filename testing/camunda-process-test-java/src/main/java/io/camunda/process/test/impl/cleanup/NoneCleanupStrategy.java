@@ -14,9 +14,9 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class NoOpCleanupStrategy implements CleanupStrategy {
+public final class NoneCleanupStrategy implements CleanupStrategy {
 
-  private static final Logger LOG = LoggerFactory.getLogger(NoOpCleanupStrategy.class);
+  private static final Logger LOG = LoggerFactory.getLogger(NoneCleanupStrategy.class);
 
   @Override
   public void cleanup(
