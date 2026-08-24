@@ -280,6 +280,47 @@ class CurrentClusterConfigurationTest {
     }
 
     @Test
+    void shouldKeepEachNodesTargetGroupWhenMigratingWhatIsLeft() {
+      // given — a graph whose nodes name the groups they target, with the first one completed
+      final var builder = OperationGraph.builder();
+      final var first =
+          builder.add(
+              new PartitionJoinOperation(MEMBER_0, 1, 1), Set.of(), Optional.of("tenant-a"));
+      final var second =
+          builder.add(
+              new PartitionJoinOperation(MEMBER_0, 2, 1), Set.of(first), Optional.of("tenant-b"));
+      final var plan =
+          new DependencyChangePlan(
+              4,
+              ClusterChangePlan.Status.IN_PROGRESS,
+              Instant.EPOCH,
+              builder.build(),
+              new TreeMap<>(Map.of(first, Instant.EPOCH)));
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(2)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(plan))
+              .build();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
+
+      // then — the surviving node keeps the group it names. Dropping it would silently retarget the
+      // operation at whichever sub-configuration happens to hold the migrated graph.
+      final var phase =
+          (PartitionGroupPhase) migrated.phasedChangeState().onlyPending().currentPhase();
+      assertThat(
+              phase
+                  .groupGraphs()
+                  .get(CurrentClusterConfiguration.DEFAULT_GROUP)
+                  .operations()
+                  .get(second)
+                  .groupId())
+          .contains("tenant-b");
+    }
+
+    @Test
     void shouldMigrateNoPlanWhenAGraphChangeHasFullyDrained() {
       // given — a graph change with every operation completed but the plan not yet cleared
       final var builder = OperationGraph.builder();

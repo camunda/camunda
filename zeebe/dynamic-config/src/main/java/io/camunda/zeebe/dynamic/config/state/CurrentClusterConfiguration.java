@@ -934,7 +934,9 @@ public record CurrentClusterConfiguration(
               }
               final SortedSet<OperationId> outstanding = new TreeSet<>(planned.dependsOn());
               outstanding.removeIf(plan::isComplete);
-              remaining.put(operationId, new PlannedOperation(planned.operation(), outstanding));
+              remaining.put(
+                  operationId,
+                  new PlannedOperation(planned.operation(), outstanding, planned.groupId()));
             });
     return remaining.isEmpty() ? Optional.empty() : Optional.of(new OperationGraph(remaining));
   }
