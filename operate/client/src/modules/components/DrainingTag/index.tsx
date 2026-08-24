@@ -12,11 +12,22 @@ import {Timer} from '@carbon/react/icons';
 type Props = {
   description: string;
   align?: React.ComponentProps<typeof Tooltip>['align'];
+  className?: string;
 };
 
-const DrainingTag: React.FC<Props> = ({description, align = 'top'}) => (
+const DrainingTag: React.FC<Props> = ({
+  description,
+  align = 'top',
+  className,
+}) => (
   <Tooltip label={description} align={align} autoAlign>
-    <Tag size="md" type="red" renderIcon={Timer} data-testid="draining-tag">
+    <Tag
+      className={className}
+      size="md"
+      type="red"
+      renderIcon={Timer}
+      data-testid="draining-tag"
+    >
       Draining
     </Tag>
   </Tooltip>

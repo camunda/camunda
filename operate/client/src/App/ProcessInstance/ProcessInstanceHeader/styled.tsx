@@ -7,16 +7,15 @@
  */
 
 import {Tag} from '@carbon/react';
+import {DrainingTag as DefaultDrainingTag} from 'modules/components/DrainingTag';
 import styled from 'styled-components';
 
 const VersionTag = styled(Tag)`
   margin-left: 0;
 `;
 
-const HeaderActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--cds-spacing-05);
+const DrainingTag = styled(DefaultDrainingTag)`
+  margin-inline-end: var(--cds-spacing-05);
 `;
 
-export {VersionTag, HeaderActions};
+export {VersionTag, DrainingTag};

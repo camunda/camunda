@@ -16,10 +16,9 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
-import {VersionTag, HeaderActions} from './styled';
+import {VersionTag, DrainingTag} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useDrainingProcessDefinitions} from 'modules/queries/processDefinitions/useDrainingProcessDefinitions';
-import {DrainingTag} from 'modules/components/DrainingTag';
 import {DRAINING_MESSAGES} from 'modules/utils/draining';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
@@ -249,7 +248,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
         },
       ]}
       additionalContent={
-        <HeaderActions>
+        <>
           {isDraining && (
             <DrainingTag
               description={DRAINING_MESSAGES.version}
@@ -260,7 +259,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
             isCollapsed={showReducedContent}
             processInstance={processInstance}
           />
-        </HeaderActions>
+        </>
       }
     />
   );
