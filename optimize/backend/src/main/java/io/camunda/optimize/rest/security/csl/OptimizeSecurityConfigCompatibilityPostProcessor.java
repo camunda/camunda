@@ -281,7 +281,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
           "Optimize left '{}' unused: its OIDC endpoint paths are only known for Keycloak, so CSL"
               + " resolves the endpoints from the issuer by discovery. Set the"
               + " 'camunda.security.authentication.oidc.authorization-uri', 'token-uri',"
-              + " 'jwk-set-uri', 'user-info-uri' and 'end-session-endpoint-uri' explicitly to have"
+              + " 'jwk-set-uri' and 'end-session-endpoint-uri' explicitly to have"
               + " Optimize reach the provider on that URL.",
           IDENTITY_ISSUER_BACKEND_URL);
       return;
@@ -305,9 +305,11 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
         OIDC_PREFIX + "end-session-endpoint-uri", front + "/protocol/openid-connect/logout");
     // Back channel: Optimize calls these itself.
     derived.putIfAbsent(OIDC_PREFIX + "token-uri", back + "/protocol/openid-connect/token");
-    // CSL requests UserInfo during login by default, and Spring skips the call when the endpoint is
-    // unknown, dropping the claims it contributes.
-    derived.putIfAbsent(OIDC_PREFIX + "user-info-uri", back + "/protocol/openid-connect/userinfo");
+    // Deliberately no 'user-info-uri'. CSL builds the registration without a userNameAttributeName,
+    // which Spring's DefaultOAuth2UserService requires as soon as the UserInfo endpoint is known,
+    // so deriving it fails every login with 'missing_user_name_attribute'. Nothing consumes it:
+    // CSL resolves its claims from the ID token, and UserInfo augmentation is off by default and
+    // keys on an issuer-uri this bridge deliberately never derives.
     // The public API's own JWK set URI wins: it belongs to the IdP that signs the API tokens, which
     // need not be the Identity instance behind issuerBackendUrl.
     final String publicApiJwks =
@@ -396,8 +398,8 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
       LOG.warn(
           "Optimize config '{}' is deprecated; migrate to the explicit"
               + " 'camunda.security.authentication.oidc.authorization-uri', 'token-uri',"
-              + " 'jwk-set-uri', 'user-info-uri' and 'end-session-endpoint-uri' — the last two are"
-              + " needed for the UserInfo claims and for RP-initiated logout. Prefer those over"
+              + " 'jwk-set-uri' and 'end-session-endpoint-uri' — the last one is"
+              + " needed for RP-initiated logout. Prefer those over"
               + " 'camunda.security.authentication.oidc.issuer-uri', which makes CSL dial this URL"
               + " for OIDC discovery at startup. Support for the legacy key will be removed in {}.",
           legacyKey,
