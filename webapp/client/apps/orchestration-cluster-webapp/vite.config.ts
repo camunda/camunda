@@ -104,11 +104,11 @@ const config = defineConfig(({mode}) => ({
 		browser: {
 			enabled: true,
 			// A failing browser test is otherwise undiagnosable after the fact: CI keeps no
-			// record of what the page looked like. Traces carry the DOM snapshot and the
-			// action timeline, which is what identifies a userEvent action that hung.
+			// record of what the page looked like. Screenshots cost nothing on the happy
+			// path, unlike Playwright tracing, which snapshots the DOM on every action and
+			// pushed this suite past the job timeout.
 			screenshotFailures: Boolean(process.env['CI']),
 			screenshotDirectory: 'test-artifacts/screenshots',
-			trace: process.env['CI'] ? {mode: 'retain-on-failure', tracesDir: 'test-artifacts/traces'} : 'off',
 			headless: true,
 			viewport: {
 				width: 1280,
