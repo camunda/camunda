@@ -72,6 +72,9 @@ public class MessageSubscriptionEntity
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String inboundConnectorType;
 
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String businessId;
+
   /**
    * @deprecated since 8.9
    */
@@ -275,6 +278,15 @@ public class MessageSubscriptionEntity
     return this;
   }
 
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  public MessageSubscriptionEntity setBusinessId(final String businessId) {
+    this.businessId = businessId;
+    return this;
+  }
+
   /**
    * @deprecated since 8.9
    */
@@ -369,7 +381,8 @@ public class MessageSubscriptionEntity
         toolProperties,
         messageSubscriptionType,
         toolName,
-        inboundConnectorType);
+        inboundConnectorType,
+        businessId);
   }
 
   @Override
@@ -405,6 +418,7 @@ public class MessageSubscriptionEntity
         && Objects.equals(toolProperties, that.toolProperties)
         && Objects.equals(messageSubscriptionType, that.messageSubscriptionType)
         && Objects.equals(toolName, that.toolName)
-        && Objects.equals(inboundConnectorType, that.inboundConnectorType);
+        && Objects.equals(inboundConnectorType, that.inboundConnectorType)
+        && Objects.equals(businessId, that.businessId);
   }
 }
