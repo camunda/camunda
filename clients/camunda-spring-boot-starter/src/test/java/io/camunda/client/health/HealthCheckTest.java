@@ -17,7 +17,6 @@ package io.camunda.client.health;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
@@ -26,15 +25,20 @@ import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.response.StatusResponse;
 import io.grpc.Status;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 final class HealthCheckTest {
+
+  @Mock private CamundaClient camundaClient;
+  @Mock private StatusRequestStep1 statusRequestStep1;
+  @Mock private StatusResponse statusResponse;
 
   @Test
   void shouldReportUpWhenStatusRequestReportsUp() {
     // given
-    final CamundaClient camundaClient = mock(CamundaClient.class);
-    final StatusRequestStep1 statusRequestStep1 = mock(StatusRequestStep1.class);
-    final StatusResponse statusResponse = mock(StatusResponse.class);
     when(camundaClient.newStatusRequest()).thenReturn(statusRequestStep1);
     when(statusRequestStep1.execute()).thenReturn(statusResponse);
     when(statusResponse.getStatus()).thenReturn(StatusResponse.Status.UP);
@@ -50,9 +54,6 @@ final class HealthCheckTest {
   @Test
   void shouldReportDownWhenStatusRequestReportsDown() {
     // given
-    final CamundaClient camundaClient = mock(CamundaClient.class);
-    final StatusRequestStep1 statusRequestStep1 = mock(StatusRequestStep1.class);
-    final StatusResponse statusResponse = mock(StatusResponse.class);
     when(camundaClient.newStatusRequest()).thenReturn(statusRequestStep1);
     when(statusRequestStep1.execute()).thenReturn(statusResponse);
     when(statusResponse.getStatus()).thenReturn(StatusResponse.Status.DOWN);
@@ -68,8 +69,6 @@ final class HealthCheckTest {
   @Test
   void shouldPropagateExceptionWhenStatusRequestFailsWithConnectivityIssue() {
     // given
-    final CamundaClient camundaClient = mock(CamundaClient.class);
-    final StatusRequestStep1 statusRequestStep1 = mock(StatusRequestStep1.class);
     final ClientStatusException failure =
         new ClientStatusException(
             Status.UNAVAILABLE.withDescription("unreachable"), new RuntimeException());
