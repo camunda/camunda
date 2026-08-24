@@ -74,6 +74,23 @@ class AgentInstanceRequestValidatorTest {
       assertThat(result).isPresent();
       assertThat(result.get().getDetail()).isEqualTo("No elementInstanceKey provided.");
     }
+
+    @Test
+    @DisplayName(
+        "Should accept a missing jobKey when no history is provided (enforcement deferred to #60864)")
+    void shouldAcceptMissingJobKeyOnUpdateForNow() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(null)
+              .jobLease(JOB_LEASE)
+              .build();
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isEmpty();
+    }
   }
 
   @Nested
