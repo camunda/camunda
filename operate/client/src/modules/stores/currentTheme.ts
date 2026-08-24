@@ -8,8 +8,7 @@
 
 import {makeAutoObservable} from 'mobx';
 import {tracking} from 'modules/tracking';
-
-import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
+import {getStateLocally} from 'modules/utils/localStorage';
 
 type ThemeType = 'light' | 'dark' | 'system';
 type State = {
@@ -24,7 +23,7 @@ const THEME_NAME = {
   SYSTEM: 'system',
 } as const;
 
-const STORED_THEME: ThemeType = getStateLocally()[STORAGE_KEY];
+const STORED_THEME: ThemeType = getStateLocally(STORAGE_KEY);
 const INITIAL_STATE: State = {
   selectedTheme: Object.values(THEME_NAME).includes(STORED_THEME)
     ? STORED_THEME
@@ -62,9 +61,7 @@ class CurrentTheme {
 
     this.state.selectedTheme = theme;
 
-    storeStateLocally({
-      [STORAGE_KEY]: theme,
-    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(theme));
   };
 
   updateSystemPreference = (theme: 'light' | 'dark') => {
@@ -83,9 +80,7 @@ class CurrentTheme {
     });
 
     this.state.selectedTheme = nextTheme;
-    storeStateLocally({
-      [STORAGE_KEY]: nextTheme,
-    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextTheme));
   };
 
   reset = () => {

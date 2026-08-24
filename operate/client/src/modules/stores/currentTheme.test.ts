@@ -8,12 +8,10 @@
 
 import {currentTheme} from './currentTheme';
 
-import {getStateLocally, clearStateLocally} from 'modules/utils/localStorage';
-
 describe('stores/currentTheme', () => {
-  beforeEach(() => {
+  afterEach(() => {
+    localStorage.clear();
     currentTheme.reset();
-    clearStateLocally();
   });
 
   it('should select the system theme by default', () => {
@@ -26,17 +24,17 @@ describe('stores/currentTheme', () => {
     currentTheme.changeTheme('dark');
 
     expect(currentTheme.state.selectedTheme).toBe('dark');
-    expect(getStateLocally().theme).toBe('dark');
+    expect(localStorage.getItem('theme')).toBe('"dark"');
     expect(currentTheme.theme).toBe('dark');
 
     currentTheme.changeTheme('light');
     expect(currentTheme.state.selectedTheme).toBe('light');
-    expect(getStateLocally().theme).toBe('light');
+    expect(localStorage.getItem('theme')).toBe('"light"');
     expect(currentTheme.theme).toBe('light');
 
     currentTheme.changeTheme('system');
     expect(currentTheme.state.selectedTheme).toBe('system');
-    expect(getStateLocally().theme).toBe('system');
+    expect(localStorage.getItem('theme')).toBe('"system"');
     expect(currentTheme.theme).toBe('light');
   });
 });
