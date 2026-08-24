@@ -137,16 +137,21 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
   test('Suspend active batch operation returns 204 and status becomes SUSPENDED without resume', async ({
     request,
   }) => {
-    const key = await test.step('Create cancel batch operation', async () => {
-      return createCancellationBatch(request, 3, 'batch_suspension_process');
-    });
+    const key =
+      await test.step('Create batch operation and suspend it while active', async () => {
+        // Same scheduler-phase race as the sibling suspend tests: a small batch
+        // (here only 3 instances) is initialized and fully executed within roughly
+        // one ~1s scheduler cycle, so a batch created just before a tick reaches
+        // COMPLETED before the suspend command is processed and the suspend is then
+        // permanently rejected with 404 — no amount of retrying that one suspend can
+        // recover it, which is why racing a single fast-completing batch times out
+        // (seen consistently on the RDBMS backings). createSuspendedBatchOperation
+        // retries the whole create-then-suspend cycle until one batch is caught
+        // active and settles on SUSPENDED (the first suspend returns 204).
+        return createSuspendedBatchOperation(request);
+      });
 
-    await test.step('Send suspend request', async () => {
-      const res = await suspendBatchOperation(request, key);
-      await assertStatusCode(res, 204);
-    });
-
-    await test.step('Poll until batch operation is suspended', async () => {
+    await test.step('Confirm batch operation is suspended', async () => {
       await expectBatchState(request, key, 'SUSPENDED');
     });
   });
