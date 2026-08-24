@@ -50,10 +50,100 @@ class ProcessDefinitionMapperTest {
         .doesNotContain("i.ERROR_MESSAGE IS NULL");
   }
 
+  @Test
+  void shouldRenderOracleEmptyEqualsAsIsNull() throws Exception {
+    // given
+    final var configuration = mapperConfiguration("oracle");
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .errorMessageOperations(Operation.eq(""))
+            .build();
+    final var query = ProcessDefinitionStatisticsDbQuery.of(builder -> builder.filter(filter));
+
+    // when
+    final var sql =
+        configuration
+            .getMappedStatement(FLOW_NODE_STATISTICS_STATEMENT)
+            .getBoundSql(query)
+            .getSql();
+
+    // then
+    assertThat(sql).contains("i.ERROR_MESSAGE IS NULL").doesNotContain("LIKE");
+  }
+
+  @Test
+  void shouldRenderOracleEmptyNotEqualsAsIsNotNull() throws Exception {
+    // given
+    final var configuration = mapperConfiguration("oracle");
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .errorMessageOperations(Operation.neq(""))
+            .build();
+    final var query = ProcessDefinitionStatisticsDbQuery.of(builder -> builder.filter(filter));
+
+    // when
+    final var sql =
+        configuration
+            .getMappedStatement(FLOW_NODE_STATISTICS_STATEMENT)
+            .getBoundSql(query)
+            .getSql();
+
+    // then
+    assertThat(sql).contains("i.ERROR_MESSAGE IS NOT NULL").doesNotContain("LIKE");
+  }
+
+  @Test
+  void shouldRenderOracleNonEmptyEqualsAsLike() throws Exception {
+    // given
+    final var configuration = mapperConfiguration("oracle");
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .errorMessageOperations(Operation.eq("expected error"))
+            .build();
+    final var query = ProcessDefinitionStatisticsDbQuery.of(builder -> builder.filter(filter));
+
+    // when
+    final var sql =
+        configuration
+            .getMappedStatement(FLOW_NODE_STATISTICS_STATEMENT)
+            .getBoundSql(query)
+            .getSql();
+
+    // then
+    assertThat(sql).contains("LOWER(i.ERROR_MESSAGE) LIKE LOWER(").contains("ESCAPE");
+  }
+
+  @Test
+  void shouldRenderEqualsAsCaseInsensitiveLike() throws Exception {
+    // given
+    final var configuration = mapperConfiguration();
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .errorMessageOperations(Operation.eq("Expected Error"))
+            .build();
+    final var query = ProcessDefinitionStatisticsDbQuery.of(builder -> builder.filter(filter));
+
+    // when
+    final var sql =
+        configuration
+            .getMappedStatement(FLOW_NODE_STATISTICS_STATEMENT)
+            .getBoundSql(query)
+            .getSql();
+
+    // then
+    assertThat(sql).contains("LOWER(i.ERROR_MESSAGE) LIKE LOWER(").contains("ESCAPE");
+  }
+
   private Configuration mapperConfiguration() throws Exception {
+    return mapperConfiguration(null);
+  }
+
+  private Configuration mapperConfiguration(final String databaseId) throws Exception {
     final var configuration = new Configuration();
+    configuration.setDatabaseId(databaseId);
     final var properties = new Properties();
     properties.setProperty("prefix", "");
+    properties.setProperty("escapeChar", "'\\\\'");
     configuration.setVariables(properties);
 
     final var mapperFiles =
