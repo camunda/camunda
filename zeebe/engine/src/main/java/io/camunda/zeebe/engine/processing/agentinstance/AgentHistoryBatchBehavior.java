@@ -67,12 +67,12 @@ public final class AgentHistoryBatchBehavior {
   static final String ERROR_MSG_JOB_REQUIRED_FOR_HISTORY =
       "Expected a job to be provided for the embedded history batch, but no jobKey was set."
           + " A history batch must be attributed to the active job that produced it.";
-  private static final String ERROR_MSG_UNKNOWN_ATTRIBUTES =
-      "Expected to update agent instance configuration with history item '%s',"
-          + " but changedAttributes contained unknown attribute(s) %s. Allowed attributes are: %s.";
   static final String ERROR_MSG_DUPLICATE_HISTORY_ITEM_ID_IN_REQUEST =
       "Expected to update agent instance, but historyItemId '%s' is used by more than one history "
           + "item. Each history item must have a unique historyItemId.";
+  private static final String ERROR_MSG_UNKNOWN_ATTRIBUTES =
+      "Expected to update agent instance configuration with history item '%s',"
+          + " but changedAttributes contained unknown attribute(s) %s. Allowed attributes are: %s.";
 
   private final KeyGenerator keyGenerator;
   private final ProcessingState processingState;
