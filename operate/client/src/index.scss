@@ -59,6 +59,8 @@ body,
     min-width: 0;
     --operate-card-border-radius: 0.75rem;
     --operate-input-border-radius: 0.5rem;
+    --operate-button-border-radius: 0.5rem;
+    --operate-checkbox-border-radius: 0.25rem;
 
     .cds--text-input,
     .cds--text-area,
@@ -67,13 +69,96 @@ body,
     .cds--select-input,
     .cds--date-picker__input,
     .cds--number input[type='number'] {
-      border: 1px solid var(--cds-border-subtle-01);
+      border: 1px solid var(--cds-border-subtle-02);
+      border-radius: var(--operate-input-border-radius);
+      background-color: var(--cds-field-01);
+    }
+
+    .cds--list-box .cds--text-input {
+      border: none;
+      background-color: transparent;
+    }
+
+    .cds--list-box__field,
+    .cds--list-box__field--wrapper {
+      border-radius: var(--operate-input-border-radius);
+    }
+
+    .cds--list-box__menu {
+      border-radius: var(--operate-input-border-radius);
+      background-color: var(--cds-layer-01);
+      overflow: hidden auto;
+    }
+
+    .cds--overflow-menu-options__btn {
       border-radius: var(--operate-input-border-radius);
     }
 
     .cds--search-close {
       border-radius: 0 var(--operate-input-border-radius)
         var(--operate-input-border-radius) 0;
+    }
+
+    .cds--checkbox-label::before {
+      border-radius: var(--operate-checkbox-border-radius);
+      border-color: var(--cds-border-subtle-02);
+    }
+
+    .cds--btn {
+      border-radius: var(--operate-button-border-radius);
+      justify-content: center;
+      text-align: center;
+      padding-inline: var(--cds-layout-density-padding-inline-local);
+    }
+
+    .cds--btn--primary:not(:disabled):not(.cds--btn--disabled) {
+      background-color: var(--cds-text-primary);
+      border-color: var(--cds-text-primary);
+      color: var(--cds-background);
+
+      &:hover {
+        background-color: color-mix(
+          in srgb,
+          var(--cds-text-primary) 85%,
+          var(--cds-background)
+        );
+        border-color: color-mix(
+          in srgb,
+          var(--cds-text-primary) 85%,
+          var(--cds-background)
+        );
+        color: var(--cds-background);
+      }
+
+      &:active {
+        background-color: color-mix(
+          in srgb,
+          var(--cds-text-primary) 70%,
+          var(--cds-background)
+        );
+        border-color: color-mix(
+          in srgb,
+          var(--cds-text-primary) 70%,
+          var(--cds-background)
+        );
+      }
+    }
+
+    .cds--btn--secondary:not(:disabled):not(.cds--btn--disabled),
+    .cds--btn--tertiary:not(:disabled):not(.cds--btn--disabled) {
+      background-color: var(--cds-field-01);
+      border-color: var(--cds-border-subtle-01);
+      color: var(--cds-text-primary);
+
+      &:hover {
+        background-color: var(--cds-background-hover);
+        border-color: var(--cds-border-subtle-01);
+        color: var(--cds-text-primary);
+      }
+    }
+
+    .cds--btn--ghost:not(:disabled):not(.cds--btn--disabled) {
+      color: var(--cds-text-primary);
     }
   }
 }
