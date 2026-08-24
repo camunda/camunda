@@ -129,9 +129,10 @@ public class BusinessValueOverviewComputeService {
       throw new IllegalArgumentException("ranges must not be null or empty");
     }
 
-    // Guarded here rather than at the call sites so every caller is covered — the scheduler tick,
-    // the stale-read backstop, and whatever calls in next — and so flipping the flag takes effect
-    // on the next invocation without a restart, which is the point of having it during an incident.
+    // Guarded here rather than at the call sites so every caller is covered: the scheduler tick,
+    // the stale-read backstop, and whatever calls in next. Note the flag is read from configuration
+    // that is parsed once at startup — ConfigurationReloadable is only driven by test
+    // infrastructure — so changing it requires restarting Optimize.
     if (!configurationService.getBusinessValueConfiguration().isOverviewComputeEnabled()) {
       LOG.info(
           "Business-value overview compute is disabled by configuration; skipping. "

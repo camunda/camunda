@@ -10,8 +10,8 @@ package io.camunda.optimize.service.businessvalue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.dto.optimize.DefinitionType;
@@ -33,6 +33,8 @@ import io.camunda.optimize.service.db.report.PlainReportEvaluationHandler;
 import io.camunda.optimize.service.db.report.ReportEvaluationInfo;
 import io.camunda.optimize.service.db.report.result.MapCommandResult;
 import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
+import io.camunda.optimize.service.db.repository.MappingMetadataRepository;
+import io.camunda.optimize.service.db.repository.SearchLimitsRepository;
 import io.camunda.optimize.service.db.writer.BusinessValueOverviewWriter;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.configuration.BusinessValueConfiguration;
@@ -54,23 +56,32 @@ class BusinessValueOverviewComputeKillSwitchTest {
 
   private BusinessValueOverviewWriter overviewWriter;
   private PlainReportEvaluationHandler reportEvaluationHandler;
+  private BusinessValueTargetRepository targetRepository;
+  private DefinitionService definitionService;
+  private MappingMetadataRepository mappingMetadataRepository;
+  private SearchLimitsRepository searchLimitsRepository;
   private BusinessValueConfiguration businessValueConfiguration;
   private BusinessValueOverviewComputeService computeService;
 
   @BeforeEach
   void setUp() {
-    final BusinessValueTargetRepository targetRepository =
-        mock(BusinessValueTargetRepository.class);
+    targetRepository = mock(BusinessValueTargetRepository.class);
     overviewWriter = mock(BusinessValueOverviewWriter.class);
-    final DefinitionService definitionService = mock(DefinitionService.class);
+    definitionService = mock(DefinitionService.class);
     final ReportService reportService = mock(ReportService.class);
     reportEvaluationHandler = mock(PlainReportEvaluationHandler.class);
     final ConfigurationService configurationService = mock(ConfigurationService.class);
+    mappingMetadataRepository = mock(MappingMetadataRepository.class);
+    searchLimitsRepository = mock(SearchLimitsRepository.class);
     businessValueConfiguration = new BusinessValueConfiguration();
 
     when(configurationService.getBusinessValueConfiguration())
         .thenReturn(businessValueConfiguration);
     when(targetRepository.scanAll()).thenReturn(List.of());
+    when(mappingMetadataRepository.getProcessDefinitionKeysWithInstanceIndex())
+        .thenReturn(java.util.Set.of("invoice-process"));
+    when(searchLimitsRepository.aggregationBucketLimit()).thenReturn(1000);
+    when(searchLimitsRepository.indexNamePrefix()).thenReturn("optimize");
     when(reportService.getReportDefinition(anyString())).thenAnswer(invocation -> seededReport());
     when(reportEvaluationHandler.evaluateReport(any(ReportEvaluationInfo.class)))
         .thenAnswer(invocation -> emptyEvaluationResult());
@@ -92,6 +103,8 @@ class BusinessValueOverviewComputeKillSwitchTest {
             definitionService,
             reportService,
             reportEvaluationHandler,
+            mappingMetadataRepository,
+            searchLimitsRepository,
             configurationService);
   }
 
@@ -126,10 +139,17 @@ class BusinessValueOverviewComputeKillSwitchTest {
     // when a tick fires
     computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
 
-    // then no report is evaluated and no row is written — a switch that returned early but still
-    // queried would not relieve the load it exists to relieve
-    verify(reportEvaluationHandler, never()).evaluateReport(any(ReportEvaluationInfo.class));
-    verify(overviewWriter, never()).bulkUpsertFromScheduler(any());
+    // then nothing the sweep would have done happens. Asserting only on evaluation and the write
+    // would leave the rest of the sweep untested — the definition scan, the target scan and the
+    // instance-index lookup are all database round trips this switch exists to stop, and each one
+    // sits before a chunk is ever built.
+    verifyNoInteractions(
+        reportEvaluationHandler,
+        overviewWriter,
+        definitionService,
+        targetRepository,
+        mappingMetadataRepository,
+        searchLimitsRepository);
   }
 
   @Test

@@ -43,6 +43,8 @@ import io.camunda.optimize.service.db.repository.MappingMetadataRepository;
 import io.camunda.optimize.service.db.repository.SearchLimitsRepository;
 import io.camunda.optimize.service.db.writer.BusinessValueOverviewWriter;
 import io.camunda.optimize.service.report.ReportService;
+import io.camunda.optimize.service.util.configuration.BusinessValueConfiguration;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -117,7 +119,8 @@ class BusinessValueOverviewComputeServiceTest {
             reportService,
             reportEvaluationHandler,
             mappingMetadataRepository,
-            searchLimitsWithBucketLimit(1000));
+            searchLimitsWithBucketLimit(1000),
+            enabledConfiguration());
   }
 
   private void stubEvaluation() {
@@ -514,15 +517,7 @@ class BusinessValueOverviewComputeServiceTest {
   @Test
   void shouldChunkBelowALoweredAggregationBucketLimit() {
     // given a bucket limit smaller than the default chunk size
-    computeService =
-        new BusinessValueOverviewComputeService(
-            targetRepository,
-            overviewWriter,
-            definitionService,
-            reportService,
-            reportEvaluationHandler,
-            mappingMetadataRepository,
-            searchLimitsWithBucketLimit(10));
+    computeService = computeServiceWith(searchLimitsWithBucketLimit(10));
     givenDefinitions(DEFAULT_TENANT, 20);
 
     // when computing a single range
@@ -542,7 +537,8 @@ class BusinessValueOverviewComputeServiceTest {
         reportService,
         reportEvaluationHandler,
         mappingMetadataRepository,
-        searchLimits);
+        searchLimits,
+        enabledConfiguration());
   }
 
   /** The definition keys pinned onto each evaluation, in invocation order. */
@@ -669,6 +665,14 @@ class BusinessValueOverviewComputeServiceTest {
       return definition.getTenantIds().stream().findFirst().map(valuesByTenant::get).orElse(null);
     }
     return stubbedValuesByKey.get(definition.getKey());
+  }
+
+  /** The sweep is enabled unless a deployment turns it off; these tests all assume it is on. */
+  private static ConfigurationService enabledConfiguration() {
+    final ConfigurationService configurationService = mock(ConfigurationService.class);
+    when(configurationService.getBusinessValueConfiguration())
+        .thenReturn(new BusinessValueConfiguration());
+    return configurationService;
   }
 
   private static SearchLimitsRepository searchLimitsWithBucketLimit(final int bucketLimit) {
