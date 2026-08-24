@@ -103,10 +103,6 @@ const config = defineConfig(({mode}) => ({
 		outputFile: process.env['CI'] ? {junit: 'TEST-unit.xml'} : undefined,
 		browser: {
 			enabled: true,
-			// A failing browser test is otherwise undiagnosable after the fact: CI keeps no
-			// record of what the page looked like. Screenshots cost nothing on the happy
-			// path, unlike Playwright tracing, which snapshots the DOM on every action and
-			// pushed this suite past the job timeout.
 			screenshotFailures: Boolean(process.env['CI']),
 			screenshotDirectory: 'test-artifacts/screenshots',
 			headless: true,
@@ -114,10 +110,7 @@ const config = defineConfig(({mode}) => ({
 				width: 1280,
 				height: 720,
 			},
-			// Playwright waits forever for an unactionable element by default, so a hung
-			// userEvent surfaces only as a bare "test timed out" with no locator named.
-			// Expire below the test timeout so the action reports which element it gave up on.
-			provider: playwright({actionTimeout: 10_000}),
+			provider: playwright(),
 			instances: [
 				{
 					browser: 'chromium',
