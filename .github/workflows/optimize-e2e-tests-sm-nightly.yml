@@ -68,7 +68,6 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
-          harbor: true
           maven-cache-key-modifier: optimize-e2e-nightly
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
