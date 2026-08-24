@@ -10,7 +10,6 @@ package io.camunda.optimize;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,7 +45,6 @@ public class OptimizeTomcatConfigTest {
   public void shouldAddConnectorsForHttpAndHttps() {
     // when
     when(environment.getProperty(anyString())).thenReturn("property");
-    givenCslDisabled();
     when(environment.getProperty(EnvironmentPropertiesConstants.HTTP_PORT_KEY)).thenReturn("8090");
     when(environment.getProperty(EnvironmentPropertiesConstants.HTTPS_PORT_KEY)).thenReturn("8091");
 
@@ -75,7 +73,6 @@ public class OptimizeTomcatConfigTest {
   public void shouldNotAddConnectorForEmptyHttpPort() {
     // when
     when(environment.getProperty(anyString())).thenReturn("property");
-    givenCslDisabled();
     when(environment.getProperty(EnvironmentPropertiesConstants.HTTP_PORT_KEY)).thenReturn("");
     when(environment.getProperty(EnvironmentPropertiesConstants.HTTPS_PORT_KEY)).thenReturn("8091");
 
@@ -127,12 +124,5 @@ public class OptimizeTomcatConfigTest {
     when(environment.getProperty(httpPortKey)).thenReturn("");
     // then
     assertThat(optimizeTomcatConfig.getPort(httpPortKey)).isEqualTo(-1);
-  }
-
-  /** customize() reads the CSL flag to decide on the readiness rewrite valve. */
-  private void givenCslDisabled() {
-    lenient()
-        .when(environment.getProperty("optimize.security.csl.enabled", Boolean.class, true))
-        .thenReturn(false);
   }
 }
