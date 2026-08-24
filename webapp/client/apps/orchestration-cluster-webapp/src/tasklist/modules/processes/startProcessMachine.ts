@@ -9,6 +9,7 @@
 import {t} from 'i18next';
 import {assign, fromPromise, setup, type SnapshotFrom} from 'xstate';
 import type {useNavigate} from '@tanstack/react-router';
+import {toast} from '@camunda/design-system';
 import type {
 	CreateProcessInstanceResponseBody,
 	ProcessDefinition,
@@ -57,6 +58,46 @@ type StartProcessEvent = {
 
 type StartProcessStatusTag =
 	'status:starting' | 'status:waiting_for_tasks' | 'status:start_succeeded' | 'status:start_failed';
+
+type NotifyOptions = {
+	kind: 'success' | 'error';
+	title: string;
+	subtitle?: string;
+	isDismissable?: boolean;
+	isActionable?: boolean;
+	actionButtonLabel?: string;
+	onActionButtonClick?: () => void;
+};
+
+// The processes/task-detail routes exist in parallel under both the Carbon
+// and shadcn route trees (see ProcessesRoute above) with this machine shared
+// between them, so notifications route the same way: the Carbon tree keeps
+// going through notificationsStore's own renderer, the shadcn tree through
+// the design system's toast (mounted by src/routes/shadcn/route.tsx).
+function notify(processesRoute: ProcessesRoute, options: NotifyOptions) {
+	const {kind, title, subtitle, isDismissable = true, isActionable, actionButtonLabel, onActionButtonClick} = options;
+
+	if (processesRoute.startsWith('/shadcn')) {
+		toast[kind](title, {
+			description: subtitle,
+			action:
+				isActionable === true && actionButtonLabel !== undefined && onActionButtonClick !== undefined
+					? {label: actionButtonLabel, onClick: onActionButtonClick}
+					: undefined,
+		});
+		return;
+	}
+
+	notificationsStore.displayNotification({
+		kind,
+		title,
+		subtitle,
+		isDismissable,
+		isActionable,
+		actionButtonLabel,
+		onActionButtonClick,
+	});
+}
 
 function getStartProcessFailureReason(error: unknown): StartProcessFailureReason {
 	const result = requestErrorSchema.safeParse(error);
@@ -155,8 +196,8 @@ const startProcessMachine = setup({
 		setFailureReason: assign((_, params: {error: unknown}) => ({
 			failureReason: getStartProcessFailureReason(params.error),
 		})),
-		notifySuccess: () => {
-			notificationsStore.displayNotification({
+		notifySuccess: ({context}) => {
+			notify(context.processesRoute, {
 				kind: 'success',
 				title: t('tasklist.processesStartProcessNotificationSuccess'),
 				isDismissable: true,
@@ -170,7 +211,7 @@ const startProcessMachine = setup({
 			}
 
 			if (context.failureReason === 'forbidden') {
-				notificationsStore.displayNotification({
+				notify(context.processesRoute, {
 					kind: 'error',
 					title: t('tasklist.processesStartProcessFailed'),
 					subtitle: t('tasklist.taskActionForbidden'),
@@ -179,7 +220,7 @@ const startProcessMachine = setup({
 				return;
 			}
 
-			notificationsStore.displayNotification({
+			notify(context.processesRoute, {
 				kind: 'error',
 				title:
 					getClientConfig().deployment.isMultiTenancyEnabled && process.tenantId === undefined
@@ -191,7 +232,7 @@ const startProcessMachine = setup({
 		},
 		notifyNewTasks: ({context}) => {
 			context.tasks.forEach(({elementId, name, processDefinitionId, processName, userTaskKey}) => {
-				notificationsStore.displayNotification({
+				notify(context.processesRoute, {
 					kind: 'success',
 					title: t('tasklist.processesNewTaskNotification', {
 						processName: processName ?? processDefinitionId,
