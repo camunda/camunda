@@ -11,6 +11,7 @@ import static io.camunda.application.commons.condition.ConditionalOnAnyHttpGatew
 
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.broker.Broker;
@@ -18,6 +19,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.health.contributor.HealthContributor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -51,5 +53,20 @@ public class SearchEngineDatabaseConfiguration {
         physicalTenantScopedIndexDescriptors,
         meterRegistry,
         isAnyHttpGatewayEnabled(environment));
+  }
+
+  /**
+   * Reports the search engine's cluster health for operators, deliberately outside every probe
+   * group: a cluster that turns red after startup is worth seeing on {@code /actuator/health}, but
+   * not worth taking the node out of rotation or restarting it for, which is what the removed
+   * Operate and Tasklist indicators used to do.
+   */
+  @Bean
+  public HealthContributor searchEngineStatusHealthIndicator(
+      final SearchClients searchClients,
+      @Qualifier("searchEngineConfigurationsByTenant")
+          final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant) {
+    return SearchEngineStatusHealthIndicator.forPhysicalTenants(
+        searchClients, searchEngineConfigurationsByTenant);
   }
 }
