@@ -178,7 +178,7 @@ const SortableTable = <
                       <ColumnHeader
                         {...props}
                         key={key}
-                        data-column-key={header.key}
+                        columnKey={header.key}
                         label={header.header}
                         sortKey={headerColumns[index]?.sortKey ?? header.key}
                         isDefault={headerColumns[index]?.isDefault}

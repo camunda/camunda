@@ -13,7 +13,7 @@ const Container = styled.section`
   display: flex;
   flex-direction: column;
 
-  th[data-column-key='operations'] {
+  th.sortable-table-column-operations {
     text-align: center;
 
     .cds--table-header-label {
