@@ -7,12 +7,6 @@
  */
 
 import { FC, ReactNode } from "react";
-import {
-  Loading,
-  StructuredListBody,
-  StructuredListRow,
-  StructuredListWrapper,
-} from "@carbon/react";
 import { Cell, HeadCell } from "./components";
 import Skeleton from "./Skeleton";
 
@@ -33,22 +27,22 @@ const EntityDetail: FC<EntityDetailProps> = ({
   const entries = data.length;
   const isDataMissing = data.some(({ value }) => !value);
 
-  return loading && isDataMissing ? (
-    <Skeleton entries={entries} />
-  ) : (
-    <StructuredListWrapper aria-label={listLabel}>
-      {loading && <Loading />}
-      <StructuredListBody>
-        {data?.map(({ label, value }, idx) => (
-          <StructuredListRow key={`${label}-${idx}`}>
-            <HeadCell head noWrap>
-              {label}
-            </HeadCell>
-            <Cell>{value}</Cell>
-          </StructuredListRow>
-        ))}
-      </StructuredListBody>
-    </StructuredListWrapper>
+  if (loading || isDataMissing) {
+    return <Skeleton entries={entries} />;
+  }
+
+  return (
+    <dl aria-label={listLabel} className="m-0 flex flex-col">
+      {data?.map(({ label, value }, idx) => (
+        <div
+          key={`${label}-${idx}`}
+          className="flex gap-4 py-3 shadow-[inset_0_-1px_0_var(--border)]"
+        >
+          <HeadCell>{label}</HeadCell>
+          <Cell>{value}</Cell>
+        </div>
+      ))}
+    </dl>
   );
 };
 
