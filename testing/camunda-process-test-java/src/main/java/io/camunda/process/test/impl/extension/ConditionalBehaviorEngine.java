@@ -25,6 +25,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -201,6 +202,7 @@ public class ConditionalBehaviorEngine {
     private final AtomicInteger actionIndex = new AtomicInteger(0);
     private final AtomicInteger fireCount = new AtomicInteger(0);
     private final AtomicInteger failureCount = new AtomicInteger(0);
+    private final AtomicLong nextAllowedFireTimeMillis = new AtomicLong(0);
     private volatile String name;
 
     ConditionalBehavior(final BehaviorCondition condition, final String defaultName) {
@@ -213,6 +215,9 @@ public class ConditionalBehaviorEngine {
     }
 
     void evaluate() {
+      if (System.currentTimeMillis() < nextAllowedFireTimeMillis.get()) {
+        return;
+      }
       if (isConditionMet()) {
         LOGGER.trace("Condition met for '{}', firing action at index {}", name, actionIndex.get());
         if (fireAction()) {
@@ -261,9 +266,20 @@ public class ConditionalBehaviorEngine {
       final Runnable action = actions.get(clampToLastAction(actionIndex.get()));
       try {
         action.run();
+        failureCount.set(0);
       } catch (final Throwable t) {
-        failureCount.incrementAndGet();
-        LOGGER.warn("Behavior '{}' action threw an exception, will retry", name, t);
+        final int failures = failureCount.incrementAndGet();
+        final long backoffMillis =
+            Math.min(
+                resetTimeout.toMillis(),
+                pollInterval.toMillis() * Math.min(32, (1L << Math.min(failures, 6))));
+        nextAllowedFireTimeMillis.set(System.currentTimeMillis() + backoffMillis);
+        LOGGER.warn(
+            "Behavior '{}' action threw an exception (attempt {}), backoff for {}ms: {}",
+            name,
+            failures,
+            backoffMillis,
+            t.getMessage());
         return false;
       }
       actionIndex.set(clampToLastAction(actionIndex.get() + 1));

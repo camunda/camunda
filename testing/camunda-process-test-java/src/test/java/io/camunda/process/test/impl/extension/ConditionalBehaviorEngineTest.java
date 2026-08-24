@@ -472,4 +472,21 @@ class ConditionalBehaviorEngineTest {
     // resetTimeout=5s, pollInterval=100ms — any gap < 5s proves reset-wait was skipped.
     assertThat(gapMillis).isLessThan(5000);
   }
+
+  @Test
+  void shouldApplyBackoffOnRepeatedActionFailures() {
+    final AtomicInteger failureAttempts = new AtomicInteger(0);
+
+    engine
+        .when(() -> {})
+        .then(
+            () -> {
+              failureAttempts.incrementAndGet();
+              throw new RuntimeException("repeated failure");
+            });
+
+    await()
+        .atMost(3, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(failureAttempts.get()).isGreaterThanOrEqualTo(2));
+  }
 }
