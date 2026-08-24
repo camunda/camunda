@@ -18,14 +18,15 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 /**
- * Verifies that {@link Gateway#applyMaxConnectionAge(NettyServerBuilder, NetworkCfg)} only
- * configures grpc-java's server-side {@code maxConnectionAge}/{@code maxConnectionAgeGrace} when
- * explicitly enabled, leaving grpc-java's own defaults untouched otherwise.
+ * Verifies that {@link Gateway#applyMaxConnectionAge(NettyServerBuilder, NetworkCfg)} configures
+ * grpc-java's server-side {@code maxConnectionAge}/{@code maxConnectionAgeGrace} using {@link
+ * NetworkCfg}'s defaults, and only skips doing so when explicitly disabled via {@code null} or a
+ * non-positive duration, leaving grpc-java's own defaults untouched in that case.
  */
 final class GatewayNetworkConfigTest {
 
   @Test
-  void shouldNotConfigureMaxConnectionAgeWhenDisabledByDefault() {
+  void shouldConfigureMaxConnectionAgeAndGraceByDefault() {
     // given
     final var cfg = new NetworkCfg();
     final var serverBuilder = mock(NettyServerBuilder.class);
@@ -34,7 +35,10 @@ final class GatewayNetworkConfigTest {
     Gateway.applyMaxConnectionAge(serverBuilder, cfg);
 
     // then
-    verifyNoInteractions(serverBuilder);
+    verify(serverBuilder)
+        .maxConnectionAge(cfg.getMaxConnectionAge().toMillis(), TimeUnit.MILLISECONDS);
+    verify(serverBuilder)
+        .maxConnectionAgeGrace(cfg.getMaxConnectionAgeGrace().toMillis(), TimeUnit.MILLISECONDS);
   }
 
   @Test
@@ -85,10 +89,11 @@ final class GatewayNetworkConfigTest {
   }
 
   @Test
-  void shouldConfigureMaxConnectionAgeWithoutGraceWhenGraceNotSet() {
+  void shouldConfigureMaxConnectionAgeWithoutGraceWhenGraceExplicitlyNull() {
     // given
     final var maxConnectionAge = Duration.ofMinutes(30);
-    final var cfg = new NetworkCfg().setMaxConnectionAge(maxConnectionAge);
+    final var cfg =
+        new NetworkCfg().setMaxConnectionAge(maxConnectionAge).setMaxConnectionAgeGrace(null);
     final var serverBuilder = mock(NettyServerBuilder.class);
 
     // when

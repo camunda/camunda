@@ -60,18 +60,18 @@ public class Grpc implements Cloneable {
 
   /**
    * Sets the maximum age of a gRPC connection before the gateway proactively closes it (via
-   * GOAWAY), forcing the client to reconnect. Defaults to unset, i.e. disabled, keeping grpc-java's
-   * own default of an unbounded connection age.
+   * GOAWAY), forcing the client to reconnect. Defaults to 5 minutes. Set to unset to disable,
+   * keeping grpc-java's own default of an unbounded connection age.
    */
-  private @Nullable Duration maxConnectionAge;
+  private @Nullable Duration maxConnectionAge = Duration.ofMinutes(5);
 
   /**
    * Sets the grace period, after the maximum connection age elapses, during which existing calls on
    * the connection may finish before it is forcibly terminated. Only takes effect when the maximum
-   * connection age is set. Defaults to unset, i.e. disabled, keeping grpc-java's own default of an
-   * infinite grace period.
+   * connection age is set. Defaults to 1 minute. Set to unset to disable, keeping grpc-java's own
+   * default of an infinite grace period.
    */
-  private @Nullable Duration maxConnectionAgeGrace;
+  private @Nullable Duration maxConnectionAgeGrace = Duration.ofMinutes(1);
 
   public String getAddress() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
