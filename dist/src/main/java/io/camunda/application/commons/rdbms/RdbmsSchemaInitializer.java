@@ -62,6 +62,10 @@ import org.springframework.beans.factory.InitializingBean;
 public class RdbmsSchemaInitializer
     implements InitializingBean, DisposableBean, RdbmsSchemaManagerRegistry {
 
+  static final Duration MIN_RETRY_DELAY = Duration.ofMillis(500);
+  static final Duration MAX_RETRY_DELAY = Duration.ofSeconds(10);
+  static final int MAX_RETRIES = Integer.MAX_VALUE;
+
   /**
    * The backoff a degraded tenant retries on, deliberately not configurable: what a degraded node
    * needs is to keep retrying, no deployment has asked to tune that, and a property surface is
@@ -227,9 +231,9 @@ public class RdbmsSchemaInitializer
 
   private static RetryConfiguration unboundedRetry() {
     final var retry = new RetryConfiguration();
-    retry.setMaxRetries(Integer.MAX_VALUE);
-    retry.setMinRetryDelay(Duration.ofMillis(500));
-    retry.setMaxRetryDelay(Duration.ofSeconds(10));
+    retry.setMaxRetries(MAX_RETRIES);
+    retry.setMinRetryDelay(MIN_RETRY_DELAY);
+    retry.setMaxRetryDelay(MAX_RETRY_DELAY);
     return retry;
   }
 
