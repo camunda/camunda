@@ -34,7 +34,7 @@
         <!-- For testing Spring Boot 4.1 compatibility. Spring Boot 4.1.0 manages Spring
              Framework 7.0.8 (same as the default Spring Boot 4.0.x), so version.spring is left
              at the inherited default; only the Spring Boot version is overridden here. -->
-        <version.spring-boot>4.1.0</version.spring-boot>
+        <version.spring-boot>4.1.1</version.spring-boot>
       </properties>
     </profile>
   </profiles>
