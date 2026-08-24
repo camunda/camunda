@@ -141,6 +141,7 @@ final class MessageSubscriptionExportHandlerTest {
     final String tenantId = "tenant-1";
     final String processName = "Process One";
     final int processVersion = 2;
+    final String businessId = "order-100";
     final Map<String, String> extProps =
         Map.of("io.camunda.tool:name", "myTool", "inbound.type", "io.camunda:http-webhook:1");
 
@@ -155,6 +156,7 @@ final class MessageSubscriptionExportHandlerTest {
             .withRootProcessInstanceKey(rootProcessInstanceKey)
             .withElementInstanceKey(flowNodeInstanceKey)
             .withTenantId(tenantId)
+            .withBusinessId(businessId)
             .build();
 
     final Record<ProcessMessageSubscriptionRecordValue> record =
@@ -191,6 +193,7 @@ final class MessageSubscriptionExportHandlerTest {
     assertThat(model.messageSubscriptionType()).isEqualTo(MessageSubscriptionType.PROCESS_EVENT);
     assertThat(model.messageName()).isEqualTo(messageName);
     assertThat(model.correlationKey()).isEqualTo(correlationKey);
+    assertThat(model.businessId()).isEqualTo(businessId);
     assertThat(model.tenantId()).isEqualTo(tenantId);
     assertThat(model.partitionId()).isEqualTo(partitionId);
     assertThat(model.dateTime())
@@ -250,5 +253,37 @@ final class MessageSubscriptionExportHandlerTest {
     assertThat(model.toolProperties()).isEqualTo(Map.of());
     assertThat(model.toolName()).isNull();
     assertThat(model.inboundConnectorType()).isNull();
+  }
+
+  @Test
+  void shouldMapEmptyBusinessIdToNull() {
+    // given
+    final long pdKey = 300L;
+    final var recordValue =
+        ImmutableProcessMessageSubscriptionRecordValue.builder()
+            .withProcessDefinitionKey(pdKey)
+            .withBpmnProcessId("proc")
+            .withElementId("catch")
+            .withMessageName("msg")
+            .withCorrelationKey("key")
+            .withProcessInstanceKey(1L)
+            .withRootProcessInstanceKey(1L)
+            .withElementInstanceKey(2L)
+            .withBusinessId("")
+            .withVariables(Map.of())
+            .build();
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CREATED).withValue(recordValue));
+    when(processCache.get(pdKey)).thenReturn(Optional.empty());
+
+    // when
+    underTest.export(record);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(MessageSubscriptionDbModel.class);
+    verify(writer).create(captor.capture());
+    assertThat(captor.getValue().businessId()).isNull();
   }
 }
