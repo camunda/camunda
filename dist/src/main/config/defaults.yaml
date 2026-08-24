@@ -17,6 +17,15 @@ camunda: # Type: io.camunda.configuration.Camunda
       interceptors: null # Type: List<io.camunda.configuration.Interceptor>, Env: CAMUNDA_API_GRPC_INTERCEPTORS
       # Sets the number of threads the gateway will use to communicate with the broker cluster
       management-threads: null # Type: Integer, Env: CAMUNDA_API_GRPC_MANAGEMENTTHREADS
+      # Sets the maximum age of a gRPC connection before the gateway proactively closes it (via GOAWAY),
+      # forcing the client to reconnect. Defaults to {@link Duration#ZERO}, i.e. disabled, keeping
+      # grpc-java's own default of an unbounded connection age.
+      max-connection-age: 0 # Type: Duration, Env: CAMUNDA_API_GRPC_MAXCONNECTIONAGE
+      # Sets the grace period, after {@link #maxConnectionAge} elapses, during which existing calls on the
+      # connection may finish before it is forcibly terminated. Only takes effect when {@link
+      # #maxConnectionAge} is set. Defaults to {@link Duration#ZERO}, i.e. disabled, keeping grpc-java's own
+      # default of an infinite grace period.
+      max-connection-age-grace: 0 # Type: Duration, Env: CAMUNDA_API_GRPC_MAXCONNECTIONAGEGRACE
       # Sets the minimum keep alive interval. This setting specifies the minimum accepted interval between
       # keep alive pings. This value must be specified as a positive integer followed by 's' for seconds,
       # 'm' for minutes or 'h' for hours.

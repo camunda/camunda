@@ -447,6 +447,8 @@ public class BrokerBasedPropertiesOverride {
     networkCfg.setHost(grpc.getAddress());
     networkCfg.setPort(grpc.getPort());
     networkCfg.setMinKeepAliveInterval(grpc.getMinKeepAliveInterval());
+    networkCfg.setMaxConnectionAge(grpc.getMaxConnectionAge());
+    networkCfg.setMaxConnectionAgeGrace(grpc.getMaxConnectionAgeGrace());
 
     populateFromSsl(override, camunda);
     populateFromInterceptors(override, camunda);

@@ -25,13 +25,17 @@ public class Grpc implements Cloneable {
           "host", "zeebe.gateway.network.host",
           "port", "zeebe.gateway.network.port",
           "minKeepAliveInterval", "zeebe.gateway.network.minKeepAliveInterval",
-          "managementThreads", "zeebe.gateway.threads.managementThreads");
+          "managementThreads", "zeebe.gateway.threads.managementThreads",
+          "maxConnectionAge", "zeebe.gateway.network.maxConnectionAge",
+          "maxConnectionAgeGrace", "zeebe.gateway.network.maxConnectionAgeGrace");
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
           "host", "zeebe.broker.gateway.network.host",
           "port", "zeebe.broker.gateway.network.port",
           "minKeepAliveInterval", "zeebe.broker.gateway.network.minKeepAliveInterval",
-          "managementThreads", "zeebe.broker.gateway.threads.managementThreads");
+          "managementThreads", "zeebe.broker.gateway.threads.managementThreads",
+          "maxConnectionAge", "zeebe.broker.gateway.network.maxConnectionAge",
+          "maxConnectionAgeGrace", "zeebe.broker.gateway.network.maxConnectionAgeGrace");
 
   private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
 
@@ -56,6 +60,21 @@ public class Grpc implements Cloneable {
 
   /** Sets the number of threads the gateway will use to communicate with the broker cluster */
   private int managementThreads = DEFAULT_MANAGEMENT_THREADS;
+
+  /**
+   * Sets the maximum age of a gRPC connection before the gateway proactively closes it (via
+   * GOAWAY), forcing the client to reconnect. Defaults to {@link Duration#ZERO}, i.e. disabled,
+   * keeping grpc-java's own default of an unbounded connection age.
+   */
+  private Duration maxConnectionAge = Duration.ZERO;
+
+  /**
+   * Sets the grace period, after {@link #maxConnectionAge} elapses, during which existing calls on
+   * the connection may finish before it is forcibly terminated. Only takes effect when {@link
+   * #maxConnectionAge} is set. Defaults to {@link Duration#ZERO}, i.e. disabled, keeping
+   * grpc-java's own default of an infinite grace period.
+   */
+  private Duration maxConnectionAgeGrace = Duration.ZERO;
 
   public String getAddress() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -115,6 +134,32 @@ public class Grpc implements Cloneable {
 
   public void setManagementThreads(final int managementThreads) {
     this.managementThreads = managementThreads;
+  }
+
+  public Duration getMaxConnectionAge() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".max-connection-age",
+        maxConnectionAge,
+        Duration.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("maxConnectionAge")));
+  }
+
+  public void setMaxConnectionAge(final Duration maxConnectionAge) {
+    this.maxConnectionAge = maxConnectionAge;
+  }
+
+  public Duration getMaxConnectionAgeGrace() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".max-connection-age-grace",
+        maxConnectionAgeGrace,
+        Duration.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("maxConnectionAgeGrace")));
+  }
+
+  public void setMaxConnectionAgeGrace(final Duration maxConnectionAgeGrace) {
+    this.maxConnectionAgeGrace = maxConnectionAgeGrace;
   }
 
   public List<Interceptor> getInterceptors() {

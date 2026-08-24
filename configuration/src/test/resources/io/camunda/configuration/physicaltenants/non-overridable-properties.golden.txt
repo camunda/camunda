@@ -7,6 +7,8 @@
 api.grpc.address
 api.grpc.interceptors
 api.grpc.management-threads
+api.grpc.max-connection-age
+api.grpc.max-connection-age-grace
 api.grpc.min-keep-alive-interval
 api.grpc.port
 api.grpc.ssl
