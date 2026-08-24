@@ -11,6 +11,7 @@ import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -18,6 +19,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
+import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -32,6 +34,9 @@ test.beforeEach(({network}) => {
 		}),
 		mockQueryUserTasksEndpoint({
 			successResponse: HttpResponse.json(createQueryUserTasksResponse({items: []})),
+		}),
+		mockQueryProcessDefinitionsEndpoint({
+			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
 		}),
 	);
 });
