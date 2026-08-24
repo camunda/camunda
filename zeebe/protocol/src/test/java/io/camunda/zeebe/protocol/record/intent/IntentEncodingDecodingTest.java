@@ -141,10 +141,7 @@ final class IntentEncodingDecodingTest {
     result.addAll(
         buildParameterSets(
             ProcessInstanceBusinessIdIntent.class, ProcessInstanceBusinessIdIntent::from));
-    result.addAll(
-        buildParameterSets(
-            ProcessInstanceBufferedCommandIntent.class,
-            ProcessInstanceBufferedCommandIntent::from));
+    result.addAll(buildParameterSets(BufferedCommandIntent.class, BufferedCommandIntent::from));
     result.addAll(
         buildParameterSets(
             ProcessMessageSubscriptionIntent.class, ProcessMessageSubscriptionIntent::from));

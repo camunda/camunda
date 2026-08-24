@@ -14,11 +14,11 @@ import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -154,7 +154,7 @@ public final class SuspensionStateTest {
 
     // then
     final List<Long> visitedKeys = new ArrayList<>();
-    final List<ProcessInstanceBufferedCommandRecordValue> visitedValues = new ArrayList<>();
+    final List<BufferedCommandRecordValue> visitedValues = new ArrayList<>();
     suspensionState.visitBufferedCommands(
         processInstanceKey,
         (key, value) -> {
@@ -322,9 +322,9 @@ public final class SuspensionStateTest {
     assertThat(visitedKeys).isEmpty();
   }
 
-  private ProcessInstanceBufferedCommandRecord bufferedCommandRecord(
+  private BufferedCommandRecord bufferedCommandRecord(
       final long processInstanceKey, final long commandKey) {
-    return new ProcessInstanceBufferedCommandRecord()
+    return new BufferedCommandRecord()
         .setProcessInstanceKey(processInstanceKey)
         .setProcessDefinitionKey(1)
         .setTenantId("tenant")

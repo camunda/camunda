@@ -18,10 +18,10 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -148,17 +148,16 @@ public final class AdHocSubProcessSuspensionGateTest {
   private static AdHocSubProcessInstructionIntent bufferedCommandIntent(
       final long processInstanceKey) {
     return (AdHocSubProcessInstructionIntent)
-        ((ProcessInstanceBufferedCommandRecordValue) bufferedCommand(processInstanceKey).getValue())
-            .getIntent();
+        ((BufferedCommandRecordValue) bufferedCommand(processInstanceKey).getValue()).getIntent();
   }
 
   private static Record<RecordValue> bufferedCommand(final long processInstanceKey) {
     return RecordingExporter.records()
-        .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
-        .withIntent(ProcessInstanceBufferedCommandIntent.BUFFERED)
+        .withValueType(ValueType.BUFFERED_COMMAND)
+        .withIntent(BufferedCommandIntent.BUFFERED)
         .filter(
             r ->
-                ((ProcessInstanceBufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
+                ((BufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
                     == processInstanceKey)
         .getFirst();
   }

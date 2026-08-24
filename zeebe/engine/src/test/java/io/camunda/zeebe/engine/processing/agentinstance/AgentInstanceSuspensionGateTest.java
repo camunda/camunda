@@ -19,10 +19,10 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -146,16 +146,16 @@ public class AgentInstanceSuspensionGateTest {
     // then — the gate queues the internal command; it will be drained when the instance resumes
     final Record<RecordValue> buffered =
         RecordingExporter.records()
-            .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
-            .withIntent(ProcessInstanceBufferedCommandIntent.BUFFERED)
+            .withValueType(ValueType.BUFFERED_COMMAND)
+            .withIntent(BufferedCommandIntent.BUFFERED)
             .filter(
                 r -> {
-                  final var v = (ProcessInstanceBufferedCommandRecordValue) r.getValue();
+                  final var v = (BufferedCommandRecordValue) r.getValue();
                   return v.getProcessInstanceKey() == processInstanceKey
                       && v.getValueType() == ValueType.AGENT_INSTANCE;
                 })
             .getFirst();
-    assertThat(((ProcessInstanceBufferedCommandRecordValue) buffered.getValue()).getIntent())
+    assertThat(((BufferedCommandRecordValue) buffered.getValue()).getIntent())
         .isEqualTo(AgentInstanceIntent.CREATE);
   }
 
@@ -198,16 +198,16 @@ public class AgentInstanceSuspensionGateTest {
     // then — the gate queues the internal command; it will be drained when the instance resumes
     final Record<RecordValue> buffered =
         RecordingExporter.records()
-            .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
-            .withIntent(ProcessInstanceBufferedCommandIntent.BUFFERED)
+            .withValueType(ValueType.BUFFERED_COMMAND)
+            .withIntent(BufferedCommandIntent.BUFFERED)
             .filter(
                 r -> {
-                  final var v = (ProcessInstanceBufferedCommandRecordValue) r.getValue();
+                  final var v = (BufferedCommandRecordValue) r.getValue();
                   return v.getProcessInstanceKey() == processInstanceKey
                       && v.getValueType() == ValueType.AGENT_INSTANCE;
                 })
             .getFirst();
-    assertThat(((ProcessInstanceBufferedCommandRecordValue) buffered.getValue()).getIntent())
+    assertThat(((BufferedCommandRecordValue) buffered.getValue()).getIntent())
         .isEqualTo(AgentInstanceIntent.UPDATE);
   }
 
