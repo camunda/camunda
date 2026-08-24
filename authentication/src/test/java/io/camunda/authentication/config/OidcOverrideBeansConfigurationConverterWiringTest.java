@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.authentication.service.PhysicalTenantMembershipContextPropagator;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.core.port.out.MembershipPort;
@@ -110,15 +111,7 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
     RequestContextHolder.resetRequestAttributes();
 
     // then every lookup uses the tenant from login time. Without the wrapping it would throw here.
-    assertThat(authentication.authenticatedMappingRuleIds()).containsExactly("mapping-rule-1");
-    assertThat(authentication.authenticatedGroupIds()).containsExactly("group-1");
-    assertThat(authentication.authenticatedRoleIds()).containsExactly("role-1");
-    assertThat(authentication.authenticatedTenantIds()).containsExactly("tenant-1");
-    assertThat(tenantSeenByLookup)
-        .containsEntry("mappingRuleIds", "tenant-a")
-        .containsEntry("groupIds", "tenant-a")
-        .containsEntry("roleIds", "tenant-a")
-        .containsEntry("tenantIds", "tenant-a");
+    assertMembershipResolvedAgainstTenant(authentication, tenantSeenByLookup, "tenant-a");
   }
 
   @Test
@@ -138,21 +131,29 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
     RequestContextHolder.resetRequestAttributes();
 
     // then the scoped converter's lists resolve against the tenant from login too
-    assertThat(authentication.authenticatedMappingRuleIds()).containsExactly("mapping-rule-1");
-    assertThat(authentication.authenticatedGroupIds()).containsExactly("group-1");
-    assertThat(authentication.authenticatedRoleIds()).containsExactly("role-1");
-    assertThat(authentication.authenticatedTenantIds()).containsExactly("tenant-1");
-    assertThat(tenantSeenByLookup)
-        .containsEntry("mappingRuleIds", "tenanta")
-        .containsEntry("groupIds", "tenanta")
-        .containsEntry("roleIds", "tenanta")
-        .containsEntry("tenantIds", "tenanta");
+    assertMembershipResolvedAgainstTenant(authentication, tenantSeenByLookup, "tenanta");
   }
 
   @AfterEach
   void clearRequestScope() {
     // if a test fails early, the request it bound would leak into the next test
     RequestContextHolder.resetRequestAttributes();
+  }
+
+  /** Asserts all four lazy lists resolved, each lookup having observed {@code tenant}. */
+  private static void assertMembershipResolvedAgainstTenant(
+      final CamundaAuthentication authentication,
+      final Map<String, String> tenantSeenByLookup,
+      final String tenant) {
+    assertThat(authentication.authenticatedMappingRuleIds()).containsExactly("mapping-rule-1");
+    assertThat(authentication.authenticatedGroupIds()).containsExactly("group-1");
+    assertThat(authentication.authenticatedRoleIds()).containsExactly("role-1");
+    assertThat(authentication.authenticatedTenantIds()).containsExactly("tenant-1");
+    assertThat(tenantSeenByLookup)
+        .containsEntry("mappingRuleIds", tenant)
+        .containsEntry("groupIds", tenant)
+        .containsEntry("roleIds", tenant)
+        .containsEntry("tenantIds", tenant);
   }
 
   /** Records the physical tenant each membership lookup observes, keyed by lookup name. */
