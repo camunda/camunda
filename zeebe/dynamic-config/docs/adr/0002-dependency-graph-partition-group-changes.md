@@ -43,33 +43,18 @@ broker applying an operation must be the only writer of the entry it writes — 
 concurrent execution until write-set validation exists or the merge rule changes.
 
 **D3. Every sub-configuration runs a graph; phase sequencing stays.**
-`GlobalConfiguration` runs a `DependencyChangePlan` too, so nothing executes the queue model. Its
-graph is built by `OperationGraph.sequential(...)`, which means cluster-wide changes still run one
-operation at a time — not as an artefact of the encoding but because that is what these operations
-are. They are broker lifecycle steps, and `MemberRemoveOperation` writes the entry of the member
-being removed rather than of the member applying it, violating the rule below; nothing here may be
-unchained before that write set is settled. The gain is not parallelism, it is that one execution
-model means one plan lifecycle, one merge path and one driver, instead of a class of bug where a
-check written for one model silently does the wrong thing for the other.
-
-Two rules come with running a graph in a sub-configuration. Recording a completed operation must not
-move that sub-configuration's version, or a later merge leaves its structural branch for the
-wholesale-adopt branch and discards whatever a peer recorded against the same plan. And finishing a
-drained change is coordinator-free — every broker may do it — so two brokers can stamp the same
-completed change differently, which is why `lastChange` is merged by `CompletedChange.merge` rather
-than by keeping the receiver's copy.
+`GlobalConfiguration` runs a `DependencyChangePlan` too, so nothing executes the queue model. The
+gain is not parallelism — a cluster-wide change has none to declare — but that one execution model
+means one plan lifecycle, one merge path and one driver, instead of a class of bug where a check
+written for one model silently does the wrong thing for the other.
 
 Phase boundaries are *not* collapsed into the graph. A boundary is expressible as "every operation
 in phase B depends on every operation in phase A", but such a graph spans sub-configurations, and
-progress lives in each sub-configuration's own `pendingChanges` — which is also its unit of merge
-and of versioning. Collapsing therefore means moving progress up to the plan, which pulls in the
-merge semantics, the driver's staleness anchor, `PlanAdvancer` and the dry-run: its own change, with
-its own ADR. The prerequisite is done: a graph node names the partition group it targets
-(`OperationGraph.PlannedOperation.groupId`). Note that this ADR originally costed that prerequisite
-as adding `groupId()` to every `PartitionGroupOperation` — 20 record types and several hundred
-construction sites. It belongs on the graph node instead and means the same thing, because an
-operation's own sealed type already says whether it targets a group or the global configuration; the
-only missing information is *which* group.
+progress lives in each sub-configuration's own pending change — which is also its unit of merge and
+of versioning. Collapsing therefore means moving progress up to the plan, and with it the merge
+semantics, the driver's staleness anchor, phase advancement and the dry-run: its own change, with
+its own ADR. Its one prerequisite is done — a graph node names the partition group it targets, so a
+graph spanning sub-configurations is expressible.
 
 `ClusterChangePlan` survives as data, not as an executor: it is the shape the pre-8.10
 `ClusterTopology` message carries, which the single-group `ClusterConfiguration` is encoded as for a
