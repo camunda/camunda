@@ -25,17 +25,13 @@ public class Grpc implements Cloneable {
           "host", "zeebe.gateway.network.host",
           "port", "zeebe.gateway.network.port",
           "minKeepAliveInterval", "zeebe.gateway.network.minKeepAliveInterval",
-          "managementThreads", "zeebe.gateway.threads.managementThreads",
-          "maxConnectionAge", "zeebe.gateway.network.maxConnectionAge",
-          "maxConnectionAgeGrace", "zeebe.gateway.network.maxConnectionAgeGrace");
+          "managementThreads", "zeebe.gateway.threads.managementThreads");
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
           "host", "zeebe.broker.gateway.network.host",
           "port", "zeebe.broker.gateway.network.port",
           "minKeepAliveInterval", "zeebe.broker.gateway.network.minKeepAliveInterval",
-          "managementThreads", "zeebe.broker.gateway.threads.managementThreads",
-          "maxConnectionAge", "zeebe.broker.gateway.network.maxConnectionAge",
-          "maxConnectionAgeGrace", "zeebe.broker.gateway.network.maxConnectionAgeGrace");
+          "managementThreads", "zeebe.broker.gateway.threads.managementThreads");
 
   private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
 
@@ -137,12 +133,7 @@ public class Grpc implements Cloneable {
   }
 
   public Duration getMaxConnectionAge() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".max-connection-age",
-        maxConnectionAge,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("maxConnectionAge")));
+    return maxConnectionAge;
   }
 
   public void setMaxConnectionAge(final Duration maxConnectionAge) {
@@ -150,12 +141,7 @@ public class Grpc implements Cloneable {
   }
 
   public Duration getMaxConnectionAgeGrace() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".max-connection-age-grace",
-        maxConnectionAgeGrace,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("maxConnectionAgeGrace")));
+    return maxConnectionAgeGrace;
   }
 
   public void setMaxConnectionAgeGrace(final Duration maxConnectionAgeGrace) {

@@ -304,16 +304,14 @@ public final class Gateway implements CloseableSilently {
    */
   static void applyMaxConnectionAge(final NettyServerBuilder serverBuilder, final NetworkCfg cfg) {
     final Duration maxConnectionAge = cfg.getMaxConnectionAge();
-    if (maxConnectionAge == null || maxConnectionAge.isZero() || maxConnectionAge.isNegative()) {
+    if (maxConnectionAge == null || !maxConnectionAge.isPositive()) {
       return;
     }
 
     serverBuilder.maxConnectionAge(maxConnectionAge.toMillis(), TimeUnit.MILLISECONDS);
 
     final Duration maxConnectionAgeGrace = cfg.getMaxConnectionAgeGrace();
-    if (maxConnectionAgeGrace != null
-        && !maxConnectionAgeGrace.isZero()
-        && !maxConnectionAgeGrace.isNegative()) {
+    if (maxConnectionAgeGrace != null && maxConnectionAgeGrace.isPositive()) {
       serverBuilder.maxConnectionAgeGrace(maxConnectionAgeGrace.toMillis(), TimeUnit.MILLISECONDS);
     }
   }

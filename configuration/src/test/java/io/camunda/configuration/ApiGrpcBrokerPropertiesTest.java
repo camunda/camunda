@@ -90,8 +90,6 @@ public class ApiGrpcBrokerPropertiesTest {
         "zeebe.gateway.network.minKeepAliveInterval=50s",
         "zeebe.gateway.network.maxMessageSize=50MB",
         "zeebe.gateway.threads.managementThreads=10",
-        "zeebe.gateway.network.maxConnectionAge=4h",
-        "zeebe.gateway.network.maxConnectionAgeGrace=120s",
       })
   class WithOnlyLegacyGatewayPropertiesSet {
     final BrokerBasedProperties brokerCfg;
@@ -127,18 +125,6 @@ public class ApiGrpcBrokerPropertiesTest {
       assertThat(brokerCfg.getGateway().getThreads().getManagementThreads())
           .isEqualTo(DEFAULT_MANAGEMENT_THREADS);
     }
-
-    @Test
-    void shouldNotSetMaxConnectionAgeFromLegacyGatewayNetwork() {
-      assertThat(brokerCfg.getGateway().getNetwork().getMaxConnectionAge())
-          .isEqualTo(Duration.ZERO);
-    }
-
-    @Test
-    void shouldNotSetMaxConnectionAgeGraceFromLegacyGatewayNetwork() {
-      assertThat(brokerCfg.getGateway().getNetwork().getMaxConnectionAgeGrace())
-          .isEqualTo(Duration.ZERO);
-    }
   }
 
   @Nested
@@ -150,8 +136,6 @@ public class ApiGrpcBrokerPropertiesTest {
         "zeebe.broker.network.maxMessageSize=60MB",
         "zeebe.broker.gateway.network.maxMessageSize=60MB",
         "zeebe.broker.gateway.threads.managementThreads=6",
-        "zeebe.broker.gateway.network.maxConnectionAge=3h",
-        "zeebe.broker.gateway.network.maxConnectionAgeGrace=90s",
       })
   class WithOnlyLegacyBrokerPropertiesSet {
     final BrokerBasedProperties brokerCfg;
@@ -186,18 +170,6 @@ public class ApiGrpcBrokerPropertiesTest {
     void shouldSetManagementThreadsFromLegacyBrokerThreads() {
       assertThat(brokerCfg.getGateway().getThreads().getManagementThreads()).isEqualTo(6);
     }
-
-    @Test
-    void shouldSetMaxConnectionAgeFromLegacyBrokerNetwork() {
-      assertThat(brokerCfg.getGateway().getNetwork().getMaxConnectionAge())
-          .isEqualTo(Duration.ofHours(3));
-    }
-
-    @Test
-    void shouldSetMaxConnectionAgeGraceFromLegacyBrokerNetwork() {
-      assertThat(brokerCfg.getGateway().getNetwork().getMaxConnectionAgeGrace())
-          .isEqualTo(Duration.ofSeconds(90));
-    }
   }
 
   @Nested
@@ -217,16 +189,12 @@ public class ApiGrpcBrokerPropertiesTest {
         "zeebe.gateway.network.minKeepAliveInterval=50s",
         "zeebe.gateway.network.maxMessageSize=50MB",
         "zeebe.gateway.threads.managementThreads=10",
-        "zeebe.gateway.network.maxConnectionAge=4h",
-        "zeebe.gateway.network.maxConnectionAgeGrace=120s",
         // legacy broker configuration
         "zeebe.broker.gateway.network.host=192.0.0.1",
         "zeebe.broker.gateway.network.port=28900",
         "zeebe.broker.gateway.network.minKeepAliveInterval=60s",
         "zeebe.broker.gateway.network.maxMessageSize=60MB",
         "zeebe.broker.gateway.threads.managementThreads=6",
-        "zeebe.broker.gateway.network.maxConnectionAge=3h",
-        "zeebe.broker.gateway.network.maxConnectionAgeGrace=90s"
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;
