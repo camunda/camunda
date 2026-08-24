@@ -65,7 +65,7 @@ public interface CreateAgentInstanceCommandStep1 {
     CreateAgentInstanceCommandStep3 jobKey(long jobKey);
   }
 
-  interface CreateAgentInstanceCommandStep3 extends FinalCommandStep<CreateAgentInstanceResponse> {
+  interface CreateAgentInstanceCommandStep3 {
 
     /**
      * Sets the opaque job lease token received from the job activation response. Optional —
@@ -82,13 +82,15 @@ public interface CreateAgentInstanceCommandStep1 {
 
     /**
      * Sets the batch of conversation history items to append to the agent instance at creation.
-     * Requires a CONFIGURATION item within the batch that establishes model, provider, and
-     * systemPrompt.
+     * Always required — a CONFIGURATION item within the batch establishing model, provider, and
+     * systemPrompt is the only way to create an agent instance.
      *
-     * @param history the history items to append, in order. Must not be null; elements must not be
-     *     null.
-     * @return this builder for method chaining
+     * @param history the history items to append, in order. Must not be null or empty; elements
+     *     must not be null.
+     * @return the next step of the builder
      */
-    CreateAgentInstanceCommandStep3 history(List<AgentInstanceHistoryItem> history);
+    CreateAgentInstanceCommandStep4 history(List<AgentInstanceHistoryItem> history);
   }
+
+  interface CreateAgentInstanceCommandStep4 extends FinalCommandStep<CreateAgentInstanceResponse> {}
 }

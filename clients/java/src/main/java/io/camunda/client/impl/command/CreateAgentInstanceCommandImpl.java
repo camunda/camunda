@@ -21,6 +21,7 @@ import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep2;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep3;
+import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep4;
 import io.camunda.client.api.response.CreateAgentInstanceResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -38,7 +39,8 @@ import org.apache.hc.client5.http.config.RequestConfig;
 public class CreateAgentInstanceCommandImpl
     implements CreateAgentInstanceCommandStep1,
         CreateAgentInstanceCommandStep2,
-        CreateAgentInstanceCommandStep3 {
+        CreateAgentInstanceCommandStep3,
+        CreateAgentInstanceCommandStep4 {
 
   private final AgentInstanceCreationRequest request;
   private final JsonMapper jsonMapper;
@@ -77,8 +79,11 @@ public class CreateAgentInstanceCommandImpl
   }
 
   @Override
-  public CreateAgentInstanceCommandStep3 history(final List<AgentInstanceHistoryItem> history) {
+  public CreateAgentInstanceCommandStep4 history(final List<AgentInstanceHistoryItem> history) {
     ArgumentUtil.ensureNotNull("history", history);
+    if (history.isEmpty()) {
+      throw new IllegalArgumentException("history must not be empty");
+    }
     final List<io.camunda.client.protocol.rest.AgentInstanceHistoryItem> protocolHistory =
         new ArrayList<>(history.size());
     for (final AgentInstanceHistoryItem item : history) {
@@ -92,18 +97,13 @@ public class CreateAgentInstanceCommandImpl
   }
 
   @Override
-  public CreateAgentInstanceCommandStep3 requestTimeout(final Duration requestTimeout) {
+  public CreateAgentInstanceCommandStep4 requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public CamundaFuture<CreateAgentInstanceResponse> send() {
-    final boolean hasHistory = request.getHistory() != null && !request.getHistory().isEmpty();
-
-    if (!hasHistory) {
-      throw new IllegalArgumentException("history must not be empty");
-    }
     ensureConfigurationEstablishesDefinition(request.getHistory());
 
     final HttpCamundaFuture<CreateAgentInstanceResponse> result = new HttpCamundaFuture<>();
