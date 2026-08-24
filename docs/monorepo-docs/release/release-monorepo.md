@@ -310,29 +310,28 @@ Ownership model:
 
 <PersistentTaskListEnabler
   storageKey="minor-release-readiness-checklist"
-  version="3"
+  version="4"
   startHeadingId="minor-release-readiness-checklist"
   endHeadingId="minor-release-references"
 />
 
 #### 0. Dates, ownership, and high-level alignment
 
-- [ ] Confirm official minor release, feature freeze, and code freeze dates from the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train). See [Feature Freeze vs Code Freeze](#feature-freeze-vs-code-freeze-minor-releases) for definitions and timing.
-- [ ] Confirm the Monorepo Release Manager (MRM) is available for feature freeze week, code freeze / branch creation, and the final RC window.
+- [ ] Confirm official minor release and code freeze dates from the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train). See [Code Freeze](#code-freeze-minor-releases) for definitions and timing.
+- [ ] Confirm the Monorepo Release Manager (MRM) is available for code freeze / branch creation and the final RC window.
 - [ ] Check for major holidays during RC and final release weeks. If holidays are involved, do not just note it — explicitly align with release stakeholders on adjusted ETAs, coverage gaps, and any scope or timing changes, and document the agreed expectations.
 
 > **Tip:** When communicating release ETAs to stakeholders, default to **12:00 Central European time** as the reference time unless a different time has been explicitly agreed.
 
-#### 1. Around feature freeze / last alpha (branch strategy)
+#### 1. Stable branch strategy
 
-- [ ] Send feature freeze communication before the last alpha using the [feature-freeze template](#feature-freeze-vs-code-freeze-minor-releases) and explicitly state that only bug fixes and stabilization are expected after freeze.
-- [ ] Create `stable/<minor>` from `main` before the last alpha according to the early-stable strategy (i.e. create the `stable/<minor>` branch before the last alpha and branch all subsequent alpha/RC/final release branches from `stable/<minor>` instead of `main`).
+- [ ] Create `stable/<minor>` from `main` just before the `<minor>.0-rc1` build starts, and branch all subsequent RC/final release branches from `stable/<minor>` instead of `main`.
 - [ ] [DEPRECATED for +8.10] Mirror the same strategy in [zeebe-process-test](https://github.com/camunda/zeebe-process-test): create `stable/<minor>` from `main` and align release-branch handling.
 - [ ] Create `backport stable/<minor>` label in monorepo.
 - [ ] [DEPRECATED for +8.10] Create `backport stable/<minor>` label in ZPT.
 - [ ] Announce stable branch creation and backport procedure (label + `/backport`) in the relevant engineering channels.
 
-#### 2. Versioning and branch plumbing (after last alpha branch exists)
+#### 2. Versioning and branch plumbing (after the `stable/<minor>` cut, before `rc1`)
 
 - [ ] On monorepo `main`, bump all `pom.xml` versions to `8.(x+1).0-SNAPSHOT` using:
   - `./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT`
@@ -357,7 +356,7 @@ Ownership model:
 
 #### 5. Backports, RCs, and merge-backs
 
-- [ ] Enforce bug-fix backport rule after last alpha branch cut: fixes merged to `main` must be backported to `stable/<minor>` to ship in that minor.
+- [ ] Enforce bug-fix backport rule after the `stable/<minor>` cut (before `rc1`): fixes merged to `main` must be backported to `stable/<minor>` to ship in that minor.
 - [ ] For critical fixes after branch cut, backport to both `stable/<minor>` and active alpha/minor release branch; trigger a new RC if needed.
 - [ ] Track minor backports via labels/board to avoid missing required fixes.
 - [ ] Simulate release-branch merge-back to `stable/<minor>` early to detect predictable conflicts.
@@ -365,7 +364,7 @@ Ownership model:
 
 #### 6. Documentation and communication hygiene
 
-- [ ] Keep this file current for minor branch strategy, bug-fix backport rules, and feature freeze vs code freeze definitions.
+- [ ] Keep this file current for minor branch strategy and bug-fix backport rules.
 
 #### 7. Watch-outs and sanity checks
 
@@ -376,7 +375,6 @@ Ownership model:
 
 - [Release process documentation](./index.md)
 - [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train)
-- [Minor Release Feature Freeze](https://confluence.camunda.com/spaces/HAN/pages/307894801/Minor+Release+Feature+Freeze)
 - [Issue #46249](https://github.com/camunda/camunda/issues/46249)
 - [Issue #40009](https://github.com/camunda/camunda/issues/40009)
 - [Issue #37374](https://github.com/camunda/camunda/issues/37374)
@@ -440,7 +438,7 @@ Scripts live in [`.github/scripts/mergeback/`](https://github.com/camunda/camund
 - Context: this happened due to wrong test naming during the stable-branch transition. See Remco's note: `@monorepo-ci-medic Backports to stable/8.9...`
 - Known workaround: there is no generic workaround beyond fixing the incorrect test name or image reference.
 
-### Feature Freeze vs Code Freeze (Minor Releases)
+### Code Freeze (Minor Releases)
 
 Terminology:
 
@@ -448,31 +446,7 @@ Terminology:
 * **Code freeze date**: The day on which the release branch will be forked from the base branch
 * **Press release date**: (out of scope of the Monorepo) The day on which the whole C8 release train should be finished
 
-For C8 monorepo minor releases, we enforce two distinct stages to ensure quality and predictable delivery:
-
-**🔒 Feature Freeze (Minor Releases)**
-- **Purpose**: Lock in the feature scope for the upcoming minor release
-- **Timing**: Occurs with the **last alpha** before the minor release (e.g., for `8.9.0`, this would be `8.9.0-alpha5`), on the day of the code freeze of the last alpha
-- **What Changes**:
-  - ✅ All cross-component features targeted for the minor must be fully implemented, documented, and working end-to-end
-  - ❌ No new features, scope extensions, or risky changes after this point
-  - ✅ Bug fixes, stabilization work, and E2E testing continue
-- **Notification Process**: Send calendar invite to engineering teams (Core Features, Orchestration, QA, DevOps/Release, and other relevant teams) with:
-  - **Subject**: `Camunda repo (Zeebe/Operate/Tasklist/Identity/Optimize) Release Minor <version> - Feature Freeze`
-  - **Body**:
-
-    ```
-    Hey all,
-
-    This appointment marks the feature freeze for the camunda/camunda repository: <minor_version> (minor).
-    <last_alpha_version> is the last alpha before the minor and defines the scope of what will ship in <minor_version>. Any new features or scope changes must be merged before this point to make it into the minor.
-
-    After this date, we focus on bug fixing, stabilization, and end-to-end testing for <minor_version>. New features should target future alphas/minors instead.
-
-    Overall release manager is <release_manager_name>
-
-    Have a nice week!
-    ```
+For C8 monorepo minor releases, we enforce a code freeze to ensure quality and predictable delivery:
 
 **🚫 Code Freeze (Minor Releases)**
 - **Purpose**: Minimize code changes to ensure release stability
@@ -483,8 +457,7 @@ For C8 monorepo minor releases, we enforce two distinct stages to ensure quality
 - **Coordination**: Scheduled via dedicated calendar invite managed by respective teams
 
 **📅 Important References**
-- **Release Dates**: All upcoming alpha, minor, and feature freeze dates are maintained on the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train) page
-- **Detailed Policy**: See [Minor Release Feature Freeze](https://confluence.camunda.com/spaces/HAN/pages/307894801/Minor+Release+Feature+Freeze) for comprehensive guidelines
+- **Release Dates**: All upcoming alpha and minor dates are maintained on the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train) page
 
 ## Troubleshooting
 
