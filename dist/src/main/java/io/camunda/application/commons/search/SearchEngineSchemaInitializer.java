@@ -160,7 +160,9 @@ public class SearchEngineSchemaInitializer
             new SchemaManagerMetrics(meterRegistry, physicalTenantId))) {
       schemaManager.startupOnce();
     }
-    if (healthCheckEnabled && !clientAdapter.getSearchEngineClient().isHealthy()) {
+    if (configuration.schemaManager().isCreateSchema()
+        && healthCheckEnabled
+        && !clientAdapter.getSearchEngineClient().isHealthy()) {
       // Not terminal: a red/unreachable cluster right after schema creation may still turn
       // yellow/green shortly after, so this attempt is retried like any other storage failure.
       // A missing 'monitor' privilege is the one health-check failure classified terminal, in
