@@ -670,6 +670,11 @@ public final class CatchEventBehavior {
     final long processDefinitionKey = subscription.getRecord().getProcessDefinitionKey();
     final String tenantId = subscription.getRecord().getTenantId();
 
+    // Quote the stored key so the message-side stale-delete guard can reject a close a resume has
+    // superseded (-1 means legacy/unacknowledged). Captured before DELETING, whose applier re-reads
+    // the shared record.
+    final long subscriptionKey = subscription.getRecord().getSubscriptionKey();
+
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
 
@@ -679,7 +684,8 @@ public final class CatchEventBehavior {
         elementInstanceKey,
         processDefinitionKey,
         messageName,
-        subscription.getRecord().getTenantId());
+        subscription.getRecord().getTenantId(),
+        subscriptionKey);
     final var lastSentTime = clock.millis();
 
     // update transient state in a side-effect to ensure that these changes only take effect after
@@ -698,7 +704,8 @@ public final class CatchEventBehavior {
       final long elementInstanceKey,
       final long processDefinitionKey,
       final DirectBuffer messageName,
-      final String tenantId) {
+      final String tenantId,
+      final long subscriptionKey) {
     return subscriptionCommandSender.closeMessageSubscription(
         subscriptionPartitionId,
         processInstanceKey,
@@ -706,7 +713,7 @@ public final class CatchEventBehavior {
         processDefinitionKey,
         messageName,
         tenantId,
-        -1L);
+        subscriptionKey);
   }
 
   private boolean sendOpenMessageSubscription(
