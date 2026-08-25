@@ -10,6 +10,8 @@ import {type Page} from '@playwright/test';
 import {ShadcnNotifications} from './ShadcnNotifications';
 import {View} from './BasePage';
 
+type LanguageOption = 'English' | 'Français' | 'Deutsch' | 'Español';
+
 class ShadcnHeader extends View {
 	readonly notifications: ShadcnNotifications;
 
@@ -20,6 +22,10 @@ class ShadcnHeader extends View {
 
 	get branding() {
 		return this.page.getByRole('link', {name: 'Camunda logo'});
+	}
+
+	get productBreadcrumb() {
+		return this.page.getByRole('navigation', {name: 'Camunda context'}).getByRole('link');
 	}
 
 	get userSidebarToggle() {
@@ -51,19 +57,31 @@ class ShadcnHeader extends View {
 	}
 
 	get languageSelector() {
-		return this.page.getByRole('menuitemcheckbox', {name: 'English'});
+		return this.page.getByRole('radiogroup', {name: 'Language'});
 	}
 
 	async openUserSidebar() {
 		await this.userSidebarToggle.click();
 	}
 
+	async closeUserSidebar() {
+		await this.page.keyboard.press('Escape');
+	}
+
 	async openInfoSidebar() {
 		await this.infoSidebarToggle.click();
 	}
 
-	async selectLanguage(language: string) {
-		await this.page.getByRole('menuitemcheckbox', {name: language}).click();
+	getLanguageOption(language: LanguageOption) {
+		return this.page.getByRole('radio', {name: language});
+	}
+
+	async selectLanguage(language: LanguageOption) {
+		await this.getLanguageOption(language).click();
+	}
+
+	async selectTheme(theme: string) {
+		await this.page.getByRole('radio', {name: theme}).click();
 	}
 
 	get tasksNavItem() {

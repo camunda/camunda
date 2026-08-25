@@ -50,6 +50,8 @@ describe('<Header /> (V2)', () => {
 		await expect.element(screen.getByRole('banner')).toBeVisible();
 		await expect.element(screen.getByText('Non-Production License')).toBeVisible();
 		await expect.element(screen.getByText('Non-commercial license')).toBeVisible();
+		await expect.element(screen.getByRole('navigation', {name: 'Camunda context'})).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Tasklist'})).toHaveAttribute('href', '/shadcn/tasklist');
 		await expect.element(screen.getByRole('button', {name: 'Info'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Settings'})).toBeVisible();
 		await expect.element(screen.getByText('Page content')).toBeVisible();

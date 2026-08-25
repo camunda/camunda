@@ -9,7 +9,7 @@
 import {useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {ListTodo, Workflow} from 'lucide-react';
-import type {SidebarNode} from '@camunda/design-system';
+import {camundaAppIcons, type NavIcon, type SidebarNode} from '@camunda/design-system';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {hasComponentAccess} from '#/shared/componentAccess';
 import {useHasRouteMatch} from '#/shared/useHasRouteMatch';
@@ -24,6 +24,10 @@ type SidebarNavigation = {
 	ariaLabel: string;
 	homeRoute: FileRouteTypes['to'];
 	items: SidebarNode[];
+	product?: {
+		icon: NavIcon;
+		label: string;
+	};
 };
 
 function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
@@ -39,6 +43,10 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 		return {
 			ariaLabel: t('tasklist.taskPanelNavAria'),
 			homeRoute: tabRoutes['tasklistIndex'],
+			product: {
+				icon: camundaAppIcons.tasklist,
+				label: 'Tasklist',
+			},
 			items: hasTasklistAccess
 				? [
 						{

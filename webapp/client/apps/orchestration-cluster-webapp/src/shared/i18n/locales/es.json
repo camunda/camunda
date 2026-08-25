@@ -7,6 +7,7 @@
 		"headerSidebarFeedbackAndSupportLink": "Comentarios y Soporte",
 		"headerSidebarCommunityForumLink": "Foro de la Comunidad",
 		"headerAppBarLabel": "Camunda Apps",
+		"headerContextLabel": "Contexto de Camunda",
 		"headerNonProductionLicenseLabel": "Licencia de No Producción",
 		"headerNonProductionLicenseText": "Licencia de No Producción. Si desea información sobre el uso en producción, consulte nuestra <2>página de términos y condiciones</2> o <6>contacte con ventas</6>.",
 		"headerInfoLabel": "Información",
