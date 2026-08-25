@@ -14,10 +14,6 @@ package io.camunda.zeebe.stream.api;
 @FunctionalInterface
 public interface SideEffectProducer {
 
-  /**
-   * Applies the side effect.
-   *
-   * @return <code>false</code> to indicate that the side effect could not be applied successfully
-   */
-  boolean flush();
+  /** Applies the side effect. */
+  void flush();
 }

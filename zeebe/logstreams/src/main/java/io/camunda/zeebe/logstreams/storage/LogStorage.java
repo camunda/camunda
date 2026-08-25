@@ -33,6 +33,15 @@ public interface LogStorage {
   LogStorageReader newReader();
 
   /**
+   * Creates a new reader that also reads records that have been appended to the storage but are not
+   * yet committed. This is only safe for consumers that can tolerate records being truncated again,
+   * e.g. the stream processor which rebuilds its state from committed records on recovery.
+   *
+   * @return a new stateful storage reader
+   */
+  LogStorageReader newUncommittedReader();
+
+  /**
    * Writes a block containing one or multiple log entries in the storage and returns the address at
    * which the block has been written.
    *
@@ -93,6 +102,35 @@ public interface LogStorage {
   void removeCommitListener(CommitListener listener);
 
   /**
+   * Register a committed position listener
+   *
+   * @param listener the listener which will be notified with the highest committed record position.
+   */
+  void addCommittedPositionListener(CommittedPositionListener listener);
+
+  /**
+   * Remove a committed position listener
+   *
+   * @param listener the listener to remove
+   */
+  void removeCommittedPositionListener(CommittedPositionListener listener);
+
+  /**
+   * Register an append listener
+   *
+   * @param listener the listener which will be notified when new records are appended to the
+   *     storage, before they are committed.
+   */
+  void addAppendedListener(AppendedListener listener);
+
+  /**
+   * Remove an append listener
+   *
+   * @param listener the listener to remove
+   */
+  void removeAppendedListener(AppendedListener listener);
+
+  /**
    * An append listener can be added to an append call to be notified of different events that can
    * occur during the append operation.
    */
@@ -126,5 +164,40 @@ public interface LogStorage {
 
     /** Called when a new record is committed in the storage */
     void onCommit();
+  }
+
+  /**
+   * Consumers of LogStorage can use this listener to get notified of the position up to which
+   * records are committed. Unlike {@link CommitListener}, which is notified whenever the storage
+   * commits anything, this listener is only notified for records that the local node appended
+   * itself. In particular, a follower is never notified, and a leader is not notified for records
+   * appended by a previous leader. Consumers that must observe every commit, regardless of who
+   * wrote the record, have to use {@link CommitListener} instead.
+   */
+  interface CommittedPositionListener {
+
+    /**
+     * Called when records appended by this node are committed in the storage.
+     *
+     * @param highestPosition the highest committed record position
+     */
+    void onCommittedPosition(long highestPosition);
+  }
+
+  /**
+   * Consumers of LogStorage can use this listener to get notified when new records are appended to
+   * the storage, before they are committed. The difference between this and {@link AppendListener}
+   * is that {@link AppendListener} can only be used by the writer of a record. {@link
+   * AppendedListener} can be used by any consumers of LogStorage, and get notified of new records
+   * appended even if it did not write the record itself.
+   */
+  interface AppendedListener {
+
+    /**
+     * Called when records are appended to the storage.
+     *
+     * @param highestPosition the highest appended record position
+     */
+    void onAppend(long highestPosition);
   }
 }

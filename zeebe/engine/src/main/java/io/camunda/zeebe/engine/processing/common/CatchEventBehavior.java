@@ -442,7 +442,6 @@ public final class CatchEventBehavior {
           transientProcessMessageSubscriptionState.update(
               new PendingSubscription(elementInstanceKey, subscriptionMessageName, tenantId),
               lastSentTime);
-          return true;
         });
   }
 
@@ -496,7 +495,6 @@ public final class CatchEventBehavior {
           /* timerChecker implements onRecovered to recover from restart, so no need to schedule
           this in TimerCreatedApplier.*/
           timerChecker.scheduleTimer(dueDate);
-          return true;
         });
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), TimerIntent.CREATED, timerRecord);
@@ -691,7 +689,6 @@ public final class CatchEventBehavior {
           transientProcessMessageSubscriptionState.update(
               new PendingSubscription(elementInstanceKey, messageNameString, tenantId),
               lastSentTime);
-          return true;
         });
   }
 

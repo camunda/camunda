@@ -54,6 +54,8 @@ There are three sources of commands.
 - Command processors can request next steps by appending commands, e.g. flow to the next element in the process after completing a task.
 - Scheduled tasks that run periodically inside the engine can append commands, e.g. to remove a message from the buffer after its TTL has expired.
 
+Commands are processed as soon as they are appended to the log, without waiting for them to be committed. This overlaps processing with replication and reduces the latency of command responses. The stream processor rebuilds its state from committed records on recovery, so processing records that are later truncated is harmless: the state is discarded and rebuilt from the committed log.
+
 ### Relation to other components
 
 The workflow engine is built on top of the `protocol` and `stream-platform` modules.
@@ -398,7 +400,7 @@ guide on golden files, common scenarios, and porting pitfalls.
 
 ### Side-effects are not guaranteed to be executed
 
-- Side-effects are executed before the next command is picked up, but if execution fails or if failover occurs the side-effect may not be executed.
+- Side-effects are executed asynchronously after their processing results are committed, but if execution fails or if failover occurs the side-effect may not be executed.
 - **Don't** do things that must happen in a side-effect.
 - **Do** use side-effects for things like updating caches or sending responses.
 

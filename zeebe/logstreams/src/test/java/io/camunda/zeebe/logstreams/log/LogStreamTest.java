@@ -97,6 +97,30 @@ public final class LogStreamTest {
   }
 
   @Test
+  public void shouldNotifyAppendedListenerBeforeTheRecordIsCommitted() throws InterruptedException {
+    // given a listener for each visibility, and a storage that does not commit on its own
+    final var logStorage = logStreamRule.getLogStorage();
+    logStorage.deferCommits();
+    final CountDownLatch appendedListener = new CountDownLatch(1);
+    final CountDownLatch committedListener = new CountDownLatch(1);
+    logStream.registerAppendedRecordAvailableListener(appendedListener::countDown);
+    logStream.registerRecordAvailableListener(committedListener::countDown);
+
+    // when the record is appended but not committed
+    logStreamRule.getLogStreamWriter().tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
+
+    // then only the listener that reads uncommitted records is woken
+    assertThat(appendedListener.await(2, TimeUnit.SECONDS)).isTrue();
+    assertThat(committedListener.getCount()).isOne();
+
+    // when the record commits
+    logStorage.commitPendingEntries();
+
+    // then
+    assertThat(committedListener.await(2, TimeUnit.SECONDS)).isTrue();
+  }
+
+  @Test
   public void shouldNotifyMultipleListenersWhenNewRecordsAreAvailable()
       throws InterruptedException {
     // given
