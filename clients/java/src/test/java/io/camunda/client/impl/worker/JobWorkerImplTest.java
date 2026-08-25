@@ -310,12 +310,15 @@ public final class JobWorkerImplTest {
                 .pollInterval(Duration.ofMillis(50))
                 .open()) {
 
-      // when the executor rejects the rest of the activated batch
-      Awaitility.await("Executor should reject the jobs it cannot run")
-          .untilAtomic(rejectedJobs, Matchers.greaterThanOrEqualTo(maxJobsActive - 1));
-
-      // and the handler capacity is free again
-      releaseHandler.countDown();
+      try {
+        // when the executor rejects the rest of the activated batch
+        Awaitility.await("Executor should reject the jobs it cannot run")
+            .untilAtomic(rejectedJobs, Matchers.greaterThanOrEqualTo(maxJobsActive - 1));
+      } finally {
+        // and the handler capacity is free again, also when the check above failed: a handler left
+        // waiting keeps its thread alive and holds up closing the client for 15 seconds
+        releaseHandler.countDown();
+      }
 
       // then the worker keeps activating jobs
       Awaitility.await("Worker should activate jobs again once capacity is free")
