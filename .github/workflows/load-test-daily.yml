@@ -6,16 +6,16 @@
 #              immediately deletes the namespaces to reduce cost.
 #              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
 #              Each variant's full lifecycle (setup, warmup, profile, soak, collect-metrics,
-#              cleanup) is delegated to the reusable stress-load-test.yml workflow via a
+#              cleanup) is delegated to the reusable load-test-stress.yml workflow via a
 #              matrix — adding a variant is a one-line matrix entry, not a 6-job copy-paste.
 #              The no-secondary-storage variant only runs this daily `max` leg; it deliberately
 #              does not get its own multi-week weekly endurance rotation, since that long-horizon
 #              engine coverage is not storage-specific and is already provided by the ES/OS/RDBMS
 #              weekly runs.
-# calls: stress-load-test.yml (per variant)
+# calls: load-test-stress.yml (per variant)
 # type: CI
 # owner: @camunda/reliability-testing
-name: Daily Camunda Platform Load Tests
+name: "Load Test: Daily"
 on:
   workflow_dispatch:
      inputs:
@@ -106,7 +106,7 @@ jobs:
             load-test-load: '--set load-tester.starter.rate=500'
             load-test-setup-helm-values: ''
             secondary-storage-type: none
-    uses: ./.github/workflows/stress-load-test.yml
+    uses: ./.github/workflows/load-test-stress.yml
     secrets: inherit
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}-${{ matrix.variant.key }}

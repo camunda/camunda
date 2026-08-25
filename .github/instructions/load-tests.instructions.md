@@ -1,8 +1,22 @@
 ---
-applyTo: "load-tests/**,.github/workflows/*load-test*,.github/workflows/*load_test*,.github/workflows/*benchmark*,.github/workflows/profile-load-test*,.github/workflows/camunda-*-load-tests*,.github/workflows/camunda-release-load-test*,.github/workflows/camunda-scheduled-release*,.github/workflows/camunda-verify-and-cleanup*,.github/scripts/*load*"
+applyTo: "load-tests/**,.github/workflows/load-test-*,.github/workflows/load-test.yml,.github/workflows/*benchmark*,.github/scripts/*load*"
 ---
 
 # Load Test Review Guidelines
+
+## Workflow naming convention
+
+Every GitHub Actions workflow file that belongs to the load test / reliability-testing
+suite must have a filename prefixed with `load-test-` (e.g. `load-test-daily.yml`,
+`load-test-metrics.yaml`), with the single exception of the central reusable workflow
+`load-test.yml` itself. This applies to workflows owned by
+`@camunda/reliability-testing` and to load-test-pipeline workflows owned by other teams
+(e.g. `load-test-profile.yml`, `load-test-ecs-weekly.yml`, owned by
+`@camunda/zeebe-distributed-platform`) — ownership doesn't change the naming rule.
+
+A workflow that is merely a *caller* of the load-test suite (e.g. a team's own benchmark
+workflow that invokes `load-test.yml` as a reusable workflow) is not itself part of the
+suite and does not need the `load-test-` prefix.
 
 ## Required Review Checks
 
@@ -47,7 +61,7 @@ When reviewing changes to load tests, workflows, or load test infrastructure:
 4. **Command-line flag precedence**: A flag added via `+=` to
    `additional_load_test_setup_configuration` or `additional_load_test_configuration` in a
    `load-tests/setup/*/Makefile` is silently dropped when CI passes that same variable on the
-   `make` command line (as `camunda-load-test.yml` always does) — GNU Make blocks any later `+=`
+   `make` command line (as `load-test.yml` always does) — GNU Make blocks any later `+=`
    to a variable once it has command-line origin, even if the CLI value is empty
    ([Overriding](https://www.gnu.org/software/make/manual/html_node/Overriding.html),
    [Override Directive](https://www.gnu.org/software/make/manual/html_node/Override-Directive.html)).
@@ -85,7 +99,7 @@ if related documentation needs updating:
 
 ## Scheduled Release Load Tests
 
-The file `camunda-scheduled-release-load-tests.yml` uses hardcoded release tags
+The file `load-test-scheduled-release.yml` uses hardcoded release tags
 per stable branch. Patch releases do not require updates. When reviewing PRs that
 create a new minor version (e.g., 8.10) or deprecate a stable branch, verify that
 this workflow is updated accordingly.

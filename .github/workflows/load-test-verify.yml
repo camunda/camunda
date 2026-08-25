@@ -1,9 +1,9 @@
 # description: Verifies a load test deployment is healthy.
-# called-by: camunda-scheduled-release-load-tests.yml, camunda-verify-and-cleanup-load-test.yml
+# called-by: load-test-scheduled-release.yml, load-test-verify-and-cleanup.yml
 # type: CI
 # owner: @camunda/reliability-testing
-name: Verify load test
-run-name: "Verify load test: ${{ inputs.namespace }}"
+name: "Load Test: Verify"
+run-name: "Load Test: Verify: ${{ inputs.namespace }}"
 
 on:
   workflow_call:

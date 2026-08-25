@@ -1,11 +1,11 @@
 # description: Runs parallel endurance tests weekly against main (TTL: 28 days).
 #              Variants: realistic, rdbms-realistic (PostgreSQL), opensearch-realistic, ECS.
 #              Naming pattern: medic-y-YYYY-cw-WW-<sha>
-# calls: camunda-load-test.yml (3 parallel calls, one per scenario) +
-#        camunda-ecs-weekly-load-test.yml (1 parallel call) — 4 load tests total
+# calls: load-test.yml (3 parallel calls, one per scenario) +
+#        load-test-ecs-weekly.yml (1 parallel call) — 4 load tests total
 # type: CI
 # owner: @camunda/reliability-testing
-name: Camunda weekly medic load test
+name: "Load Test: Weekly Medic"
 on:
   workflow_dispatch:
      inputs:
@@ -188,7 +188,7 @@ jobs:
       needs.test-data.result == 'success' &&
       (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.test-data.outputs.image-tag }}-rdbms-realistic
@@ -208,7 +208,7 @@ jobs:
       needs.test-data.result == 'success' &&
       (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.test-data.outputs.image-tag }}-opensearch-realistic
@@ -219,7 +219,7 @@ jobs:
 
   setup-realistic-test:
     name: Realistic load test
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     needs:
       - test-data
@@ -252,7 +252,7 @@ jobs:
       needs.test-data.result == 'success' &&
       (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
-    uses: ./.github/workflows/camunda-ecs-weekly-load-test.yml
+    uses: ./.github/workflows/load-test-ecs-weekly.yml
     secrets: inherit
     with:
       image_tag: ${{ needs.test-data.outputs.image-tag }}

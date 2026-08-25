@@ -1,19 +1,19 @@
 # description: Runs the full lifecycle for a stress test: deploy (setup), 15-min
 #              warmup, async-profiler capture (30 min, parallel to soak), 3-hour soak, metrics
 #              snapshot, then namespace cleanup. Used on daily schedule in different
-#              variants, see camunda-daily-load-tests.yml.
+#              variants, see load-test-daily.yml.
 #              Uploads its own metrics as a `stress-test-result-<name>` artifact containing
 #              {namespace, soakEndEpoch, results} for the caller to aggregate (matrix job outputs
 #              are not reliable to fan out per-leg via `needs.<job>.outputs`).
-# calls: camunda-load-test.yml (scenario: max), profile-load-test.yml,
-#        camunda-load-test-metrics.yaml, camunda-delete-load-test.yml
-# called-by: camunda-daily-load-tests.yml
+# calls: load-test.yml (scenario: max), load-test-profile.yml,
+#        load-test-metrics.yaml, load-test-delete.yml
+# called-by: load-test-daily.yml
 # note: this chain is 3 of GitHub's 4 allowed reusable-workflow nesting levels deep (calls 4 more
 #       reusable workflows); none of them may add another nested "uses:" job without breaking it.
 # type: CI
 # owner: @camunda/reliability-testing
-name: Stress test
-run-name: "Stress test variant: ${{ inputs.name }}"
+name: "Load Test: Stress"
+run-name: "Load Test: Stress: ${{ inputs.name }}"
 
 on:
   workflow_call:
@@ -23,17 +23,17 @@ on:
         type: string
         required: true
       secondary-storage-type:
-        description: 'Secondary database backend for Camunda Platform, passed through to camunda-load-test.yml'
+        description: 'Secondary database backend for Camunda Platform, passed through to load-test.yml'
         type: string
         default: elasticsearch
         required: false
       load-test-load:
-        description: 'Helm args for workload components, passed through to camunda-load-test.yml (e.g. --set global.preferRest.enabled=true)'
+        description: 'Helm args for workload components, passed through to load-test.yml (e.g. --set global.preferRest.enabled=true)'
         type: string
         default: ""
         required: false
       load-test-setup-helm-values:
-        description: 'Additional Helm values for the load-test-setup chart, passed through to camunda-load-test.yml'
+        description: 'Additional Helm values for the load-test-setup chart, passed through to load-test.yml'
         type: string
         default: ""
         required: false
@@ -92,7 +92,7 @@ env:
   NAMESPACE: c8-${{ inputs.name }}
   # Fixed timing constants: no current or planned variant needs different values, and GitHub
   # Actions can't compute `timeout-minutes` from an input expression, so these stay hardcoded
-  # rather than caller-configurable (see profile-load-test.yml's similar INVARIANT comment).
+  # rather than caller-configurable (see load-test-profile.yml's similar INVARIANT comment).
   WARMUP_SECONDS: 900
   SOAK_SECONDS: 10800
 
@@ -102,7 +102,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     with:
       name: ${{ inputs.name }}
@@ -114,7 +114,7 @@ jobs:
 
   # Wait 15 minutes after setup succeeds before profiling starts, mirroring the warmup convention
   # the rest of the load-test flow already uses (see WARMUP_SECONDS in resolve-daily.py and
-  # await-benchmark's `sleep 900` in camunda-pr-load-test.yaml): profiling from t=0 would capture
+  # await-benchmark's `sleep 900` in load-test-pr.yaml): profiling from t=0 would capture
   # pod startup and ramp-up noise instead of steady-state behavior.
   warmup:
     name: Warmup before profiling
@@ -136,7 +136,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/profile-load-test.yml
+    uses: ./.github/workflows/load-test-profile.yml
     secrets: inherit
     with:
       name: c8-${{ inputs.name }}
@@ -180,7 +180,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/camunda-load-test-metrics.yaml
+    uses: ./.github/workflows/load-test-metrics.yaml
     secrets: inherit
     with:
       namespace: c8-${{ inputs.name }}
@@ -232,7 +232,7 @@ jobs:
 
   # Delete the namespace immediately after metrics are collected to reduce cluster cost. Runs
   # regardless of whether metrics collection succeeded (idempotent + guardrailed inside
-  # camunda-delete-load-test.yml), as long as the namespace name is known — which it always is,
+  # load-test-delete.yml), as long as the namespace name is known — which it always is,
   # since it's derived from required inputs.
   cleanup:
     name: Cleanup namespace
@@ -241,7 +241,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/camunda-delete-load-test.yml
+    uses: ./.github/workflows/load-test-delete.yml
     secrets: inherit
     with:
       namespace: c8-${{ inputs.name }}

@@ -37,7 +37,7 @@ run_all=false
 
 # Run all versions if the load-test workflow changed. This is a precaution
 # because the workflow may have changed in a way that affects all versions.
-if grep -qE '\.github/workflows/camunda-load-test' <<<"$changed"; then
+if grep -qE '\.github/workflows/load-test(-smoke)?\.yml' <<<"$changed"; then
     echo "⇒ Load-test workflow changed, running all versions..."
     run_all=true
 fi

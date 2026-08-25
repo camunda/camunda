@@ -4,8 +4,8 @@
 # calls: load-tests/docs/scripts/loadTestMetrics.sh
 # type: CI
 # owner: @camunda/reliability-testing
-name: Camunda Load Test Metrics
-run-name: "Camunda Load Test Metrics: ${{ inputs.namespace }}"
+name: "Load Test: Metrics"
+run-name: "Load Test: Metrics: ${{ inputs.namespace }}"
 
 on:
   workflow_dispatch:

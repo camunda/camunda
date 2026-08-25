@@ -3,7 +3,7 @@
 
 Renders a side-by-side metrics table — one column per variant — from the end-of-soak metric
 snapshots and posts it to the reliability-testing Slack channel via an incoming webhook. Invoked
-by the `notify-results` job of `.github/workflows/camunda-daily-load-tests.yml`.
+by the `notify-results` job of `.github/workflows/load-test-daily.yml`.
 
 Metric names, descriptions, and display formats are sourced from `queries.yaml` (the single
 source of truth shared with `loadTestMetrics.sh`), so adding a metric there automatically adds a
@@ -11,7 +11,7 @@ row here. Metrics tied to secondary storage (e.g. importer/exporter lag) natural
 for a no-secondary-storage variant.
 
 The table has one column per entry in VARIANTS_JSON — adding a daily variant (a new matrix entry
-in camunda-daily-load-tests.yml) needs no change here.
+in load-test-daily.yml) needs no change here.
 
 Required environment variables:
   VARIANTS_JSON       JSON array of {key, label, namespace, soakEndEpoch, results} objects, one

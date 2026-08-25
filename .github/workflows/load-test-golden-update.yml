@@ -5,7 +5,7 @@
 # type: ci
 # owner: @camunda/reliability-testing
 ---
-name: Load Test Setup - Golden File Update
+name: "Load Test: Update Golden Files"
 
 on:
   push:

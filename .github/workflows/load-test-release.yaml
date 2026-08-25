@@ -3,15 +3,15 @@
 #              accepting required name and tag inputs plus optional per-component
 #              tag overrides: optimize-tag, identity-tag, and connectors-tag.
 #              Uses official Docker images with scenario: realistic.
-# called-by: camunda-scheduled-release-load-tests.yml (weekdays Mon-Fri at 02:00 UTC),
+# called-by: load-test-scheduled-release.yml (weekdays Mon-Fri at 02:00 UTC),
 #            release BPMN process (workflow_dispatch via GitHub API)
-# calls: camunda-load-test.yml (orchestration-tag: <tag>, scenario: realistic)
+# calls: load-test.yml (orchestration-tag: <tag>, scenario: realistic)
 # note: Verification and namespace cleanup are handled externally by the scheduled workflow
-#       via camunda-verify-and-cleanup-load-test.yml, not by this workflow.
+#       via load-test-verify-and-cleanup.yml, not by this workflow.
 # type: CI
 # owner: @camunda/reliability-testing
-name: Camunda Release load test workflow
-run-name: "Camunda Release load test workflow: ${{ inputs.name }}"
+name: "Load Test: Release"
+run-name: "Load Test: Release: ${{ inputs.name }}"
 
 on:
   workflow_dispatch:
@@ -106,7 +106,7 @@ jobs:
   create-load-test:
     name: Create release load test
     needs: sanitize-inputs
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.sanitize-inputs.outputs.sanitized-name }}
