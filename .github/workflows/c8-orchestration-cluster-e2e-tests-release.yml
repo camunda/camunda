@@ -91,6 +91,8 @@ jobs:
             base="stable/8.8"
           elif [[ "$major_minor" == "8.9" ]]; then
             base="stable/8.9"
+          elif [[ "$major_minor" == "8.10" ]]; then
+            base="stable/8.10"
           else
             base="main"
           fi
