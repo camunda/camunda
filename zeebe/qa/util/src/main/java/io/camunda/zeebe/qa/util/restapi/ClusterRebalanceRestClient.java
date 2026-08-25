@@ -22,7 +22,10 @@ import java.net.URI;
  */
 public interface ClusterRebalanceRestClient {
   static ClusterRebalanceRestClient of(final TestGateway<?> gateway) {
-    final URI restAddress = gateway.restAddress();
+    return of(gateway.restAddress());
+  }
+
+  static ClusterRebalanceRestClient of(final URI restAddress) {
     final var path = restAddress.getPath();
     final var baseWithTrailingSlash =
         path.endsWith("/") ? restAddress : URI.create(restAddress + "/");
