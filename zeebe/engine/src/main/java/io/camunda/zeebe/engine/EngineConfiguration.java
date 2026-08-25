@@ -166,7 +166,7 @@ public final class EngineConfiguration {
   private boolean includeVariablesInJobCompletedEvent =
       DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT;
   private boolean enableRpaReexportMigration = DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION;
-  private InputMappingMode inputMappingMode = InputMappingMode.ORDERED;
+  private InputMappingMode inputMappingMode = InputMappingMode.COMBINED;
 
   /**
    * Controls uniqueness enforcement of business IDs across active process instances.
