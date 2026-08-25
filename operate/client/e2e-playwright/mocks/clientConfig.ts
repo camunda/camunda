@@ -19,6 +19,7 @@ const clientConfigMock = `window.clientConfig = ${JSON.stringify({
   tasklistUrl: null,
   resourcePermissionsEnabled: false,
   multiTenancyEnabled: false,
+  isNavV2Enabled: true,
 })};`;
 
 export {clientConfigMock};

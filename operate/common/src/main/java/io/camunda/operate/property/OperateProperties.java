@@ -39,7 +39,7 @@ public class OperateProperties {
 
   private boolean enterprise = false;
 
-  private boolean navV2Enabled = true;
+  private boolean navV2Enabled = false;
 
   private String tasklistUrl = null;
 

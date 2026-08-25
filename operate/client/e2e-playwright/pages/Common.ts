@@ -35,6 +35,7 @@ type ClientConfig = {
   tasklistUrl?: null | string;
   resourcePermissionsEnabled?: boolean;
   multiTenancyEnabled?: boolean;
+  isNavV2Enabled?: boolean;
 };
 
 export class Common {
@@ -243,6 +244,7 @@ export class Common {
       stage: null,
       mixpanelToken: null,
       mixpanelAPIHost: null,
+      isNavV2Enabled: true,
     };
 
     return context.route('**/client-config.js', (route) =>
@@ -253,7 +255,7 @@ export class Common {
         },
         body: `window.clientConfig = ${JSON.stringify({
           ...defaultConfig,
-          config,
+          ...config,
         })};`,
       }),
     );
