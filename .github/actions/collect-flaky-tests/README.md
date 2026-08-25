@@ -6,24 +6,26 @@ This composite action collects and aggregates flaky test results from multiple C
 
 ## Inputs
 
-| ···············Input················ | ·······················Description························ | ·Required· | ·Default· |
-|--------------------------------------|------------------------------------------------------------|------------|-----------|
-| `general-unit-tests-result`          | Result of the general unit tests job                       | true       | N/A       |
-| `general-unit-tests-flaky`           | Flaky tests from the general unit tests job                | true       | N/A       |
-| `elasticsearch-tests-result`         | Result of the Elasticsearch integration tests job          | true       | N/A       |
-| `elasticsearch-tests-flaky`          | Flaky tests from the Elasticsearch integration tests job   | true       | N/A       |
-| `opensearch-tests-result`            | Result of the OpenSearch integration tests job             | true       | N/A       |
-| `opensearch-tests-flaky`             | Flaky tests from the OpenSearch integration tests job      | true       | N/A       |
-| `rdbms-h2-tests-result`              | Result of the RDBMS H2 integration tests job               | true       | N/A       |
-| `rdbms-h2-tests-flaky`               | Flaky tests from the RDBMS H2 integration tests job        | true       | N/A       |
-| `rdbms-tests-result`                 | Result of the RDBMS integration tests job                  | true       | N/A       |
-| `rdbms-tests-flaky`                  | Flaky tests from the RDBMS integration tests job           | true       | N/A       |
-| `docker-checks-result`               | Result of the Docker checks job                            | true       | N/A       |
-| `docker-checks-flaky`                | Flaky tests from the Docker checks job                     | true       | N/A       |
-| `zeebe-tests-result`                 | Result of the Zeebe unit tests job                         | true       | N/A       |
-| `zeebe-matrix-output-result`         | Matrix output for Zeebe unit tests                         | true       | N/A       |
-| `integration-tests-result`           | Result of the integration tests job                        | true       | N/A       |
-| `integration-matrix-output-result`   | Matrix output for integration tests                        | true       | N/A       |
+| ···············Input················ |  ·······················Description························  | ·Required· | ·Default· |
+|--------------------------------------|--------------------------------------------------------------|------------|-----------|
+| `general-unit-tests-result`          | Result of the general unit tests job                         | true       | N/A       |
+| `general-unit-tests-flaky`           | Flaky tests from the general unit tests job                  | true       | N/A       |
+| `elasticsearch-tests-result`         | Result of the Elasticsearch integration tests job            | true       | N/A       |
+| `elasticsearch-tests-flaky`          | Flaky tests from the Elasticsearch integration tests job     | true       | N/A       |
+| `opensearch-tests-result`            | Result of the OpenSearch integration tests job               | true       | N/A       |
+| `opensearch-tests-flaky`             | Flaky tests from the OpenSearch integration tests job        | true       | N/A       |
+| `rdbms-h2-tests-result`              | Result of the RDBMS H2 integration tests job                 | true       | N/A       |
+| `rdbms-h2-tests-flaky`               | Flaky tests from the RDBMS H2 integration tests job          | true       | N/A       |
+| `rdbms-tests-result`                 | Result of the RDBMS integration tests job                    | true       | N/A       |
+| `rdbms-tests-flaky`                  | Flaky tests from the RDBMS integration tests job             | true       | N/A       |
+| `async-repl-tests-result`            | Result of the async-replication integration tests job        | true       | N/A       |
+| `async-repl-tests-flaky`             | Flaky tests from the async-replication integration tests job | true       | N/A       |
+| `docker-checks-result`               | Result of the Docker checks job                              | true       | N/A       |
+| `docker-checks-flaky`                | Flaky tests from the Docker checks job                       | true       | N/A       |
+| `zeebe-tests-result`                 | Result of the Zeebe unit tests job                           | true       | N/A       |
+| `zeebe-matrix-output-result`         | Matrix output for Zeebe unit tests                           | true       | N/A       |
+| `integration-tests-result`           | Result of the integration tests job                          | true       | N/A       |
+| `integration-matrix-output-result`   | Matrix output for integration tests                          | true       | N/A       |
 
 ## Outputs
 
@@ -70,6 +72,8 @@ This composite action collects and aggregates flaky test results from multiple C
     rdbms-h2-tests-flaky: ${{ needs.rdbms-h2-integration-tests.outputs.flaky_tests }}
     rdbms-tests-result: ${{ needs.rdbms-integration-tests.result }}
     rdbms-tests-flaky: ${{ needs.rdbms-integration-tests.outputs.flaky_tests }}
+    async-repl-tests-result: ${{ needs.async-replication-integration-tests.result }}
+    async-repl-tests-flaky: ${{ needs.async-replication-integration-tests.outputs.flaky_tests }}
     docker-checks-result: ${{ needs.docker-checks.result }}
     docker-checks-flaky: ${{ needs.docker-checks.outputs.flaky_tests }}
     zeebe-tests-result: ${{ needs.zeebe-unit-tests.result }}
