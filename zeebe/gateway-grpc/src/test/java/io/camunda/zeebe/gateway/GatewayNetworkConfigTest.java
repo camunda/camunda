@@ -15,7 +15,10 @@ import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.grpc.netty.NettyServerBuilder;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Verifies that {@link Gateway#applyMaxConnectionAge(NettyServerBuilder, NetworkCfg)} configures
@@ -41,11 +44,19 @@ final class GatewayNetworkConfigTest {
         .maxConnectionAgeGrace(cfg.getMaxConnectionAgeGrace().toMillis(), TimeUnit.MILLISECONDS);
   }
 
-  @Test
-  void shouldNotConfigureMaxConnectionAgeWhenExplicitlyZero() {
+  /**
+   * {@code null} and a non-positive duration both hit the same disabling branch in {@link
+   * Gateway#applyMaxConnectionAge(NettyServerBuilder, NetworkCfg)}, so both are covered by this
+   * single parameterized test instead of two separate tests asserting the same outcome.
+   */
+  @ParameterizedTest(name = "maxConnectionAge={0}")
+  @MethodSource("disablingDurations")
+  void shouldNotConfigureMaxConnectionAgeWhenDisabled(final Duration disablingDuration) {
     // given
     final var cfg =
-        new NetworkCfg().setMaxConnectionAge(Duration.ZERO).setMaxConnectionAgeGrace(Duration.ZERO);
+        new NetworkCfg()
+            .setMaxConnectionAge(disablingDuration)
+            .setMaxConnectionAgeGrace(disablingDuration);
     final var serverBuilder = mock(NettyServerBuilder.class);
 
     // when
@@ -55,17 +66,8 @@ final class GatewayNetworkConfigTest {
     verifyNoInteractions(serverBuilder);
   }
 
-  @Test
-  void shouldNotConfigureMaxConnectionAgeWhenExplicitlyNull() {
-    // given
-    final var cfg = new NetworkCfg().setMaxConnectionAge(null).setMaxConnectionAgeGrace(null);
-    final var serverBuilder = mock(NettyServerBuilder.class);
-
-    // when
-    Gateway.applyMaxConnectionAge(serverBuilder, cfg);
-
-    // then
-    verifyNoInteractions(serverBuilder);
+  private static Stream<Duration> disablingDurations() {
+    return Stream.of(null, Duration.ZERO);
   }
 
   @Test
