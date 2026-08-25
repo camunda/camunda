@@ -1,7 +1,8 @@
-# description: Runs the full lifecycle for one daily-load-test variant: deploy (setup), 15-min
-#              warmup, async-profiler capture (30 min, parallel to soak), 3-hour soak, metrics
-#              snapshot, then namespace cleanup. Called once per variant (via a matrix) by
-#              camunda-daily-load-tests.yml — see that workflow for the variant list.
+# description: Runs the full lifecycle of a single stress test: deploy (setup), 15-min warmup,
+#              async-profiler capture (30 min, parallel to soak), 3-hour soak, metrics snapshot,
+#              then namespace cleanup. Standalone-callable (workflow_dispatch) or as one matrix
+#              leg (via workflow_call) — currently called that way once per variant by
+#              camunda-daily-load-tests.yml, see that workflow for the variant list.
 #              Uploads its own metrics as a `daily-load-test-variant-metrics-<variant-key>`
 #              artifact for the caller to aggregate (matrix job outputs are not reliable to fan
 #              out per-leg via `needs.<job>.outputs`).
@@ -12,8 +13,8 @@
 #       reusable workflows); none of them may add another nested "uses:" job without breaking it.
 # type: CI
 # owner: @camunda/reliability-testing
-name: Load test variant
-run-name: "Load test variant: ${{ inputs.benchmark }}${{ inputs.namespace-suffix }} (${{ inputs.variant-key }})"
+name: Stress test
+run-name: "Stress test: ${{ inputs.benchmark }}${{ inputs.namespace-suffix }} (${{ inputs.variant-key }})"
 
 on:
   workflow_call:
