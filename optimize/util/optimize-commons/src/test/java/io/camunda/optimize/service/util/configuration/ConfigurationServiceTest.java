@@ -587,6 +587,67 @@ public class ConfigurationServiceTest {
     }
   }
 
+  // Regression tests for epic camunda/product-hub#3785 (implemented in camunda/camunda#60587):
+  // Optimize object-variable flattening is disabled by default on Self-Managed via
+  // zeebe.includeObjectVariableValue (env CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE). The
+  // default (unset) resolving to false is already covered by
+  // assertThatPlaceholderDefaultValuesAreResolved; the tests below cover explicit overrides and
+  // config-source precedence.
+
+  @Test
+  public void includeObjectVariableValueResolvesToFalseWhenExplicitlyConfiguredFalse() {
+    // given the property is explicitly set to false (as opposed to relying on the default)
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE", "false");
+
+    // when
+    final ConfigurationService underTest = createDefaultConfiguration();
+
+    // then
+    // Characterization for epic camunda/product-hub#3785 (case 4, config-resolution half): an
+    // explicit `false` and a defaulted `false` both resolve to the same effective value. Nothing
+    // downstream (e.g. ConfigurationValidator) can tell them apart. Sub-issue camunda/camunda#60583
+    // confirms this is intentional: the startup WARN fires unconditionally whenever the effective
+    // (resolved) value is false, regardless of whether it was defaulted or explicitly configured.
+    // So no distinction is expected here. Flagged during manual QA as worth a second look; per the
+    // ticket, the current behavior is correct.
+    assertThat(underTest.getConfiguredZeebe().isIncludeObjectVariableValue()).isFalse();
+  }
+
+  @Test
+  public void includeObjectVariableValueResolvesToTrueWhenExplicitlyConfiguredTrue() {
+    // given the operator opts back in to object-variable flattening
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE", "true");
+
+    // when
+    final ConfigurationService underTest = createDefaultConfiguration();
+
+    // then
+    assertThat(underTest.getConfiguredZeebe().isIncludeObjectVariableValue()).isTrue();
+  }
+
+  @Test
+  public void includeObjectVariableValueSystemPropertyTakesPrecedenceOverEnvironmentVariable() {
+    // given the property is set via BOTH a JVM system property and an environment variable, with
+    // conflicting values
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE", "true");
+    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE", "false");
+
+    // when
+    final ConfigurationService underTest = createDefaultConfiguration();
+
+    // then
+    // Characterization for epic camunda/product-hub#3785 (case 9). ConfigurationParser resolves
+    // placeholders via `System.getProperty(name)` first, falling back to `System.getenv(name)`
+    // (see ConfigurationParser#resolveVariablePlaceholders), so the JVM SYSTEM PROPERTY wins over
+    // the ENVIRONMENT VARIABLE. This was flagged during manual QA, whose note assumed the env var
+    // wins; the code shows the system property wins. A system property outranking an env var is
+    // actually consistent with Spring Boot's own property-source ordering. Note this resolution
+    // path is Optimize-specific (ConfigurationParser), not Spring's Environment. Left as a
+    // characterization of current behavior so a reviewer can decide whether the precedence (or the
+    // QA note) should be revisited.
+    assertThat(underTest.getConfiguredZeebe().isIncludeObjectVariableValue()).isFalse();
+  }
+
   private ConfigurationService createConfiguration(final String... locations) {
     return ConfigurationServiceBuilder.createConfiguration()
         .loadConfigurationFrom(locations)
