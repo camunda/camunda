@@ -836,6 +836,9 @@
           <ignoredUnusedDeclaredDependencies>
             <ignoredUnusedDeclaredDependency>io.camunda:zeebe-protocol-jackson:jar</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.junit.platform:junit-platform-suite</ignoredUnusedDeclaredDependency>
+            <!-- Never referenced by Java code on purpose: exists only to give the reactor a real
+                 build-order edge, see the dependency's own comment above. -->
+            <ignoredUnusedDeclaredDependency>io.camunda.optimize:optimize-client:jar</ignoredUnusedDeclaredDependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
         <executions>
