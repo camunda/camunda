@@ -15,9 +15,6 @@
  */
 package io.camunda.process.test.impl.containers;
 
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_DEFAULTHISTORYTTL;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_MAXHISTORYCLEANUPINTERVAL;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_MINHISTORYCLEANUPINTERVAL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
@@ -25,6 +22,13 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 
 class CamundaContainerTest {
+
+  private static final String RDBMS_HISTORY_DEFAULT_HISTORY_TTL =
+      "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_DEFAULTHISTORYTTL";
+  private static final String RDBMS_HISTORY_MIN_HISTORY_CLEANUP_INTERVAL =
+      "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_MINHISTORYCLEANUPINTERVAL";
+  private static final String RDBMS_HISTORY_MAX_HISTORY_CLEANUP_INTERVAL =
+      "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_MAXHISTORYCLEANUPINTERVAL";
 
   @Test
   void shouldNotConfigureRdbmsHistoryCleanupForH2() {
@@ -38,8 +42,8 @@ class CamundaContainerTest {
     // then
     assertThat(envs)
         .doesNotContainKeys(
-            CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_DEFAULTHISTORYTTL,
-            CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_MINHISTORYCLEANUPINTERVAL,
-            CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_MAXHISTORYCLEANUPINTERVAL);
+            RDBMS_HISTORY_DEFAULT_HISTORY_TTL,
+            RDBMS_HISTORY_MIN_HISTORY_CLEANUP_INTERVAL,
+            RDBMS_HISTORY_MAX_HISTORY_CLEANUP_INTERVAL);
   }
 }
