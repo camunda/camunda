@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Bean;
@@ -117,6 +118,9 @@ class PhysicalTenantWebSessionIsolationIT {
   }
 
   @Test
+  @Disabled(
+      "Blocks for ~600s inside the full rdbms suite and times out CI. Re-enable with the fix: "
+          + "https://github.com/camunda/camunda/issues/61009")
   void shouldSurviveRestartInCorrectPhysicalTenantStore() {
     // given — write via app1's tenant A store
     final String id = UUID.randomUUID().toString();
