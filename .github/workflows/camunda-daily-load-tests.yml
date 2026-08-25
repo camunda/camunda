@@ -82,9 +82,9 @@ jobs:
       fail-fast: false
       matrix:
         # Each entry fully describes one variant. Adding a variant (e.g. a future RDBMS leg) is
-        # a new entry here — also add its key to VARIANT_ORDER in the aggregate-metrics job
-        # below (in matrix order), or its metrics will be silently dropped from the Slack
-        # summary and the combined artifact.
+        # a new entry here — also add its "key:label" pair to VARIANT_ORDER in the
+        # aggregate-metrics job below (in matrix order), or its metrics will be silently dropped
+        # from the Slack summary and the combined artifact.
         variant:
           - key: grpc
             label: gRPC
@@ -98,8 +98,6 @@ jobs:
     secrets: inherit
     with:
       benchmark: ${{ needs.benchmark-data.outputs.benchmark }}
-      variant-key: ${{ matrix.variant.key }}
-      variant-label: ${{ matrix.variant.label }}
       namespace-suffix: -${{ matrix.variant.key }}
       build-frontend: true
       load-test-load: ${{ matrix.variant.load-test-load }}
@@ -122,25 +120,31 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         continue-on-error: true # a variant whose collect-metrics never ran just yields fewer entries below
         with:
-          pattern: daily-load-test-variant-metrics-*
+          pattern: stress-test-result-*
           path: variant-metrics
-          merge-multiple: true
+          # No merge-multiple: stress-test.yml's artifact content carries no variant identity
+          # (by design — it's generic), so each variant's stress-result.json needs its own
+          # per-artifact-name folder here to avoid colliding with every other variant's file
+          # of the same name.
       - name: Merge into the legacy combined artifact + variants-json manifest
         id: merge
         env:
-          # Keep in sync with the `run-variant` matrix above — this determines the
-          # Slack summary table's column order, which is not guaranteed by artifact
-          # download order.
-          VARIANT_ORDER: 'grpc rest'
+          # Keep in sync with the `run-variant` matrix above (key:label pairs) — this determines
+          # the Slack summary table's column order, which is not guaranteed by artifact download
+          # order. key here must match the -<key> suffix passed as namespace-suffix above.
+          VARIANT_ORDER: 'grpc:gRPC rest:REST'
         run: |
           manifest='[]'
-          for key in $VARIANT_ORDER; do
-            f="variant-metrics/variant-${key}.json"
+          for entry in $VARIANT_ORDER; do
+            key="${entry%%:*}"
+            label="${entry#*:}"
+            f="variant-metrics/stress-test-result-${key}/stress-result.json"
             if [ ! -f "$f" ]; then
               continue
             fi
             jq '.results' "$f" > "metrics-${key}.json"
-            manifest=$(jq --slurpfile v "$f" '. + $v' <<<"$manifest")
+            entry_json=$(jq --arg key "$key" --arg label "$label" '. + {key: $key, label: $label}' "$f")
+            manifest=$(jq --argjson v "$entry_json" '. + [$v]' <<<"$manifest")
           done
           if [ "$manifest" = '[]' ]; then
             echo "::warning::No variant metrics artifacts found; Slack summary and legacy artifact will be empty"

@@ -2,9 +2,10 @@
 #              warmup, async-profiler capture (30 min, parallel to soak), 3-hour soak, metrics
 #              snapshot, then namespace cleanup. Used on daily schedule in different
 #              variants, see camunda-daily-load-tests.yml.
-#              Uploads its own metrics as a `daily-load-test-variant-metrics-<variant-key>`
-#              artifact for the caller to aggregate (matrix job outputs are not reliable to fan
-#              out per-leg via `needs.<job>.outputs`).
+#              Uploads its own metrics as a `stress-test-result<namespace-suffix>` artifact for
+#              the caller to aggregate (matrix job outputs are not reliable to fan out per-leg
+#              via `needs.<job>.outputs`) — the artifact contains only namespace/results, no
+#              variant identity, since that belongs to the caller, not this generic workflow.
 # calls: camunda-load-test.yml (scenario: max), profile-load-test.yml,
 #        camunda-load-test-metrics.yaml, camunda-delete-load-test.yml
 # called-by: camunda-daily-load-tests.yml
@@ -13,7 +14,7 @@
 # type: CI
 # owner: @camunda/reliability-testing
 name: Stress test
-run-name: "Stress test variant: ${{ inputs.benchmark }}${{ inputs.namespace-suffix }} (${{ inputs.variant-key }})"
+run-name: "Stress test variant: ${{ inputs.benchmark }}${{ inputs.namespace-suffix }}"
 
 on:
   workflow_call:
@@ -22,16 +23,8 @@ on:
         description: 'Base benchmark name (e.g. medic-daily-2026-08-18-abc1234-test), without variant suffix or c8- prefix'
         type: string
         required: true
-      variant-key:
-        description: 'Short lowercase variant slug (e.g. grpc, rest, none) — used for artifact/profile naming'
-        type: string
-        required: true
-      variant-label:
-        description: 'Human-readable variant label (e.g. gRPC, REST, None) — used in the Slack summary table'
-        type: string
-        required: true
       namespace-suffix:
-        description: 'Suffix appended to the benchmark name to form this variant''s namespace (e.g. "", "-rest", "-none")'
+        description: 'Suffix appended to the benchmark name to form this variant''s namespace and artifact name (e.g. "", "-rest", "-none")'
         type: string
         default: ""
         required: false
@@ -67,14 +60,8 @@ on:
       benchmark:
         description: 'Base benchmark name, without variant suffix or c8- prefix'
         required: true
-      variant-key:
-        description: 'Short lowercase variant slug (e.g. grpc, rest, none)'
-        required: true
-      variant-label:
-        description: 'Human-readable variant label (e.g. gRPC, REST, None)'
-        required: true
       namespace-suffix:
-        description: 'Suffix appended to the benchmark name to form this variant''s namespace'
+        description: 'Suffix appended to the benchmark name to form this variant''s namespace and artifact name'
         default: ""
         required: false
       secondary-storage-type:
@@ -170,7 +157,7 @@ jobs:
     with:
       name: c8-${{ inputs.benchmark }}${{ inputs.namespace-suffix }}
       pod: ''
-      test-type: ${{ inputs.variant-key }}
+      test-type: ${{ inputs.namespace-suffix }}
       duration-seconds: '1800'
 
   # Wait 3 hours, anchored to this variant's own setup completion, before taking its metrics
@@ -219,7 +206,10 @@ jobs:
   # Upload this variant's metrics as its own artifact for the caller's aggregate-metrics job to
   # re-read. Matrix job outputs are not reliably fanned out per-leg via `needs.<job>.outputs` (the
   # value returned is undefined/arbitrary across legs), so the artifact is the source of truth —
-  # not the workflow_call `results-json`/`soak-end-epoch` outputs above.
+  # not the workflow_call `results-json`/`soak-end-epoch` outputs above. The artifact carries only
+  # namespace/results — no variant key or label — so this workflow stays ignorant of the caller's
+  # own variant identity; the caller maps each downloaded artifact back to its variant via the
+  # artifact name (which it built from its own namespace-suffix), not via content this workflow embeds.
   upload-variant-metrics:
     name: Upload variant metrics artifact
     runs-on: ubuntu-latest
@@ -230,23 +220,19 @@ jobs:
     steps:
       - name: Write variant metrics manifest
         env:
-          VARIANT_KEY: ${{ inputs.variant-key }}
-          VARIANT_LABEL: ${{ inputs.variant-label }}
           RESULTS_JSON: ${{ needs.collect-metrics.outputs.results-json }}
           SOAK_END_EPOCH: ${{ needs.soak.outputs.soak_end_epoch }}
         run: |
           jq -n \
-            --arg key "$VARIANT_KEY" \
-            --arg label "$VARIANT_LABEL" \
             --arg namespace "${NAMESPACE}" \
             --argjson soakEndEpoch "${SOAK_END_EPOCH:-0}" \
             --argjson results "${RESULTS_JSON:-{}}" \
-            '{key: $key, label: $label, namespace: $namespace, soakEndEpoch: $soakEndEpoch, results: $results}' \
-            > "variant-${VARIANT_KEY}.json"
+            '{namespace: $namespace, soakEndEpoch: $soakEndEpoch, results: $results}' \
+            > stress-result.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: daily-load-test-variant-metrics-${{ inputs.variant-key }}
-          path: variant-${{ inputs.variant-key }}.json
+          name: stress-test-result${{ inputs.namespace-suffix }}
+          path: stress-result.json
           retention-days: 90
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
