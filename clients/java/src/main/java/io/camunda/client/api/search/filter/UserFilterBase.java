@@ -16,10 +16,10 @@
 package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import java.util.List;
+import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.util.function.Consumer;
 
-public interface UserFilter extends UserFilterBase {
+public interface UserFilterBase extends SearchRequestFilter {
 
   /**
    * Filter users by the specified username.
@@ -27,8 +27,7 @@ public interface UserFilter extends UserFilterBase {
    * @param username the username of the user
    * @return the updated filter
    */
-  @Override
-  UserFilter username(final String username);
+  UserFilterBase username(final String username);
 
   /**
    * Filters users by the specified username using {@link StringProperty} consumer.
@@ -36,8 +35,7 @@ public interface UserFilter extends UserFilterBase {
    * @param fn the username {@link StringProperty} consumer of the user
    * @return the updated filter
    */
-  @Override
-  UserFilter username(final Consumer<StringProperty> fn);
+  UserFilterBase username(final Consumer<StringProperty> fn);
 
   /**
    * Filter users by the specified name.
@@ -45,8 +43,7 @@ public interface UserFilter extends UserFilterBase {
    * @param name the name of the user
    * @return the updated filter
    */
-  @Override
-  UserFilter name(final String name);
+  UserFilterBase name(final String name);
 
   /**
    * Filters users by the specified name using {@link StringProperty} consumer.
@@ -54,8 +51,7 @@ public interface UserFilter extends UserFilterBase {
    * @param fn the name {@link StringProperty} consumer of the user
    * @return the updated filter
    */
-  @Override
-  UserFilter name(final Consumer<StringProperty> fn);
+  UserFilterBase name(final Consumer<StringProperty> fn);
 
   /**
    * Filter users by the specified email.
@@ -63,8 +59,7 @@ public interface UserFilter extends UserFilterBase {
    * @param email the email of the user
    * @return the updated filter
    */
-  @Override
-  UserFilter email(final String email);
+  UserFilterBase email(final String email);
 
   /**
    * Filters users by the specified email using {@link StringProperty} consumer.
@@ -72,14 +67,5 @@ public interface UserFilter extends UserFilterBase {
    * @param fn the email {@link StringProperty} consumer of the user
    * @return the updated filter
    */
-  @Override
-  UserFilter email(final Consumer<StringProperty> fn);
-
-  /**
-   * Combine this filter with a list of alternative filter groups using OR logic.
-   *
-   * @param filters the alternative filter groups
-   * @return the updated filter
-   */
-  UserFilterBase orFilters(List<Consumer<UserFilterBase>> filters);
+  UserFilterBase email(final Consumer<StringProperty> fn);
 }

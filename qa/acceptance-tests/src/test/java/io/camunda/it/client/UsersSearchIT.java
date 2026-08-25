@@ -17,6 +17,7 @@ import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.User;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -85,6 +86,23 @@ public class UsersSearchIT {
         .hasSize(1)
         .map(User::getUsername)
         .containsOnly(USERNAME_1);
+  }
+
+  @Test
+  void searchShouldReturnUsersMatchingOrFilters() {
+    final var userSearchResponse =
+        camundaClient
+            .newUsersSearchRequest()
+            .filter(
+                fn ->
+                    fn.orFilters(
+                        List.of(f1 -> f1.username(USERNAME_1), f2 -> f2.username(USERNAME_2))))
+            .send()
+            .join();
+
+    assertThat(userSearchResponse.items())
+        .extracting(User::getUsername)
+        .containsExactlyInAnyOrder(USERNAME_1, USERNAME_2);
   }
 
   @Test
