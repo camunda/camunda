@@ -6,20 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
+import { FC, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Pencil, Trash2 } from "lucide-react";
+import { Button, PageHeader } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import { userQueries } from "src/utility/api/users/queries";
 import NotFound from "src/pages/not-foundV2";
-import { OverflowMenu, OverflowMenuItem, Section } from "@carbon/react";
 import { StackPage } from "src/components/layoutV2/Page";
-import PageHeadline from "src/components/layoutV2/PageHeadline";
 import UserDetails from "./UserDetailsTab";
-import Tabs from "src/components/tabsV2";
+import { Tabs, TabsHeaderList, TabsContent } from "src/components/tabsV2";
 import { DetailPageHeaderFallback } from "src/components/fallbacksV2";
-// TODO: Replace with Tailwind classes
-import Flex from "src/components/layout/Flex";
 import { useEntityModal } from "src/components/modalV2";
 import EditModal from "src/pages/users/modalsV2/EditModal";
 import DeleteModal from "src/pages/users/modalsV2/DeleteModal";
@@ -35,7 +33,22 @@ const Details: FC = () => {
   const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
+
   const user = userSearchResults ? userSearchResults.items[0] : null;
+  const tabs = useMemo(() => {
+    if (!user) {
+      return [];
+    }
+
+    return [
+      {
+        key: "details",
+        label: t("userDetails"),
+        content: <UserDetails user={user} loading={loading} />,
+      },
+    ];
+  }, [user, loading, t]);
+
   if (!loading && !user) return <NotFound />;
 
   return (
@@ -44,41 +57,38 @@ const Details: FC = () => {
         {loading && !user ? (
           <DetailPageHeaderFallback hasOverflowMenu={false} />
         ) : (
-          <Flex>
-            {user && (
-              <>
-                <PageHeadline>{user.username}</PageHeadline>
-                <OverflowMenu ariaLabel={t("openContextMenu")}>
-                  <OverflowMenuItem
-                    itemText={t("update")}
-                    onClick={() => {
-                      editUser(user);
-                    }}
-                  />
-                  <OverflowMenuItem
-                    itemText={t("delete")}
-                    onClick={() => {
-                      deleteUser(user);
-                    }}
-                  />
-                </OverflowMenu>
-              </>
-            )}
-          </Flex>
+          user && (
+            <Tabs path={`../${id}`} tabs={tabs} selectedTabKey={tab}>
+              <PageHeader
+                title={user.username}
+                actions={
+                  <>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => editUser(user)}
+                    >
+                      <Pencil aria-hidden="true" />
+                      {t("update")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteUser(user)}
+                    >
+                      <Trash2 aria-hidden="true" />
+                      {t("delete")}
+                    </Button>
+                  </>
+                }
+                tabs={<TabsHeaderList />}
+              />
+              <TabsContent />
+            </Tabs>
+          )
         )}
-        <Section>
-          <Tabs
-            tabs={[
-              {
-                key: "details",
-                label: t("userDetails"),
-                content: user && <UserDetails user={user} loading={loading} />,
-              },
-            ]}
-            selectedTabKey={tab}
-            path={`../${id}`}
-          />
-        </Section>
       </>
       {editUserModal}
       {deleteUserModal}
