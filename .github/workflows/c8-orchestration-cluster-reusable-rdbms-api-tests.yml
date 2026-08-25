@@ -367,9 +367,9 @@ jobs:
           # Retry to absorb transient npm registry network errors (e.g. ECONNRESET
           # while fetching a package) that otherwise fail a single matrix leg.
           for attempt in 1 2 3; do
-            npm install && exit 0
+            timeout 300 npm install && exit 0
             echo "npm install failed (attempt ${attempt}/3); retrying in 15s..."
-            sleep 15
+            [ "$attempt" -lt 3 ] && sleep 15
           done
           echo "npm install failed after 3 attempts"
           exit 1
