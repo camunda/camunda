@@ -14,7 +14,7 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 
 REPO = os.environ.get("GITHUB_REPOSITORY", "")
-WORKFLOW = "camunda-daily-load-tests.yml"
+WORKFLOW = "load-test-daily.yml"
 ARTIFACT_PREFIX = "daily-load-test-metrics-"
 ARTIFACT_NAME_PREFIX = ARTIFACT_PREFIX + "medic-daily-"
 SOAK_JOB_NAME = "Soak"

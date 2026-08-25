@@ -4,7 +4,7 @@
 Renders a side-by-side gRPC vs REST metrics table from the end-of-soak metric
 snapshots and posts it to the reliability-testing Slack channel via an incoming
 webhook. Invoked by the `notify-results` job of
-`.github/workflows/camunda-daily-load-tests.yml`.
+`.github/workflows/load-test-daily.yml`.
 
 Metric names, descriptions, and display formats are sourced from `queries.yaml`
 (the single source of truth shared with `loadTestMetrics.sh`), so adding a metric

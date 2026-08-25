@@ -131,14 +131,14 @@ For [the ZPT (zeebe-process-test) project](https://github.com/camunda/zeebe-proc
   * There's a [dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m&from=now-24h&to=now&timezone=browser&var-DS_PROMETHEUS=prometheus&var-cluster=$__all&var-namespace=$__all&var-pod=$__all&var-partition=$__all) to observe the status of the benchmarks
 * Every created benchmark has a dedicated namespace in the Kubernetes cluster (e.g. `c8-release-8-7-x`)
 * There's a benchmark for every currently supported ([maintained](https://docs.camunda.io/docs/next/reference/announcements-release-notes/overview/#announcements--release-notes)) version + previously released alpha version.
-* A benchmark is installed/upgraded by this [GHA workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test.yml)
+* A benchmark is installed/upgraded by this [GHA workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/load-test.yml)
   * Under the hood, it's running a `helm install --upgrade` command for a benchmark creation/update
   * installs a special [Helm chart](https://github.com/camunda/camunda-load-tests-helm) containing the load test applications
   * installs the standard Camunda 8 [Helm chart](https://github.com/camunda/camunda-platform-helm)
 
 **:leaves: Benchmark flow**
 
-* A benchmark is automatically created via GitHub Action call after a release candidate (RC) is triggered ([GHA workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test.yml))
+* A benchmark is automatically created via GitHub Action call after a release candidate (RC) is triggered ([GHA workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/load-test.yml))
   * Benchmark creation applies only to alpha, minor, and major releases.
   * Patches don't require a new benchmark creation. What is required is to re-use the same namespace + the recently released patch version, and update the the applicable benchmark with the newest patch version.
 * If during the release, new commits are merged into the release branch (major, minor, alpha), the corresponding benchmark needs to be updated to run the code from latest commit of the release branch.

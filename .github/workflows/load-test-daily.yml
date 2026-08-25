@@ -5,13 +5,13 @@
 #              posts a side-by-side summary table (with flamegraph links) to
 #              Slack, then immediately deletes both namespaces to reduce cost.
 #              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
-# calls: camunda-load-test.yml (scenario: max),
-#        profile-load-test.yml,
-#        camunda-load-test-metrics.yaml,
-#        camunda-delete-load-test.yml
+# calls: load-test.yml (scenario: max),
+#        load-test-profile.yml,
+#        load-test-metrics.yaml,
+#        load-test-delete.yml
 # type: CI
 # owner: @camunda/reliability-testing
-name: Daily Camunda Platform Load Tests
+name: "Load Test: Daily"
 on:
   workflow_dispatch:
      inputs:
@@ -77,7 +77,7 @@ jobs:
     name: Setup max load test
     needs:
       - benchmark-data
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}
@@ -92,7 +92,7 @@ jobs:
     name: Setup max REST load test
     needs:
       - benchmark-data
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}-rest
@@ -105,7 +105,7 @@ jobs:
   # Wait 15 minutes after setup succeeds before profiling starts, mirroring the
   # warmup convention the rest of the load-test flow already uses (see
   # WARMUP_SECONDS in resolve-daily.py and await-benchmark's `sleep 900` in
-  # camunda-pr-load-test.yaml): profiling from t=0 would capture pod startup
+  # load-test-pr.yaml): profiling from t=0 would capture pod startup
   # and ramp-up noise instead of steady-state behavior.
   warmup-grpc:
     name: Warmup before profiling (gRPC)
@@ -138,7 +138,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/profile-load-test.yml
+    uses: ./.github/workflows/load-test-profile.yml
     secrets: inherit
     with:
       name: c8-${{ needs.benchmark-data.outputs.benchmark }}
@@ -153,7 +153,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/profile-load-test.yml
+    uses: ./.github/workflows/load-test-profile.yml
     secrets: inherit
     with:
       name: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
@@ -212,7 +212,7 @@ jobs:
     name: Collect metrics (gRPC)
     needs: [ benchmark-data, setup-max-load-test, soak-grpc ]
     if: needs.soak-grpc.result == 'success' && needs.setup-max-load-test.result == 'success'
-    uses: ./.github/workflows/camunda-load-test-metrics.yaml
+    uses: ./.github/workflows/load-test-metrics.yaml
     secrets: inherit
     with:
       namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}
@@ -223,7 +223,7 @@ jobs:
     name: Collect metrics (REST)
     needs: [ benchmark-data, setup-max-rest-load-test, soak-rest ]
     if: needs.soak-rest.result == 'success' && needs.setup-max-rest-load-test.result == 'success'
-    uses: ./.github/workflows/camunda-load-test-metrics.yaml
+    uses: ./.github/workflows/load-test-metrics.yaml
     secrets: inherit
     with:
       namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
@@ -352,7 +352,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/camunda-delete-load-test.yml
+    uses: ./.github/workflows/load-test-delete.yml
     secrets: inherit
     with:
       namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}
@@ -364,7 +364,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/camunda-delete-load-test.yml
+    uses: ./.github/workflows/load-test-delete.yml
     secrets: inherit
     with:
       namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest

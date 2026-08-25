@@ -27,7 +27,7 @@ echo "Finding versions changed compared to ${PARENT}..."
 changed="$(git diff --name-only "${PARENT}...HEAD")"
 
 run_all=false
-if grep -qE '\.github/workflows/camunda-load-test' <<<"$changed"; then
+if grep -qE '\.github/workflows/load-test(-smoke(-dispatch)?)?\.yml' <<<"$changed"; then
     echo "⇒ Load-test workflow changed, running all versions..."
     run_all=true
 fi

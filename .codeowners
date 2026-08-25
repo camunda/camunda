@@ -337,7 +337,7 @@ optimize.Dockerfile         @camunda/core-features
 # CI/CD Workflows
 /.github/workflows/*load-test*.yml @camunda/reliability-testing
 /.github/workflows/*load-test*.yaml @camunda/reliability-testing
-/.github/workflows/profile-load-test.yml @camunda/reliability-testing
+/.github/workflows/load-test-profile.yml @camunda/reliability-testing
 
 # Helm version pin consumed by the load test setup golden file workflow
 /.tool-versions             @camunda/reliability-testing
