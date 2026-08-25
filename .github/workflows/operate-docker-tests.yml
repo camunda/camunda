@@ -38,6 +38,9 @@ concurrency:
   cancel-in-progress: true
   group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && github.sha || github.ref) }}
 
+env:
+  TEST_OWNER: '@camunda/core-features'
+
 jobs:
   # does not meet the 10 minute runtime as required by the unified CI
   integration-tests:

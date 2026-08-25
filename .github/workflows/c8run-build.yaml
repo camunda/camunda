@@ -24,6 +24,7 @@ on:
 
 env:
   GO_VERSION: ">= 1.23.1"
+  TEST_OWNER: '@camunda/distribution'
 
 permissions:
   actions: write
