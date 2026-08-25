@@ -147,6 +147,10 @@
             <!-- Exclude tests that use Jackson 3.x (tools.jackson.*) which is not available in Spring Boot 3.x -->
             <exclude>io/camunda/client/impl/CamundaObjectMapperTest.java</exclude>
             <exclude>io/camunda/client/spring/configuration/JsonMapperConfigurationTest.java</exclude>
+            <!-- Exclude test that uses org.springframework.boot.health.contributor, which is a
+                 Spring Boot 4.x-only package; Spring Boot 3.x has its own
+                 CamundaClientHealthIndicator override under org.springframework.boot.actuate.health -->
+            <exclude>io/camunda/client/spring/actuator/CamundaClientHealthIndicatorTest.java</exclude>
           </testExcludes>
         </configuration>
       </plugin>
