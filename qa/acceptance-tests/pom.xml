@@ -751,7 +751,7 @@
           <systemPropertyVariables>
             <identity.docker.image.version>${version.identity}</identity.docker.image.version>
           </systemPropertyVariables>
-          <excludedGroups>rdbms, rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, dl-nightly</excludedGroups>
+          <excludedGroups>rdbms, rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, dl-nightly, async-repl</excludedGroups>
         </configuration>
         <dependencies>
           <dependency>
@@ -815,6 +815,38 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <groups>rdbms</groups>
+              <!--
+              JUnit 5 aggregates @Tag up the class hierarchy, so AuroraAsyncReplicationIT and
+              AuroraMysqlAsyncReplicationIT (which extend AsyncReplicationIT, itself extending
+              AbstractAsyncReplicationIT, tagged "rdbms"/"async-repl" depending on the profile
+              below) also carry this profile's own tag on top of their own
+              "rdbms-aurora"/"rdbms-aurora-mysql" tag. The exclusions below are what keep them out
+              of this profile's run; they are not dead copy-paste and must not be trimmed without
+              re-checking that inheritance.
+              -->
+              <excludedGroups>rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, history</excludedGroups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>async-repl</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <groups>async-repl</groups>
+              <!--
+              Same tag-inheritance guard as the "rdbms" profile above: AuroraAsyncReplicationIT
+              and AuroraMysqlAsyncReplicationIT inherit @Tag("async-repl") from
+              AbstractAsyncReplicationIT in addition to their own "rdbms-aurora"/
+              "rdbms-aurora-mysql" tag, so <groups>async-repl</groups> alone would otherwise sweep
+              them into this job (which has no AWS Aurora credentials). Do not remove.
+              -->
               <excludedGroups>rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, history</excludedGroups>
             </configuration>
           </plugin>

@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 
-@Tag("rdbms")
+@Tag("async-repl")
 @TestInstance(Lifecycle.PER_CLASS)
 abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer> {
 

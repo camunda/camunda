@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-@Tag("rdbms")
+@Tag("async-repl")
 public class ReplicationStatusLogIT {
 
   @RegisterExtension
