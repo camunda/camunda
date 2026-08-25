@@ -300,7 +300,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             variableBehavior,
             processingState);
 
-    agentInstanceBehavior = new AgentInstanceBehavior(writers);
+    agentInstanceBehavior = new AgentInstanceBehavior(writers, processingState);
 
     processDeletionBehavior =
         new BpmnProcessDeletionBehavior(
