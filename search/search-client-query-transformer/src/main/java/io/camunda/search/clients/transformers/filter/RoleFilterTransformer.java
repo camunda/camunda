@@ -34,6 +34,16 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
       return createMultipleMemberTypeQuery(filter);
     }
 
+    final var queries = new ArrayList<>(toSearchQueryFields(filter));
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      queries.add(or(filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).toList()));
+    }
+
+    return and(queries);
+  }
+
+  private ArrayList<SearchQuery> toSearchQueryFields(final RoleFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     if (filter.roleId() != null) {
       queries.add(term(RoleIndex.ROLE_ID, filter.roleId()));
@@ -65,8 +75,7 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
               ? matchNone()
               : stringTerms(RoleIndex.ROLE_ID, filter.roleIds()));
     }
-
-    return and(queries);
+    return queries;
   }
 
   @Override
