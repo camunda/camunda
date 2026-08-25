@@ -10,10 +10,11 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
 import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
@@ -193,66 +194,17 @@ final class VariableInputMappingTransformerTest {
       final List<ZeebeMapping> mappings,
       final Map<String, DirectBuffer> variables,
       final String expectedOutput) {
-    // given
-    final var inputMappings = transformer.transformInputMappings(mappings, expressionLanguage);
-    inputMappings
-        .mappings()
-        .forEach(
-            mapping ->
-                assertThat(mapping.source().isValid())
-                    .describedAs(
-                        "Expected valid expression: %s", mapping.source().getFailureMessage())
-                    .isTrue());
-
-    // when: evaluate the mappings one by one in modeling order, same as
-    // BpmnVariableMappingBehavior.applyInputMappings does at runtime — accumulated results shadow
-    // the base variables, which fall back for anything not mapped yet
-    final var resultBuilder = new InputMappingResultBuilder(variables::get);
-    for (final var mapping : inputMappings.mappings()) {
-      final EvaluationContext context =
-          name -> {
-            final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
-          };
-      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
-    }
-
-    // then
-    MsgPackUtil.assertEquality(resultBuilder.toDocument(), expectedOutput);
+    MsgPackUtil.assertEquality(evaluate(mappings, variables, expressionLanguage), expectedOutput);
   }
 
   @Test
   void shouldPreserveDeclarationOrderAcrossRegroupedTargets() {
-    // given: c is declared BETWEEN the two "a.*" entries, so the user reasonably expects a.d to
+    // c is declared BETWEEN the two "a.*" entries, so the user reasonably expects a.d to
     // see c's just-assigned value
     final var mappings = List.of(mapping("1", "a.b"), mapping("x", "c"), mapping("c", "a.d"));
-    final Map<String, DirectBuffer> variables = Map.of("x", asMsgPack("1"));
-
-    final var inputMappings = transformer.transformInputMappings(mappings, expressionLanguage);
-    inputMappings
-        .mappings()
-        .forEach(
-            mapping ->
-                assertThat(mapping.source().isValid())
-                    .describedAs(
-                        "Expected valid expression: %s", mapping.source().getFailureMessage())
-                    .isTrue());
-
-    // when
-    final var resultBuilder = new InputMappingResultBuilder(variables::get);
-    for (final var mapping : inputMappings.mappings()) {
-      final EvaluationContext context =
-          name -> {
-            final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
-          };
-      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
-    }
-
-    // then
-    MsgPackUtil.assertEquality(resultBuilder.toDocument(), "{'a':{'b':1, 'd':1}, 'c':1}");
+    MsgPackUtil.assertEquality(
+        evaluate(mappings, Map.of("x", asMsgPack("1")), expressionLanguage),
+        "{'a':{'b':1, 'd':1}, 'c':1}");
   }
 
   @Test
@@ -282,15 +234,20 @@ final class VariableInputMappingTransformerTest {
       final Map<String, DirectBuffer> variables,
       final ExpressionLanguage language) {
     final var inputMappings = transformer.transformInputMappings(mappings, language);
+    final var ep =
+        new ExpressionProcessor(
+            language,
+            name -> Either.left(variables.get(name)),
+            EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT);
     final var resultBuilder = new InputMappingResultBuilder(variables::get);
     for (final var mapping : inputMappings.mappings()) {
-      final EvaluationContext context =
-          name -> {
-            final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
-          };
-      final var result = language.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+      final var buffer =
+          ep.prependContext(name -> Either.left(resultBuilder.get(name)))
+              .evaluateVariableMappingExpression(mapping.source(), -1L, "");
+      if (buffer.isLeft()) {
+        throw new IllegalStateException("Evaluation failed: " + buffer.getLeft().getMessage());
+      }
+      resultBuilder.put(mapping.targetPath(), buffer.get());
     }
     return resultBuilder.toDocument();
   }

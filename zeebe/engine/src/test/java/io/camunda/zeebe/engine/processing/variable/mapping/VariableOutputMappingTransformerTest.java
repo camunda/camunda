@@ -211,7 +211,7 @@ public final class VariableOutputMappingTransformerTest {
     for (final var mapping : outputMappings) {
       final EvaluationContext context =
           name -> {
-            final var accumulated = resultBuilder.getVariable(name);
+            final var accumulated = resultBuilder.get(name);
             return Either.left(accumulated != null ? accumulated : variables.get(name));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
@@ -245,7 +245,7 @@ public final class VariableOutputMappingTransformerTest {
     for (final var mapping : outputMappings) {
       final EvaluationContext context =
           name -> {
-            final var accumulated = resultBuilder.getVariable(name);
+            final var accumulated = resultBuilder.get(name);
             return Either.left(accumulated != null ? accumulated : variables.get(name));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
@@ -285,7 +285,7 @@ public final class VariableOutputMappingTransformerTest {
     for (final var mapping : outputMappings) {
       final EvaluationContext context =
           name -> {
-            final var accumulated = resultBuilder.getVariable(name);
+            final var accumulated = resultBuilder.get(name);
             return Either.left(accumulated != null ? accumulated : variables.get(name));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
@@ -318,7 +318,7 @@ public final class VariableOutputMappingTransformerTest {
     for (final var mapping : outputMappings) {
       final EvaluationContext context =
           name -> {
-            final var accumulated = resultBuilder.getVariable(name);
+            final var accumulated = resultBuilder.get(name);
             return Either.left(accumulated != null ? accumulated : variables.get(name));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
