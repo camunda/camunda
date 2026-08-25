@@ -313,6 +313,19 @@ final class SegmentWriter {
     FrameUtil.markAsIgnored(buffer, position);
   }
 
+  /**
+   * Flushes the invalidated frame that marks where this segment's records end, so that a restart
+   * cannot read whatever follows it. Only needed when the segment stops being written before it is
+   * full, as the records after the invalidated frame are otherwise overwritten anyway.
+   *
+   * <p>Expects the position to be at that frame, which is where truncating leaves it. A caller that
+   * flushes a segment whose records end at its capacity fails here, rather than silently skipping a
+   * marker that recovery relies on.
+   */
+  void flushEndOfRecords() {
+    buffer.force(buffer.position(), FrameUtil.getLength());
+  }
+
   private void jumpToLastEntry(final int lastPosition, final long lastIndex) {
     try {
       buffer.position(lastPosition);
