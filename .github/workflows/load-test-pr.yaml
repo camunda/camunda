@@ -5,12 +5,12 @@
 #                                post the comparison comment, then tear the namespace down
 #              On unlabel or PR close, fires an explicit cleanup. New commits on the PR
 #              cancel the in-flight run (via dispatch-level concurrency) and redeploy fresh.
-# called by: pr-load-test-dispatch.yml
-# calls: camunda-load-test.yml (scenario: max), profile-load-test.yml,
-#        camunda-load-test-metrics.yaml, camunda-delete-load-test.yml
+# called by: load-test-pr-dispatch.yml
+# calls: load-test.yml (scenario: max), load-test-profile.yml,
+#        load-test-metrics.yaml, load-test-delete.yml
 # type: CI
 # owner @camunda/reliability-testing
-name: Camunda Pull Request Benchmark
+name: "Load Test: Pull Request"
 on:
   pull_request:
     types:
@@ -65,7 +65,7 @@ jobs:
     if: >
       (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
@@ -103,7 +103,7 @@ jobs:
     if: >
       (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
-    uses: ./.github/workflows/profile-load-test.yml
+    uses: ./.github/workflows/load-test-profile.yml
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
@@ -167,7 +167,7 @@ jobs:
   get-pr-metrics:
     name: Collect PR namespace metrics
     needs: [sanitize-branch-name, await-benchmark]
-    uses: ./.github/workflows/camunda-load-test-metrics.yaml
+    uses: ./.github/workflows/load-test-metrics.yaml
     secrets: inherit
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
@@ -177,7 +177,7 @@ jobs:
     name: Collect daily-on-main metrics
     needs: resolve-daily-namespace
     if: needs.resolve-daily-namespace.outputs.daily-namespace != ''
-    uses: ./.github/workflows/camunda-load-test-metrics.yaml
+    uses: ./.github/workflows/load-test-metrics.yaml
     secrets: inherit
     with:
       namespace: ${{ needs.resolve-daily-namespace.outputs.daily-namespace }}
@@ -280,7 +280,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/camunda-delete-load-test.yml
+    uses: ./.github/workflows/load-test-delete.yml
     secrets: inherit
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
@@ -371,7 +371,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/camunda-delete-load-test.yml
+    uses: ./.github/workflows/load-test-delete.yml
     secrets: inherit
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}

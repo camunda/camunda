@@ -2,7 +2,7 @@
 # We use this workflow to start ad-hoc load tests or weekly medic load tests.
 # The health of the cluster and results of the load tests are monitored by Core team's regularly.
 # https://dashboard.benchmark.camunda.cloud/
-# called by: camunda-weekly-load-tests.yml, camunda-pr-load-test.yaml
+# called by: load-test-weekly.yml, load-test-pr.yaml
 # type: CI
 # owner: camunda/orchestration-cluster-team
 #
@@ -12,8 +12,8 @@
 #   To use them in a namespace, the namespace must be labeled with "registry=harbor"
 #   You must also set the image pull secret to "harbor-registry" in the helm values.
 
-name: Camunda load test
-run-name: "Camunda load test: ${{ inputs.name }}"
+name: "Load Test"
+run-name: "Load Test: ${{ inputs.name }}"
 
 on:
   workflow_dispatch:
