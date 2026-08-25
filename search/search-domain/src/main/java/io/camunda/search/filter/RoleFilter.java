@@ -27,7 +27,8 @@ public record RoleFilter(
     Set<String> roleIds,
     EntityType childMemberType,
     String tenantId,
-    Map<EntityType, Set<String>> memberIdsByType)
+    Map<EntityType, Set<String>> memberIdsByType,
+    List<RoleFilter> orFilters)
     implements FilterBase {
 
   public static RoleFilter of(
@@ -44,7 +45,8 @@ public record RoleFilter(
         .roleIds(roleIds)
         .childMemberType(childMemberType)
         .tenantId(tenantId)
-        .memberIdsByType(memberIdsByType);
+        .memberIdsByType(memberIdsByType)
+        .orFilters(orFilters);
   }
 
   public static final class Builder implements ObjectBuilder<RoleFilter> {
@@ -56,6 +58,7 @@ public record RoleFilter(
     private EntityType childMemberType;
     private String tenantId;
     private Map<EntityType, Set<String>> memberIdsByType;
+    private List<RoleFilter> orFilters;
 
     public Builder roleId(final String value) {
       roleId = value;
@@ -125,6 +128,19 @@ public record RoleFilter(
       return this;
     }
 
+    public Builder addOrOperation(final RoleFilter orOperation) {
+      if (orFilters == null) {
+        orFilters = new ArrayList<>();
+      }
+      orFilters.add(orOperation);
+      return this;
+    }
+
+    public Builder orFilters(final List<RoleFilter> orFilters) {
+      this.orFilters = orFilters;
+      return this;
+    }
+
     @Override
     public RoleFilter build() {
       if (memberIds != null && childMemberType == null) {
@@ -138,7 +154,8 @@ public record RoleFilter(
           roleIds,
           childMemberType,
           tenantId,
-          memberIdsByType);
+          memberIdsByType,
+          orFilters);
     }
   }
 }
