@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
@@ -26,11 +27,15 @@ public final class AgentInstanceBehavior {
   }
 
   /**
-   * Completes every agent instance still associated with the given process instance. Does nothing
-   * if the process instance has no associated agent instances, to avoid appending a command that
-   * the {@code AgentInstanceCompleteProcessor} would just reject as NOT_FOUND.
+   * Completes every agent instance still associated with the given process instance, if any.
+   *
+   * <p>Does nothing if the process instance has no associated agent instances.
    */
-  public void completeAgentInstancesOfProcessInstance(final BpmnElementContext context) {
+  public void completeAgentInstancesOfProcessInstance(
+      final ExecutableProcess process, final BpmnElementContext context) {
+    if (!process.isAgentic()) {
+      return;
+    }
     final long processInstanceKey = context.getProcessInstanceKey();
     if (agentInstanceState.getFirstAgentInstanceKeyByProcessInstanceKey(processInstanceKey)
         == null) {

@@ -22,6 +22,7 @@ public class ExecutableProcess extends ExecutableFlowElementContainer {
 
   private final Map<DirectBuffer, AbstractFlowElement> flowElements = new HashMap<>();
   private Expression defaultJobPriority;
+  private boolean agentic;
 
   public ExecutableProcess(final String id) {
     super(id);
@@ -112,5 +113,21 @@ public class ExecutableProcess extends ExecutableFlowElementContainer {
 
   public Collection<AbstractFlowElement> getFlowElements() {
     return flowElements.values();
+  }
+
+  /**
+   * A process is agentic when it contains at least one agent-marked element: a {@code serviceTask}
+   * or {@code adHocSubProcess} carrying an explicit {@code zeebe:agentDefinition} marker, anywhere
+   * in its element tree.
+   *
+   * @return {@code true} if this process was detected at deploy time to be agentic.
+   */
+  public boolean isAgentic() {
+    return agentic;
+  }
+
+  /** Marks this process as agentic, detected at deploy time from an agent-marked element. */
+  public void markAgentic() {
+    agentic = true;
   }
 }
