@@ -42,6 +42,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ResourceFilter;
 import io.camunda.gateway.protocol.model.RoleFilterFields;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
+import io.camunda.gateway.protocol.model.UserFilterFields;
 import io.camunda.gateway.protocol.model.UserTaskAuditLogFilter;
 import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
 import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
@@ -1127,7 +1128,17 @@ public class SearchQueryFilterMapper {
 
   static UserFilter toUserFilter(
       final io.camunda.gateway.protocol.model.@Nullable UserFilter filter) {
+    final var builder = toUserFilterFields(filter);
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final UserFilterFields or : filter.get$Or()) {
+        builder.addOrOperation(toUserFilterFields(or).build());
+      }
+    }
+    return builder.build();
+  }
 
+  static UserFilter.Builder toUserFilterFields(
+      final io.camunda.gateway.protocol.model.@Nullable UserFilterFields filter) {
     final var builder = FilterBuilders.user();
     if (filter != null) {
       Optional.ofNullable(filter.getUsername())
@@ -1140,7 +1151,7 @@ public class SearchQueryFilterMapper {
           .map(mapToStringOperations())
           .ifPresent(builder::emailOperations);
     }
-    return builder.build();
+    return builder;
   }
 
   static Either<List<String>, IncidentFilter> toIncidentFilter(
