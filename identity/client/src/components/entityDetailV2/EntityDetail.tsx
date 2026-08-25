@@ -25,7 +25,9 @@ const EntityDetail: FC<EntityDetailProps> = ({
   loading,
 }) => {
   const entries = data.length;
-  const isDataMissing = data.some(({ value }) => !value);
+  const isDataMissing = data.some(
+    ({ value }) => value === undefined || value === null,
+  );
 
   if (loading || isDataMissing) {
     return <Skeleton entries={entries} />;
