@@ -53,9 +53,11 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -456,6 +458,41 @@ public final class JobWorkerImplTest {
   }
 
   @Test
+  public void shouldNotAskForMoreJobsThanItCanRunWhenAJobRunsAndIsRefusedAtTheSameTime() {
+    // given a worker whose handler executor runs a job and then reports it as refused
+    final int maxJobsActive = 3;
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobHandlingExecutor = new RunsThenRefusesExecutor();
+    gateway.respondWith(TestData.jobs(maxJobsActive));
+
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler(NOOP_JOB_HANDLER)
+                .maxJobsActive(maxJobsActive)
+                .pollInterval(Duration.ofMillis(50))
+                .open()) {
+
+      // when the worker has been through several rounds of activating those jobs
+      Awaitility.await("Worker should activate jobs repeatedly")
+          .atMost(Duration.ofSeconds(10))
+          .until(() -> gateway.getRequestedJobCounts().size() >= 3);
+
+      // then it never asks for more jobs than it is allowed to run at a time, which it would do if
+      // it counted a job that both ran and was refused as two free slots instead of one
+      assertThat(gateway.getRequestedJobCounts())
+          .allSatisfy(requested -> assertThat(requested).isLessThanOrEqualTo(maxJobsActive));
+    }
+  }
+
+  @Test
   public void shouldCloseIfExecutorIsClosed() {
     // given
     final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -534,6 +571,42 @@ public final class JobWorkerImplTest {
   }
 
   /**
+   * An executor that runs the command on the calling thread and then reports it as refused. It
+   * stands in for any executor that can do both, which leaves the caller unable to tell "the
+   * command never ran" from "the command already ran" by looking at the exception alone.
+   */
+  private static final class RunsThenRefusesExecutor extends AbstractExecutorService {
+    @Override
+    public void shutdown() {}
+
+    @Override
+    public List<Runnable> shutdownNow() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public boolean isShutdown() {
+      return false;
+    }
+
+    @Override
+    public boolean isTerminated() {
+      return false;
+    }
+
+    @Override
+    public boolean awaitTermination(final long timeout, final TimeUnit unit) {
+      return true;
+    }
+
+    @Override
+    public void execute(final Runnable command) {
+      command.run();
+      throw new RejectedExecutionException("Command ran here, but the executor is out of capacity");
+    }
+  }
+
+  /**
    * A scheduler that runs tasks only when the test tells it to. {@link DeterministicScheduler}
    * refuses to answer whether it was shut down, while the worker asks that question whenever the
    * handler executor refuses a job, so the answer is supplied here.
@@ -605,6 +678,8 @@ public final class JobWorkerImplTest {
         new HashMap<>();
     private final Object failedJobsLock = new Object();
     private final List<FailJobRequest> failedJobs = new ArrayList<>();
+    private final Object requestedJobCountsLock = new Object();
+    private final List<Integer> requestedJobCounts = new ArrayList<>();
     private final Object responsesLock = new Object();
     private boolean isInErrorMode = false;
     private ActivateJobsResponse pollSuccessResponse = ActivateJobsResponse.newBuilder().build();
@@ -620,6 +695,9 @@ public final class JobWorkerImplTest {
     public void activateJobs(
         final ActivateJobsRequest request,
         final StreamObserver<ActivateJobsResponse> responseObserver) {
+      synchronized (requestedJobCountsLock) {
+        requestedJobCounts.add(request.getMaxJobsToActivate());
+      }
       synchronized (metricsLock) {
         if (isMeasuring) {
           final Instant now = Instant.now();
@@ -664,6 +742,12 @@ public final class JobWorkerImplTest {
     public List<FailJobRequest> getFailedJobs() {
       synchronized (failedJobsLock) {
         return new ArrayList<>(failedJobs);
+      }
+    }
+
+    public List<Integer> getRequestedJobCounts() {
+      synchronized (requestedJobCountsLock) {
+        return new ArrayList<>(requestedJobCounts);
       }
     }
 
