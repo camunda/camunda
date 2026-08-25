@@ -40,7 +40,7 @@ export default function InfoMenu({docsUrl, enterpriseMode}: InfoMenuProps) {
     },
     {
       key: 'slackCommunityChannel',
-      label: 'Slack Community Channel',
+      label: t('navigation.slackCommunityChannel').toString(),
       href: 'https://camunda.com/slack',
     },
   ];
