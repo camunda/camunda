@@ -149,7 +149,16 @@ rules:
   valid-deprecated-enum-members:
     description: "`x-deprecated-enum-members` must be a valid array of {name, deprecatedInVersion} referencing existing enum values."
     severity: error
-    given: "$.components.schemas[*]"
+    # Matches named schemas and inline (property-level) enums alike. resolved:
+    # false reports at the schema's source location instead of at every $ref
+    # consumer (mirrors properties-added-in-version-shape below). The parent
+    # operator (^) is required over a [?(@['x-deprecated-enum-members'])]
+    # filter: Spectral crashes walking into a `x-deprecated-enum-members:`
+    # with no value (e.g. a YAML indentation mistake), since the filter
+    # dereferences the property on every visited node, including once it is
+    # null.
+    resolved: false
+    given: "$..x-deprecated-enum-members^"
     message: "{{error}}"
     then:
       function: verifyDeprecatedEnumMembers
