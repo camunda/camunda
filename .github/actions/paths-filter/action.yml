@@ -210,6 +210,16 @@ outputs:
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.rdbms-change == 'true'
       }}
+  async-replication-tests:
+    description: Output whether async-replication integration tests should be run based on code changes
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.async-replication-change == 'true'
+      }}
   renovate-config-changes:
     description: Output whether renovate config validator needs to be run
     value: >-
@@ -354,6 +364,12 @@ runs:
         - 'qa/acceptance-tests/**'
         - 'search/search-domain/**'
         - 'zeebe/exporters/rdbms-exporter/**'
+
+        async-replication-change:
+        - 'db/rdbms/**'
+        - 'zeebe/exporters/rdbms-exporter/**'
+        - 'qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/asyncreplication/**'
+        - 'qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/util/**'
 
   - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-github-actions

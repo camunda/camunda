@@ -42,10 +42,11 @@ import org.junit.jupiter.api.TestMethodOrder;
  * elapses, and that they are acknowledged afterwards. Uses H2 in-memory database (vendor-agnostic)
  * — no replication cluster is required.
  *
- * <p>Tagged {@code dl-nightly} because the 1-minute delay makes it too slow for regular CI.
+ * <p>Tagged {@code async-repl} so it runs in the path-scoped async-replication CI job once
+ * re-enabled, rather than nightly-only.
  */
-@Disabled("shouldNotAcknowledgeBeforeDelayExpires currently failing on nightly CI - INC-6678")
-@Tag("dl-nightly")
+@Disabled("shouldNotAcknowledgeBeforeDelayExpires currently failing - INC-6678")
+@Tag("async-repl")
 @TestInstance(Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
 public class DelayReplicationIT {

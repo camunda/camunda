@@ -63,6 +63,7 @@ jobs:
       openapi-changes: ${{ steps.filter.outputs.openapi-changes }}
       stable-branch-changes: ${{ steps.filter.outputs.stable-branch-changes }}
       rdbms-integration-tests: ${{steps.filter.outputs.rdbms-integration-tests}}
+      async-replication-tests: ${{ steps.filter.outputs.async-replication-tests }}
       renovate-config-changes: ${{ steps.filter.outputs.renovate-config-changes }}
       webapp-client-changes: ${{ steps.filter.outputs.webapp-client-changes }}
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
@@ -1395,6 +1396,102 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  async-replication-integration-tests:
+    if: needs.detect-changes.outputs.async-replication-tests == 'true'
+    needs: [ detect-changes, build-distball ]
+    name: "General / Integration / Async Replication ITs"
+    timeout-minutes: 20
+    runs-on: gcp-perf-core-8-default
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token for the GCS distball download
+    env:
+      # Route base-branch failure alerts to the code owner of /db/ and the RDBMS ITs
+      # (.codeowners), instead of the workflow-level default @camunda/engineering-operations.
+      TEST_OWNER: '@camunda/data-layer'
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          persist-credentials: false
+      - name: Check for fork
+        id: is-fork
+        uses: ./.github/actions/is-fork
+      # Consume the shared distball's io.camunda SNAPSHOTs instead of a ~15 min reactor build.
+      # This job runs on a self-hosted gcp-perf runner where the artifact API is throughput-capped,
+      # so restore-shared-m2 pulls from GCS (same-region, non-billable). Async-replication ITs run
+      # in-process (no Docker image build), so only the m2 SNAPSHOTs are needed, not the distball
+      # tarball. The GCS build-cache auth step below authenticates gcloud for that download.
+      # See build-distball.
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          maven-cache-key-modifier: it-async-repl
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Timed out here directly (not via setup-build) so a Vault/WIF hang fails fast instead
+      # of silently eating the whole job timeout-minutes budget -- see INC-6820.
+      - name: Authenticate to GCS build-cache
+        if: steps.is-fork.outputs.is-fork != 'true'
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/restore-shared-m2
+        if: steps.is-fork.outputs.is-fork != 'true'
+      # Fork PRs can't authenticate to GCS (no Vault access), so build the SNAPSHOTs locally
+      # instead of restoring them -- same fallback the database/webapp-UT reusable workflows
+      # use for their standalone (non-ci.yml) callers.
+      - uses: ./.github/actions/build-zeebe
+        if: steps.is-fork.outputs.is-fork == 'true'
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      # Run the async-replication integration tests (tag "async-repl"), split out of the
+      # general RDBMS ITs job so it only runs when replication-related code actually changes.
+      - name: Maven Test Build Async Replication
+        shell: bash
+        run: >
+          ./mvnw -B -T1C --no-snapshot-updates
+          -D forkCount=1
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
+          -P async-repl,extract-flaky-tests
+          -pl qa/acceptance-tests
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] Async Replication"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: async-replication-integration-tests
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          detailed_junit_tests: true
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs (${{ matrix.stressRun }})"
@@ -1817,6 +1914,7 @@ jobs:
     needs:
       - detect-changes
       - archunit-tests
+      - async-replication-integration-tests
       - database-integration-tests
       - docker-checks
       - general-unit-tests
@@ -1904,6 +2002,8 @@ jobs:
           identity-matrix-output-result: ${{ steps.matrix-read.outputs.identity }}
           rdbms-tests-result: ${{ needs.rdbms-integration-tests.result }}
           rdbms-tests-flaky: ${{ needs.rdbms-integration-tests.outputs.flakyTests }}
+          async-repl-tests-result: ${{ needs.async-replication-integration-tests.result }}
+          async-repl-tests-flaky: ${{ needs.async-replication-integration-tests.outputs.flakyTests }}
           docker-checks-result: ${{ needs.docker-checks.result }}
           docker-checks-flaky: ${{ needs.docker-checks.outputs.flakyTests }}
           zeebe-tests-result: ${{ needs.zeebe-unit-tests.result }}
@@ -1942,6 +2042,7 @@ jobs:
           IDENTITY: ${{ needs.identity-tests.result }}
           INTEGRATION: ${{ needs.integration-tests.result }}
           RDBMS: ${{ needs.rdbms-integration-tests.result }}
+          ASYNC_REPL: ${{ needs.async-replication-integration-tests.result }}
           ZEEBE: ${{ needs.zeebe-unit-tests.result }}
           ARCHUNIT: ${{ needs.archunit-tests.result }}
         run: |
@@ -1954,6 +2055,7 @@ jobs:
             ["identity-tests"]="$IDENTITY"
             ["integration-tests"]="$INTEGRATION"
             ["rdbms-integration-tests"]="$RDBMS"
+            ["async-replication-integration-tests"]="$ASYNC_REPL"
             ["zeebe-unit-tests"]="$ZEEBE"
             ["archunit-tests"]="$ARCHUNIT"
           )
@@ -2622,6 +2724,7 @@ jobs:
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
       - archunit-tests
+      - async-replication-integration-tests
       - build-distball
       - build-platform-frontend
       - c8-e2e-test-suite
