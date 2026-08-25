@@ -36,6 +36,17 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
     if (filter.memberIdsByType() != null && !filter.memberIdsByType().isEmpty()) {
       return createMultipleMemberTypeQuery(filter);
     }
+
+    final var queries = new ArrayList<>(toSearchQueryFields(filter));
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      queries.add(or(filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).toList()));
+    }
+
+    return and(queries);
+  }
+
+  private ArrayList<SearchQuery> toSearchQueryFields(final GroupFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     if (filter.groupIdOperations() != null && !filter.groupIdOperations().isEmpty()) {
       queries.addAll(stringOperations(GROUP_ID, filter.groupIdOperations()));
@@ -61,8 +72,7 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
               IdentityJoinRelationshipType.MEMBER.getType(),
               term(GroupIndex.MEMBER_TYPE, filter.childMemberType().name())));
     }
-
-    return and(queries);
+    return queries;
   }
 
   private SearchQuery createMultipleMemberTypeQuery(final GroupFilter filter) {
