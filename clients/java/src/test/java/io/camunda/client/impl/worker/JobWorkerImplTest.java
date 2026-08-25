@@ -33,6 +33,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
@@ -310,6 +312,50 @@ public final class JobWorkerImplTest {
   }
 
   @Test
+  public void shouldFailRejectedJobsBackToTheBroker() {
+    // given a worker whose handler executor refuses every job
+    final int maxJobsActive = 4;
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobHandlingExecutor = Executors.newSingleThreadExecutor();
+    jobHandlingExecutor.shutdown();
+    gateway.respondWith(TestData.jobs(maxJobsActive));
+
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler(NOOP_JOB_HANDLER)
+                .maxJobsActive(maxJobsActive)
+                .pollInterval(Duration.ofMillis(50))
+                .open()) {
+
+      // when the executor refuses the activated jobs
+      // then they are handed back so another worker can pick them up right away
+      Awaitility.await("Refused jobs should be failed back without using up a retry")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () -> {
+                final List<FailJobRequest> failedJobs = gateway.getFailedJobs();
+                assertThat(failedJobs)
+                    .extracting(FailJobRequest::getJobKey)
+                    .contains(0L, 1L, 2L, 3L);
+                assertThat(failedJobs)
+                    .allSatisfy(
+                        request -> {
+                          assertThat(request.getRetries()).isEqualTo(TestData.JOB_RETRIES);
+                          assertThat(request.getRetryBackOff()).isZero();
+                        });
+              });
+    }
+  }
+
+  @Test
   public void shouldCloseIfExecutorIsClosed() {
     // given
     final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -401,6 +447,8 @@ public final class JobWorkerImplTest {
 
     private final Map<StreamActivatedJobsRequest, StreamObserver<ActivatedJob>> openStreams =
         new HashMap<>();
+    private final Object failedJobsLock = new Object();
+    private final List<FailJobRequest> failedJobs = new ArrayList<>();
     private final Object responsesLock = new Object();
     private boolean isInErrorMode = false;
     private ActivateJobsResponse pollSuccessResponse = ActivateJobsResponse.newBuilder().build();
@@ -437,6 +485,16 @@ public final class JobWorkerImplTest {
     }
 
     @Override
+    public void failJob(
+        final FailJobRequest request, final StreamObserver<FailJobResponse> responseObserver) {
+      synchronized (failedJobsLock) {
+        failedJobs.add(request);
+      }
+      responseObserver.onNext(FailJobResponse.newBuilder().build());
+      responseObserver.onCompleted();
+    }
+
+    @Override
     public void streamActivatedJobs(
         final StreamActivatedJobsRequest request,
         final StreamObserver<ActivatedJob> responseObserver) {
@@ -445,6 +503,12 @@ public final class JobWorkerImplTest {
       openStreams.put(request, responseObserver);
       observer.setOnCancelHandler(() -> openStreams.remove(request));
       observer.setOnCloseHandler(() -> openStreams.remove(request));
+    }
+
+    public List<FailJobRequest> getFailedJobs() {
+      synchronized (failedJobsLock) {
+        return new ArrayList<>(failedJobs);
+      }
     }
 
     public void respondWith(final List<ActivatedJob> jobs) {
