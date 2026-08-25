@@ -80,11 +80,6 @@ on:
         type: boolean
         default: true
         required: false
-      ttl:
-        description: 'Days before the namespace is auto-deleted'
-        type: number
-        default: 1
-        required: false
 
 defaults:
   run:
@@ -111,7 +106,6 @@ jobs:
     secrets: inherit
     with:
       name: ${{ inputs.name }}
-      ttl: ${{ inputs.ttl || 1 }}
       scenario: max
       build-frontend: ${{ inputs.build-frontend }}
       secondary-storage-type: ${{ inputs.secondary-storage-type }}
