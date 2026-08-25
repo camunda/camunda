@@ -477,6 +477,9 @@
                     },
                     "1": {
                       "text": "Healthy"
+                    },
+                    "2": {
+                      "text": "Recovering"
                     }
                   },
                   "type": "value"
@@ -496,6 +499,10 @@
                   {
                     "color": "green",
                     "value": 1
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 2
                   }
                 ]
               }
@@ -1804,6 +1811,11 @@
                       "color": "dark-red",
                       "index": 3,
                       "text": "DEAD"
+                    },
+                    "2": {
+                      "color": "blue",
+                      "index": 4,
+                      "text": "RECOVERING"
                     }
                   },
                   "type": "value"
