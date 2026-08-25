@@ -19,6 +19,7 @@ on:
 
 env:
   GCS_BUILD_CACHE_BUCKET: camunda-monorepo-ci-artifacts
+  TEST_OWNER: '@camunda/engineering-operations'
 
 jobs:
   build-distball:

@@ -2,7 +2,7 @@
 # test location: /client-components
 # called by: ci.yml
 # type: CI
-# owner: @camunda/engineering-operations
+# owner: @camunda/core-features
 name: Client Components Jobs
 
 on:
@@ -11,6 +11,7 @@ on:
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
   CLIENT_DIR: client-components
+  TEST_OWNER: '@camunda/core-features'
 
 jobs:
   lint:
