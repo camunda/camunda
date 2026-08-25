@@ -17,6 +17,9 @@ on:
       - "c8run/**"
       - ".github/workflows/c8run-build.yaml"
 
+env:
+  TEST_OWNER: '@camunda/distribution'
+
 permissions:
   actions: write
   attestations: none
