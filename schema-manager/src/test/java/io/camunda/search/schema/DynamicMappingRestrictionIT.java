@@ -8,6 +8,11 @@
 package io.camunda.search.schema;
 
 import static io.camunda.search.schema.utils.SchemaTestUtil.createSchemaManager;
+<<<<<<< HEAD
+=======
+import static io.camunda.search.schema.utils.SchemaTestUtil.searchEngineClientFromConfig;
+import static io.camunda.search.schema.utils.SchemaTestUtil.startupWithRetry;
+>>>>>>> 2b8aeddd (test: close leaked search clients created by schema-manager IT tests)
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -43,8 +48,13 @@ public class DynamicMappingRestrictionIT {
         new IndexDescriptors(
             config.connect().getIndexPrefix(), config.connect().getTypeEnum().isElasticSearch());
 
-    try (final SchemaManager schemaManager =
-        createSchemaManager(indexDescriptors.indices(), indexDescriptors.templates(), config)) {
+    try (final var searchEngineClient = searchEngineClientFromConfig(config);
+        final SchemaManager schemaManager =
+            createSchemaManager(
+                searchEngineClient,
+                indexDescriptors.indices(),
+                indexDescriptors.templates(),
+                config)) {
 
       schemaManager.startup();
 
