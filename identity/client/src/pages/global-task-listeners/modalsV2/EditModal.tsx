@@ -8,23 +8,34 @@
 
 import { FC, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Dropdown, MultiSelect, NumberInput } from "@carbon/react";
+import {
+  MultiSelect,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@camunda/design-system";
 import { FormModal, UseEntityModalProps } from "src/components/modalV2";
 import useTranslate from "src/utility/localization";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { globalTaskListenerMutations } from "src/utility/api/global-task-listeners/mutations";
+import FormField from "src/components/formV2/FormField";
 import TextField from "src/components/formV2/TextField";
+import NumberField from "src/components/formV2/NumberField";
 import { LISTENER_EVENT_TYPES } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
 import {
-  getEventTypeLabel,
-  getEventTypeLabels,
+  getEventTypeOptions,
+  getExecutionOrderOptions,
   LISTENER_TYPE_PATTERN,
+  syncAllEventType,
+  toFormValues,
+  toRequestEventTypes,
 } from "src/pages/global-task-listeners/utility";
 import type {
   CreateGlobalTaskListenerRequestBody,
   GlobalTaskListener,
-  GlobalTaskListenerEventType,
 } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
@@ -42,84 +53,23 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
     error,
   } = useMutation(globalTaskListenerMutations.update(qc));
 
-  const { control, handleSubmit, watch, setValue, reset } =
+  const { control, handleSubmit, reset } =
     useForm<CreateGlobalTaskListenerRequestBody>({
-      defaultValues: {
-        id: entity.id,
-        type: entity.type,
-        eventTypes: entity.eventTypes,
-        retries: entity.retries ?? undefined,
-        afterNonGlobal: entity.afterNonGlobal ?? undefined,
-        priority: entity.priority ?? undefined,
-      },
+      defaultValues: toFormValues(entity),
       mode: "all",
     });
 
   // Reset form when entity changes
   useEffect(() => {
-    reset({
-      id: entity.id,
-      type: entity.type,
-      eventTypes: entity.eventTypes,
-      retries: entity.retries ?? undefined,
-      afterNonGlobal: entity.afterNonGlobal ?? undefined,
-      priority: entity.priority ?? undefined,
-    });
+    reset(toFormValues(entity));
   }, [entity, reset]);
 
-  const eventTypes = watch("eventTypes");
-
-  const handleEventTypeChange = (
-    selectedItems: GlobalTaskListenerEventType[],
-  ) => {
-    const individualTypes = LISTENER_EVENT_TYPES.filter((opt) => opt !== "all");
-
-    // If "all" was just checked, select all individual types too
-    if (selectedItems.includes("all") && !eventTypes.includes("all")) {
-      setValue("eventTypes", [...LISTENER_EVENT_TYPES]); // includes "all" and all individuals
-      return;
-    }
-
-    // If "all" was just unchecked, uncheck all individual types too
-    if (!selectedItems.includes("all") && eventTypes.includes("all")) {
-      setValue("eventTypes", []);
-      return;
-    }
-
-    // If an individual type was unchecked while "all" is checked, uncheck "all" too
-    if (
-      eventTypes.includes("all") &&
-      selectedItems.length < LISTENER_EVENT_TYPES.length
-    ) {
-      setValue(
-        "eventTypes",
-        selectedItems.filter((item) => item !== "all"),
-      );
-      return;
-    }
-
-    // If all individual types are now selected, also select "all"
-    const allIndividualSelected = individualTypes.every((type) =>
-      selectedItems.includes(type),
-    );
-    if (allIndividualSelected && !selectedItems.includes("all")) {
-      setValue("eventTypes", [...LISTENER_EVENT_TYPES]); // includes "all" and all individuals
-      return;
-    }
-
-    setValue("eventTypes", selectedItems);
-  };
-
   const onSubmit = (data: CreateGlobalTaskListenerRequestBody) => {
-    const eventTypes = data.eventTypes.includes("all")
-      ? ["all" as const]
-      : data.eventTypes.filter((type) => type !== "all");
-
     mutate(
       {
         id: entity.id,
         type: data.type,
-        eventTypes: eventTypes,
+        eventTypes: toRequestEventTypes(data.eventTypes),
         retries: data.retries,
         afterNonGlobal: data.afterNonGlobal,
         priority: data.priority,
@@ -137,10 +87,8 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
     );
   };
 
-  const afterNonGlobalOptions = [
-    { id: "false", label: t("executionOrderBefore"), value: false },
-    { id: "true", label: t("executionOrderAfter"), value: true },
-  ];
+  const afterNonGlobalOptions = getExecutionOrderOptions(t);
+  const eventTypeOptions = getEventTypeOptions(t);
 
   return (
     <FormModal
@@ -192,53 +140,44 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
           validate: (value) => value.length > 0 || t("eventTypeRequired"),
         }}
         render={({ field, fieldState }) => (
-          <MultiSelect
-            id="event-type-multiselect-edit"
-            titleText={t("eventType")}
-            label={
-              field.value.length > 0
-                ? getEventTypeLabels(field.value, t)
-                : t("selectEventTypes")
-            }
-            items={[...LISTENER_EVENT_TYPES]}
-            selectedItems={field.value}
-            onChange={({
-              selectedItems,
-            }: {
-              selectedItems: GlobalTaskListenerEventType[];
-            }) => {
-              handleEventTypeChange(selectedItems);
-            }}
-            itemToString={(item: GlobalTaskListenerEventType) =>
-              getEventTypeLabel(item, t)
-            }
-            invalid={!!fieldState.error}
-            invalidText={fieldState.error?.message}
-          />
+          <FormField label={t("eventType")} error={fieldState.error?.message}>
+            {({ id }) => (
+              <MultiSelect
+                id={id}
+                placeholder={t("selectEventTypes")}
+                options={eventTypeOptions}
+                // "all" is a real API value listed next to the individual
+                // events, so the schema order carries meaning and the built-in
+                // select-all row would duplicate the "All events" option.
+                sorted={false}
+                hideSelectAll
+                searchable={false}
+                // An existing listener can already have every event type
+                // selected; the default cap of 3 would collapse the rest into a
+                // "+N more" chip and hide what is stored.
+                maxCount={LISTENER_EVENT_TYPES.length}
+                value={field.value}
+                onValueChange={(value) =>
+                  field.onChange(syncAllEventType(value, field.value))
+                }
+              />
+            )}
+          </FormField>
         )}
       />
       <Controller
         name="retries"
         control={control}
+        rules={{ min: { value: 1, message: t("retriesMin") } }}
         render={({ field, fieldState }) => (
-          <NumberInput
-            id="retries-input-edit"
+          <NumberField
             label={t("retries")}
+            helperText={t("retriesHelperText")}
             min={1}
             step={1}
             value={field.value}
-            onChange={(
-              _,
-              { value }: { value: string | number; direction: string },
-            ) => {
-              const numValue =
-                typeof value === "string" ? parseInt(value, 10) : value;
-              if (!isNaN(numValue)) {
-                field.onChange(numValue);
-              }
-            }}
-            invalid={!!fieldState.error}
-            invalidText={fieldState.error?.message}
+            onValueChange={field.onChange}
+            error={fieldState.error?.message}
           />
         )}
       />
@@ -246,56 +185,47 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
         name="afterNonGlobal"
         control={control}
         render={({ field }) => (
-          <Dropdown
-            id="execution-order-dropdown-edit"
-            titleText={t("executionOrder")}
-            label={t("executionOrder")}
-            items={afterNonGlobalOptions}
-            selectedItem={afterNonGlobalOptions.find(
-              (opt) => opt.value === field.value,
+          <FormField label={t("executionOrder")}>
+            {({ id }) => (
+              <Select
+                // A listener stored without `afterNonGlobal` has no value to
+                // stringify — `String(undefined)` would match no item and leave
+                // the trigger blank, so fall through to the placeholder instead.
+                value={
+                  field.value === undefined ? undefined : String(field.value)
+                }
+                onValueChange={(value) => {
+                  field.onChange(value === "true");
+                }}
+              >
+                <SelectTrigger id={id} className="w-full">
+                  <SelectValue placeholder={t("executionOrder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {afterNonGlobalOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
-            onChange={({
-              selectedItem,
-            }: {
-              selectedItem: {
-                id: string;
-                label: string;
-                value: boolean;
-              } | null;
-            }) => {
-              if (selectedItem) {
-                field.onChange(selectedItem.value);
-              }
-            }}
-            itemToString={(item: { id: string; label: string } | null) =>
-              item?.label ?? ""
-            }
-          />
+          </FormField>
         )}
       />
       <Controller
         name="priority"
         control={control}
+        rules={{ min: { value: 0, message: t("priorityMin") } }}
         render={({ field, fieldState }) => (
-          <NumberInput
-            id="priority-input-edit"
+          <NumberField
             label={t("priority")}
             helperText={t("priorityHelperText")}
             min={0}
             step={1}
             value={field.value}
-            onChange={(
-              _,
-              { value }: { value: string | number; direction: string },
-            ) => {
-              const numValue =
-                typeof value === "string" ? parseInt(value, 10) : value;
-              if (!isNaN(numValue)) {
-                field.onChange(numValue);
-              }
-            }}
-            invalid={!!fieldState.error}
-            invalidText={fieldState.error?.message}
+            onValueChange={field.onChange}
+            error={fieldState.error?.message}
           />
         )}
       />

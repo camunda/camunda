@@ -8,23 +8,31 @@
 
 import { FC } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Dropdown, MultiSelect, NumberInput } from "@carbon/react";
+import {
+  MultiSelect,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@camunda/design-system";
 import { FormModal, UseModalProps } from "src/components/modalV2";
 import useTranslate from "src/utility/localization";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { globalTaskListenerMutations } from "src/utility/api/global-task-listeners/mutations";
+import FormField from "src/components/formV2/FormField";
 import TextField from "src/components/formV2/TextField";
+import NumberField from "src/components/formV2/NumberField";
 import { LISTENER_EVENT_TYPES } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
 import {
-  getEventTypeLabel,
-  getEventTypeLabels,
+  getEventTypeOptions,
+  getExecutionOrderOptions,
   LISTENER_TYPE_PATTERN,
+  syncAllEventType,
+  toRequestEventTypes,
 } from "src/pages/global-task-listeners/utility";
-import type {
-  CreateGlobalTaskListenerRequestBody,
-  GlobalTaskListenerEventType,
-} from "@camunda/camunda-api-zod-schemas/8.10";
+import type { CreateGlobalTaskListenerRequestBody } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("globalTaskListeners");
@@ -36,7 +44,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     error,
   } = useMutation(globalTaskListenerMutations.create(qc));
 
-  const { control, handleSubmit, watch, setValue } =
+  const { control, handleSubmit } =
     useForm<CreateGlobalTaskListenerRequestBody>({
       defaultValues: {
         id: "",
@@ -49,59 +57,12 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       mode: "all",
     });
 
-  const eventTypes = watch("eventTypes");
-
-  const handleEventTypeChange = (
-    selectedItems: GlobalTaskListenerEventType[],
-  ) => {
-    const individualTypes = LISTENER_EVENT_TYPES.filter((opt) => opt !== "all");
-
-    // If "all" was just checked, select all individual types too
-    if (selectedItems.includes("all") && !eventTypes.includes("all")) {
-      setValue("eventTypes", [...LISTENER_EVENT_TYPES]); // includes "all" and all individuals
-      return;
-    }
-
-    // If "all" was just unchecked, uncheck all individual types too
-    if (!selectedItems.includes("all") && eventTypes.includes("all")) {
-      setValue("eventTypes", []);
-      return;
-    }
-
-    // If an individual type was unchecked while "all" is checked, uncheck "all" too
-    if (
-      eventTypes.includes("all") &&
-      selectedItems.length < LISTENER_EVENT_TYPES.length
-    ) {
-      setValue(
-        "eventTypes",
-        selectedItems.filter((item) => item !== "all"),
-      );
-      return;
-    }
-
-    // If all individual types are now selected, also select "all"
-    const allIndividualSelected = individualTypes.every((type) =>
-      selectedItems.includes(type),
-    );
-    if (allIndividualSelected && !selectedItems.includes("all")) {
-      setValue("eventTypes", [...LISTENER_EVENT_TYPES]); // includes "all" and all individuals
-      return;
-    }
-
-    setValue("eventTypes", selectedItems);
-  };
-
   const onSubmit = (data: CreateGlobalTaskListenerRequestBody) => {
-    const eventTypes = data.eventTypes.includes("all")
-      ? ["all" as const]
-      : data.eventTypes.filter((type) => type !== "all");
-
     mutate(
       {
         id: data.id,
         type: data.type,
-        eventTypes: eventTypes,
+        eventTypes: toRequestEventTypes(data.eventTypes),
         retries: data.retries,
         afterNonGlobal: data.afterNonGlobal,
         priority: data.priority,
@@ -119,10 +80,8 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     );
   };
 
-  const afterNonGlobalOptions = [
-    { id: "false", label: t("executionOrderBefore"), value: false },
-    { id: "true", label: t("executionOrderAfter"), value: true },
-  ];
+  const afterNonGlobalOptions = getExecutionOrderOptions(t);
+  const eventTypeOptions = getEventTypeOptions(t);
 
   return (
     <FormModal
@@ -183,50 +142,44 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
           validate: (value) => value.length > 0 || t("eventTypeRequired"),
         }}
         render={({ field, fieldState }) => (
-          <MultiSelect
-            id="event-type-multiselect"
-            titleText={t("eventType")}
-            label={
-              field.value.length > 0
-                ? getEventTypeLabels(field.value, t)
-                : t("selectEventTypes")
-            }
-            items={[...LISTENER_EVENT_TYPES]}
-            selectedItems={field.value}
-            onChange={({
-              selectedItems,
-            }: {
-              selectedItems: GlobalTaskListenerEventType[];
-            }) => {
-              handleEventTypeChange(selectedItems);
-            }}
-            itemToString={(item: GlobalTaskListenerEventType) =>
-              getEventTypeLabel(item, t)
-            }
-            invalid={!!fieldState.error}
-            invalidText={fieldState.error?.message}
-          />
+          <FormField label={t("eventType")} error={fieldState.error?.message}>
+            {({ id }) => (
+              <MultiSelect
+                id={id}
+                placeholder={t("selectEventTypes")}
+                options={eventTypeOptions}
+                // "all" is a real API value listed next to the individual
+                // events, so the schema order carries meaning and the built-in
+                // select-all row would duplicate the "All events" option.
+                sorted={false}
+                hideSelectAll
+                searchable={false}
+                // Checking "All events" selects every type at once, and the
+                // default cap of 3 would collapse the rest into a "+N more"
+                // chip that hides what is about to be submitted.
+                maxCount={LISTENER_EVENT_TYPES.length}
+                value={field.value}
+                onValueChange={(value) =>
+                  field.onChange(syncAllEventType(value, field.value))
+                }
+              />
+            )}
+          </FormField>
         )}
       />
       <Controller
         name="retries"
         control={control}
+        rules={{ min: { value: 1, message: t("retriesMin") } }}
         render={({ field, fieldState }) => (
-          <NumberInput
-            id="retries-input"
+          <NumberField
             label={t("retries")}
+            helperText={t("retriesHelperText")}
             min={1}
             step={1}
             value={field.value}
-            onChange={(_, { value }) => {
-              const numValue =
-                typeof value === "string" ? parseInt(value, 10) : value;
-              if (!isNaN(numValue)) {
-                field.onChange(numValue);
-              }
-            }}
-            invalid={!!fieldState.error}
-            invalidText={fieldState.error?.message}
+            onValueChange={field.onChange}
+            error={fieldState.error?.message}
           />
         )}
       />
@@ -234,56 +187,42 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         name="afterNonGlobal"
         control={control}
         render={({ field }) => (
-          <Dropdown
-            id="execution-order-dropdown"
-            titleText={t("executionOrder")}
-            label={t("executionOrder")}
-            items={afterNonGlobalOptions}
-            selectedItem={afterNonGlobalOptions.find(
-              (opt) => opt.value === field.value,
+          <FormField label={t("executionOrder")}>
+            {({ id }) => (
+              <Select
+                value={String(field.value)}
+                onValueChange={(value) => {
+                  field.onChange(value === "true");
+                }}
+              >
+                <SelectTrigger id={id} className="w-full">
+                  <SelectValue placeholder={t("executionOrder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {afterNonGlobalOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
-            onChange={({
-              selectedItem,
-            }: {
-              selectedItem: {
-                id: string;
-                label: string;
-                value: boolean;
-              } | null;
-            }) => {
-              if (selectedItem) {
-                field.onChange(selectedItem.value);
-              }
-            }}
-            itemToString={(item: { id: string; label: string } | null) =>
-              item?.label ?? ""
-            }
-          />
+          </FormField>
         )}
       />
       <Controller
         name="priority"
         control={control}
+        rules={{ min: { value: 0, message: t("priorityMin") } }}
         render={({ field, fieldState }) => (
-          <NumberInput
-            id="priority-input"
+          <NumberField
             label={t("priority")}
             helperText={t("priorityHelperText")}
             min={0}
             step={1}
             value={field.value}
-            onChange={(
-              _,
-              { value }: { value: string | number; direction: string },
-            ) => {
-              const numValue =
-                typeof value === "string" ? parseInt(value, 10) : value;
-              if (!isNaN(numValue)) {
-                field.onChange(numValue);
-              }
-            }}
-            invalid={!!fieldState.error}
-            invalidText={fieldState.error?.message}
+            onValueChange={field.onChange}
+            error={fieldState.error?.message}
           />
         )}
       />
