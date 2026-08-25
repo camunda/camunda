@@ -3,14 +3,16 @@
 #              accepting required name and tag inputs plus optional per-component
 #              tag overrides: optimize-tag, identity-tag, and connectors-tag.
 #              Uses official Docker images with scenario: realistic.
-# called-by: camunda-scheduled-release-load-tests.yml (daily schedule),
+# called-by: camunda-scheduled-release-load-tests.yml from the main branch,
 #            release BPMN process (workflow_dispatch via GitHub API)
 # calls: camunda-load-test.yml (orchestration-tag: <tag>, scenario: realistic)
 # note: Verification and namespace cleanup are handled externally by the scheduled workflow
 #       via camunda-verify-and-cleanup-load-test.yml, not by this workflow.
 # type: CI
-# owner @camunda/reliability-testing
+# owner: @camunda/reliability-testing
 name: Camunda Release load test workflow
+run-name: "Camunda Release load test workflow: ${{ inputs.name }}"
+
 on:
   workflow_dispatch:
     inputs:
@@ -71,8 +73,6 @@ defaults:
 
 env:
   TEST_OWNER: '@camunda/reliability-testing'
-  CLUSTER: camunda-benchmark-prod
-  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
 
 jobs:
   sanitize-inputs:
@@ -82,15 +82,12 @@ jobs:
     permissions: {}
     outputs:
       sanitized-name: ${{ steps.sanitize.outputs.branch_name }}
-      test-tag: ${{ steps.prepare_tag.outputs.test-tag }}
     steps:
       - id: sanitize
         uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name: v1.0.0
         with:
           branch: ${{ inputs.name }}
           max_length: 50  # reduced to account for load-test prefix "c8-" and potential suffixes for uniqueness
-      - id: prepare_tag
-        run: echo "test-tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -128,10 +125,12 @@ jobs:
     if: failure()
     permissions: {}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Import Slack webhook from Vault
         id: slack-secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
