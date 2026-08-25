@@ -84,6 +84,13 @@ function notify(processesRoute: ProcessesRoute, options: NotifyOptions) {
 				isActionable === true && actionButtonLabel !== undefined && onActionButtonClick !== undefined
 					? {label: actionButtonLabel, onClick: onActionButtonClick}
 					: undefined,
+			// Carbon's isDismissable: false means "no auto-timeout, stays until the
+			// user acts on it" (its ActionableNotification never times out on its
+			// own). The design system's toast defaults to a 5s auto-dismiss even
+			// for actionable ones, so without this an isDismissable: false
+			// notification — e.g. notifyNewTasks's "Open task" action — could
+			// vanish, action button and all, before anyone gets to click it.
+			duration: isDismissable ? undefined : Infinity,
 		});
 		return;
 	}
