@@ -7,7 +7,7 @@ ROOT_DIR="$SCRIPT_DIR"
 
 . "${SCRIPT_DIR}/utils.sh"
 
-AVAILABLE_VERSIONS=(main stable-87 stable-88 stable-89)
+AVAILABLE_VERSIONS=(main stable-87 stable-88 stable-89 stable-810)
 
 # Internal plumbing hook for the golden-file test harness: lets callers enumerate versions without
 # duplicating AVAILABLE_VERSIONS.
@@ -60,6 +60,12 @@ case "$target_version" in
   stable-89)
     # renovate: version=camunda-platform-8.9
     camunda_platform_helm_chart_version="14.8.4"
+    allowed_storage=(elasticsearch opensearch postgresql mysql mariadb mssql oracle none)
+    elasticsearch_version="8.18.0"
+    ;;
+  stable-810)
+    # renovate: version=camunda-platform-8.10
+    camunda_platform_helm_chart_version="15.0.0-alpha4"
     allowed_storage=(elasticsearch opensearch postgresql mysql mariadb mssql oracle none)
     elasticsearch_version="8.18.0"
     ;;
