@@ -176,7 +176,7 @@ We have different scenarios targeting different use cases and versions.
 
 #### Release load tests
 
-For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous load test with artificial load. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn). Triggering our ad-hoc [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml).
+For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous load test with artificial load. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn). Triggering our ad-hoc [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/load-test.yml).
 
 **Goal:** Validating the reliability of our releases and detecting earlier issues, especially with alpha versions and updates.
 
@@ -205,14 +205,14 @@ graph TD
         SCHEDULE["Scheduled Smoke Tests<br/>(daily 04:00 UTC)"]
     end
 
-    subgraph "Abstraction Layer — camunda-release-load-test.yaml"
+    subgraph "Abstraction Layer — load-test-release.yaml"
         direction TB
         API["Public API<br/>inputs: name, tag<br/>optional: optimize-tag, identity-tag, connectors-tag"]
         SANITIZE["Sanitize inputs"]
         API --> SANITIZE
     end
 
-    subgraph "Implementation — camunda-load-test.yml"
+    subgraph "Implementation — load-test.yml"
         LOAD["Create load test cluster<br/>• orchestration-tag: &lt;tag&gt;<br/>• scenario: realistic<br/>• ttl: 60 days"]
     end
 
@@ -220,7 +220,7 @@ graph TD
     SCHEDULE -->|"workflow_call @stable/8.x<br/>name + tag"| API
     SANITIZE --> LOAD
 
-    subgraph "Verification — camunda-verify-and-cleanup-load-test.yml"
+    subgraph "Verification — load-test-verify-and-cleanup.yml"
         VERIFY["await-load-test action<br/>• pod readiness<br/>• gateway connectivity"]
         CLEANUP["Delete namespace"]
         VERIFY --> CLEANUP
@@ -234,7 +234,7 @@ This decoupling provides several benefits:
 * **Clear API**: The release process only needs to provide a test name and tag (with optional per-component image tags) — implementation details (official images, realistic scenario, TTL) are encapsulated in the release load test workflow
 * **Independent evolution**: Changes to load test infrastructure (helm values, Makefiles, scripts) don't require changes to the release process BPMN
 * **Per-branch workflows**: Each stable branch has its own copy of the release load test workflow (via backports), ensuring the correct infrastructure files are used for each version
-* **Daily smoke tests**: The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) validates daily that release load tests can be created for all active stable branches
+* **Daily smoke tests**: The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/load-test-scheduled-release.yml) validates daily that release load tests can be created for all active stable branches
 
 ##### Setup and integration
 
@@ -244,7 +244,7 @@ There exists a separate process (called a sub-process) to set up the load test, 
 
 ![setup-benchmark](assets/setup_benchmark.png)
 
-The used REST-Connector initiates a call against the GitHub API (`https://api.github.com/repos/camunda/camunda/actions/workflows/camunda-load-test.yml/dispatches`) to trigger the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test.yml) on a specific git reference (_The reference can be a branch or tag name._).
+The used REST-Connector initiates a call against the GitHub API (`https://api.github.com/repos/camunda/camunda/actions/workflows/load-test.yml/dispatches`) to trigger the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/load-test.yml) on a specific git reference (_The reference can be a branch or tag name._).
 
 > [!Important]
 >
@@ -277,9 +277,9 @@ When we look at an example release process instance from the past, we can find t
 
 ##### Scheduled smoke tests
 
-The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) runs daily at 04:00 UTC to validate that release load tests can be created for all active stable branches (8.6, 8.7, 8.8, 8.9) and main. Each branch's load test is created by calling the release load test workflow on that branch (`@stable/8.x`), ensuring the correct infrastructure files are used.
+The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/load-test-scheduled-release.yml) runs daily at 04:00 UTC to validate that release load tests can be created for all active stable branches (8.6, 8.7, 8.8, 8.9) and main. Each branch's load test is created by calling the release load test workflow on that branch (`@stable/8.x`), ensuring the correct infrastructure files are used.
 
-After deployment, each load test is verified by the [verify-and-cleanup workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-verify-and-cleanup-load-test.yml), which:
+After deployment, each load test is verified by the [verify-and-cleanup workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/load-test-verify-and-cleanup.yml), which:
 
 1. Waits for all pods to be ready
 2. Checks gateway connectivity via the `app.connected` gauge metric (set to 1 when topology is first received)
@@ -293,7 +293,7 @@ Results are posted to the `#reliability-testing-alerts` Slack channel.
 
 #### Weekly load tests
 
-In addition to our release tests, we ran weekly load tests for all [endurance test variants](#endurance-test-variants) based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). The load tests are automatically created every Monday and run for 4 weeks. They are automatically cleaned up by our [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This means we have three variants per week times four weeks running at the same time (makes 12 weekly load tests running concurrently).
+In addition to our release tests, we ran weekly load tests for all [endurance test variants](#endurance-test-variants) based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/load-test.yml). The load tests are automatically created every Monday and run for 4 weeks. They are automatically cleaned up by our [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This means we have three variants per week times four weeks running at the same time (makes 12 weekly load tests running concurrently).
 
 **Goal:** Validating the reliability of our current main, and detecting earlier issues, allowing us to detect newly introduced instabilities and potential memory leaks or performance degradation.
 
@@ -316,7 +316,7 @@ As an example, we have the following tests running:
 
 #### Daily load tests
 
-In addition to our weekly load tests, we ran daily stress tests based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml).
+In addition to our weekly load tests, we ran daily stress tests based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/load-test.yml).
 
 **Goal:** Validating the reliability of our current main (putting it under stress), and detecting earlier issues, allowing us to detect newly introduced instabilities.
 
@@ -330,7 +330,7 @@ In addition to our weekly load tests, we ran daily stress tests based on the sta
 
 #### Ad-Hoc load tests
 
-On top of the previous scenarios, we support running ad-hoc load tests. They can be either set up by labeling an existing a pull-request (PR) at the mono repository with **benchmark** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Chart [manually](https://github.com/camunda/camunda/tree/main/zeebe/load-tests/setup).
+On top of the previous scenarios, we support running ad-hoc load tests. They can be either set up by labeling an existing a pull-request (PR) at the mono repository with **benchmark** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Chart [manually](https://github.com/camunda/camunda/tree/main/zeebe/load-tests/setup).
 
 **Goal:** The goal of these ad-hoc load tests is to have a quick way to validate certain changes (reducing the feedback loop). The intentions can be manifold, may it be stability/reliability, performance, or something else.
 
@@ -340,13 +340,13 @@ On top of the previous scenarios, we support running ad-hoc load tests. They can
 
 ##### Labeling a PR
 
-It is as easy as it sounds; we can label an existing PR with the [**benchmark**](https://github.com/camunda/camunda/labels/benchmark) label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-pr-load-test.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
+It is as easy as it sounds; we can label an existing PR with the [**benchmark**](https://github.com/camunda/camunda/labels/benchmark) label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/load-test-pr.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
 
-This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
+This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/load-test.yml) is recommended.
 
 ##### Trigger Camunda load test GitHub Workflow
 
-The [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is the **easiest** way to run a load test for a specific branch or main (default) with more customization. We support to set up load tests for different Camunda/Zeebe versions, by selecting the specific workflow revision as part of the workflow dispatch form (UI).
+The [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/load-test.yml) is the **easiest** way to run a load test for a specific branch or main (default) with more customization. We support to set up load tests for different Camunda/Zeebe versions, by selecting the specific workflow revision as part of the workflow dispatch form (UI).
 
 It allows high customization:
 

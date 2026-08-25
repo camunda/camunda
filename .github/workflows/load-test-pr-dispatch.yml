@@ -20,7 +20,7 @@
 #
 # No workflow-level concurrency: all event-triggered runs coexist independently. The reusable
 # pipeline's job conditions ensure correct create vs. delete behavior per DB per event.
-name: Camunda PR Benchmark
+name: "Load Test: Dispatch on PR"
 on:
   pull_request:
     types:
@@ -119,7 +119,7 @@ jobs:
     concurrency:
       group: pr-benchmark-${{ matrix.db }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
-    uses: ./.github/workflows/camunda-pr-load-test.yaml
+    uses: ./.github/workflows/load-test-pr.yaml
     secrets: inherit
     with:
       label: ${{ matrix.label }}

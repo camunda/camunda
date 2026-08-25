@@ -15,7 +15,7 @@ More details can also be found in our [reliability testing documentation](../doc
 
 ### Via GitHub Actions (recommended)
 
-Trigger the [Camunda load test workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) via the UI. Select a branch, name your test, and choose a scenario.
+Trigger the [Camunda load test workflow](https://github.com/camunda/camunda/actions/workflows/load-test.yml) via the UI. Select a branch, name your test, and choose a scenario.
 
 ### Via Makefile (manual)
 
@@ -30,30 +30,30 @@ See the [setup README](setup/README.md) for full details.
 
 ## Workflow Overview
 
-All automated load tests flow through `camunda-load-test.yml`, which builds images and deploys via the same Makefiles used for manual deployments.
+All automated load tests flow through `load-test.yml`, which builds images and deploys via the same Makefiles used for manual deployments.
 
 ```mermaid
 graph TD
     subgraph "Scheduled Triggers"
-        SCHEDULED["camunda-scheduled-release-<br/>load-tests.yml<br/><i>Daily 04:00 UTC</i>"]
-        DAILY["camunda-daily-load-tests.yml<br/><i>Daily 04:00 UTC</i>"]
-        WEEKLY["camunda-weekly-load-tests.yml<br/><i>Monday 01:00 UTC</i>"]
-        ROLLING["zeebe-update-long-running-<br/>migrating-benchmark.yaml<br/><i>Monday 00:00 UTC</i>"]
-        CLEANUP["camunda-load-test-ttl-cleanup.yml<br/><i>Daily 04:00 UTC</i>"]
+        SCHEDULED["load-test-scheduled-release.yml<br/><i>Daily 04:00 UTC</i>"]
+        DAILY["load-test-daily.yml<br/><i>Daily 04:00 UTC</i>"]
+        WEEKLY["load-test-weekly.yml<br/><i>Monday 01:00 UTC</i>"]
+        ROLLING["load-test-zeebe-migrating-<br/>benchmark.yaml<br/><i>Monday 00:00 UTC</i>"]
+        CLEANUP["load-test-ttl-cleanup.yml<br/><i>Daily 04:00 UTC</i>"]
     end
 
     subgraph "Event Triggers"
-        PR["camunda-pr-load-test.yaml<br/><i>PR label: benchmark</i>"]
+        PR["load-test-pr.yaml<br/><i>PR label: benchmark</i>"]
         ADHOC["Manual workflow_dispatch"]
     end
 
     subgraph "Reusable Workflows"
-        RELEASE["camunda-release-load-test.yaml<br/><i>workflow_call</i>"]
-        CORE["camunda-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
-        VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
-        PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
-        METRICS["camunda-load-test-metrics.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
-        DELETE["camunda-delete-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        RELEASE["load-test-release.yaml<br/><i>workflow_call</i>"]
+        CORE["load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        VERIFY["load-test-verify-and-cleanup.yml<br/><i>workflow_call</i>"]
+        PROFILE["load-test-profile.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        METRICS["load-test-metrics.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
+        DELETE["load-test-delete.yml<br/><i>workflow_call + workflow_dispatch</i>"]
     end
 
     subgraph "Deployment Layer"
@@ -89,12 +89,12 @@ graph TD
 
 ### Schedule
 
-|       Time       |                       Workflow                       | Frequency |
-|------------------|------------------------------------------------------|-----------|
-| 00:00 UTC Monday | `zeebe-update-long-running-migrating-benchmark.yaml` | Weekly    |
-| 01:00 UTC Monday | `camunda-weekly-load-tests.yml`                      | Weekly    |
-| 04:00 UTC        | `camunda-scheduled-release-load-tests.yml`           | Daily     |
-| 04:00 UTC        | `camunda-daily-load-tests.yml`                       | Daily     |
-| 04:00 UTC        | `camunda-load-test-clean-up.yml`                     | Daily     |
+|       Time       |                  Workflow                  | Frequency |
+|------------------|--------------------------------------------|-----------|
+| 00:00 UTC Monday | `load-test-zeebe-migrating-benchmark.yaml` | Weekly    |
+| 01:00 UTC Monday | `load-test-weekly.yml`                     | Weekly    |
+| 04:00 UTC        | `load-test-scheduled-release.yml`          | Daily     |
+| 04:00 UTC        | `load-test-daily.yml`                      | Daily     |
+| 04:00 UTC        | `camunda-load-test-clean-up.yml`           | Daily     |
 
 For detailed inputs, triggers, and job definitions, see each workflow's header comments in [`.github/workflows/`](../.github/workflows/). For branch-specific path differences, see [directory structure history](docs/directory-structure.md).

@@ -254,7 +254,7 @@
 
 # CI/CD Workflows
 /.github/workflows/*load-test*.yml @camunda/reliability-testing
-/.github/workflows/profile-load-test.yml @camunda/reliability-testing
+/.github/workflows/load-test-profile.yml @camunda/reliability-testing
 
 ################################
 ## @camunda/data-layer

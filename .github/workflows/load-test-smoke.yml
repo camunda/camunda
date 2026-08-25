@@ -1,12 +1,12 @@
 # description: Smoke-tests the load-test setup on every push that touches load-test infra.
 #              Deploys a minimal load test from the PR head ref, for supported secondary storages,
 #              waits for pod readiness and gateway connectivity, then deletes the namespace.
-# calls: camunda-load-test.yml (scenario: realistic),
-#        camunda-verify-and-cleanup-load-test.yml (verify + delete namespace)
+# calls: load-test.yml (scenario: realistic),
+#        load-test-verify-and-cleanup.yml (verify + delete namespace)
 # notifications: Slack (#reliability-testing-alerts) on failure only
 # type: CI
 # owner: @camunda/reliability-testing
-name: Camunda Smoke Load Test
+name: "Load Test: Smoke Test"
 on:
   pull_request:
     # Sequence of patterns matched against refs/heads
@@ -15,9 +15,9 @@ on:
       - 'stable/**'
     paths:
       - 'load-tests/setup/**'
-      - '.github/workflows/camunda-load-test.yml'
-      - '.github/workflows/camunda-verify-and-cleanup-load-test.yml'
-      - '.github/workflows/camunda-load-test-smoke.yml'
+      - '.github/workflows/load-test.yml'
+      - '.github/workflows/load-test-verify-and-cleanup.yml'
+      - '.github/workflows/load-test-smoke.yml'
   workflow_dispatch:
     inputs:
       ref:
@@ -81,7 +81,7 @@ jobs:
   smoke-install:
     name: Smoke Install
     needs: [ sanitize-branch-name, utils-get-snapshot-docker-tag ]
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
@@ -101,7 +101,7 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
-    uses: ./.github/workflows/camunda-verify-load-test.yml
+    uses: ./.github/workflows/load-test-verify.yml
     secrets: inherit
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
@@ -111,7 +111,7 @@ jobs:
   smoke-update:
     name: Smoke update
     needs: [sanitize-branch-name, utils-get-snapshot-docker-tag, verify-install]
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
@@ -131,7 +131,7 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
-    uses: ./.github/workflows/camunda-verify-load-test.yml
+    uses: ./.github/workflows/load-test-verify.yml
     secrets: inherit
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
@@ -143,7 +143,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/camunda-delete-load-test.yml
+    uses: ./.github/workflows/load-test-delete.yml
     secrets: inherit
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}

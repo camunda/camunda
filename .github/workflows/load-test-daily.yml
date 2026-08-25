@@ -1,7 +1,7 @@
 # description: Deploys new load test daily.
 # type: CI
 # owner: @camunda/reliability-testing
-name: Daily Camunda Platform Load Tests
+name: "Load Test: Daily"
 on:
   workflow_dispatch:
      inputs:
@@ -67,7 +67,7 @@ jobs:
     name: Setup max load test
     needs:
       - benchmark-data
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}
@@ -79,7 +79,7 @@ jobs:
     name: Setup max REST load test
     needs:
       - benchmark-data
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}-rest
