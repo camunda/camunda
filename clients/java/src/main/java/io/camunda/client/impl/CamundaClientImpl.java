@@ -124,6 +124,7 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.AgentDefinitionGetRequest;
 import io.camunda.client.api.fetch.AgentInstanceGetRequest;
 import io.camunda.client.api.fetch.AuditLogGetRequest;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
@@ -317,6 +318,7 @@ import io.camunda.client.impl.command.UpdateRoleCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.client.impl.command.UpdateUserCommandImpl;
 import io.camunda.client.impl.command.UpdateUserTaskCommandImpl;
+import io.camunda.client.impl.fetch.AgentDefinitionGetRequestImpl;
 import io.camunda.client.impl.fetch.AgentInstanceGetRequestImpl;
 import io.camunda.client.impl.fetch.AuditLogGetRequestImpl;
 import io.camunda.client.impl.fetch.AuthorizationGetRequestImpl;
@@ -1844,6 +1846,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public GlobalTaskListenerSearchRequest newGlobalTaskListenerSearchRequest() {
     return new GlobalTaskListenerSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public AgentDefinitionGetRequest newAgentDefinitionGetRequest(final long agentDefinitionKey) {
+    return new AgentDefinitionGetRequestImpl(httpClient, agentDefinitionKey);
   }
 
   @Override
