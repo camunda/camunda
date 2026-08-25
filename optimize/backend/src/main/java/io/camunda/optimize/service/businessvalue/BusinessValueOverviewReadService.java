@@ -294,6 +294,11 @@ public class BusinessValueOverviewReadService {
   }
 
   private void triggerFullScopeBackstop() {
+    // Checked before the coalescing flag so a disabled sweep does not leave it set, and so reads
+    // do not queue work that would return immediately.
+    if (!configurationService.getBusinessValueConfiguration().isOverviewComputeEnabled()) {
+      return;
+    }
     if (!backstopInFlight.compareAndSet(false, true)) {
       // Another reader has already scheduled the full-scope recompute; nothing to do.
       return;
