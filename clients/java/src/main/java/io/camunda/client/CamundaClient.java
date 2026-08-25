@@ -149,6 +149,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.request.AgentDefinitionSearchRequest;
 import io.camunda.client.api.search.request.AgentInstanceHistorySearchRequest;
 import io.camunda.client.api.search.request.AgentInstanceSearchRequest;
 import io.camunda.client.api.search.request.AuditLogSearchRequest;
@@ -3721,6 +3722,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for fetching an agent definition
    */
   AgentDefinitionGetRequest newAgentDefinitionGetRequest(long agentDefinitionKey);
+
+  /**
+   * Creates a request to search for agent definitions.
+   *
+   * <p>Agent definitions can be searched with filtering and sorting capabilities:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentDefinitionSearchRequest()
+   *       .filter(f -> f.agentType(AgentDefinitionType.AI_AGENT_SUB_PROCESS))
+   *       .sort(s -> s.processDefinitionKey().desc())
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for searching agent definitions
+   */
+  AgentDefinitionSearchRequest newAgentDefinitionSearchRequest();
 
   /**
    * Creates a request to fetch an agent instance by its key.

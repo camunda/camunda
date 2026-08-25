@@ -78,6 +78,14 @@ public final class SearchResponseMapper {
     return new AgentDefinitionImpl(result);
   }
 
+  public static SearchResponse<AgentDefinition> toAgentDefinitionSearchResponse(
+      final AgentDefinitionSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<AgentDefinition> instances =
+        toSearchResponseInstances(response.getItems(), AgentDefinitionImpl::new);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
   public static AgentInstance toAgentInstanceGetResponse(final AgentInstanceResult result) {
     return new AgentInstanceImpl(result);
   }
