@@ -14,12 +14,12 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
-import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping;
-import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
+import io.camunda.zeebe.engine.processing.variable.MappingResolver;
 import io.camunda.zeebe.engine.processing.variable.MsgPackPath;
 import io.camunda.zeebe.engine.processing.variable.OutputMappingResultBuilder;
+import io.camunda.zeebe.engine.processing.variable.ScopedExpressionProcessor;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -50,13 +50,15 @@ public final class BpmnVariableMappingBehavior {
 
   private final EventTriggerBehavior eventTriggerBehavior;
   private final boolean evaluateDuplicateOutputMappingTargetsInOrder;
+  private final MappingResolver inputMappingResolver;
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
       final ProcessingState processingState,
       final VariableBehavior variableBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
+      final boolean evaluateDuplicateOutputMappingTargetsInOrder,
+      final MappingResolver inputMappingResolver) {
     this.expressionProcessor = expressionProcessor;
     inputMappingExpressionProcessor = expressionProcessor.withSecretReferenceContext();
     elementInstanceState = processingState.getElementInstanceState();
@@ -66,6 +68,7 @@ public final class BpmnVariableMappingBehavior {
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.evaluateDuplicateOutputMappingTargetsInOrder =
         evaluateDuplicateOutputMappingTargetsInOrder;
+    this.inputMappingResolver = inputMappingResolver;
   }
 
   /**
@@ -92,24 +95,16 @@ public final class BpmnVariableMappingBehavior {
       return Either.right(null);
     }
 
-    final var resultBuilder =
-        new InputMappingResultBuilder(
-            name -> variablesState.getVariable(scopeKey, BufferUtil.wrapString(name)));
     // secret references (camunda.secrets.<name>) are resolved to their placeholder string only
     // for input mappings, so a modeled reference survives evaluation instead of nulling
-    final var processor =
-        inputMappingExpressionProcessor.prependContext(
-            name -> Either.left(resultBuilder.getVariable(name)));
-
-    for (final InputMapping mapping : inputMappings.get().mappings()) {
-      final var result =
-          processor.evaluateVariableMappingExpression(mapping.source(), scopeKey, tenantId);
-      if (result.isLeft()) {
-        return Either.left(result.getLeft());
-      }
-      resultBuilder.put(mapping.targetPath(), result.get());
+    final var result =
+        inputMappingResolver.resolveInputMappings(
+            inputMappings.get(),
+            new ScopedExpressionProcessor(inputMappingExpressionProcessor, scopeKey, tenantId));
+    if (result.isLeft()) {
+      return Either.left(result.getLeft());
     }
-    return mapLocalVariables(context, element, resultBuilder.toDocument());
+    return mapLocalVariables(context, element, result.get());
   }
 
   /**
@@ -171,8 +166,10 @@ public final class BpmnVariableMappingBehavior {
                               elementInstanceKey, BufferUtil.wrapString(path.getFirst())))
                       .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
                       .orElse(null));
+      // crosses from Zeebe's Either<Failure, T> world into FEEL's Either<DirectBuffer,
+      // EvaluationContext> convention (Left = terminal value or absence) for this one lambda
       final var processor =
-          expressionProcessor.prependContext(name -> Either.left(resultBuilder.getVariable(name)));
+          expressionProcessor.prependContext(name -> Either.left(resultBuilder.get(name)));
 
       final var mappingsToEvaluate =
           evaluateDuplicateOutputMappingTargetsInOrder
