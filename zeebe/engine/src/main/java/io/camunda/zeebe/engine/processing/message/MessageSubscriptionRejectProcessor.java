@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
@@ -31,6 +32,10 @@ public final class MessageSubscriptionRejectProcessor
 
   private static final String SUBSCRIPTION_NOT_FOUND =
       "Expected to find subscription for message with name '%s' and correlation key '%s', but none was found.";
+  private static final String STALE_REJECT_MESSAGE =
+      "Expected to reject message subscription for element with key '%d' and message name '%s' with "
+          + "subscription key '%d', but the current subscription has key '%d'; the reject command is "
+          + "stale and is ignored";
 
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
@@ -38,6 +43,7 @@ public final class MessageSubscriptionRejectProcessor
   private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
+  private final TypedRejectionWriter rejectionWriter;
 
   public MessageSubscriptionRejectProcessor(
       final MessageState messageState,
@@ -51,12 +57,34 @@ public final class MessageSubscriptionRejectProcessor
     this.commandSender = commandSender;
     stateWriter = writers.state();
     responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
   }
 
   @Override
   public void processRecord(final TypedRecord<MessageSubscriptionRecord> record) {
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
+
+    final var stored =
+        subscriptionState.get(
+            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
+    final long requestedKey = subscriptionRecord.getSubscriptionKey();
+    if (stored != null && requestedKey != -1L && stored.getKey() != requestedKey) {
+      // Stale reject: the stored row is a newer generation, so REJECTED (removing by
+      // element/message
+      // name) would delete the live replacement; reject instead. A buffered message is picked up by
+      // the replacement's own correlateNextMessage.
+      final var reason =
+          String.format(
+              STALE_REJECT_MESSAGE,
+              subscriptionRecord.getElementInstanceKey(),
+              subscriptionRecord.getMessageName(),
+              requestedKey,
+              stored.getKey());
+      rejectionWriter.appendRejection(record, RejectionType.INVALID_STATE, reason);
+      return;
+    }
+
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.REJECTED, subscriptionRecord);
 
