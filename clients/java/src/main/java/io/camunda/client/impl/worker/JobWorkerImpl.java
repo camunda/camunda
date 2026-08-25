@@ -17,6 +17,7 @@ package io.camunda.client.impl.worker;
 
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.BackoffSupplier;
+import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.client.impl.Loggers;
@@ -56,11 +57,13 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   public static final String ERROR_MSG =
       "Expected to handle received job with key {}, but the worker reached maximum capacity (maxJobsActive). "
-          + "The job activation timed out (controllable by timeout parameter). It will get reactivated shortly. "
-          + "If this issue persist, make sure to either scale your workers, threads, increase maxJobsActive or reduce the load you want to work on. ";
+          + "The job is handed back to the broker so that it can be picked up again right away. "
+          + "If this issue persists, make sure to either scale your workers, threads, increase maxJobsActive or reduce the load you want to work on. ";
   private static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
       JobWorkerBuilderImpl.DEFAULT_BACKOFF_SUPPLIER;
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
+  private static final String RETURN_JOB_ERROR_MSG =
+      "The worker had no capacity to handle this job, so it was returned to the broker.";
   private static final String SUPPLY_RETRY_DELAY_FAILURE_MESSAGE =
       "Expected to supply retry delay, but an exception was thrown. Falling back to default backoff supplier";
   // job queue state
@@ -70,6 +73,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   // job execution facilities
   private final Executor executor;
+  private final JobClient jobClient;
   private final JobRunnableFactory jobHandlerFactory;
   private final long initialPollInterval;
   private final JobStreamer jobStreamer;
@@ -89,6 +93,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       final int maxJobsActive,
       final ScheduledExecutorService executor,
       final Duration pollInterval,
+      final JobClient jobClient,
       final JobRunnableFactory jobHandlerFactory,
       final JobPoller jobPoller,
       final JobStreamer jobStreamer,
@@ -102,6 +107,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
     this.executor = jobExecutor;
     scheduledExecutorService = executor;
+    this.jobClient = jobClient;
     this.jobHandlerFactory = jobHandlerFactory;
     this.jobStreamer = jobStreamer;
     initialPollInterval = pollInterval.toMillis();
@@ -283,8 +289,43 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       }
 
       LOG.warn(ERROR_MSG, job.getKey(), e);
+      returnJobToBroker(job);
       return false;
     }
+  }
+
+  /**
+   * Fails the job without using up a retry, so that the broker offers it again right away instead
+   * of holding it back until its timeout expires.
+   *
+   * <p>Never throws: a job that could not be handed back simply stays out of reach until its
+   * timeout expires, which is where it would have been anyway. Letting a failure out of here would
+   * stop the worker from handling the rest of the jobs it just activated.
+   */
+  private void returnJobToBroker(final ActivatedJob job) {
+    try {
+      jobClient
+          .newFailCommand(job)
+          .retries(job.getRetries())
+          .errorMessage(RETURN_JOB_ERROR_MSG)
+          .send()
+          .exceptionally(
+              error -> {
+                logFailedReturn(job, error);
+                return null;
+              });
+    } catch (final RuntimeException e) {
+      // sending can also fail on the spot, for example once the client starts shutting down
+      logFailedReturn(job, e);
+    }
+  }
+
+  private void logFailedReturn(final ActivatedJob job, final Throwable error) {
+    LOG.debug(
+        "Failed to return job with key {} to the broker. It stays out of reach until its "
+            + "timeout expires.",
+        job.getKey(),
+        error);
   }
 
   private void handleJobFinished() {
