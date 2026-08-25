@@ -138,6 +138,32 @@ public class GroupSpecificFilterIT {
     assertThat(searchResult.items()).hasSize(expectedCount);
   }
 
+  @Test
+  public void shouldFindGroupsWithOrFilters() {
+    final var matchingGroup = createRandomized(b -> b);
+    final var otherMatchingGroup = createRandomized(b -> b);
+    final var nonMatchingGroup = createRandomized(b -> b);
+    createAndSaveGroup(rdbmsWriters, matchingGroup);
+    createAndSaveGroup(rdbmsWriters, otherMatchingGroup);
+    createAndSaveGroup(rdbmsWriters, nonMatchingGroup);
+
+    final var searchResult =
+        groupReader.search(
+            new GroupQuery(
+                new GroupFilter.Builder()
+                    .orFilters(
+                        List.of(
+                            new GroupFilter.Builder().groupIds(matchingGroup.groupId()).build(),
+                            new GroupFilter.Builder()
+                                .groupIds(otherMatchingGroup.groupId())
+                                .build()))
+                    .build(),
+                GroupSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+  }
+
   static List<GroupFilter> shouldFindWithSpecificFilterParameters() {
     return List.of(
         new GroupFilter.Builder().name("Group 1337").build(),
