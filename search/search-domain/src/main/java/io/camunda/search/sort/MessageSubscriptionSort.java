@@ -102,6 +102,11 @@ public record MessageSubscriptionSort(List<FieldSorting> orderings) implements S
       return this;
     }
 
+    public Builder businessId() {
+      currentOrdering = new FieldSorting("businessId", null);
+      return this;
+    }
+
     @Override
     protected MessageSubscriptionSort.Builder self() {
       return this;

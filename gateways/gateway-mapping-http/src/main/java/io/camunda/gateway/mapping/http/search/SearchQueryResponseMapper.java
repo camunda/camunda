@@ -1324,6 +1324,7 @@ public final class SearchQueryResponseMapper {
   private static MessageSubscriptionResult toMessageSubscription(
       final MessageSubscriptionEntity messageSubscription) {
     return MessageSubscriptionResult.Builder.create()
+        .businessId(messageSubscription.businessId())
         .rootProcessInstanceKey(keyToStringOrNull(messageSubscription.rootProcessInstanceKey()))
         .correlationKey(messageSubscription.correlationKey())
         .elementId(messageSubscription.flowNodeId())

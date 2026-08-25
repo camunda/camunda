@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import static io.camunda.exporter.utils.ExporterUtil.emptyToNull;
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
 import io.camunda.exporter.ExporterMetadata;
@@ -93,6 +94,7 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
         .setFlowNodeId(elementId)
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
         .setPositionProcessMessageSubscription(record.getPosition())
+        .setBusinessId(emptyToNull(recordValue.getBusinessId()))
         .setMessageSubscriptionType("PROCESS_EVENT");
 
     final MessageSubscriptionMetadataEntity eventMetadata = new MessageSubscriptionMetadataEntity();
