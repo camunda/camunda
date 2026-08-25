@@ -71,6 +71,16 @@ public final class CamundaExporterConfigurationApplier {
         source.getConnectionTimeout() != null
             ? Math.toIntExact(source.getConnectionTimeout().toMillis())
             : null);
+    // Only override when set: unset unified values must not wipe the values bound through the
+    // legacy 'zeebe.broker.exporters.camundaexporter.args.connect' path.
+    final var maxConnections = source.getMaxConnections();
+    if (maxConnections != null) {
+      target.setMaxConnections(maxConnections);
+    }
+    final var maxConnectionsPerRoute = source.getMaxConnectionsPerRoute();
+    if (maxConnectionsPerRoute != null) {
+      target.setMaxConnectionsPerRoute(maxConnectionsPerRoute);
+    }
     target.setUsername(source.getUsername());
     target.setPassword(source.getPassword());
     target.setIndexPrefix(source.getIndexPrefix());
