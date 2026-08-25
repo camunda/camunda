@@ -13,8 +13,8 @@ import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import javax.sql.DataSource;
-import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,6 +42,6 @@ public class RdbmsTestConfiguration {
 
   @Bean
   public MeterRegistry meterRegistry() {
-    return Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS);
+    return new SimpleMeterRegistry();
   }
 }
