@@ -37,10 +37,27 @@ test.describe('Optimize startup and accessibility', () => {
         .toBe(302);
     });
 
-    await test.step('redirect targets the Optimize OIDC login', () => {
-      expect(redirectLocation).toContain('/protocol/openid-connect/auth');
-      expect(redirectLocation).toContain('client_id=optimize');
-      expect(redirectLocation).toContain('audience=optimize-api');
+    await test.step('root redirect enters the Spring Security OIDC login flow', () => {
+      expect(redirectLocation).toContain('/oauth2/authorization/oidc');
+    });
+
+    await test.step('login flow targets the Optimize OIDC authorization endpoint', async () => {
+      // Optimize now delegates unauthenticated access to Spring Security's
+      // OAuth2 client, so hitting `/` redirects to the local
+      // `/oauth2/authorization/oidc` login-initiation endpoint first; that
+      // endpoint builds the real authorization request and issues the second
+      // 302 to the OIDC provider. Follow that one hop to assert the provider
+      // target (no realm needs to exist — the URL is built locally).
+      const authResponse = await request.get(redirectLocation, {
+        maxRedirects: 0,
+        timeout: 5000,
+      });
+      expect(authResponse.status()).toBe(302);
+
+      const authLocation = authResponse.headers()['location'] ?? '';
+      expect(authLocation).toContain('/protocol/openid-connect/auth');
+      expect(authLocation).toContain('client_id=optimize');
+      expect(authLocation).toContain('audience=optimize-api');
     });
   });
 });
