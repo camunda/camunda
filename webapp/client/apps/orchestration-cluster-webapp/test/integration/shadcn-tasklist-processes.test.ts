@@ -526,7 +526,6 @@ test('should retry after a transient start-form loading failure', async ({networ
 test('should start a process without a form using the selected tenant and open its task', async ({
 	network,
 	shadcnTasklistProcessesPage,
-	taskDetailPage,
 	page,
 }) => {
 	const processDefinitionKey = '2251799813685279';
@@ -598,17 +597,16 @@ test('should start a process without a form using the selected tenant and open i
 	);
 	await expect(shadcnTasklistProcessesPage.waitingForTasksStatus).toBeVisible();
 	await expect(shadcnTasklistProcessesPage.startProcessButton).toHaveCount(0);
-	// The DS task-detail page doesn't exist yet (#60217-#60223) — the interim
-	// redirect at /shadcn/tasklist/$userTaskKey forwards here, to the real
-	// Carbon task page, so this URL is the correct end state for now.
-	await expect(page).toHaveURL(`/tasklist/${userTaskKey}`);
-	await expect(taskDetailPage.detailsInfo).toBeVisible();
+	// The real DS task-detail page doesn't exist yet (#60217-#60223) — this lands
+	// on its placeholder (TaskDetailsPlaceholderPage), not Carbon's task page.
+	await expect(page).toHaveURL(`/shadcn/tasklist/${userTaskKey}?filter=all-open&sortBy=creation`);
+	await expect(page.getByRole('heading', {name: 'Details'})).toBeVisible();
+	await expect(page.getByText(userTaskKey)).toBeVisible();
 });
 
 test('should notify about multiple new tasks and open a selected task', async ({
 	network,
 	shadcnTasklistProcessesPage,
-	taskDetailPage,
 	page,
 }) => {
 	const processDefinitionKey = '2251799813685279';
@@ -671,9 +669,11 @@ test('should notify about multiple new tasks and open a selected task', async ({
 	);
 	await shadcnTasklistProcessesPage.header.notifications.getActionButton(approveNotificationTitle, 'Open task').click();
 
-	// Interim redirect (see above) — lands on the existing Carbon task page.
-	await expect(page).toHaveURL(`/tasklist/${approveTask.userTaskKey}`);
-	await expect(taskDetailPage.detailsInfo).toBeVisible();
+	// The real DS task-detail page doesn't exist yet (#60217-#60223) — this lands
+	// on its placeholder (TaskDetailsPlaceholderPage), not Carbon's task page.
+	await expect(page).toHaveURL(`/shadcn/tasklist/${approveTask.userTaskKey}?filter=all-open&sortBy=creation`);
+	await expect(page.getByRole('heading', {name: 'Details'})).toBeVisible();
+	await expect(page.getByText(approveTask.userTaskKey)).toBeVisible();
 });
 
 test('should notify the user when starting a process fails', async ({network, shadcnTasklistProcessesPage}) => {
