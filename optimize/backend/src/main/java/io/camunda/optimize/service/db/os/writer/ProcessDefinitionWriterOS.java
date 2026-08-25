@@ -28,8 +28,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
@@ -91,7 +93,17 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
   @Override
   public void deleteDefinition(final String definitionId) {
     LOG.debug("Deleting process definition with ID {}", definitionId);
-    osClient.delete(PROCESS_DEFINITION_INDEX_NAME, definitionId);
+    // Refresh immediately: callers rely on a subsequent search seeing this delete right away
+    final DeleteRequest.Builder request =
+        new DeleteRequest.Builder()
+            .index(PROCESS_DEFINITION_INDEX_NAME)
+            .id(definitionId)
+            .refresh(Refresh.True);
+    osClient.delete(
+        request,
+        String.format(
+            "There was a problem when trying to delete process definition with ID %s",
+            definitionId));
   }
 
   @Override

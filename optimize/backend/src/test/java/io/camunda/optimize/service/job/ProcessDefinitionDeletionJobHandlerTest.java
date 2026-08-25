@@ -66,10 +66,13 @@ class ProcessDefinitionDeletionJobHandlerTest {
     definitionReader = mock(DefinitionReader.class);
     reportService = mock(ReportService.class);
     definitionService = mock(DefinitionService.class);
+    // default: after deletion, no other version is left (i.e. this was the last remaining
+    // version); individual tests override this when they need to assert the "other versions
+    // remain" behavior
     lenient()
         .when(
             definitionReader.getDefinitionVersions(eq(DefinitionType.PROCESS), anyString(), any()))
-        .thenReturn(List.of(new DefinitionVersionResponseDto("1", null)));
+        .thenReturn(List.of());
     handler =
         new ProcessDefinitionDeletionJobHandler(
             processDefinitionReader,
@@ -120,11 +123,11 @@ class ProcessDefinitionDeletionJobHandlerTest {
 
   @Test
   void shouldClearCachedXmlAndInvalidateCacheWhenDeletingTheOnlyRemainingVersion() {
-    // given -- pre-delete query sees only the version being deleted
+    // given -- post-delete query finds no other version left
     when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
         .thenReturn(Optional.of(definition()));
     when(definitionReader.getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of()))
-        .thenReturn(List.of(new DefinitionVersionResponseDto("1", null)));
+        .thenReturn(List.of());
 
     // when
     handler.handle(job());
@@ -136,25 +139,7 @@ class ProcessDefinitionDeletionJobHandlerTest {
 
   @Test
   void shouldNotClearCachedXmlWhenOtherVersionsRemainAfterDeletion() {
-    // given -- pre-delete query sees this version plus another sibling version
-    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
-        .thenReturn(Optional.of(definition()));
-    when(definitionReader.getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of()))
-        .thenReturn(
-            List.of(
-                new DefinitionVersionResponseDto("1", null),
-                new DefinitionVersionResponseDto("2", null)));
-
-    // when
-    handler.handle(job());
-
-    // then
-    verify(reportService, never()).clearCachedReportXml(anyString());
-  }
-
-  @Test
-  void shouldNotClearCachedXmlWhenTheSingleReturnedVersionIsNotTheOneBeingDeleted() {
-    // given
+    // given -- post-delete query still finds a sibling version
     when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
         .thenReturn(Optional.of(definition()));
     when(definitionReader.getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of()))
@@ -173,10 +158,7 @@ class ProcessDefinitionDeletionJobHandlerTest {
     when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
         .thenReturn(Optional.of(definition()));
     when(definitionReader.getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of()))
-        .thenReturn(
-            List.of(
-                new DefinitionVersionResponseDto("1", null),
-                new DefinitionVersionResponseDto("2", null)));
+        .thenReturn(List.of(new DefinitionVersionResponseDto("2", null)));
 
     // when
     handler.handle(job());
@@ -186,24 +168,21 @@ class ProcessDefinitionDeletionJobHandlerTest {
   }
 
   @Test
-  void shouldCheckRemainingVersionsBeforeDeletingSoALastVersionDeleteIsNeverMissed() {
-    // given -- deleteDefinition() does not force a refresh, so checking remaining versions
-    // AFTER deleting could still see the stale (not-yet-refreshed) document and wrongly
-    // conclude other versions remain; checking beforehand avoids that read-after-write gap
+  void shouldCheckRemainingVersionsAfterDeletingSoAConcurrentSiblingDeleteIsNeverMissed() {
     when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
         .thenReturn(Optional.of(definition()));
     when(definitionReader.getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of()))
-        .thenReturn(List.of(new DefinitionVersionResponseDto("1", null)));
+        .thenReturn(List.of());
 
     // when
     handler.handle(job());
 
     // then
     final var order = inOrder(definitionReader, processDefinitionWriter);
+    order.verify(processDefinitionWriter).deleteDefinition(DEFINITION_ID);
     order
         .verify(definitionReader)
         .getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of());
-    order.verify(processDefinitionWriter).deleteDefinition(DEFINITION_ID);
   }
 
   @Test

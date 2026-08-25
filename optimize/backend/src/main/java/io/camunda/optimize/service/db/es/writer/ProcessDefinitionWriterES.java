@@ -16,6 +16,7 @@ import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionInde
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch._types.ScriptLanguage;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
@@ -102,9 +103,13 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
   public void deleteDefinition(final String definitionId) {
     LOG.debug("Deleting process definition with ID {}", definitionId);
     try {
+      // Refresh immediately: callers rely on a subsequent search seeing this delete right away
       esClient.delete(
           OptimizeDeleteRequestBuilderES.of(
-              d -> d.optimizeIndex(esClient, PROCESS_DEFINITION_INDEX_NAME).id(definitionId)));
+              d ->
+                  d.optimizeIndex(esClient, PROCESS_DEFINITION_INDEX_NAME)
+                      .id(definitionId)
+                      .refresh(Refresh.True)));
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(
           String.format(
