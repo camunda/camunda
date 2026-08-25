@@ -107,9 +107,7 @@ jobs:
       load-test-load: ${{ matrix.variant.load-test-load }}
       load-test-setup-helm-values: ${{ matrix.variant.load-test-setup-helm-values }}
 
-  # Aggregates every variant's metrics artifact into one place. This job — not
-  # `needs.run-variant.outputs.*` — is the source of truth for downstream jobs: GitHub Actions
-  # does not reliably fan out per-leg outputs from a matrixed job.
+  # Aggregates every variant's metrics artifact into one place.
   aggregate-metrics:
     name: Aggregate variant metrics
     runs-on: ubuntu-latest

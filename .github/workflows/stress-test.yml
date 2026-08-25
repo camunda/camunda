@@ -1,8 +1,7 @@
-# description: Runs the full lifecycle of a single stress test: deploy (setup), 15-min warmup,
-#              async-profiler capture (30 min, parallel to soak), 3-hour soak, metrics snapshot,
-#              then namespace cleanup. Standalone-callable (workflow_dispatch) or as one matrix
-#              leg (via workflow_call) — currently called that way once per variant by
-#              camunda-daily-load-tests.yml, see that workflow for the variant list.
+# description: Runs the full lifecycle for a stress test: deploy (setup), 15-min
+#              warmup, async-profiler capture (30 min, parallel to soak), 3-hour soak, metrics
+#              snapshot, then namespace cleanup. Used on daily schedule in different
+#              variants, see camunda-daily-load-tests.yml.
 #              Uploads its own metrics as a `daily-load-test-variant-metrics-<variant-key>`
 #              artifact for the caller to aggregate (matrix job outputs are not reliable to fan
 #              out per-leg via `needs.<job>.outputs`).
@@ -14,7 +13,7 @@
 # type: CI
 # owner: @camunda/reliability-testing
 name: Stress test
-run-name: "Stress test: ${{ inputs.benchmark }}${{ inputs.namespace-suffix }} (${{ inputs.variant-key }})"
+run-name: "Stress test variant: ${{ inputs.benchmark }}${{ inputs.namespace-suffix }} (${{ inputs.variant-key }})"
 
 on:
   workflow_call:
@@ -55,11 +54,6 @@ on:
         description: 'Build frontend assets as part of the load test image build'
         type: boolean
         default: true
-        required: false
-      ttl:
-        description: 'Days before the namespace is auto-deleted'
-        type: number
-        default: 1
         required: false
     outputs:
       results-json:
@@ -140,7 +134,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ inputs.benchmark }}${{ inputs.namespace-suffix }}
-      ttl: ${{ inputs.ttl }}
+      ttl: ${{ inputs.ttl || 1 }}
       scenario: max
       build-frontend: ${{ inputs.build-frontend }}
       secondary-storage-type: ${{ inputs.secondary-storage-type }}
@@ -188,8 +182,8 @@ jobs:
   # This job is always named "Soak" — the calling job's own `name:` (set per-matrix-entry by the
   # caller, e.g. "gRPC", "REST") disambiguates it in the Actions UI and Jobs API, which render a
   # matrixed reusable-workflow call's inner jobs as "<outer job name> / <inner job name>" (e.g.
-  # "gRPC / Soak"). resolve-daily.py's SOAK_JOB_NAME constant depends on this exact composite
-  # name for the gRPC variant — do not rename this job without updating that constant too.
+  # "gRPC / Soak").
+  # Some consumers depend on this job name, do not rename this job without updating the other related constants too.
   soak:
     name: Soak
     runs-on: ubuntu-latest
