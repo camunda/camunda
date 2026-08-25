@@ -54,10 +54,6 @@ class ShadcnTasklistProcessesPage extends BasePage {
 		return this.page.getByRole('button', {name: 'Start process'});
 	}
 
-	get startProcessButton() {
-		return this.page.getByRole('button', {name: 'Start process'});
-	}
-
 	get startProcessDialog() {
 		return this.page.getByRole('dialog', {name: /Start process/});
 	}
