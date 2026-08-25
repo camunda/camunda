@@ -376,8 +376,8 @@ components:
           allOf:
             - $ref: '#/components/schemas/MappingRuleFilter'
 
-    MappingRuleFilter:
-      description: Mapping rule search filter.
+    MappingRuleFilterFields:
+      description: Mapping rule search filter fields.
       type: object
       properties:
         claimName:
@@ -394,3 +394,35 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The ID of the mapping rule.
+
+    MappingRuleFilter:
+      description: Mapping rule search filter.
+      allOf:
+        - $ref: '#/components/schemas/MappingRuleFilterFields'
+        - type: object
+          properties:
+            $or:
+              description: |
+                Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
+
+                Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
+                <br>
+                <em>Example:</em>
+
+                ```json
+                {
+                  "$or": [
+                    { "mappingRuleId": "rule-1" },
+                    { "mappingRuleId": "rule-2" }
+                  ]
+                }
+                ```
+                This matches mapping rules whose <code>mappingRuleId</code> is <em>rule-1</em> or <em>rule-2</em>.
+                <br>
+                <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
+              type: array
+              items:
+                $ref: '#/components/schemas/MappingRuleFilterFields'
+          x-properties-added-in-version:
+            - propertyName: "$or"
+              addedInVersion: "8.10"

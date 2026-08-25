@@ -37,6 +37,7 @@ import io.camunda.gateway.protocol.model.ElementInstanceFilterFields;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.GroupFilterFields;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
+import io.camunda.gateway.protocol.model.MappingRuleFilterFields;
 import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ResourceFilter;
@@ -853,6 +854,17 @@ public class SearchQueryFilterMapper {
 
   static MappingRuleFilter toMappingRuleFilter(
       final io.camunda.gateway.protocol.model.@Nullable MappingRuleFilter filter) {
+    final var builder = toMappingRuleFilterFields(filter);
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final MappingRuleFilterFields or : filter.get$Or()) {
+        builder.addOrOperation(toMappingRuleFilterFields(or).build());
+      }
+    }
+    return builder.build();
+  }
+
+  static MappingRuleFilter.Builder toMappingRuleFilterFields(
+      final io.camunda.gateway.protocol.model.@Nullable MappingRuleFilterFields filter) {
     final var builder = FilterBuilders.mappingRule();
     if (filter != null) {
       ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
@@ -860,7 +872,7 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
       ofNullable(filter.getMappingRuleId()).ifPresent(builder::mappingRuleId);
     }
-    return builder.build();
+    return builder;
   }
 
   static Either<List<String>, DecisionDefinitionFilter> toDecisionDefinitionFilter(
