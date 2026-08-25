@@ -84,4 +84,8 @@ export const kpiTemplateSelection = Selector('input#KpiSelectionComboBox');
 export const emptyStateAdd = Selector('.EmptyState .cds--btn--primary');
 export const processItem = listItemLink('process', true);
 export const templateOption = (text) => Selector('.Modal .templateContainer button').withText(text);
-export const collectionsPage = Selector('header > nav a[href="#/collections"]');
+// Matches either navigation: under IS_NAV_V2_ENABLED the link moves from the header
+// tabs into the design-system sidebar. Only one of the two renders at a time.
+export const collectionsPage = Selector(
+  'header > nav a[href="#/collections"], [data-slot="app-sidebar-item"][href="#/collections"]'
+);
