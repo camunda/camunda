@@ -39,6 +39,7 @@ import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefi
 import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ResourceFilter;
+import io.camunda.gateway.protocol.model.RoleFilterFields;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.UserTaskAuditLogFilter;
 import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
@@ -818,12 +819,23 @@ public class SearchQueryFilterMapper {
 
   static RoleFilter toRoleFilter(
       final io.camunda.gateway.protocol.model.@Nullable RoleFilter filter) {
+    final var builder = toRoleFilterFields(filter);
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final RoleFilterFields or : filter.get$Or()) {
+        builder.addOrOperation(toRoleFilterFields(or).build());
+      }
+    }
+    return builder.build();
+  }
+
+  static RoleFilter.Builder toRoleFilterFields(
+      final io.camunda.gateway.protocol.model.@Nullable RoleFilterFields filter) {
     final var builder = FilterBuilders.role();
     if (filter != null) {
       ofNullable(filter.getRoleId()).ifPresent(builder::roleId);
       ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     }
-    return builder.build();
+    return builder;
   }
 
   static MappingRuleFilter toMappingRuleFilter(
