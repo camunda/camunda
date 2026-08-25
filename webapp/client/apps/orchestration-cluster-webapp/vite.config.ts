@@ -103,7 +103,8 @@ const config = defineConfig(({mode}) => ({
 		outputFile: process.env['CI'] ? {junit: 'TEST-unit.xml'} : undefined,
 		browser: {
 			enabled: true,
-			screenshotFailures: false,
+			screenshotFailures: Boolean(process.env['CI']),
+			screenshotDirectory: 'test-artifacts/screenshots',
 			headless: true,
 			viewport: {
 				width: 1280,
