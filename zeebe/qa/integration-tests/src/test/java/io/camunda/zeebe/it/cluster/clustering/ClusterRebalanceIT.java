@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import feign.Response;
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.PartitionInfo;
@@ -20,14 +21,12 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.qa.util.restapi.ClusterRebalanceRestClient;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.stream.StreamSupport;
 import org.awaitility.Awaitility;
@@ -41,7 +40,6 @@ import org.slf4j.LoggerFactory;
 @ZeebeIntegration
 final class ClusterRebalanceIT {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterRebalanceIT.class);
-  private static final String REBALANCE_PATH = "cluster/v2/rebalance";
   private static final String JOB_TYPE = "rebalance-test";
   private static final int PARTITION_COUNT = 3;
   private static final ObjectMapper JSON = new ObjectMapper();
@@ -55,13 +53,14 @@ final class ClusterRebalanceIT {
           .withReplicationFactor(3)
           .build();
 
-  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
   @AutoClose private CamundaClient client;
+  private ClusterRebalanceRestClient rebalanceClient;
 
   @BeforeEach
   void setup() {
     // broker 1 is stopped/restarted to force an imbalance, so use another broker's client
     client = cluster.brokers().get(MemberId.from("0")).newClientBuilder().build();
+    rebalanceClient = ClusterRebalanceRestClient.of(cluster.availableGateway());
   }
 
   @Test
@@ -81,40 +80,30 @@ final class ClusterRebalanceIT {
     assertThatAllJobsCanBeCompleted(processInstanceKeys, client, JOB_TYPE);
   }
 
-  private void assertAccepted(final HttpResponse<String> response) {
-    assertThat(response.statusCode())
-        .as("rebalance response: %s", response.body())
+  private void assertAccepted(final Response response) {
+    final String body = readBody(response);
+    assertThat(response.status())
+        .as("rebalance response: %s", body)
         .isEqualTo(HttpURLConnection.HTTP_ACCEPTED);
   }
 
-  private HttpResponse<String> triggerRebalance() {
-    final URI uri = rebalanceUri();
-    final HttpRequest request = HttpRequest.newBuilder(uri).POST(BodyPublishers.noBody()).build();
-    return sendHttp(request);
+  private Response triggerRebalance() {
+    return rebalanceClient.triggerRebalance();
   }
 
-  private HttpResponse<String> getRebalance() {
-    final URI uri = rebalanceUri();
-    final HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
-    return sendHttp(request);
+  private Response getRebalance() {
+    return rebalanceClient.getRebalance();
   }
 
-  private URI rebalanceUri() {
-    final URI restAddress = cluster.availableGateway().restAddress();
-    final String path = restAddress.getPath();
-    final URI baseWithTrailingSlash =
-        path.endsWith("/") ? restAddress : URI.create(restAddress + "/");
-    return baseWithTrailingSlash.resolve(REBALANCE_PATH);
-  }
-
-  private HttpResponse<String> sendHttp(final HttpRequest request) {
-    try {
-      return httpClient.send(request, BodyHandlers.ofString());
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new RuntimeException(e);
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
+  private static String readBody(final Response response) {
+    try (response) {
+      final var body = response.body();
+      if (body == null) {
+        return "";
+      }
+      return new String(body.asInputStream().readAllBytes(), StandardCharsets.UTF_8);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
 
@@ -124,40 +113,41 @@ final class ClusterRebalanceIT {
         .untilAsserted(
             () -> {
               final var response = getRebalance();
-              assertThat(response.statusCode())
-                  .as("rebalance status response: %s", response.body())
+              final String responseBody = readBody(response);
+              assertThat(response.status())
+                  .as("rebalance status response: %s", responseBody)
                   .isEqualTo(HttpURLConnection.HTTP_OK);
 
-              final JsonNode body = JSON.readTree(response.body());
+              final JsonNode body = JSON.readTree(responseBody);
               assertThat(body.has("runningRebalance"))
-                  .as("runningRebalance field present: %s", response.body())
+                  .as("runningRebalance field present: %s", responseBody)
                   .isTrue();
               assertThat(body.get("runningRebalance").isNull())
-                  .as("no rebalance still running: %s", response.body())
+                  .as("no rebalance still running: %s", responseBody)
                   .isTrue();
 
               final JsonNode lastCompleted = body.get("lastCompletedRebalance");
               assertThat(lastCompleted)
-                  .as("a completed rebalance is present: %s", response.body())
+                  .as("a completed rebalance is present: %s", responseBody)
                   .isNotNull();
               assertThat(lastCompleted.isNull())
-                  .as("a completed rebalance is present: %s", response.body())
+                  .as("a completed rebalance is present: %s", responseBody)
                   .isFalse();
 
               assertThat(lastCompleted.path("result").asText())
-                  .as("rebalance result: %s", response.body())
+                  .as("rebalance result: %s", responseBody)
                   .isEqualTo("COMPLETED");
 
               final var partitions = lastCompleted.path("partitions");
               assertThat(partitions.isArray() && partitions.size() > 0)
-                  .as("rebalance partitions present: %s", response.body())
+                  .as("rebalance partitions present: %s", responseBody)
                   .isTrue();
               final boolean anyTransferred =
                   StreamSupport.stream(partitions.spliterator(), false)
                       .anyMatch(
                           partition -> "TRANSFERRED".equals(partition.path("result").asText()));
               assertThat(anyTransferred)
-                  .as("at least one partition was transferred: %s", response.body())
+                  .as("at least one partition was transferred: %s", responseBody)
                   .isTrue();
             });
   }
