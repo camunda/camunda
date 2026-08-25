@@ -1,0 +1,34 @@
+/* Preserve stroke-based Lucide icons under Carbon's global SVG fill. */
+:where(.c4-ui) svg.lucide:not([class*='fill-']) {
+  fill: none;
+}
+
+.c4-ui,
+.c4-ui.dark {
+  --background: var(--cds-background);
+}
+
+/* The design system ships Tailwind's `.container` utility unlayered and unscoped
+   (`width: 100%` plus a `max-width` per breakpoint). Optimize has its own `.container`
+   elements, including the one `Number` hands to fitty — that one must stay shrink-to-fit
+   or fitty measures a full-width box, computes a scale factor of ~1 and leaves the value
+   at its base size instead of growing it to fill the tile. Restore the pre-design-system
+   values outside the design system's own subtree. */
+.container:not(.c4-ui *) {
+  width: auto;
+  max-width: none;
+}
+
+/* Below the design system's mobile breakpoint the header only has room for the
+   current context, so the logo, the ancestor crumbs and the license tag give way. */
+@media (width < 48rem) {
+  .HeaderV2-license-tag {
+    display: none;
+  }
+
+  [data-slot='app-header'] > div:has(.HeaderV2-logo),
+  .HeaderV2-breadcrumb [data-slot='nav-breadcrumb-separator'],
+  .HeaderV2-breadcrumb [data-slot='nav-breadcrumb-item']:not(:last-child) {
+    display: none;
+  }
+}
