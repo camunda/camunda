@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.91
+
+### 🚀 Enhancements
+
+- Accept a top-level `$or` clause in the 8.10 user task search filter, matching the other search endpoints ([#59998](https://github.com/camunda/camunda/issues/59998))
+
+### ❤️ Contributors
+
+- Aleksander Dytko ([@aleksander-dytko](https://github.com/aleksander-dytko))
+
 ## v0.0.90
 
 ### 🩹 Fixes
