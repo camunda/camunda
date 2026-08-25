@@ -53,9 +53,10 @@ const TasklistProcessesPage: React.FC<Props> = ({
 	);
 
 	return (
-		<PageLayout>
-			<div className="flex flex-col gap-6">
-				<PageHeader title={t('tasklist.headerNavItemProcesses')} description={t('tasklist.processesSubtitle')} />
+		<>
+			<PageLayout>
+				<div className="flex flex-col gap-6">
+					<PageHeader title={t('tasklist.headerNavItemProcesses')} description={t('tasklist.processesSubtitle')} />
 
 					<div className="flex flex-col gap-4">
 						<ProcessesFilters initialFilterValues={initialFilterValues} tenants={tenants} />
