@@ -16,9 +16,13 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.GroupFilter;
+import io.camunda.client.api.search.filter.GroupFilterBase;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.util.GroupFilterMapper;
+import io.camunda.client.protocol.rest.GroupFilterFields;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class GroupFilterImpl
@@ -47,6 +51,18 @@ public class GroupFilterImpl
   @Override
   public GroupFilter name(final String name) {
     filter.setName(name);
+    return this;
+  }
+
+  @Override
+  public GroupFilterBase orFilters(final List<Consumer<GroupFilterBase>> fns) {
+    for (final Consumer<GroupFilterBase> fn : fns) {
+      final GroupFilterImpl orFilter = new GroupFilterImpl();
+      fn.accept(orFilter);
+      final GroupFilterFields protocolFilterFields =
+          GroupFilterMapper.from(orFilter.getSearchRequestProperty());
+      filter.add$OrItem(protocolFilterFields);
+    }
     return this;
   }
 
