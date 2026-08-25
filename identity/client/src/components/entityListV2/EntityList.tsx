@@ -181,6 +181,7 @@ const EntityList = <D extends EntityData>({
           label,
           variant: isDangerous ? "destructive" : "default",
           icon: Icon ? <Icon aria-hidden="true" /> : undefined,
+          iconOnly: !!Icon && !isDangerous,
           disabled: (row: D) => resolveMenuItemFlag(disabled, row),
           visible: (row: D) => !resolveMenuItemFlag(hidden, row),
           onClick,
