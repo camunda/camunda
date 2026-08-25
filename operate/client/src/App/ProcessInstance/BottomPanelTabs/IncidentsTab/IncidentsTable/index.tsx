@@ -89,6 +89,7 @@ type IncidentsTableProps = {
   incidents: EnhancedIncident[];
   decisionInstancesByElementKey?: DecisionInstanceLookup;
   childInstanceWithIncident?: ChildInstanceWithIncident;
+  isProcessInstanceSuspended?: boolean;
   state: React.ComponentProps<typeof SortableTable>['state'];
   onVerticalScrollStartReach?: React.ComponentProps<
     typeof SortableTable
@@ -105,6 +106,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
     processInstanceKey,
     decisionInstancesByElementKey,
     childInstanceWithIncident,
+    isProcessInstanceSuspended = false,
     onVerticalScrollEndReach,
     onVerticalScrollStartReach,
   }) {
@@ -279,6 +281,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
                 <IncidentOperation
                   incidentKey={incident.incidentKey}
                   jobKey={incident.jobKey}
+                  disabled={isProcessInstanceSuspended}
                 />
               ) : undefined,
             };
