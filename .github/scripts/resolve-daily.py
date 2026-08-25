@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Resolve the daily-on-main load-test namespace + post-warmup anchor.
 
-Emits `namespace` (`c8-medic-daily-<date>-<sha>-test`, gRPC) and `at`
+Emits `namespace` (`c8-medic-daily-<date>-<sha>-test-grpc`, the gRPC variant) and `at`
 (RFC3339 = soak.started_at + 45 min, so PromQL `[1800s] @ at` evaluates
 the first 30 min after the 15-min warmup) to `$GITHUB_OUTPUT`. Empty on
 miss so the downstream comparison job skips cleanly. Falls back to the
@@ -143,7 +143,9 @@ def resolve(now: datetime) -> tuple[str, str] | None:
         anchor = (start_dt + timedelta(seconds=WARMUP_SECONDS + METRICS_WINDOW_SECONDS)).strftime(
             "%Y-%m-%dT%H:%M:%SZ"
         )
-        namespace = f"c8-{benchmark}"
+        # Every daily variant's namespace carries a -<variant-key> suffix (see
+        # camunda-daily-load-tests.yml's matrix), including the gRPC variant this resolves to.
+        namespace = f"c8-{benchmark}-grpc"
         print(f"daily run {rid} ({d}) → {namespace} @ {anchor}")
         return namespace, anchor
     return None

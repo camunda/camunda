@@ -88,12 +88,10 @@ jobs:
         variant:
           - key: grpc
             label: gRPC
-            namespace-suffix: ''
             load-test-load: ''
             load-test-setup-helm-values: '--set elasticsearch.storage.requests=64Gi'
           - key: rest
             label: REST
-            namespace-suffix: '-rest'
             load-test-load: '--set global.preferRest.enabled=true'
             load-test-setup-helm-values: '--set elasticsearch.storage.requests=64Gi'
     uses: ./.github/workflows/stress-test.yml
@@ -102,7 +100,7 @@ jobs:
       benchmark: ${{ needs.benchmark-data.outputs.benchmark }}
       variant-key: ${{ matrix.variant.key }}
       variant-label: ${{ matrix.variant.label }}
-      namespace-suffix: ${{ matrix.variant.namespace-suffix }}
+      namespace-suffix: -${{ matrix.variant.key }}
       build-frontend: true
       load-test-load: ${{ matrix.variant.load-test-load }}
       load-test-setup-helm-values: ${{ matrix.variant.load-test-setup-helm-values }}
