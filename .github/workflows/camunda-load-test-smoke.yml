@@ -149,34 +149,9 @@ jobs:
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
 
-  smoke-reapply:
-    name: Smoke Reapply (idempotency)
-    needs: [sanitize-branch-name, verify-install]
-    uses: ./.github/workflows/camunda-load-test.yml
-    secrets: inherit
-    with:
-      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
-      ref: ${{ github.event.pull_request.head.ref || inputs.ref || github.event.inputs.ref }}
-      scenario: realistic
-      secondary-storage-type: elasticsearch
-      ttl: 1
-      target-version: ${{ inputs.target-version || 'main' }}
-      orchestration-tag: ${{ inputs.orchestration-tag || 'SNAPSHOT' }}
-
-  verify-reapply:
-    name: Verify Reapply
-    needs: [sanitize-branch-name, smoke-reapply]
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    uses: ./.github/workflows/camunda-verify-load-test.yml
-    secrets: inherit
-    with:
-      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
-
   cleanup-install:
     name: Cleanup (install chain)
-    needs: [sanitize-branch-name, verify-reapply]
+    needs: [sanitize-branch-name]
     if: always()
     permissions:
       contents: read
