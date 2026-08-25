@@ -26,7 +26,8 @@ public record MappingRuleFilter(
     String tenantId,
     Set<String> mappingRuleIds,
     String groupId,
-    String roleId)
+    String roleId,
+    List<MappingRuleFilter> orFilters)
     implements FilterBase {
 
   public MappingRuleFilter.Builder toBuilder() {
@@ -40,7 +41,8 @@ public record MappingRuleFilter(
         .tenantId(tenantId)
         .mappingRuleIds(mappingRuleIds)
         .groupId(groupId)
-        .roleId(roleId);
+        .roleId(roleId)
+        .orFilters(orFilters);
   }
 
   public static final class Builder implements ObjectBuilder<MappingRuleFilter> {
@@ -54,6 +56,7 @@ public record MappingRuleFilter(
     private String tenantId;
     private String groupId;
     private String roleId;
+    private List<MappingRuleFilter> orFilters;
 
     public Builder mappingRuleId(final String value) {
       mappingRuleId = value;
@@ -129,6 +132,19 @@ public record MappingRuleFilter(
       return this;
     }
 
+    public Builder addOrOperation(final MappingRuleFilter orOperation) {
+      if (orFilters == null) {
+        orFilters = new ArrayList<>();
+      }
+      orFilters.add(orOperation);
+      return this;
+    }
+
+    public Builder orFilters(final List<MappingRuleFilter> orFilters) {
+      this.orFilters = orFilters;
+      return this;
+    }
+
     @Override
     public MappingRuleFilter build() {
       return new MappingRuleFilter(
@@ -141,7 +157,8 @@ public record MappingRuleFilter(
           tenantId,
           mappingRuleIds,
           groupId,
-          roleId);
+          roleId,
+          orFilters);
     }
   }
 
