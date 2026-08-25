@@ -304,6 +304,7 @@ Ownership model:
 
 - The checklist is owned collectively by the MRMs and evolves through updates from each shift.
 - The acting subject for each checklist item is the MRM on shift when that item becomes relevant, not necessarily the MRM who started preparing the minor.
+- The MRM who cuts `stable/<minor>` is the one driving the release of the first version that ships from it (the upcoming minor — its last alpha, RC, then final). The cut and the release it feeds belong to the same owner; if a rotation falls between, hand both over together so one person carries them.
 - Open checklist items and context should be explicitly handed over at monthly MRM rotation.
 
 ### Minor Release Readiness Checklist
@@ -330,8 +331,7 @@ Ownership model:
 
 #### 2. Version-bump probe (ahead of the cut)
 
-- [ ] On a cadence in the weeks before the deadline, run the bump command against `main` and let Unified CI run on the result as a short-lived check (not a long-lived PR). Catches version-skip regressions early, with no time pressure.
-- [ ] Triage each real failure by the **2-day rule**: more than ~2 days before the cut, fix it; within ~2 days, `@Disabled` + a tracked follow-up/incident.
+- [ ] In the weeks before the deadline, run the bump command `./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT` against `main` and let Unified CI run on the result as a short-lived check (not a long-lived PR). Catches version-skip regressions early, with no time pressure.
 
 #### 3. Merge the ruleset-protection PR (before the cut)
 
@@ -344,6 +344,7 @@ Ownership model:
 
 #### 5. Cut the branch + label
 
+- [ ] The MRM cutting the branch must be the one who will drive the last alpha release before the minor. If a rotation falls before then, hand the cut and that release over together.
 - [ ] Confirm the merge queue is empty (or acceptable) and record the exact `main` HEAD SHA — auditable, avoids cutting mid-drain.
 - [ ] Cut `stable/<minor>` from `main` before the last alpha (early-stable strategy: branch all later alpha/RC/final branches from `stable/<minor>`, not `main`). Cut **before** the version bump merges, or the branch inherits the wrong `-SNAPSHOT`.
 - [ ] Create the `backport stable/<minor>` label immediately, and announce the branch + backport procedure (label / `/backport`) in the engineering channels.
@@ -351,15 +352,14 @@ Ownership model:
 
 #### 6. Merge the version-bump PR (promptly)
 
-- [ ] On `main`, bump all `pom.xml` versions: `./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT`.
-- [ ] Merge it promptly — until it lands, `main` and `stable/<minor>` publish colliding SNAPSHOTs. Clear the likely blockers ahead: human review (a bot comment does not count) and the vulnerability gate's `502`-outage override label.
+- [ ] Open the real version-bump PR (`./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT`) and merge it promptly — until it lands, `main` and `stable/<minor>` publish colliding SNAPSHOTs. Clear the likely blockers ahead: human review (a bot comment does not count) and the vulnerability gate's `502`-outage override label.
 - [ ] [DEPRECATED for +8.10] Bump ZPT `main` to the next minor snapshot line.
 - [ ] Confirm artifacts: `stable/<minor>` → `<minor>.0-SNAPSHOT`, `main` → `<next-minor>.0-SNAPSHOT` (or generic `SNAPSHOT`).
 - [ ] Update upgrade/migration test config so the previous minor upgrades to the new line.
 
 #### 7. Triage probe CI failures
 
-- [ ] Resolve the failures surfaced in step 2 by the same 2-day rule — real fix, or `@Disabled` + incident.
+- [ ] Resolve the failures surfaced by the probe (step 2) by the **2-day rule**: more than ~2 days before the cut, fix it; within ~2 days, `@Disabled` + a tracked follow-up/incident.
 
 #### 8. Wire release workflows (branch must exist)
 
@@ -389,7 +389,7 @@ Ownership model:
 #### 13. Backports, RCs, and merge-backs (ongoing)
 
 - [ ] After the cut, enforce the backport rule: fixes merged to `main` must be backported to `stable/<minor>` to ship in the minor. For critical fixes, backport to both `stable/<minor>` and the active release branch and trigger a new RC if needed. Track via labels/board.
-- [ ] Simulate the merge-back to `stable/<minor>` early. The [Release Merge-back Conflict Check](#merge-back-divergence-handling) automates this in the release window — confirm it is green before the final merge-back.
+- [ ] Simulate the merge-back to `stable/<minor>` early; the [Release Merge-back Conflict Check](#merge-back-divergence-handling) automates this in the release window — confirm it is green before the final merge-back.
 
 #### 14. Watch-outs and sanity checks
 
