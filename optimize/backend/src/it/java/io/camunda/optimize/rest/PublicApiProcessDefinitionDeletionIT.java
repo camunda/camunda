@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.rest;
 
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.AbstractCCSMIT;
@@ -20,6 +21,7 @@ import io.camunda.optimize.service.db.writer.JobRegistryWriter;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,8 +32,15 @@ public class PublicApiProcessDefinitionDeletionIT extends AbstractCCSMIT {
 
   private static final String TEST_ACCESS_TOKEN = "test-access-token";
 
+  @Override
+  protected void startAndUseNewOptimizeInstance() {
+    // see PublicApiVariableLabelsIT for rationale for pinning cslEnabled=false here
+    startAndUseNewOptimizeInstance(Map.of("optimize.security.csl.enabled", "false"), CCSM_PROFILE);
+  }
+
   @BeforeEach
   public void configurePublicApiToken() {
+    startAndUseNewOptimizeInstance();
     embeddedOptimizeExtension
         .getConfigurationService()
         .getOptimizeApiConfiguration()
