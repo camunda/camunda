@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Monorepo Release | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-61068/release/release-monorepo/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Monorepo Release | Camunda Platform"><meta data-rh="true" name="description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><meta data-rh="true" property="og:description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-61068/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-61068/release/release-monorepo/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-61068/release/release-monorepo/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-61068/release/release-monorepo/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://camunda.github.io/camunda/pr-preview/pr-61068/release/"},{"@type":"ListItem","position":2,"name":"Monorepo Release","item":"https://camunda.github.io/camunda/pr-preview/pr-61068/release/release-monorepo"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-61068/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-61068/assets/js/runtime~main.7473f7ed.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-61068/assets/js/main.3943f105.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-61068/assets/js/runtime~main.8f29cf92.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-61068/assets/js/main.ca79d395.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -318,6 +318,7 @@
 <ul>
 <li class="">The checklist is owned collectively by the MRMs and evolves through updates from each shift.</li>
 <li class="">The acting subject for each checklist item is the MRM on shift when that item becomes relevant, not necessarily the MRM who started preparing the minor.</li>
+<li class="">The MRM who cuts <code>stable/&lt;minor&gt;</code> is the one driving the release of the first version that ships from it (the upcoming minor — its last alpha, RC, then final). The cut and the release it feeds belong to the same owner; if a rotation falls between, hand both over together so one person carries them.</li>
 <li class="">Open checklist items and context should be explicitly handed over at monthly MRM rotation.</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="minor-release-readiness-checklist">Minor Release Readiness Checklist<a href="#minor-release-readiness-checklist" class="hash-link" aria-label="Direct link to Minor Release Readiness Checklist" title="Direct link to Minor Release Readiness Checklist" translate="no">​</a></h3>
@@ -338,8 +339,7 @@
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-version-bump-probe-ahead-of-the-cut">2. Version-bump probe (ahead of the cut)<a href="#2-version-bump-probe-ahead-of-the-cut" class="hash-link" aria-label="Direct link to 2. Version-bump probe (ahead of the cut)" title="Direct link to 2. Version-bump probe (ahead of the cut)" translate="no">​</a></h4>
 <ul class="contains-task-list containsTaskList_mC6p">
-<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->On a cadence in the weeks before the deadline, run the bump command against <code>main</code> and let Unified CI run on the result as a short-lived check (not a long-lived PR). Catches version-skip regressions early, with no time pressure.</li>
-<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Triage each real failure by the <strong>2-day rule</strong>: more than ~2 days before the cut, fix it; within ~2 days, <code>@Disabled</code> + a tracked follow-up/incident.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->In the weeks before the deadline, run the bump command <code>./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT</code> against <code>main</code> and let Unified CI run on the result as a short-lived check (not a long-lived PR). Catches version-skip regressions early, with no time pressure.</li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-merge-the-ruleset-protection-pr-before-the-cut">3. Merge the ruleset-protection PR (before the cut)<a href="#3-merge-the-ruleset-protection-pr-before-the-cut" class="hash-link" aria-label="Direct link to 3. Merge the ruleset-protection PR (before the cut)" title="Direct link to 3. Merge the ruleset-protection PR (before the cut)" translate="no">​</a></h4>
 <ul class="contains-task-list containsTaskList_mC6p">
@@ -352,6 +352,7 @@
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-cut-the-branch--label">5. Cut the branch + label<a href="#5-cut-the-branch--label" class="hash-link" aria-label="Direct link to 5. Cut the branch + label" title="Direct link to 5. Cut the branch + label" translate="no">​</a></h4>
 <ul class="contains-task-list containsTaskList_mC6p">
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->The MRM cutting the branch must be the one who will drive the last alpha release before the minor. If a rotation falls before then, hand the cut and that release over together.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Confirm the merge queue is empty (or acceptable) and record the exact <code>main</code> HEAD SHA — auditable, avoids cutting mid-drain.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Cut <code>stable/&lt;minor&gt;</code> from <code>main</code> before the last alpha (early-stable strategy: branch all later alpha/RC/final branches from <code>stable/&lt;minor&gt;</code>, not <code>main</code>). Cut <strong>before</strong> the version bump merges, or the branch inherits the wrong <code>-SNAPSHOT</code>.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Create the <code>backport stable/&lt;minor&gt;</code> label immediately, and announce the branch + backport procedure (label / <code>/backport</code>) in the engineering channels.</li>
@@ -359,15 +360,14 @@
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="6-merge-the-version-bump-pr-promptly">6. Merge the version-bump PR (promptly)<a href="#6-merge-the-version-bump-pr-promptly" class="hash-link" aria-label="Direct link to 6. Merge the version-bump PR (promptly)" title="Direct link to 6. Merge the version-bump PR (promptly)" translate="no">​</a></h4>
 <ul class="contains-task-list containsTaskList_mC6p">
-<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->On <code>main</code>, bump all <code>pom.xml</code> versions: <code>./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT</code>.</li>
-<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Merge it promptly — until it lands, <code>main</code> and <code>stable/&lt;minor&gt;</code> publish colliding SNAPSHOTs. Clear the likely blockers ahead: human review (a bot comment does not count) and the vulnerability gate&#x27;s <code>502</code>-outage override label.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Open the real version-bump PR (<code>./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT</code>) and merge it promptly — until it lands, <code>main</code> and <code>stable/&lt;minor&gt;</code> publish colliding SNAPSHOTs. Clear the likely blockers ahead: human review (a bot comment does not count) and the vulnerability gate&#x27;s <code>502</code>-outage override label.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->[DEPRECATED for +8.10] Bump ZPT <code>main</code> to the next minor snapshot line.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Confirm artifacts: <code>stable/&lt;minor&gt;</code> → <code>&lt;minor&gt;.0-SNAPSHOT</code>, <code>main</code> → <code>&lt;next-minor&gt;.0-SNAPSHOT</code> (or generic <code>SNAPSHOT</code>).</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Update upgrade/migration test config so the previous minor upgrades to the new line.</li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="7-triage-probe-ci-failures">7. Triage probe CI failures<a href="#7-triage-probe-ci-failures" class="hash-link" aria-label="Direct link to 7. Triage probe CI failures" title="Direct link to 7. Triage probe CI failures" translate="no">​</a></h4>
 <ul class="contains-task-list containsTaskList_mC6p">
-<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Resolve the failures surfaced in step 2 by the same 2-day rule — real fix, or <code>@Disabled</code> + incident.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Resolve the failures surfaced by the probe (step 2) by the <strong>2-day rule</strong>: more than ~2 days before the cut, fix it; within ~2 days, <code>@Disabled</code> + a tracked follow-up/incident.</li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="8-wire-release-workflows-branch-must-exist">8. Wire release workflows (branch must exist)<a href="#8-wire-release-workflows-branch-must-exist" class="hash-link" aria-label="Direct link to 8. Wire release workflows (branch must exist)" title="Direct link to 8. Wire release workflows (branch must exist)" translate="no">​</a></h4>
 <ul class="contains-task-list containsTaskList_mC6p">
@@ -397,7 +397,7 @@
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="13-backports-rcs-and-merge-backs-ongoing">13. Backports, RCs, and merge-backs (ongoing)<a href="#13-backports-rcs-and-merge-backs-ongoing" class="hash-link" aria-label="Direct link to 13. Backports, RCs, and merge-backs (ongoing)" title="Direct link to 13. Backports, RCs, and merge-backs (ongoing)" translate="no">​</a></h4>
 <ul class="contains-task-list containsTaskList_mC6p">
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->After the cut, enforce the backport rule: fixes merged to <code>main</code> must be backported to <code>stable/&lt;minor&gt;</code> to ship in the minor. For critical fixes, backport to both <code>stable/&lt;minor&gt;</code> and the active release branch and trigger a new RC if needed. Track via labels/board.</li>
-<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Simulate the merge-back to <code>stable/&lt;minor&gt;</code> early. The <a href="#merge-back-divergence-handling" class="">Release Merge-back Conflict Check</a> automates this in the release window — confirm it is green before the final merge-back.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Simulate the merge-back to <code>stable/&lt;minor&gt;</code> early; the <a href="#merge-back-divergence-handling" class="">Release Merge-back Conflict Check</a> automates this in the release window — confirm it is green before the final merge-back.</li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="14-watch-outs-and-sanity-checks">14. Watch-outs and sanity checks<a href="#14-watch-outs-and-sanity-checks" class="hash-link" aria-label="Direct link to 14. Watch-outs and sanity checks" title="Direct link to 14. Watch-outs and sanity checks" translate="no">​</a></h4>
 <ul class="contains-task-list containsTaskList_mC6p">
