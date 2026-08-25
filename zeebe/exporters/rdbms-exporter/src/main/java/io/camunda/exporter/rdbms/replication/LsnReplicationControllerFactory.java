@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.rdbms.replication;
 
-import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
+import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -16,18 +16,18 @@ import java.time.InstantSource;
 public class LsnReplicationControllerFactory implements ReplicationControllerFactory {
 
   private final int partitionId;
-  private final ReplicationLogStatusProvider replicationLagProvider;
+  private final ReplicationLsnProvider replicationLsnProvider;
   private final ReplicationConfiguration replicationConfiguration;
   private final InstantSource clock;
   private final RdbmsWriterMetrics metrics;
 
   public LsnReplicationControllerFactory(
-      final ReplicationLogStatusProvider lsnProvider,
+      final ReplicationLsnProvider lsnProvider,
       final ReplicationConfiguration replicationConfiguration,
       final int partitionId,
       final InstantSource clock,
       final RdbmsWriterMetrics metrics) {
-    replicationLagProvider = lsnProvider;
+    replicationLsnProvider = lsnProvider;
     this.replicationConfiguration = replicationConfiguration;
     this.partitionId = partitionId;
     this.clock = clock;
@@ -36,7 +36,9 @@ public class LsnReplicationControllerFactory implements ReplicationControllerFac
 
   @Override
   public ReplicationController createReplicationController(final Controller controller) {
-    return new LsnReplicationController(
-        controller, replicationLagProvider, replicationConfiguration, partitionId, clock, metrics);
+    final var strategy =
+        new LsnReplicationSignalStrategy(replicationLsnProvider, replicationConfiguration);
+    return new DefaultReplicationController(
+        controller, strategy, replicationConfiguration, partitionId, clock, metrics);
   }
 }

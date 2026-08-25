@@ -9,8 +9,10 @@ package io.camunda.exporter.rdbms;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
+import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.RdbmsServiceFactory;
-import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
+import io.camunda.db.rdbms.read.replication.ReplicationLagProvider;
+import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
@@ -70,6 +72,7 @@ import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateRemoveHandler;
 import io.camunda.exporter.rdbms.replication.DelayReplicationControllerFactory;
 import io.camunda.exporter.rdbms.replication.LsnReplicationControllerFactory;
 import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
+import io.camunda.exporter.rdbms.replication.TimeMonitoringReplicationControllerFactory;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -81,6 +84,7 @@ import io.camunda.zeebe.exporter.common.waitstate.transformers.WaitStateTransfor
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.time.InstantSource;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -158,35 +162,58 @@ public class RdbmsExporterWrapper implements Exporter {
                 config.getHistoryDeletion().getDependentRowLimit()),
             context.clock());
     builder.historyDeletionService(historyDeletionService);
-    if (!config.getAsyncReplication().isEnabled()) {
-      builder.replicationControllerFactory(ReplicationControllerFactory.noop());
-    } else {
-      switch (config.getAsyncReplication().getType()) {
-        case LOG_SEQ -> {
-          final ReplicationLogStatusProvider replicationLogStatusProvider =
-              rdbmsService.getReplicationLogStatusProvider();
-          builder.replicationControllerFactory(
-              new LsnReplicationControllerFactory(
-                  replicationLogStatusProvider,
-                  config.getAsyncReplication(),
-                  partitionId,
-                  context.clock(),
-                  rdbmsWriters.getMetrics()));
-        }
-        case DELAY ->
-            builder.replicationControllerFactory(
-                new DelayReplicationControllerFactory(
-                    config.getAsyncReplication(), partitionId, context.clock()));
-        default ->
-            throw new IllegalArgumentException(
-                "Unknown replication type: " + config.getAsyncReplication().getType());
-      }
-    }
+    configureReplicationController(
+        config, builder, rdbmsService, rdbmsWriters, partitionId, context.clock());
 
     createHandlers(partitionId, rdbmsWriters, builder, config, historyCleanupService);
     createBatchOperationHandlers(rdbmsWriters, builder, historyCleanupService);
 
     exporter = builder.rdbmsSchemaManagerRegistry(rdbmsSchemaManagerRegistry).build();
+  }
+
+  private void configureReplicationController(
+      final ExporterConfiguration config,
+      final Builder builder,
+      final RdbmsService rdbmsService,
+      final RdbmsWriters rdbmsWriters,
+      final int partitionId,
+      final InstantSource clock) {
+    if (!config.getAsyncReplication().isEnabled()) {
+      builder.replicationControllerFactory(ReplicationControllerFactory.noop());
+      return;
+    }
+
+    switch (config.getAsyncReplication().getType()) {
+      case LOG_SEQ -> {
+        final ReplicationLsnProvider replicationLsnProvider =
+            rdbmsService.getReplicationLsnProvider();
+        builder.replicationControllerFactory(
+            new LsnReplicationControllerFactory(
+                replicationLsnProvider,
+                config.getAsyncReplication(),
+                partitionId,
+                clock,
+                rdbmsWriters.getMetrics()));
+      }
+      case TIME_LAG -> {
+        final ReplicationLagProvider replicationLagProvider =
+            rdbmsService.getReplicationLagProvider();
+        builder.replicationControllerFactory(
+            new TimeMonitoringReplicationControllerFactory(
+                replicationLagProvider,
+                config.getAsyncReplication(),
+                partitionId,
+                clock,
+                rdbmsWriters.getMetrics()));
+      }
+      case DELAY ->
+          builder.replicationControllerFactory(
+              new DelayReplicationControllerFactory(
+                  config.getAsyncReplication(), partitionId, clock, rdbmsWriters.getMetrics()));
+      default ->
+          throw new IllegalArgumentException(
+              "Unknown replication type: " + config.getAsyncReplication().getType());
+    }
   }
 
   @Override

@@ -10,6 +10,7 @@ package io.camunda.it.rdbms.db.asyncreplication;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
 import io.camunda.it.rdbms.db.util.MSSQLReplicationClusterContainer;
 import io.camunda.it.rdbms.db.util.PostgresReplicationClusterContainer;
 import io.camunda.it.rdbms.db.util.ReplicationClusterContainer;
@@ -111,5 +112,39 @@ class MssqlAsyncReplicationIT extends AsyncReplicationIT<MSSQLReplicationCluster
   @Override
   protected MSSQLReplicationClusterContainer createCluster() {
     return new MSSQLReplicationClusterContainer();
+  }
+}
+
+/**
+ * Exercises the same scenarios as {@link PostgresAsyncReplicationIT} but against {@code
+ * TimeMonitoringReplicationSignalStrategy} (lag-based, no LSN tracking) instead of {@code
+ * LsnReplicationSignalStrategy}.
+ */
+class PostgresTimeMonitoringReplicationIT
+    extends AsyncReplicationIT<PostgresReplicationClusterContainer> {
+
+  @Override
+  protected PostgresReplicationClusterContainer createCluster() {
+    return new PostgresReplicationClusterContainer();
+  }
+
+  @Override
+  protected ReplicationType getReplicationType() {
+    return ReplicationType.TIME_LAG;
+  }
+}
+
+/** Same as {@link PostgresTimeMonitoringReplicationIT}, against an on-prem MSSQL Always On AG. */
+class MssqlTimeMonitoringReplicationIT
+    extends AsyncReplicationIT<MSSQLReplicationClusterContainer> {
+
+  @Override
+  protected MSSQLReplicationClusterContainer createCluster() {
+    return new MSSQLReplicationClusterContainer();
+  }
+
+  @Override
+  protected ReplicationType getReplicationType() {
+    return ReplicationType.TIME_LAG;
   }
 }
