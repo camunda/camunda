@@ -1402,6 +1402,8 @@ jobs:
     name: "General / Integration / Async Replication ITs"
     timeout-minutes: 20
     runs-on: gcp-perf-core-8-default
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token for the GCS distball download
@@ -1461,14 +1463,20 @@ jobs:
           -D forkCount=1
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
-          -P async-repl
+          -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
+          -P async-repl,extract-flaky-tests
           -pl qa/acceptance-tests
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
-        if: ${{ failure() || cancelled() }}
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: "[IT] Async Replication"
       - name: Observe build status
@@ -1478,6 +1486,7 @@ jobs:
         with:
           job_name: async-replication-integration-tests
           build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           detailed_junit_tests: true
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -1905,6 +1914,7 @@ jobs:
     needs:
       - detect-changes
       - archunit-tests
+      - async-replication-integration-tests
       - database-integration-tests
       - docker-checks
       - general-unit-tests
@@ -1992,6 +2002,8 @@ jobs:
           identity-matrix-output-result: ${{ steps.matrix-read.outputs.identity }}
           rdbms-tests-result: ${{ needs.rdbms-integration-tests.result }}
           rdbms-tests-flaky: ${{ needs.rdbms-integration-tests.outputs.flakyTests }}
+          async-repl-tests-result: ${{ needs.async-replication-integration-tests.result }}
+          async-repl-tests-flaky: ${{ needs.async-replication-integration-tests.outputs.flakyTests }}
           docker-checks-result: ${{ needs.docker-checks.result }}
           docker-checks-flaky: ${{ needs.docker-checks.outputs.flakyTests }}
           zeebe-tests-result: ${{ needs.zeebe-unit-tests.result }}
@@ -2030,6 +2042,7 @@ jobs:
           IDENTITY: ${{ needs.identity-tests.result }}
           INTEGRATION: ${{ needs.integration-tests.result }}
           RDBMS: ${{ needs.rdbms-integration-tests.result }}
+          ASYNC_REPL: ${{ needs.async-replication-integration-tests.result }}
           ZEEBE: ${{ needs.zeebe-unit-tests.result }}
           ARCHUNIT: ${{ needs.archunit-tests.result }}
         run: |
@@ -2042,6 +2055,7 @@ jobs:
             ["identity-tests"]="$IDENTITY"
             ["integration-tests"]="$INTEGRATION"
             ["rdbms-integration-tests"]="$RDBMS"
+            ["async-replication-integration-tests"]="$ASYNC_REPL"
             ["zeebe-unit-tests"]="$ZEEBE"
             ["archunit-tests"]="$ARCHUNIT"
           )
