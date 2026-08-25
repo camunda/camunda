@@ -91,7 +91,7 @@
     <version.netty>4.2.17.Final</version.netty>
     <version.objenesis>3.6</version.objenesis>
     <version.opentelemetry>1.65.0</version.opentelemetry>
-    <version.opensearch.client>2.17.0</version.opensearch.client>
+    <version.opensearch.client>2.17.1</version.opensearch.client>
     <version.opensearch-java>3.7.0</version.opensearch-java>
     <!-- renovate: datasource=docker depName=opensearchproject/opensearch -->
     <version.opensearch.container>2.19.6</version.opensearch.container>
