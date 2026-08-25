@@ -205,6 +205,35 @@ public class RoleSpecificFilterIT {
     assertThat(searchResult.items().getFirst().roleKey()).isEqualTo(ROLE_KEY);
   }
 
+  @Test
+  public void shouldFindRolesWithOrFilters() {
+    final var matchingRoleId = Strings.newRandomValidIdentityId();
+    final var otherMatchingRoleId = Strings.newRandomValidIdentityId();
+    final var nonMatchingRoleId = Strings.newRandomValidIdentityId();
+    createAndSaveRole(rdbmsWriters, RoleFixtures.createRandomized(b -> b.roleId(matchingRoleId)));
+    createAndSaveRole(
+        rdbmsWriters, RoleFixtures.createRandomized(b -> b.roleId(otherMatchingRoleId)));
+    createAndSaveRole(
+        rdbmsWriters, RoleFixtures.createRandomized(b -> b.roleId(nonMatchingRoleId)));
+
+    final var searchResult =
+        roleReader.search(
+            new RoleQuery(
+                new RoleFilter.Builder()
+                    .orFilters(
+                        List.of(
+                            new RoleFilter.Builder().roleId(matchingRoleId).build(),
+                            new RoleFilter.Builder().roleId(otherMatchingRoleId).build()))
+                    .build(),
+                RoleSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items())
+        .extracting(RoleEntity::roleId)
+        .containsExactlyInAnyOrder(matchingRoleId, otherMatchingRoleId);
+  }
+
   static List<RoleFilter> shouldFindWithSpecificFilterParameters() {
     return List.of(
         new RoleFilter.Builder().roleId(ROLE_ID).build(),
