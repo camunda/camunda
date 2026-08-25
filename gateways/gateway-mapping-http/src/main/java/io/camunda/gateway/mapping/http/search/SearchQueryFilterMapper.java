@@ -35,6 +35,7 @@ import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.ElementInstanceFilterFields;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
+import io.camunda.gateway.protocol.model.GroupFilterFields;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
@@ -807,6 +808,17 @@ public class SearchQueryFilterMapper {
 
   static GroupFilter toGroupFilter(
       final io.camunda.gateway.protocol.model.@Nullable GroupFilter filter) {
+    final var builder = toGroupFilterFields(filter);
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final GroupFilterFields or : filter.get$Or()) {
+        builder.addOrOperation(toGroupFilterFields(or).build());
+      }
+    }
+    return builder.build();
+  }
+
+  static GroupFilter.Builder toGroupFilterFields(
+      final io.camunda.gateway.protocol.model.@Nullable GroupFilterFields filter) {
     final var builder = FilterBuilders.group();
     if (filter != null) {
       ofNullable(filter.getGroupId())
@@ -814,7 +826,7 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::groupIdOperations);
       ofNullable(filter.getName()).ifPresent(builder::name);
     }
-    return builder.build();
+    return builder;
   }
 
   static RoleFilter toRoleFilter(
