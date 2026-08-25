@@ -34,6 +34,12 @@ inputs:
     rdbms-tests-flaky:
         description: 'Flaky tests from the RDBMS integration tests job'
         required: true
+    async-repl-tests-result:
+        description: 'Result of the async-replication integration tests job'
+        required: true
+    async-repl-tests-flaky:
+        description: 'Flaky tests from the async-replication integration tests job'
+        required: true
     docker-checks-result:
         description: 'Result of the Docker checks job'
         required: true
@@ -88,6 +94,8 @@ runs:
         GENERAL_UNIT_TESTS_FLAKY: ${{ inputs.general-unit-tests-flaky }}
         RDBMS_TESTS_RESULT: ${{ inputs.rdbms-tests-result }}
         RDBMS_TESTS_FLAKY: ${{ inputs.rdbms-tests-flaky }}
+        ASYNC_REPL_TESTS_RESULT: ${{ inputs.async-repl-tests-result }}
+        ASYNC_REPL_TESTS_FLAKY: ${{ inputs.async-repl-tests-flaky }}
         DOCKER_CHECKS_RESULT: ${{ inputs.docker-checks-result }}
         DOCKER_CHECKS_FLAKY: ${{ inputs.docker-checks-flaky }}
         HISTORY_TESTS_RESULT: ${{ inputs.history-tests-result }}
@@ -118,6 +126,7 @@ runs:
         # Collect from single jobs
         collect_from_single_job "general-unit-tests" "$GENERAL_UNIT_TESTS_RESULT" "$GENERAL_UNIT_TESTS_FLAKY"
         collect_from_single_job "rdbms-integration-tests" "$RDBMS_TESTS_RESULT" "$RDBMS_TESTS_FLAKY"
+        collect_from_single_job "async-replication-integration-tests" "$ASYNC_REPL_TESTS_RESULT" "$ASYNC_REPL_TESTS_FLAKY"
         collect_from_single_job "docker-checks" "$DOCKER_CHECKS_RESULT" "$DOCKER_CHECKS_FLAKY"
 
         # Collect from matrix jobs

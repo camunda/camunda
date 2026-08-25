@@ -751,7 +751,7 @@
           <systemPropertyVariables>
             <identity.docker.image.version>${version.identity}</identity.docker.image.version>
           </systemPropertyVariables>
-          <excludedGroups>rdbms, rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, dl-nightly</excludedGroups>
+          <excludedGroups>rdbms, rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, dl-nightly, async-repl</excludedGroups>
         </configuration>
         <dependencies>
           <dependency>
@@ -815,6 +815,22 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <groups>rdbms</groups>
+              <excludedGroups>rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, history</excludedGroups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>async-repl</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <groups>async-repl</groups>
               <excludedGroups>rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, history</excludedGroups>
             </configuration>
           </plugin>
