@@ -2,9 +2,9 @@
 #              warmup, async-profiler capture (30 min, parallel to soak), 3-hour soak, metrics
 #              snapshot, then namespace cleanup. Used on daily schedule in different
 #              variants, see camunda-daily-load-tests.yml.
-#              Uploads its own metrics as a `stress-test-result<namespace-suffix>` artifact
-#              containing {namespace, soakEndEpoch, results} for the caller to aggregate (matrix
-#              job outputs are not reliable to fan out per-leg via `needs.<job>.outputs`).
+#              Uploads its own metrics as a `stress-test-result-<name>` artifact containing
+#              {namespace, soakEndEpoch, results} for the caller to aggregate (matrix job outputs
+#              are not reliable to fan out per-leg via `needs.<job>.outputs`).
 # calls: camunda-load-test.yml (scenario: max), profile-load-test.yml,
 #        camunda-load-test-metrics.yaml, camunda-delete-load-test.yml
 # called-by: camunda-daily-load-tests.yml
@@ -13,20 +13,15 @@
 # type: CI
 # owner: @camunda/reliability-testing
 name: Stress test
-run-name: "Stress test variant: ${{ inputs.benchmark }}${{ inputs.namespace-suffix }}"
+run-name: "Stress test variant: ${{ inputs.name }}"
 
 on:
   workflow_call:
     inputs:
-      benchmark:
-        description: 'Base benchmark name (e.g. medic-daily-2026-08-18-abc1234-test), without variant suffix or c8- prefix'
+      name:
+        description: 'Bare name for this stress test (e.g. medic-daily-2026-08-18-abc1234-test-grpc), without c8- prefix'
         type: string
         required: true
-      namespace-suffix:
-        description: 'Suffix appended to the benchmark name to form this variant''s namespace and artifact name (e.g. "", "-rest", "-none")'
-        type: string
-        default: ""
-        required: false
       secondary-storage-type:
         description: 'Secondary database backend for Camunda Platform, passed through to camunda-load-test.yml'
         type: string
@@ -56,13 +51,9 @@ on:
         value: ${{ jobs.soak.outputs.soak_end_epoch }}
   workflow_dispatch:
     inputs:
-      benchmark:
-        description: 'Base benchmark name, without variant suffix or c8- prefix'
+      name:
+        description: 'Bare name for this stress test, without c8- prefix'
         required: true
-      namespace-suffix:
-        description: 'Suffix appended to the benchmark name to form this variant''s namespace and artifact name'
-        default: ""
-        required: false
       secondary-storage-type:
         description: 'Secondary database backend for Camunda Platform'
         type: choice
@@ -103,7 +94,7 @@ defaults:
 
 env:
   TEST_OWNER: '@camunda/reliability-testing'
-  NAMESPACE: c8-${{ inputs.benchmark }}${{ inputs.namespace-suffix }}
+  NAMESPACE: c8-${{ inputs.name }}
   # Fixed timing constants: no current or planned variant needs different values, and GitHub
   # Actions can't compute `timeout-minutes` from an input expression, so these stay hardcoded
   # rather than caller-configurable (see profile-load-test.yml's similar INVARIANT comment).
@@ -119,7 +110,7 @@ jobs:
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
-      name: ${{ inputs.benchmark }}${{ inputs.namespace-suffix }}
+      name: ${{ inputs.name }}
       ttl: ${{ inputs.ttl || 1 }}
       scenario: max
       build-frontend: ${{ inputs.build-frontend }}
@@ -154,9 +145,9 @@ jobs:
     uses: ./.github/workflows/profile-load-test.yml
     secrets: inherit
     with:
-      name: c8-${{ inputs.benchmark }}${{ inputs.namespace-suffix }}
+      name: c8-${{ inputs.name }}
       pod: ''
-      test-type: ${{ inputs.namespace-suffix }}
+      test-type: ${{ inputs.name }}
       duration-seconds: '1800'
 
   # Wait 3 hours, anchored to this variant's own setup completion, before taking its metrics
@@ -198,7 +189,7 @@ jobs:
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
     secrets: inherit
     with:
-      namespace: c8-${{ inputs.benchmark }}${{ inputs.namespace-suffix }}
+      namespace: c8-${{ inputs.name }}
       duration-seconds: '10800'
       at: ${{ needs.soak.outputs.soak_end_epoch }}
 
@@ -206,7 +197,7 @@ jobs:
   # re-read. Matrix job outputs are not reliably fanned out per-leg via `needs.<job>.outputs` (the
   # value returned is undefined/arbitrary across legs), so the artifact is the source of truth —
   # not the workflow_call `results-json`/`soak-end-epoch` outputs above. The artifact name is
-  # built from namespace-suffix, which the caller uses to map each downloaded artifact to a variant.
+  # built from name, which the caller uses to map each downloaded artifact to a variant.
   upload-variant-metrics:
     name: Upload variant metrics artifact
     runs-on: ubuntu-latest
@@ -228,7 +219,7 @@ jobs:
             > stress-result.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: stress-test-result${{ inputs.namespace-suffix }}
+          name: stress-test-result-${{ inputs.name }}
           path: stress-result.json
           retention-days: 90
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -259,4 +250,4 @@ jobs:
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:
-      namespace: c8-${{ inputs.benchmark }}${{ inputs.namespace-suffix }}
+      namespace: c8-${{ inputs.name }}
