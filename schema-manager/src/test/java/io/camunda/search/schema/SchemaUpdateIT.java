@@ -12,6 +12,7 @@ import static io.camunda.search.schema.utils.SchemaManagerITInvocationProvider.E
 import static io.camunda.search.schema.utils.SchemaManagerITInvocationProvider.OPENSEARCH_NETWORK_ALIAS;
 import static io.camunda.search.schema.utils.SchemaTestUtil.assertMappingsMatch;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createSchemaManager;
+import static io.camunda.search.schema.utils.SchemaTestUtil.searchEngineClientFromConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Maps;
@@ -133,32 +134,40 @@ class SchemaUpdateIT {
             indexDescriptors.templates().stream()
                 .filter(template -> !template.getVersion().startsWith(currentMinorVersion))
                 .toList());
-    final SchemaManager schemaManager =
-        createSchemaManager(indexDescriptors.indices(), indexDescriptors.templates(), config);
     final var exceptions = new ConcurrentLinkedQueue<Throwable>();
 
     // when
-    final var threads =
-        IntStream.range(0, numberOfThreads)
-            .mapToObj(
-                i ->
-                    Thread.ofVirtual()
-                        .start(
-                            () -> {
-                              try {
-                                schemaManager.startup();
-                              } catch (final Throwable e) {
-                                exceptions.add(e);
-                              }
-                            }))
-            .toList();
-    for (final var thread : threads) {
-      thread.join(Duration.ofSeconds(10));
-    }
+    try (final var searchEngineClient = searchEngineClientFromConfig(config);
+        final SchemaManager schemaManager =
+            createSchemaManager(
+                searchEngineClient,
+                indexDescriptors.indices(),
+                indexDescriptors.templates(),
+                config)) {
+      final var threads =
+          IntStream.range(0, numberOfThreads)
+              .mapToObj(
+                  i ->
+                      Thread.ofVirtual()
+                          .start(
+                              () -> {
+                                try {
+                                  schemaManager.startup();
+                                } catch (final Throwable e) {
+                                  exceptions.add(e);
+                                }
+                              }))
+              .toList();
+      for (final var thread : threads) {
+        thread.join(Duration.ofSeconds(10));
+      }
 
-    // then
-    assertThat(exceptions).isEmpty();
-    assertThat(schemaManager.isSchemaReadyForUse()).isTrue();
+      assertThat(threads).allMatch(thread -> !thread.isAlive());
+
+      // then
+      assertThat(exceptions).isEmpty();
+      assertThat(schemaManager.isSchemaReadyForUse()).isTrue();
+    }
 
     // validate "camunda-history-retention-policy" retention policy is created
     assertThat(
