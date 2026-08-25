@@ -6594,6 +6594,717 @@
         "x": 0,
         "y": 15
       },
+      "id": 119,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Discrepancy between last committed log appender position and the position the analytics exporter has acknowledged. A growing backlog means analytics is falling behind the log, so contractual counters and events are shipped late.\n\nA flat zero is not evidence that analytics delivery is healthy. AnalyticsExporter.export() acknowledges the record position unconditionally, outside the try that swallows handler failures, so the acknowledged position keeps advancing even when every handler throws and every OTLP batch is dropped. This panel only moves when the exporter director itself is behind — use the OTLP delivery outcome and records dropped panels to judge delivery health.\n\nShows the top 10 partitions.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "axisSoftMin": 0,
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 5,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 1
+          },
+          "id": 120,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": true,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "topk(10,\n    max (\n        zeebe_log_appender_last_committed_position{\n            cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"\n            }\n    ) by (partition, namespace, physicalTenant)\n    * on(namespace)\n    group_left(\n        label_cloud_camunda_io_generation,\n        label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n        kube_namespace_labels{\n        namespace=~\"$namespace\",\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n        }\n    ) by (\n        namespace\n    )\n    -\n    max (\n        zeebe_exporter_last_exported_position{\n            exporter=\"analytics\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"\n            }\n    ) by (partition, namespace, physicalTenant)\n    * on(namespace)\n    group_left(\n        label_cloud_camunda_io_generation,\n        label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n        kube_namespace_labels{\n        namespace=~\"$namespace\",\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n        }\n    ) by (\n        namespace\n    )\n)",
+              "legendFormat": "{{namespace}} p{{partition}} {{physicalTenant}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Analytics Exporter (records to export backlog)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Rate of analytics log records the exporter emits (process instance, user task, incident, tenant and heartbeat events).\n\nIncludes the periodic heartbeat, which uses the same logger as the analytics events and is scheduled unconditionally by AnalyticsExporter.open() — there is no category or sampling gate on it. A cluster processing nothing therefore still shows a low steady rate here, so read this alongside the record handling panel rather than as proof that analytics data is being produced. By the same token, zero does not mean the handler categories are misconfigured: it means the exporter never opened or the log pipeline is dead.\n\nThe series is otel_sdk_log_total, not otel_sdk_log_created_total: the SDK counter is otel.sdk.log.created, and the Prometheus client strips the reserved _created suffix before appending _total.\n\nShows the top 10 partitions.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "axisSoftMin": 0,
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 5,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  }
+                ]
+              },
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 12,
+            "y": 1
+          },
+          "id": 121,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": true,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "topk(10,\n    sum by (namespace, pod, partition, physicalTenant) (\n        rate(\n            otel_sdk_log_total{\n                otel_component_origin=\"analytics_exporter\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"\n                }[$__rate_interval]\n        )\n    * on(namespace)\n    group_left(\n        label_cloud_camunda_io_generation,\n        label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n        kube_namespace_labels{\n        namespace=~\"$namespace\",\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n        }\n    ) by (\n        namespace\n    )\n    )\n)",
+              "legendFormat": "{{namespace}} p{{partition}} {{physicalTenant}} {{pod}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Analytics Exporter (events emitted)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Rate of log records and metric data points the OTLP exporters hand off to the analytics backend, split into delivered and failed. Failures carry the exception class in error_type; sustained failure means analytics data is being lost once the batch queue fills.\n\nCovers both signals: otel_component_type distinguishes the log exporter from the metric exporter.\n\nShows the top 10 series per target.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "axisSoftMin": 0,
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 5,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  }
+                ]
+              },
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 10
+          },
+          "id": 122,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": true,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "topk(10,\n    sum by (namespace, otel_component_type, physicalTenant) (\n        rate(\n            {\n                __name__=~\"otel_sdk_exporter_(log|metric_data_point)_exported_total\",\n                otel_component_origin=\"analytics_exporter\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\", error_type=\"\"\n                }[$__rate_interval]\n        )\n        * on(namespace)\n        group_left(\n            label_cloud_camunda_io_generation,\n            label_cloud_camunda_io_sales_plan_type\n        )\n        max(\n            kube_namespace_labels{\n            namespace=~\"$namespace\",\n            label_cloud_camunda_io_generation=~\"$generation\",\n            label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n            }\n        ) by (\n            namespace\n        )\n    )\n)",
+              "legendFormat": "delivered {{otel_component_type}} {{physicalTenant}} [{{namespace}}]",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "topk(10,\n    sum by (namespace, otel_component_type, error_type, physicalTenant) (\n        rate(\n            {\n                __name__=~\"otel_sdk_exporter_(log|metric_data_point)_exported_total\",\n                otel_component_origin=\"analytics_exporter\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\", error_type!=\"\"\n                }[$__rate_interval]\n        )\n        * on(namespace)\n        group_left(\n            label_cloud_camunda_io_generation,\n            label_cloud_camunda_io_sales_plan_type\n        )\n        max(\n            kube_namespace_labels{\n            namespace=~\"$namespace\",\n            label_cloud_camunda_io_generation=~\"$generation\",\n            label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n            }\n        ) by (\n            namespace\n        )\n    )\n)",
+              "legendFormat": "failed {{otel_component_type}} {{error_type}} {{physicalTenant}} [{{namespace}}]",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "title": "Analytics Exporter (OTLP delivery outcome)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Average duration of an OTLP export request to the analytics backend, by signal and HTTP response status. The instrument is a summary, so only the average is available — there are no buckets to take a quantile from.\n\nShows the top 10 series.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "axisSoftMin": 0,
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 5,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 12,
+            "y": 10
+          },
+          "id": 123,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": true,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "topk(10,\n    sum by (namespace, otel_component_type, http_response_status_code, physicalTenant) (\n        rate(\n            otel_sdk_exporter_operation_duration_seconds_sum{\n                otel_component_origin=\"analytics_exporter\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"\n                }[$__rate_interval]\n        )\n    * on(namespace)\n    group_left(\n        label_cloud_camunda_io_generation,\n        label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n        kube_namespace_labels{\n        namespace=~\"$namespace\",\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n        }\n    ) by (\n        namespace\n    )\n    )\n    /\n    sum by (namespace, otel_component_type, http_response_status_code, physicalTenant) (\n        rate(\n            otel_sdk_exporter_operation_duration_seconds_count{\n                otel_component_origin=\"analytics_exporter\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"\n                }[$__rate_interval]\n        )\n    * on(namespace)\n    group_left(\n        label_cloud_camunda_io_generation,\n        label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n        kube_namespace_labels{\n        namespace=~\"$namespace\",\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n        }\n    ) by (\n        namespace\n    )\n    )\n)",
+              "legendFormat": "{{otel_component_type}} {{http_response_status_code}} {{physicalTenant}} [{{namespace}}]",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Analytics Exporter (OTLP request duration avg)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Fraction of the batch log record processor's queue that is occupied. The queue only fills when the analytics backend cannot absorb batches as fast as the engine produces events; once it reaches 1 the next record is dropped.\n\nThe otel_component_name filter excludes the bridge's placeholder gauge, which is always reported as zero.\n\nShows the top 10 partitions.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "axisSoftMin": 0,
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 5,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 19
+          },
+          "id": 124,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": true,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "topk(10,\n    max by (namespace, pod, partition, physicalTenant) (\n        (\n            otel_sdk_processor_log_queue_size{\n                otel_component_origin=\"analytics_exporter\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\", otel_component_name!=\"\"\n                }\n            /\n            otel_sdk_processor_log_queue_capacity{\n                otel_component_origin=\"analytics_exporter\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\", otel_component_name!=\"\"\n                }\n        )\n    * on(namespace)\n    group_left(\n        label_cloud_camunda_io_generation,\n        label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n        kube_namespace_labels{\n        namespace=~\"$namespace\",\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n        }\n    ) by (\n        namespace\n    )\n    )\n)",
+              "legendFormat": "{{namespace}} p{{partition}} {{physicalTenant}} {{pod}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Analytics Exporter (batch queue utilisation)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Rate of analytics records the batch processor could not hand to the OTLP exporter, labelled with the reason. Anything above zero is analytics data loss that the engine will not retry — the exporter never blocks the processing stream.\n\nShows the top 10 partitions.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "axisSoftMin": 0,
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 5,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  }
+                ]
+              },
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 12,
+            "y": 19
+          },
+          "id": 125,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": true,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "topk(10,\n    sum by (namespace, partition, error_type, physicalTenant) (\n        rate(\n            otel_sdk_processor_log_processed_total{\n                otel_component_origin=\"analytics_exporter\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\", error_type!=\"\"\n                }[$__rate_interval]\n        )\n    * on(namespace)\n    group_left(\n        label_cloud_camunda_io_generation,\n        label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n        kube_namespace_labels{\n        namespace=~\"$namespace\",\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n        }\n    ) by (\n        namespace\n    )\n    )\n)",
+              "legendFormat": "{{error_type}} p{{partition}} {{physicalTenant}} [{{namespace}}]",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Analytics Exporter (records dropped)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Average time the analytics handlers spend on one record inside the exporter director. This is engine-thread time, so a regression here slows exporting for every exporter on the partition, unlike the OTLP request duration which happens off the hot path.\n\nCovers export() only. The periodic metric flush and the heartbeat run as scheduled tasks on the same partition thread and are not timed here, so this understates the exporter total partition-thread cost.\n\nShows the top 10 partitions.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "axisSoftMin": 0,
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 5,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 28
+          },
+          "id": 127,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": true,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "topk(10,\n    sum by (namespace, pod, partition, physicalTenant) (\n        rate(\n            zeebe_exporter_exporting_duration_seconds_sum{\n                exporter=\"analytics\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"\n                }[$__rate_interval]\n        )\n    * on(namespace)\n    group_left(\n        label_cloud_camunda_io_generation,\n        label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n        kube_namespace_labels{\n        namespace=~\"$namespace\",\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n        }\n    ) by (\n        namespace\n    )\n    )\n    /\n    sum by (namespace, pod, partition, physicalTenant) (\n        rate(\n            zeebe_exporter_exporting_duration_seconds_count{\n                exporter=\"analytics\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"\n                }[$__rate_interval]\n        )\n    * on(namespace)\n    group_left(\n        label_cloud_camunda_io_generation,\n        label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n        kube_namespace_labels{\n        namespace=~\"$namespace\",\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n        }\n    ) by (\n        namespace\n    )\n    )\n)",
+              "legendFormat": "{{namespace}} p{{partition}} {{physicalTenant}} {{pod}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Analytics Exporter (record handling duration avg)",
+          "type": "timeseries"
+        }
+      ],
+      "title": "Analytics Exporter",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
       "id": 101,
       "panels": [
         {
@@ -6704,7 +7415,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 17
       },
       "id": 100,
       "panels": [
@@ -7344,7 +8055,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 18
       },
       "id": 47,
       "panels": [
