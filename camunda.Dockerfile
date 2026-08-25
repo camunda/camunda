@@ -12,8 +12,8 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
-ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.3_9-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:1a99f30a84d58729f1184c1c693f25fb6f91970ddf05395515540bc5773b8edd"
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.4_7-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:b4c93a50fc67612798db73d68ca3b0ee4ebdd51736e59cca370e689b9797037e"
 ARG BASE="hardened"
 
 # set to "build" to build camunda from scratch instead of using a distball
