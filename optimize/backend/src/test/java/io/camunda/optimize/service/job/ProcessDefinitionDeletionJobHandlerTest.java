@@ -9,25 +9,36 @@ package io.camunda.optimize.service.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
+import io.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
+import io.camunda.optimize.service.DefinitionService;
+import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.report.ReportService;
 import java.net.SocketTimeoutException;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +53,9 @@ class ProcessDefinitionDeletionJobHandlerTest {
   private ProcessDefinitionReader processDefinitionReader;
   private ProcessInstanceWriter processInstanceWriter;
   private ProcessDefinitionWriter processDefinitionWriter;
+  private DefinitionReader definitionReader;
+  private ReportService reportService;
+  private DefinitionService definitionService;
   private ProcessDefinitionDeletionJobHandler handler;
 
   @BeforeEach
@@ -49,9 +63,22 @@ class ProcessDefinitionDeletionJobHandlerTest {
     processDefinitionReader = mock(ProcessDefinitionReader.class);
     processInstanceWriter = mock(ProcessInstanceWriter.class);
     processDefinitionWriter = mock(ProcessDefinitionWriter.class);
+    definitionReader = mock(DefinitionReader.class);
+    reportService = mock(ReportService.class);
+    definitionService = mock(DefinitionService.class);
+    lenient()
+        .when(
+            definitionReader.getDefinitionVersions(eq(DefinitionType.PROCESS), anyString(), any()))
+        .thenReturn(List.of(new DefinitionVersionResponseDto("1", null)));
     handler =
         new ProcessDefinitionDeletionJobHandler(
-            processDefinitionReader, processInstanceWriter, processDefinitionWriter, millis -> {});
+            processDefinitionReader,
+            processInstanceWriter,
+            processDefinitionWriter,
+            definitionReader,
+            reportService,
+            definitionService,
+            millis -> {});
   }
 
   @Test
@@ -87,6 +114,96 @@ class ProcessDefinitionDeletionJobHandlerTest {
     // then
     verify(processInstanceWriter, never()).deleteInstancesByDefinitionId(anyString(), anyString());
     verify(processDefinitionWriter, never()).deleteDefinition(anyString());
+    verify(reportService, never()).clearCachedReportXml(anyString());
+    verify(definitionService, never()).invalidateProcessDefinition(anyString());
+  }
+
+  @Test
+  void shouldClearCachedXmlAndInvalidateCacheWhenDeletingTheOnlyRemainingVersion() {
+    // given -- pre-delete query sees only the version being deleted
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definition()));
+    when(definitionReader.getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of()))
+        .thenReturn(List.of(new DefinitionVersionResponseDto("1", null)));
+
+    // when
+    handler.handle(job());
+
+    // then
+    verify(reportService).clearCachedReportXml(BPMN_PROCESS_ID);
+    verify(definitionService).invalidateProcessDefinition(BPMN_PROCESS_ID);
+  }
+
+  @Test
+  void shouldNotClearCachedXmlWhenOtherVersionsRemainAfterDeletion() {
+    // given -- pre-delete query sees this version plus another sibling version
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definition()));
+    when(definitionReader.getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of()))
+        .thenReturn(
+            List.of(
+                new DefinitionVersionResponseDto("1", null),
+                new DefinitionVersionResponseDto("2", null)));
+
+    // when
+    handler.handle(job());
+
+    // then
+    verify(reportService, never()).clearCachedReportXml(anyString());
+  }
+
+  @Test
+  void shouldNotClearCachedXmlWhenTheSingleReturnedVersionIsNotTheOneBeingDeleted() {
+    // given
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definition()));
+    when(definitionReader.getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of()))
+        .thenReturn(List.of(new DefinitionVersionResponseDto("2", null)));
+
+    // when
+    handler.handle(job());
+
+    // then
+    verify(reportService, never()).clearCachedReportXml(anyString());
+  }
+
+  @Test
+  void shouldInvalidateDefinitionCacheEvenWhenOtherVersionsRemain() {
+    // given
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definition()));
+    when(definitionReader.getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of()))
+        .thenReturn(
+            List.of(
+                new DefinitionVersionResponseDto("1", null),
+                new DefinitionVersionResponseDto("2", null)));
+
+    // when
+    handler.handle(job());
+
+    // then
+    verify(definitionService).invalidateProcessDefinition(BPMN_PROCESS_ID);
+  }
+
+  @Test
+  void shouldCheckRemainingVersionsBeforeDeletingSoALastVersionDeleteIsNeverMissed() {
+    // given -- deleteDefinition() does not force a refresh, so checking remaining versions
+    // AFTER deleting could still see the stale (not-yet-refreshed) document and wrongly
+    // conclude other versions remain; checking beforehand avoids that read-after-write gap
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definition()));
+    when(definitionReader.getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of()))
+        .thenReturn(List.of(new DefinitionVersionResponseDto("1", null)));
+
+    // when
+    handler.handle(job());
+
+    // then
+    final var order = inOrder(definitionReader, processDefinitionWriter);
+    order
+        .verify(definitionReader)
+        .getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of());
+    order.verify(processDefinitionWriter).deleteDefinition(DEFINITION_ID);
   }
 
   @Test
@@ -218,6 +335,7 @@ class ProcessDefinitionDeletionJobHandlerTest {
     final ProcessDefinitionOptimizeDto definition = new ProcessDefinitionOptimizeDto();
     definition.setId(DEFINITION_ID);
     definition.setKey(BPMN_PROCESS_ID);
+    definition.setVersion("1");
     return definition;
   }
 }

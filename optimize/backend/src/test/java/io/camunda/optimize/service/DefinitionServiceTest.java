@@ -8,8 +8,12 @@
 package io.camunda.optimize.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.optimize.dto.optimize.DefinitionType;
+import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
@@ -72,5 +76,28 @@ class DefinitionServiceTest {
 
     // then
     assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldEvictProcessDefinitionFromCacheOnInvalidation() {
+    // given
+    final String definitionKey = "invoice-process";
+    final ProcessDefinitionOptimizeDto definition = new ProcessDefinitionOptimizeDto();
+    definition.setKey(definitionKey);
+    definition.setTenantId(null);
+    when(definitionReader.getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+            DefinitionType.PROCESS, definitionKey))
+        .thenReturn(List.of(definition));
+    // populate the cache
+    underTest.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, definitionKey);
+
+    // when
+    underTest.invalidateProcessDefinition(definitionKey);
+    underTest.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, definitionKey);
+
+    // then -- the loader had to be called again since the entry was evicted
+    verify(definitionReader, times(2))
+        .getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+            DefinitionType.PROCESS, definitionKey);
   }
 }

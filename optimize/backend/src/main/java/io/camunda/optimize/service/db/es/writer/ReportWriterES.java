@@ -56,6 +56,7 @@ import jakarta.json.JsonValue;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -299,6 +300,30 @@ public class ReportWriterES implements ReportWriter {
         updateItem,
         updateDefinitionXmlScript,
         Query.of(q -> q.term(t -> t.field(PROCESS_DEFINITION_PROPERTY).value(definitionKey))),
+        SINGLE_PROCESS_REPORT_INDEX_NAME);
+  }
+
+  @Override
+  public void clearReportDefinitionXmlForReportIds(final List<String> reportIds) {
+    if (reportIds.isEmpty()) {
+      return;
+    }
+    final String updateItem =
+        String.format("%d report(s) with cleared definition XML", reportIds.size());
+    LOG.debug("Clearing definition XML for {} in Elasticsearch", updateItem);
+
+    final Script clearDefinitionXmlScript =
+        Script.of(
+            s ->
+                s.lang(ScriptLanguage.Painless)
+                    // this script is deliberately not updating the modified date as this is
+                    // not a user operation
+                    .source("ctx._source.data.configuration.xml = null;"));
+
+    taskRepositoryES.tryUpdateByQueryRequest(
+        updateItem,
+        clearDefinitionXmlScript,
+        Query.of(q -> q.ids(i -> i.values(reportIds))),
         SINGLE_PROCESS_REPORT_INDEX_NAME);
   }
 

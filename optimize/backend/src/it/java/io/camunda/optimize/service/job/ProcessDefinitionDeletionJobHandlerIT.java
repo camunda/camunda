@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
+import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
@@ -20,11 +21,17 @@ import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobStatus;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
+import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.reader.JobRegistryReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessOverviewReader;
+import io.camunda.optimize.service.db.reader.ReportReader;
 import io.camunda.optimize.service.db.writer.JobRegistryWriter;
 import io.camunda.optimize.service.db.writer.ProcessOverviewWriter;
+import io.camunda.optimize.service.db.writer.ReportWriter;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,6 +45,9 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
   private ProcessDefinitionReader processDefinitionReader;
   private ProcessOverviewReader processOverviewReader;
   private ProcessOverviewWriter processOverviewWriter;
+  private ReportReader reportReader;
+  private ReportWriter reportWriter;
+  private DefinitionService definitionService;
   private JobRegistryWriter jobRegistryWriter;
   private JobDispatcher jobDispatcher;
 
@@ -47,6 +57,9 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     processDefinitionReader = embeddedOptimizeExtension.getBean(ProcessDefinitionReader.class);
     processOverviewReader = embeddedOptimizeExtension.getBean(ProcessOverviewReader.class);
     processOverviewWriter = embeddedOptimizeExtension.getBean(ProcessOverviewWriter.class);
+    reportReader = embeddedOptimizeExtension.getBean(ReportReader.class);
+    reportWriter = embeddedOptimizeExtension.getBean(ReportWriter.class);
+    definitionService = embeddedOptimizeExtension.getBean(DefinitionService.class);
     jobRegistryWriter = embeddedOptimizeExtension.getBean(JobRegistryWriter.class);
     jobDispatcher = embeddedOptimizeExtension.getBean(JobDispatcher.class);
   }
@@ -72,11 +85,11 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     persistProcessInstances(Stream.concat(instancesV1.stream(), instancesV2.stream()).toList());
 
     processOverviewWriter.updateProcessOwnerIfNotSet(bpmnProcessId, "owner-1");
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    refreshAllIndices();
 
     // when
     handler.handle(job(definitionIdV1));
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    refreshAllIndices();
 
     // then
     assertThat(getProcessDefinition(definitionIdV1)).isEmpty();
@@ -101,15 +114,127 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     final String definitionId = bpmnProcessId + ":1:" + UUID.randomUUID();
     persistProcessInstances(List.of(instanceFor(bpmnProcessId, definitionId, "1")));
     processOverviewWriter.updateProcessOwnerIfNotSet(bpmnProcessId, "owner-1");
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    refreshAllIndices();
 
     // when
     handler.handle(job(definitionId));
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    refreshAllIndices();
 
     // then
     assertThat(getProcessDefinition(definitionId)).isEmpty();
     assertThat(processOverviewReader.getProcessOverviewByKey(bpmnProcessId)).isPresent();
+  }
+
+  @Test
+  void shouldClearCachedXmlOnReportsWhenLastVersionDeleted() {
+    // given -- a single version of bpmnProcessId, so this deletion removes its last version
+    final String bpmnProcessId = "definition-deletion-clear-xml-test-" + UUID.randomUUID();
+    final String definitionId = bpmnProcessId + ":1:" + UUID.randomUUID();
+    persistProcessInstances(List.of(instanceFor(bpmnProcessId, definitionId, "1")));
+    final String reportId = createSingleProcessReportWithCachedXml(bpmnProcessId);
+    refreshAllIndices();
+
+    // when
+    handler.handle(job(definitionId));
+    refreshAllIndices();
+
+    // then
+    assertThat(getProcessDefinition(definitionId)).isEmpty();
+    assertThat(getCachedXml(reportId)).isNull();
+  }
+
+  @Test
+  void shouldLeaveCachedXmlUntouchedWhenOtherVersionsRemain() {
+    // given
+    final String bpmnProcessId = "definition-deletion-keep-xml-test-" + UUID.randomUUID();
+    final String definitionIdV1 = bpmnProcessId + ":1:" + UUID.randomUUID();
+    final String definitionIdV2 = bpmnProcessId + ":2:" + UUID.randomUUID();
+    persistProcessInstances(
+        List.of(
+            instanceFor(bpmnProcessId, definitionIdV1, "1"),
+            instanceFor(bpmnProcessId, definitionIdV2, "2")));
+    final String reportId = createSingleProcessReportWithCachedXml(bpmnProcessId);
+    refreshAllIndices();
+
+    // when -- only one of the two versions is deleted, so bpmnProcessId still has a version left
+    handler.handle(job(definitionIdV1));
+    refreshAllIndices();
+
+    // then
+    assertThat(getCachedXml(reportId)).isEqualTo("<definitions>cached</definitions>");
+  }
+
+  @Test
+  void shouldClearCachedXmlOnComparisonReportWhereKeyIsFirstDefinition() {
+    // given -- a comparison report referencing bpmnProcessId as its first of two definitions
+    final String bpmnProcessId = "definition-deletion-comparison-first-test-" + UUID.randomUUID();
+    final String definitionId = bpmnProcessId + ":1:" + UUID.randomUUID();
+    persistProcessInstances(List.of(instanceFor(bpmnProcessId, definitionId, "1")));
+
+    final ProcessReportDataDto comparisonData = new ProcessReportDataDto();
+    comparisonData.setProcessDefinitionKey(bpmnProcessId);
+    comparisonData.getDefinitions().add(new ReportDataDefinitionDto("some-other-process"));
+    comparisonData.getConfiguration().setXml("<definitions>cached</definitions>");
+    final String reportId =
+        reportWriter
+            .createNewSingleProcessReport("demo", comparisonData, "Comparison Report", null, null)
+            .getId();
+    refreshAllIndices();
+
+    // when
+    handler.handle(job(definitionId));
+    refreshAllIndices();
+
+    // then
+    assertThat(getProcessDefinition(definitionId)).isEmpty();
+    assertThat(getCachedXml(reportId)).isNull();
+  }
+
+  @Test
+  void shouldLeaveCachedXmlUntouchedOnComparisonReportWhereKeyIsNotFirstDefinition() {
+    // given -- a comparison report referencing bpmnProcessId only as its second definition
+    final String bpmnProcessId = "definition-deletion-not-first-test-" + UUID.randomUUID();
+    final String definitionId = bpmnProcessId + ":1:" + UUID.randomUUID();
+    persistProcessInstances(List.of(instanceFor(bpmnProcessId, definitionId, "1")));
+
+    final ProcessReportDataDto comparisonData = new ProcessReportDataDto();
+    comparisonData.setProcessDefinitionKey("some-other-process");
+    comparisonData.getDefinitions().add(new ReportDataDefinitionDto(bpmnProcessId));
+    comparisonData.getConfiguration().setXml("<definitions>cached</definitions>");
+    final String reportId =
+        reportWriter
+            .createNewSingleProcessReport("demo", comparisonData, "Comparison Report", null, null)
+            .getId();
+    refreshAllIndices();
+
+    // when
+    handler.handle(job(definitionId));
+    refreshAllIndices();
+
+    // then
+    assertThat(getProcessDefinition(definitionId)).isEmpty();
+    assertThat(getCachedXml(reportId)).isEqualTo("<definitions>cached</definitions>");
+  }
+
+  @Test
+  void shouldEvictDefinitionFromCacheAfterDeletion() {
+    // given
+    final String bpmnProcessId = "definition-deletion-cache-evict-test-" + UUID.randomUUID();
+    final String definitionId = bpmnProcessId + ":1:" + UUID.randomUUID();
+    persistProcessDefinitions(List.of(definitionFor(bpmnProcessId, definitionId, "1")));
+    refreshAllIndices();
+    // populate the cache before deletion
+    definitionService.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, bpmnProcessId);
+
+    // when
+    handler.handle(job(definitionId));
+    refreshAllIndices();
+
+    // then -- a fresh cache fetch no longer returns the deleted definition
+    assertThat(
+            definitionService.getCachedTenantToLatestDefinitionMap(
+                DefinitionType.PROCESS, bpmnProcessId))
+        .isEmpty();
   }
 
   @Test
@@ -123,7 +248,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
 
     // when / then
     assertThatCode(() -> handler.handle(job(definitionId))).doesNotThrowAnyException();
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    refreshAllIndices();
     assertThat(getProcessDefinition(definitionId)).isEmpty();
   }
 
@@ -133,10 +258,10 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     final String bpmnProcessId = "definition-deletion-idempotency-test-" + UUID.randomUUID();
     final String definitionId = bpmnProcessId + ":1:" + UUID.randomUUID();
     persistProcessInstances(List.of(instanceFor(bpmnProcessId, definitionId, "1")));
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    refreshAllIndices();
 
     handler.handle(job(definitionId));
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    refreshAllIndices();
     assertThat(getProcessDefinition(definitionId)).isEmpty();
 
     // when / then -- re-invoking against already-deleted data is a no-op, not an exception
@@ -149,7 +274,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     final String bpmnProcessId = "definition-deletion-dispatch-test-" + UUID.randomUUID();
     final String definitionId = bpmnProcessId + ":1:" + UUID.randomUUID();
     persistProcessInstances(List.of(instanceFor(bpmnProcessId, definitionId, "1")));
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    refreshAllIndices();
 
     final JobRegistryEntryDto queued =
         jobRegistryWriter.createJobEntry(
@@ -157,7 +282,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
 
     // when
     jobDispatcher.dispatchNextBatch();
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    refreshAllIndices();
 
     // then
     assertThat(getProcessDefinition(definitionId)).isEmpty();
@@ -173,6 +298,20 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
 
   private Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
     return processDefinitionReader.getProcessDefinition(definitionId, false);
+  }
+
+  private String createSingleProcessReportWithCachedXml(final String bpmnProcessId) {
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setProcessDefinitionKey(bpmnProcessId);
+    reportData.getConfiguration().setXml("<definitions>cached</definitions>");
+    return reportWriter
+        .createNewSingleProcessReport("demo", reportData, "Test Report", null, null)
+        .getId();
+  }
+
+  private String getCachedXml(final String reportId) {
+    final ReportDefinitionDto<?> report = reportReader.getReport(reportId).orElseThrow();
+    return ((ProcessReportDataDto) report.getData()).getConfiguration().getXml();
   }
 
   private JobRegistryEntryDto job(final String definitionId) {
@@ -199,5 +338,9 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
         .tenantId(ZEEBE_DEFAULT_TENANT_ID)
         .bpmn20Xml("<definitions/>")
         .build();
+  }
+
+  private static void refreshAllIndices() {
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 }

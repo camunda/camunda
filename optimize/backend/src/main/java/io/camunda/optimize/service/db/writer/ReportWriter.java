@@ -27,6 +27,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRep
 import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
+import java.util.List;
 import java.util.Set;
 
 public interface ReportWriter {
@@ -84,6 +85,8 @@ public interface ReportWriter {
 
   void updateProcessDefinitionXmlForProcessReportsWithKey(
       final String definitionKey, final String definitionXml);
+
+  void clearReportDefinitionXmlForReportIds(final List<String> reportIds);
 
   void deleteAllManagementReports();
 
