@@ -40,7 +40,7 @@ const AssigneeBadge: React.FC<Props> = ({currentUser, assignee}) => {
 	}
 
 	return (
-		<Badge title={t('tasklist.assigneeTagAssignedToXAria', {assignee})}>
+		<Badge variant="accent" title={t('tasklist.assigneeTagAssignedToXAria', {assignee})}>
 			<UserRound aria-hidden />
 			{assignee}
 		</Badge>
