@@ -41,6 +41,7 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import jakarta.json.JsonValue;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Refresh;
@@ -277,6 +278,22 @@ public class ReportWriterOS implements ReportWriter {
         SINGLE_PROCESS_REPORT_INDEX_NAME,
         QueryDSL.term(PROCESS_DEFINITION_PROPERTY, definitionKey),
         updateDefinitionXmlScript);
+  }
+
+  @Override
+  public void clearReportDefinitionXmlForReportIds(final List<String> reportIds) {
+    if (reportIds.isEmpty()) {
+      return;
+    }
+    final String updateItem =
+        String.format("%d report(s) with cleared definition XML", reportIds.size());
+    LOG.debug("Clearing definition XML for {} in OpenSearch", updateItem);
+
+    final Script clearDefinitionXmlScript =
+        OpenSearchWriterUtil.createDefaultScript("ctx._source.data.configuration.xml = null;");
+
+    osClient.updateByQuery(
+        SINGLE_PROCESS_REPORT_INDEX_NAME, QueryDSL.ids(reportIds), clearDefinitionXmlScript);
   }
 
   @Override
