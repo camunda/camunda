@@ -14,7 +14,7 @@ import { Button, PageHeader } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import { userQueries } from "src/utility/api/users/queries";
 import NotFound from "src/pages/not-foundV2";
-import { StackPage } from "src/components/layoutV2/Page";
+import { Breadcrumbs, StackPage } from "src/components/layoutV2/Page";
 import UserDetails from "./UserDetailsTab";
 import { Tabs, TabsHeaderList, TabsContent } from "src/components/tabsV2";
 import { DetailPageHeaderFallback } from "src/components/fallbacksV2";
@@ -35,10 +35,13 @@ const Details: FC = () => {
   );
 
   const user = userSearchResults ? userSearchResults.items[0] : null;
+  const breadcrumbs = useMemo(() => {
+    if (!user) return [];
+
+    return [{ title: t("users"), href: ".." }, { title: user.username }];
+  }, [user, t]);
   const tabs = useMemo(() => {
-    if (!user) {
-      return [];
-    }
+    if (!user) return [];
 
     return [
       {
@@ -61,6 +64,7 @@ const Details: FC = () => {
             <Tabs path={`../${id}`} tabs={tabs} selectedTabKey={tab}>
               <PageHeader
                 title={user.username}
+                breadcrumb={<Breadcrumbs items={breadcrumbs} />}
                 actions={
                   <>
                     <Button
