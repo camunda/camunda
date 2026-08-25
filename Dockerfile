@@ -9,8 +9,8 @@ ARG BASE_DIGEST="sha256:adfd5a3db20a8840d7558f982365864166d5a5acc7e04aeb8268c634
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
-ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.11_10-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:b251c6e60516a48d6511a33b9afc2f8b1a427e53a598b16c1f29390c9bf916bd"
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.12_8-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:96975602e131485862eb8cd32927face8a06d7591a5e865944b634a701d9df72"
 ARG BASE="hardened"
 
 # set to "build" to build zeebe from scratch instead of using a distball
