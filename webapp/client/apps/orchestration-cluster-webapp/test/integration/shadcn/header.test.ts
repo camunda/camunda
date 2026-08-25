@@ -78,6 +78,8 @@ test.describe('user sidebar', () => {
 		await shadcnTasklistIndexPage.goto();
 
 		await test.step('render header with default English translations', async () => {
+			await expect(shadcnTasklistIndexPage.header.productBreadcrumb).toHaveText('Tasklist');
+			await expect(shadcnTasklistIndexPage.header.productBreadcrumb).toHaveAttribute('href', '/shadcn/tasklist');
 			await expect(shadcnTasklistIndexPage.header.tasksNavItem).toBeVisible();
 			await expect(shadcnTasklistIndexPage.header.processesNavItem).toBeVisible();
 		});
@@ -87,10 +89,19 @@ test.describe('user sidebar', () => {
 
 			await expect(page.getByText(currentUserMock.displayName)).toBeVisible();
 			await expect(shadcnTasklistIndexPage.header.languageSelector).toBeVisible();
+			await expect(page.getByRole('radio', {name: 'System'})).toBeChecked();
+		});
+
+		await test.step('update the selected theme', async () => {
+			await shadcnTasklistIndexPage.header.selectTheme('Dark');
+
+			await expect(page.getByRole('radio', {name: 'Dark'})).toBeChecked();
 		});
 
 		await test.step('update header text when language is changed', async () => {
 			await shadcnTasklistIndexPage.header.selectLanguage('Deutsch');
+			await expect(shadcnTasklistIndexPage.header.getLanguageOption('Deutsch')).toBeChecked();
+			await shadcnTasklistIndexPage.header.closeUserSidebar();
 
 			await expect(page.getByRole('link', {name: 'Aufgaben', exact: true})).toBeVisible();
 			await expect(page.getByRole('link', {name: 'Prozesse'})).toBeVisible();

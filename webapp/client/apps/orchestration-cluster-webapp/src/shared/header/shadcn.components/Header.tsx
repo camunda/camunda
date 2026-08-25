@@ -6,7 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {AppHeader, AppSidebar, CamundaLogo, SidebarProvider, toast, TooltipProvider} from '@camunda/design-system';
+import {
+	AppHeader,
+	AppSidebar,
+	CamundaLogo,
+	NavBreadcrumbSwitcher,
+	SidebarProvider,
+	toast,
+	TooltipProvider,
+	type NavBreadcrumbDescriptor,
+} from '@camunda/design-system';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
@@ -30,8 +39,22 @@ const Header: React.FC<Props> = ({children}) => {
 	const {t} = useTranslation();
 	const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
 	const {data: license} = useSuspenseQuery(queries.getLicense());
-	const {ariaLabel, homeRoute, items} = useSidebarNavigation(currentUser);
+	const {ariaLabel, homeRoute, items, product} = useSidebarNavigation(currentUser);
 	const {canLogout} = getClientConfig().authentication;
+	const breadcrumbItems = useMemo<NavBreadcrumbDescriptor[]>(
+		() =>
+			product === undefined
+				? []
+				: [
+						{
+							key: 'app',
+							label: product.label,
+							icon: product.icon,
+							linkProps: {to: homeRoute},
+						},
+					],
+		[homeRoute, product],
+	);
 
 	const handleLogout = useCallback(() => {
 		toast.info(t('notificationLogOutTitle'), {
@@ -63,6 +86,15 @@ const Header: React.FC<Props> = ({children}) => {
 							<Link aria-label={t('loginLogoLabel')} className="flex items-center" to={homeRoute}>
 								<CamundaLogo />
 							</Link>
+						}
+						breadcrumb={
+							breadcrumbItems.length === 0 ? undefined : (
+								<NavBreadcrumbSwitcher
+									items={breadcrumbItems}
+									linkComponent={Link}
+									aria-label={t('headerContextLabel')}
+								/>
+							)
 						}
 						trailing={<LicenseBadges license={license} />}
 						actions={

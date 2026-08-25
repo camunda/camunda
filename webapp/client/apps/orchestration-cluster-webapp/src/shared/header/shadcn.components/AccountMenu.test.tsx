@@ -34,8 +34,8 @@ describe('User info', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Settings'}));
 
-		await expect.element(screen.getByText('Language')).toBeVisible();
-		await expect.element(screen.getByRole('menuitemcheckbox', {name: 'English'})).toBeChecked();
+		await expect.element(screen.getByRole('radiogroup', {name: 'Language'})).toBeVisible();
+		await expect.element(screen.getByRole('radio', {name: 'English'})).toBeChecked();
 	});
 
 	it('should handle a SSO user', async () => {
@@ -105,10 +105,15 @@ describe('User info', () => {
 		expect(localStorage.getItem('theme')).toBeNull();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Settings'}));
-		await userEvent.click(screen.getByRole('menuitemcheckbox', {name: 'Light'}));
+
+		await expect.element(screen.getByRole('radiogroup', {name: 'Theme'})).toBeVisible();
+		await expect.element(screen.getByRole('radio', {name: 'System'})).toBeChecked();
+		await userEvent.click(screen.getByRole('radio', {name: 'Light'}));
 
 		expect(themeStore.selectedTheme).toBe('light');
 		expect(localStorage.getItem('theme')).toBe('"light"');
+		await expect.element(screen.getByRole('radio', {name: 'Light'})).toBeChecked();
+		await expect.element(screen.getByRole('radio', {name: 'System'})).not.toBeChecked();
 	});
 
 	it('should update the selected language', async () => {
@@ -119,9 +124,11 @@ describe('User info', () => {
 		expect(localStorage.getItem('language')).toBeNull();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Settings'}));
-		await userEvent.click(screen.getByRole('menuitemcheckbox', {name: 'Deutsch'}));
+		await userEvent.click(screen.getByRole('radio', {name: 'Deutsch'}));
 
 		expect(changeLanguageSpy).toHaveBeenCalledWith('de');
 		expect(localStorage.getItem('language')).toBe('de');
+		await expect.element(screen.getByRole('radio', {name: 'Deutsch'})).toBeChecked();
+		await expect.element(screen.getByRole('radio', {name: 'English'})).not.toBeChecked();
 	});
 });
