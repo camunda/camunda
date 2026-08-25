@@ -31,6 +31,7 @@ import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.client.impl.util.Environment;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
+import io.camunda.process.test.api.DataDeletionMode;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestAutoConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import java.net.URI;
@@ -232,7 +233,7 @@ public class CamundaProcessTestDefaultConfigurationTest {
       properties = {
         "camunda.process-test.connectors-enabled=true",
         "camunda.process-test.clock-reset-enabled=false",
-        "camunda.process-test.data-deletion-enabled=false",
+        "camunda.process-test.data-deletion-mode=none",
         "camunda.process-test.camunda-docker-image-version=8.8.0-new",
         "camunda.process-test.camunda-docker-image-name=camunda/camunda-new",
         "io.camunda.process.test.camunda-docker-image-name=camunda/camunda-legacy",
@@ -245,7 +246,7 @@ public class CamundaProcessTestDefaultConfigurationTest {
     void shouldReadConfigurationWithNewPrefix() {
       assertThat(configuration.isConnectorsEnabled()).isTrue();
       assertThat(configuration.isClockResetEnabled()).isFalse();
-      assertThat(configuration.isDataDeletionEnabled()).isFalse();
+      assertThat(configuration.getDataDeletionMode()).isEqualTo(DataDeletionMode.NONE);
       assertThat(configuration.getCamundaDockerImageVersion()).isEqualTo("8.8.0-new");
       assertThat(configuration.getCamundaDockerImageName()).isEqualTo("camunda/camunda-new");
     }
@@ -266,7 +267,7 @@ public class CamundaProcessTestDefaultConfigurationTest {
     void shouldUseLegacyConfiguration() {
       assertThat(configuration.isConnectorsEnabled()).isTrue();
       assertThat(configuration.isClockResetEnabled()).isTrue();
-      assertThat(configuration.isDataDeletionEnabled()).isTrue();
+      assertThat(configuration.getDataDeletionMode()).isEqualTo(DataDeletionMode.CLUSTER_PURGE);
       assertThat(configuration.getCamundaDockerImageVersion()).isEqualTo("8.8.0-legacy");
       assertThat(configuration.getCamundaDockerImageName()).isEqualTo("camunda/camunda-legacy");
     }
