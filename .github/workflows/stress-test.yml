@@ -2,10 +2,9 @@
 #              warmup, async-profiler capture (30 min, parallel to soak), 3-hour soak, metrics
 #              snapshot, then namespace cleanup. Used on daily schedule in different
 #              variants, see camunda-daily-load-tests.yml.
-#              Uploads its own metrics as a `stress-test-result<namespace-suffix>` artifact for
-#              the caller to aggregate (matrix job outputs are not reliable to fan out per-leg
-#              via `needs.<job>.outputs`) — the artifact contains only namespace/results, no
-#              variant identity, since that belongs to the caller, not this generic workflow.
+#              Uploads its own metrics as a `stress-test-result<namespace-suffix>` artifact
+#              containing {namespace, soakEndEpoch, results} for the caller to aggregate (matrix
+#              job outputs are not reliable to fan out per-leg via `needs.<job>.outputs`).
 # calls: camunda-load-test.yml (scenario: max), profile-load-test.yml,
 #        camunda-load-test-metrics.yaml, camunda-delete-load-test.yml
 # called-by: camunda-daily-load-tests.yml
@@ -206,10 +205,8 @@ jobs:
   # Upload this variant's metrics as its own artifact for the caller's aggregate-metrics job to
   # re-read. Matrix job outputs are not reliably fanned out per-leg via `needs.<job>.outputs` (the
   # value returned is undefined/arbitrary across legs), so the artifact is the source of truth —
-  # not the workflow_call `results-json`/`soak-end-epoch` outputs above. The artifact carries only
-  # namespace/results — no variant key or label — so this workflow stays ignorant of the caller's
-  # own variant identity; the caller maps each downloaded artifact back to its variant via the
-  # artifact name (which it built from its own namespace-suffix), not via content this workflow embeds.
+  # not the workflow_call `results-json`/`soak-end-epoch` outputs above. The artifact name is
+  # built from namespace-suffix, which the caller uses to map each downloaded artifact to a variant.
   upload-variant-metrics:
     name: Upload variant metrics artifact
     runs-on: ubuntu-latest

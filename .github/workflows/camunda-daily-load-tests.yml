@@ -122,10 +122,8 @@ jobs:
         with:
           pattern: stress-test-result-*
           path: variant-metrics
-          # No merge-multiple: stress-test.yml's artifact content carries no variant identity
-          # (by design — it's generic), so each variant's stress-result.json needs its own
-          # per-artifact-name folder here to avoid colliding with every other variant's file
-          # of the same name.
+          # No merge-multiple: every artifact contains a file named stress-result.json, so each
+          # needs its own per-artifact-name folder to avoid one variant's file overwriting another's.
       - name: Merge into the legacy combined artifact + variants-json manifest
         id: merge
         env:
