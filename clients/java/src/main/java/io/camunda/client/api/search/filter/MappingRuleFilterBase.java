@@ -16,10 +16,10 @@
 package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import java.util.List;
+import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.util.function.Consumer;
 
-public interface MappingRuleFilter extends MappingRuleFilterBase {
+public interface MappingRuleFilterBase extends SearchRequestFilter {
 
   /**
    * Filter mapping rules by the specified mapping rule id.
@@ -27,8 +27,7 @@ public interface MappingRuleFilter extends MappingRuleFilterBase {
    * @param mappingRuleId the id of the mapping rule
    * @return the updated filter
    */
-  @Override
-  MappingRuleFilter mappingRuleId(final String mappingRuleId);
+  MappingRuleFilterBase mappingRuleId(final String mappingRuleId);
 
   /**
    * Filter mapping rules by the specified claim name.
@@ -36,8 +35,7 @@ public interface MappingRuleFilter extends MappingRuleFilterBase {
    * @param claimName the name of the claim
    * @return the updated filter
    */
-  @Override
-  MappingRuleFilter claimName(final String claimName);
+  MappingRuleFilterBase claimName(final String claimName);
 
   /**
    * Filter mapping rules by the specified claim value.
@@ -45,8 +43,7 @@ public interface MappingRuleFilter extends MappingRuleFilterBase {
    * @param claimValue the value of the claim
    * @return the updated filter
    */
-  @Override
-  MappingRuleFilter claimValue(final String claimValue);
+  MappingRuleFilterBase claimValue(final String claimValue);
 
   /**
    * Filter mapping rules by the specified name.
@@ -54,17 +51,7 @@ public interface MappingRuleFilter extends MappingRuleFilterBase {
    * @param name the name of the mapping rule
    * @return the updated filter
    */
-  @Override
-  MappingRuleFilter name(final String name);
+  MappingRuleFilterBase name(final String name);
 
-  @Override
-  MappingRuleFilter name(Consumer<StringProperty> fn);
-
-  /**
-   * Combine this filter with a list of alternative filter groups using OR logic.
-   *
-   * @param filters the alternative filter groups
-   * @return the updated filter
-   */
-  MappingRuleFilterBase orFilters(List<Consumer<MappingRuleFilterBase>> filters);
+  MappingRuleFilterBase name(Consumer<StringProperty> fn);
 }
