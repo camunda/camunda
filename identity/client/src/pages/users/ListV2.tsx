@@ -8,7 +8,7 @@
 
 import { FC } from "react";
 import { useNavigate } from "react-router-dom";
-import { Edit, TrashCan } from "@carbon/react/icons";
+import { Pencil, Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
@@ -90,11 +90,11 @@ const List: FC = () => {
           {
             label: t("editUser"),
             onClick: editUser,
-            icon: Edit,
+            icon: Pencil,
           },
           {
             label: t("delete"),
-            icon: TrashCan,
+            icon: Trash2,
             onClick: deleteUser,
             isDangerous: true,
           },
