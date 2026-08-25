@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
@@ -141,11 +142,11 @@ final class VariableInputMappingTransformerTest {
         Map.of("orders", asMsgPack("[{'id':1}, {'id':2}]")),
         "{'first':null, 'last':2}"
       },
-      // malformed targets are deploy-time rejected in practice; shows what the naive
-      // split("\\.") would do if one ever reached the transformer
-      {List.of(mapping("x", "a..b")), Map.of("x", asMsgPack("1")), "{'a':{'':{'b':1}}}"},
+      // malformed targets are deploy-time rejected: the transformer throws
+      // IllegalStateException when the combined FEEL context text fails to parse. Only cases where
+      // the naive split("\\.") happens to still produce parseable FEEL survive here (e.g. a
+      // trailing '.' gets its empty segment dropped by String.split).
       {List.of(mapping("x", "a.")), Map.of("x", asMsgPack("1")), "{'a':1}"},
-      {List.of(mapping("x", "`a.b`")), Map.of("x", asMsgPack("1")), "{'`a':{'b`':1}}"},
       // reserved-word/space targets are also deploy-time rejected, but would work fine here since
       // input targets are plain path segments, never FEEL identifiers
       {List.of(mapping("x", "for")), Map.of("x", asMsgPack("1")), "{'for':1}"},
@@ -195,6 +196,17 @@ final class VariableInputMappingTransformerTest {
       final Map<String, DirectBuffer> variables,
       final String expectedOutput) {
     MsgPackUtil.assertEquality(evaluate(mappings, variables, expressionLanguage), expectedOutput);
+  }
+
+  @Test
+  void shouldRejectDeploymentWhenCombinedFeelContextIsUnparseable() {
+    // Target "a..b" renders an empty context key ({a:{:{b: x}}}) that FEEL cannot parse.
+    // Historically (pre-baddd911435) and again after this restoration, an unparseable
+    // combined context fails the deployment rather than silently landing with null.
+    final var mappings = List.of(mapping("x", "a..b"));
+    assertThatThrownBy(() -> transformer.transformInputMappings(mappings, expressionLanguage))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageStartingWith("Failed to build variable mapping expression:");
   }
 
   @Test
