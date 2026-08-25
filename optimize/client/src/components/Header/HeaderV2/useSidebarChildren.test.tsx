@@ -80,3 +80,21 @@ it('should collapse the analysis group outside of the analysis routes', () => {
 
   expect(getAnalysis(node)).toMatchObject({isActive: false, isExpanded: false});
 });
+
+it('should keep a manual collapse when leaving and returning to the analysis routes', () => {
+  (useLocation as jest.Mock).mockReturnValue({pathname: '/analysis/branchAnalysis'});
+  const node = shallow(<Sidebar />);
+
+  getAnalysis(node).onToggleExpand?.(false);
+  node.update();
+  expect(getAnalysis(node).isExpanded).toBe(false);
+
+  (useLocation as jest.Mock).mockReturnValue({pathname: '/collections'});
+  node.setProps({});
+  expect(getAnalysis(node).isExpanded).toBe(false);
+
+  (useLocation as jest.Mock).mockReturnValue({pathname: '/analysis/branchAnalysis'});
+  node.setProps({});
+
+  expect(getAnalysis(node).isExpanded).toBe(false);
+});

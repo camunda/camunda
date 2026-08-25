@@ -31,8 +31,7 @@ export default function useSidebarChildren(noActions?: boolean): SidebarNode[] {
   const {pathname} = useLocation();
 
   const isAnalysis = isCurrentPage(['/analysis/', '/analysis/*'], pathname);
-  // Remembers a manual collapse only while the user stays on the same side of the
-  // Analysis boundary; crossing it hands control back to the route.
+  // A manual toggle sticks for the side of the Analysis boundary it was made on.
   const [expansion, setExpansion] = useState({section: isAnalysis, expanded: isAnalysis});
   const analysisExpanded = expansion.section === isAnalysis ? expansion.expanded : isAnalysis;
 
