@@ -4,7 +4,7 @@
 # calls: load-tests/docs/scripts/loadTestMetrics.sh
 # type: CI
 # owner: @camunda/reliability-testing
-name: Camunda Load Test Metrics
+name: "Load Test: Metrics"
 on:
   workflow_dispatch:
     inputs:

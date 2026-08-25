@@ -18,7 +18,7 @@ Prerequisites: access to the GKE benchmark cluster via [Teleport](https://camund
 
 ### Via GitHub Actions (recommended)
 
-Trigger the [Camunda load test workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) via the UI. Select a branch, name your test, and choose a scenario.
+Trigger the [Camunda load test workflow](https://github.com/camunda/camunda/actions/workflows/load-test.yml) via the UI. Select a branch, name your test, and choose a scenario.
 
 ### Via Makefile (manual)
 

@@ -1,7 +1,7 @@
 # description: This workflow allows to profile more easily running load tests
 # type: CI
 # owner: @camunda/zeebe-distributed-platform
-name: Profile running load test
+name: "Load Test: Profile"
 on:
   workflow_dispatch:
     inputs:

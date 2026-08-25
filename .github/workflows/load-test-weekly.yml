@@ -1,7 +1,7 @@
 # description: Deploys new Camunda load tests weekly. Multiple kinds of load tests are created - typical, realistic, latency
 # type: CI
 # owner: @camunda/reliability-testing
-name: Camunda weekly medic load test
+name: "Load Test: Weekly Medic"
 on:
   workflow_dispatch:
      inputs:
@@ -56,7 +56,7 @@ jobs:
     name: Typical load test
     needs:
       - test-data
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.test-data.outputs.test }}-typical
@@ -68,7 +68,7 @@ jobs:
     name: Postgres realistic load test
     needs:
       - test-data
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.test-data.outputs.test }}-rdbms-realistic
@@ -79,7 +79,7 @@ jobs:
       scenario: realistic
   setup-realistic-test:
     name: Realistic load test
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     needs:
       - test-data
@@ -91,7 +91,7 @@ jobs:
       build-frontend: true
   setup-latency-test:
     name: Latency test
-    uses: ./.github/workflows/camunda-load-test.yml
+    uses: ./.github/workflows/load-test.yml
     secrets: inherit
     needs:
       - test-data

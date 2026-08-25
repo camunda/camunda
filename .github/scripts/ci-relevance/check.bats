@@ -16,7 +16,7 @@ check() {
 @test "should not be CI-relevant when only a load-test workflow changed" {
   # given a PR that only changes a load-test workflow
   # when checking CI relevance
-  run check ".github/workflows/camunda-weekly-load-tests.yml"
+  run check ".github/workflows/load-test-weekly.yml"
   # then CI should not be triggered
   [ "$status" -eq 1 ]
 }
@@ -24,7 +24,7 @@ check() {
 @test "should not be CI-relevant when only a daily load-test workflow changed" {
   # given a PR that only changes a daily load-test workflow
   # when checking CI relevance
-  run check ".github/workflows/camunda-daily-load-tests.yml"
+  run check ".github/workflows/load-test-daily.yml"
   # then CI should not be triggered
   [ "$status" -eq 1 ]
 }
@@ -32,7 +32,7 @@ check() {
 @test "should not be CI-relevant when only a benchmark workflow changed" {
   # given a PR that only changes a benchmark workflow
   # when checking CI relevance
-  run check ".github/workflows/zeebe-update-long-running-migrating-benchmark.yaml"
+  run check ".github/workflows/load-test-zeebe-migrating-benchmark.yaml"
   # then CI should not be triggered
   [ "$status" -eq 1 ]
 }
@@ -101,7 +101,7 @@ check() {
 @test "should be CI-relevant when a load-test workflow and a CI workflow both changed" {
   # given a PR that changes both a load-test workflow and the CI workflow
   # when checking CI relevance
-  run check ".github/workflows/camunda-weekly-load-tests.yml" \
+  run check ".github/workflows/load-test-weekly.yml" \
             ".github/workflows/ci.yml"
   # then CI should be triggered (non-excluded file wins)
   [ "$status" -eq 0 ]
@@ -110,7 +110,7 @@ check() {
 @test "should be CI-relevant when a load-test workflow and a .github/actions/ file both changed" {
   # given a PR that changes both a load-test workflow and a CI-relevant action
   # when checking CI relevance
-  run check ".github/workflows/camunda-weekly-load-tests.yml" \
+  run check ".github/workflows/load-test-weekly.yml" \
             ".github/actions/paths-filter/action.yml"
   # then CI should be triggered (non-excluded file wins)
   [ "$status" -eq 0 ]
