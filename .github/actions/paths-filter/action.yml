@@ -217,6 +217,7 @@ outputs:
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.async-replication-change == 'true'
       }}
   renovate-config-changes:
