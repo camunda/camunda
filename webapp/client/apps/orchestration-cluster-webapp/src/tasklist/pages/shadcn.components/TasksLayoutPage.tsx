@@ -6,12 +6,32 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {EmptyState} from '@camunda/design-system';
 import {Outlet} from '@tanstack/react-router';
-import {Search} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
+import type {CurrentUser, QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {AvailableTasks} from '#/tasklist/modules/available-tasks/shadcn.components/AvailableTasks';
 
-const TasksLayoutPage: React.FC = () => {
+type Props = {
+	pages: QueryUserTasksResponseBody[];
+	currentUser: CurrentUser;
+	hasNextPage: boolean;
+	hasPreviousPage: boolean;
+	onScrollDown: () => Promise<void>;
+	onScrollUp: () => Promise<void>;
+	isFetchingNextPage?: boolean;
+	isFetchingPreviousPage?: boolean;
+};
+
+const TasksLayoutPage: React.FC<Props> = ({
+	pages,
+	currentUser,
+	hasNextPage,
+	hasPreviousPage,
+	onScrollDown,
+	onScrollUp,
+	isFetchingNextPage,
+	isFetchingPreviousPage,
+}) => {
 	const {t} = useTranslation();
 
 	return (
@@ -22,19 +42,22 @@ const TasksLayoutPage: React.FC = () => {
 			>
 				<header className="flex items-center border-b border-border px-4">
 					<h1 className="sr-only">{t('tasklist.headerNavItemTasks')}</h1>
+					<h2 className="text-sm font-medium">{t('tasklist.taskFiltersAllOpenTasks')}</h2>
 				</header>
-				<div className="overflow-auto p-4">
-					<EmptyState
-						size="sm"
-						icon={<Search aria-hidden />}
-						heading={t('tasklist.availableTasksNoTasksFoundInfo')}
-						description={t('tasklist.availableTasksNoTasksMatchingCriteriaInfo')}
-					/>
-				</div>
+				<AvailableTasks
+					pages={pages}
+					currentUser={currentUser}
+					hasNextPage={hasNextPage}
+					hasPreviousPage={hasPreviousPage}
+					onScrollDown={onScrollDown}
+					onScrollUp={onScrollUp}
+					isFetchingNextPage={isFetchingNextPage}
+					isFetchingPreviousPage={isFetchingPreviousPage}
+				/>
 			</section>
-			<section className="overflow-auto border-l border-border" aria-label={t('tasklist.taskDetailsDetailsLabel')}>
+			<div className="overflow-auto border-l border-border">
 				<Outlet />
-			</section>
+			</div>
 		</main>
 	);
 };
