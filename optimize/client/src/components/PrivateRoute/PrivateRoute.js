@@ -43,7 +43,7 @@ export function PrivateRoute({component: Component, ...rest}) {
         return (
           <>
             <Header />
-            <main>
+            <main className={IS_NAV_V2_ENABLED ? 'nav-v2' : undefined}>
               <div
                 className={'PrivateRoute' + (IS_NAV_V2_ENABLED ? ' nav-v2' : '')}
                 id="main-content"

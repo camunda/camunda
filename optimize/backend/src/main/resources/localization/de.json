@@ -66,12 +66,9 @@
     "notificationsDismissAll": "Alle verwerfen",
     "notificationsEmptyTitle": "Keine Benachrichtigungen",
     "notificationsEmptyDescription": "Neue Updates zu Ihren Prozessen, Clustern und mehr erscheinen hier.",
-    "sidebarCollapse": "Einklappen",
-    "sidebarExpand": "Ausklappen",
-    "sidebarCollapseAria": "Seitenleiste einklappen",
-    "sidebarExpandAria": "Seitenleiste ausklappen",
-    "sidebarGroupCollapseAria": "{label} einklappen",
-    "sidebarGroupExpandAria": "{label} ausklappen"
+    "mainNavigation": "Hauptnavigation",
+    "breadcrumb": "Camunda-Kontext",
+    "version": "Version {version}"
   },
   "login": {
     "label": "Einloggen",
