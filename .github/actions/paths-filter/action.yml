@@ -366,10 +366,8 @@ runs:
         - 'zeebe/exporters/rdbms-exporter/**'
 
         async-replication-change:
-        - 'db/rdbms/src/main/java/io/camunda/db/rdbms/read/replication/**'
-        - 'db/rdbms/src/main/java/io/camunda/db/rdbms/sql/ReplicationStatusMapper.java'
-        - 'db/rdbms/src/main/resources/mapper/ReplicationStatusMapper.xml'
-        - 'zeebe/exporters/rdbms-exporter/src/main/java/io/camunda/exporter/rdbms/replication/**'
+        - 'db/rdbms/**'
+        - 'zeebe/exporters/rdbms-exporter/**'
         - 'qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/asyncreplication/**'
         - 'qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/util/**'
 
