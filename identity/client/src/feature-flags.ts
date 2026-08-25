@@ -10,5 +10,9 @@ import { isSaaS } from "./configuration";
 
 export const featureFlags = [];
 
+<<<<<<< HEAD
 export const IS_NEW_DESIGN_SYSTEM_ENABLED = isSaaS ? false : true;
+=======
+export const IS_NEW_DESIGN_SYSTEM_ENABLED = true;
+>>>>>>> cdb2eb25 (feat: enable new redesign in Admin)
 export const IS_NAV_V2_ENABLED = IS_NEW_DESIGN_SYSTEM_ENABLED;
