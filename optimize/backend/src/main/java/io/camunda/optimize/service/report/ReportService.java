@@ -31,6 +31,7 @@ import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportData
 import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
@@ -447,6 +448,27 @@ public class ReportService implements CollectionReferencingService {
   public void updateDefinitionXmlOfProcessReports(
       final String definitionKey, final String definitionXml) {
     reportWriter.updateProcessDefinitionXmlForProcessReportsWithKey(definitionKey, definitionXml);
+  }
+
+  /**
+   * Clears the cached BPMN XML ({@code data.configuration.xml}) on every single-process report
+   * whose first-listed definition is {@code processDefinitionKey}.
+   */
+  public void clearCachedReportXml(final String processDefinitionKey) {
+    final List<String> reportIdsToClear =
+        getAllReportsForProcessDefinitionKeyOmitXml(processDefinitionKey).stream()
+            .filter(report -> isFirstDefinition(report, processDefinitionKey))
+            .map(ReportDefinitionDto::getId)
+            .toList();
+    if (!reportIdsToClear.isEmpty()) {
+      reportWriter.clearReportDefinitionXmlForReportIds(reportIdsToClear);
+    }
+  }
+
+  private boolean isFirstDefinition(
+      final ReportDefinitionDto<?> report, final String processDefinitionKey) {
+    return report.getData() instanceof final SingleReportDataDto singleReportData
+        && processDefinitionKey.equals(singleReportData.getDefinitionKey());
   }
 
   public void updateSingleDecisionReport(

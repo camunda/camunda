@@ -8,19 +8,24 @@
 package io.camunda.optimize.service.job;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
+import io.camunda.optimize.service.DefinitionService;
+import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
+import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
@@ -46,24 +51,43 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessInstanceWriter processInstanceWriter;
   private final ProcessDefinitionWriter processDefinitionWriter;
+  private final DefinitionReader definitionReader;
+  private final ReportService reportService;
+  private final DefinitionService definitionService;
   private final Sleeper sleeper;
 
   @Autowired
   public ProcessDefinitionDeletionJobHandler(
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceWriter processInstanceWriter,
-      final ProcessDefinitionWriter processDefinitionWriter) {
-    this(processDefinitionReader, processInstanceWriter, processDefinitionWriter, Thread::sleep);
+      final ProcessDefinitionWriter processDefinitionWriter,
+      final DefinitionReader definitionReader,
+      final ReportService reportService,
+      final DefinitionService definitionService) {
+    this(
+        processDefinitionReader,
+        processInstanceWriter,
+        processDefinitionWriter,
+        definitionReader,
+        reportService,
+        definitionService,
+        Thread::sleep);
   }
 
   ProcessDefinitionDeletionJobHandler(
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceWriter processInstanceWriter,
       final ProcessDefinitionWriter processDefinitionWriter,
+      final DefinitionReader definitionReader,
+      final ReportService reportService,
+      final DefinitionService definitionService,
       final Sleeper sleeper) {
     this.processDefinitionReader = processDefinitionReader;
     this.processInstanceWriter = processInstanceWriter;
     this.processDefinitionWriter = processDefinitionWriter;
+    this.definitionReader = definitionReader;
+    this.reportService = reportService;
+    this.definitionService = definitionService;
     this.sleeper = sleeper;
   }
 
@@ -89,12 +113,30 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
       return;
     }
     final String bpmnProcessId = definition.get().getKey();
+    final String version = definition.get().getVersion();
+
+    final boolean isLastRemainingVersion =
+        withRetry(
+                "check remaining versions of process definition " + bpmnProcessId,
+                () ->
+                    definitionReader.getDefinitionVersions(
+                        DefinitionType.PROCESS, bpmnProcessId, Set.of()))
+            .stream()
+            .allMatch(v -> version.equals(v.getVersion()));
+
     deleteWithRetry(
         "delete process instances for definition " + definitionId,
         () -> processInstanceWriter.deleteInstancesByDefinitionId(bpmnProcessId, definitionId));
     deleteWithRetry(
         "delete process definition " + definitionId,
         () -> processDefinitionWriter.deleteDefinition(definitionId));
+
+    if (isLastRemainingVersion) {
+      deleteWithRetry(
+          "clear cached XML for reports referencing " + bpmnProcessId,
+          () -> reportService.clearCachedReportXml(bpmnProcessId));
+    }
+    definitionService.invalidateProcessDefinition(bpmnProcessId);
   }
 
   private void deleteWithRetry(final String description, final Runnable deletion) {
