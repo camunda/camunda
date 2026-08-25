@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import javax.sql.DataSource;
 import liquibase.database.Database;
@@ -51,6 +52,32 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
   private static final int DEFAULT_MIGRATION_RETRY_ATTEMPTS = 3;
   private static final Duration DEFAULT_RETRY_BACKOFF = Duration.ofMillis(200);
   private static final String CHANGE_LOG = "db/changelog/rdbms-exporter/changelog-master.xml";
+
+  /**
+   * Forces Liquibase runs in this JVM to execute one at a time, because two of them overlapping
+   * corrupts each other's lock bookkeeping — even against entirely separate databases.
+   *
+   * <p>Liquibase ends each update with {@code LockServiceFactory.getInstance().resetAll()} ({@code
+   * AbstractUpdateCommandStep#cleanUp}), which discards that factory's JVM-wide singleton along
+   * with every database's {@code LockService}. A run that finishes while another is still between
+   * acquiring and releasing its lock therefore leaves the second run looking up a factory that no
+   * longer knows it holds one: {@code hasChangeLogLock()} reads false, the release is skipped
+   * without so much as a log line, and that tenant's {@code DATABASECHANGELOGLOCK} row stays set.
+   * The next start then blocks for Liquibase's full changelog-lock wait, fails, and keeps retrying
+   * until {@link #releaseStaleLockIfPresent()} force-releases the row a {@code
+   * ddl-lock-wait-timeout} later. Liquibase applies the per-database fix this needs to the sibling
+   * {@code ChangeLogHistoryServiceFactory} on the very next line of that same method, and documents
+   * the hazard in its javadoc; {@code LockServiceFactory} has not been given it (5.0.4).
+   *
+   * <p>Serializing costs the physical tenants their overlap, not their independence: each still
+   * migrates on its own thread, with its own retry loop, and one tenant's failure still degrades
+   * only itself. Held interruptibly so that a shutdown does not have to wait out a peer's
+   * migration.
+   *
+   * <p>Meant to be temporary: it can go as soon as Liquibase discards that factory per database
+   * rather than JVM-wide. See #61009 for the analysis and the upstream state.
+   */
+  private static final ReentrantLock MIGRATION_LOCK = new ReentrantLock(true);
 
   private static final Set<String> RETRYABLE_MESSAGES =
       Set.of(
@@ -220,7 +247,12 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
 
   @VisibleForTesting
   protected void performMigration(final SpringLiquibase runner) throws Exception {
-    runner.afterPropertiesSet();
+    MIGRATION_LOCK.lockInterruptibly();
+    try {
+      runner.afterPropertiesSet();
+    } finally {
+      MIGRATION_LOCK.unlock();
+    }
   }
 
   protected void waitBeforeRetry(final Duration retryBackoff) throws InterruptedException {

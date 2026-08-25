@@ -26,10 +26,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -117,6 +119,7 @@ class PhysicalTenantWebSessionIsolationIT {
   }
 
   @Test
+  @Timeout(value = 60, unit = TimeUnit.SECONDS)
   void shouldSurviveRestartInCorrectPhysicalTenantStore() {
     // given — write via app1's tenant A store
     final String id = UUID.randomUUID().toString();
