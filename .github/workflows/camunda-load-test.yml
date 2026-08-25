@@ -26,7 +26,7 @@ on:
         required: true
       ref:
         description: 'Git ref (branch, tag or commit SHA) to build and test against'
-        default: 'main'
+        default: 'stable/8.10'
         type: string
         required: false
       scenario:
@@ -111,11 +111,6 @@ on:
         type: number
         default: 1
         required: false
-      target-version:
-        description: 'Setup version subfolder to use. Corresponds to load-tests/setup/<target-version>/. Default: main.'
-        type: string
-        default: "main"
-        required: false
       orchestration-tag:
         description: 'Official Docker Hub image tag (docker.io/camunda/camunda). Uses Docker Hub instead of building. ⚠ Cannot be used with reuse-tag.'
         type: string
@@ -140,7 +135,7 @@ on:
     inputs:
       ref:
         description: 'Specifies the ref (e.g. branch name, commit sha or tag) from which the docker image is built and used to run the load test against'
-        default: 'main'
+        default: 'stable/8.10'
         type: string
         required: false
       name:
@@ -222,11 +217,6 @@ on:
         type: string
         required: false
         default: elasticsearch
-      target-version:
-        description: 'Setup version subfolder to use (main, stable-89, stable-88, stable-87). Default: main.'
-        type: string
-        default: "main"
-        required: false
       orchestration-tag:
         description: 'Orchestration Tag: Docker image tag for official Camunda images from Docker Hub (docker.io/camunda/camunda). When set, official Docker Hub images are used instead of building from source. Cannot be used together with reuse-tag.'
         type: string
@@ -278,7 +268,6 @@ env:
   SCENARIO: ${{ inputs.scenario }}
   SECONDARY_STORAGE_TYPE: ${{ inputs.secondary-storage-type }}
   STABLE_VMS: ${{ inputs.stable-vms }}
-  TARGET_VERSION: ${{ inputs.target-version }}
   TTL: ${{ inputs.ttl }}
 
 defaults:
@@ -304,7 +293,6 @@ jobs:
           |-------|-------|
           | Name | \`${NAME}\` |
           | Ref | \`${REF}\` |
-          | Target version | \`${TARGET_VERSION}\` |
           | Scenario | \`${SCENARIO}\` |
           | Secondary storage | \`${SECONDARY_STORAGE_TYPE}\` |
           | Reuse tag | \`${REUSE_TAG:-—}\` |
@@ -549,7 +537,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.ref }}
+          ref: main
+          sparse-checkout: |
+            load-tests/
+            .github
+            .tool-versions
           persist-credentials: false
 
       - name: Set up Helm
@@ -580,7 +572,7 @@ jobs:
           git config user.name "${GITHUB_ACTOR}"
           # Render the load-test folder. newLoadTest.sh no longer creates the namespace — that
           # happens on `make install` via `kubectl apply -f resources/namespace.yaml`.
-          ./newLoadTest.sh --target-version "${TARGET_VERSION}" "${NAMESPACE}" "${SECONDARY_STORAGE_TYPE}" "${TTL}" "${ENABLE_OPTIMIZE}"
+          ./newLoadTest.sh --target-version stable-810 "${NAMESPACE}" "${SECONDARY_STORAGE_TYPE}" "${TTL}" "${ENABLE_OPTIMIZE}"
 
       - name: Install latest Camunda Platform
         shell: bash --noprofile --norc -exo pipefail {0}
