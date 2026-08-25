@@ -27,7 +27,8 @@ public record GroupFilter(
     String tenantId,
     EntityType childMemberType,
     String roleId,
-    Map<EntityType, Set<String>> memberIdsByType)
+    Map<EntityType, Set<String>> memberIdsByType,
+    List<GroupFilter> orFilters)
     implements FilterBase {
 
   public static GroupFilter of(
@@ -44,7 +45,8 @@ public record GroupFilter(
         .tenantId(tenantId)
         .childMemberType(childMemberType)
         .roleId(roleId)
-        .memberIdsByType(memberIdsByType);
+        .memberIdsByType(memberIdsByType)
+        .orFilters(orFilters);
   }
 
   public static final class Builder implements ObjectBuilder<GroupFilter> {
@@ -56,6 +58,7 @@ public record GroupFilter(
     private EntityType childMemberType;
     private String roleId;
     private Map<EntityType, Set<String>> memberIdsByType;
+    private List<GroupFilter> orFilters;
 
     public Builder groupIdOperations(final List<Operation<String>> operations) {
       if (operations != null) {
@@ -125,6 +128,19 @@ public record GroupFilter(
       return this;
     }
 
+    public Builder addOrOperation(final GroupFilter orOperation) {
+      if (orFilters == null) {
+        orFilters = new ArrayList<>();
+      }
+      orFilters.add(orOperation);
+      return this;
+    }
+
+    public Builder orFilters(final List<GroupFilter> orFilters) {
+      this.orFilters = orFilters;
+      return this;
+    }
+
     @Override
     public GroupFilter build() {
       return new GroupFilter(
@@ -135,7 +151,8 @@ public record GroupFilter(
           tenantId,
           childMemberType,
           roleId,
-          memberIdsByType);
+          memberIdsByType,
+          orFilters);
     }
   }
 }
