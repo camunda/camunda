@@ -22,7 +22,7 @@
         JOIN ${prefix}ROLE_MEMBER rm ON t.USERNAME = rm.ENTITY_ID
         AND rm.ENTITY_TYPE = 'USER'
       </if>
-        <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
+        <include refid="io.camunda.db.rdbms.sql.UserMapper.searchAndAuthFilter"/>
       ${count.limit}
     ) t
   </select>
@@ -37,16 +37,15 @@
     EMAIL,
     PASSWORD
     FROM ${prefix}USER_ t
-    <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.UserMapper.searchAndAuthFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
-  <sql id="searchFilter">
+  <sql id="searchAndAuthFilter">
     <where>
-      <!-- authorization filters -->
       <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
         AND USERNAME IN
         <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
@@ -54,35 +53,49 @@
           #{resourceId}
         </foreach>
       </if>
-      <!-- basic filters -->
-      <if test="filter.usernameOperations != null and !filter.usernameOperations.isEmpty()">
-        <foreach collection="filter.usernameOperations" item="operation">
-          AND t.USERNAME
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
+      <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
+        AND (
+        <foreach collection="filter.orFilters" item="filter" separator=" OR ">
+          <trim prefix="(" suffix=")">
+            <trim prefixOverrides="AND">
+              <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
+            </trim>
+          </trim>
         </foreach>
-      </if>
-      <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
-        <foreach collection="filter.nameOperations" item="operation">
-          AND t.NAME
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.emailOperations != null and !filter.emailOperations.isEmpty()">
-        <foreach collection="filter.emailOperations" item="operation">
-          AND t.EMAIL
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.tenantId != null">AND username IN (SELECT ENTITY_ID FROM
-        ${prefix}TENANT_MEMBER WHERE ENTITY_TYPE = 'USER' AND TENANT_ID = #{filter.tenantId})
-      </if>
-      <if test="filter.groupId != null">AND username IN (SELECT ENTITY_ID FROM ${prefix}GROUP_MEMBER
-        WHERE ENTITY_TYPE = 'USER' AND GROUP_ID = #{filter.groupId})
-      </if>
-      <if test="filter.roleId != null">AND username IN (SELECT ENTITY_ID FROM ${prefix}ROLE_MEMBER
-        WHERE ENTITY_TYPE = 'USER' AND ROLE_ID = #{filter.roleId})
+        )
       </if>
     </where>
+  </sql>
+
+  <sql id="searchFilter">
+    <if test="filter.usernameOperations != null and !filter.usernameOperations.isEmpty()">
+      <foreach collection="filter.usernameOperations" item="operation">
+        AND t.USERNAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+      <foreach collection="filter.nameOperations" item="operation">
+        AND t.NAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.emailOperations != null and !filter.emailOperations.isEmpty()">
+      <foreach collection="filter.emailOperations" item="operation">
+        AND t.EMAIL
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.tenantId != null">AND username IN (SELECT ENTITY_ID FROM
+      ${prefix}TENANT_MEMBER WHERE ENTITY_TYPE = 'USER' AND TENANT_ID = #{filter.tenantId})
+    </if>
+    <if test="filter.groupId != null">AND username IN (SELECT ENTITY_ID FROM ${prefix}GROUP_MEMBER
+      WHERE ENTITY_TYPE = 'USER' AND GROUP_ID = #{filter.groupId})
+    </if>
+    <if test="filter.roleId != null">AND username IN (SELECT ENTITY_ID FROM ${prefix}ROLE_MEMBER
+      WHERE ENTITY_TYPE = 'USER' AND ROLE_ID = #{filter.roleId})
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.UserEntity">
