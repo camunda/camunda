@@ -40,6 +40,7 @@ defaults:
 
 # Define environment variable for concurrency
 env:
+  TEST_OWNER: '@camunda/core-features'
   LIMITS_CPU: ${{ inputs.forkCount }}  # consumed by `maven-surefire-plugin` & `maven-failsafe-plugin` plugins defined in main `pom.xml` file
 
 jobs:
