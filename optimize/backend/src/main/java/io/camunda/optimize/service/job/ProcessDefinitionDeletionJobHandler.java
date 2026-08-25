@@ -113,16 +113,6 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
       return;
     }
     final String bpmnProcessId = definition.get().getKey();
-    final String version = definition.get().getVersion();
-
-    final boolean isLastRemainingVersion =
-        withRetry(
-                "check remaining versions of process definition " + bpmnProcessId,
-                () ->
-                    definitionReader.getDefinitionVersions(
-                        DefinitionType.PROCESS, bpmnProcessId, Set.of()))
-            .stream()
-            .allMatch(v -> version.equals(v.getVersion()));
 
     deleteWithRetry(
         "delete process instances for definition " + definitionId,
@@ -130,6 +120,14 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
     deleteWithRetry(
         "delete process definition " + definitionId,
         () -> processDefinitionWriter.deleteDefinition(definitionId));
+
+    final boolean isLastRemainingVersion =
+        withRetry(
+                "check remaining versions of process definition " + bpmnProcessId,
+                () ->
+                    definitionReader.getDefinitionVersions(
+                        DefinitionType.PROCESS, bpmnProcessId, Set.of()))
+            .isEmpty();
 
     if (isLastRemainingVersion) {
       deleteWithRetry(
