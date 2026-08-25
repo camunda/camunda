@@ -623,7 +623,6 @@ public class SubscriptionCommandSender {
               () -> {
                 interPartitionCommandSender.sendCommand(
                     receiverPartitionId, valueType, intent, record);
-                return true;
               });
     }
     return true;

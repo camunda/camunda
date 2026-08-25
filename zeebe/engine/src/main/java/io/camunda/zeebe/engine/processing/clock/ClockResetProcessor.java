@@ -96,11 +96,7 @@ public final class ClockResetProcessor implements DistributedTypedRecordProcesso
   }
 
   private void applyClockModification(final long key, final ClockRecord clockRecord) {
-    final SideEffectProducer sideEffect =
-        () -> {
-          clock.reset();
-          return true;
-        };
+    final SideEffectProducer sideEffect = () -> clock.reset();
     sideEffectWriter.appendSideEffect(sideEffect);
     stateWriter.appendFollowUpEvent(key, ClockIntent.RESETTED, clockRecord);
   }

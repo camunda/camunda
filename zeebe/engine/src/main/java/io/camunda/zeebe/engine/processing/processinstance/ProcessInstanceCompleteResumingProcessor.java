@@ -101,7 +101,6 @@ public final class ProcessInstanceCompleteResumingProcessor
     sideEffectWriter.appendSideEffect(
         () -> {
           timerChecker.scheduleTimer(-1);
-          return true;
         });
   }
 

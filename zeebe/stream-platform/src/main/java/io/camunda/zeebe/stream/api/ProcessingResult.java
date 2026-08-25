@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -33,9 +34,11 @@ public interface ProcessingResult {
   Optional<ProcessingResponse> getProcessingResponse();
 
   /**
-   * @return <code>false</code> to indicate that the side effect could not be applied successfully
+   * Returns the post-commit tasks that belong to this processing result.
+   *
+   * @return the post-commit tasks to execute once the result is committed
    */
-  boolean executePostCommitTasks();
+  List<PostCommitTask> getPostCommitTasks();
 
   /**
    * Indicates whether the processing result is empty.
