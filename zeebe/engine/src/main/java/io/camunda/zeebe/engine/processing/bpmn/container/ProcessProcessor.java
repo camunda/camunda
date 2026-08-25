@@ -82,7 +82,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     compensationSubscriptionBehaviour.deleteSubscriptionsOfProcessInstance(context);
-    agentInstanceBehavior.completeAgentInstancesOfProcessInstance(context);
+    agentInstanceBehavior.completeAgentInstancesOfProcessInstance(element, context);
     return SUCCESS;
   }
 
@@ -118,7 +118,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
   @Override
   public void finalizeTermination(
       final ExecutableProcess element, final BpmnElementContext terminationContext) {
-    agentInstanceBehavior.completeAgentInstancesOfProcessInstance(terminationContext);
+    agentInstanceBehavior.completeAgentInstancesOfProcessInstance(element, terminationContext);
     transitionTo(
         element,
         terminationContext,
