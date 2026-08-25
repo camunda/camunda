@@ -32,4 +32,8 @@ public final class HealthMetrics {
   public void setDead() {
     health.set(-1);
   }
+
+  public void setRecovering() {
+    health.set(2);
+  }
 }
