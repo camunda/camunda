@@ -8,17 +8,12 @@
 
 import { FC } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Stack } from "@carbon/react";
+import { Heading, Separator } from "@camunda/design-system";
 import TextField from "src/components/formV2/TextField";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseEntityModalProps } from "src/components/modalV2";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { mappingRuleMutations } from "src/utility/api/mapping-rules/mutations";
-import {
-  CustomStack,
-  EqualSignContainer,
-  MappingRuleContainer,
-} from "./components";
 import { useNotifications } from "src/components/notifications";
 import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -104,42 +99,45 @@ const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
           />
         )}
       />
-      <MappingRuleContainer>
-        <Stack gap="5">
-          <h3>{t("mappingRule")}</h3>
-          <CustomStack orientation="horizontal">
-            <Controller
-              name="claimName"
-              control={control}
-              rules={{ required: t("claimNameRequired") }}
-              render={({ field, fieldState }) => (
-                <TextField
-                  {...field}
-                  label={t("claimName")}
-                  placeholder={t("enterClaimName")}
-                  helperText={t("customClaimName")}
-                  errors={fieldState.error?.message}
-                />
-              )}
-            />
-            <EqualSignContainer>=</EqualSignContainer>
-            <Controller
-              name="claimValue"
-              control={control}
-              rules={{ required: t("claimValueRequired") }}
-              render={({ field, fieldState }) => (
-                <TextField
-                  {...field}
-                  label={t("claimValue")}
-                  placeholder={t("enterClaimValue")}
-                  helperText={t("valueForClaim")}
-                  errors={fieldState.error?.message}
-                />
-              )}
-            />
-          </CustomStack>
-        </Stack>
-      </MappingRuleContainer>
+      <Separator />
+      <div className="grid gap-2">
+        <Heading as="h3" variant="heading-xs">
+          {t("mappingRule")}
+        </Heading>
+        <div className="grid gap-2 grid-cols-[1fr_auto_1fr]">
+          <Controller
+            name="claimName"
+            control={control}
+            rules={{ required: t("claimNameRequired") }}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label={t("claimName")}
+                placeholder={t("enterClaimName")}
+                helperText={t("customClaimName")}
+                errors={fieldState.error?.message}
+              />
+            )}
+          />
+          <div className="flex items-center justify-center self-center text-lg">
+            =
+          </div>
+          <Controller
+            name="claimValue"
+            control={control}
+            rules={{ required: t("claimValueRequired") }}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label={t("claimValue")}
+                placeholder={t("enterClaimValue")}
+                helperText={t("valueForClaim")}
+                errors={fieldState.error?.message}
+              />
+            )}
+          />
+        </div>
+      </div>
     </FormModal>
   );
 };
