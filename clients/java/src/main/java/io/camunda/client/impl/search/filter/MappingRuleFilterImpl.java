@@ -16,9 +16,13 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.MappingRuleFilter;
+import io.camunda.client.api.search.filter.MappingRuleFilterBase;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.util.MappingRuleFilterMapper;
+import io.camunda.client.protocol.rest.MappingRuleFilterFields;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class MappingRuleFilterImpl
@@ -59,6 +63,18 @@ public class MappingRuleFilterImpl
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setName(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public MappingRuleFilterBase orFilters(final List<Consumer<MappingRuleFilterBase>> fns) {
+    for (final Consumer<MappingRuleFilterBase> fn : fns) {
+      final MappingRuleFilterImpl orFilter = new MappingRuleFilterImpl();
+      fn.accept(orFilter);
+      final MappingRuleFilterFields protocolFilterFields =
+          MappingRuleFilterMapper.from(orFilter.getSearchRequestProperty());
+      filter.add$OrItem(protocolFilterFields);
+    }
     return this;
   }
 
