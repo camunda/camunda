@@ -50,9 +50,9 @@ jobs:
           BRANCH: ${{ github.event.inputs.branch }}
         run: |
           echo "Detecting base branch for input branch: $BRANCH"
-          git fetch origin stable/8.6 stable/8.7 stable/8.8 stable/8.9 main "$BRANCH"
+          git fetch origin stable/8.6 stable/8.7 stable/8.8 stable/8.9 stable/8.10 main "$BRANCH"
           base="main"
-          for candidate in stable/8.6 stable/8.7 stable/8.8 stable/8.9 main; do
+          for candidate in stable/8.6 stable/8.7 stable/8.8 stable/8.9 stable/8.10 main; do
             if git merge-base --is-ancestor origin/$candidate "origin/$BRANCH"; then
               base="$candidate"
               break
