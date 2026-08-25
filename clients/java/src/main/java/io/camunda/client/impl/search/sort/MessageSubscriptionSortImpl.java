@@ -22,6 +22,11 @@ public class MessageSubscriptionSortImpl extends SearchRequestSortBase<MessageSu
     implements MessageSubscriptionSort {
 
   @Override
+  public MessageSubscriptionSort businessId() {
+    return field("businessId");
+  }
+
+  @Override
   public MessageSubscriptionSort messageSubscriptionKey() {
     return field("messageSubscriptionKey");
   }

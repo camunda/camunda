@@ -45,7 +45,8 @@
     PROCESS_DEFINITION_VERSION,
     TOOL_PROPERTIES,
     TOOL_NAME,
-    INBOUND_CONNECTOR_TYPE
+    INBOUND_CONNECTOR_TYPE,
+    BUSINESS_ID
     FROM ${prefix}MESSAGE_SUBSCRIPTION
 
     <include refid="io.camunda.db.rdbms.sql.MessageSubscriptionMapper.searchAndAuthFilter" />
@@ -173,6 +174,12 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+    <if test="filter.businessIdOperations != null and !filter.businessIdOperations.isEmpty()">
+      <foreach collection="filter.businessIdOperations" item="operation">
+        AND BUSINESS_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel">
@@ -196,6 +203,7 @@
       <arg column="TOOL_PROPERTIES" javaType="java.lang.String" name="serializedToolProperties" />
       <arg column="TOOL_NAME" javaType="java.lang.String" name="toolName" />
       <arg column="INBOUND_CONNECTOR_TYPE" javaType="java.lang.String" name="inboundConnectorType" />
+      <arg column="BUSINESS_ID" javaType="java.lang.String" name="businessId" />
     </constructor>
   </resultMap>
 
@@ -220,7 +228,8 @@
                                                PROCESS_DEFINITION_VERSION,
                                                TOOL_PROPERTIES,
                                                TOOL_NAME,
-                                               INBOUND_CONNECTOR_TYPE
+                                               INBOUND_CONNECTOR_TYPE,
+                                               BUSINESS_ID
     )
     VALUES (
             #{messageSubscriptionKey},
@@ -241,7 +250,8 @@
             #{processDefinitionVersion},
             #{serializedToolProperties},
             #{toolName},
-            #{inboundConnectorType}
+            #{inboundConnectorType},
+            #{businessId}
     )
   </insert>
 
@@ -262,7 +272,8 @@
         PROCESS_DEFINITION_VERSION = #{processDefinitionVersion},
         TOOL_PROPERTIES = #{serializedToolProperties},
         TOOL_NAME = #{toolName},
-        INBOUND_CONNECTOR_TYPE = #{inboundConnectorType}
+        INBOUND_CONNECTOR_TYPE = #{inboundConnectorType},
+        BUSINESS_ID = #{businessId}
     WHERE MESSAGE_SUBSCRIPTION_KEY = #{messageSubscriptionKey}
   </update>
 

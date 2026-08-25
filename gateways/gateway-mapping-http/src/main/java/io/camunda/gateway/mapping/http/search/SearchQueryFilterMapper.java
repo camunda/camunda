@@ -1218,6 +1218,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getInboundConnectorType())
           .map(mapToStringOperations())
           .ifPresent(builder::inboundConnectorTypeOperations);
+      ofNullable(filter.getBusinessId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::businessIdOperations);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

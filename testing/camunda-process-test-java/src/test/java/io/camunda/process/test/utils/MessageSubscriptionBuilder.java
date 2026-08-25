@@ -41,6 +41,7 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   private Map<String, String> toolProperties;
   private String toolName;
   private String inboundConnectorType;
+  private String businessId;
 
   @Override
   public Long getMessageSubscriptionKey() {
@@ -130,6 +131,11 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   @Override
   public String getInboundConnectorType() {
     return inboundConnectorType;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return businessId;
   }
 
   public MessageSubscriptionBuilder setToolProperties(final Map<String, String> toolProperties) {
@@ -222,6 +228,11 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
 
   public MessageSubscriptionBuilder setInboundConnectorType(final String inboundConnectorType) {
     this.inboundConnectorType = inboundConnectorType;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setBusinessId(final String businessId) {
+    this.businessId = businessId;
     return this;
   }
 

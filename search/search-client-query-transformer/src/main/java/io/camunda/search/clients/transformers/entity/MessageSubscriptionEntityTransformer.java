@@ -38,7 +38,8 @@ public class MessageSubscriptionEntityTransformer
         value.getProcessDefinitionVersion(),
         value.getToolProperties(),
         value.getToolName(),
-        value.getInboundConnectorType());
+        value.getInboundConnectorType(),
+        value.getBusinessId());
   }
 
   private io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState

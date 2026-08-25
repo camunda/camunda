@@ -28,6 +28,7 @@ import java.util.Objects;
 public class MessageSubscriptionImpl implements MessageSubscription {
 
   private final Long messageSubscriptionKey;
+  private final String businessId;
   private final String processDefinitionId;
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
@@ -48,6 +49,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
 
   public MessageSubscriptionImpl(final MessageSubscriptionResult item) {
     messageSubscriptionKey = ParseUtil.parseLongOrNull(item.getMessageSubscriptionKey());
+    businessId = item.getBusinessId();
     processDefinitionId = item.getProcessDefinitionId();
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
@@ -72,6 +74,11 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   @Override
   public Long getMessageSubscriptionKey() {
     return messageSubscriptionKey;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return businessId;
   }
 
   @Override
@@ -163,6 +170,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   public int hashCode() {
     return Objects.hash(
         messageSubscriptionKey,
+        businessId,
         processDefinitionId,
         processDefinitionKey,
         processInstanceKey,
@@ -192,6 +200,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
     }
     final MessageSubscriptionImpl subscription = (MessageSubscriptionImpl) o;
     return Objects.equals(messageSubscriptionKey, subscription.messageSubscriptionKey)
+        && Objects.equals(businessId, subscription.businessId)
         && Objects.equals(processDefinitionId, subscription.processDefinitionId)
         && Objects.equals(processDefinitionKey, subscription.processDefinitionKey)
         && Objects.equals(processInstanceKey, subscription.processInstanceKey)
