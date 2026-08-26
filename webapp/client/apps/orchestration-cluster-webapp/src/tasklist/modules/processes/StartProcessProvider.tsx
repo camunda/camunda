@@ -6,29 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ReactNode} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import {useActorRef} from '@xstate/react';
 import {StartProcessContext} from './startProcessContext';
-import {startProcessMachine, type ProcessesRoute, type TaskRoute} from './startProcessMachine';
+import {startProcessMachine} from './startProcessMachine';
 
-type Props = {
-	children: ReactNode;
-	// Default to the Carbon routes so the existing Carbon call site (which
-	// passes neither) is unaffected; the shadcn route passes its own tree.
-	processesRoute?: ProcessesRoute;
-	taskRoute?: TaskRoute;
-};
-
-function StartProcessProvider({
-	children,
-	processesRoute = '/tasklist/processes',
-	taskRoute = '/tasklist/$userTaskKey',
-}: Props) {
+const StartProcessProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
 	const navigate = useNavigate();
-	const actorRef = useActorRef(startProcessMachine, {input: {navigate, processesRoute, taskRoute}});
+	const actorRef = useActorRef(startProcessMachine, {input: {navigate}});
 
 	return <StartProcessContext.Provider value={actorRef}>{children}</StartProcessContext.Provider>;
-}
+};
 
 export {StartProcessProvider};

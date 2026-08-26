@@ -19,8 +19,8 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist/processes')({
 	validateSearch: processesSearchSchema,
 	loaderDeps: ({search}) => ({search}),
 	loader: async ({context: {queryClient}, deps: {search}}) => {
-		const {tenants} = await queryClient.ensureQueryData(queries.getCurrentUser());
-		await queryClient.ensureInfiniteQueryData(
+		const {tenants} = await queryClient.query(queries.getCurrentUser());
+		await queryClient.infiniteQuery(
 			queries.queryProcessDefinitionsInfinite(getProcessDefinitionsRequestBody(search, tenants)),
 		);
 	},
@@ -46,7 +46,7 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist/processes')({
 		);
 
 		return (
-			<StartProcessProvider processesRoute="/shadcn/tasklist/processes" taskRoute="/shadcn/tasklist/$userTaskKey">
+			<StartProcessProvider>
 				<TasklistProcessesPage
 					initialFilterValues={search}
 					tenants={currentUser.tenants}

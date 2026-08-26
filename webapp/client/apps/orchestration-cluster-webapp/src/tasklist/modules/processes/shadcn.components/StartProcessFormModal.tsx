@@ -6,15 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
+import {useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Check, Link as LinkIcon} from 'lucide-react';
+import {X} from 'lucide-react';
 import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
 import {
 	Alert,
 	Button,
 	Dialog,
 	DialogBody,
+	DialogClose,
 	DialogContent,
 	DialogFooter,
 	DialogHeader,
@@ -25,6 +26,7 @@ import {CamundaFormRenderer, type PartialVariable} from '#/tasklist/modules/form
 import type {FormManager} from '#/tasklist/modules/form-js/FormManager';
 import {ProcessStartFormImportError} from '#/shared/errors';
 import {cn} from '#/shared/cn';
+import {CopyLinkButton} from './CopyLinkButton';
 
 type CommonProps = {
 	processDisplayName: string;
@@ -47,8 +49,8 @@ type ErrorProps = CommonProps & {
 };
 
 type ShellProps = CommonProps & {
-	children: ReactNode;
-	footer: ReactNode;
+	children: React.ReactNode;
+	footer: React.ReactNode;
 };
 
 function getErrorSubtitleKey(variant: ErrorVariant) {
@@ -79,16 +81,12 @@ const StartProcessFormModalShell: React.FC<ShellProps> = ({processDisplayName, o
 				}
 			}}
 		>
-			{/* Blocks backdrop-click dismissal — losing an in-progress form to a stray
-			    click outside would discard whatever the user already typed. size="lg"
-			    (800px) and DialogBody's own scroll-containment (only the body scrolls,
-			    header/footer stay put) are both native to DialogContent — no custom
-			    width/scroll CSS needed here, unlike the prototype this was ported from. */}
-			{/* aria-describedby={undefined}: Radix requires DialogContent to have an
-			    accessible description or an explicit opt-out — Carbon's ComposedModal
-			    never had separate description text here either, only the title, so
-			    there's nothing real to point to instead of inventing new copy. */}
-			<DialogContent size="lg" aria-describedby={undefined} onInteractOutside={(event) => event.preventDefault()}>
+			<DialogContent
+				size="lg"
+				showCloseButton={false}
+				aria-describedby={undefined}
+				onInteractOutside={(event) => event.preventDefault()}
+			>
 				<DialogHeader>
 					<DialogTitle>{t('tasklist.processesStartProcessWithForm', {processDisplayName})}</DialogTitle>
 				</DialogHeader>
@@ -96,6 +94,17 @@ const StartProcessFormModalShell: React.FC<ShellProps> = ({processDisplayName, o
 					<div className="mx-auto w-full max-w-[900px]">{children}</div>
 				</DialogBody>
 				{footer}
+				<DialogClose asChild>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						className="absolute top-2 right-2"
+						aria-label={t('tasklist.optionsModalCloseButton')}
+					>
+						<X aria-hidden />
+					</Button>
+				</DialogClose>
 			</DialogContent>
 		</Dialog>
 	);
@@ -115,31 +124,10 @@ const StartProcessFormModal: React.FC<Props> = ({
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [hasSubmissionFailed, setHasSubmissionFailed] = useState(false);
 	const [formImportFailure, setFormImportFailure] = useState<{cause: unknown} | null>(null);
-	const [isCopied, setIsCopied] = useState(false);
-	const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-	useEffect(() => {
-		return () => {
-			clearTimeout(copiedTimeoutRef.current);
-		};
-	}, []);
 
 	if (formImportFailure !== null) {
 		throw new ProcessStartFormImportError(formImportFailure.cause);
 	}
-
-	const handleShareButtonClick = useCallback(async () => {
-		try {
-			await navigator.clipboard.writeText(window.location.href);
-			setIsCopied(true);
-			clearTimeout(copiedTimeoutRef.current);
-			copiedTimeoutRef.current = setTimeout(() => {
-				setIsCopied(false);
-			}, 2000);
-		} catch (error) {
-			console.error('Failed to copy URL to clipboard', error);
-		}
-	}, []);
 
 	return (
 		<StartProcessFormModalShell
@@ -147,19 +135,8 @@ const StartProcessFormModal: React.FC<Props> = ({
 			onClose={onClose}
 			footer={
 				<DialogFooter>
-					{/* Three direct DialogFooter children, not two (share + a wrapping div
-					    around cancel/start) — a wrapping div opts its contents out of
-					    DialogFooter's own flex-col-reverse stacking below `sm`, so cancel/
-					    start stayed force-side-by-side and overflowed on narrow screens.
-					    `sm:mr-auto` on the share button reproduces the "share pinned left,
-					    cancel/start grouped right" desktop layout without that wrapper. */}
-					<Button type="button" variant="ghost" size="sm" className="sm:mr-auto" onClick={handleShareButtonClick}>
-						{isCopied ? <Check aria-hidden /> : <LinkIcon aria-hidden />}
-						{isCopied
-							? t('tasklist.processesStartProcessWithFormCopyURLButtonLabel')
-							: t('tasklist.processesStartProcessWithFormShareButtonLabel')}
-					</Button>
-					<Button type="button" variant="secondary" onClick={onClose}>
+					<CopyLinkButton textToCopy={window.location.href} />
+					<Button type="button" variant="secondary" disabled={isSubmitting} onClick={onClose}>
 						{t('tasklist.processesProcessTileCancelButtonLabel')}
 					</Button>
 					<Button type="button" loading={isSubmitting} onClick={() => formManagerRef.current?.submit()}>

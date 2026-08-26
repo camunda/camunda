@@ -7,7 +7,7 @@
  */
 
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
-import {Badge, Button, Card, CardContent} from '@camunda/design-system';
+import {Badge, Button, Card, CardContent, Heading} from '@camunda/design-system';
 import {ArrowRight, List} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
 import type {StartProcessStatus} from '#/tasklist/modules/processes/startProcessMachine';
@@ -43,13 +43,16 @@ const ProcessTile: React.FC<Props> = ({process, status, isStartButtonDisabled, o
 	const {t} = useTranslation();
 	const displayName = process.name ?? process.processDefinitionId;
 	const isBusy = status === 'active' || status === 'active-tasks';
+	const isStatusVisible = status !== 'inactive';
 	const statusLabel = getStartProcessStatusLabel(t, status);
 
 	return (
 		<Card className="h-full" data-testid={`process-tile-${process.processDefinitionKey}`}>
 			<CardContent className="flex h-full min-w-0 flex-col justify-between gap-6">
 				<div className="flex min-w-0 flex-col gap-1">
-					<h2 className="truncate text-base leading-6 font-semibold">{displayName}</h2>
+					<Heading as="h2" variant="heading-sm" className="truncate" title={displayName}>
+						{displayName}
+					</Heading>
 					<span
 						className="block min-h-4 truncate text-xs leading-4 text-neutral-foreground-subtle"
 						title={process.processDefinitionId}
@@ -64,8 +67,9 @@ const ProcessTile: React.FC<Props> = ({process, status, isStartButtonDisabled, o
 						size="sm"
 						loading={isBusy}
 						disabled={isStartButtonDisabled}
+						aria-disabled={isStatusVisible || undefined}
 						aria-live={status === 'error' || status === 'finished' ? 'assertive' : 'polite'}
-						onClick={onStartProcess}
+						onClick={isStatusVisible ? undefined : onStartProcess}
 					>
 						{statusLabel ?? t('tasklist.processesTileStartProcessButtonLabel')}
 						{statusLabel === undefined && process.hasStartForm ? (
