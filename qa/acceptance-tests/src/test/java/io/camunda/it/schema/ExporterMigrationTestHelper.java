@@ -76,7 +76,7 @@ public class ExporterMigrationTestHelper {
   private static final String VARIABLE_INDEX = "zeebe-record_variable_*";
   private static final String USER_TASK_INDEX = "zeebe-record_user-task_*";
   private static final String INCIDENT_INDEX = "zeebe-record_incident_*";
-  private static final String DEPLOYMENT_INDEX = "zeebe-record_deployment_*";
+  private static final String PROCESS_INDEX = "zeebe-record_process_*";
   private static final String ZEEBE_RECORD_INDEXES = "zeebe-record*";
 
   private static final String CURRENT_MINOR_VERSION = getCurrentMinorVersion();
@@ -268,7 +268,7 @@ public class ExporterMigrationTestHelper {
       completeJobs(clientPrevious, 1);
       log.info("Completed job for instance #1");
 
-      awaitExported("deployment records should be exported to " + engineName, DEPLOYMENT_INDEX);
+      awaitExported("process records should be exported to " + engineName, PROCESS_INDEX);
       awaitExported("process instance records should be exported to " + engineName, PI_INDEX);
       awaitExported("user task records should be exported to " + engineName, USER_TASK_INDEX);
 
@@ -451,7 +451,7 @@ public class ExporterMigrationTestHelper {
             .isGreaterThanOrEqualTo(instanceKeys.size());
 
         // Verify that deployment records are in ES/OS
-        final long deploymentCount = countDocuments(DEPLOYMENT_INDEX);
+        final long deploymentCount = countDocuments(PROCESS_INDEX);
         log.info("Total deployment records in {}: {}", engineName, deploymentCount);
         assertThat(deploymentCount)
             .as("deployment records should be exported across upgrade")
