@@ -22,8 +22,9 @@ golden/<version>/<scenario>/<chart>/charts/<subchart>/templates/<file>.yaml
 
 - `<version>` — setup directory: `main`, `stable-89`, …
 - `<scenario>` — storage/optimize/stable combos (`elasticsearch`, `opensearch`,
-  `rdbms`, `rdbms-optimize`, `none`, and the `-stable` variants) plus the workload
-  profiles `max` and `realistic`
+  `rdbms`, `rdbms-optimize`, `none`, and the `-stable` variants), the
+  `<storage>-physical-tenants` variants (one per storage type, `main`/`stable-810`
+  only), plus the workload profiles `max` and `realistic`
 - `<chart>` — `platform`, `load-tester`, `load-test-setup`
 
 Workload scenarios (`max`, `realistic`) only change load-tester flags, so they
@@ -31,6 +32,13 @@ render just the `load-tester` chart on a fixed elasticsearch backend. `realistic
 pulls a values file from the `camunda-load-tests-helm` repo at render time — the
 same live-latest policy as the load-tester chart, so regenerate its golden when
 that file changes.
+
+The `<storage>-physical-tenants` scenarios all use `physical_tenant_count=1` —
+this covers per-storage-type rendering (prefix/index-prefix keys, authorizations,
+credentials secret, starter/worker renaming) but **not** the `pt1..ptN` loop at
+N>1 (resource-name/prefix uniqueness across tenants). Run a manual load test with
+`physical-tenant-count=3` (or higher) before relying on a change to that loop —
+see "Optional physical tenants (pt1..ptN)" in `../README.md`.
 
 ## About the credentials in these files
 
