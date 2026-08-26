@@ -296,31 +296,6 @@ final class GraphScopeReconcilerTest {
     assertThat(started).doesNotHaveDuplicates();
   }
 
-  /**
-   * An asynchronously-scheduling {@link TestConcurrencyControl} that also records the delay of
-   * every task scheduled through it. The base class exposes only how many tasks are queued, and the
-   * reconciler's backoff is otherwise entirely internal, so this is what makes an escalating — or a
-   * flat — retry delay assertable.
-   */
-  private static final class DelayRecordingConcurrencyControl extends TestConcurrencyControl {
-
-    private final List<Duration> delays = new ArrayList<>();
-
-    private DelayRecordingConcurrencyControl() {
-      super(true);
-    }
-
-    @Override
-    public ScheduledTimer schedule(final long delayMs, final Runnable runnable) {
-      delays.add(Duration.ofMillis(delayMs));
-      return super.schedule(delayMs, runnable);
-    }
-
-    private List<Duration> delays() {
-      return delays;
-    }
-  }
-
   /** A scope whose plan is {@code plan} until {@code plan} is exhausted by the fake operations. */
   private static GraphScopeReconciler.Scope scope(
       final DependencyChangePlan plan, final Supplier<GraphScopeReconciler.Operation> operations) {
@@ -407,5 +382,30 @@ final class GraphScopeReconcilerTest {
                 }));
       }
     };
+  }
+
+  /**
+   * An asynchronously-scheduling {@link TestConcurrencyControl} that also records the delay of
+   * every task scheduled through it. The base class exposes only how many tasks are queued, and the
+   * reconciler's backoff is otherwise entirely internal, so this is what makes an escalating — or a
+   * flat — retry delay assertable.
+   */
+  private static final class DelayRecordingConcurrencyControl extends TestConcurrencyControl {
+
+    private final List<Duration> delays = new ArrayList<>();
+
+    private DelayRecordingConcurrencyControl() {
+      super(true);
+    }
+
+    @Override
+    public ScheduledTimer schedule(final long delayMs, final Runnable runnable) {
+      delays.add(Duration.ofMillis(delayMs));
+      return super.schedule(delayMs, runnable);
+    }
+
+    private List<Duration> delays() {
+      return delays;
+    }
   }
 }
