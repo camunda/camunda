@@ -55,30 +55,29 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.ExternalResourceSupport;
 import org.mockito.Mockito;
 
 @SuppressWarnings("resource")
-@RunWith(JUnit4.class)
-public final class JobWorkerImplTest {
+@ExtendWith({ExternalResourceSupport.class, EnvironmentExtension.class})
+final class JobWorkerImplTest {
 
   private static final JobHandler NOOP_JOB_HANDLER = (client, job) -> {};
   private static final long SLOW_POLL_DELAY_IN_MS = 1_000L;
   private static final Duration SLOW_POLL_THRESHOLD = Duration.ofMillis(SLOW_POLL_DELAY_IN_MS / 2);
 
   @Rule public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-  @Rule public final EnvironmentExtension environmentRule = new EnvironmentExtension();
 
   private MockedGateway gateway;
   private CamundaClient client;
   private ManagedChannel channel;
 
-  @Before
-  public void setup() throws IOException {
+  @BeforeEach
+  void setup() throws IOException {
     gateway = new MockedGateway();
 
     // ensure all gRPC resources are registered for cleanup. Since clients identify the in-process
@@ -102,7 +101,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldBackoffWhenGatewayRespondsWithResourceExhausted() {
+  void shouldBackoffWhenGatewayRespondsWithResourceExhausted() {
     // given a gateway that responds with some jobs
     gateway.respondWith(TestData.jobs(10));
 
@@ -139,7 +138,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldBackoffWhenStreamEnabledOnPollSuccessAndResponseIsEmpty() {
+  void shouldBackoffWhenStreamEnabledOnPollSuccessAndResponseIsEmpty() {
     // given a gateway that responds with some jobs
     gateway.respondWith(TestData.jobs(0));
 
@@ -168,7 +167,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldOpenStreamIfOptedIn() {
+  void shouldOpenStreamIfOptedIn() {
     // given
     final JobWorkerBuilderStep3 builder =
         client.newWorker().jobType("test").handler(NOOP_JOB_HANDLER).streamEnabled(true);
@@ -184,7 +183,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void workerBuilderShouldOverrideEnvVariables() {
+  void workerBuilderShouldOverrideEnvVariables() {
     // given
     Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "false");
 
@@ -207,7 +206,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldHandleOnlyCapacity() {
+  void shouldHandleOnlyCapacity() {
     // given
     final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
     final ArrayList<io.camunda.client.api.response.ActivatedJob> jobs = new ArrayList<>();
@@ -249,7 +248,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldCloseIfExecutorIsClosed() {
+  void shouldCloseIfExecutorIsClosed() {
     // given
     final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
 
@@ -283,7 +282,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldUseJobHandlingExecutorForJobs() {
+  void shouldUseJobHandlingExecutorForJobs() {
     // given
     final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     final ExecutorService jobHandlingExecutor =
