@@ -27,7 +27,7 @@ inputs:
     default: "false"
   harbor:
     description: |
-      If enabled, logs into Harbor with a CI account.
+      If enabled, logs into Harbor with a Harbor robot account.
       Harbor login is automatically disabled for fork PRs.
     required: false
     default: "false"
@@ -154,7 +154,9 @@ runs:
         secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | dockerhub-token;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
-        secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
+        secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token;
+        secret/data/products/camunda/ci/harbor username | harbor-username;
+        secret/data/products/camunda/ci/harbor password | harbor-password
   - name: Logs on to Minimus    # Minimus login is disabled for fork PRs
     if: >-
       steps.checks.outputs.is-fork != 'true' &&
@@ -289,8 +291,8 @@ runs:
       inputs.harbor == 'true'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_USERNAME: ${{ steps.secrets.outputs.ci-account-username }}
-      DOCKER_PASSWORD: ${{ steps.secrets.outputs.ci-account-password }}
+      DOCKER_USERNAME: ${{ steps.secrets.outputs.harbor-username }}
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.harbor-password }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
