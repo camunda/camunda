@@ -752,8 +752,8 @@ public class ClusteringRule extends ExternalResource {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              assertThat(serverOfExpectedLeader.promote())
-                  .describedAs("Promote request is successful")
+              assertThat(serverOfExpectedLeader.anoint())
+                  .describedAs("Anoint request is successful")
                   .succeedsWithin(Duration.ofSeconds(15));
               final int currentLeaderId = getLeaderForPartition(partitionId).getNodeId();
               assertThat(currentLeaderId)
