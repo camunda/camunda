@@ -459,8 +459,8 @@ public class ProtoBufSerializer
       case LEAVING -> MemberState.State.LEAVING;
       case LEFT -> MemberState.State.LEFT;
       case RECOVERING -> MemberState.State.RECOVERING;
-      case BOOTSTRAPPING ->
-          throw new IllegalStateException("Member cannot be in BOOTSTRAPPING state");
+      case BOOTSTRAPPING, LEARNER ->
+          throw new IllegalStateException("Member cannot be in %s state".formatted(state));
     };
   }
 
@@ -472,6 +472,7 @@ public class ProtoBufSerializer
       case LEAVING -> PartitionState.State.LEAVING;
       case BOOTSTRAPPING -> PartitionState.State.BOOTSTRAPPING;
       case RECOVERING -> PartitionState.State.RECOVERING;
+      case LEARNER -> PartitionState.State.LEARNER;
     };
   }
 
@@ -483,6 +484,7 @@ public class ProtoBufSerializer
       case LEAVING -> Topology.State.LEAVING;
       case BOOTSTRAPPING -> Topology.State.BOOTSTRAPPING;
       case RECOVERING -> Topology.State.RECOVERING;
+      case LEARNER -> Topology.State.LEARNER;
     };
   }
 
@@ -2661,7 +2663,7 @@ public class ProtoBufSerializer
       case ACTIVE -> BrokerState.State.ACTIVE;
       case LEAVING -> BrokerState.State.LEAVING;
       case LEFT -> BrokerState.State.LEFT;
-      case BOOTSTRAPPING, RECOVERING ->
+      case BOOTSTRAPPING, RECOVERING, LEARNER ->
           throw new IllegalStateException(
               "Broker cannot be in %s lifecycle state".formatted(state));
     };

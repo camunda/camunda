@@ -190,11 +190,15 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
 
   private static State mapState(final PartitionState.State state) {
     return switch (state) {
+      // BOOTSTRAPPING spans a single, momentary startup step with no value in the public
+      // contract. LEARNER is different: a member stays there for as long as the promotion's
+      // catch-up gate keeps rejecting it, which operators need visibility into.
       case UNKNOWN, BOOTSTRAPPING -> State.UNKNOWN;
       case JOINING -> State.JOINING;
       case ACTIVE -> State.ACTIVE;
       case LEAVING -> State.LEAVING;
       case RECOVERING -> State.RECOVERING;
+      case LEARNER -> State.LEARNER;
     };
   }
 
@@ -400,7 +404,8 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
     JOINING,
     ACTIVE,
     LEAVING,
-    RECOVERING
+    RECOVERING,
+    LEARNER
   }
 
   public enum ClusterStatus {
