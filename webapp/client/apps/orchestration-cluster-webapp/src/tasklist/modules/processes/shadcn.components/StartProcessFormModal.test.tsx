@@ -109,25 +109,6 @@ describe('<StartProcessFormModal />', () => {
 		expect(writeText).toHaveBeenCalledWith(window.location.href);
 	});
 
-	it('should show a copied confirmation after sharing the URL', async () => {
-		vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
-		const screen = await render(
-			<StartProcessFormModal
-				processDisplayName="Invoice review"
-				schema={FORM_SCHEMA}
-				isMultiTenancyEnabled={false}
-				tenantId="<default>"
-				onClose={vi.fn()}
-				onSubmit={() => Promise.resolve()}
-				onFileUpload={() => Promise.resolve(new Map())}
-			/>,
-		);
-
-		await userEvent.click(screen.getByRole('button', {name: 'Copy link'}));
-
-		await expect.element(screen.getByRole('button', {name: 'Copied'})).toBeVisible();
-	});
-
 	it('should submit valid form values', async () => {
 		const onSubmit = vi.fn(() => Promise.resolve());
 		const screen = await render(

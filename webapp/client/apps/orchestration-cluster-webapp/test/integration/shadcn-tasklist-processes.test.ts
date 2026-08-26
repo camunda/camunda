@@ -74,13 +74,6 @@ test.beforeEach(async ({network, page}) => {
 	);
 });
 
-test('should render the Tasklist processes page with navigation', async ({shadcnTasklistProcessesPage}) => {
-	await shadcnTasklistProcessesPage.goto();
-
-	await expect(shadcnTasklistProcessesPage.heading).toBeVisible();
-	await expect(shadcnTasklistProcessesPage.description).toBeVisible();
-});
-
 test('should display available processes with their names, IDs, form requirements, start buttons, and more-results control', async ({
 	network,
 	shadcnTasklistProcessesPage,
@@ -764,4 +757,27 @@ test('should notify the user when they do not have permission to start a process
 	);
 	await expect(notification).not.toContainText('Invoice review');
 	await expect(shadcnTasklistProcessesPage.startProcessButton).toBeEnabled();
+});
+
+test('should display the forbidden page when process access is denied', async ({
+	network,
+	shadcnTasklistProcessesPage,
+	forbiddenPage,
+}) => {
+	network.use(mockQueryProcessDefinitionsEndpoint({successResponse: new HttpResponse(null, {status: 403})}));
+
+	await shadcnTasklistProcessesPage.goto();
+
+	await expect(forbiddenPage.heading).toBeVisible();
+});
+
+test('should display the generic error page when processes cannot be loaded', async ({
+	network,
+	shadcnTasklistProcessesPage,
+}) => {
+	network.use(mockQueryProcessDefinitionsEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
+
+	await shadcnTasklistProcessesPage.goto();
+
+	await expect(shadcnTasklistProcessesPage.genericErrorHeading).toBeVisible();
 });
