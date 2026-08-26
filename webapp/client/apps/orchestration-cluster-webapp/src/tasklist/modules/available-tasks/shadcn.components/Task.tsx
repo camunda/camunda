@@ -9,7 +9,7 @@
 import React from 'react';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Text} from '@camunda/design-system';
-import {Link, useMatch} from '@tanstack/react-router';
+import {Link, useMatchRoute} from '@tanstack/react-router';
 import {Bell, Calendar, CircleCheck, TriangleAlert} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
 import {cn} from '#/shared/cn';
@@ -52,11 +52,8 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 		ref,
 	) => {
 		const {t} = useTranslation();
-		const match = useMatch({
-			from: '/shadcn/_auth/tasklist/_tasks/$userTaskKey/',
-			shouldThrow: false,
-		});
-		const isActive = match?.params.userTaskKey === userTaskKey;
+		const matchRoute = useMatchRoute();
+		const isActive = matchRoute({to: '/shadcn/tasklist/$userTaskKey', params: {userTaskKey}, fuzzy: true}) !== false;
 		const creationDate = formatISODateTime(creationDateString);
 		const secondaryDate = getSecondaryDate({
 			completionDate: formatISODate(completionDateString),

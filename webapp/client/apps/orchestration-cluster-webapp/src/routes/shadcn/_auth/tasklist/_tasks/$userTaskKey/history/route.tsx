@@ -8,6 +8,6 @@
 
 import {createFileRoute} from '@tanstack/react-router';
 
-export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks/$userTaskKey/')({
+export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks/$userTaskKey/history')({
 	component: () => null,
 });

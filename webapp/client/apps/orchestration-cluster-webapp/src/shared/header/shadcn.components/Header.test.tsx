@@ -70,4 +70,34 @@ describe('<Header /> (V2)', () => {
 		await expect.element(screen.getByRole('link', {name: 'Tasks'})).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('link', {name: 'Processes'})).not.toBeInTheDocument();
 	});
+
+	it.for([
+		{path: '/shadcn/tasklist/$userTaskKey' as const, initialEntry: '/shadcn/tasklist/task-42'},
+		{path: '/shadcn/tasklist/$userTaskKey/process' as const, initialEntry: '/shadcn/tasklist/task-42/process'},
+		{path: '/shadcn/tasklist/$userTaskKey/history' as const, initialEntry: '/shadcn/tasklist/task-42/history'},
+	])('should mark Tasks as active at $initialEntry', async ({path, initialEntry}, {worker}) => {
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		);
+
+		const screen = await renderWithRouter(() => <Header>Page content</Header>, {path, initialEntry});
+
+		await expect.element(screen.getByRole('link', {name: 'Tasks'})).toHaveAttribute('aria-current', 'page');
+		await expect.element(screen.getByRole('link', {name: 'Processes'})).not.toHaveAttribute('aria-current');
+	});
+
+	it('should mark Processes as active on the processes route', async ({worker}) => {
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		);
+
+		const screen = await renderWithRouter(() => <Header>Page content</Header>, {
+			path: '/shadcn/tasklist/processes',
+		});
+
+		await expect.element(screen.getByRole('link', {name: 'Processes'})).toHaveAttribute('aria-current', 'page');
+		await expect.element(screen.getByRole('link', {name: 'Tasks'})).not.toHaveAttribute('aria-current');
+	});
 });

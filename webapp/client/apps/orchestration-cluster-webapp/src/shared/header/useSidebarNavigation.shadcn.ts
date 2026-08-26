@@ -12,7 +12,6 @@ import {ListTodo, Workflow} from 'lucide-react';
 import {camundaAppIcons, type NavIcon, type SidebarNode} from '@camunda/design-system';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {hasComponentAccess} from '#/shared/componentAccess';
-import {useHasRouteMatch} from '#/shared/useHasRouteMatch';
 
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 const tabRoutes = {
@@ -33,11 +32,11 @@ type SidebarNavigation = {
 function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 	const {t} = useTranslation();
 	const matchRoute = useMatchRoute();
-	const hasRouteMatch = useHasRouteMatch();
 	const {authorizedComponents} = currentUser;
 	const isProcessesRoute = matchRoute({to: tabRoutes['tasklistProcesses'], fuzzy: true}) !== false;
+	const isTasklistRoute = matchRoute({to: tabRoutes['tasklistIndex'], fuzzy: true}) !== false;
 
-	if (matchRoute({to: tabRoutes['tasklistIndex'], fuzzy: true}) !== false) {
+	if (isTasklistRoute) {
 		const hasTasklistAccess = hasComponentAccess('tasklist', authorizedComponents);
 
 		return {
@@ -54,7 +53,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 							key: 'tasks',
 							label: t('tasklist.headerNavItemTasks'),
 							icon: ListTodo,
-							isActive: !isProcessesRoute && hasRouteMatch('/shadcn/tasklist', '/shadcn/tasklist/$userTaskKey'),
+							isActive: !isProcessesRoute,
 							linkProps: {
 								to: tabRoutes['tasklistIndex'],
 								activeOptions: {

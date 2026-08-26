@@ -7,13 +7,14 @@
  */
 
 import {render} from 'vitest-browser-react';
+import {describe, expect} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
-import {expect} from 'vitest';
-import {TaskDetailsPlaceholderPage} from './TaskDetailsPlaceholderPage';
+import {DetailsSkeleton} from './DetailsSkeleton';
 
-it('should display the task details placeholder', async () => {
-	const screen = await render(<TaskDetailsPlaceholderPage userTaskKey="2251799813685281" />);
+describe('<DetailsSkeleton />', () => {
+	it('should render with the provided data-testid', async () => {
+		const screen = await render(<DetailsSkeleton data-testid="details-skeleton" />);
 
-	await expect.element(screen.getByRole('heading', {name: 'Details'})).toBeVisible();
-	await expect.element(screen.getByText('2251799813685281')).toBeVisible();
+		await expect.element(screen.getByTestId('details-skeleton')).toBeVisible();
+	});
 });
