@@ -83,7 +83,7 @@
     <version.opensearch-java>2.9.1</version.opensearch-java>
     <version.opensearch.testcontainers>4.0.1</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
-    <version.protobuf>4.32.0</version.protobuf>
+    <version.protobuf>4.33.6</version.protobuf>
     <version.protobuf-common>2.59.2</version.protobuf-common>
     <version.micrometer>1.16.7</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
