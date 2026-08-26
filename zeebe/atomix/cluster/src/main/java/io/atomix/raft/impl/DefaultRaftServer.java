@@ -108,7 +108,7 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
-  public CompletableFuture<RaftServer> promote() {
+  public CompletableFuture<RaftServer> anoint() {
     return new ReconfigurationHelper(context).anoint().thenApply(v -> this);
   }
 
