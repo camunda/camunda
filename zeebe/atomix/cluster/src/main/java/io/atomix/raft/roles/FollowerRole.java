@@ -319,11 +319,8 @@ public final class FollowerRole extends ActiveRole {
 
     if (isRunning() && !complete.get()) {
       if (error != null) {
-        final var cause = FuturesUtil.unwrapCompletionException(error);
-        final var status = VoteErrorStatus.of(cause);
-        log.atLevel(status.logLevel())
-            .log("Poll request to {} failed with {}: {}", member.memberId(), status, cause);
-        quorum.fail(member.memberId(), status);
+        logRequestFailure("Poll", member, error);
+        quorum.fail(member.memberId(), VoteErrorStatus.of(error));
       } else {
         final boolean respondedWithGreaterTerm = response.term() > raft.getTerm();
         if (respondedWithGreaterTerm) {

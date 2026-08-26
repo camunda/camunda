@@ -16,19 +16,38 @@
  */
 package io.atomix.raft.roles;
 
+import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.raft.RaftServer;
+import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import org.slf4j.event.Level;
 
 /** Abstract active state. */
 public abstract class ActiveRole extends PassiveRole {
 
   protected ActiveRole(final RaftContext context) {
     super(context);
+  }
+
+  /**
+   * Logs a failed poll or vote request to a member, demoting the expected failure mode - the member
+   * is not in the membership view, e.g. while it boots or after it was removed - to TRACE to avoid
+   * flooding the log on every election round.
+   */
+  protected void logRequestFailure(
+      final String requestType, final RaftMember member, final Throwable error) {
+    // request futures complete exceptionally with the cause wrapped in a CompletionException
+    final var cause =
+        error instanceof CompletionException && error.getCause() != null ? error.getCause() : error;
+    final var logLevel = cause instanceof NoSuchMemberException ? Level.TRACE : Level.WARN;
+    log.atLevel(logLevel)
+        .log("{} request to {} failed: {}", requestType, member.memberId(), cause.getMessage());
   }
 
   @Override
