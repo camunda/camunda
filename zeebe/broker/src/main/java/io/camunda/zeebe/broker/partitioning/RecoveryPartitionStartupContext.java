@@ -12,12 +12,15 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.management.ReadOnlyBackupService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
+import io.camunda.zeebe.broker.system.monitoring.HealthTreeMetrics;
 import io.camunda.zeebe.broker.transport.backupapi.ReadOnlyBackupApiRequestHandler;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.nio.file.Path;
 import org.jspecify.annotations.Nullable;
 
@@ -34,8 +37,12 @@ public final class RecoveryPartitionStartupContext {
   private final BrokerInfo brokerInfo;
   private final AtomixServerTransport gatewayBrokerTransport;
   private final @Nullable BackupStore backupStore;
+  private final String brokerComponentName;
   private ReadOnlyBackupService backupService;
   private ReadOnlyBackupApiRequestHandler backupApiRequestHandler;
+  private CompositeMeterRegistry partitionMeterRegistry;
+  private HealthMetrics healthMetrics;
+  private HealthTreeMetrics healthTreeMetrics;
 
   public RecoveryPartitionStartupContext(
       final PartitionId partitionId,
@@ -47,7 +54,9 @@ public final class RecoveryPartitionStartupContext {
       final BrokerCfg brokerCfg,
       final BrokerInfo brokerInfo,
       final AtomixServerTransport gatewayBrokerTransport,
-      final @Nullable BackupStore backupStore) {
+      final @Nullable BackupStore backupStore,
+      final String brokerComponentName) {
+    this.brokerComponentName = brokerComponentName;
     this.partitionId = partitionId;
     this.partitionDirectory = partitionDirectory;
     this.schedulingService = schedulingService;
@@ -122,6 +131,39 @@ public final class RecoveryPartitionStartupContext {
   public RecoveryPartitionStartupContext setBackupApiRequestHandler(
       final ReadOnlyBackupApiRequestHandler backupApiRequestHandler) {
     this.backupApiRequestHandler = backupApiRequestHandler;
+    return this;
+  }
+
+  public CompositeMeterRegistry getPartitionMeterRegistry() {
+    return partitionMeterRegistry;
+  }
+
+  public RecoveryPartitionStartupContext setPartitionMeterRegistry(
+      final CompositeMeterRegistry partitionMeterRegistry) {
+    this.partitionMeterRegistry = partitionMeterRegistry;
+    return this;
+  }
+
+  public String brokerComponentName() {
+    return brokerComponentName;
+  }
+
+  public HealthTreeMetrics getHealthTreeMetrics() {
+    return healthTreeMetrics;
+  }
+
+  public RecoveryPartitionStartupContext setHealthTreeMetrics(
+      final HealthTreeMetrics healthTreeMetrics) {
+    this.healthTreeMetrics = healthTreeMetrics;
+    return this;
+  }
+
+  public HealthMetrics getHealthMetrics() {
+    return healthMetrics;
+  }
+
+  public RecoveryPartitionStartupContext setHealthMetrics(final HealthMetrics healthMetrics) {
+    this.healthMetrics = healthMetrics;
     return this;
   }
 }
