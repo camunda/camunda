@@ -75,30 +75,29 @@ import java.util.function.IntConsumer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.jmock.lib.concurrent.DeterministicScheduler;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.ExternalResourceSupport;
 import org.mockito.Mockito;
 
 @SuppressWarnings("resource")
-@RunWith(JUnit4.class)
-public final class JobWorkerImplTest {
+@ExtendWith({ExternalResourceSupport.class, EnvironmentExtension.class})
+final class JobWorkerImplTest {
 
   private static final JobHandler NOOP_JOB_HANDLER = (client, job) -> {};
   private static final long SLOW_POLL_DELAY_IN_MS = 1_000L;
   private static final Duration SLOW_POLL_THRESHOLD = Duration.ofMillis(SLOW_POLL_DELAY_IN_MS / 2);
 
   @Rule public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-  @Rule public final EnvironmentExtension environmentRule = new EnvironmentExtension();
 
   private MockedGateway gateway;
   private CamundaClient client;
   private ManagedChannel channel;
 
-  @Before
-  public void setup() throws IOException {
+  @BeforeEach
+  void setup() throws IOException {
     gateway = new MockedGateway();
 
     // ensure all gRPC resources are registered for cleanup. Since clients identify the in-process
@@ -122,7 +121,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldBackoffWhenGatewayRespondsWithResourceExhausted() {
+  void shouldBackoffWhenGatewayRespondsWithResourceExhausted() {
     // given a gateway that responds with some jobs
     gateway.respondWith(TestData.jobs(10));
 
@@ -159,7 +158,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldBackoffWhenStreamEnabledOnPollSuccessAndResponseIsEmpty() {
+  void shouldBackoffWhenStreamEnabledOnPollSuccessAndResponseIsEmpty() {
     // given a gateway that responds with some jobs
     gateway.respondWith(TestData.jobs(0));
 
@@ -188,7 +187,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldOpenStreamIfOptedIn() {
+  void shouldOpenStreamIfOptedIn() {
     // given
     final JobWorkerBuilderStep3 builder =
         client.newWorker().jobType("test").handler(NOOP_JOB_HANDLER).streamEnabled(true);
@@ -204,7 +203,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void workerBuilderShouldOverrideEnvVariables() {
+  void workerBuilderShouldOverrideEnvVariables() {
     // given
     Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "false");
 
@@ -227,7 +226,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldHandleOnlyCapacity() {
+  void shouldHandleOnlyCapacity() {
     // given
     final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
     final ArrayList<io.camunda.client.api.response.ActivatedJob> jobs = new ArrayList<>();
@@ -269,7 +268,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldKeepPollingAfterHandlerExecutorRejectsJobs() {
+  void shouldKeepPollingAfterHandlerExecutorRejectsJobs() {
     // given a worker whose handler executor can run a single job and rejects the rest, so that
     // most of an activated batch never reaches a handler
     final int maxJobsActive = 4;
@@ -328,7 +327,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldKeepPollingWhileALongRunningJobHoldsPartOfTheCapacity() {
+  void shouldKeepPollingWhileALongRunningJobHoldsPartOfTheCapacity() {
     // given a worker whose handler executor can run a single job and rejects the rest
     final int maxJobsActive = 4;
     final AtomicInteger rejectedJobs = new AtomicInteger();
@@ -379,7 +378,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldFailRejectedJobsBackToTheBroker() {
+  void shouldFailRejectedJobsBackToTheBroker() {
     // given a worker whose handler executor refuses every job
     final int maxJobsActive = 4;
     final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -423,7 +422,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldBackOffWhenTheHandlerExecutorTakesNoJobAtAll() {
+  void shouldBackOffWhenTheHandlerExecutorTakesNoJobAtAll() {
     // given a worker whose handler executor takes no job at all, so that nothing the worker
     // activates ever runs and nothing is left running to prompt the next poll
     final int maxJobsActive = 4;
@@ -461,7 +460,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldKeepPollingWhenHandingARefusedJobBackFails() {
+  void shouldKeepPollingWhenHandingARefusedJobBackFails() {
     // given a job client that cannot send commands any more, as it would be while shutting down
     final JobClient brokenJobClient = Mockito.mock(JobClient.class);
     Mockito.when(
@@ -499,7 +498,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldNotAskForMoreJobsThanItCanRunWhenAJobRunsAndIsRefusedAtTheSameTime() {
+  void shouldNotAskForMoreJobsThanItCanRunWhenAJobRunsAndIsRefusedAtTheSameTime() {
     // given a worker whose handler executor runs a job and then reports it as refused
     final int maxJobsActive = 3;
     final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -534,7 +533,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldNotHandBackAJobWhoseHandlerAlreadyRan() {
+  void shouldNotHandBackAJobWhoseHandlerAlreadyRan() {
     // given a worker whose handler executor runs a job and then reports it as refused
     final int maxJobsActive = 3;
     final AtomicInteger handledJobs = new AtomicInteger();
@@ -569,7 +568,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldCloseIfExecutorIsClosed() {
+  void shouldCloseIfExecutorIsClosed() {
     // given
     final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
 
@@ -603,7 +602,7 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldUseJobHandlingExecutorForJobs() {
+  void shouldUseJobHandlingExecutorForJobs() {
     // given
     final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     final ExecutorService jobHandlingExecutor =
