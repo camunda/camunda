@@ -51,7 +51,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
@@ -241,6 +246,65 @@ final class JobWorkerImplTest {
         // then
         Awaitility.await("Handler should see both").until(() -> jobs, Matchers.hasSize(2));
       }
+    }
+  }
+
+  @Test
+  void shouldKeepPollingAfterHandlerExecutorRejectsJobs() {
+    // given a worker whose handler executor can run a single job and rejects the rest, so that
+    // most of an activated batch never reaches a handler
+    final int maxJobsActive = 4;
+    final AtomicInteger rejectedJobs = new AtomicInteger();
+    final AtomicInteger handledJobs = new AtomicInteger();
+    final CountDownLatch releaseHandler = new CountDownLatch(1);
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobHandlingExecutor =
+        new ThreadPoolExecutor(
+            1,
+            1,
+            0,
+            TimeUnit.MILLISECONDS,
+            new SynchronousQueue<>(),
+            (rejected, executor) -> {
+              rejectedJobs.incrementAndGet();
+              throw new RejectedExecutionException("Job handling executor is saturated");
+            });
+    gateway.respondWith(TestData.jobs(maxJobsActive));
+
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler(
+                    (c, job) -> {
+                      if (handledJobs.incrementAndGet() == 1) {
+                        Uninterruptibles.awaitUninterruptibly(releaseHandler);
+                      }
+                    })
+                .maxJobsActive(maxJobsActive)
+                .pollInterval(Duration.ofMillis(50))
+                .open()) {
+
+      try {
+        // when the executor rejects the rest of the activated batch
+        Awaitility.await("Executor should reject the jobs it cannot run")
+            .untilAtomic(rejectedJobs, Matchers.greaterThanOrEqualTo(maxJobsActive - 1));
+      } finally {
+        // and the handler capacity is free again, also when the check above failed: a handler left
+        // waiting keeps its thread alive and holds up closing the client for 15 seconds
+        releaseHandler.countDown();
+      }
+
+      // then the worker keeps activating jobs
+      Awaitility.await("Worker should activate jobs again once capacity is free")
+          .atMost(Duration.ofSeconds(10))
+          .untilAtomic(handledJobs, Matchers.greaterThan(maxJobsActive));
     }
   }
 
