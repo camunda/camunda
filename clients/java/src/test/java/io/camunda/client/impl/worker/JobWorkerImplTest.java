@@ -20,11 +20,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientImpl;
+import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.client.impl.response.ActivatedJobImpl;
 import io.camunda.client.impl.util.Environment;
 import io.camunda.client.impl.util.EnvironmentExtension;
 import io.camunda.client.impl.util.ExecutorResource;
@@ -53,6 +58,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -61,8 +67,13 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
+import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.Rule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -488,6 +499,44 @@ final class JobWorkerImplTest {
   }
 
   @Test
+  void shouldKeepPollingWhenHandingARefusedJobBackFails() {
+    // given a job client that cannot send commands any more, as it would be while shutting down
+    final JobClient brokenJobClient = Mockito.mock(JobClient.class);
+    Mockito.when(
+            brokenJobClient.newFailCommand(
+                Mockito.any(io.camunda.client.api.response.ActivatedJob.class)))
+        .thenThrow(new IllegalStateException("Client is shutting down"));
+
+    // and a worker whose handler executor refuses every job
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    try (final JobWorkerImpl ignored =
+        new JobWorkerImpl(
+            4,
+            scheduler,
+            Duration.ofMillis(50),
+            brokenJobClient,
+            (job, doneCallback) -> doneCallback,
+            poller,
+            JobStreamer.noop(),
+            delay -> delay,
+            delay -> delay,
+            JobWorkerMetrics.noop(),
+            command -> {
+              throw new RejectedExecutionException("The executor has no capacity");
+            })) {
+
+      // when the poller hands over two jobs and handing the first one back to the broker fails
+      scheduler.tick(50, TimeUnit.MILLISECONDS);
+      poller.handOverJobs(TestData.jobs(2));
+
+      // then the worker still finished the poll, so it asks for jobs again
+      scheduler.tick(50, TimeUnit.MILLISECONDS);
+      assertThat(poller.getPollCount()).isEqualTo(2);
+    }
+  }
+
+  @Test
   void shouldCloseIfExecutorIsClosed() {
     // given
     final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -555,6 +604,63 @@ final class JobWorkerImplTest {
     public void execute(final Runnable command) {
       command.run();
       throw new RejectedExecutionException("Command ran here, but the executor is out of capacity");
+    }
+  }
+
+  /**
+   * A scheduler that runs tasks only when the test tells it to. {@link DeterministicScheduler}
+   * refuses to answer whether it was shut down, while the worker asks that question whenever the
+   * handler executor refuses a job, so the answer is supplied here.
+   */
+  private static final class AlwaysRunningDeterministicScheduler extends DeterministicScheduler {
+    @Override
+    public boolean isShutdown() {
+      return false;
+    }
+
+    @Override
+    public boolean isTerminated() {
+      return false;
+    }
+  }
+
+  /**
+   * Hands the jobs over the way the real poller does: from a callback of the request future rather
+   * than from the call to {@link #poll}. Anything thrown while handing a job over therefore ends up
+   * in that future, where nobody looks at it, instead of reaching the worker.
+   */
+  private static final class RecordingJobPoller implements JobPoller {
+    private final JsonMapper jsonMapper = new CamundaObjectMapper();
+    private final AtomicInteger pollCount = new AtomicInteger();
+    private final AtomicReference<Consumer<io.camunda.client.api.response.ActivatedJob>>
+        jobConsumer = new AtomicReference<>();
+    private final AtomicReference<IntConsumer> doneCallback = new AtomicReference<>();
+
+    @Override
+    public void poll(
+        final int maxJobsToActivate,
+        final Consumer<io.camunda.client.api.response.ActivatedJob> jobConsumer,
+        final IntConsumer doneCallback,
+        final Consumer<Throwable> errorCallback,
+        final BooleanSupplier openSupplier) {
+      pollCount.incrementAndGet();
+      this.jobConsumer.set(jobConsumer);
+      this.doneCallback.set(doneCallback);
+    }
+
+    private int getPollCount() {
+      return pollCount.get();
+    }
+
+    private void handOverJobs(final List<ActivatedJob> jobs) {
+      CompletableFuture.completedFuture(jobs)
+          .thenApply(
+              activatedJobs -> {
+                activatedJobs.forEach(
+                    job -> jobConsumer.get().accept(new ActivatedJobImpl(jsonMapper, job)));
+                doneCallback.get().accept(activatedJobs.size());
+                return null;
+              });
     }
   }
 
