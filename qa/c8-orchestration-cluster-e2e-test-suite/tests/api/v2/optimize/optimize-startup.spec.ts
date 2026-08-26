@@ -47,7 +47,10 @@ test.describe('Optimize startup and accessibility', () => {
       // `/oauth2/authorization/oidc` login-initiation endpoint first; that
       // endpoint builds the real authorization request and issues the second
       // 302 to the OIDC provider. Follow that one hop to assert the provider
-      // target (no realm needs to exist — the URL is built locally).
+      // target (no realm needs to exist — the URL is built locally). No
+      // audience param is asserted: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE feeds
+      // oidc.audiences, which validates incoming JWTs, and is never added to
+      // the authorization request.
       const authResponse = await request.get(redirectLocation, {
         maxRedirects: 0,
         timeout: 5000,
@@ -57,7 +60,7 @@ test.describe('Optimize startup and accessibility', () => {
       const authLocation = authResponse.headers()['location'] ?? '';
       expect(authLocation).toContain('/protocol/openid-connect/auth');
       expect(authLocation).toContain('client_id=optimize');
-      expect(authLocation).toContain('audience=optimize-api');
+      expect(authLocation).toContain('/api/authentication/callback');
     });
   });
 });
