@@ -215,9 +215,13 @@ def test_supported_base_refs_match_the_fix_workflow_whitelist():
         / "workflows"
         / "alwaysgreen-fix.yml"
     ).read_text()
-    match = re.search(r"^\s*(main\|stable[^)]*)\)\s*;;", workflow, re.M)
+    # Tolerant of formatting so this fails on drift and not on a reflow: `[^)]` spans
+    # newlines for a wrapped list, whitespace is allowed around each `|`, and every
+    # token is stripped before comparing.
+    match = re.search(r"^\s*(main\s*\|[^)]*)\)\s*;;", workflow, re.M)
     assert match, "no base_ref case statement found in alwaysgreen-fix.yml"
-    assert set(match.group(1).split("|")) == set(plan.SUPPORTED_BASE_REFS)
+    refs = {token.strip() for token in match.group(1).split("|")} - {""}
+    assert refs == set(plan.SUPPORTED_BASE_REFS)
 
 
 def test_unsupported_ref_is_reported_before_any_other_reason():
