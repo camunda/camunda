@@ -107,10 +107,6 @@ public class SimpleVoteQuorum implements VoteQuorum {
     }
   }
 
-  /**
-   * Failures to reach members are actionable for operators and warrant a warning; regular protocol
-   * outcomes such as denied votes happen during normal operation and stay at debug.
-   */
   private Level reportLevel() {
     return failedStatuses.values().stream().allMatch(VoteErrorStatus::isProtocolOutcome)
         ? Level.DEBUG
