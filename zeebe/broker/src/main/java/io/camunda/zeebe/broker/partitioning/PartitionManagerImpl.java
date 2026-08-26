@@ -13,6 +13,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
+import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
 import io.camunda.search.clients.SearchClientsProxy;
@@ -223,6 +224,7 @@ public final class PartitionManagerImpl
             brokerMeterRegistry,
             brokerClient,
             gatewayBrokerTransport);
+    context.joinMemberType(RaftMember.Type.ACTIVE);
     final var partition = Partition.joining(context);
     final var previousPartition = partitions.putIfAbsent(id, partition);
     if (previousPartition != null) {
