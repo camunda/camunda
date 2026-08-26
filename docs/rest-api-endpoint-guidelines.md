@@ -86,6 +86,7 @@ All descriptive text (summaries, descriptions, property docs) should follow the 
 - `tags` — exactly one tag matching the resource
 - `x-eventually-consistent` — explicitly `true` or `false` (see §2.5)
 - `x-added-in-version` — the Camunda version in which the operation was introduced, e.g., `"8.9"` (see §2.17)
+- `x-scope` — `cluster-wide` or `physical-tenant`, matching whether the endpoint is reachable via a physical-tenant-prefixed route (see §2.20)
 
 **Path patterns:**
 
@@ -1312,6 +1313,90 @@ correct deny shape — `4xx` for `reject`, `200` + target-absent for `filter`. S
 ADR decision **D8** for why static derivation of the deny outcome is unsound and
 the runtime oracle is authoritative.
 
+### 2.20 Scope annotation (`x-scope`)
+
+Every operation **must** declare `x-scope` as either `cluster-wide` or
+`physical-tenant`. This tells the docs API reference whether an operation acts
+on the whole cluster or on a single physical tenant, without having to
+fragment the existing tag-based grouping (`groupPathsBy: "tag"`) to express
+it. See
+[camunda-docs#8886 (comment)](https://github.com/camunda/camunda-docs/issues/8886#issuecomment-5414815612)
+for the motivating discussion and camunda/camunda#61157 for the annotation's
+introduction.
+
+```yaml
+/backups/runtime:
+  post:
+    operationId: takeRuntimeBackup
+    x-scope: physical-tenant
+    tags:
+      - Backup
+
+/cluster/v2/backups/runtime:
+  post:
+    operationId: takeClusterRuntimeBackup
+    x-scope: cluster-wide
+    tags:
+      - Backup
+```
+
+#### How to pick a value
+
+The value must match reachability — whether
+`PhysicalTenantRequestMappingHandlerMapping` actually registers a
+`/physical-tenants/{id}/...`-prefixed sibling route for the operation's
+controller — not a guess based on the path or tag:
+
+- `physical-tenant` — the default. A tenant-prefixed sibling route is
+  registered for the operation's controller, so it operates within a single
+  physical tenant's context (the default tenant when called without a
+  prefix).
+- `cluster-wide` — no tenant-prefixed sibling is registered; the operation
+  exists exactly once, cluster-wide. Today this is exactly the set of
+  `/cluster/v2/...` operations sourced from `cluster-admin.yaml`.
+
+The usual signal for `cluster-wide` is a controller annotated
+`@io.camunda.zeebe.gateway.rest.annotation.ClusterScoped`. That annotation is
+not, by itself, what makes a route unreachable per tenant, though: `prefix()`
+only builds a tenant-prefixed sibling when the path matches one of
+`PhysicalTenantRequestMappingHandlerMapping`'s `PREFIXABLE_ROOTS` (`/v2`,
+`/v3/api-docs`, `/post-logout`, `/custom.css`, the web apps). `/cluster/v2/...`
+paths match none of them, so they get no tenant-prefixed sibling whether or
+not their controller carries `@ClusterScoped` — the annotation and the
+prefixable-root check happen to agree for every controller today, but only
+the reachability check is the actual definition. When adding a new endpoint,
+verify reachability directly rather than relying on the annotation alone; if
+`@ClusterScoped` and reachability ever disagree, treat that as a bug to fix,
+not a reason to pick a value with `x-scope`.
+
+`x-scope` tracks reachability, not whether the returned data happens to be
+identical across tenants. Two known cases where reachability and semantics
+diverge:
+
+- `GET /license` is annotated `x-scope: physical-tenant` because it is
+  reachable under a `/physical-tenants/{id}/` prefix, even though the license
+  itself is a single cluster-wide fact that does not vary per tenant.
+- `GET /status` (`getStatus`) is annotated `x-scope: physical-tenant`, but it
+  is only reachable at the default physical tenant's prefix
+  (`/physical-tenants/default/v2/status`); every other physical tenant id
+  returns `404`. A two-valued reachability badge cannot express "default
+  tenant only," so the badge will read as "works for any physical tenant,"
+  which for this endpoint is not true.
+
+These are documented warts, not endpoints to imitate — most operations are
+either genuinely cluster-wide or genuinely usable at any physical tenant
+prefix.
+
+#### What the Spectral rule enforces
+
+The `require-scope` rule (severity `error`) checks every operation under
+`paths` (`get`, `post`, `put`, `patch`, `delete`) and fails the build if
+`x-scope` is missing, is not one of `cluster-wide` / `physical-tenant`, or
+disagrees with the path-derived expectation (`cluster-wide` for
+`/cluster/v2/...` paths, `physical-tenant` otherwise). The rule does not
+cross-check the value against the `@ClusterScoped` annotation in Java directly
+— that agreement is a reviewer responsibility.
+
 ---
 
 ## 3. Spectral linting & custom rules
@@ -1359,6 +1444,7 @@ The ruleset lives in `zeebe/gateway-protocol/.spectral.yaml`. Custom functions a
 | `valid-deprecated-enum-members`            | error    | `x-deprecated-enum-members` must be well-formed                                                   |
 | `require-added-in-version`                 | error    | Every operation must declare `x-added-in-version` (see §2.17)                                     |
 | `properties-added-in-version-shape`        | error    | `x-properties-added-in-version` entries must be `{propertyName, addedInVersion}` only (see §2.17) |
+| `require-scope`                            | error    | Every operation must declare `x-scope` as `cluster-wide` or `physical-tenant` (see §2.20)         |
 | `oas3-valid-schema-example`                | error    | Schemas must be valid per OpenAPI 3.0 JSON Schema rules                                           |
 
 ### 3.4 Adding new Spectral rules
@@ -1648,6 +1734,7 @@ Before opening a PR:
 - [ ] **Key properties are `type: string`**
 - [ ] **`x-eventually-consistent`** set correctly (`true` for queries, `false` for commands)
 - [ ] **`x-added-in-version`** field present on every new operation (see §2.17)
+- [ ] **`x-scope`** field present on every new operation, matching whether the endpoint is reachable via a physical-tenant-prefixed route (see §2.20)
 - [ ] **`x-properties-added-in-version`** entries added for properties whose intro version differs from their endpoint / nearest ancestor property, per Rules 1–3 in §2.17
 - [ ] **Response arrays** are `required` and not `nullable`
 - [ ] **`required` entries** all exist in `properties`

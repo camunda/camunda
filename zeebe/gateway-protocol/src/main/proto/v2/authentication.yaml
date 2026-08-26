@@ -25,6 +25,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /authentication/me/authorizations/search:
     post:
@@ -59,6 +60,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
 ## Schema definitions
 

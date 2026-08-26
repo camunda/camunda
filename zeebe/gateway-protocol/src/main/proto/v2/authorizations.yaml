@@ -43,6 +43,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /authorizations/{authorizationKey}:
     put:
@@ -86,6 +87,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     get:
       x-eventually-consistent: true
@@ -126,6 +128,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     delete:
       x-eventually-consistent: false
@@ -162,6 +165,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /authorizations/search:
     post:
@@ -198,6 +202,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
 ## Schema definitions
 

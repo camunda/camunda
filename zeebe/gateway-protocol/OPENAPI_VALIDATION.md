@@ -19,6 +19,7 @@ We use [Spectral CLI](https://docs.stoplight.io/docs/spectral/) to validate the 
   - Eventually-consistent annotation validation (command operations must not be marked as eventually consistent)
   - Required property existence validation (entries in required array must exist in properties)
   - Operation versioning annotation validation (every operation must declare `x-added-in-version`)
+  - Operation scope annotation validation (every operation must declare `x-scope` as `cluster-wide` or `physical-tenant`)
   - Property versioning annotation shape validation (`x-properties-added-in-version` entries must be `{propertyName, addedInVersion}` only)
   - Semantic graph annotation shape + cross-reference validation (`x-semantic-establishes`, `x-semantic-requires`, `semantic-kinds.json` registry)
 
@@ -186,6 +187,36 @@ ProcessInstanceModificationInstruction:
 Semantic correctness of these annotations (does the property actually exist? was it really introduced in that version?) is still validated in CI by the verifier under [`.github/scripts/x-added-in-version-check/`](../../.github/scripts/x-added-in-version-check/README.md) — the Spectral rule only checks shape.
 
 When a reviewer deliberately wants to publish a version other than the one the verifier computes, use `x-added-in-version-override` / `addedInVersionOverride` instead of just changing the annotation — see ["Overriding the computed version"](../../.github/scripts/x-added-in-version-check/README.md#overriding-the-computed-version) in the verifier's README.
+
+### Missing or invalid `x-scope`
+
+Every operation must declare `x-scope` as either `cluster-wide` or `physical-tenant`, marking whether it operates on the whole cluster or on a single physical tenant. The `require-scope` rule fails the build if this annotation is missing or has an unrecognised value.
+
+**Wrong:**
+
+```yaml
+paths:
+  /my-resources:
+    post:
+      operationId: createMyResource
+      summary: Create a my-resource
+      tags: [My resource]
+      # ❌ Missing x-scope
+```
+
+**Correct:**
+
+```yaml
+paths:
+  /my-resources:
+    post:
+      operationId: createMyResource
+      summary: Create a my-resource
+      x-scope: physical-tenant  # ✓ Scoped to a single physical tenant
+      tags: [My resource]
+```
+
+See §2.20 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) for the full convention, including how this maps to the `@ClusterScoped` controller annotation.
 
 ### Semantic graph annotations (`x-semantic-establishes`, `x-semantic-requires`)
 

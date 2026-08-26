@@ -72,6 +72,7 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}:
     get:
@@ -115,6 +116,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/sequence-flows:
     get:
@@ -152,6 +154,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/statistics/element-instances:
     get:
@@ -190,6 +193,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/statistics/wait-states:
     get:
@@ -228,6 +232,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /process-instances/search:
     post:
@@ -265,6 +270,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/incidents/search:
     post:
@@ -320,6 +326,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/incident-resolution:
     post:
@@ -363,6 +370,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/cancellation:
     post:
@@ -413,6 +421,7 @@ paths:
         "504":
           $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /process-instances/cancellation:
     post:
@@ -461,6 +470,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/incident-resolution:
     post:
@@ -509,6 +519,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/migration:
     post:
@@ -557,6 +568,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/modification:
     post:
@@ -607,6 +619,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-instances/suspension:
     post:
@@ -655,6 +668,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /process-instances/resumption:
     post:
@@ -703,6 +717,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/deletion:
     post:
@@ -754,6 +769,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /process-instances/deletion:
     post:
@@ -801,6 +817,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/migration:
     post:
@@ -859,6 +876,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/business-id-assignment:
     post:
@@ -920,6 +938,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/modification:
     post:
@@ -969,6 +988,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/suspension:
     post:
@@ -1022,6 +1042,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/resumption:
     post:
@@ -1075,6 +1096,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /process-instances/{processInstanceKey}/call-hierarchy:
     get:
@@ -1120,6 +1142,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
 ## Schema definitions
 

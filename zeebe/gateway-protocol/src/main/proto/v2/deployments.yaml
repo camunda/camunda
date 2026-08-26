@@ -48,6 +48,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /resources/{resourceKey}:
     get:
@@ -91,6 +92,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.7"
+      x-scope: physical-tenant
 
   /resources/{resourceKey}/content:
     get:
@@ -144,6 +146,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.7"
+      x-scope: physical-tenant
 
   /resources/{resourceKey}/content/binary:
     get:
@@ -188,6 +191,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /resources/search:
     post:
@@ -231,6 +235,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /resources/{resourceKey}/deletion:
     post:
@@ -303,6 +308,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
