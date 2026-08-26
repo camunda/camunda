@@ -572,6 +572,44 @@ final class JobWorkerImplTest {
   }
 
   @Test
+  void shouldBackOffWhenTheHandlerExecutorTakesNoJobAtAll() {
+    // given a worker whose handler executor takes no job at all, so that nothing the worker
+    // activates ever runs and nothing is left running to prompt the next poll
+    final int maxJobsActive = 4;
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobHandlingExecutor = Executors.newSingleThreadExecutor();
+    jobHandlingExecutor.shutdown();
+    gateway.respondWith(TestData.jobs(maxJobsActive));
+
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler(NOOP_JOB_HANDLER)
+                .maxJobsActive(maxJobsActive)
+                .pollInterval(Duration.ofMillis(50))
+                .backoffSupplier(prev -> SLOW_POLL_DELAY_IN_MS)
+                .open()) {
+
+      // when the worker keeps activating jobs the executor takes none of
+      // then it slows down, rather than activating and handing back jobs as fast as it can
+      gateway.startMeasuring();
+      Awaitility.await("Worker should slow down its polling")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(gateway.getTimeBetweenLatestPolls())
+                      .isGreaterThan(SLOW_POLL_THRESHOLD));
+    }
+  }
+
+  @Test
   void shouldCloseIfExecutorIsClosed() {
     // given
     final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
