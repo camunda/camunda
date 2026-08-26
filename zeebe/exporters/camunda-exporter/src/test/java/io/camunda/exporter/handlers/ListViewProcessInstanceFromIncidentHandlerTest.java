@@ -33,12 +33,12 @@ public class ListViewProcessInstanceFromIncidentHandlerTest {
       new ListViewProcessInstanceFromIncidentHandler(indexName);
 
   @Test
-  public void testGetHandledValueType() {
+  public void shouldHandleIncidentValueType() {
     assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.INCIDENT);
   }
 
   @Test
-  public void testGetEntityType() {
+  public void shouldHandleProcessInstanceForListViewEntityType() {
     assertThat(underTest.getEntityType()).isEqualTo(ProcessInstanceForListViewEntity.class);
   }
 
