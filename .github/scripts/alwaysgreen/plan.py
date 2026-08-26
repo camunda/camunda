@@ -18,6 +18,7 @@ Two levels of identity are used, for different jobs:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 
 import classify
 
@@ -41,6 +42,41 @@ SUPPRESSED_CAP = "per-run-cap-reached"
 #: fail on the agent's first step, which is what happened to run 31115770750 on
 #: `ci/alwaysgreen-helm-live-check`.
 SUPPORTED_BASE_REFS = frozenset({"main", "stable/8.7", "stable/8.8", "stable/8.9"})
+
+
+#: How long an open fix PR's key label keeps holding its dispatch key. The lock is
+#: there to win the race described above, but nothing ever released it: the label
+#: stops matching `is:open` only when a human merges or closes the PR, so the agent's
+#: own output locked the agent out of its own surface. camunda-platform-helm#6927
+#: claimed `main:sm-smoke-e2e` on 2026-08-20 and then sat unreviewed, and every `main`
+#: triage for the following six days reported `open-fix-pr-for-surface` and dispatched
+#: nothing. Past the TTL this coarse per-surface lock lifts and the per-spec coverage
+#: block takes over: a repeat of the same failure is still suppressed as
+#: `open-pr-covers-all-specs`, while a genuinely new one gets an agent.
+PR_LOCK_TTL_DAYS = 2
+
+
+def pr_lock_expired(
+    created_at: str, now: datetime, ttl_days: int = PR_LOCK_TTL_DAYS
+) -> bool:
+    """Whether an open fix PR is too old to keep holding its dispatch key.
+
+    A missing or unparseable timestamp keeps the lock, and `ttl_days <= 0` disables
+    expiry altogether: the bias matches the `ok` flags in discover's key lookups,
+    where an unproven state suppresses rather than risks a duplicate PR.
+    """
+    if ttl_days <= 0:
+        return False
+    text = (created_at or "").strip()
+    if not text:
+        return False
+    try:
+        created = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=timezone.utc)
+    return now - created > timedelta(days=ttl_days)
 
 
 def spec_suite(spec_file: str) -> str | None:
@@ -109,10 +145,18 @@ class Candidate:
     evidence_repo: str = ""
     #: Set when the surface produced no per-spec detail (job-level failure).
     job_level: bool = False
+    #: Further jobs of the same surface, folded in by `merge_by_key`. Kept so a merged
+    #: job-level dispatch still claims a fingerprint per job and leaves none of them
+    #: uncovered and re-dispatchable on the next run.
+    also_failing_jobs: list[str] = field(default_factory=list)
 
     @property
     def key(self) -> str:
         return dispatch_key(self.base_ref, self.surface)
+
+    @property
+    def job_names(self) -> list[str]:
+        return [self.job_name, *self.also_failing_jobs]
 
     @property
     def spec_fingerprints(self) -> list[str]:
@@ -125,7 +169,12 @@ class Candidate:
     def fingerprints(self) -> list[str]:
         """Every fingerprint this candidate would claim in a PR coverage block."""
         if self.job_level or not self.specs:
-            return [classify.job_fingerprint(self.base_ref, self.surface, self.job_name)]
+            return list(
+                dict.fromkeys(
+                    classify.job_fingerprint(self.base_ref, self.surface, n)
+                    for n in self.job_names
+                )
+            )
         return self.spec_fingerprints
 
     @property
@@ -146,6 +195,35 @@ class Plan:
     suppressed: list[Suppression] = field(default_factory=list)
     #: Failing jobs dropped by the noise prefilter, for the summary only.
     noise: list[tuple[str, str]] = field(default_factory=list)
+
+
+def merge_by_key(candidates: list[Candidate]) -> list[Candidate]:
+    """Collapse candidates sharing a dispatch key into one, keeping input order.
+
+    Candidates are built per failing job while a key is one agent's remit, and one
+    surface routinely fails as several jobs: `Playwright e2e full after install` and
+    `Playwright e2e smoke after install` are both `sm-smoke-e2e`, and a multi-cell
+    matrix yields one `helm-install` job per cell. `plan_dispatches` reads
+    `open_pr_keys` and `inflight_keys` once up front and never adds a key it has just
+    planned, so same-key candidates could not see each other and both dispatched —
+    two agents, then two PRs stamping the one key label.
+    c8-cross-component-e2e-tests#3071 and #3073 are such a pair, and freeing
+    `stable/8.9:saas-smoke-e2e` needed two merges instead of one.
+    """
+    merged: dict[str, Candidate] = {}
+    for cand in candidates:
+        first = merged.get(cand.key)
+        if first is None:
+            merged[cand.key] = cand
+            continue
+        first.specs.extend(cand.specs)
+        for name in cand.job_names:
+            if name and name not in first.job_names:
+                first.also_failing_jobs.append(name)
+        first.evidence_run_url = first.evidence_run_url or cand.evidence_run_url
+        first.evidence_repo = first.evidence_repo or cand.evidence_repo
+        first.job_level = first.job_level or cand.job_level
+    return list(merged.values())
 
 
 def plan_dispatches(
@@ -178,7 +256,7 @@ def plan_dispatches(
     no_fix = recent_no_fix_fingerprints or set()
     fixed_upstream = fixed_upstream_fingerprints or set()
 
-    for cand in candidates:
+    for cand in merge_by_key(candidates):
         # Before anything reads .specs or derives fingerprints from them.
         cand.specs = dedupe_specs(cand.specs)
 

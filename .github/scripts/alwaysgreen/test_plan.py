@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 import classify
 import plan
 
@@ -11,11 +13,17 @@ def _spec(name="t", file="tests/SM-8.10/smoke-tests.spec.ts", deterministic=True
     return classify.FailingSpec(file=file, test_name=name, statuses=statuses)
 
 
-def _cand(surface=classify.SURFACE_SM_E2E, base_ref="main", specs=None, job_level=False):
+def _cand(
+    surface=classify.SURFACE_SM_E2E,
+    base_ref="main",
+    specs=None,
+    job_level=False,
+    job_name="Playwright e2e after install - install on gke - agrn (1 of 1)",
+):
     return plan.Candidate(
         base_ref=base_ref,
         surface=surface,
-        job_name="Playwright e2e after install - install on gke - agrn (1 of 1)",
+        job_name=job_name,
         specs=list(specs if specs is not None else [_spec()]),
         job_level=job_level,
     )
@@ -467,3 +475,124 @@ def test_open_fix_pr_blocks_even_when_the_body_claims_nothing():
     cand = _cand(surface=classify.SURFACE_SM_E2E)
     result = _plan([cand], covered_fingerprints=set(), open_pr_keys={"main:sm-smoke-e2e"})
     assert result.dispatches == []
+
+
+# ---------------------------------------------------------------------------
+# PR lock expiry
+# ---------------------------------------------------------------------------
+
+NOW = datetime(2026, 8, 26, 12, 0, tzinfo=timezone.utc)
+
+
+def _ago(**kw):
+    return (NOW - timedelta(**kw)).isoformat().replace("+00:00", "Z")
+
+
+def test_fresh_fix_pr_keeps_holding_its_key():
+    assert plan.pr_lock_expired(_ago(hours=6), NOW, 2) is False
+
+
+def test_fix_pr_past_the_ttl_releases_its_key():
+    # camunda-platform-helm#6927 held main:sm-smoke-e2e unreviewed from 2026-08-20,
+    # and every main triage for six days dispatched nothing.
+    assert plan.pr_lock_expired("2026-08-20T14:56:44Z", NOW, 2) is True
+
+
+def test_ttl_boundary_is_inclusive_of_the_lock():
+    assert plan.pr_lock_expired(_ago(days=2), NOW, 2) is False
+    assert plan.pr_lock_expired(_ago(days=2, minutes=1), NOW, 2) is True
+
+
+def test_unreadable_timestamp_keeps_the_lock():
+    for value in ("", None, "yesterday", "2026-13-45T00:00:00Z"):
+        assert plan.pr_lock_expired(value, NOW, 2) is False
+
+
+def test_naive_timestamp_is_read_as_utc():
+    assert plan.pr_lock_expired("2026-08-20T14:56:44", NOW, 2) is True
+
+
+def test_zero_ttl_restores_the_never_expiring_lock():
+    assert plan.pr_lock_expired("2026-01-01T00:00:00Z", NOW, 0) is False
+
+
+# ---------------------------------------------------------------------------
+# Same-key merge
+# ---------------------------------------------------------------------------
+
+
+def test_two_jobs_of_one_surface_dispatch_a_single_agent():
+    # The 2026-08-26 shape: "Playwright e2e full after install" and "Playwright e2e
+    # smoke after install" are both sm-smoke-e2e, so triage reported them as x2 and
+    # would have dispatched two agents onto one key.
+    result = _plan([
+        _cand(job_name="Playwright e2e full after install - agrn (1 of 1)"),
+        _cand(job_name="Playwright e2e smoke after install - agrn (1 of 1)"),
+    ])
+    assert len(result.dispatches) == 1
+    assert result.suppressed == []
+
+
+def test_merge_unions_specs_across_jobs_without_duplicating_them():
+    merged = plan.merge_by_key([
+        _cand(job_name="full", specs=[_spec("flow"), _spec("shared")]),
+        _cand(job_name="smoke", specs=[_spec("shared"), _spec("connector")]),
+    ])
+    assert len(merged) == 1
+    result = _plan(merged)
+    names = [s.test_name for s in result.dispatches[0].specs]
+    assert names == ["flow", "shared", "connector"]
+
+
+def test_merge_records_the_folded_in_job_names():
+    merged = plan.merge_by_key([_cand(job_name="full"), _cand(job_name="smoke")])
+    assert merged[0].job_names == ["full", "smoke"]
+
+
+def test_merged_job_level_candidate_claims_a_fingerprint_per_job():
+    # One helm-install job per matrix cell: a merged dispatch must still cover both,
+    # or the uncovered one is re-dispatched on the next failing run.
+    merged = plan.merge_by_key([
+        _cand(surface=classify.SURFACE_HELM_INSTALL, specs=[], job_level=True,
+              job_name="install for install on gke - agrn"),
+        _cand(surface=classify.SURFACE_HELM_INSTALL, specs=[], job_level=True,
+              job_name="install for install on gke - esss"),
+    ])
+    assert merged[0].fingerprints == [
+        classify.job_fingerprint("main", classify.SURFACE_HELM_INSTALL, n)
+        for n in ("install for install on gke - agrn", "install for install on gke - esss")
+    ]
+
+
+def test_merge_leaves_distinct_keys_alone_and_keeps_order():
+    merged = plan.merge_by_key([
+        _cand(surface=classify.SURFACE_SAAS_E2E),
+        _cand(surface=classify.SURFACE_SM_E2E),
+        _cand(surface=classify.SURFACE_SM_E2E, base_ref="stable/8.9"),
+    ])
+    assert [c.key for c in merged] == [
+        "main:saas-smoke-e2e", "main:sm-smoke-e2e", "stable/8.9:sm-smoke-e2e"
+    ]
+
+
+def test_merged_candidate_is_suppressed_once_not_per_job():
+    result = _plan(
+        [_cand(job_name="full"), _cand(job_name="smoke")],
+        open_pr_keys={"main:sm-smoke-e2e"},
+    )
+    assert [s.reason for s in result.suppressed] == [plan.SUPPRESSED_PR_OPEN]
+
+
+def test_merged_candidate_consumes_one_slot_of_the_cap():
+    result = _plan(
+        [
+            _cand(job_name="full"),
+            _cand(job_name="smoke"),
+            _cand(surface=classify.SURFACE_SAAS_E2E),
+        ],
+        max_dispatches=2,
+    )
+    assert [c.surface for c in result.dispatches] == [
+        classify.SURFACE_SM_E2E, classify.SURFACE_SAAS_E2E
+    ]
+    assert result.suppressed == []
