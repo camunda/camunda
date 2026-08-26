@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import static io.camunda.zeebe.engine.Engine.ERROR_MESSAGE_SUSPENDED_PI;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
@@ -34,7 +33,6 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -50,8 +48,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import org.agrona.collections.MutableBoolean;
-import org.agrona.collections.MutableLong;
 
 public final class MessageCorrelationCorrelateProcessor
     implements TypedRecordProcessor<MessageCorrelationRecord>,
@@ -74,7 +70,6 @@ public final class MessageCorrelationCorrelateProcessor
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final MessageCorrelationMetrics metrics;
-  private final SuspensionState suspensionState;
 
   public MessageCorrelationCorrelateProcessor(
       final Writers writers,
@@ -93,8 +88,7 @@ public final class MessageCorrelationCorrelateProcessor
       final boolean businessIdUniquenessEnabled,
       final RoutingInfo routingInfo,
       final int partitionId,
-      final MessageCorrelationMetrics metrics,
-      final SuspensionState suspensionState) {
+      final MessageCorrelationMetrics metrics) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -102,7 +96,6 @@ public final class MessageCorrelationCorrelateProcessor
     this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
     this.metrics = metrics;
-    this.suspensionState = suspensionState;
     final var eventHandle =
         new EventHandle(
             keyGenerator,
@@ -181,32 +174,6 @@ public final class MessageCorrelationCorrelateProcessor
       return;
     }
 
-    // Suspension enforcement: a suspended process instance must not receive the message, but active
-    // targets still must. Determine whether at least one eligible (start-event or non-suspended)
-    // target exists. If every collected target is suspended, reject before any state write so the
-    // message is preserved for a retry once the instance resumes; the gate cannot evaluate this up
-    // front because the target instances are only known once subscriptions are collected.
-    final var suspendedTargetKey = new MutableLong(-1L);
-    final var hasEligibleTarget = new MutableBoolean(false);
-    tempCorrelatingSubscriptions.visitSubscriptions(
-        subscription -> {
-          if (subscription.isStartEventSubscription()
-              || !suspensionState.isSuspended(subscription.processInstanceKey())) {
-            hasEligibleTarget.set(true);
-          } else {
-            suspendedTargetKey.set(subscription.processInstanceKey());
-          }
-          return true;
-        },
-        true);
-
-    if (!hasEligibleTarget.get() && suspendedTargetKey.get() > 0) {
-      final var message = String.format(ERROR_MESSAGE_SUSPENDED_PI, suspendedTargetKey.get());
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, message);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, message);
-      return;
-    }
-
     // Now that authorization passed, write the message and correlations to state
     final var messageRecord =
         new MessageRecord()
@@ -222,8 +189,7 @@ public final class MessageCorrelationCorrelateProcessor
 
     // Now actually correlate with state writes
     final var blockedProcessIds = new HashSet<String>();
-    correlateBehavior.correlateToMessageEvents(
-        messageData, correlatingSubscriptions, suspensionState::isSuspended);
+    correlateBehavior.correlateToMessageEvents(messageData, correlatingSubscriptions);
     final var delegatedCrossPartition =
         correlateBehavior.correlateToMessageStartEvents(
             messageData, correlatingSubscriptions, blockedProcessIds);

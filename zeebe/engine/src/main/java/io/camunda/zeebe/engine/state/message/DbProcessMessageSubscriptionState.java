@@ -99,7 +99,17 @@ public final class DbProcessMessageSubscriptionState
 
   @Override
   public void updateToOpeningState(final ProcessMessageSubscriptionRecord record) {
-    update(record, s -> s.setRecord(record).setOpening());
+    // Capture subscriptionKey before the update call: the shared processMessageSubscription object
+    // returned by getSubscription() is the same instance as record.getRecord() when the caller
+    // passes the shared visitor object. getSubscription() re-reads from DB and resets all fields
+    // (including subscriptionKey to -1), so we capture it here to survive the reset.
+    final long subscriptionKey = record.getSubscriptionKey();
+    update(
+        record,
+        s -> {
+          s.setRecord(record).setOpening();
+          s.getRecord().setSubscriptionKey(subscriptionKey);
+        });
     transientState.update(
         new PendingSubscription(
             record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
@@ -108,12 +118,29 @@ public final class DbProcessMessageSubscriptionState
 
   @Override
   public void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
-    update(record, s -> s.setRecord(record).setOpened());
+    // This method is transitively part of the released v1 CREATED and CORRELATED appliers. The
+    // subscriptionKey preservation added here is replay-safe: records written before the field
+    // existed deserialize it to its default (-1), so both old and new code produce identical state
+    // for pre-feature events. Only events that actually carry a real subscriptionKey (written by
+    // this version onward) observe the corrected value, so no applier version bump is required.
+    final long subscriptionKey = record.getSubscriptionKey();
+    update(
+        record,
+        s -> {
+          s.setRecord(record).setOpened();
+          s.getRecord().setSubscriptionKey(subscriptionKey);
+        });
   }
 
   @Override
   public void updateToClosingState(final ProcessMessageSubscriptionRecord record) {
-    update(record, s -> s.setRecord(record).setClosing());
+    final long subscriptionKey = record.getSubscriptionKey();
+    update(
+        record,
+        s -> {
+          s.setRecord(record).setClosing();
+          s.getRecord().setSubscriptionKey(subscriptionKey);
+        });
   }
 
   @Override

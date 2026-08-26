@@ -255,6 +255,424 @@
     )
   </insert>
 
+  <!--
+    Upsert used for the CREATED intent. A process message subscription row can receive CREATED more
+    than once: the suspend/resume flow re-emits CREATED when the delete ack for the suspend-driven
+    close arrives (manifest restore) and again when the CREATE acknowledgement for a buffered REOPEN
+    completes re-subscription during resume. A plain INSERT would then violate the primary key. On
+    conflict, all columns are updated so that a prior stale state (e.g. CORRELATED for a
+    non-interrupting subscription that was correlated before suspension) is correctly reset to
+    CREATED.
+  -->
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel"
+    databaseId="postgresql">
+    INSERT INTO ${prefix}MESSAGE_SUBSCRIPTION (
+                                               MESSAGE_SUBSCRIPTION_KEY,
+                                               PROCESS_DEFINITION_ID,
+                                               PROCESS_DEFINITION_KEY,
+                                               PROCESS_INSTANCE_KEY,
+                                               ROOT_PROCESS_INSTANCE_KEY,
+                                               FLOW_NODE_ID,
+                                               FLOW_NODE_INSTANCE_KEY,
+                                               MESSAGE_SUBSCRIPTION_STATE,
+                                               MESSAGE_SUBSCRIPTION_TYPE,
+                                               DATE_TIME,
+                                               MESSAGE_NAME,
+                                               CORRELATION_KEY,
+                                               TENANT_ID,
+                                               PARTITION_ID,
+                                               PROCESS_DEFINITION_NAME,
+                                               PROCESS_DEFINITION_VERSION,
+                                               TOOL_PROPERTIES,
+                                               TOOL_NAME,
+                                               INBOUND_CONNECTOR_TYPE,
+                                               BUSINESS_ID
+    )
+    VALUES (
+            #{messageSubscriptionKey},
+            #{processDefinitionId},
+            #{processDefinitionKey},
+            #{processInstanceKey},
+            #{rootProcessInstanceKey},
+            #{flowNodeId},
+            #{flowNodeInstanceKey},
+            #{messageSubscriptionState},
+            #{messageSubscriptionType},
+            #{dateTime, jdbcType=TIMESTAMP},
+            #{messageName},
+            #{correlationKey},
+            #{tenantId},
+            #{partitionId},
+            #{processDefinitionName},
+            #{processDefinitionVersion},
+            #{serializedToolProperties},
+            #{toolName},
+            #{inboundConnectorType},
+            #{businessId}
+    )
+    ON CONFLICT (MESSAGE_SUBSCRIPTION_KEY) DO UPDATE SET
+      PROCESS_DEFINITION_ID      = EXCLUDED.PROCESS_DEFINITION_ID,
+      PROCESS_DEFINITION_KEY     = EXCLUDED.PROCESS_DEFINITION_KEY,
+      PROCESS_INSTANCE_KEY       = EXCLUDED.PROCESS_INSTANCE_KEY,
+      ROOT_PROCESS_INSTANCE_KEY  = EXCLUDED.ROOT_PROCESS_INSTANCE_KEY,
+      FLOW_NODE_ID               = EXCLUDED.FLOW_NODE_ID,
+      FLOW_NODE_INSTANCE_KEY     = EXCLUDED.FLOW_NODE_INSTANCE_KEY,
+      MESSAGE_SUBSCRIPTION_STATE = EXCLUDED.MESSAGE_SUBSCRIPTION_STATE,
+      MESSAGE_SUBSCRIPTION_TYPE  = EXCLUDED.MESSAGE_SUBSCRIPTION_TYPE,
+      DATE_TIME                  = EXCLUDED.DATE_TIME,
+      MESSAGE_NAME               = EXCLUDED.MESSAGE_NAME,
+      CORRELATION_KEY            = EXCLUDED.CORRELATION_KEY,
+      TENANT_ID                  = EXCLUDED.TENANT_ID,
+      PARTITION_ID               = EXCLUDED.PARTITION_ID,
+      PROCESS_DEFINITION_NAME    = EXCLUDED.PROCESS_DEFINITION_NAME,
+      PROCESS_DEFINITION_VERSION = EXCLUDED.PROCESS_DEFINITION_VERSION,
+      TOOL_PROPERTIES            = EXCLUDED.TOOL_PROPERTIES,
+      TOOL_NAME                  = EXCLUDED.TOOL_NAME,
+      INBOUND_CONNECTOR_TYPE     = EXCLUDED.INBOUND_CONNECTOR_TYPE,
+      BUSINESS_ID                = EXCLUDED.BUSINESS_ID
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel" databaseId="mariadb">
+    INSERT INTO ${prefix}MESSAGE_SUBSCRIPTION (
+                                               MESSAGE_SUBSCRIPTION_KEY,
+                                               PROCESS_DEFINITION_ID,
+                                               PROCESS_DEFINITION_KEY,
+                                               PROCESS_INSTANCE_KEY,
+                                               ROOT_PROCESS_INSTANCE_KEY,
+                                               FLOW_NODE_ID,
+                                               FLOW_NODE_INSTANCE_KEY,
+                                               MESSAGE_SUBSCRIPTION_STATE,
+                                               MESSAGE_SUBSCRIPTION_TYPE,
+                                               DATE_TIME,
+                                               MESSAGE_NAME,
+                                               CORRELATION_KEY,
+                                               TENANT_ID,
+                                               PARTITION_ID,
+                                               PROCESS_DEFINITION_NAME,
+                                               PROCESS_DEFINITION_VERSION,
+                                               TOOL_PROPERTIES,
+                                               TOOL_NAME,
+                                               INBOUND_CONNECTOR_TYPE,
+                                               BUSINESS_ID
+    )
+    VALUES (
+            #{messageSubscriptionKey},
+            #{processDefinitionId},
+            #{processDefinitionKey},
+            #{processInstanceKey},
+            #{rootProcessInstanceKey},
+            #{flowNodeId},
+            #{flowNodeInstanceKey},
+            #{messageSubscriptionState},
+            #{messageSubscriptionType},
+            #{dateTime, jdbcType=TIMESTAMP},
+            #{messageName},
+            #{correlationKey},
+            #{tenantId},
+            #{partitionId},
+            #{processDefinitionName},
+            #{processDefinitionVersion},
+            #{serializedToolProperties},
+            #{toolName},
+            #{inboundConnectorType},
+            #{businessId}
+    )
+    ON DUPLICATE KEY UPDATE
+      PROCESS_DEFINITION_ID      = VALUES(PROCESS_DEFINITION_ID),
+      PROCESS_DEFINITION_KEY     = VALUES(PROCESS_DEFINITION_KEY),
+      PROCESS_INSTANCE_KEY       = VALUES(PROCESS_INSTANCE_KEY),
+      ROOT_PROCESS_INSTANCE_KEY  = VALUES(ROOT_PROCESS_INSTANCE_KEY),
+      FLOW_NODE_ID               = VALUES(FLOW_NODE_ID),
+      FLOW_NODE_INSTANCE_KEY     = VALUES(FLOW_NODE_INSTANCE_KEY),
+      MESSAGE_SUBSCRIPTION_STATE = VALUES(MESSAGE_SUBSCRIPTION_STATE),
+      MESSAGE_SUBSCRIPTION_TYPE  = VALUES(MESSAGE_SUBSCRIPTION_TYPE),
+      DATE_TIME                  = VALUES(DATE_TIME),
+      MESSAGE_NAME               = VALUES(MESSAGE_NAME),
+      CORRELATION_KEY            = VALUES(CORRELATION_KEY),
+      TENANT_ID                  = VALUES(TENANT_ID),
+      PARTITION_ID               = VALUES(PARTITION_ID),
+      PROCESS_DEFINITION_NAME    = VALUES(PROCESS_DEFINITION_NAME),
+      PROCESS_DEFINITION_VERSION = VALUES(PROCESS_DEFINITION_VERSION),
+      TOOL_PROPERTIES            = VALUES(TOOL_PROPERTIES),
+      TOOL_NAME                  = VALUES(TOOL_NAME),
+      INBOUND_CONNECTOR_TYPE     = VALUES(INBOUND_CONNECTOR_TYPE),
+      BUSINESS_ID                = VALUES(BUSINESS_ID)
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel" databaseId="mysql">
+    INSERT INTO ${prefix}MESSAGE_SUBSCRIPTION (
+                                               MESSAGE_SUBSCRIPTION_KEY,
+                                               PROCESS_DEFINITION_ID,
+                                               PROCESS_DEFINITION_KEY,
+                                               PROCESS_INSTANCE_KEY,
+                                               ROOT_PROCESS_INSTANCE_KEY,
+                                               FLOW_NODE_ID,
+                                               FLOW_NODE_INSTANCE_KEY,
+                                               MESSAGE_SUBSCRIPTION_STATE,
+                                               MESSAGE_SUBSCRIPTION_TYPE,
+                                               DATE_TIME,
+                                               MESSAGE_NAME,
+                                               CORRELATION_KEY,
+                                               TENANT_ID,
+                                               PARTITION_ID,
+                                               PROCESS_DEFINITION_NAME,
+                                               PROCESS_DEFINITION_VERSION,
+                                               TOOL_PROPERTIES,
+                                               TOOL_NAME,
+                                               INBOUND_CONNECTOR_TYPE,
+                                               BUSINESS_ID
+    )
+    VALUES (
+            #{messageSubscriptionKey},
+            #{processDefinitionId},
+            #{processDefinitionKey},
+            #{processInstanceKey},
+            #{rootProcessInstanceKey},
+            #{flowNodeId},
+            #{flowNodeInstanceKey},
+            #{messageSubscriptionState},
+            #{messageSubscriptionType},
+            #{dateTime, jdbcType=TIMESTAMP},
+            #{messageName},
+            #{correlationKey},
+            #{tenantId},
+            #{partitionId},
+            #{processDefinitionName},
+            #{processDefinitionVersion},
+            #{serializedToolProperties},
+            #{toolName},
+            #{inboundConnectorType},
+            #{businessId}
+    )
+    ON DUPLICATE KEY UPDATE
+      PROCESS_DEFINITION_ID      = VALUES(PROCESS_DEFINITION_ID),
+      PROCESS_DEFINITION_KEY     = VALUES(PROCESS_DEFINITION_KEY),
+      PROCESS_INSTANCE_KEY       = VALUES(PROCESS_INSTANCE_KEY),
+      ROOT_PROCESS_INSTANCE_KEY  = VALUES(ROOT_PROCESS_INSTANCE_KEY),
+      FLOW_NODE_ID               = VALUES(FLOW_NODE_ID),
+      FLOW_NODE_INSTANCE_KEY     = VALUES(FLOW_NODE_INSTANCE_KEY),
+      MESSAGE_SUBSCRIPTION_STATE = VALUES(MESSAGE_SUBSCRIPTION_STATE),
+      MESSAGE_SUBSCRIPTION_TYPE  = VALUES(MESSAGE_SUBSCRIPTION_TYPE),
+      DATE_TIME                  = VALUES(DATE_TIME),
+      MESSAGE_NAME               = VALUES(MESSAGE_NAME),
+      CORRELATION_KEY            = VALUES(CORRELATION_KEY),
+      TENANT_ID                  = VALUES(TENANT_ID),
+      PARTITION_ID               = VALUES(PARTITION_ID),
+      PROCESS_DEFINITION_NAME    = VALUES(PROCESS_DEFINITION_NAME),
+      PROCESS_DEFINITION_VERSION = VALUES(PROCESS_DEFINITION_VERSION),
+      TOOL_PROPERTIES            = VALUES(TOOL_PROPERTIES),
+      TOOL_NAME                  = VALUES(TOOL_NAME),
+      INBOUND_CONNECTOR_TYPE     = VALUES(INBOUND_CONNECTOR_TYPE),
+      BUSINESS_ID                = VALUES(BUSINESS_ID)
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel" databaseId="h2">
+    MERGE INTO ${prefix}MESSAGE_SUBSCRIPTION ms
+      USING dual
+      ON (ms.MESSAGE_SUBSCRIPTION_KEY = #{messageSubscriptionKey})
+    WHEN NOT MATCHED THEN
+    INSERT (MESSAGE_SUBSCRIPTION_KEY,
+            PROCESS_DEFINITION_ID,
+            PROCESS_DEFINITION_KEY,
+            PROCESS_INSTANCE_KEY,
+            ROOT_PROCESS_INSTANCE_KEY,
+            FLOW_NODE_ID,
+            FLOW_NODE_INSTANCE_KEY,
+            MESSAGE_SUBSCRIPTION_STATE,
+            MESSAGE_SUBSCRIPTION_TYPE,
+            DATE_TIME,
+            MESSAGE_NAME,
+            CORRELATION_KEY,
+            TENANT_ID,
+            PARTITION_ID,
+            PROCESS_DEFINITION_NAME,
+            PROCESS_DEFINITION_VERSION,
+            TOOL_PROPERTIES,
+            TOOL_NAME,
+            INBOUND_CONNECTOR_TYPE,
+            BUSINESS_ID)
+    VALUES (#{messageSubscriptionKey},
+            #{processDefinitionId},
+            #{processDefinitionKey},
+            #{processInstanceKey},
+            #{rootProcessInstanceKey},
+            #{flowNodeId},
+            #{flowNodeInstanceKey},
+            #{messageSubscriptionState},
+            #{messageSubscriptionType},
+            #{dateTime, jdbcType=TIMESTAMP},
+            #{messageName},
+            #{correlationKey},
+            #{tenantId},
+            #{partitionId},
+            #{processDefinitionName},
+            #{processDefinitionVersion},
+            #{serializedToolProperties},
+            #{toolName},
+            #{inboundConnectorType},
+            #{businessId})
+    WHEN MATCHED THEN UPDATE SET
+      ms.PROCESS_DEFINITION_ID      = #{processDefinitionId},
+      ms.PROCESS_DEFINITION_KEY     = #{processDefinitionKey},
+      ms.PROCESS_INSTANCE_KEY       = #{processInstanceKey},
+      ms.ROOT_PROCESS_INSTANCE_KEY  = #{rootProcessInstanceKey},
+      ms.FLOW_NODE_ID               = #{flowNodeId},
+      ms.FLOW_NODE_INSTANCE_KEY     = #{flowNodeInstanceKey},
+      ms.MESSAGE_SUBSCRIPTION_STATE = #{messageSubscriptionState},
+      ms.MESSAGE_SUBSCRIPTION_TYPE  = #{messageSubscriptionType},
+      ms.DATE_TIME                  = #{dateTime, jdbcType=TIMESTAMP},
+      ms.MESSAGE_NAME               = #{messageName},
+      ms.CORRELATION_KEY            = #{correlationKey},
+      ms.TENANT_ID                  = #{tenantId},
+      ms.PARTITION_ID               = #{partitionId},
+      ms.PROCESS_DEFINITION_NAME    = #{processDefinitionName},
+      ms.PROCESS_DEFINITION_VERSION = #{processDefinitionVersion},
+      ms.TOOL_PROPERTIES            = #{serializedToolProperties},
+      ms.TOOL_NAME                  = #{toolName},
+      ms.INBOUND_CONNECTOR_TYPE     = #{inboundConnectorType},
+      ms.BUSINESS_ID                = #{businessId}
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel" databaseId="oracle">
+    MERGE INTO ${prefix}MESSAGE_SUBSCRIPTION ms
+      USING dual
+      ON (ms.MESSAGE_SUBSCRIPTION_KEY = #{messageSubscriptionKey})
+    WHEN NOT MATCHED THEN
+    INSERT (MESSAGE_SUBSCRIPTION_KEY,
+            PROCESS_DEFINITION_ID,
+            PROCESS_DEFINITION_KEY,
+            PROCESS_INSTANCE_KEY,
+            ROOT_PROCESS_INSTANCE_KEY,
+            FLOW_NODE_ID,
+            FLOW_NODE_INSTANCE_KEY,
+            MESSAGE_SUBSCRIPTION_STATE,
+            MESSAGE_SUBSCRIPTION_TYPE,
+            DATE_TIME,
+            MESSAGE_NAME,
+            CORRELATION_KEY,
+            TENANT_ID,
+            PARTITION_ID,
+            PROCESS_DEFINITION_NAME,
+            PROCESS_DEFINITION_VERSION,
+            TOOL_PROPERTIES,
+            TOOL_NAME,
+            INBOUND_CONNECTOR_TYPE,
+            BUSINESS_ID)
+    VALUES (#{messageSubscriptionKey},
+            #{processDefinitionId},
+            #{processDefinitionKey},
+            #{processInstanceKey},
+            #{rootProcessInstanceKey},
+            #{flowNodeId},
+            #{flowNodeInstanceKey},
+            #{messageSubscriptionState},
+            #{messageSubscriptionType},
+            #{dateTime, jdbcType=TIMESTAMP},
+            #{messageName},
+            #{correlationKey},
+            #{tenantId},
+            #{partitionId},
+            #{processDefinitionName},
+            #{processDefinitionVersion},
+            #{serializedToolProperties},
+            #{toolName},
+            #{inboundConnectorType},
+            #{businessId})
+    WHEN MATCHED THEN UPDATE SET
+      ms.PROCESS_DEFINITION_ID      = #{processDefinitionId},
+      ms.PROCESS_DEFINITION_KEY     = #{processDefinitionKey},
+      ms.PROCESS_INSTANCE_KEY       = #{processInstanceKey},
+      ms.ROOT_PROCESS_INSTANCE_KEY  = #{rootProcessInstanceKey},
+      ms.FLOW_NODE_ID               = #{flowNodeId},
+      ms.FLOW_NODE_INSTANCE_KEY     = #{flowNodeInstanceKey},
+      ms.MESSAGE_SUBSCRIPTION_STATE = #{messageSubscriptionState},
+      ms.MESSAGE_SUBSCRIPTION_TYPE  = #{messageSubscriptionType},
+      ms.DATE_TIME                  = #{dateTime, jdbcType=TIMESTAMP},
+      ms.MESSAGE_NAME               = #{messageName},
+      ms.CORRELATION_KEY            = #{correlationKey},
+      ms.TENANT_ID                  = #{tenantId},
+      ms.PARTITION_ID               = #{partitionId},
+      ms.PROCESS_DEFINITION_NAME    = #{processDefinitionName},
+      ms.PROCESS_DEFINITION_VERSION = #{processDefinitionVersion},
+      ms.TOOL_PROPERTIES            = #{serializedToolProperties},
+      ms.TOOL_NAME                  = #{toolName},
+      ms.INBOUND_CONNECTOR_TYPE     = #{inboundConnectorType},
+      ms.BUSINESS_ID                = #{businessId}
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel" databaseId="mssql">
+    MERGE INTO ${prefix}MESSAGE_SUBSCRIPTION AS target
+    USING (SELECT 1 AS dummy) AS src
+      ON (target.MESSAGE_SUBSCRIPTION_KEY = #{messageSubscriptionKey})
+    WHEN NOT MATCHED THEN
+      INSERT (MESSAGE_SUBSCRIPTION_KEY,
+              PROCESS_DEFINITION_ID,
+              PROCESS_DEFINITION_KEY,
+              PROCESS_INSTANCE_KEY,
+              ROOT_PROCESS_INSTANCE_KEY,
+              FLOW_NODE_ID,
+              FLOW_NODE_INSTANCE_KEY,
+              MESSAGE_SUBSCRIPTION_STATE,
+              MESSAGE_SUBSCRIPTION_TYPE,
+              DATE_TIME,
+              MESSAGE_NAME,
+              CORRELATION_KEY,
+              TENANT_ID,
+              PARTITION_ID,
+              PROCESS_DEFINITION_NAME,
+              PROCESS_DEFINITION_VERSION,
+              TOOL_PROPERTIES,
+              TOOL_NAME,
+              INBOUND_CONNECTOR_TYPE,
+              BUSINESS_ID)
+      VALUES (#{messageSubscriptionKey},
+              #{processDefinitionId},
+              #{processDefinitionKey},
+              #{processInstanceKey},
+              #{rootProcessInstanceKey},
+              #{flowNodeId},
+              #{flowNodeInstanceKey},
+              #{messageSubscriptionState},
+              #{messageSubscriptionType},
+              #{dateTime, jdbcType=TIMESTAMP},
+              #{messageName},
+              #{correlationKey},
+              #{tenantId},
+              #{partitionId},
+              #{processDefinitionName},
+              #{processDefinitionVersion},
+              #{serializedToolProperties},
+              #{toolName},
+              #{inboundConnectorType},
+              #{businessId})
+    WHEN MATCHED THEN UPDATE SET
+      target.PROCESS_DEFINITION_ID      = #{processDefinitionId},
+      target.PROCESS_DEFINITION_KEY     = #{processDefinitionKey},
+      target.PROCESS_INSTANCE_KEY       = #{processInstanceKey},
+      target.ROOT_PROCESS_INSTANCE_KEY  = #{rootProcessInstanceKey},
+      target.FLOW_NODE_ID               = #{flowNodeId},
+      target.FLOW_NODE_INSTANCE_KEY     = #{flowNodeInstanceKey},
+      target.MESSAGE_SUBSCRIPTION_STATE = #{messageSubscriptionState},
+      target.MESSAGE_SUBSCRIPTION_TYPE  = #{messageSubscriptionType},
+      target.DATE_TIME                  = #{dateTime, jdbcType=TIMESTAMP},
+      target.MESSAGE_NAME               = #{messageName},
+      target.CORRELATION_KEY            = #{correlationKey},
+      target.TENANT_ID                  = #{tenantId},
+      target.PARTITION_ID               = #{partitionId},
+      target.PROCESS_DEFINITION_NAME    = #{processDefinitionName},
+      target.PROCESS_DEFINITION_VERSION = #{processDefinitionVersion},
+      target.TOOL_PROPERTIES            = #{serializedToolProperties},
+      target.TOOL_NAME                  = #{toolName},
+      target.INBOUND_CONNECTOR_TYPE     = #{inboundConnectorType},
+      target.BUSINESS_ID                = #{businessId};
+  </insert>
+
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel">
     UPDATE ${prefix}MESSAGE_SUBSCRIPTION
     SET PROCESS_DEFINITION_ID = #{processDefinitionId},

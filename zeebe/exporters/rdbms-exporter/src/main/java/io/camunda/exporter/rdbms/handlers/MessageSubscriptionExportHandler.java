@@ -59,7 +59,10 @@ public class MessageSubscriptionExportHandler
   public void export(final Record<ProcessMessageSubscriptionRecordValue> record) {
     switch (record.getIntent()) {
       case ProcessMessageSubscriptionIntent.CREATED:
-        messageSubscriptionWriter.create(map(record));
+        // Idempotent: the suspend/resume flow reuses the same subscription key and re-emits CREATED
+        // (manifest restore on suspend-close ack, and reopen on resume). A plain insert would hit
+        // the existing primary key on the second CREATED and stall the exporter.
+        messageSubscriptionWriter.createIfNotExists(map(record));
         break;
       case ProcessMessageSubscriptionIntent.CORRELATED,
       ProcessMessageSubscriptionIntent.DELETED,

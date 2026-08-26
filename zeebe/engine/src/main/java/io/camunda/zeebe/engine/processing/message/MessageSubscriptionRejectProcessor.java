@@ -118,7 +118,8 @@ public final class MessageSubscriptionRejectProcessor
         subscription.getMessageKey(),
         subscription.getVariablesBuffer(),
         subscription.getCorrelationKeyBuffer(),
-        subscription.getTenantId());
+        subscription.getTenantId(),
+        subscription.getSubscriptionKey());
   }
 
   private void writeNotCorrelatedResponse(final TypedRecord<MessageSubscriptionRecord> record) {
