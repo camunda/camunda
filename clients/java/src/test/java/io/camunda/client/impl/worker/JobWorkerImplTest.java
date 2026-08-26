@@ -33,6 +33,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
@@ -400,6 +402,95 @@ final class JobWorkerImplTest {
   }
 
   @Test
+  void shouldFailRejectedJobsBackToTheBroker() {
+    // given a worker whose handler executor refuses every job
+    final int maxJobsActive = 4;
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobHandlingExecutor = Executors.newSingleThreadExecutor();
+    jobHandlingExecutor.shutdown();
+    gateway.respondWith(TestData.jobs(maxJobsActive));
+
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler(NOOP_JOB_HANDLER)
+                .maxJobsActive(maxJobsActive)
+                .pollInterval(Duration.ofMillis(50))
+                .open()) {
+
+      // when the executor refuses the activated jobs
+      // then they are handed back so another worker can pick them up right away
+      Awaitility.await("Refused jobs should be failed back without using up a retry")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () -> {
+                final List<FailJobRequest> failedJobs = gateway.getFailedJobs();
+                assertThat(failedJobs)
+                    .extracting(FailJobRequest::getJobKey)
+                    .contains(0L, 1L, 2L, 3L);
+                assertThat(failedJobs)
+                    .allSatisfy(
+                        request -> {
+                          assertThat(request.getRetries()).isEqualTo(TestData.JOB_RETRIES);
+                          assertThat(request.getRetryBackOff()).isZero();
+                        });
+              });
+    }
+  }
+
+  @Test
+  void shouldLeaveARefusedStreamedJobToTheBroker() {
+    // given a worker that streams jobs and whose handler executor refuses every job
+    final int maxJobsActive = 4;
+    final long streamedJobKey = 777L;
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobHandlingExecutor = Executors.newSingleThreadExecutor();
+    jobHandlingExecutor.shutdown();
+    gateway.respondWith(TestData.jobs(maxJobsActive));
+
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler(NOOP_JOB_HANDLER)
+                .maxJobsActive(maxJobsActive)
+                .pollInterval(Duration.ofMillis(50))
+                .streamEnabled(true)
+                .open()) {
+      Awaitility.await("Stream should be open").until(() -> !gateway.openStreams.isEmpty());
+
+      // when a streamed job is refused by the handler executor. The push runs the worker's handling
+      // inline, so the job has been refused by the time this returns.
+      gateway.pushJob(TestData.job(streamedJobKey));
+
+      // then the worker keeps handing polled jobs back, so the fail path is demonstrably live
+      Awaitility.await("Refused polled jobs should still be handed back")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () -> assertThat(gateway.getFailedJobs()).hasSizeGreaterThanOrEqualTo(maxJobsActive));
+
+      // and the streamed job is left alone, because the broker yields a job whose push fails and a
+      // fail command from here would race that yield
+      assertThat(gateway.getFailedJobs())
+          .extracting(FailJobRequest::getJobKey)
+          .doesNotContain(streamedJobKey);
+    }
+  }
+
+  @Test
   void shouldCloseIfExecutorIsClosed() {
     // given
     final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -536,6 +627,9 @@ final class JobWorkerImplTest {
     private final Object requestedJobCountsLock = new Object();
     private final List<Integer> requestedJobCounts = new ArrayList<>();
 
+    private final Object failedJobsLock = new Object();
+    private final List<FailJobRequest> failedJobs = new ArrayList<>();
+
     private final Object metricsLock = new Object();
     private boolean isMeasuring = false;
     private long countedPolls = 0;
@@ -636,6 +730,22 @@ final class JobWorkerImplTest {
     public List<Integer> getRequestedJobCounts() {
       synchronized (requestedJobCountsLock) {
         return new ArrayList<>(requestedJobCounts);
+      }
+    }
+
+    @Override
+    public void failJob(
+        final FailJobRequest request, final StreamObserver<FailJobResponse> responseObserver) {
+      synchronized (failedJobsLock) {
+        failedJobs.add(request);
+      }
+      responseObserver.onNext(FailJobResponse.newBuilder().build());
+      responseObserver.onCompleted();
+    }
+
+    public List<FailJobRequest> getFailedJobs() {
+      synchronized (failedJobsLock) {
+        return new ArrayList<>(failedJobs);
       }
     }
   }
