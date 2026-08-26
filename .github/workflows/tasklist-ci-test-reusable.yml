@@ -42,7 +42,7 @@ jobs:
   integration-tests:
     name: Test
     runs-on: gcp-perf-core-16-default
-    timeout-minutes: 40
+    timeout-minutes: 50
     if: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
     strategy:
       fail-fast: false
