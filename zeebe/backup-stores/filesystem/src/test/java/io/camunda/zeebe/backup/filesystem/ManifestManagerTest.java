@@ -181,13 +181,13 @@ class ManifestManagerTest {
     var listings = 0;
     try {
       final var deleting = deleter.submit(() -> deletable.forEach(manifestManager::deleteManifest));
-      while (!deleting.isDone()) {
+      do {
         // then every listing succeeds and still reports the manifest nothing deleted
         assertThat(manifestManager.listManifests(wildcard))
             .extracting(manifest -> manifest.id().checkpointId())
             .contains(1L);
         listings++;
-      }
+      } while (!deleting.isDone());
       // surfaces a failure of the deleting side, which the loop above would otherwise hide
       deleting.get(30, TimeUnit.SECONDS);
     } finally {
