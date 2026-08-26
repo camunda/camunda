@@ -17,6 +17,8 @@ import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleMemberQuery;
@@ -189,6 +191,75 @@ public class RoleQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(roleServices).search(eq(new RoleQuery.Builder().build()), any());
+  }
+
+  @Test
+  void shouldSearchRolesWithOrOperator() {
+    // given
+    when(roleServices.search(any(RoleQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(new RoleEntity(100L, "role-top", "Role Top", "description 1")))
+                .build());
+
+    final var orFilters =
+        List.of(
+            new RoleFilter.Builder().nameOperations(Operation.eq("Role A")).build(),
+            new RoleFilter.Builder()
+                .nameOperations(Operation.eq("Role B"))
+                .roleId("role-b")
+                .build());
+
+    final var expectedFilter = new RoleFilter.Builder().roleId("role-top");
+    orFilters.forEach(expectedFilter::addOrOperation);
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(ROLE_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "roleId": "role-top",
+                "$or": [
+                  { "name": "Role A" },
+                  { "name": "Role B", "roleId": "role-b" }
+                ]
+              }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "name": "Role Top",
+                 "roleId": "role-top",
+                 "description": "description 1"
+               }
+             ],
+             "page": {
+               "totalItems": 1,
+               "startCursor": "f",
+               "endCursor": "v",
+               "hasMoreTotalItems": false
+             }
+           }""",
+            JsonCompareMode.STRICT);
+
+    verify(roleServices)
+        .search(eq(new RoleQuery.Builder().filter(expectedFilter.build()).build()), any());
   }
 
   @Test
