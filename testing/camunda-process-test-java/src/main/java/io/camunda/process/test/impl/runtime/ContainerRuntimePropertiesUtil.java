@@ -54,8 +54,6 @@ public final class ContainerRuntimePropertiesUtil {
   public static final String PROPERTY_NAME_DATA_DELETION_MODE = "dataDeletionMode";
   public static final String PROPERTY_NAME_QUERY_PAGE_LIMIT = "queryPageLimit";
 
-  private static final int DEFAULT_QUERY_PAGE_LIMIT = 100;
-
   private static final String BASE_DIR = "/";
 
   private final CamundaContainerRuntimeProperties camundaContainerRuntimeProperties;
@@ -125,7 +123,7 @@ public final class ContainerRuntimePropertiesUtil {
             properties,
             PROPERTY_NAME_QUERY_PAGE_LIMIT,
             Integer::parseInt,
-            DEFAULT_QUERY_PAGE_LIMIT);
+            CamundaProcessTestRuntimeDefaults.DEFAULT_QUERY_PAGE_LIMIT);
   }
 
   public static ContainerRuntimePropertiesUtil readProperties() {
