@@ -25,7 +25,6 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
-import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NonIncidentBulkUpdate;
@@ -33,9 +32,6 @@ import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncide
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ProcessInstanceDocument;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.operate.TreePath;
-import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
-import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -462,28 +458,18 @@ final class IncidentUpdateTaskTest {
       assertThat(incidentBulkUpdate.incidentRequests())
           .hasSize(1)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "5",
-                  "incidents",
-                  Map.of(
-                      IncidentTemplate.STATE,
-                      IncidentState.ACTIVE,
-                      IncidentTemplate.TREE_PATH,
-                      "PI_3/FNI_4"),
-                  null));
+              new IncidentUpdate("5", "incidents", IncidentState.ACTIVE, "PI_3/FNI_4"));
 
       final var nonIncidentBulkUpdate = nonIncidentBulkUpdateCaptor.getValue();
       // only the PI and flow node referenced by the sparse path are touched (no parent ancestry)
       assertThat(nonIncidentBulkUpdate.listViewRequests())
           .hasSize(2)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate("3", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "3"),
-              new DocumentUpdate("4", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "3"));
+              new ListViewInstanceUpdate("3", "list-view", "3", true),
+              new ListViewInstanceUpdate("4", "list-view", "3", true));
       assertThat(nonIncidentBulkUpdate.flowNodeInstanceRequests())
           .hasSize(1)
-          .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "4", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, true), null));
+          .containsExactlyInAnyOrder(new FlowNodeInstanceUpdate("4", "flow-nodes", true));
       assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(highestPosition);
       verify(metrics).recordIncidentUpdatesProcessed(1);
       verify(metrics).recordIncidentUpdatesDocumentsUpdated(4);
@@ -524,15 +510,8 @@ final class IncidentUpdateTaskTest {
       assertThat(update.incidentRequests())
           .hasSize(1)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "5",
-                  "incidents",
-                  Map.of(
-                      IncidentTemplate.STATE,
-                      IncidentState.ACTIVE,
-                      IncidentTemplate.TREE_PATH,
-                      "PI_3/FNI_4"),
-                  null));
+              new IncidentUpdate("5", "incidents", IncidentState.ACTIVE, "PI_3/FNI_4"));
+
       assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(highestPosition);
     }
 
@@ -624,15 +603,8 @@ final class IncidentUpdateTaskTest {
       assertThat(update.incidentRequests())
           .hasSize(1)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "5",
-                  "incidents",
-                  Map.of(
-                      IncidentTemplate.STATE,
-                      IncidentState.ACTIVE,
-                      IncidentTemplate.TREE_PATH,
-                      "PI_1/FNI_2/PI_3/FNI_4"),
-                  null));
+              new IncidentUpdate("5", "incidents", IncidentState.ACTIVE, "PI_1/FNI_2/PI_3/FNI_4"));
+
       final var incident =
           new IncidentEntity()
               .setKey(5L)
@@ -674,10 +646,10 @@ final class IncidentUpdateTaskTest {
       assertThat(update.listViewRequests())
           .hasSize(4)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate("1", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "1"),
-              new DocumentUpdate("2", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "1"),
-              new DocumentUpdate("3", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "3"),
-              new DocumentUpdate("4", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "3"));
+              new ListViewInstanceUpdate("1", "list-view", "1", true),
+              new ListViewInstanceUpdate("2", "list-view", "1", true),
+              new ListViewInstanceUpdate("3", "list-view", "3", true),
+              new ListViewInstanceUpdate("4", "list-view", "3", true));
       final var incident =
           new IncidentEntity()
               .setKey(5L)
@@ -719,10 +691,8 @@ final class IncidentUpdateTaskTest {
       assertThat(update.flowNodeInstanceRequests())
           .hasSize(2)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "2", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, true), null),
-              new DocumentUpdate(
-                  "4", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, true), null));
+              new FlowNodeInstanceUpdate("2", "flow-nodes", true),
+              new FlowNodeInstanceUpdate("4", "flow-nodes", true));
       final var incident =
           new IncidentEntity()
               .setKey(5L)
@@ -775,22 +745,13 @@ final class IncidentUpdateTaskTest {
       assertThat(incidentBulkUpdate.incidentRequests())
           .hasSize(1)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "5",
-                  "incidents",
-                  Map.of(
-                      IncidentTemplate.STATE,
-                      IncidentState.ACTIVE,
-                      IncidentTemplate.TREE_PATH,
-                      "PI_1/FNI_1"),
-                  null));
+              new IncidentUpdate("5", "incidents", IncidentState.ACTIVE, "PI_1/FNI_1"));
 
       final var nonIncidentBulkUpdate = nonIncidentBulkUpdateCaptor.getValue();
       assertThat(nonIncidentBulkUpdate.flowNodeInstanceRequests()).isEmpty();
       assertThat(nonIncidentBulkUpdate.listViewRequests())
           .hasSize(1)
-          .containsExactlyInAnyOrder(
-              new DocumentUpdate("1", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "1"));
+          .containsExactlyInAnyOrder(new ListViewInstanceUpdate("1", "list-view", "1", true));
 
       final var incident =
           new IncidentEntity()
@@ -844,24 +805,21 @@ final class IncidentUpdateTaskTest {
       assertThat(incidentBulkUpdate.incidentRequests())
           .hasSize(1)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "5", "incidents", Map.of(IncidentTemplate.STATE, IncidentState.RESOLVED), null));
+              new IncidentUpdate("5", "incidents", IncidentState.RESOLVED, null));
 
       final var nonIncidentBulkUpdate = nonIncidentBulkUpdateCaptor.getValue();
       assertThat(nonIncidentBulkUpdate.flowNodeInstanceRequests())
           .hasSize(2)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "2", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, false), null),
-              new DocumentUpdate(
-                  "4", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, false), null));
+              new FlowNodeInstanceUpdate("2", "flow-nodes", false),
+              new FlowNodeInstanceUpdate("4", "flow-nodes", false));
       assertThat(nonIncidentBulkUpdate.listViewRequests())
           .hasSize(4)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate("1", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "1"),
-              new DocumentUpdate("2", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "1"),
-              new DocumentUpdate("3", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "3"),
-              new DocumentUpdate("4", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "3"));
+              new ListViewInstanceUpdate("1", "list-view", "1", false),
+              new ListViewInstanceUpdate("2", "list-view", "1", false),
+              new ListViewInstanceUpdate("3", "list-view", "3", false),
+              new ListViewInstanceUpdate("4", "list-view", "3", false));
 
       verify(incidentNotifier, times(0)).notifyAsync(any());
       verify(metrics).recordIncidentUpdatesProcessed(1);
@@ -911,23 +869,20 @@ final class IncidentUpdateTaskTest {
       assertThat(incidentBulkUpdate.incidentRequests())
           .hasSize(1)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "5", "incidents", Map.of(IncidentTemplate.STATE, IncidentState.RESOLVED), null));
+              new IncidentUpdate("5", "incidents", IncidentState.RESOLVED, null));
 
       final var nonIncidentBulkUpdate = nonIncidentBulkUpdateCaptor.getValue();
       assertThat(nonIncidentBulkUpdate.flowNodeInstanceRequests())
           .hasSize(2)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "2", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, false), null),
-              new DocumentUpdate(
-                  "4", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, false), null));
+              new FlowNodeInstanceUpdate("2", "flow-nodes", false),
+              new FlowNodeInstanceUpdate("4", "flow-nodes", false));
       assertThat(nonIncidentBulkUpdate.listViewRequests())
           .hasSize(3)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate("2", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "1"),
-              new DocumentUpdate("3", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "3"),
-              new DocumentUpdate("4", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "3"));
+              new ListViewInstanceUpdate("2", "list-view", "1", false),
+              new ListViewInstanceUpdate("3", "list-view", "3", false),
+              new ListViewInstanceUpdate("4", "list-view", "3", false));
       verify(metrics).recordIncidentUpdatesProcessed(1);
       verify(metrics).recordIncidentUpdatesDocumentsUpdated(6);
     }
