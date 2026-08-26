@@ -86,11 +86,11 @@ on:
         type: boolean
         required: false
         default: false
-      physical-tenants:
-        description: 'Deploy a second physical tenant (testfoo) with its own load tester. Requires an rdbms secondary-storage-type.'
-        type: boolean
+      physical-tenant-count:
+        description: 'Number of extra physical tenants (pt1..ptN) to deploy alongside the default tenant, each with its own load tester.'
+        type: number
         required: false
-        default: false
+        default: 0
       enable-optimize-report-metrics:
         description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
         type: boolean
@@ -201,11 +201,11 @@ on:
         type: boolean
         required: false
         default: false
-      physical-tenants:
-        description: 'Deploy a second physical tenant (testfoo) with its own load tester. Requires an rdbms secondary-storage-type.'
-        type: boolean
+      physical-tenant-count:
+        description: 'Number of extra physical tenants (pt1..ptN) to deploy alongside the default tenant, each with its own load tester.'
+        type: number
         required: false
-        default: false
+        default: 0
       enable-optimize-report-metrics:
         description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
         type: boolean
@@ -271,7 +271,7 @@ env:
   OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
   ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
   PERFORM_READ_BENCHMARKS: ${{ inputs.perform-read-benchmarks }}
-  PHYSICAL_TENANTS: ${{ inputs.physical-tenants }}
+  PHYSICAL_TENANT_COUNT: ${{ inputs.physical-tenant-count }}
   PLATFORM_HELM_VALUES: ${{ inputs.platform-helm-values }}
   REF: ${{ inputs.ref }}
   REUSE_TAG: ${{ inputs.reuse-tag}}
@@ -317,7 +317,7 @@ jobs:
           | Enable Optimize | \`${ENABLE_OPTIMIZE}\` |
           | Enable Optimize report metrics | \`${ENABLE_OPTIMIZE_METRICS}\` |
           | Enable chaos | \`${ENABLE_CHAOS}\` |
-          | Physical tenants | \`${PHYSICAL_TENANTS}\` |
+          | Physical tenant count | \`${PHYSICAL_TENANT_COUNT}\` |
           | Build frontend | \`${BUILD_FRONTEND}\` |
           | Perform read benchmarks | \`${PERFORM_READ_BENCHMARKS}\` |
           | Optimize tag | \`${OPTIMIZE_TAG:-—}\` |
@@ -605,7 +605,7 @@ jobs:
             "${ENABLE_OPTIMIZE_METRICS}" \
             "${METRICS_EXPORTER_BUILT}" \
             "${ENABLE_CHAOS}" \
-            "${PHYSICAL_TENANTS}" \
+            "${PHYSICAL_TENANT_COUNT}" \
             --optimize-tag "${OPTIMIZE_TAG}" \
             --orchestration-tag "${ORCHESTRATION_TAG}" \
             --identity-tag "${IDENTITY_TAG}" \
