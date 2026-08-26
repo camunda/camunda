@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.process.test.impl.configuration.AssertionConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.LegacyCamundaProcessTestRuntimeConfiguration;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,8 @@ public class AssertionConfigurationTest {
       assertThat(assertionConfiguration).isNotNull();
       assertThat(assertionConfiguration.getTimeout()).isEmpty();
       assertThat(assertionConfiguration.getInterval()).isEmpty();
-      assertThat(assertionConfiguration.getQueryPageLimit()).isEmpty();
+      assertThat(configuration.getQueryPageLimit())
+          .isEqualTo(CamundaProcessTestRuntimeDefaults.QUERY_PAGE_LIMIT);
     }
   }
 
@@ -57,7 +59,7 @@ public class AssertionConfigurationTest {
       properties = {
         "camunda.process-test.assertion.timeout=PT1M",
         "camunda.process-test.assertion.interval=PT0.5S",
-        "camunda.process-test.assertion.query-page-limit=1000"
+        "camunda.process-test.query-page-limit=1000"
       })
   class ConfigureAssertion {
 
@@ -70,7 +72,7 @@ public class AssertionConfigurationTest {
       assertThat(assertionConfiguration).isNotNull();
       assertThat(assertionConfiguration.getTimeout()).hasValue(Duration.ofMinutes(1));
       assertThat(assertionConfiguration.getInterval()).hasValue(Duration.ofMillis(500));
-      assertThat(assertionConfiguration.getQueryPageLimit()).hasValue(1000);
+      assertThat(configuration.getQueryPageLimit()).isEqualTo(1000);
     }
   }
 }
