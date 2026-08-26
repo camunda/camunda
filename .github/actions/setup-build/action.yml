@@ -155,10 +155,29 @@ runs:
         secret/data/products/camunda/ci/harbor username | harbor-username;
         secret/data/products/camunda/ci/harbor password | harbor-password
   - name: Setup Java
-    uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+    # wretry retries setup-java through transient network/setup failures (INC-7417). Same pattern
+    # as build-platform-docker; `_js_action` pin lets the *_context inputs be overridden.
+    # `token` is passed explicitly since github_context is blanked (setup-java defaults it from it).
+    uses: Wandalen/wretry.action@71a909ebf09f3ffdc6f42a17bd54ecb43481da49 # v3.8.0_js_action
     with:
-      distribution: ${{ inputs.java-distribution }}
-      java-version: ${{ inputs.java-version }}
+      action: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      attempt_limit: 3
+      attempt_delay: 10000
+      github_token: ${{ github.token }}
+      github_context: '{}'
+      env_context: '{}'
+      job_context: '{}'
+      matrix_context: '{}'
+      with: |
+        distribution: ${{ inputs.java-distribution }}
+        java-version: ${{ inputs.java-version }}
+        token: ${{ github.token }}
+  # wretry leaks the wrapped action's INPUT_* vars into GITHUB_ENV; blank them (cannot unset).
+  - name: Clear setup-java inputs leaked into the job environment by wretry
+    if: always()
+    shell: bash
+    run: |
+      env | grep -o '^INPUT_[^=]*' | sed 's/$/=/' >> "$GITHUB_ENV" || true
   - name: Register Maven problem matcher
     shell: bash
     run: echo "::add-matcher::.github/maven-matcher.json"
