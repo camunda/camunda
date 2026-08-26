@@ -71,6 +71,9 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private final int activationThreshold;
   private final AtomicInteger remainingJobs;
 
+  /** Jobs the handler executor refused, out of those the poll in progress activated. */
+  private final AtomicInteger refusedJobsInPoll = new AtomicInteger(0);
+
   // job execution facilities
   private final Executor executor;
   private final JobClient jobClient;
@@ -201,6 +204,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       return;
     }
     final int maxJobsToActivate = maxJobsActive - actualRemainingJobs;
+    refusedJobsInPoll.set(0);
     jobPoller.poll(
         maxJobsToActivate,
         this::handleJob,
@@ -210,6 +214,8 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void onPollSuccess(final JobPoller jobPoller, final int activatedJobs) {
+    // read before releasing the poller, as the next poll starts counting from zero
+    final int refusedJobs = refusedJobsInPoll.get();
     // first release, then lookup remaining jobs, to allow handleJobFinished() to poll
     releaseJobPoller(jobPoller);
     final int actualRemainingJobs = remainingJobs.get();
@@ -219,6 +225,17 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       // we back off on poll success responses.
       backoff(jobPoller, streamNoJobsBackoffSupplier);
       LOG.trace("No jobs to activate via polling, will backoff and poll in {}", pollInterval);
+    } else if (activatedJobs > 0 && refusedJobs == activatedJobs && actualRemainingJobs <= 0) {
+      // The executor took none of these jobs and the worker has nothing of its own left running,
+      // so no job will finish and ask for the next poll. Polling again at full speed would
+      // activate another batch the executor cannot take either and hand all of it straight back,
+      // leaving the broker to serve jobs that never get done. Slow down until the executor takes
+      // jobs again, at which point the poll interval goes back to its usual value.
+      backoff(jobPoller, backoffSupplier);
+      LOG.debug(
+          "The handler executor took none of the {} activated jobs, will poll in {} ms",
+          activatedJobs,
+          pollInterval);
     } else {
       pollInterval = initialPollInterval;
       // Normally the jobs just activated go on to free their own capacity as they finish, and each
@@ -267,6 +284,10 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     // would let the worker ask the broker for more jobs than it is allowed to run at a time.
     final AtomicBoolean capacityHeld = new AtomicBoolean(true);
     if (!handleActivatedJob(job, () -> handleJobFinished(capacityHeld))) {
+      if (capacityHeld.get()) {
+        // the finalizer never ran, so the handler never saw this job and it goes back untouched
+        refusedJobsInPoll.incrementAndGet();
+      }
       releaseCapacity(capacityHeld);
     }
   }
