@@ -17,14 +17,15 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.service.db.repository.MappingMetadataRepository;
 import io.camunda.optimize.service.db.repository.SnapshotRepository;
+import io.camunda.optimize.service.db.schema.BackupPriority;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class BackupWriterTest {
 
-  private static final String[] IMPORT_INDICES = new String[] {"job-registry"};
-  private static final String[] NON_IMPORT_INDICES = new String[] {"process-instance"};
+  private static final String[] PRIORITY1_INDICES = new String[] {"job-registry"};
+  private static final String[] PRIORITY2_INDICES = new String[] {"process-instance"};
 
   private SnapshotRepository snapshotRepository;
   private BackupWriter backupWriter;
@@ -34,33 +35,33 @@ class BackupWriterTest {
     final MappingMetadataRepository mappingMetadataRepository =
         mock(MappingMetadataRepository.class);
     snapshotRepository = mock(SnapshotRepository.class);
-    when(mappingMetadataRepository.getIndexAliasesWithImportIndexFlag(true))
-        .thenReturn(IMPORT_INDICES);
-    when(mappingMetadataRepository.getIndexAliasesWithImportIndexFlag(false))
-        .thenReturn(NON_IMPORT_INDICES);
+    when(mappingMetadataRepository.getIndexAliasesWithBackupPriority(BackupPriority.PRIORITY1))
+        .thenReturn(PRIORITY1_INDICES);
+    when(mappingMetadataRepository.getIndexAliasesWithBackupPriority(BackupPriority.PRIORITY2))
+        .thenReturn(PRIORITY2_INDICES);
     backupWriter = new BackupWriter(mappingMetadataRepository, snapshotRepository);
   }
 
   @Test
-  void shouldNotTriggerNonImportSnapshotUntilImportSnapshotFutureCompletes() {
+  void shouldNotTriggerPriority2SnapshotUntilPriority1SnapshotFutureCompletes() {
     // given
     final CompletableFuture<Void> importSnapshotFuture = new CompletableFuture<>();
-    when(snapshotRepository.triggerSnapshot(any(), eq(IMPORT_INDICES)))
+    when(snapshotRepository.triggerSnapshot(any(), eq(PRIORITY1_INDICES)))
         .thenReturn(importSnapshotFuture);
-    when(snapshotRepository.triggerSnapshot(any(), eq(NON_IMPORT_INDICES)))
+    when(snapshotRepository.triggerSnapshot(any(), eq(PRIORITY2_INDICES)))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     final CompletableFuture<Void> result = backupWriter.triggerSnapshotCreation(1L);
 
-    // then - the non-import snapshot must not fire while the import snapshot is still pending
-    verify(snapshotRepository, never()).triggerSnapshot(any(), eq(NON_IMPORT_INDICES));
+    // then - the PRIORITY2 snapshot must not fire while the PRIORITY1 snapshot is still pending
+    verify(snapshotRepository, never()).triggerSnapshot(any(), eq(PRIORITY2_INDICES));
 
     // when the import snapshot resolves
     importSnapshotFuture.complete(null);
     result.join();
 
     // then the non-import snapshot is triggered afterward
-    verify(snapshotRepository, times(1)).triggerSnapshot(any(), eq(NON_IMPORT_INDICES));
+    verify(snapshotRepository, times(1)).triggerSnapshot(any(), eq(PRIORITY2_INDICES));
   }
 }
