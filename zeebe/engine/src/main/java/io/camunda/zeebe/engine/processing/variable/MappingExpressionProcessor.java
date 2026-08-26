@@ -25,20 +25,40 @@ import org.jspecify.annotations.Nullable;
  * ScopedEvaluationContext#getVariable} directly without calling {@code processScoped} themselves.
  */
 @NullMarked
-public final class ScopedExpressionProcessor {
+public final class MappingExpressionProcessor {
 
   private final ExpressionProcessor processor;
   private final ScopedEvaluationContext scopedContext;
   private final long scopeKey;
   private final String tenantId;
+  private final MappingContext mappingContext;
 
-  public ScopedExpressionProcessor(
-      final ExpressionProcessor processor, final long scopeKey, final String tenantId) {
+  public MappingExpressionProcessor(
+      final ExpressionProcessor processor, final MappingContext mappingContext) {
     this.processor = processor;
+    this.mappingContext = mappingContext;
+    this.scopeKey = mappingContext.scopeKey();
+    this.tenantId = mappingContext.tenantId();
+    this.scopedContext =
+        processor.getEvaluationContext().processScoped(scopeKey).tenantScoped(tenantId);
+  }
+
+  private MappingExpressionProcessor(
+      final ExpressionProcessor processor,
+      final MappingContext mappingContext,
+      final long scopeKey,
+      final String tenantId) {
+    this.processor = processor;
+    this.mappingContext = mappingContext;
     this.scopeKey = scopeKey;
     this.tenantId = tenantId;
     this.scopedContext =
         processor.getEvaluationContext().processScoped(scopeKey).tenantScoped(tenantId);
+  }
+
+  /** Returns the mapping context associated with this activation. */
+  public MappingContext getMappingContext() {
+    return mappingContext;
   }
 
   /**
@@ -62,14 +82,15 @@ public final class ScopedExpressionProcessor {
   }
 
   /**
-   * Returns a new {@link ScopedExpressionProcessor} with {@code ctx} prepended to the underlying
+   * Returns a new {@link MappingExpressionProcessor} with {@code ctx} prepended to the underlying
    * processor's evaluation context chain, preserving the same scope key and tenant binding.
    *
    * @param ctx the evaluation context to prepend (e.g. an in-flight result accumulator)
    * @return a new scoped processor with {@code ctx} as the outermost context layer
    */
-  public ScopedExpressionProcessor prependContext(final ScopedEvaluationContext ctx) {
-    return new ScopedExpressionProcessor(processor.prependContext(ctx), scopeKey, tenantId);
+  public MappingExpressionProcessor prependContext(final ScopedEvaluationContext ctx) {
+    return new MappingExpressionProcessor(
+        processor.prependContext(ctx), mappingContext, scopeKey, tenantId);
   }
 
   /**
@@ -80,7 +101,7 @@ public final class ScopedExpressionProcessor {
    * @param lookup maps a variable name to its value, or {@code null} if absent
    * @return a new scoped processor with the lookup as the outermost context layer
    */
-  public ScopedExpressionProcessor prependContext(
+  public MappingExpressionProcessor prependContext(
       final Function<String, @Nullable DirectBuffer> lookup) {
     return prependContext((ScopedEvaluationContext) name -> Either.left(lookup.apply(name)));
   }
