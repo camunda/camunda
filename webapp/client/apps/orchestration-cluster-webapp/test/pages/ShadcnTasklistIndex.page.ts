@@ -26,8 +26,28 @@ class ShadcnTasklistIndexPage extends BasePage {
 		return this.page.getByRole('region', {name: 'Tasks side panel'});
 	}
 
-	tasksPanelHeading(filterName: 'All open tasks') {
-		return this.page.getByRole('heading', {name: filterName});
+	get filterSelect() {
+		return this.page.getByRole('combobox', {name: 'Filters'});
+	}
+
+	filterOption(name: string) {
+		return this.page.getByRole('option', {name});
+	}
+
+	get sortButton() {
+		return this.page.getByRole('button', {name: 'Sort tasks'});
+	}
+
+	async openSortMenu() {
+		await this.sortButton.click();
+	}
+
+	sortOption(name: string) {
+		return this.page.getByRole('menuitemradio', {name});
+	}
+
+	get autoSelectToggle() {
+		return this.page.getByRole('switch', {name: 'Auto-select first available task'});
 	}
 
 	taskItem(name: string) {

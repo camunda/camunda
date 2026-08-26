@@ -38,7 +38,7 @@ test.beforeEach(({network}) => {
 
 test('should match the tasklist index page snapshot', async ({shadcnTasklistIndexPage, page}) => {
 	await shadcnTasklistIndexPage.goto();
-	await expect(shadcnTasklistIndexPage.tasksPanelHeading('All open tasks')).toBeVisible();
+	await expect(shadcnTasklistIndexPage.filterSelect).toHaveText('All open tasks');
 
 	await expect(page).toHaveScreenshot();
 });
@@ -65,6 +65,22 @@ test('should match the tasklist index page snapshot with available tasks', async
 	await shadcnTasklistIndexPage.goto();
 	await expect(page.getByText('ORDER-2024-0042')).toBeVisible();
 	await expect(page.getByText('ORDER-2024-0043')).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the built-in filter picker open', async ({shadcnTasklistIndexPage, page}) => {
+	await shadcnTasklistIndexPage.goto();
+	await shadcnTasklistIndexPage.filterSelect.click();
+	await expect(shadcnTasklistIndexPage.filterOption('Completed')).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the sort menu open', async ({shadcnTasklistIndexPage, page}) => {
+	await shadcnTasklistIndexPage.goto();
+	await shadcnTasklistIndexPage.openSortMenu();
+	await expect(shadcnTasklistIndexPage.sortOption('Creation date')).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

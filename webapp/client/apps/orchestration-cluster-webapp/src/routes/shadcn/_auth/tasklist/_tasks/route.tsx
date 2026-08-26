@@ -8,21 +8,36 @@
 
 import {useCallback, useMemo} from 'react';
 import {useSuspenseInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
-import {createFileRoute, notFound} from '@tanstack/react-router';
+import {createFileRoute, notFound, retainSearchParams, stripSearchParams} from '@tanstack/react-router';
 import {queries} from '#/shared/http/queries';
 import {getTasksRequestBody} from '#/tasklist/modules/available-tasks/getTasksRequestBody';
 import {TasksLayoutPage} from '#/tasklist/pages/shadcn.components/TasksLayoutPage';
-import {tasklistIndexSearchDefaults} from '#/tasklist/modules/available-tasks/searchSchema';
+import {
+	enforceSortInvariant,
+	stripCustomFilterParams,
+	tasklistIndexSearchDefaults,
+	tasklistIndexSearchSchema,
+} from '#/tasklist/modules/available-tasks/searchSchema';
 
 export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks')({
+	validateSearch: tasklistIndexSearchSchema,
+	search: {
+		middlewares: [
+			stripSearchParams(tasklistIndexSearchDefaults),
+			retainSearchParams(['filter', 'sortBy']),
+			enforceSortInvariant,
+			stripCustomFilterParams,
+		],
+	},
 	notFoundComponent: () => {
 		throw notFound({routeId: '/shadcn/_auth/tasklist'});
 	},
 	component: function TasksLayoutRoute() {
+		const search = Route.useSearch();
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
 		const requestBody = useMemo(
-			() => getTasksRequestBody(tasklistIndexSearchDefaults, {currentUsername: currentUser.username}),
-			[currentUser.username],
+			() => getTasksRequestBody(search, {currentUsername: currentUser.username}),
+			[search, currentUser.username],
 		);
 		const {
 			data,
@@ -47,6 +62,8 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks')({
 			<TasksLayoutPage
 				pages={data.pages}
 				currentUser={currentUser}
+				filter={search.filter}
+				sortBy={search.sortBy}
 				hasNextPage={hasNextPage}
 				hasPreviousPage={hasPreviousPage}
 				onScrollDown={onScrollDown}

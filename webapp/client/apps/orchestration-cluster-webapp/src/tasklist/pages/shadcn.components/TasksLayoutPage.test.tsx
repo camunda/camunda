@@ -23,6 +23,8 @@ describe('<TasksLayoutPage />', () => {
 				<TasksLayoutPage
 					pages={[createQueryUserTasksResponse()]}
 					currentUser={currentUser}
+					filter="all-open"
+					sortBy="creation"
 					hasNextPage={false}
 					hasPreviousPage={false}
 					onScrollDown={noop}
