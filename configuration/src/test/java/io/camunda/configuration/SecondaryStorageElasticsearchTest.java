@@ -282,6 +282,10 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(exporterConfiguration.getConnect().getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(exporterConfiguration.getConnect().getMaxConnections())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS);
+      assertThat(exporterConfiguration.getConnect().getMaxConnectionsPerRoute())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS_PER_ROUTE);
 
       assertThat(exporterConfiguration.getConnect().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
@@ -648,6 +652,10 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(exporterConfiguration.getConnect().getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(exporterConfiguration.getConnect().getMaxConnections())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS);
+      assertThat(exporterConfiguration.getConnect().getMaxConnectionsPerRoute())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS_PER_ROUTE);
 
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
@@ -736,6 +744,45 @@ public class SecondaryStorageElasticsearchTest {
       final ExporterConfiguration exporterConfiguration =
           UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo("http://matching-url:4321");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
+        "zeebe.broker.exporters.camundaexporter.class-name=io.camunda.exporter.CamundaExporter",
+        "zeebe.broker.exporters.camundaexporter.args.connect.maxConnections="
+            + EXPECTED_MAX_CONNECTIONS,
+        "zeebe.broker.exporters.camundaexporter.args.connect.maxConnectionsPerRoute="
+            + EXPECTED_MAX_CONNECTIONS_PER_ROUTE,
+      })
+  class WithOnlyLegacyExporterConnectionPoolSet {
+    final BrokerBasedProperties brokerBasedProperties;
+
+    WithOnlyLegacyExporterConnectionPoolSet(
+        @Autowired final BrokerBasedProperties brokerBasedProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+    }
+
+    @Test
+    void shouldKeepLegacyConnectionPoolWhenUnifiedConfigIsUnset() {
+      // given
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getConnect().getMaxConnections())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS);
+      assertThat(exporterConfiguration.getConnect().getMaxConnectionsPerRoute())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS_PER_ROUTE);
     }
   }
 
