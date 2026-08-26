@@ -342,15 +342,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   public void reloadConfigurationFromLog() {
     raft.checkThread();
     final var currentConfiguration = configuration;
-    if (currentConfiguration != null && currentConfiguration.force()) {
-      // A forced configuration is authoritative until a new leader appends the configuration that
-      // leaves the forced state. The log may still contain a stale, higher-index configuration
-      // entry from a reconfiguration that was in flight before the force - recovering it would
-      // resurrect exactly the configuration that the force configure was meant to replace. The
-      // force-leaving configuration is not needed from the log either, a leader will disseminate
-      // it via configure requests.
-      return;
-    }
     IndexedRaftLogEntry lastConfigurationEntry = null;
     // The reader needs to be uncommitted because the configuration entry might not be committed yet
     // on this node, but committed on the leader already.
