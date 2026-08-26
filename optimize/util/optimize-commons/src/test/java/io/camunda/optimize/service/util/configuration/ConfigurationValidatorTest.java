@@ -14,25 +14,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import io.github.netmikey.logunit.api.LogCapturer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.event.Level;
 
 public class ConfigurationValidatorTest {
-
-  @RegisterExtension
-  final LogCapturer logs =
-      LogCapturer.create().captureForType(ConfigurationValidator.class, Level.WARN);
 
   private ConfigurationService configurationService;
   private EmailAuthenticationConfiguration emailAuthConfig;
   private ElasticSearchConfiguration elasticSearchConfiguration;
   private OpenSearchConfiguration openSearchConfiguration;
-  private ZeebeConfiguration zeebeConfiguration;
 
   private ConfigurationValidator configurationValidator;
 
@@ -42,14 +34,9 @@ public class ConfigurationValidatorTest {
     emailAuthConfig = mock(EmailAuthenticationConfiguration.class);
     elasticSearchConfiguration = mock(ElasticSearchConfiguration.class);
     openSearchConfiguration = mock(OpenSearchConfiguration.class);
-    zeebeConfiguration = mock(ZeebeConfiguration.class);
     when(configurationService.getElasticSearchConfiguration())
         .thenReturn(elasticSearchConfiguration);
     when(configurationService.getOpenSearchConfiguration()).thenReturn(openSearchConfiguration);
-    when(configurationService.getConfiguredZeebe()).thenReturn(zeebeConfiguration);
-    when(zeebeConfiguration.isEnabled()).thenReturn(true);
-    when(zeebeConfiguration.isVariableImportEnabled()).thenReturn(true);
-    when(zeebeConfiguration.isIncludeObjectVariableValue()).thenReturn(false);
 
     configurationValidator = new ConfigurationValidator();
   }
@@ -116,77 +103,5 @@ public class ConfigurationValidatorTest {
     assertThatCode(() -> configurationValidator.validate(configurationService))
         .hasMessageContaining("Optimize indexPrefix must not begin with invalid characters [. +].")
         .isInstanceOf(OptimizeConfigurationException.class);
-  }
-
-  @Test
-  public void validateShouldWarnWhenObjectVariableValuesAreNotImported() {
-    // given
-    when(configurationService.getEmailAuthenticationConfiguration()).thenReturn(emailAuthConfig);
-    when(zeebeConfiguration.isIncludeObjectVariableValue()).thenReturn(false);
-
-    // when
-    configurationValidator.validate(configurationService);
-
-    // then
-    logs.assertContains(
-        entry ->
-            entry.getLevel() == Level.WARN
-                && entry.getMessage().contains("zeebe.includeObjectVariableValue"),
-        "expected a WARN log about object variable values not being imported");
-  }
-
-  @Test
-  public void validateShouldNotWarnWhenObjectVariableValuesAreImported() {
-    // given
-    when(configurationService.getEmailAuthenticationConfiguration()).thenReturn(emailAuthConfig);
-    when(zeebeConfiguration.isIncludeObjectVariableValue()).thenReturn(true);
-
-    // when
-    configurationValidator.validate(configurationService);
-
-    // then
-    logs.assertDoesNotContain(
-        entry ->
-            entry.getLevel() == Level.WARN
-                && entry.getMessage().contains("zeebe.includeObjectVariableValue"),
-        "expected no WARN log when object variable values are imported");
-  }
-
-  @Test
-  public void validateShouldNotWarnWhenZeebeImportIsDisabled() {
-    // given
-    when(configurationService.getEmailAuthenticationConfiguration()).thenReturn(emailAuthConfig);
-    when(zeebeConfiguration.isEnabled()).thenReturn(false);
-    when(zeebeConfiguration.isIncludeObjectVariableValue()).thenReturn(false);
-
-    // when
-    configurationValidator.validate(configurationService);
-
-    // then
-    logs.assertDoesNotContain(
-        entry ->
-            entry.getLevel() == Level.WARN
-                && entry.getMessage().contains("zeebe.includeObjectVariableValue"),
-        "expected no WARN log when Zeebe import is disabled, regardless of "
-            + "includeObjectVariableValue");
-  }
-
-  @Test
-  public void validateShouldNotWarnWhenZeebeVariableImportIsDisabled() {
-    // given
-    when(configurationService.getEmailAuthenticationConfiguration()).thenReturn(emailAuthConfig);
-    when(zeebeConfiguration.isVariableImportEnabled()).thenReturn(false);
-    when(zeebeConfiguration.isIncludeObjectVariableValue()).thenReturn(false);
-
-    // when
-    configurationValidator.validate(configurationService);
-
-    // then
-    logs.assertDoesNotContain(
-        entry ->
-            entry.getLevel() == Level.WARN
-                && entry.getMessage().contains("zeebe.includeObjectVariableValue"),
-        "expected no WARN log when Zeebe variable import is disabled, regardless of "
-            + "includeObjectVariableValue");
   }
 }
