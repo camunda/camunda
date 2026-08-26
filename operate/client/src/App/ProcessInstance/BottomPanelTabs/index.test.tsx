@@ -25,10 +25,16 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {mockSearchIncidentsByElementInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByElementInstance';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {open} from 'modules/mocks/diagrams';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {modificationsStore} from 'modules/stores/modifications';
 
 const PROCESS_INSTANCE_ID = '123';
+const CALL_ACTIVITY_ID = 'confirmDelivery';
+const SERVICE_TASK_ID = 'checkPayment';
+const START_EVENT_ID = 'StartEvent_1';
 
 const RedirectToVariables: React.FC = () => {
   const location = useLocation();
@@ -46,17 +52,29 @@ const SelectElement: React.FC = () => {
   );
 };
 
-function getWrapper(initialPath?: string) {
+const SelectSpecificElement: React.FC<{elementId: string}> = ({elementId}) => {
+  const navigate = useNavigate();
+  return (
+    <button onClick={() => navigate({search: `?elementId=${elementId}`})}>
+      Select {elementId}
+    </button>
+  );
+};
+
+function getWrapper(initialPath?: string, processDefinitionKey?: string) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     const router = createMemoryRouter(
       [
         {
           path: Paths.processInstance(undefined, true),
           element: (
-            <>
+            <ProcessDefinitionKeyContext.Provider value={processDefinitionKey}>
               <SelectElement />
+              <SelectSpecificElement elementId={CALL_ACTIVITY_ID} />
+              <SelectSpecificElement elementId={SERVICE_TASK_ID} />
+              <SelectSpecificElement elementId={START_EVENT_ID} />
               {children}
-            </>
+            </ProcessDefinitionKeyContext.Provider>
           ),
           children: [
             {index: true, element: <RedirectToVariables />},
@@ -849,6 +867,36 @@ describe('<BottomPanelTabs />', () => {
     );
   });
 
+  it('should switch to incidents when the process instance loads after an element selection', async () => {
+    mockFetchProcessInstance().withDelay(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: true,
+      }),
+    );
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
+      searchResult([], 1),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = Paths.processInstanceVariables({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path),
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Select element'}));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        Paths.processInstanceIncidents({
+          processInstanceId: PROCESS_INSTANCE_ID,
+        }),
+      ),
+    );
+  });
+
   it('should keep the current tab when switching between elements', async () => {
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
@@ -898,6 +946,169 @@ describe('<BottomPanelTabs />', () => {
     expect(await screen.findByTestId('search')).toHaveTextContent(
       '?elementId=someElement',
     );
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should switch to the details tab when a call activity is selected', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = Paths.processInstanceVariables({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path, '123'),
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: `Select ${CALL_ACTIVITY_ID}`}),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        Paths.processInstanceDetails({processInstanceId: PROCESS_INSTANCE_ID}),
+      ),
+    );
+  });
+
+  it('should switch to the details tab when a call activity replaces another selection', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = `${Paths.processInstanceVariables({processInstanceId: PROCESS_INSTANCE_ID})}?elementId=${SERVICE_TASK_ID}`;
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path, '123'),
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: `Select ${CALL_ACTIVITY_ID}`}),
+    );
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceDetails({processInstanceId: PROCESS_INSTANCE_ID}),
+    );
+  });
+
+  it('should switch to the details tab when business objects load after selecting a call activity', async () => {
+    mockFetchProcessDefinitionXml().withDelay(open('instanceMigration.bpmn'));
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = `${Paths.processInstanceVariables({processInstanceId: PROCESS_INSTANCE_ID})}?elementId=${SERVICE_TASK_ID}`;
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path, '123'),
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: `Select ${CALL_ACTIVITY_ID}`}),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        Paths.processInstanceDetails({processInstanceId: PROCESS_INSTANCE_ID}),
+      ),
+    );
+  });
+
+  it('should keep the current tab when a non-call-activity replaces another selection', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = `${Paths.processInstanceInputMappings({processInstanceId: PROCESS_INSTANCE_ID})}?elementId=${CALL_ACTIVITY_ID}`;
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path, '123'),
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: `Select ${START_EVENT_ID}`}),
+    );
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceInputMappings({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should switch to the incidents tab, not details, when a call activity with an incident is selected', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: true,
+      }),
+    );
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
+      searchResult([], 1),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = `${Paths.processInstanceVariables({processInstanceId: PROCESS_INSTANCE_ID})}?elementId=${SERVICE_TASK_ID}`;
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path, '123'),
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: `Select ${CALL_ACTIVITY_ID}`}),
+    );
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceIncidents({processInstanceId: PROCESS_INSTANCE_ID}),
+    );
+  });
+
+  it('should not switch to the details tab when a call activity replaces another selection in modification mode', async () => {
+    modificationsStore.enableModificationMode();
+    mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = `${Paths.processInstanceVariables({processInstanceId: PROCESS_INSTANCE_ID})}?elementId=${SERVICE_TASK_ID}`;
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path, '123'),
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: `Select ${CALL_ACTIVITY_ID}`}),
+    );
+
     expect(await screen.findByTestId('pathname')).toHaveTextContent(
       Paths.processInstanceVariables({
         processInstanceId: PROCESS_INSTANCE_ID,
