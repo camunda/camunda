@@ -83,6 +83,31 @@ public class BlockingExecutorTest {
   }
 
   @Test
+  public void shouldKeepCapacityLimitWhenCommandFailsOnTheCallingThread() {
+    // given an executor whose wrapped executor runs commands on the calling thread
+    final AtomicReference<Executor> wrappedExecutor = new AtomicReference<>(Runnable::run);
+    final BlockingExecutor executor =
+        new BlockingExecutor(
+            command -> wrappedExecutor.get().execute(command), 1, Duration.ofMillis(10));
+
+    // when a command fails, so that the failure reaches the caller the same way a refusal would
+    assertThatThrownBy(
+            () ->
+                executor.execute(
+                    () -> {
+                      throw new IllegalStateException("Command failed");
+                    }))
+        .isInstanceOf(IllegalStateException.class);
+
+    // then the one capacity slot the command took is free again, but only once: an executor that
+    // holds on to a command holds on to its capacity too, leaving nothing for a second command
+    wrappedExecutor.set(command -> {});
+    executor.execute(() -> {});
+    assertThatThrownBy(() -> executor.execute(() -> {}))
+        .isInstanceOf(RejectedExecutionException.class);
+  }
+
+  @Test
   public void shouldRejectCommandWhenInterruptedWhileWaitingForCapacity() {
     // given an executor whose only capacity is taken
     final Executor dropsCommands = command -> {};
