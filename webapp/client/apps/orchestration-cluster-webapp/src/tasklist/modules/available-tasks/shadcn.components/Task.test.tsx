@@ -104,4 +104,27 @@ describe('<Task />', () => {
 		await expect.element(screen.getByText('Medium')).not.toBeInTheDocument();
 		await expect.element(screen.getByText('Low')).not.toBeInTheDocument();
 	});
+
+	it.for([
+		{path: '/shadcn/tasklist/$userTaskKey' as const, initialEntry: '/shadcn/tasklist/task-42'},
+		{path: '/shadcn/tasklist/$userTaskKey/process' as const, initialEntry: '/shadcn/tasklist/task-42/process'},
+		{path: '/shadcn/tasklist/$userTaskKey/history' as const, initialEntry: '/shadcn/tasklist/task-42/history'},
+	])('should mark the task as selected at $initialEntry', async ({path, initialEntry}) => {
+		const screen = await renderWithRouter(() => <TestTask />, {path, initialEntry});
+
+		await expect
+			.element(screen.getByRole('link', {name: 'Unassigned task: Review invoice'}))
+			.toHaveAttribute('aria-current', 'page');
+	});
+
+	it('should not mark a different task as selected', async () => {
+		const screen = await renderWithRouter(() => <TestTask />, {
+			path: '/shadcn/tasklist/$userTaskKey/process',
+			initialEntry: '/shadcn/tasklist/other-task/process',
+		});
+
+		await expect
+			.element(screen.getByRole('link', {name: 'Unassigned task: Review invoice'}))
+			.not.toHaveAttribute('aria-current');
+	});
 });

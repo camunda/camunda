@@ -25,6 +25,7 @@ import {TasklistLoginPage} from '#/pages/TasklistLogin.page';
 import {ShadcnTasklistIndexPage} from '#/pages/ShadcnTasklistIndex.page';
 import {ShadcnTasklistProcessesPage} from '#/pages/ShadcnTasklistProcesses.page';
 import {ShadcnTasklistLoginPage} from '#/pages/ShadcnTasklistLogin.page';
+import {ShadcnTaskDetailPage} from '#/pages/ShadcnTaskDetail.page';
 
 type Fixtures = {
 	handlers: Array<AnyHandler>;
@@ -34,6 +35,7 @@ type Fixtures = {
 	tasklistLoginPage: TasklistLoginPage;
 	shadcnTasklistLoginPage: ShadcnTasklistLoginPage;
 	shadcnTasklistProcessesPage: ShadcnTasklistProcessesPage;
+	shadcnTaskDetailPage: ShadcnTaskDetailPage;
 	tasklistIndexPage: TasklistIndexPage;
 	tasklistProcessesPage: TasklistProcessesPage;
 	taskDetailPage: TaskDetailPage;
@@ -63,6 +65,9 @@ const test = base.extend<Fixtures>({
 	},
 	shadcnTasklistProcessesPage: async ({page}, use) => {
 		await use(new ShadcnTasklistProcessesPage(page));
+	},
+	shadcnTaskDetailPage: async ({page}, use) => {
+		await use(new ShadcnTaskDetailPage(page));
 	},
 	tasklistIndexPage: async ({page}, use) => {
 		await use(new TasklistIndexPage(page));
