@@ -46,9 +46,11 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -360,6 +362,41 @@ final class JobWorkerImplTest {
   }
 
   @Test
+  void shouldNotAskForMoreJobsThanItCanRunWhenAJobRunsAndIsRefusedAtTheSameTime() {
+    // given a worker whose handler executor runs a job and then reports it as refused
+    final int maxJobsActive = 3;
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobHandlingExecutor = new RunsThenRefusesExecutor();
+    gateway.respondWith(TestData.jobs(maxJobsActive));
+
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler(NOOP_JOB_HANDLER)
+                .maxJobsActive(maxJobsActive)
+                .pollInterval(Duration.ofMillis(50))
+                .open()) {
+
+      // when the worker has been through several rounds of activating those jobs
+      Awaitility.await("Worker should activate jobs repeatedly")
+          .atMost(Duration.ofSeconds(10))
+          .until(() -> gateway.getRequestedJobCounts().size() >= 3);
+
+      // then it never asks for more jobs than it is allowed to run at a time, which it would do if
+      // it counted a job that both ran and was refused as two free slots instead of one
+      assertThat(gateway.getRequestedJobCounts())
+          .allSatisfy(requested -> assertThat(requested).isLessThanOrEqualTo(maxJobsActive));
+    }
+  }
+
+  @Test
   void shouldCloseIfExecutorIsClosed() {
     // given
     final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -394,6 +431,43 @@ final class JobWorkerImplTest {
   }
 
   /**
+   * An executor that runs the command and then reports it as refused. A saturated {@link
+   * java.util.concurrent.ThreadPoolExecutor} using {@link
+   * java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy} behaves this way when it is shut down
+   * while the caller is running the command.
+   */
+  private static final class RunsThenRefusesExecutor extends AbstractExecutorService {
+    @Override
+    public void shutdown() {}
+
+    @Override
+    public List<Runnable> shutdownNow() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public boolean isShutdown() {
+      return false;
+    }
+
+    @Override
+    public boolean isTerminated() {
+      return false;
+    }
+
+    @Override
+    public boolean awaitTermination(final long timeout, final TimeUnit unit) {
+      return true;
+    }
+
+    @Override
+    public void execute(final Runnable command) {
+      command.run();
+      throw new RejectedExecutionException("Command ran here, but the executor is out of capacity");
+    }
+  }
+
+  /**
    * This mocked gateway is able to record metrics on polling for new jobs and easily switch how it
    * responds to polling.
    *
@@ -412,6 +486,9 @@ final class JobWorkerImplTest {
     private ActivateJobsResponse pollSuccessResponse = ActivateJobsResponse.newBuilder().build();
     private StatusRuntimeException pollErrorResponse = new StatusRuntimeException(Status.UNKNOWN);
 
+    private final Object requestedJobCountsLock = new Object();
+    private final List<Integer> requestedJobCounts = new ArrayList<>();
+
     private final Object metricsLock = new Object();
     private boolean isMeasuring = false;
     private long countedPolls = 0;
@@ -422,6 +499,9 @@ final class JobWorkerImplTest {
     public void activateJobs(
         final ActivateJobsRequest request,
         final StreamObserver<ActivateJobsResponse> responseObserver) {
+      synchronized (requestedJobCountsLock) {
+        requestedJobCounts.add(request.getMaxJobsToActivate());
+      }
       synchronized (metricsLock) {
         if (isMeasuring) {
           final Instant now = Instant.now();
@@ -503,6 +583,12 @@ final class JobWorkerImplTest {
     public long getCountedPolls() {
       synchronized (metricsLock) {
         return countedPolls;
+      }
+    }
+
+    public List<Integer> getRequestedJobCounts() {
+      synchronized (requestedJobCountsLock) {
+        return new ArrayList<>(requestedJobCounts);
       }
     }
   }
