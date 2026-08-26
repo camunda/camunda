@@ -278,6 +278,10 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(exporterConfiguration.getConnect().getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(exporterConfiguration.getConnect().getMaxConnections())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS);
+      assertThat(exporterConfiguration.getConnect().getMaxConnectionsPerRoute())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS_PER_ROUTE);
       assertThat(exporterConfiguration.getConnect().isAwsEnabled()).isEqualTo(EXPECTED_AWS_ENABLED);
 
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
@@ -638,6 +642,10 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(exporterConfiguration.getConnect().getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(exporterConfiguration.getConnect().getMaxConnections())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS);
+      assertThat(exporterConfiguration.getConnect().getMaxConnectionsPerRoute())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS_PER_ROUTE);
 
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
