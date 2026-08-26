@@ -34,8 +34,19 @@ echo "Finding versions changed compared to ${PARENT}..."
 changed="$(git diff --name-only "${PARENT}...HEAD")"
 
 run_all=false
+
+# Run all versions if the load-test workflow changed. This is a precaution
+# because the workflow may have changed in a way that affects all versions.
 if grep -qE '\.github/workflows/camunda-load-test' <<<"$changed"; then
     echo "⇒ Load-test workflow changed, running all versions..."
+    run_all=true
+fi
+
+# The load-test-setup Helm Chart is used by all the versions. It may or may not
+# affect the final output but as a precaution, we run all the versions if this
+# Helm Chart changed.
+if grep -qF 'load-tests/setup/charts/load-test-setup' <<<"$changed"; then
+    echo "⇒ load-test-setup Helm Chart changed, will run all the versions..."
     run_all=true
 fi
 
