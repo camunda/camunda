@@ -7,15 +7,13 @@
  */
 
 import Editor from "@monaco-editor/react";
-import { Button, FormLabel, Stack } from "@carbon/react";
+import { Button, Label, Text } from "@camunda/design-system";
 import { observer } from "mobx-react-lite";
 import { ComponentProps, FC, useEffect, useRef, useState } from "react";
+import { Copy, Pencil } from "lucide-react";
 import { beautify as beautifyJSON } from "src/utility/components/editor/jsonUtils.ts";
 import { options } from "src/utility/components/editor/options.ts";
 import useTranslate from "src/utility/localization";
-import { Copy, Edit } from "@carbon/react/icons";
-// TODO: Replace with Tailwind
-import Flex from "src/components/layout/Flex.tsx";
 import { useNotifications } from "src/components/notifications";
 import { themeStore } from "src/common/theme/theme.ts";
 
@@ -130,39 +128,41 @@ const JSONEditorField: FC<JSONEditorFieldProps> = ({
   };
 
   return (
-    <Stack gap="3">
-      <Flex align="start">
-        <Flex
-          direction="column"
-          align="start"
-          spacing="small"
-          style={{ flex: 1, minHeight: "36px" }}
-        >
-          <FormLabel>{label}</FormLabel>
+    <div className="flex flex-col">
+      <div className="flex items-start gap-3">
+        <div className="flex min-h-9 flex-1 flex-col items-start gap-1">
+          <Label>{label}</Label>
           {errors?.length > 0 && (
-            <FormLabel style={{ color: "var(--cds-support-error)" }}>
+            <Text
+              as="p"
+              variant="helper"
+              role="alert"
+              className="text-danger-action-default"
+            >
               {errors}
-            </FormLabel>
+            </Text>
           )}
-        </Flex>
-        <Flex spacing="small" style={{ alignSelf: "end" }}>
+        </div>
+        <div className="flex items-center gap-1 self-end">
           {beautify && (
             <Button
+              type="button"
               onClick={() => onChange?.(beautifyJSON(value))}
               size="sm"
-              kind="ghost"
-              renderIcon={Edit}
+              variant="ghost"
             >
+              <Pencil aria-hidden="true" />
               {t("format")}
             </Button>
           )}
           {copy && (
-            <Button onClick={onCopy} size="sm" kind="ghost" renderIcon={Copy}>
+            <Button type="button" onClick={onCopy} size="sm" variant="ghost">
+              <Copy aria-hidden="true" />
               {t("copy")}
             </Button>
           )}
-        </Flex>
-      </Flex>
+        </div>
+      </div>
       <JSONEditor
         value={value}
         onChange={onChange}
@@ -172,7 +172,7 @@ const JSONEditorField: FC<JSONEditorFieldProps> = ({
           editorRef.current = editor;
         }}
       />
-    </Stack>
+    </div>
   );
 };
 
