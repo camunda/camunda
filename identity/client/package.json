@@ -18,7 +18,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@camunda/camunda-api-zod-schemas": "0.0.90",
+    "@camunda/camunda-api-zod-schemas": "0.0.91",
     "@camunda/camunda-composite-components": "0.25.4",
     "@camunda/design-system": "0.47.0",
     "@camunda/session-heartbeat": "0.0.1",
@@ -49,7 +49,7 @@
     "@types/event-source-polyfill": "1.0.5",
     "@types/node": "24.13.3",
     "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.4",
+    "@types/react-dom": "19.2.5",
     "@types/react-transition-group": "4.4.12",
     "@typescript-eslint/eslint-plugin": "8.67.0",
     "@typescript-eslint/parser": "8.67.0",
