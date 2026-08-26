@@ -151,21 +151,7 @@ runs:
         secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | dockerhub-token;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
-        secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
-  # Kept separate from "Import Secrets" so that jobs which do not ask for Harbor
-  # never depend on this path resolving.
-  - name: Import Harbor Secrets
-    if: >-
-      steps.is-fork.outputs.is-fork != 'true' &&
-      inputs.harbor == 'true'
-    id: harbor-secrets
-    uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
-    with:
-      url: ${{ inputs.vault-address }}
-      method: approle
-      roleId: ${{ inputs.vault-role-id }}
-      secretId: ${{ inputs.vault-secret-id }}
-      secrets: |
+        secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token;
         secret/data/products/camunda/ci/harbor username | harbor-username;
         secret/data/products/camunda/ci/harbor password | harbor-password
   - name: Setup Java
@@ -296,8 +282,8 @@ runs:
       inputs.harbor == 'true'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_USERNAME: ${{ steps.harbor-secrets.outputs.harbor-username }}
-      DOCKER_PASSWORD: ${{ steps.harbor-secrets.outputs.harbor-password }}
+      DOCKER_USERNAME: ${{ steps.secrets.outputs.harbor-username }}
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.harbor-password }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
