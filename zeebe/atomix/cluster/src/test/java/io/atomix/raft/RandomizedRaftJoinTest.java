@@ -137,24 +137,14 @@ public class RandomizedRaftJoinTest {
         raftContexts.join(member1, RaftMember.Type.PROMOTABLE, Set.of(member0, member1));
     CompletableFuture<Void> promoteFuture = null;
 
-    // given - when there are failures such as message loss
+    // given - when there are failures such as message loss, including restarts of the joined
+    // member: the join future only completes once the admitting configuration entry is durably
+    // in this node's own log (see ReconfigurationHelper#awaitLocalDurability), so a restart right
+    // after completion always finds that entry via reloadConfigurationFromLog and never falls
+    // back to treating this node as a fresh, unconfigured one.
     final var memberIter = raftMembers.iterator();
     for (final RaftOperation operation : raftOperations) {
       final MemberId member = memberIter.next();
-      if ("Restart member".equals(operation.toString())
-          && member.equals(member1)
-          && joinFuture.isDone()
-          && !joinFuture.isCompletedExceptionally()) {
-        // Known pre-existing residual, outside this task's scope: a PROMOTABLE join can complete
-        // before the joiner received any log entry or configuration, because the joiner is in no
-        // quorum. If the joiner then restarts, it falls back to the all-ACTIVE initial
-        // configuration at index 0 and reports configuration index 0 in its append responses,
-        // which the leader ignores as "no information" (LeaderAppender#updateConfigurationIndex)
-        // while its own bookkeeping still holds the joiner's pre-restart configuration index - so
-        // the joiner is never re-configured, considers itself ACTIVE, and its local promote()
-        // no-ops forever. Skip restarts of the joined member instead of fighting this here.
-        continue;
-      }
       LOG.info("{} on {}", operation, member);
       operation.run(raftContexts, member);
       // sample the safety invariant on every step: it records the vote of each member at the
