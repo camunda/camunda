@@ -2256,7 +2256,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
-  public void shouldRejectPushFromSecondActiveElementInstanceLinkedToSameAgentInstance() {
+  public void shouldRejectUpdateFromSecondActiveElementInstanceLinkedToSameAgentInstance() {
     // given — a parallel multi-instance AI-agent service task produces two element instances,
     // EI1 and EI2, active at the same time, sharing the same elementId and process instance.
     final var multiInstanceProcessId = "dedup-parallel-multi-instance";
