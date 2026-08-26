@@ -62,12 +62,31 @@ public record SemanticVersion(
     return major + "." + minor;
   }
 
+  /**
+   * @return this version with its pre-release/build-metadata suffix stripped (e.g. {@code
+   *     8.10.0-SNAPSHOT} becomes {@code 8.10.0}), or this version unchanged if it has neither.
+   */
+  public SemanticVersion withoutPreRelease() {
+    if (preRelease == null && buildMetadata == null) {
+      return this;
+    }
+    return new SemanticVersion(major, minor, patch, null, null);
+  }
+
   public static Optional<SemanticVersion> parse(final @Nullable String version) {
     if (version == null) {
       return Optional.empty();
     }
 
     return Optional.ofNullable(CACHE.computeIfAbsent(version, SemanticVersion::doParse));
+  }
+
+  /**
+   * @return {@code version} stripped of any pre-release/build-metadata suffix, or the raw input
+   *     unchanged if it can't be parsed as a semantic version.
+   */
+  public static String withoutPreReleaseSuffix(final String version) {
+    return parse(version).map(sv -> sv.withoutPreRelease().toString()).orElse(version);
   }
 
   private static @Nullable SemanticVersion doParse(final String version) {
