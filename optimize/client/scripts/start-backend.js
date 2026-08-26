@@ -168,7 +168,7 @@ async function setupEnvironment() {
 function buildBackend() {
   return new Promise((resolve, reject) => {
     buildBackendProcess = spawnWithArgs(
-      'mvn -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend -am',
+      './mvnw -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend -am',
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
