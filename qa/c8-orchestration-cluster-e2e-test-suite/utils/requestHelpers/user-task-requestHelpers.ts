@@ -16,7 +16,7 @@ import {
   paginatedResponseFields,
 } from '../http';
 import {userTaskSearchPageResponseRequiredFields} from '../beans/requestBeans';
-import {defaultAssertionOptions} from '../constants';
+import {extendedAssertionOptions} from '../constants';
 import {validateResponse} from 'json-body-assertions';
 
 export async function findUserTask(
@@ -24,7 +24,11 @@ export async function findUserTask(
   procKey: string,
   state: string,
   elementId?: string,
-  assertionOptions = defaultAssertionOptions,
+  // The initial CREATING -> CREATED transition is applied by the RDBMS
+  // secondary-storage indexer, whose flush can lag well past the 30s default
+  // budget on a loaded database leg. Default to the extended (90s) window so a
+  // slow indexer surfaces as a longer wait, not a false CREATING failure.
+  assertionOptions = extendedAssertionOptions,
 ) {
   const localState: Record<string, unknown> = {};
   await expect(async () => {

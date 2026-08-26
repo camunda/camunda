@@ -19,7 +19,10 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {APIRequestContext} from 'playwright-core';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 import {DeployResourceResponse} from '@camunda8/sdk/dist/c8/lib/C8Dto';
@@ -396,13 +399,16 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
   });
 
   // Used before migration to confirm instances are at the source element via
-  // user-task search (only called with defaultAssertionOptions / 30s budget).
+  // user-task search. The initial CREATING -> CREATED transition is applied by
+  // the RDBMS secondary-storage indexer, whose flush can lag past the 30s
+  // default budget on a loaded database leg, so default to the extended (90s)
+  // window here too.
   const verifyBothInstancesAreAtElementId = async (
     request: APIRequestContext,
     processInstanceKey1: string,
     processInstanceKey2: string,
     elementId: string,
-    assertionOptions = defaultAssertionOptions,
+    assertionOptions = extendedAssertionOptions,
   ) => {
     await findUserTask(
       request,

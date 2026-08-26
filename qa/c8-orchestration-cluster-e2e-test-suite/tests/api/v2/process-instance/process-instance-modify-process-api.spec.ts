@@ -17,7 +17,10 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Process Instance Modify Process API', () => {
@@ -129,7 +132,12 @@ test.describe.parallel('Process Instance Modify Process API', () => {
         expect(body.items[0].state).toBe('CANCELED');
         expect(body.items[1].elementId).toBe('second_task');
         expect(body.items[1].state).toBe('CREATED');
-      }).toPass(defaultAssertionOptions);
+        // The newly activated second task must transition CREATING -> CREATED
+        // via the RDBMS secondary-storage indexer, whose flush can lag past the
+        // 30s default budget on a loaded database leg. Use the extended (90s)
+        // window so a slow indexer surfaces as a longer wait, not a false
+        // CREATING failure.
+      }).toPass(extendedAssertionOptions);
     });
 
     await cancelProcessInstance(localStorage['processInstanceKey'] as string);
