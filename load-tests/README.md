@@ -55,6 +55,7 @@ graph TD
         CORE["camunda-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
         ECS["camunda-ecs-weekly-load-test.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
+        VARIANT["stress-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
         PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
         METRICS["camunda-load-test-metrics.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         DELETE["camunda-delete-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
@@ -70,8 +71,11 @@ graph TD
 
     SCHEDULED -- "one job per stable branch<br/>+ main, official images" --> RELEASE
     SCHEDULED -- "verify + delete namespace" --> VERIFY
-    DAILY -- "scenario: max" --> CORE
-    DAILY -- "always profiles first<br/>30min of both runs" --> PROFILE
+    DAILY -- "one call per variant<br/>(matrix)" --> VARIANT
+    VARIANT -- "scenario: max" --> CORE
+    VARIANT -- "always profiles first<br/>30min of each variant" --> PROFILE
+    VARIANT -- "3hr soak, then<br/>snapshot metrics" --> METRICS
+    VARIANT -- "delete namespace<br/>after metrics" --> DELETE
     WEEKLY -- "3 parallel calls:<br/>realistic, opensearch-realistic,<br/>rdbms-realistic" --> CORE
     WEEKLY -- "ECS" --> ECS
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Resolve the daily-on-main load-test namespace + post-warmup anchor.
 
-Emits `namespace` (`c8-medic-daily-<date>-<sha>-test`, gRPC) and `at`
+Emits `namespace` (`c8-medic-daily-<date>-<sha>-test-grpc`, the gRPC variant) and `at`
 (RFC3339 = soak.started_at + 45 min, so PromQL `[1800s] @ at` evaluates
 the first 30 min after the 15-min warmup) to `$GITHUB_OUTPUT`. Empty on
 miss so the downstream comparison job skips cleanly. Falls back to the
@@ -17,7 +17,18 @@ REPO = os.environ.get("GITHUB_REPOSITORY", "")
 WORKFLOW = "camunda-daily-load-tests.yml"
 ARTIFACT_PREFIX = "daily-load-test-metrics-"
 ARTIFACT_NAME_PREFIX = ARTIFACT_PREFIX + "medic-daily-"
-SOAK_JOB_NAME = "Soak"
+# GitHub renders a matrixed reusable-workflow call's inner jobs as
+# "<outer job name> / <inner job name>" (confirmed against a real run of
+# zeebe-search-integration-tests.yml via `gh api .../jobs`). camunda-daily-load-tests.yml's
+# gRPC matrix leg is named "gRPC" and stress-load-test.yml's soak job is always named "Soak",
+# so the composite name is "gRPC / Soak". startswith() (not ==) keeps this resilient if the
+# inner workflow ever nests one level deeper.
+SOAK_JOB_NAME = "gRPC / Soak"
+# LOOKBACK_BUSINESS_DAYS looks back far enough to still hit runs from before the matrix
+# extraction landed, where the gRPC soak job was flat and simply named "Soak" (no composite
+# prefix). Kept alongside SOAK_JOB_NAME, both matched via startswith(), until those pre-merge
+# runs age out of the lookback window.
+SOAK_JOB_NAME_LEGACY = "Soak"
 WARMUP_SECONDS = 900           # mirrors sleep 900 in await-benchmark (PR side)
 METRICS_WINDOW_SECONDS = 1800  # PromQL [1800s] @ at evaluates [at-1800, at]
 TODAY_AVAILABLE_UTC_HOUR = 6  # daily cron 02:00 UTC + setup + 3h soak → ~05:30
@@ -86,7 +97,8 @@ def soak_started_at(run_id: str) -> str | None:
     out = gh([
         "api", f"repos/{REPO}/actions/runs/{run_id}/jobs",
         "--jq",
-        f'.jobs[] | select(.name | startswith("{SOAK_JOB_NAME}")) | .started_at',
+        f'.jobs[] | select((.name | startswith("{SOAK_JOB_NAME_LEGACY}")) or '
+        f'(.name | startswith("{SOAK_JOB_NAME}"))) | .started_at',
     ])
     if not out:
         return None
@@ -131,7 +143,9 @@ def resolve(now: datetime) -> tuple[str, str] | None:
         anchor = (start_dt + timedelta(seconds=WARMUP_SECONDS + METRICS_WINDOW_SECONDS)).strftime(
             "%Y-%m-%dT%H:%M:%SZ"
         )
-        namespace = f"c8-{benchmark}"
+        # Every daily variant's namespace carries a -<variant-key> suffix (see
+        # camunda-daily-load-tests.yml's matrix), including the gRPC variant this resolves to.
+        namespace = f"c8-{benchmark}-grpc"
         print(f"daily run {rid} ({d}) → {namespace} @ {anchor}")
         return namespace, anchor
     return None
