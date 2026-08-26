@@ -33,6 +33,14 @@ public record PartitionState(State state, int priority, DynamicPartitionConfig c
     return new PartitionState(State.ACTIVE, priority, config);
   }
 
+  public PartitionState toLearner() {
+    if (state != State.JOINING && state != State.LEARNER) {
+      throw new IllegalStateException(
+          String.format("Cannot transition to LEARNER when current state is %s", state));
+    }
+    return new PartitionState(State.LEARNER, priority, config);
+  }
+
   public PartitionState toLeaving() {
     return new PartitionState(State.LEAVING, priority, config);
   }
@@ -63,6 +71,20 @@ public record PartitionState(State state, int priority, DynamicPartitionConfig c
     ACTIVE,
     LEAVING,
     BOOTSTRAPPING,
-    RECOVERING
+    RECOVERING,
+    /**
+     * The member replicates the partition as a non-voting learner: it joined the replication group
+     * in a first configuration change and is caught up on the log before a second configuration
+     * change promotes it to {@link #ACTIVE}. Unlike {@link #JOINING}, this state survives a
+     * restart: the partition is part of the member's partition distribution and is started on boot,
+     * recovering its Raft state from disk, so a pending promotion can complete.
+     *
+     * <p>Rolling upgrades: a broker without this value decodes it as UNKNOWN and would conflict on
+     * merge at an equal version. That merge is unreachable, because any configuration carrying a
+     * LEARNER partition also carries a promote operation, pending or in the completed-change
+     * history, which such a broker cannot decode - it rejects the whole gossiped configuration
+     * before ever re-gossiping the UNKNOWN state.
+     */
+    LEARNER
   }
 }

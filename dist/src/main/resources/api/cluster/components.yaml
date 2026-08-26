@@ -729,6 +729,7 @@ schemas:
       - ACTIVE
       - LEAVING
       - RECOVERING
+      - LEARNER
 
   TopologyVersion:
     title: TopologyVersion

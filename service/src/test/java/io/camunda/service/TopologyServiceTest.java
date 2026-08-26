@@ -270,6 +270,7 @@ public class TopologyServiceTest {
       case ACTIVE -> State.ACTIVE;
       case LEAVING -> State.LEAVING;
       case RECOVERING -> State.RECOVERING;
+      case LEARNER -> State.LEARNER;
     };
   }
 

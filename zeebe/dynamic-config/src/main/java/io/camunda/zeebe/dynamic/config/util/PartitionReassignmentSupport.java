@@ -34,10 +34,10 @@ public final class PartitionReassignmentSupport {
    *
    * <p>Known limitation: {@code partitions} comes from {@link
    * ConfigurationUtil#getPartitionDistributionPerPhysicalTenant}, which only counts partitions in
-   * {@code ACTIVE}/{@code LEAVING}/{@code RECOVERING} state and excludes {@code JOINING}. A broker
-   * that is mid-join for a partition of some other, untouched group therefore looks under-loaded
-   * here relative to its true near-future load, and could receive more new replicas than it should
-   * as a result.
+   * {@code ACTIVE}/{@code LEAVING}/{@code RECOVERING}/{@code LEARNER} state and excludes {@code
+   * JOINING}. A broker that is mid-join for a partition of some other, untouched group therefore
+   * looks under-loaded here relative to its true near-future load, and could receive more new
+   * replicas than it should as a result.
    */
   static void accumulateLoad(
       final Set<PartitionMetadata> partitions,

@@ -727,6 +727,7 @@ final class ClusterApiUtils {
       case ACTIVE -> PartitionStateCode.ACTIVE;
       case LEAVING -> PartitionStateCode.LEAVING;
       case RECOVERING -> PartitionStateCode.RECOVERING;
+      case LEARNER -> PartitionStateCode.LEARNER;
       // TODO: Define state code for BootStrapping
       case BOOTSTRAPPING, UNKNOWN -> PartitionStateCode.UNKNOWN;
     };
