@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-adr docs-version-current docs-doc-page docs-doc-id-storage/per-index-shard-configuration" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.2">
+<title data-rh="true">Per-index shard configuration and the single-shard-by-design taxonomy | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-61115/adr/storage/per-index-shard-configuration/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Per-index shard configuration and the single-shard-by-design taxonomy | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Data Layer team"><meta data-rh="true" property="og:description" content="DRI: Data Layer team"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-61115/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-61115/adr/storage/per-index-shard-configuration/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-61115/adr/storage/per-index-shard-configuration/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-61115/adr/storage/per-index-shard-configuration/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-61115/assets/css/styles.44533d03.css">
+<script src="/camunda/pr-preview/pr-61115/assets/js/runtime~main.89506cbb.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-61115/assets/js/main.86919bfc.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda/pr-preview/pr-61115/img/black-C.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda/pr-preview/pr-61115/"><div class="navbar__logo"><img src="/camunda/pr-preview/pr-61115/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda/pr-preview/pr-61115/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Platform</b></a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><main class="docMainContainer_TBSr docMainContainerEnhanced_lQrH"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Per-index shard configuration and the single-shard-by-design taxonomy</h1></header>
+<p><strong>DRI</strong>: Data Layer team</p>
+<p><strong>Status</strong>: Accepted (8.11)</p>
+<p><strong>Purpose</strong>: Record that the global <code>number-of-shards</code> knob no longer applies to every
+secondary-storage index, fix the taxonomy that decides which indices are single-shard by
+design, and pin down how an operator overrides that per index.</p>
+<p><strong>Audience</strong>: Engineers and AI coding agents working on secondary storage
+(<code>schema-manager/</code>, <code>webapps-schema/</code>, <code>configuration/</code>) or on how Camunda 8 is
+configured in containerised deployments.</p>
+<p>Relates to: camunda/camunda#56246 (this decision), camunda/camunda#56245 (descriptor
+defaults), camunda/camunda#56117 (the post-importer-queue watermark skip),
+camunda/camunda#56179 (the brownfield read-path fix).</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">Context<a href="#context" class="hash-link" aria-label="Direct link to Context" title="Direct link to Context" translate="no">​</a></h2>
+<p>Camunda 8 creates roughly 40 indices in its secondary storage. Until 8.11 a single
+global knob, <code>camunda.data.secondary-storage.&lt;db&gt;.number-of-shards</code>, set the primary
+shard count for all of them, with a <code>number-of-shards-per-index</code> map as the only
+escape hatch.</p>
+<p>Two problems followed from that.</p>
+<p><strong>The global knob was applied where sharding cannot help, and where it actively
+hurts.</strong> The large majority of the indices are plain <code>index/</code> descriptors —
+authorization, role, user, group, tenant, mapping-rule, process, decision,
+decision-requirements, form, metadata and so on. They hold configuration, definition
+or singleton data: small, bounded, and read by exact key. Spreading them over several
+shards buys nothing and costs a fan-out on every read. Only the roughly ten
+process-instance-volume <code>Template</code> indices — list-view, flow-node-instance, variable,
+sequence-flow, incident, operation, job, decision-instance, task — have the volume
+that sharding exists to serve.</p>
+<p>For <code>post-importer-queue</code> a multi-shard index was not merely useless but the root
+cause of camunda/camunda#56117. Entries for a single partition scattered across shards
+that refresh independently, so a reader that assumed one atomic refresh could observe
+a later watermark while earlier entries were still invisible, and skip them.
+camunda/camunda#56179 hardened the read path for deployments that already had such an
+index; camunda/camunda#56245 removed the cause for newly created ones.</p>
+<p><strong>The per-index escape hatch was unusable where it was most needed.</strong> The
+<code>number-of-shards-per-index</code> property was a <code>Map&lt;String, Integer&gt;</code> keyed by the raw
+index name. Those names contain dashes, and a dash cannot appear in an environment
+variable name, so <code>CAMUNDA_..._NUMBEROFSHARDSPERINDEX_POST-IMPORTER-QUEUE</code> did not
+bind. A containerised deployment, which configures almost exclusively through the
+environment, therefore could not reach the property at all. The map&#x27;s type also said
+nothing about which keys it accepted, so the valid index names could only be found by
+reading descriptor sources.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
+<p><strong>D1. The global <code>number-of-shards</code> knob no longer applies to <code>index/</code> indices.</strong></p>
+<p><code>AbstractIndexDescriptor.getDefaultShardCount()</code> returns <code>OptionalInt.of(1)</code>, so every
+plain index defaults to one primary shard regardless of the global setting.
+<code>AbstractTemplateDescriptor</code> overrides it back to <code>OptionalInt.empty()</code>, so
+template-backed indices keep following the global knob. The knob is thereby
+redefined: it is the shard count for process-instance-volume indices, not for the
+whole schema.</p>
+<p>This changes behaviour on upgrade for anyone running a global count above 1: newly
+created <code>index/</code> indices get one shard where previously they got the global value.
+Shards are immutable after creation, so existing indices are untouched and no
+migration is involved.</p>
+<p><strong>D2. The descriptor is the single source of per-index defaults.</strong></p>
+<p>The taxonomy lives in the descriptor class hierarchy, not in a configuration file, a
+constant list, or a naming convention:</p>
+<table><thead><tr><th>Descriptor</th><th>Default shards</th><th>Rationale</th></tr></thead><tbody><tr><td><code>AbstractIndexDescriptor</code> (plain <code>index/</code>)</td><td>1</td><td>config/definition/singleton data; sharding buys nothing</td></tr><tr><td><code>AbstractTemplateDescriptor</code> (<code>template/</code>)</td><td>global knob</td><td>process-instance volume; sharding is the point</td></tr><tr><td><code>PostImporterQueueTemplate</code></td><td>1</td><td>atomic refresh is a correctness requirement (#56117)</td></tr><tr><td><code>MetadataIndex</code></td><td>1</td><td>singleton schema metadata</td></tr></tbody></table>
+<p>A descriptor that must be pinned against its base class overrides
+<code>getDefaultShardCount()</code> explicitly. Adding a new index therefore decides its shard
+behaviour by which base class it extends, which is the property we want: the decision
+cannot be forgotten, only overridden.</p>
+<p>No tuned per-index defaults are introduced beyond the pinning above. Setting, say,
+list-view to 3 by default is a per-configuration choice that can be made later without
+disturbing this taxonomy.</p>
+<p><strong>D3. Resolution precedence is explicit config, then descriptor, then global.</strong></p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">config number-of-shards-per-index.&lt;index&gt;  →  descriptor.getDefaultShardCount()  →  global number-of-shards</span><br></div></code></pre></div></div>
+<p>Explicit operator configuration always wins, for every index. This is deliberate: it
+keeps an escape hatch for the single-shard-by-design indices, of which
+persistent web session is the realistic case — an installation running very many
+concurrent sessions may genuinely outgrow one shard.</p>
+<p><strong>D4. <code>number-of-shards-per-index</code> is a typed POJO, one nullable field per index.</strong></p>
+<p>The property key is unchanged. Spring&#x27;s relaxed binding keeps existing kebab-case YAML
+working (<code>list-view</code> binds to the field <code>listView</code>) and additionally makes
+<code>CAMUNDA_..._NUMBEROFSHARDSPERINDEX_LISTVIEW</code> bind, which the map form could not. The
+declared fields also reach <code>spring-configuration-metadata.json</code>, which is what makes
+the valid keys discoverable in an IDE and in the generated <code>defaults.yaml</code>.</p>
+<p>A field is declared for <strong>every</strong> index rather than a curated subset, so nothing the
+map used to accept is silently dropped and D3&#x27;s escape hatch survives for all of them.
+A <code>null</code> field means &quot;not configured&quot; and is omitted from the projected map entirely,
+which is what lets the index fall through to the descriptor default.</p>
+<p>The replicas and refresh-interval maps keep their <code>Map&lt;String, Integer&gt;</code> shape. Their
+keys have the same environment-variable weakness, but converting them is a separate
+decision and was deliberately kept out of this change.</p>
+<p><strong>D5. Misconfiguration is rejected when it is wrong and warned about when it is a
+trade.</strong></p>
+<ul>
+<li class="">A count below 1 is a hard error, raised in the configuration layer so the message
+names the property path and the index rather than surfacing as an engine-level
+schema-creation failure.</li>
+<li class="">Raising a single-shard-by-design index above 1 shard is a <strong>warning</strong>, not a
+rejection — rejecting would contradict D3. The warning names the index and links
+camunda/camunda#56117 so the operator understands that they are trading away the
+atomic-refresh property.</li>
+<li class="">A configured count that differs from an already-created index&#x27;s actual count is a
+<strong>warning</strong>. Shards are immutable after creation, so such a setting is otherwise a
+silent no-op: the operator sees the value they asked for in their configuration and a
+differently sharded index in the engine, with nothing connecting the two. The check
+reads live settings at startup and is best-effort — a failure to read them is logged
+at debug and never fails a startup that would otherwise succeed.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences">Consequences<a href="#consequences" class="hash-link" aria-label="Direct link to Consequences" title="Direct link to Consequences" translate="no">​</a></h2>
+<ul>
+<li class="">Operators who set a global <code>number-of-shards</code> above 1 will see newly created
+<code>index/</code> indices come up with one shard. This is a documented behaviour change for
+8.11 and belongs in the release notes.</li>
+<li class="">Existing indices are never resharded. Any deployment that already has a multi-shard
+<code>post-importer-queue</code> continues to depend on the read-path hardening from
+camunda/camunda#56179.</li>
+<li class="">Adding an index to <code>webapps-schema</code> now requires adding a field to
+<code>NumberOfShardsPerIndex</code>. Without it the index still gets a correct default from its
+descriptor, but it cannot be overridden. The field-to-index-name projection is
+covered by a unit test so a field that is added but not projected fails the build.</li>
+<li class="">The <code>configuration</code> module holds the index names as string literals rather than
+referencing the descriptor <code>INDEX_NAME</code> constants, to avoid a new module dependency.
+This is the one place where drift between the two is possible.</li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/adr/storage/002-per-index-shard-configuration.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a></li><li><a href="#consequences" class="table-of-contents__link toc-highlight">Consequences</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+</body>
+</html>
