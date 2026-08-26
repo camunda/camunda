@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Per-index shard configuration and the single-shard-by-design taxonomy | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-61115/adr/storage/per-index-shard-configuration/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Per-index shard configuration and the single-shard-by-design taxonomy | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Data Layer team"><meta data-rh="true" property="og:description" content="DRI: Data Layer team"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-61115/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-61115/adr/storage/per-index-shard-configuration/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-61115/adr/storage/per-index-shard-configuration/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-61115/adr/storage/per-index-shard-configuration/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-61115/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-61115/assets/js/runtime~main.89506cbb.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-61115/assets/js/main.86919bfc.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-61115/assets/js/runtime~main.497219fe.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-61115/assets/js/main.0e6c70cb.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -101,16 +101,26 @@ trade.</strong></p>
 names the property path and the index rather than surfacing as an engine-level
 schema-creation failure.</li>
 <li class="">Raising a single-shard-by-design index above 1 shard is a <strong>warning</strong>, not a
-rejection — rejecting would contradict D3. The warning names the index and links
-camunda/camunda#56117 so the operator understands that they are trading away the
-atomic-refresh property.</li>
+rejection — rejecting would contradict D3. What is traded away differs by index:
+for most of them one shard is merely the efficient choice for
+configuration or definition data, and widening costs a fan-out per read; only
+where a reader also assumes a single atomic refresh is it a correctness risk.
+The warning therefore names the index and offers post-importer-queue and
+camunda/camunda#56117 as the example of the latter, rather than asserting that
+risk of whichever index it fires on.</li>
 <li class="">A configured count that differs from an already-created index&#x27;s actual count is a
 <strong>warning</strong>. Shards are immutable after creation, so such a setting is otherwise a
 silent no-op: the operator sees the value they asked for in their configuration and a
 differently sharded index in the engine, with nothing connecting the two. The check
 reads live settings at startup and is best-effort — a failure to read them is logged
-at debug and never fails a startup that would otherwise succeed.</li>
+at debug and never fails a startup that would otherwise succeed. The engine clients
+deliberately do not log this particular read failure themselves, so that a failure
+the caller ignores cannot reach an operator&#x27;s alerting as an ERROR.</li>
 </ul>
+<p>All three run once per startup, from a single pass over the descriptors. The settings
+resolver is called again for every descriptor during template creation, index creation
+and the settings update, so warning from there would repeat each message up to three
+times.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences">Consequences<a href="#consequences" class="hash-link" aria-label="Direct link to Consequences" title="Direct link to Consequences" translate="no">​</a></h2>
 <ul>
 <li class="">Operators who set a global <code>number-of-shards</code> above 1 will see newly created
