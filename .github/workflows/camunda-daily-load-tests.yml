@@ -103,7 +103,7 @@ jobs:
             secondary-storage-type: elasticsearch
           - key: none
             label: None
-            load-test-load: ''
+            load-test-load: '--set load-tester.starter.rate=500'
             load-test-setup-helm-values: ''
             secondary-storage-type: none
     uses: ./.github/workflows/stress-load-test.yml
