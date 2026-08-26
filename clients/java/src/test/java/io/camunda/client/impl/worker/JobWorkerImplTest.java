@@ -312,6 +312,57 @@ final class JobWorkerImplTest {
   }
 
   @Test
+  void shouldKeepPollingWhileALongRunningJobHoldsPartOfTheCapacity() {
+    // given a worker whose handler executor can run a single job and rejects the rest
+    final int maxJobsActive = 4;
+    final AtomicInteger rejectedJobs = new AtomicInteger();
+    final CountDownLatch releaseHandler = new CountDownLatch(1);
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobHandlingExecutor =
+        new ThreadPoolExecutor(
+            1,
+            1,
+            0,
+            TimeUnit.MILLISECONDS,
+            new SynchronousQueue<>(),
+            (rejected, executor) -> {
+              rejectedJobs.incrementAndGet();
+              throw new RejectedExecutionException("Job handling executor is saturated");
+            });
+    gateway.respondWith(TestData.jobs(maxJobsActive));
+
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler((c, job) -> Uninterruptibles.awaitUninterruptibly(releaseHandler))
+                .maxJobsActive(maxJobsActive)
+                .pollInterval(Duration.ofMillis(50))
+                .open()) {
+      try {
+        // when one job occupies the handler and the rest of the batch is rejected
+        Awaitility.await("Executor should reject the jobs it cannot run")
+            .untilAtomic(rejectedJobs, Matchers.greaterThanOrEqualTo(maxJobsActive - 1));
+
+        // then the worker keeps asking for jobs to fill the capacity the rejected jobs gave back,
+        // rather than waiting for the one running job to finish
+        gateway.startMeasuring();
+        Awaitility.await("Worker should keep activating jobs while one job is still running")
+            .atMost(Duration.ofSeconds(10))
+            .until(() -> gateway.getCountedPolls() > 1);
+      } finally {
+        releaseHandler.countDown();
+      }
+    }
+  }
+
+  @Test
   void shouldCloseIfExecutorIsClosed() {
     // given
     final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
