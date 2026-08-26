@@ -1,0 +1,257 @@
+// Aligns Carbon's surfaces with the design system that the V2 navigation renders, so the two do
+// not sit side by side in different visual languages. Carbon underlines its inputs and fills them
+// grey; the design system encloses them and fills them white.
+
+// Carbon spells its fields differently per component, and they are restyled in two places.
+@mixin carbon-fields {
+  .cds--text-input,
+  .cds--text-area,
+  .cds--list-box,
+  .cds--select-input,
+  .cds--date-picker__input,
+  .cds--number input[type='number'] {
+    @content;
+  }
+}
+
+// Joined into one control: neighbours overlap so they share a border, and only the group's outer
+// corners round.
+@mixin carbon-segmented-group {
+  border-radius: 0;
+  margin-inline-start: -1px;
+
+  &:first-child {
+    margin-inline-start: 0;
+    border-start-start-radius: var(--optimize-button-border-radius);
+    border-end-start-radius: var(--optimize-button-border-radius);
+  }
+
+  &:last-child {
+    border-start-end-radius: var(--optimize-button-border-radius);
+    border-end-end-radius: var(--optimize-button-border-radius);
+  }
+}
+
+// Leaves the disabled styling Carbon already applies alone. `$carbon-btn-action` also spares the
+// modal close, which Carbon marks primary but then strips the fill from, so recolouring it paints
+// a black square.
+$carbon-btn: ':not(:disabled):not(.cds--btn--disabled)';
+$carbon-btn-action: ':not(:disabled):not(.cds--btn--disabled):not(.cds--modal-close)';
+
+.optimize-nav-v2 {
+  --optimize-card-border-radius: 0.75rem;
+  --optimize-input-border-radius: 0.5rem;
+  --optimize-button-border-radius: 0.5rem;
+  --optimize-checkbox-border-radius: 0.25rem;
+  // Not a Carbon token, so re-emitting the theme further down leaves it intact.
+  --optimize-field-background: #ffffff;
+
+  @include carbon-fields {
+    // Optimize is on the `white` theme, where Carbon swaps the subtle pair, so `subtle-01` is the
+    // same #c6c6c6 that Operate gets from `subtle-02` on g10.
+    border: 1px solid var(--cds-border-subtle-01);
+    border-radius: var(--optimize-input-border-radius);
+    // Set as well as declared through `--cds-field` below: Carbon leaves fields on a coloured
+    // surface transparent, so those show the surface through rather than a field colour.
+    background-color: var(--optimize-field-background);
+  }
+
+  .cds--list-box__field,
+  .cds--list-box__field--wrapper {
+    border-radius: var(--optimize-input-border-radius);
+  }
+
+  .cds--overflow-menu-options__btn {
+    border-radius: var(--optimize-input-border-radius);
+  }
+
+  .cds--checkbox-label::before {
+    border-radius: var(--optimize-checkbox-border-radius);
+    // Not `border-subtle-01`: that is the same #e0e0e0 Carbon fills selected and header rows with,
+    // so the box disappears into them.
+    border-color: var(--cds-border-strong-01);
+  }
+
+  .cds--btn {
+    border-radius: var(--optimize-button-border-radius);
+  }
+
+  // Not the menu buttons: Carbon floors their width at 12rem, so centring only opens a gap between
+  // the label and the chevron pinned to the end.
+  .cds--btn:not(.cds--menu-button__trigger) {
+    justify-content: center;
+    text-align: center;
+  }
+
+  // The design system's primary action is the text colour, not Carbon's blue.
+  .cds--btn--primary#{$carbon-btn-action} {
+    background-color: var(--cds-text-primary);
+    border-color: var(--cds-text-primary);
+    color: var(--cds-background);
+
+    &:hover {
+      $hover: color-mix(in srgb, var(--cds-text-primary) 85%, var(--cds-background));
+
+      background-color: $hover;
+      border-color: $hover;
+      color: var(--cds-background);
+    }
+
+    &:active {
+      $active: color-mix(in srgb, var(--cds-text-primary) 70%, var(--cds-background));
+
+      background-color: $active;
+      border-color: $active;
+    }
+  }
+
+  .cds--btn--secondary#{$carbon-btn-action},
+  .cds--btn--tertiary#{$carbon-btn-action} {
+    background-color: var(--optimize-field-background);
+    border-color: var(--cds-border-subtle-01);
+    color: var(--cds-text-primary);
+
+    &:hover {
+      background-color: var(--cds-background-hover);
+      border-color: var(--cds-border-subtle-01);
+      color: var(--cds-text-primary);
+    }
+  }
+
+  .cds--btn--ghost#{$carbon-btn} {
+    color: var(--cds-text-primary);
+  }
+
+  // Carbon butts a button set together, so the radius above collides two rounded corners mid-group.
+  // Not a modal footer: Carbon marks that a set as well, but it is a row of separate dialog actions.
+  .cds--btn-set:not(.cds--modal-footer) .cds--btn {
+    @include carbon-segmented-group;
+
+    // Carbon divides disabled members with a box-shadow, which the overlap already provides and the
+    // rounded end leaves standing proud.
+    &.cds--btn--disabled {
+      box-shadow: none;
+    }
+  }
+
+  // The report header's actions read as one segmented control in the design system.
+  .EntityNameForm .tools {
+    display: inline-flex;
+    align-items: center;
+
+    .cds--btn {
+      gap: 0.5rem;
+      padding-inline: 1rem;
+
+      @include carbon-segmented-group;
+
+      // Carbon reserves a wide right padding and drops the icon into it absolutely, which leaves
+      // the label and icon at opposite ends instead of side by side.
+      svg {
+        position: static;
+        margin: 0;
+      }
+    }
+  }
+
+  // Carbon strips the fill but leaves the icon the on-colour white that paired with it.
+  .cds--modal-close {
+    color: var(--cds-icon-primary);
+  }
+
+  // Carbon splits its modal footer between full-bleed buttons meeting in the middle, which the
+  // radius above turns into two rounded slabs butted together.
+  .cds--modal-footer {
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 1rem;
+
+    .cds--btn {
+      flex: 0 0 auto;
+      // Carbon sizes these to fill half the footer each, which `flex: 0 0 auto` would keep.
+      inline-size: auto;
+      max-inline-size: none;
+      block-size: 2.5rem;
+      min-block-size: 2.5rem;
+      padding-block: 0;
+      padding-inline: 1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      // Positioned at an offset measured from the taller button.
+      svg {
+        position: static;
+        margin: 0;
+      }
+    }
+  }
+
+  .ControlPanel,
+  .EmptyState {
+    border-radius: var(--optimize-card-border-radius);
+  }
+
+  // Combo box and filterable multi select nest a `cds--text-input` inside the `cds--list-box`
+  // shell, so both match above and the field draws two borders, one inside the other.
+  .cds--list-box .cds--text-input {
+    border: none;
+    background-color: transparent;
+  }
+
+  // These menus are drawn from `--cds-layer`, which stays grey. Set here rather than on the token,
+  // which also backs the panels and table rows that should keep it.
+  .cds--list-box__menu,
+  .cds--menu {
+    border-radius: var(--optimize-input-border-radius);
+    background-color: var(--optimize-field-background);
+    overflow: hidden auto;
+  }
+
+  // Carbon draws focus as a square outline, which stands off a rounded corner. Table fields are
+  // dense enough for that to read as a mistake.
+  .cds--data-table-container,
+  .Table {
+    @include carbon-fields {
+      border-radius: 0;
+    }
+  }
+
+  // Carbon sizes these to fill the bar, which is heavy once they carry a border, and sets the line
+  // height to the old height, so that has to come down with them for the text to sit centred.
+  .cds--pagination .cds--select-input {
+    block-size: 2rem;
+    line-height: 2rem;
+  }
+
+  // Carbon sets this 1px from the selects, which only read as a gap while they had no visible edge.
+  .cds--pagination__left .cds--pagination__text {
+    margin-inline-end: 0.5rem;
+  }
+
+  .cds--pagination__right .cds--pagination__text {
+    margin-inline-start: 0.5rem;
+  }
+}
+
+// Carbon fills fields grey through `--cds-field*`, and so do Optimize's own stylesheets, so setting
+// the tokens reaches both without outranking seventeen rules. Every point that re-emits the theme
+// resets them for its subtree, which is why popovers and modals stayed grey. Dark variants are left
+// alone.
+.optimize-nav-v2,
+.optimize-nav-v2 .Modal,
+.optimize-nav-v2 .cds--layer-one,
+.optimize-nav-v2 .cds--layer-two,
+.optimize-nav-v2 .cds--layer-three,
+.optimize-nav-v2 .Popover > .cds--popover > .popoverContent {
+  --cds-field: var(--optimize-field-background);
+  --cds-field-01: var(--optimize-field-background);
+  --cds-field-02: var(--optimize-field-background);
+}
+
+// Inline blocks align on the text baseline, so they sit at different heights whenever they differ
+// in height. Invisible until the fields above gained a border to see it by.
+.optimize-nav-v2 .ControlPanel > li,
+.optimize-nav-v2 .ControlPanel .DefinitionSelection {
+  vertical-align: middle;
+}
