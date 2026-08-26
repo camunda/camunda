@@ -3,7 +3,7 @@
 #              accepting required name and tag inputs plus optional per-component
 #              tag overrides: optimize-tag, identity-tag, and connectors-tag.
 #              Uses official Docker images with scenario: realistic.
-# called-by: camunda-scheduled-release-load-tests.yml (weekdays Mon-Fri at 02:00 UTC),
+# called-by: camunda-scheduled-release-load-tests.yml from the main branch,
 #            release BPMN process (workflow_dispatch via GitHub API)
 # calls: camunda-load-test.yml (orchestration-tag: <tag>, scenario: realistic)
 # note: Verification and namespace cleanup are handled externally by the scheduled workflow
@@ -73,8 +73,6 @@ defaults:
 
 env:
   TEST_OWNER: '@camunda/reliability-testing'
-  CLUSTER: camunda-benchmark-prod
-  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
 
 jobs:
   sanitize-inputs:
@@ -90,6 +88,20 @@ jobs:
         with:
           branch: ${{ inputs.name }}
           max_length: 50  # reduced to account for load-test prefix "c8-" and potential suffixes for uniqueness
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          sparse-checkout:
+            .ci
+            .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   create-load-test:
     name: Create release load test
@@ -98,7 +110,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.sanitize-inputs.outputs.sanitized-name }}
-      ref: main
+      ref: stable/8.10
       orchestration-tag: ${{ inputs.tag }}
       ttl: 60
       scenario: 'realistic'
@@ -117,6 +129,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          sparse-checkout: |
+            .ci
+            .github
       - name: Import Slack webhook from Vault
         id: slack-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
