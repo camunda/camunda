@@ -234,6 +234,51 @@ public class RoleSpecificFilterIT {
         .containsExactlyInAnyOrder(matchingRoleId, otherMatchingRoleId);
   }
 
+  @Test
+  public void shouldFindRolesWithTopLevelFilterAndOrFiltersCombinedUsingAndSemantics() {
+    final var matchingDescription = "matching-description-" + nextStringId();
+    final var otherDescription = "other-description-" + nextStringId();
+
+    final var roleIdMatchingBoth = Strings.newRandomValidIdentityId();
+    final var roleIdMatchingOrOnly = Strings.newRandomValidIdentityId();
+    final var roleIdMatchingTopLevelOnly = Strings.newRandomValidIdentityId();
+
+    createAndSaveRole(
+        rdbmsWriters,
+        RoleFixtures.createRandomized(
+            b -> b.roleId(roleIdMatchingBoth).description(matchingDescription)));
+    createAndSaveRole(
+        rdbmsWriters,
+        RoleFixtures.createRandomized(
+            b -> b.roleId(roleIdMatchingOrOnly).description(otherDescription)));
+    createAndSaveRole(
+        rdbmsWriters,
+        RoleFixtures.createRandomized(
+            b -> b.roleId(roleIdMatchingTopLevelOnly).description(matchingDescription)));
+
+    final var searchResult =
+        roleReader.search(
+            new RoleQuery(
+                new RoleFilter.Builder()
+                    .description(matchingDescription)
+                    .orFilters(
+                        List.of(
+                            new RoleFilter.Builder().roleId(roleIdMatchingBoth).build(),
+                            new RoleFilter.Builder().roleId(roleIdMatchingOrOnly).build()))
+                    .build(),
+                RoleSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    // then: only the role matching both the top-level description AND one of the $or branches is
+    // returned. roleIdMatchingOrOnly matches an $or branch but not the top-level description, and
+    // roleIdMatchingTopLevelOnly matches the top-level description but no $or branch, so both must
+    // be excluded.
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items())
+        .extracting(RoleEntity::roleId)
+        .containsExactly(roleIdMatchingBoth);
+  }
+
   static List<RoleFilter> shouldFindWithSpecificFilterParameters() {
     return List.of(
         new RoleFilter.Builder().roleId(ROLE_ID).build(),

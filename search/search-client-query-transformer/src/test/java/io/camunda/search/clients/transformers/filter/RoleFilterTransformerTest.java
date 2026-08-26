@@ -46,6 +46,38 @@ class RoleFilterTransformerTest extends AbstractTransformerTest {
             });
   }
 
+  @Test
+  void shouldCombineTopLevelFilterWithOrFiltersUsingAndLogic() {
+    final var filter =
+        FilterBuilders.role(
+            f ->
+                f.roleId("role-top")
+                    .orFilters(
+                        List.of(
+                            FilterBuilders.role(f1 -> f1.roleId("role-1")),
+                            FilterBuilders.role(f2 -> f2.roleId("role-2")))));
+
+    final var searchQuery = transformQuery(filter);
+
+    assertThat(searchQuery.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            bool -> {
+              // the top-level field must AND with the unconditional JOIN term and the appended
+              // OR group, rather than merely coexisting with it
+              assertThat(bool.must()).hasSize(3);
+              assertThat(termValue(bool.must().get(0))).isEqualTo("role-top");
+              assertThat(bool.must().getLast().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchBoolQuery.class,
+                      or -> {
+                        assertThat(or.should()).hasSize(2);
+                        assertThat(termValue(or.should().get(0))).isEqualTo("role-1");
+                        assertThat(termValue(or.should().get(1))).isEqualTo("role-2");
+                      });
+            });
+  }
+
   /**
    * Extracts the string value of the first {@link SearchTermQuery} found in {@code q} — either
    * {@code q} itself is a term query, or it's a bool query and the term is one of its {@code must}
