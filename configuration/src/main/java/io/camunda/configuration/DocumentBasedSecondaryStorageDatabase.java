@@ -42,7 +42,12 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** Maximum number of connections allowed per route in the ES and OS connector connection pool. */
   private Integer maxConnectionsPerRoute;
 
-  /** How many shards the search engine database uses for all indices. */
+  /**
+   * How many shards the search engine database uses for indices that do not pin a shard count of
+   * their own. In practice that is the process-instance-volume indices; the remaining indices
+   * default to a single shard whatever this is set to. Use number-of-shards-per-index to override
+   * an individual index.
+   */
   private int numberOfShards = 1;
 
   /** How many replicas the search engine database uses for all indices. */

@@ -654,7 +654,10 @@ camunda: # Type: io.camunda.configuration.Camunda
         number-of-replicas: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFREPLICAS
         # Per-index replica overrides.
         number-of-replicas-per-index: null # Type: Map<String,Integer>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFREPLICASPERINDEX
-        # How many shards the search engine database uses for all indices.
+        # How many shards the search engine database uses for indices that do not pin a shard count of their
+        # own. In practice that is the process-instance-volume indices; the remaining indices default to a
+        # single shard whatever this is set to. Use number-of-shards-per-index to override an individual
+        # index.
         number-of-shards: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDS
         # Per-index shard overrides.
         number-of-shards-per-index: # Type: io.camunda.configuration.NumberOfShardsPerIndex
@@ -832,7 +835,10 @@ camunda: # Type: io.camunda.configuration.Camunda
         number-of-replicas: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFREPLICAS
         # Per-index replica overrides.
         number-of-replicas-per-index: null # Type: Map<String,Integer>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFREPLICASPERINDEX
-        # How many shards the search engine database uses for all indices.
+        # How many shards the search engine database uses for indices that do not pin a shard count of their
+        # own. In practice that is the process-instance-volume indices; the remaining indices default to a
+        # single shard whatever this is set to. Use number-of-shards-per-index to override an individual
+        # index.
         number-of-shards: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDS
         # Per-index shard overrides.
         number-of-shards-per-index: # Type: io.camunda.configuration.NumberOfShardsPerIndex
