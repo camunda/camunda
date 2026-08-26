@@ -35,7 +35,6 @@ Vault/WIF hang (see that action's README).
 
 ### Inputs
 
-
 |          Input           |                             Description                             | Required |  Default  |
 |--------------------------|---------------------------------------------------------------------|----------|-----------|
 | camunda-nexus            | Use Camunda Nexus as a Maven mirror (disabled for fork PRs)         | false    | `"true"`  |
