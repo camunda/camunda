@@ -24,7 +24,7 @@ public class SimpleVoteQuorum implements VoteQuorum {
   private boolean complete;
   private final Set<MemberId> members;
   private int succeeded;
-  private int failed;
+  private final int totalMembers;
   private final int quorum;
   private final Map<MemberId, VoteErrorStatus> failedStatuses;
 
@@ -36,6 +36,7 @@ public class SimpleVoteQuorum implements VoteQuorum {
     this.callback = callback;
     this.members = new HashSet<>(members);
     failedStatuses = new HashMap<>();
+    totalMembers = members.size();
     quorum = members.size() / 2 + 1;
   }
 
@@ -50,7 +51,6 @@ public class SimpleVoteQuorum implements VoteQuorum {
   @Override
   public void fail(final MemberId member, final VoteErrorStatus status) {
     if (members.remove(member)) {
-      failed++;
       failedStatuses.put(member, status);
       checkComplete();
     }
@@ -71,11 +71,13 @@ public class SimpleVoteQuorum implements VoteQuorum {
       if (succeeded >= quorum) {
         complete = true;
         callback.accept(true);
-      } else if (failed >= quorum) {
+      } else if (failedStatuses.size() >= quorum) {
         complete = true;
-        final int memberCount = succeeded + failed + members.size();
         LOG.warn(
-            "Quorum failed with {}/{} failed members: {}", failed, memberCount, failedStatuses);
+            "Quorum failed with {}/{} failed members: {}",
+            failedStatuses.size(),
+            totalMembers,
+            failedStatuses);
         callback.accept(false);
       }
     }
