@@ -657,7 +657,89 @@ camunda: # Type: io.camunda.configuration.Camunda
         # How many shards the search engine database uses for all indices.
         number-of-shards: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDS
         # Per-index shard overrides.
-        number-of-shards-per-index: null # Type: Map<String,Integer>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX
+        number-of-shards-per-index: # Type: io.camunda.configuration.NumberOfShardsPerIndex
+          # Primary shards for the agent definition index (agent-definition).
+          agent-definition: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_AGENTDEFINITION
+          # Primary shards for the agent history index (agent-history).
+          agent-history: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_AGENTHISTORY
+          # Primary shards for the agent instance index (agent-instance).
+          agent-instance: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_AGENTINSTANCE
+          # Primary shards for the audit log index (audit-log).
+          audit-log: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_AUDITLOG
+          # Primary shards for the audit log cleanup index (audit-log-cleanup).
+          audit-log-cleanup: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_AUDITLOGCLEANUP
+          # Primary shards for the authorization index (authorization).
+          authorization: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_AUTHORIZATION
+          # Primary shards for the batch operation index (batch-operation).
+          batch-operation: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_BATCHOPERATION
+          # Primary shards for the cluster variable index (cluster-variable).
+          cluster-variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_CLUSTERVARIABLE
+          # Primary shards for the correlated message subscription index (correlated-message-subscription).
+          correlated-message-subscription: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_CORRELATEDMESSAGESUBSCRIPTION
+          # Primary shards for the decision definition index (decision).
+          decision: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_DECISION
+          # Primary shards for the decision instance index (decision-instance).
+          decision-instance: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_DECISIONINSTANCE
+          # Primary shards for the decision requirements index (decision-requirements).
+          decision-requirements: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_DECISIONREQUIREMENTS
+          # Primary shards for the deployed resource index (deployed-resource).
+          deployed-resource: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_DEPLOYEDRESOURCE
+          # Primary shards for the draft task variable index (draft-task-variable).
+          draft-task-variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_DRAFTTASKVARIABLE
+          # Primary shards for the message subscription index (event).
+          event: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_EVENT
+          # Primary shards for the flow node instance index (flownode-instance).
+          flownode-instance: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_FLOWNODEINSTANCE
+          # Primary shards for the form index (form).
+          form: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_FORM
+          # Primary shards for the global listener index (global-listener).
+          global-listener: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_GLOBALLISTENER
+          # Primary shards for the group index (group).
+          group: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_GROUP
+          # Primary shards for the history deletion index (history-deletion).
+          history-deletion: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_HISTORYDELETION
+          # Primary shards for the incident index (incident).
+          incident: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_INCIDENT
+          # Primary shards for the job index (job).
+          job: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_JOB
+          # Primary shards for the job metrics batch index (job-metrics-batch).
+          job-metrics-batch: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_JOBMETRICSBATCH
+          # Primary shards for the process instance list view index (list-view).
+          list-view: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_LISTVIEW
+          # Primary shards for the mapping rule index (mapping-rule).
+          mapping-rule: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_MAPPINGRULE
+          # Primary shards for the message index (message).
+          message: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_MESSAGE
+          # Primary shards for the schema metadata index (metadata).
+          metadata: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_METADATA
+          # Primary shards for the operation index (operation).
+          operation: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_OPERATION
+          # Primary shards for the post importer queue index (post-importer-queue).
+          post-importer-queue: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_POSTIMPORTERQUEUE
+          # Primary shards for the process definition index (process).
+          process: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_PROCESS
+          # Primary shards for the role index (role).
+          role: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_ROLE
+          # Primary shards for the sequence flow index (sequence-flow).
+          sequence-flow: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_SEQUENCEFLOW
+          # Primary shards for the user task index (task).
+          task: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_TASK
+          # Primary shards for the task variable snapshot index (task-variable).
+          task-variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_TASKVARIABLE
+          # Primary shards for the tenant index (tenant).
+          tenant: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_TENANT
+          # Primary shards for the usage metric index (usage-metric).
+          usage-metric: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_USAGEMETRIC
+          # Primary shards for the usage metric task user index (usage-metric-tu).
+          usage-metric-tu: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_USAGEMETRICTU
+          # Primary shards for the user index (user).
+          user: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_USER
+          # Primary shards for the variable index (variable).
+          variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_VARIABLE
+          # Primary shards for the wait state index (wait-state).
+          wait-state: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_WAITSTATE
+          # Primary shards for the persistent web session index (web-session).
+          web-session: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_WEBSESSION
         # Password for the database configured as secondary storage.
         password: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PASSWORD
         # Whether to schedule the cleanup of legacy indexes
@@ -753,7 +835,89 @@ camunda: # Type: io.camunda.configuration.Camunda
         # How many shards the search engine database uses for all indices.
         number-of-shards: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDS
         # Per-index shard overrides.
-        number-of-shards-per-index: null # Type: Map<String,Integer>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX
+        number-of-shards-per-index: # Type: io.camunda.configuration.NumberOfShardsPerIndex
+          # Primary shards for the agent definition index (agent-definition).
+          agent-definition: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_AGENTDEFINITION
+          # Primary shards for the agent history index (agent-history).
+          agent-history: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_AGENTHISTORY
+          # Primary shards for the agent instance index (agent-instance).
+          agent-instance: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_AGENTINSTANCE
+          # Primary shards for the audit log index (audit-log).
+          audit-log: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_AUDITLOG
+          # Primary shards for the audit log cleanup index (audit-log-cleanup).
+          audit-log-cleanup: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_AUDITLOGCLEANUP
+          # Primary shards for the authorization index (authorization).
+          authorization: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_AUTHORIZATION
+          # Primary shards for the batch operation index (batch-operation).
+          batch-operation: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_BATCHOPERATION
+          # Primary shards for the cluster variable index (cluster-variable).
+          cluster-variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_CLUSTERVARIABLE
+          # Primary shards for the correlated message subscription index (correlated-message-subscription).
+          correlated-message-subscription: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_CORRELATEDMESSAGESUBSCRIPTION
+          # Primary shards for the decision definition index (decision).
+          decision: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_DECISION
+          # Primary shards for the decision instance index (decision-instance).
+          decision-instance: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_DECISIONINSTANCE
+          # Primary shards for the decision requirements index (decision-requirements).
+          decision-requirements: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_DECISIONREQUIREMENTS
+          # Primary shards for the deployed resource index (deployed-resource).
+          deployed-resource: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_DEPLOYEDRESOURCE
+          # Primary shards for the draft task variable index (draft-task-variable).
+          draft-task-variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_DRAFTTASKVARIABLE
+          # Primary shards for the message subscription index (event).
+          event: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_EVENT
+          # Primary shards for the flow node instance index (flownode-instance).
+          flownode-instance: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_FLOWNODEINSTANCE
+          # Primary shards for the form index (form).
+          form: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_FORM
+          # Primary shards for the global listener index (global-listener).
+          global-listener: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_GLOBALLISTENER
+          # Primary shards for the group index (group).
+          group: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_GROUP
+          # Primary shards for the history deletion index (history-deletion).
+          history-deletion: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_HISTORYDELETION
+          # Primary shards for the incident index (incident).
+          incident: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_INCIDENT
+          # Primary shards for the job index (job).
+          job: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_JOB
+          # Primary shards for the job metrics batch index (job-metrics-batch).
+          job-metrics-batch: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_JOBMETRICSBATCH
+          # Primary shards for the process instance list view index (list-view).
+          list-view: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_LISTVIEW
+          # Primary shards for the mapping rule index (mapping-rule).
+          mapping-rule: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_MAPPINGRULE
+          # Primary shards for the message index (message).
+          message: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_MESSAGE
+          # Primary shards for the schema metadata index (metadata).
+          metadata: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_METADATA
+          # Primary shards for the operation index (operation).
+          operation: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_OPERATION
+          # Primary shards for the post importer queue index (post-importer-queue).
+          post-importer-queue: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_POSTIMPORTERQUEUE
+          # Primary shards for the process definition index (process).
+          process: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_PROCESS
+          # Primary shards for the role index (role).
+          role: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_ROLE
+          # Primary shards for the sequence flow index (sequence-flow).
+          sequence-flow: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_SEQUENCEFLOW
+          # Primary shards for the user task index (task).
+          task: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_TASK
+          # Primary shards for the task variable snapshot index (task-variable).
+          task-variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_TASKVARIABLE
+          # Primary shards for the tenant index (tenant).
+          tenant: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_TENANT
+          # Primary shards for the usage metric index (usage-metric).
+          usage-metric: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_USAGEMETRIC
+          # Primary shards for the usage metric task user index (usage-metric-tu).
+          usage-metric-tu: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_USAGEMETRICTU
+          # Primary shards for the user index (user).
+          user: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_USER
+          # Primary shards for the variable index (variable).
+          variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_VARIABLE
+          # Primary shards for the wait state index (wait-state).
+          wait-state: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_WAITSTATE
+          # Primary shards for the persistent web session index (web-session).
+          web-session: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_WEBSESSION
         # Password for the database configured as secondary storage.
         password: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PASSWORD
         # Whether to schedule the cleanup of legacy indexes

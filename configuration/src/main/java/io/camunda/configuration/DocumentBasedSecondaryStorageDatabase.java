@@ -58,7 +58,8 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   private Map<String, Integer> numberOfReplicasPerIndex = new HashMap<>();
 
   /** Per-index shard overrides. */
-  private Map<String, Integer> numberOfShardsPerIndex = new HashMap<>();
+  @NestedConfigurationProperty
+  private NumberOfShardsPerIndex numberOfShardsPerIndex = new NumberOfShardsPerIndex();
 
   /** Per-index refresh interval overrides. */
   private Map<String, String> refreshIntervalByIndexName = new HashMap<>();
@@ -480,17 +481,28 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.numberOfReplicasPerIndex = numberOfReplicasPerIndex;
   }
 
-  public Map<String, Integer> getNumberOfShardsPerIndex() {
+  public NumberOfShardsPerIndex getNumberOfShardsPerIndex() {
+    return numberOfShardsPerIndex;
+  }
+
+  public void setNumberOfShardsPerIndex(final NumberOfShardsPerIndex numberOfShardsPerIndex) {
+    this.numberOfShardsPerIndex = numberOfShardsPerIndex;
+  }
+
+  /**
+   * Resolves the per-index shard overrides to the index-name keyed map the schema manager consumes,
+   * reconciling them with the legacy {@code shardsByIndexName} map properties.
+   *
+   * <p>The legacy properties are still a raw map, so the reconciliation happens on the projected
+   * map shape rather than on the typed fields.
+   */
+  public Map<String, Integer> resolveNumberOfShardsPerIndex() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".number-of-shards-per-index",
-        numberOfShardsPerIndex,
+        numberOfShardsPerIndex.toIndexNameMap(),
         ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
         BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
         legacyShardsByIndexNameProperties());
-  }
-
-  public void setNumberOfShardsPerIndex(final Map<String, Integer> numberOfShardsPerIndex) {
-    this.numberOfShardsPerIndex = numberOfShardsPerIndex;
   }
 
   public Map<String, String> getRefreshIntervalByIndexName() {
