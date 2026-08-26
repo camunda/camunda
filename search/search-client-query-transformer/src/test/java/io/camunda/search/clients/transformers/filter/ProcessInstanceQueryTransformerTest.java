@@ -377,7 +377,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   @Test
-  public void shouldQueryByErrorMessage() {
+  public void shouldQueryByErrorMessageOfFlowNodeOrProcessLevelIncident() {
     // given
     final String expectedError = "expected error";
     final ProcessInstanceFilter filter =
@@ -399,23 +399,36 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     assertIsSearchTermQuery(
         boolQuery.must().get(0).queryOption(), "joinRelation", "processInstance");
 
-    // Second must clause: should be a has_child query for errorMessage.
+    // Second must clause: the error message either on a flow node child, or, for a process level
+    // incident, on the process instance document itself.
     assertThat(boolQuery.must().get(1).queryOption())
-        .isInstanceOf(SearchHasChildQuery.class)
-        .satisfies(
-            queryOption -> {
-              // Cast the queryOption to SearchHasChildQuery
-              final SearchHasChildQuery hasChildQuery = (SearchHasChildQuery) queryOption;
-              assertThat(hasChildQuery.type()).isEqualTo("activity");
-              // Assert that the inner query is a match query on "errorMessage" with our
-              // expected value.
-              assertThat(hasChildQuery.query().queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            errorMessageQuery -> {
+              assertThat(errorMessageQuery.should()).hasSize(2);
+
+              assertThat(errorMessageQuery.should().get(0).queryOption())
                   .isInstanceOfSatisfying(
-                      SearchMatchPhraseQuery.class,
-                      (searchMatchQuery) -> {
-                        assertThat(searchMatchQuery.field()).isEqualTo("errorMessage");
-                        assertThat(searchMatchQuery.query()).isEqualTo(expectedError);
+                      SearchHasChildQuery.class,
+                      hasChildQuery -> {
+                        assertThat(hasChildQuery.type()).isEqualTo("activity");
+                        assertIsErrorMessageMatch(
+                            hasChildQuery.query().queryOption(), expectedError);
                       });
+
+              assertIsErrorMessageMatch(
+                  errorMessageQuery.should().get(1).queryOption(), expectedError);
+            });
+  }
+
+  private void assertIsErrorMessageMatch(
+      final SearchQueryOption queryOption, final String expectedError) {
+    assertThat(queryOption)
+        .isInstanceOfSatisfying(
+            SearchMatchPhraseQuery.class,
+            searchMatchQuery -> {
+              assertThat(searchMatchQuery.field()).isEqualTo("errorMessage");
+              assertThat(searchMatchQuery.query()).isEqualTo(expectedError);
             });
   }
 

@@ -479,8 +479,17 @@ public final class SearchQueryBuilders {
         .toList();
   }
 
+  /**
+   * Matches the given field against each operation, either on a child document of the given type or
+   * on the document itself.
+   *
+   * <p>The document itself is included because a value is not always carried by a child: an
+   * incident error message, for instance, lives on the flow node child document, unless the
+   * incident was raised at the process level (e.g. by a process level execution listener), in which
+   * case it lives on the process instance document.
+   */
   public static <C extends List<Operation<String>>>
-      List<SearchQuery> stringMatchPhraseWithHasChildOperations(
+      List<SearchQuery> stringMatchPhraseWithHasChildOrSelfOperations(
           final String field, final C operations, final String childType) {
 
     if (operations == null || operations.isEmpty()) {
@@ -488,45 +497,35 @@ public final class SearchQueryBuilders {
     }
 
     return operations.stream()
-        .map(
-            op ->
-                switch (op.operator()) {
-                  case EQUALS -> hasChildQuery(childType, matchPhrase(field, op.value()));
-
-                  case NOT_EQUALS ->
-                      hasChildQuery(
-                          childType,
-                          bool(b ->
-                                  b.must(List.of(exists(field)))
-                                      .mustNot(List.of(matchPhrase(field, op.value()))))
-                              .toSearchQuery());
-
-                  case EXISTS ->
-                      hasChildQuery(
-                          childType, bool(b -> b.must(List.of(exists(field)))).toSearchQuery());
-
-                  case NOT_EXISTS ->
-                      hasChildQuery(
-                          childType,
-                          bool(b -> b.must(List.of(exists(field))).mustNot(List.of(exists(field))))
-                              .toSearchQuery());
-
-                  case IN ->
-                      hasChildQuery(
-                          childType,
-                          or(
-                              op.values().stream()
-                                  .map(value -> matchPhrase(field, value))
-                                  .toList()));
-
-                  case LIKE ->
-                      hasChildQuery(
-                          childType,
-                          wildcardQuery(field, Objects.requireNonNull(op.value()).toLowerCase()));
-
-                  default -> throw unexpectedOperation("String", op.operator());
-                })
+        .map(op -> matchInChildOrSelf(childType, stringMatchPhraseOperation(field, op)))
         .toList();
+  }
+
+  private static SearchQuery matchInChildOrSelf(
+      final String childType, final SearchQuery matching) {
+    return or(hasChildQuery(childType, matching), matching);
+  }
+
+  private static SearchQuery stringMatchPhraseOperation(
+      final String field, final Operation<String> op) {
+    return switch (op.operator()) {
+      case EQUALS -> matchPhrase(field, op.value());
+
+      case NOT_EQUALS ->
+          bool(b -> b.must(List.of(exists(field))).mustNot(List.of(matchPhrase(field, op.value()))))
+              .toSearchQuery();
+
+      case EXISTS -> bool(b -> b.must(List.of(exists(field)))).toSearchQuery();
+
+      case NOT_EXISTS ->
+          bool(b -> b.must(List.of(exists(field))).mustNot(List.of(exists(field)))).toSearchQuery();
+
+      case IN -> or(op.values().stream().map(value -> matchPhrase(field, value)).toList());
+
+      case LIKE -> wildcardQuery(field, Objects.requireNonNull(op.value()).toLowerCase());
+
+      default -> throw unexpectedOperation("String", op.operator());
+    };
   }
 
   private static String formatDate(final OffsetDateTime dateTime) {
