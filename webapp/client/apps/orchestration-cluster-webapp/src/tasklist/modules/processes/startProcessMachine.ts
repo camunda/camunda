@@ -26,23 +26,12 @@ const HTTP_STATUS_FORBIDDEN = 403;
 type StartProcessStatus = 'inactive' | 'active' | 'active-tasks' | 'finished' | 'error';
 type StartProcessFailureReason = 'forbidden' | 'generic';
 type Navigate = ReturnType<typeof useNavigate>;
-// The processes/task-detail routes exist in parallel under both the Carbon and
-// shadcn route trees (#60229) — the machine is shared between them, so the
-// caller (StartProcessProvider) tells it which tree's routes to navigate to
-// rather than either tree being hardcoded here.
-type ProcessesRoute = '/tasklist/processes' | '/shadcn/tasklist/processes';
-type TaskRoute = '/tasklist/$userTaskKey' | '/shadcn/tasklist/$userTaskKey';
 
 type StartProcessMachineInput = {
 	navigate: Navigate;
-	processesRoute?: ProcessesRoute;
-	taskRoute?: TaskRoute;
 };
 
-type StartProcessMachineContext = {
-	navigate: Navigate;
-	processesRoute: ProcessesRoute;
-	taskRoute: TaskRoute;
+type StartProcessMachineContext = StartProcessMachineInput & {
 	selectedProcess: ProcessDefinition | null;
 	variables: Record<string, unknown> | undefined;
 	processInstanceKey: string | null;
@@ -69,27 +58,20 @@ type NotifyOptions = {
 	onActionButtonClick?: () => void;
 };
 
-// The processes/task-detail routes exist in parallel under both the Carbon
-// and shadcn route trees (see ProcessesRoute above) with this machine shared
-// between them, so notifications route the same way: the Carbon tree keeps
-// going through notificationsStore's own renderer, the shadcn tree through
-// the design system's toast (mounted by src/routes/shadcn/route.tsx).
-function notify(processesRoute: ProcessesRoute, options: NotifyOptions) {
+function isShadcnRoute() {
+	return window.location.pathname.startsWith('/shadcn');
+}
+
+function notify(options: NotifyOptions) {
 	const {kind, title, subtitle, isDismissable = true, isActionable, actionButtonLabel, onActionButtonClick} = options;
 
-	if (processesRoute.startsWith('/shadcn')) {
+	if (isShadcnRoute()) {
 		toast[kind](title, {
 			description: subtitle,
 			action:
 				isActionable === true && actionButtonLabel !== undefined && onActionButtonClick !== undefined
 					? {label: actionButtonLabel, onClick: onActionButtonClick}
 					: undefined,
-			// Carbon's isDismissable: false means "no auto-timeout, stays until the
-			// user acts on it" (its ActionableNotification never times out on its
-			// own). The design system's toast defaults to a 5s auto-dismiss even
-			// for actionable ones, so without this an isDismissable: false
-			// notification — e.g. notifyNewTasks's "Open task" action — could
-			// vanish, action button and all, before anyone gets to click it.
 			duration: isDismissable ? undefined : Infinity,
 		});
 		return;
@@ -152,15 +134,13 @@ const queryNewProcessInstanceTasksLogic = fromPromise<QueryUserTasksResponseBody
 	},
 );
 
-const navigateToTaskLogic = fromPromise<void, {navigate: Navigate; taskRoute: TaskRoute; userTaskKey: string}>(
-	async ({input}) => {
-		await input.navigate({
-			to: input.taskRoute,
-			params: {userTaskKey: input.userTaskKey},
-			search: {filter: 'all-open', sortBy: 'creation'},
-		});
-	},
-);
+const navigateToTaskLogic = fromPromise<void, {navigate: Navigate; userTaskKey: string}>(async ({input}) => {
+	await input.navigate({
+		to: isShadcnRoute() ? '/shadcn/tasklist/$userTaskKey' : '/tasklist/$userTaskKey',
+		params: {userTaskKey: input.userTaskKey},
+		search: {filter: 'all-open', sortBy: 'creation'},
+	});
+});
 
 const startProcessMachine = setup({
 	types: {
@@ -186,7 +166,10 @@ const startProcessMachine = setup({
 		})),
 		closeStartForm: ({context, event}) => {
 			if (event.process.hasStartForm) {
-				void context.navigate({to: context.processesRoute, search: true});
+				void context.navigate({
+					to: isShadcnRoute() ? '/shadcn/tasklist/processes' : '/tasklist/processes',
+					search: true,
+				});
 			}
 		},
 		storeProcessInstanceKey: assign((_, params: {processInstanceKey: string}) => ({
@@ -203,8 +186,8 @@ const startProcessMachine = setup({
 		setFailureReason: assign((_, params: {error: unknown}) => ({
 			failureReason: getStartProcessFailureReason(params.error),
 		})),
-		notifySuccess: ({context}) => {
-			notify(context.processesRoute, {
+		notifySuccess: () => {
+			notify({
 				kind: 'success',
 				title: t('tasklist.processesStartProcessNotificationSuccess'),
 				isDismissable: true,
@@ -218,7 +201,7 @@ const startProcessMachine = setup({
 			}
 
 			if (context.failureReason === 'forbidden') {
-				notify(context.processesRoute, {
+				notify({
 					kind: 'error',
 					title: t('tasklist.processesStartProcessFailed'),
 					subtitle: t('tasklist.taskActionForbidden'),
@@ -227,7 +210,7 @@ const startProcessMachine = setup({
 				return;
 			}
 
-			notify(context.processesRoute, {
+			notify({
 				kind: 'error',
 				title:
 					getClientConfig().deployment.isMultiTenancyEnabled && process.tenantId === undefined
@@ -239,18 +222,17 @@ const startProcessMachine = setup({
 		},
 		notifyNewTasks: ({context}) => {
 			context.tasks.forEach(({elementId, name, processDefinitionId, processName, userTaskKey}) => {
-				notify(context.processesRoute, {
+				notify({
 					kind: 'success',
 					title: t('tasklist.processesNewTaskNotification', {
 						processName: processName ?? processDefinitionId,
 						taskName: name ?? elementId,
 					}),
-					isDismissable: false,
 					isActionable: true,
 					actionButtonLabel: t('tasklist.processesNewTaskNotificationAction'),
 					onActionButtonClick: () => {
 						void context.navigate({
-							to: context.taskRoute,
+							to: isShadcnRoute() ? '/shadcn/tasklist/$userTaskKey' : '/tasklist/$userTaskKey',
 							params: {userTaskKey},
 							search: {filter: 'all-open', sortBy: 'creation'},
 						});
@@ -268,8 +250,6 @@ const startProcessMachine = setup({
 	id: 'startProcess',
 	context: ({input}) => ({
 		navigate: input?.navigate ?? (async () => undefined),
-		processesRoute: input?.processesRoute ?? '/tasklist/processes',
-		taskRoute: input?.taskRoute ?? '/tasklist/$userTaskKey',
 		selectedProcess: null,
 		variables: undefined,
 		processInstanceKey: null,
@@ -360,7 +340,6 @@ const startProcessMachine = setup({
 				src: 'navigateToTask',
 				input: ({context}) => ({
 					navigate: context.navigate,
-					taskRoute: context.taskRoute,
 					userTaskKey: context.tasks[0]?.userTaskKey ?? '',
 				}),
 				onDone: {target: 'Succeeded'},
@@ -411,4 +390,4 @@ function deriveStartProcessStatus(snapshot: SnapshotFrom<typeof startProcessMach
 }
 
 export {deriveStartProcessStatus, startProcessMachine};
-export type {StartProcessStatus, ProcessesRoute, TaskRoute};
+export type {StartProcessStatus};

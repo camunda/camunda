@@ -68,23 +68,40 @@ const TasklistProcessesPage: React.FC<Props> = ({
 										? t('tasklist.processesProcessNotFoundError')
 										: t('tasklist.processesProcessNotPublishedError')
 								}
-								description={t('tasklist.processesErrorBody')}
+								description={
+									<>
+										{t('tasklist.processesErrorBody')}
+										<Button asChild variant="link" className="h-auto p-0 align-baseline font-normal">
+											<a
+												href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
+												target="_blank"
+												rel="noopener noreferrer"
+											>
+												{t('tasklist.processesErrorBodyLinkLabel')}
+											</a>
+										</Button>
+									</>
+								}
 							/>
 						) : (
 							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-								{processes.map((process) => (
-									<ProcessTile
-										key={process.processDefinitionKey}
-										process={process}
-										status={selectedProcessDefinitionKey === process.processDefinitionKey ? status : 'inactive'}
-										isStartButtonDisabled={isBusy}
-										onStartProcess={() => handleStartProcess(process)}
-									/>
-								))}
+								{processes.map((process) => {
+									const isSelected = selectedProcessDefinitionKey === process.processDefinitionKey;
+
+									return (
+										<ProcessTile
+											key={process.processDefinitionKey}
+											process={process}
+											status={isSelected ? status : 'inactive'}
+											isStartButtonDisabled={isBusy && !isSelected}
+											onStartProcess={() => handleStartProcess(process)}
+										/>
+									);
+								})}
 							</div>
 						)}
 
-						{hasNextPage ? (
+						{hasNextPage && processes.length > 0 ? (
 							<div className="flex justify-center">
 								<Button type="button" variant="ghost" disabled={isFetchingNextPage} onClick={onLoadMore}>
 									{isFetchingNextPage ? t('tasklist.processesLoadingMore') : t('tasklist.processesLoadMore')}

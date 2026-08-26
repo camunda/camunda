@@ -79,10 +79,6 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 							input.onChange(event);
 							debouncedHandleSubmit();
 						}}
-						onClear={() => {
-							input.onChange('');
-							handleSubmit();
-						}}
 					/>
 				)}
 			</Field>
@@ -98,15 +94,10 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 									defaultValue="all"
 									value={input.value ?? 'all'}
 									onValueChange={(value) => {
-										// Radix's Select.Root mirrors its value onto a hidden native
-										// <select> for native form/autofill support; a timing gap
-										// between that mirror updating and its <option>s mounting can
-										// make the browser reset the native element's selection and
-										// echo a spurious onValueChange("") back — not a real user
-										// pick, so ignore it rather than reset the filter.
 										if (!value) {
 											return;
 										}
+
 										input.onChange(value === 'all' ? undefined : value);
 										handleSubmit();
 									}}
@@ -138,12 +129,10 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 										defaultValue={tenants[0]?.tenantId}
 										value={input.value}
 										onValueChange={(tenantId) => {
-											// See the hasStartForm Select above — same guard against a
-											// spurious empty echo from Radix's hidden native-select
-											// mirror.
 											if (!tenantId) {
 												return;
 											}
+
 											input.onChange(tenantId);
 											handleSubmit();
 										}}
