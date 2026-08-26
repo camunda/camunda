@@ -638,6 +638,18 @@ public final class RecoveryPartitionManager
   }
 
   @Override
+  public ActorFuture<Void> promote(final int partitionId) {
+    return CompletableActorFuture.completedExceptionally(
+        new IllegalStateException("Cannot perform promote on a recovering partition"));
+  }
+
+  @Override
+  public ActorFuture<Void> demote(final int partitionId) {
+    return CompletableActorFuture.completedExceptionally(
+        new IllegalStateException("Cannot perform demote on a recovering partition"));
+  }
+
+  @Override
   public ActorFuture<Void> bootstrap(
       final int partitionId,
       final int priority,

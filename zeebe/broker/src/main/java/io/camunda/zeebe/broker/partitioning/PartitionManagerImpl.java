@@ -420,6 +420,58 @@ public final class PartitionManagerImpl
   }
 
   @Override
+  public ActorFuture<Void> promote(final int partitionId) {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var partition = partitions.get(partitionId);
+          if (partition == null) {
+            result.completeExceptionally(
+                new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+            return;
+          }
+          LOGGER.info("Promoting member to a voting member of partition {}", partitionId);
+          concurrencyControl.runOnCompletion(
+              partition.promoteMember(),
+              (ok, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                  return;
+                }
+                LOGGER.info("Promoted member to a voting member of partition {}", partitionId);
+                result.complete(null);
+              });
+        });
+    return result;
+  }
+
+  @Override
+  public ActorFuture<Void> demote(final int partitionId) {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var partition = partitions.get(partitionId);
+          if (partition == null) {
+            result.completeExceptionally(
+                new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+            return;
+          }
+          LOGGER.info("Demoting member to a non-voting member of partition {}", partitionId);
+          concurrencyControl.runOnCompletion(
+              partition.demoteMember(),
+              (ok, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                  return;
+                }
+                LOGGER.info("Demoted member to a non-voting member of partition {}", partitionId);
+                result.complete(null);
+              });
+        });
+    return result;
+  }
+
+  @Override
   public ActorFuture<Void> bootstrap(
       final int partitionId,
       final int priority,
