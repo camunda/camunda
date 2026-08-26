@@ -83,6 +83,13 @@ CWD is the repo root, on a clean or disposable branch (reproduction may start lo
    is for genuinely independent fixes at different layers (e.g. a frontend workaround alongside a
    backend root-cause fix) — it does not license splitting one root-cause fix across backends. See
    Phase 5's backend-parity check and Phase 6's decision table for how this plays out in practice.
+9. **When running autonomously, always post — never ask whether to.** Whether to post progress to
+   the GitHub issue is a one-time question asked in Phase 0, and it's only safe to ask when an
+   engineer is actually present to answer it. In an autonomous run (e.g. triggered by an automated
+   workflow) there is no one to respond — asking anyway would hang the run indefinitely waiting for
+   an answer that will never come, the same failure mode as Phase 3's health-check loop without a
+   timeout. Autonomous invocations must say so explicitly and skip the question entirely, defaulting
+   to posting.
 
 ## Procedure
 
@@ -101,7 +108,14 @@ engineer directly — don't post a comment, don't investigate. An "investigation
 comment on an issue someone already closed or is already fixing is exactly the duplicate work this
 check exists to prevent.
 
-Otherwise, post the initial comment immediately, before doing any further investigation work, so
+Otherwise, decide once whether to post to the issue at all, before doing anything else. If an
+engineer is present in this session, ask now: "Post progress and the final report on the GitHub
+issue, or just report back here?" — default to posting if they don't say. If running autonomously
+(no engineer present to ask — see Hard rule 9), skip the question and always post. This decision
+holds for the rest of the investigation; see [GitHub comment lifecycle](#github-comment-lifecycle)
+for what each phase's "update the comment" step means in either case.
+
+If posting, post the initial comment immediately, before doing any further investigation work, so
 the engineer sees the agent picked it up:
 
 Write the body to a file, then post it via `jq --rawfile` piped into `gh api --input -` — see
@@ -339,7 +353,14 @@ implementation already exist from Phase 5 — this section only covers committin
 
 ## GitHub comment lifecycle
 
-The comment body is always multi-paragraph markdown with permalinks, code spans, and headings —
+This section only applies if Phase 0 decided to post. If it decided not to, every "post"/"PATCH
+the comment" instruction elsewhere in this skill (including "Update the comment: check off item
+N" in each phase) means something different: keep a single running copy of the report body
+locally — the same content a PATCH would have contained — and update it after each phase exactly
+as if about to PATCH, but don't call the GitHub API. Surface only the final version once, in your
+response to the engineer, at the end of Phase 6. Nothing else below applies in that case.
+
+If posting: the comment body is always multi-paragraph markdown with permalinks, code spans, and headings —
 never pass it as an inline `-f body="..."` shell string (quoting/escaping breaks on real content)
 and **never use `-f body=@<path>`** expecting file-content substitution — `gh api`'s `-f`/`--raw-field`
 does not do `@file` expansion the way `-F`/`--field` does for some inputs; passed this way, the
