@@ -50,8 +50,6 @@ function FirstTimeProcessWarning({children}: Props) {
 					}
 				}}
 			>
-				{/* Blocks backdrop-click dismissal — cancelling out of this modal is a
-				    real navigation (leaving Processes), not a no-op dismiss. */}
 				<DialogContent size="md" onInteractOutside={(event) => event.preventDefault()}>
 					<DialogHeader>
 						<DialogTitle>{t('tasklist.processesFirstTimeModalHeading')}</DialogTitle>
@@ -59,8 +57,6 @@ function FirstTimeProcessWarning({children}: Props) {
 					<DialogBody className="flex flex-col items-center text-center">
 						<img className="mb-8 h-auto w-full max-w-[404px]" src={Illustration} alt="" />
 						<div>
-							{/* First paragraph doubles as the Dialog's accessible description —
-							    Radix requires DialogContent to have one. */}
 							<DialogDescription>{t('tasklist.processesFirstTimeModalBodyPart1')}</DialogDescription>
 							<p>{t('tasklist.processesFirstTimeModalBodyPart2')}</p>
 							<p>{t('tasklist.processesFirstTimeModalBodyPart3')}</p>
