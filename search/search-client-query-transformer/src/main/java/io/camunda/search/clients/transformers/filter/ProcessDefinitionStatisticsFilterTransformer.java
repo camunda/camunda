@@ -13,7 +13,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringMatchPhraseInSingleHasChild;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringMatchPhraseInSingleHasChildOrSelf;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -131,7 +131,7 @@ public class ProcessDefinitionStatisticsFilterTransformer
     Optional.of(stringOperations(BUSINESS_ID, filter.businessIdOperations()))
         .ifPresent(queries::addAll);
     Optional.ofNullable(
-            stringMatchPhraseInSingleHasChild(
+            stringMatchPhraseInSingleHasChildOrSelf(
                 ERROR_MSG, filter.errorMessageOperations(), ACTIVITIES_JOIN_RELATION))
         .ifPresent(queries::add);
     ofNullable(getProcessVariablesQuery(filter.variableFilters())).ifPresent(queries::add);
