@@ -31,17 +31,17 @@ class ItemProviderFactoryTest {
 
   @Test
   void shouldSetFiltersForCancelProcessInstance() {
-    // Arrange
+    // given
     final var filter = new ProcessInstanceFilter.Builder().build();
     final var batchOperation = mock(PersistedBatchOperation.class);
     when(batchOperation.getBatchOperationType())
         .thenReturn(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
 
-    // Act
+    // when
     final var itemProvider = factory.fromBatchOperation(batchOperation);
 
-    // Assert
+    // then
     assertThat(itemProvider).isNotNull();
     assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
 
@@ -53,17 +53,17 @@ class ItemProviderFactoryTest {
 
   @Test
   void shouldSetFiltersForSuspendProcessInstance() {
-    // Arrange
+    // given
     final var filter = new ProcessInstanceFilter.Builder().build();
     final var batchOperation = mock(PersistedBatchOperation.class);
     when(batchOperation.getBatchOperationType())
         .thenReturn(BatchOperationType.SUSPEND_PROCESS_INSTANCE);
     when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
 
-    // Act
+    // when
     final var itemProvider = factory.fromBatchOperation(batchOperation);
 
-    // Assert
+    // then
     assertThat(itemProvider).isNotNull();
     assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
 
@@ -76,7 +76,7 @@ class ItemProviderFactoryTest {
 
   @Test
   void shouldOverrideFiltersForSuspendProcessInstance() {
-    // Arrange
+    // given
     final var filter =
         new ProcessInstanceFilter.Builder()
             .states("COMPLETED")
@@ -88,10 +88,10 @@ class ItemProviderFactoryTest {
         .thenReturn(BatchOperationType.SUSPEND_PROCESS_INSTANCE);
     when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
 
-    // Act
+    // when
     final var itemProvider = factory.fromBatchOperation(batchOperation);
 
-    // Assert
+    // then
     assertThat(itemProvider).isNotNull();
     assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
 
@@ -105,17 +105,17 @@ class ItemProviderFactoryTest {
 
   @Test
   void shouldSetFiltersForResumeProcessInstance() {
-    // Arrange
+    // given
     final var filter = new ProcessInstanceFilter.Builder().build();
     final var batchOperation = mock(PersistedBatchOperation.class);
     when(batchOperation.getBatchOperationType())
         .thenReturn(BatchOperationType.RESUME_PROCESS_INSTANCE);
     when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
 
-    // Act
+    // when
     final var itemProvider = factory.fromBatchOperation(batchOperation);
 
-    // Assert
+    // then
     assertThat(itemProvider).isNotNull();
     assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
 
@@ -128,7 +128,7 @@ class ItemProviderFactoryTest {
 
   @Test
   void shouldOverrideFiltersForResumeProcessInstance() {
-    // Arrange
+    // given
     final var filter =
         new ProcessInstanceFilter.Builder()
             .states("ACTIVE")
@@ -140,10 +140,10 @@ class ItemProviderFactoryTest {
         .thenReturn(BatchOperationType.RESUME_PROCESS_INSTANCE);
     when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
 
-    // Act
+    // when
     final var itemProvider = factory.fromBatchOperation(batchOperation);
 
-    // Assert
+    // then
     assertThat(itemProvider).isNotNull();
     assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
 
@@ -157,16 +157,17 @@ class ItemProviderFactoryTest {
 
   @Test
   void shouldSetFiltersForMigrateProcessInstance() {
+    // given
     final var filter = new ProcessInstanceFilter.Builder().build();
     final var batchOperation = mock(PersistedBatchOperation.class);
     when(batchOperation.getBatchOperationType())
         .thenReturn(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
     when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
 
-    // Act
+    // when
     final var itemProvider = factory.fromBatchOperation(batchOperation);
 
-    // Assert
+    // then
     assertThat(itemProvider).isNotNull();
     assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
 
@@ -178,16 +179,17 @@ class ItemProviderFactoryTest {
 
   @Test
   void shouldSetFiltersForModifyProcessInstance() {
+    // given
     final var filter = new ProcessInstanceFilter.Builder().build();
     final var batchOperation = mock(PersistedBatchOperation.class);
     when(batchOperation.getBatchOperationType())
         .thenReturn(BatchOperationType.MODIFY_PROCESS_INSTANCE);
     when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
 
-    // Act
+    // when
     final var itemProvider = factory.fromBatchOperation(batchOperation);
 
-    // Assert
+    // then
     assertThat(itemProvider).isNotNull();
     assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
 
@@ -199,15 +201,16 @@ class ItemProviderFactoryTest {
 
   @Test
   void shouldSetFiltersForResolveIncident() {
+    // given
     final var filter = new ProcessInstanceFilter.Builder().build();
     final var batchOperation = mock(PersistedBatchOperation.class);
     when(batchOperation.getBatchOperationType()).thenReturn(BatchOperationType.RESOLVE_INCIDENT);
     when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
 
-    // Act
+    // when
     final var itemProvider = factory.fromBatchOperation(batchOperation);
 
-    // Assert
+    // then
     assertThat(itemProvider).isNotNull();
     assertThat(itemProvider).isInstanceOf(IncidentItemProvider.class);
 
@@ -219,16 +222,16 @@ class ItemProviderFactoryTest {
 
   @Test
   void shouldSetFiltersForUpdateJob() {
-    // Arrange
+    // given
     final var filter = new JobFilter.Builder().build();
     final var batchOperation = mock(PersistedBatchOperation.class);
     when(batchOperation.getBatchOperationType()).thenReturn(BatchOperationType.UPDATE_JOB);
     when(batchOperation.getEntityFilter(JobFilter.class)).thenReturn(filter);
 
-    // Act
+    // when
     final var itemProvider = factory.fromBatchOperation(batchOperation);
 
-    // Assert
+    // then
     assertThat(itemProvider).isNotNull();
     assertThat(itemProvider).isInstanceOf(JobItemProvider.class);
 
@@ -250,17 +253,17 @@ class ItemProviderFactoryTest {
 
   @Test
   void shouldSetFiltersForDeleteProcessInstance() {
-    // Arrange
+    // given
     final var filter = new ProcessInstanceFilter.Builder().build();
     final var batchOperation = mock(PersistedBatchOperation.class);
     when(batchOperation.getBatchOperationType())
         .thenReturn(BatchOperationType.DELETE_PROCESS_INSTANCE);
     when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
 
-    // Act
+    // when
     final var itemProvider = factory.fromBatchOperation(batchOperation);
 
-    // Assert
+    // then
     assertThat(itemProvider).isNotNull();
     assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
 
@@ -270,17 +273,17 @@ class ItemProviderFactoryTest {
 
   @Test
   void shouldSetFiltersForDeleteDecisionInstance() {
-    // Arrange
+    // given
     final var filter = new DecisionInstanceFilter.Builder().build();
     final var batchOperation = mock(PersistedBatchOperation.class);
     when(batchOperation.getBatchOperationType())
         .thenReturn(BatchOperationType.DELETE_DECISION_INSTANCE);
     when(batchOperation.getEntityFilter(DecisionInstanceFilter.class)).thenReturn(filter);
 
-    // Act
+    // when
     final var itemProvider = factory.fromBatchOperation(batchOperation);
 
-    // Assert
+    // then
     assertThat(itemProvider).isNotNull();
     assertThat(itemProvider).isInstanceOf(DecisionInstanceItemProvider.class);
 

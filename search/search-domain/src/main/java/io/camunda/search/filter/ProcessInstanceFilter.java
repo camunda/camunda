@@ -222,11 +222,6 @@ public record ProcessInstanceFilter(
       return parentProcessInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
-    public Builder replaceParentProcessInstanceKeys(final Long value, final Long... values) {
-      return replaceParentProcessInstanceKeyOperations(
-          FilterUtil.mapDefaultToOperation(value, values));
-    }
-
     @SafeVarargs
     public final Builder parentProcessInstanceKeyOperations(
         final Operation<Long> operation, final Operation<Long>... operations) {
