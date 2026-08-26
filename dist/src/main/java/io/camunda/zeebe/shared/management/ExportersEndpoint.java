@@ -133,22 +133,14 @@ public class ExportersEndpoint {
 
   public CompletableFuture<ResponseEntity<?>> listExporters(final @Nullable String physicalTenant) {
     final var tenant = nonBlank(physicalTenant);
-    return requestSender
-        .getTopology()
-        .handle((response, throwable) -> mapQueryResponse(tenant, response, throwable));
+    final CompletableFuture<ResponseEntity<?>> topologyResponse =
+        requestSender.getTopology().thenApply(response -> mapQueryResponse(tenant, response));
+    return topologyResponse.exceptionally(ClusterApiUtils::mapError);
   }
 
   private ResponseEntity<?> mapQueryResponse(
       final Optional<String> physicalTenant,
-      final @Nullable Either<ErrorResponse, CurrentClusterConfiguration> response,
-      final @Nullable Throwable throwable) {
-    if (throwable != null) {
-      return ClusterApiUtils.mapError(throwable);
-    }
-    if (response == null) {
-      throw new IllegalStateException("No response or error was returned");
-    }
-
+      final Either<ErrorResponse, CurrentClusterConfiguration> response) {
     if (response.isLeft()) {
       return ClusterApiUtils.mapErrorResponse(response.getLeft());
     }
