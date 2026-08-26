@@ -19,7 +19,6 @@ package io.atomix.raft.roles;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.MemberId;
-import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.ElectionTimerFactory;
 import io.atomix.raft.RaftError;
@@ -43,11 +42,10 @@ import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.utils.VoteQuorum;
 import io.atomix.raft.utils.VoteQuorum.VoteErrorStatus;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.slf4j.event.Level;
 
 /** Follower state. */
 public final class FollowerRole extends ActiveRole {
@@ -97,16 +95,6 @@ public final class FollowerRole extends ActiveRole {
       onHeartbeatFromLeader();
     }
     return future;
-  }
-
-  @Override
-  protected VoteResponse handleVote(final VoteRequest request) {
-    // Reset the heartbeat timeout if we voted for another candidate.
-    final VoteResponse response = super.handleVote(request);
-    if (response.voted()) {
-      onHeartbeatFromLeader();
-    }
-    return response;
   }
 
   /** Handles a cluster event. */
@@ -200,6 +188,15 @@ public final class FollowerRole extends ActiveRole {
   }
 
   @Override
+  public CompletableFuture<AppendResponse> onAppend(final InternalAppendRequest request) {
+    final CompletableFuture<AppendResponse> future = super.onAppend(request);
+    if (isRequestFromCurrentLeader(request.term(), request.leader())) {
+      onHeartbeatFromLeader();
+    }
+    return future;
+  }
+
+  @Override
   public CompletableFuture<TimeoutNowResponse> onTimeoutNow(final TimeoutNowRequest request) {
     logRequest(request);
 
@@ -225,12 +222,13 @@ public final class FollowerRole extends ActiveRole {
   }
 
   @Override
-  public CompletableFuture<AppendResponse> onAppend(final InternalAppendRequest request) {
-    final CompletableFuture<AppendResponse> future = super.onAppend(request);
-    if (isRequestFromCurrentLeader(request.term(), request.leader())) {
+  protected VoteResponse handleVote(final VoteRequest request) {
+    // Reset the heartbeat timeout if we voted for another candidate.
+    final VoteResponse response = super.handleVote(request);
+    if (response.voted()) {
       onHeartbeatFromLeader();
     }
-    return future;
+    return response;
   }
 
   /**
@@ -321,8 +319,11 @@ public final class FollowerRole extends ActiveRole {
 
     if (isRunning() && !complete.get()) {
       if (error != null) {
-        logError(error, member);
-        quorum.fail(member.memberId(), VoteErrorStatus.of(error));
+        final var cause = FuturesUtil.unwrapCompletionException(error);
+        final var status = VoteErrorStatus.of(cause);
+        log.atLevel(status.logLevel())
+            .log("Poll request to {} failed with {}: {}", member.memberId(), status, cause);
+        quorum.fail(member.memberId(), status);
       } else {
         if (response.term() > raft.getTerm()) {
           raft.setTerm(response.term());
@@ -340,13 +341,5 @@ public final class FollowerRole extends ActiveRole {
         }
       }
     }
-  }
-
-  private void logError(final Throwable error, final RaftMember member) {
-    final var cause =
-        error instanceof CompletionException && error.getCause() != null ? error.getCause() : error;
-    final var logLevel = cause instanceof NoSuchMemberException ? Level.TRACE : Level.WARN;
-    log.atLevel(logLevel)
-        .log("Poll request to {} failed: {}", member.memberId(), cause.getMessage());
   }
 }

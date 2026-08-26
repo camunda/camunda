@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.event.Level;
 
 final class VoteErrorStatusTest {
 
@@ -72,19 +73,6 @@ final class VoteErrorStatusTest {
 
       // then
       assertThat(status).isEqualTo(expected);
-    }
-
-    @Test
-    void shouldClassifyTransportFailureWrappedMoreThanOnce() {
-      // given
-      final var error =
-          new CompletionException(new CompletionException(new ConnectException("refused")));
-
-      // when
-      final var status = VoteErrorStatus.of(error);
-
-      // then
-      assertThat(status).isEqualTo(VoteErrorStatus.NO_SUCH_MEMBER);
     }
   }
 
@@ -148,6 +136,48 @@ final class VoteErrorStatusTest {
 
       // then
       assertThat(status).isEqualTo(VoteErrorStatus.UNKNOWN);
+    }
+  }
+
+  @Nested
+  final class LogLevels {
+
+    static Stream<Arguments> unreachableMemberFailures() {
+      return Stream.of(
+          Arguments.of(
+              Named.of("member not in membership view", new NoSuchMemberException("member 2"))),
+          Arguments.of(Named.of("connection refused", new ConnectException("connection refused"))),
+          Arguments.of(
+              Named.of("partition handler not registered", new NoRemoteHandler("vote-subject"))));
+    }
+
+    /**
+     * Every failure classified as an unreachable member has to be demoted, not only the one
+     * exception type that names it.
+     */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("unreachableMemberFailures")
+    void shouldDemoteEveryUnreachableMemberFailure(final Throwable error) {
+      // given
+      final var wrapped = new CompletionException(error);
+
+      // when
+      final var level = VoteErrorStatus.of(wrapped).logLevel();
+
+      // then
+      assertThat(level).isEqualTo(Level.TRACE);
+    }
+
+    @Test
+    void shouldKeepReportingOtherFailuresAtWarn() {
+      // given
+      final var error = new CompletionException(new IllegalStateException("boom"));
+
+      // when
+      final var level = VoteErrorStatus.of(error).logLevel();
+
+      // then
+      assertThat(level).isEqualTo(Level.WARN);
     }
   }
 }

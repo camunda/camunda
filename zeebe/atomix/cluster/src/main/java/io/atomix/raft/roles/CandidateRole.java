@@ -30,6 +30,7 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.utils.VoteQuorum;
 import io.atomix.raft.utils.VoteQuorum.VoteErrorStatus;
 import io.atomix.utils.concurrent.Scheduled;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -243,7 +244,8 @@ public final class CandidateRole extends ActiveRole {
       final RaftMember member,
       final VoteRequest request,
       final Throwable error) {
-    if (error.getCause() instanceof NoRemoteHandler) {
+    final var cause = FuturesUtil.unwrapCompletionException(error);
+    if (cause instanceof NoRemoteHandler) {
       log.debug(
           "Member {} is not ready to receive vote requests, will retry later.", member, error);
       if (isRunning() && !complete.get()) {
@@ -253,8 +255,10 @@ public final class CandidateRole extends ActiveRole {
                 () -> sendVoteRequestToMember(complete, quorum, member, request));
       }
     } else {
-      log.warn(error.getMessage());
-      quorum.fail(member.memberId(), VoteErrorStatus.of(error));
+      final var status = VoteErrorStatus.of(cause);
+      log.atLevel(status.logLevel())
+          .log("Vote request to {} failed with {}: {}", member.memberId(), status, cause);
+      quorum.fail(member.memberId(), status);
     }
   }
 
