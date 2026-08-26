@@ -39,6 +39,7 @@ public class DeletedProcessDefinitionCache extends AbstractScheduledService {
   private final AtomicBoolean initialLoadDone = new AtomicBoolean(false);
   private final int maxSize;
   private final Duration refreshInterval;
+  private final boolean zeebeImportEnabled;
   private volatile Set<String> suppressedIds = Set.of();
 
   public DeletedProcessDefinitionCache(
@@ -48,11 +49,14 @@ public class DeletedProcessDefinitionCache extends AbstractScheduledService {
         configurationService.getCaches().getDeletedProcessDefinitions();
     maxSize = config.getMaxSize();
     refreshInterval = Duration.ofSeconds(config.getRefreshIntervalSeconds());
+    zeebeImportEnabled = configurationService.getConfiguredZeebe().isEnabled();
   }
 
   @PostConstruct
   public void init() {
-    startScheduling();
+    if (zeebeImportEnabled) {
+      startScheduling();
+    }
   }
 
   @PreDestroy
