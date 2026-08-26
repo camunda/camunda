@@ -9,6 +9,10 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipEvent;
@@ -17,6 +21,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
+import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -46,10 +51,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -63,6 +71,7 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.AdditionalAnswers;
 
 /** Tests end-to-end stream management from client to server */
 final class StreamIntegrationTest {
@@ -426,6 +435,70 @@ final class StreamIntegrationTest {
     }
 
     @Test
+    void shouldAddStreamOnceServerStartsHandlingCleanup() {
+      // given
+      final var streamType = BufferUtil.wrapString("foo");
+      final var streamId =
+          clientStreamer
+              .add(
+                  streamType,
+                  new TestSerializableData(),
+                  p -> CompletableActorFuture.completed(null),
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .join();
+      awaitStreamAdded(streamType, streamId, server1, server2);
+      server1.close();
+      client.streamService.onServerRemoved(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
+
+      // when
+      try (final var restartedServer =
+          new TestServer(createClusterNode(clusterNodes.getFirst(), clusterNodes))) {
+        restartedServer.startCluster();
+        client.streamService.onServerJoined(restartedServer.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
+        Awaitility.await().until(() -> client.cleanupAttempts(restartedServer.memberId()) >= 2);
+        restartedServer.startStreamService();
+
+        // then
+        awaitStreamAdded(streamType, streamId, restartedServer, server2);
+      }
+    }
+
+    @Test
+    void shouldRemoveStreamsOfPreviousIncarnationWhenRejoining() {
+      // given
+      final var staleStreamType = BufferUtil.wrapString("stale");
+      final var staleStreamId =
+          clientStreamer
+              .add(
+                  staleStreamType,
+                  new TestSerializableData(),
+                  p -> CompletableActorFuture.completed(null),
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .join();
+      awaitStreamAdded(staleStreamType, staleStreamId, server1, server2);
+      client.streamService.onServerRemoved(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
+      clientStreamer.remove(staleStreamId).join();
+
+      final var streamType = BufferUtil.wrapString("current");
+      final var streamId =
+          clientStreamer
+              .add(
+                  streamType,
+                  new TestSerializableData(),
+                  p -> CompletableActorFuture.completed(null),
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .join();
+      awaitStreamAdded(streamType, streamId, server2);
+
+      // when
+      client.streamService.onServerJoined(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
+
+      // then
+      awaitStreamAdded(streamType, streamId, server1, server2);
+      assertThat(server1.streamer.streamFor(staleStreamType)).isEmpty();
+    }
+
+    @Test
     void shouldAddStreamAgainOnLegacyRestartRequest() {
       // given
       final var streamType = BufferUtil.wrapString("foo");
@@ -500,8 +573,16 @@ final class StreamIntegrationTest {
     }
 
     private void start() {
+      startCluster();
+      startStreamService();
+    }
+
+    private void startCluster() {
       cluster.start().join();
       actorScheduler.submitActor(this).join();
+    }
+
+    private void startStreamService() {
       streamer = actor.call(() -> streamService.start(actorScheduler, this)).join().join();
     }
 
@@ -525,6 +606,7 @@ final class StreamIntegrationTest {
   private final class TestClient implements AutoCloseable {
     private final AtomixCluster cluster;
     private final ClientStreamService<TestSerializableData> streamService;
+    private final Map<MemberId, AtomicInteger> cleanupAttempts = new ConcurrentHashMap<>();
 
     public TestClient(final AtomixCluster cluster) {
       this.cluster = cluster;
@@ -532,7 +614,35 @@ final class StreamIntegrationTest {
       final var factory = new TransportFactory(actorScheduler);
       streamService =
           factory.createRemoteStreamClient(
-              cluster.getCommunicationService(), physicalTenantId -> ClientStreamMetrics.noop());
+              countingCleanupAttempts(cluster.getCommunicationService()),
+              physicalTenantId -> ClientStreamMetrics.noop());
+    }
+
+    private int cleanupAttempts(final MemberId serverId) {
+      return cleanupAttempts.getOrDefault(serverId, new AtomicInteger()).get();
+    }
+
+    private ClusterCommunicationService countingCleanupAttempts(
+        final ClusterCommunicationService delegate) {
+      final var answer = AdditionalAnswers.delegatesTo(delegate);
+      final var counting = mock(ClusterCommunicationService.class, answer);
+      doAnswer(
+              invocation -> {
+                cleanupAttempts
+                    .computeIfAbsent(invocation.getArgument(4), id -> new AtomicInteger())
+                    .incrementAndGet();
+                return answer.answer(invocation);
+              })
+          .when(counting)
+          .send(
+              eq(StreamTopics.REMOVE_ALL.legacyTopic()),
+              any(),
+              any(),
+              any(),
+              any(MemberId.class),
+              any());
+
+      return counting;
     }
 
     private void start() {
