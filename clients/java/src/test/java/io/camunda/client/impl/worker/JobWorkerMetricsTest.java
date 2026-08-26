@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.response.ActivatedJobImpl;
@@ -33,6 +34,7 @@ import java.util.function.IntConsumer;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 final class JobWorkerMetricsTest {
 
@@ -60,6 +62,7 @@ final class JobWorkerMetricsTest {
         32,
         executor,
         Duration.ofSeconds(30),
+        Mockito.mock(JobClient.class),
         new TestJobRunnableFactory(autoCompleteCount),
         poller,
         streamer,
