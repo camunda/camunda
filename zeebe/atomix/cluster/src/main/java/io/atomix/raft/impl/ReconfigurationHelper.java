@@ -10,6 +10,7 @@ package io.atomix.raft.impl;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
+import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftException.ProtocolException;
 import io.atomix.raft.RaftServer.Role;
@@ -24,8 +25,10 @@ import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.utils.ForceConfigureQuorum;
+import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.ThreadContext;
 import java.net.ConnectException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -194,8 +197,22 @@ public final class ReconfigurationHelper {
                   result.completeExceptionally(error);
                 }
               } else if (response.status() == Status.OK) {
-                LOGGER.debug("Join request accepted");
-                result.complete(null);
+                // The leader may have committed the configuration entry admitting this member
+                // without this member's participation at all - e.g. a PROMOTABLE joiner is in no
+                // quorum, so the old side of a joint configuration can commit on the strength of
+                // the existing members alone. Wait for this node's own commit index to reach the
+                // entry before declaring the join done: RaftContext#setCommitIndex clamps to what
+                // this node has itself persisted, so reaching the index implies the entry is
+                // already durable here too - exactly what a restart needs, see
+                // RaftClusterContext#reloadConfigurationFromLog - and it recovers this join's
+                // outcome instead of falling back to treating this node as a fresh, unconfigured
+                // one. A crash before that needs no special handling: the join future then never
+                // completes, so the caller retries it.
+                LOGGER.debug(
+                    "Join request accepted at index {}, waiting for the configuration entry to"
+                        + " commit locally",
+                    response.index());
+                awaitLocalCommit(response.index(), result, deadline);
               } else if (response.error().type() == RaftError.Type.NO_LEADER
                   || response.error().type() == RaftError.Type.CONFIGURATION_ERROR) {
                 if (Instant.now().isBefore(deadline)) {
@@ -237,6 +254,63 @@ public final class ReconfigurationHelper {
               }
             },
             threadContext);
+  }
+
+  /**
+   * Completes {@code result} once this node's own commit index reaches {@code index}, using {@link
+   * RaftContext#addCommitListener} rather than polling. {@link RaftContext#setCommitIndex} clamps
+   * to what this node has itself persisted, so waiting for the local commit index - not the
+   * leader's - is what guarantees the entry is durable here too.
+   *
+   * @param index the index of the configuration entry admitting this member
+   * @param result the future to complete once the entry commits locally
+   * @param deadline until when to wait before failing {@code result}
+   */
+  private void awaitLocalCommit(
+      final long index, final CompletableFuture<Void> result, final Instant deadline) {
+    if (raftContext.getCommitIndex() >= index) {
+      LOGGER.debug("Configuration entry at index {} is already committed locally", index);
+      result.complete(null);
+      return;
+    }
+    if (!Instant.now().isBefore(deadline)) {
+      result.completeExceptionally(
+          new TimeoutException(
+              "Join request was accepted at index %d, but that configuration entry did not commit"
+                  + " locally within the configuration change timeout".formatted(index)));
+      return;
+    }
+
+    // Self-removing: whichever of the commit notification or the timeout fires first cancels the
+    // other. Needs a mutable field for the timeout handle because the listener has to be
+    // registered before that handle exists.
+    final var listener =
+        new RaftCommitListener() {
+          Scheduled timeout;
+
+          @Override
+          public void onCommit(final long committedIndex) {
+            if (committedIndex < index) {
+              return;
+            }
+            raftContext.removeCommitListener(this);
+            timeout.cancel();
+            LOGGER.debug("Configuration entry at index {} committed locally", index);
+            result.complete(null);
+          }
+        };
+    listener.timeout =
+        threadContext.schedule(
+            Duration.between(Instant.now(), deadline),
+            () -> {
+              raftContext.removeCommitListener(listener);
+              result.completeExceptionally(
+                  new TimeoutException(
+                      "Join request was accepted at index %d, but that configuration entry did"
+                          + " not commit locally within the configuration change timeout"
+                              .formatted(index)));
+            });
+    raftContext.addCommitListener(listener);
   }
 
   public CompletableFuture<Void> leave() {
