@@ -45,6 +45,7 @@ import io.atomix.raft.utils.VoteQuorum;
 import io.atomix.raft.utils.VoteQuorum.VoteErrorStatus;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.event.Level;
 
@@ -342,7 +343,10 @@ public final class FollowerRole extends ActiveRole {
   }
 
   private void logError(final Throwable error, final RaftMember member) {
-    log.atLevel(error instanceof NoSuchMemberException ? Level.TRACE : Level.WARN)
-        .log("Poll request to {} failed: {}", member.memberId(), error.getMessage());
+    final var cause =
+        error instanceof CompletionException && error.getCause() != null ? error.getCause() : error;
+    final var logLevel = cause instanceof NoSuchMemberException ? Level.TRACE : Level.WARN;
+    log.atLevel(logLevel)
+        .log("Poll request to {} failed: {}", member.memberId(), cause.getMessage());
   }
 }
