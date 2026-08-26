@@ -25,6 +25,8 @@ public interface VoteQuorum {
 
   enum VoteErrorStatus {
     NO_SUCH_MEMBER,
+    MEMBER_UNREACHABLE,
+    MEMBER_NOT_READY,
     MEMBER_TIMED_OUT,
     REJECTED,
     INVALID_TERM,
@@ -33,8 +35,8 @@ public interface VoteQuorum {
     public static VoteErrorStatus of(final Throwable error) {
       return switch (FuturesUtil.unwrapCompletionException(error)) {
         case final NoSuchMemberException noSuchMemberException -> NO_SUCH_MEMBER;
-        case final ConnectException connectException -> NO_SUCH_MEMBER;
-        case final NoRemoteHandler noRemoteHandler -> NO_SUCH_MEMBER;
+        case final ConnectException connectException -> MEMBER_UNREACHABLE;
+        case final NoRemoteHandler noRemoteHandler -> MEMBER_NOT_READY;
         case final TimeoutException timeoutException -> MEMBER_TIMED_OUT;
         default -> UNKNOWN;
       };
