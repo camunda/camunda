@@ -74,8 +74,22 @@ public class SimpleVoteQuorum implements VoteQuorum {
    */
   @Override
   public void cancel() {
+    close(reportLevel());
+  }
+
+  /**
+   * Cancels the quorum whose result is no longer needed because the election is already decided,
+   * e.g. the sibling configuration failed a joint election. Unlike {@link #cancel()}, the collected
+   * member states are only logged at debug so a single election produces a single default-level
+   * report.
+   */
+  void abandon() {
+    close(Level.DEBUG);
+  }
+
+  private void close(final Level level) {
     if (!complete && !failedStatuses.isEmpty()) {
-      LOG.atLevel(reportLevel())
+      LOG.atLevel(level)
           .log(
               "{} cancelled before completion with {}/{} failed members: {}, pending members: {}",
               name,

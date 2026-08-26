@@ -59,8 +59,8 @@ public class JointConsensusVoteQuorum implements VoteQuorum {
       completed = true;
       // the joint election is decided; stop the still-pending sub-quorum from processing and
       // reporting responses for an election that is already over
-      oldQuorum.cancel();
-      newQuorum.cancel();
+      oldQuorum.abandon();
+      newQuorum.abandon();
       callback.accept(false);
     }
   }

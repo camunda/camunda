@@ -385,7 +385,7 @@ final class VoteQuorumTest {
     }
 
     @Test
-    void shouldReportJointConsensusFailureOnce() {
+    void shouldWarnOnceWhenJointConsensusFails() {
       // given
       final Consumer<Boolean> callback = mock();
       final var quorum =
@@ -399,17 +399,73 @@ final class VoteQuorumTest {
       quorum.fail(new MemberId("2"), VoteErrorStatus.NO_SUCH_MEMBER);
 
       // then
-      final var failureReports =
-          recorder.getAppendedEvents().stream()
-              .filter(event -> event.getMessage().getFormattedMessage().contains("failed with"))
-              .toList();
-      assertThat(failureReports)
+      assertThat(recorder.getAppendedEvents())
+          .filteredOn(event -> event.getLevel().isMoreSpecificThan(Level.WARN))
           .hasSize(1)
           .first()
           .satisfies(
               event ->
                   assertThat(event.getMessage().getFormattedMessage())
-                      .contains("Old configuration quorum"));
+                      .contains("Old configuration quorum failed with"));
+    }
+
+    @Test
+    void shouldLogAbandonedSiblingStatesAtDebugWhenJointConsensusFails() {
+      // given
+      final Consumer<Boolean> callback = mock();
+      final var quorum =
+          new JointConsensusVoteQuorum(
+              callback,
+              Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")),
+              Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("4")));
+
+      // when
+      quorum.fail(new MemberId("1"), VoteErrorStatus.NO_SUCH_MEMBER);
+      quorum.fail(new MemberId("2"), VoteErrorStatus.NO_SUCH_MEMBER);
+
+      // then
+      assertThat(recorder.getAppendedEvents())
+          .filteredOn(event -> event.getLevel() == Level.DEBUG)
+          .anySatisfy(
+              event ->
+                  assertThat(event.getMessage().getFormattedMessage())
+                      .contains("New configuration quorum cancelled before completion")
+                      .contains("1=NO_SUCH_MEMBER"));
+    }
+
+    @Test
+    void shouldWarnPerConfigurationWhenAJointElectionIsCancelled() {
+      // given
+      final Consumer<Boolean> callback = mock();
+      final var quorum =
+          new JointConsensusVoteQuorum(
+              callback,
+              Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")),
+              Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("4")));
+
+      // when
+      quorum.fail(new MemberId("3"), VoteErrorStatus.NO_SUCH_MEMBER);
+      quorum.fail(new MemberId("4"), VoteErrorStatus.MEMBER_TIMED_OUT);
+      quorum.cancel();
+
+      // then
+      final var warnings =
+          recorder.getAppendedEvents().stream()
+              .filter(event -> event.getLevel().isMoreSpecificThan(Level.WARN))
+              .map(event -> event.getMessage().getFormattedMessage())
+              .toList();
+      assertThat(warnings)
+          .hasSize(2)
+          .anySatisfy(
+              message ->
+                  assertThat(message)
+                      .contains("Old configuration quorum cancelled before completion")
+                      .contains("3=NO_SUCH_MEMBER"))
+          .anySatisfy(
+              message ->
+                  assertThat(message)
+                      .contains("New configuration quorum cancelled before completion")
+                      .contains("4=MEMBER_TIMED_OUT"));
     }
   }
 }
