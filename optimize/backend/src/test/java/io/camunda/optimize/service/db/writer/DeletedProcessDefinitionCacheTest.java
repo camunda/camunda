@@ -18,7 +18,9 @@ import io.camunda.optimize.service.db.reader.JobRegistryReader;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DeletedProcessDefinitionCacheConfiguration;
 import io.camunda.optimize.service.util.configuration.GlobalCacheConfiguration;
+import io.camunda.optimize.service.util.configuration.ZeebeConfiguration;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +29,7 @@ class DeletedProcessDefinitionCacheTest {
   private static final int TEST_MAX_SIZE = 3;
 
   private JobRegistryReader jobRegistryReader;
+  private ZeebeConfiguration zeebeConfiguration;
   private DeletedProcessDefinitionCache cache;
 
   @BeforeEach
@@ -38,9 +41,50 @@ class DeletedProcessDefinitionCacheTest {
     cacheConfig.setRefreshIntervalSeconds(5);
     final GlobalCacheConfiguration globalCacheConfiguration = mock(GlobalCacheConfiguration.class);
     when(globalCacheConfiguration.getDeletedProcessDefinitions()).thenReturn(cacheConfig);
+    zeebeConfiguration = mock(ZeebeConfiguration.class);
+    when(zeebeConfiguration.isEnabled()).thenReturn(true);
     final ConfigurationService configurationService = mock(ConfigurationService.class);
     when(configurationService.getCaches()).thenReturn(globalCacheConfiguration);
+    when(configurationService.getConfiguredZeebe()).thenReturn(zeebeConfiguration);
     cache = new DeletedProcessDefinitionCache(jobRegistryReader, configurationService);
+  }
+
+  @AfterEach
+  void tearDown() {
+    cache.destroy();
+  }
+
+  @Test
+  void shouldStartSchedulingOnInitWhenZeebeImportEnabled() {
+    // when
+    cache.init();
+
+    // then
+    assertThat(cache.isScheduledToRun()).isTrue();
+  }
+
+  @Test
+  void shouldNotStartSchedulingOnInitWhenZeebeImportDisabled() {
+    // given a cache built for a configuration where the zeebe importer is disabled, e.g. a
+    // webapp-only Optimize deployment that never writes process definitions
+    when(zeebeConfiguration.isEnabled()).thenReturn(false);
+    final DeletedProcessDefinitionCacheConfiguration cacheConfig =
+        new DeletedProcessDefinitionCacheConfiguration();
+    cacheConfig.setMaxSize(TEST_MAX_SIZE);
+    cacheConfig.setRefreshIntervalSeconds(5);
+    final GlobalCacheConfiguration globalCacheConfiguration = mock(GlobalCacheConfiguration.class);
+    when(globalCacheConfiguration.getDeletedProcessDefinitions()).thenReturn(cacheConfig);
+    final ConfigurationService configurationService = mock(ConfigurationService.class);
+    when(configurationService.getCaches()).thenReturn(globalCacheConfiguration);
+    when(configurationService.getConfiguredZeebe()).thenReturn(zeebeConfiguration);
+    final DeletedProcessDefinitionCache disabledCache =
+        new DeletedProcessDefinitionCache(jobRegistryReader, configurationService);
+
+    // when
+    disabledCache.init();
+
+    // then
+    assertThat(disabledCache.isScheduledToRun()).isFalse();
   }
 
   @Test
