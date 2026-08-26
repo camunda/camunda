@@ -572,12 +572,6 @@ test('should start a process without a form using the selected tenant and open i
 	);
 
 	await shadcnTasklistProcessesPage.goto('?tenantId=tenant-a');
-	// Move off (0,0) onto the content area first: Playwright's click() hovers along
-	// the way from the cursor's current position, and starting at the page origin
-	// would path directly over the sidebar's "Processes" nav item — intent-preloading
-	// it with no search params re-runs this route's loader with the tenant filter
-	// dropped, which briefly renders this page's own error boundary.
-	await page.mouse.move(640, 300);
 	await shadcnTasklistProcessesPage.startProcessButton.click();
 
 	await expect(
@@ -590,8 +584,6 @@ test('should start a process without a form using the selected tenant and open i
 	);
 	await expect(shadcnTasklistProcessesPage.waitingForTasksStatus).toBeVisible();
 	await expect(shadcnTasklistProcessesPage.startProcessButton).toHaveCount(0);
-	// The real DS task-detail page doesn't exist yet (#60217-#60223) — this lands
-	// on its placeholder (TaskDetailsPlaceholderPage), not Carbon's task page.
 	await expect(page).toHaveURL(`/shadcn/tasklist/${userTaskKey}?filter=all-open&sortBy=creation`);
 	await expect(page.getByRole('heading', {name: 'Details'})).toBeVisible();
 	await expect(page.getByText(userTaskKey)).toBeVisible();
@@ -662,8 +654,6 @@ test('should notify about multiple new tasks and open a selected task', async ({
 	);
 	await shadcnTasklistProcessesPage.header.notifications.getActionButton(approveNotificationTitle, 'Open task').click();
 
-	// The real DS task-detail page doesn't exist yet (#60217-#60223) — this lands
-	// on its placeholder (TaskDetailsPlaceholderPage), not Carbon's task page.
 	await expect(page).toHaveURL(`/shadcn/tasklist/${approveTask.userTaskKey}?filter=all-open&sortBy=creation`);
 	await expect(page.getByRole('heading', {name: 'Details'})).toBeVisible();
 	await expect(page.getByText(approveTask.userTaskKey)).toBeVisible();
