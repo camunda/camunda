@@ -325,13 +325,16 @@ public final class FollowerRole extends ActiveRole {
             .log("Poll request to {} failed with {}: {}", member.memberId(), status, cause);
         quorum.fail(member.memberId(), status);
       } else {
-        if (response.term() > raft.getTerm()) {
+        final boolean respondedWithGreaterTerm = response.term() > raft.getTerm();
+        if (respondedWithGreaterTerm) {
           raft.setTerm(response.term());
         }
 
         if (!response.accepted()) {
           log.debug("Received rejected poll from {}", member);
-          quorum.fail(member.memberId(), VoteErrorStatus.REJECTED);
+          quorum.fail(
+              member.memberId(),
+              respondedWithGreaterTerm ? VoteErrorStatus.INVALID_TERM : VoteErrorStatus.REJECTED);
         } else if (response.term() != raft.getTerm()) {
           log.debug("Received accepted poll for a different term from {}", member);
           quorum.fail(member.memberId(), VoteErrorStatus.INVALID_TERM);
