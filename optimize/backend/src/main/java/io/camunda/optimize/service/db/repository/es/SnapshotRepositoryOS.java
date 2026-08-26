@@ -14,10 +14,12 @@ import static java.lang.String.format;
 
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.SnapshotRepository;
+import io.camunda.optimize.service.util.ExceptionUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.DeleteSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
@@ -60,9 +62,10 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
   }
 
   @Override
-  public void triggerSnapshot(final String snapshotName, final String[] indexNames) {
+  public CompletableFuture<Void> triggerSnapshot(
+      final String snapshotName, final String[] indexNames) {
     LOG.info("Triggering async snapshot {}.", snapshotName);
-    osClient
+    return osClient
         .getRichOpenSearchClient()
         .async()
         .snapshot()
@@ -71,7 +74,7 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
             snapshotName,
             Arrays.asList(indexNames),
             e -> format("Failed to send create snapshot %s request to Opensearch!", snapshotName))
-        .whenComplete(
+        .handle(
             (createSnapshotResponse, throwable) -> {
               if (createSnapshotResponse != null) {
                 onSnapshotCreated(createSnapshotResponse);
@@ -79,6 +82,7 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
               if (throwable != null) {
                 onSnapshotCreationFailed(throwable, snapshotName);
               }
+              return null;
             });
   }
 
@@ -113,16 +117,21 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
   }
 
   private void onSnapshotCreationFailed(final Throwable e, final String snapshotName) {
-    if (e instanceof IOException) {
-      final String reason =
+    final String reason;
+    if (ExceptionUtil.isConcurrentSnapshotExecutionException(e)) {
+      reason =
+          format(
+              "Could not create snapshot [%s] because because of concurrent snapshot operations.",
+              snapshotName);
+    } else if (ExceptionUtil.unwrapCompletionCause(e) instanceof IOException) {
+      reason =
           format(
               "Encountered an error connecting to OpenSearch while attempting to create snapshot [%s].",
               snapshotName);
-      LOG.error(reason, e);
     } else {
-      final String reason = format("Failed to take snapshot [%s]", snapshotName);
-      LOG.error(reason, e);
+      reason = format("Failed to take snapshot [%s]", snapshotName);
     }
+    LOG.error(reason, e);
   }
 
   private void onSnapshotCreated(final CreateSnapshotResponse createSnapshotResponse) {

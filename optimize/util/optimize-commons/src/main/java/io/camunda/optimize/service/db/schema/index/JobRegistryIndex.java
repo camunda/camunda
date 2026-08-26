@@ -46,6 +46,11 @@ public abstract class JobRegistryIndex<TBuilder> extends DefaultIndexMappingCrea
   }
 
   @Override
+  public boolean isImportIndex() {
+    return true;
+  }
+
+  @Override
   public int getVersion() {
     return VERSION;
   }
