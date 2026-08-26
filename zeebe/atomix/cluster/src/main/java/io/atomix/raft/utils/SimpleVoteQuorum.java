@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 public class SimpleVoteQuorum implements VoteQuorum {
 
@@ -73,13 +74,24 @@ public class SimpleVoteQuorum implements VoteQuorum {
         callback.accept(true);
       } else if (failedStatuses.size() >= quorum) {
         complete = true;
-        LOG.warn(
-            "Quorum failed with {}/{} failed members: {}",
-            failedStatuses.size(),
-            totalMembers,
-            failedStatuses);
+        LOG.atLevel(reportLevel())
+            .log(
+                "Quorum failed with {}/{} failed members: {}",
+                failedStatuses.size(),
+                totalMembers,
+                failedStatuses);
         callback.accept(false);
       }
     }
+  }
+
+  /**
+   * Failures to reach members are actionable for operators and warrant a warning; regular protocol
+   * outcomes such as denied votes happen during normal operation and stay at debug.
+   */
+  private Level reportLevel() {
+    return failedStatuses.values().stream().allMatch(VoteErrorStatus::isProtocolOutcome)
+        ? Level.DEBUG
+        : Level.WARN;
   }
 }

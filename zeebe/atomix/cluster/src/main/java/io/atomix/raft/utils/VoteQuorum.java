@@ -32,6 +32,14 @@ public interface VoteQuorum {
     INVALID_TERM,
     UNKNOWN;
 
+    /**
+     * True when the member delivered a response and the failure is a regular protocol outcome (a
+     * denied vote or a term conflict) rather than a failure to reach the member.
+     */
+    public boolean isProtocolOutcome() {
+      return this == REJECTED || this == INVALID_TERM;
+    }
+
     public static VoteErrorStatus of(final Throwable error) {
       return switch (FuturesUtil.unwrapCompletionException(error)) {
         case final NoSuchMemberException noSuchMemberException -> NO_SUCH_MEMBER;
