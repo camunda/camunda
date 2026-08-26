@@ -8,15 +8,23 @@
   --background: var(--cds-background);
 }
 
-/* The design system ships Tailwind's `.container` utility unlayered and unscoped
-   (`width: 100%` plus a `max-width` per breakpoint). Optimize has its own `.container`
-   elements, including the one `Number` hands to fitty — that one must stay shrink-to-fit
-   or fitty measures a full-width box, computes a scale factor of ~1 and leaves the value
-   at its base size instead of growing it to fill the tile. Restore the pre-design-system
-   values outside the design system's own subtree. */
+/* The design system ships Tailwind's utility classes unlayered and unscoped, so any Optimize
+   element whose class name happens to match one inherits it. These three do, and each gains a
+   property Optimize never declared: fitty needs its box shrink-to-fit, the dashboard date filter
+   must stay in flow, and SourcesModal's header checkbox hides with `visibility` to keep its
+   column width. Optimize's own rules outrank these resets wherever the hiding is deliberate.
+   Tracked for a durable fix in camunda/camunda-hub#27965. */
 .container:not(.c4-ui *) {
   width: auto;
   max-width: none;
+}
+
+.fixed:not(.c4-ui *) {
+  position: static;
+}
+
+.hidden:not(.c4-ui *) {
+  display: revert;
 }
 
 /* Below the design system's mobile breakpoint the header only has room for the
