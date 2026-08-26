@@ -18,26 +18,27 @@ package io.camunda.zeebe.protocol;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.Arguments;
 
 class ZbColumnFamiliesTest {
 
+  /**
+   * Column family IDs are RocksDB key prefixes. They must stay unique, and a given CF name must
+   * keep the same ID across versions so upgrades do not point at a different prefix. Gaps are
+   * allowed (e.g. when back-porting a CF that was assigned a higher ID on a newer branch).
+   */
   @Test
   void shouldNotReuseEnumValues() {
     assertThat(Arrays.stream(ZbColumnFamilies.values()).map(ZbColumnFamilies::getValue))
         .doesNotHaveDuplicates();
   }
 
-  /** If this test case fails, you can update ZbColumnFamilies to include all known enum values. */
   @Test
-  void shouldNotSkipEnumValues() {
-    assertThat(
-            Arrays.stream(ZbColumnFamilies.values()).mapToInt(ZbColumnFamilies::getValue).toArray())
-        .describedAs("The enum values must be sequential")
-        .isEqualTo(IntStream.range(0, ZbColumnFamilies.values().length).toArray());
+  void shouldHaveNonNegativeEnumValues() {
+    assertThat(Arrays.stream(ZbColumnFamilies.values()).map(ZbColumnFamilies::getValue))
+        .allMatch(value -> value >= 0);
   }
 
   public static Stream<Arguments> values() {
