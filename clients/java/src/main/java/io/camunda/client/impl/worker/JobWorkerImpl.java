@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 
 /**
@@ -61,6 +61,10 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   public static final String ERROR_MSG =
       "Expected to handle received job with key {}, but the worker reached maximum capacity (maxJobsActive). "
           + "The job is made available again right away, so that it can be picked up by another worker. "
+          + "If this issue persists, make sure to either scale your workers, threads, increase maxJobsActive or reduce the load you want to work on. ";
+  private static final String STREAMED_ERROR_MSG =
+      "Expected to handle received job with key {}, but the worker reached maximum capacity (maxJobsActive). "
+          + "The job stays with this worker until its timeout expires, and only then is it offered to another worker. "
           + "If this issue persists, make sure to either scale your workers, threads, increase maxJobsActive or reduce the load you want to work on. ";
   private static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
       JobWorkerBuilderImpl.DEFAULT_BACKOFF_SUPPLIER;
@@ -314,14 +318,17 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
    * Hands the job over to the executor that runs the job handler.
    *
    * @param onRefused what to do with a job the executor would not take, which differs between a job
-   *     the worker asked for and one the broker pushed to it
+   *     the worker asked for and one the broker pushed to it. It is also what tells the user about
+   *     the refusal, since the two paths leave the job in very different places.
    * @return true if the executor took the job, in which case the given finalizer is guaranteed to
    *     run once the handler is done. A false answer does not mean the handler never ran: an
    *     executor may run the job on the calling thread and report it as refused all the same, so
    *     anything the caller does with a refused job has to cope with the job having run.
    */
   private boolean handleActivatedJob(
-      final ActivatedJob job, final Runnable finalizer, final Consumer<ActivatedJob> onRefused) {
+      final ActivatedJob job,
+      final Runnable finalizer,
+      final BiConsumer<ActivatedJob, RejectedExecutionException> onRefused) {
     metrics.jobActivated(1);
     // The executor may run the job on the calling thread and still report it as refused. Once the
     // handler has started, only it knows what became of the job, so the flag below keeps the
@@ -355,8 +362,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
         return false;
       }
 
-      LOG.warn(ERROR_MSG, job.getKey(), e);
-      onRefused.accept(job);
+      onRefused.accept(job, e);
       return false;
     }
   }
@@ -369,7 +375,8 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
    * timeout expires, which is where it would have been anyway. Letting a failure out of here would
    * stop the worker from handling the rest of the jobs it just activated.
    */
-  private void returnJobToBroker(final ActivatedJob job) {
+  private void returnJobToBroker(final ActivatedJob job, final RejectedExecutionException cause) {
+    LOG.warn(ERROR_MSG, job.getKey(), cause);
     try {
       jobClient
           .newFailCommand(job)
@@ -388,16 +395,16 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   /**
-   * Leaves a refused streamed job to the broker. The broker yields a job whose push to a stream
-   * fails, which makes it activatable again just as quickly as a fail command from here would.
-   * Sending one anyway would only race that yield, and the broker's version is the sounder of the
-   * two: it cannot be made stale by the job being activated again in the meantime.
+   * Leaves a refused streamed job to the broker, which holds on to it until its timeout expires.
+   *
+   * <p>The broker takes a streamed job back by itself when the push to the worker fails, which is
+   * how the streaming path recovers without the worker having to say anything. That does not cover
+   * this case: the push had already succeeded and the job was only refused afterwards, so nothing
+   * tells the broker that this worker will never run it.
    */
-  private void leaveStreamedJobToBroker(final ActivatedJob job) {
-    LOG.debug(
-        "Job with key {} was refused. Leaving it to the broker, which offers it again once the "
-            + "push to this worker fails.",
-        job.getKey());
+  private void leaveStreamedJobToBroker(
+      final ActivatedJob job, final RejectedExecutionException cause) {
+    LOG.warn(STREAMED_ERROR_MSG, job.getKey(), cause);
   }
 
   private void logFailedReturn(final ActivatedJob job, final Throwable error) {
