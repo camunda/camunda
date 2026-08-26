@@ -8,6 +8,8 @@
 package io.camunda.zeebe.dynamic.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -43,6 +45,7 @@ import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -1521,6 +1524,98 @@ final class ClusterConfigurationManagerImplTest {
               assertThat(defaultGroup.hasMember(MEMBER_0)).isFalse();
               assertThat(defaultGroup.hasMember(MEMBER_1)).isTrue();
             });
+  }
+
+  @Test
+  void shouldContinueTwoPhaseJoinOnRestartDuringPromotion() {
+    // given — the manager restarts between the two phases of a join: the join operation already
+    // completed and marked the local member's partition LEARNER, and the promote operation is
+    // still pending. The partition is part of the member's distribution in this state, so on a
+    // real broker it is started on boot and the promotion can be driven. The leader's catch-up
+    // gate rejects the first promotion attempts, as it does while the learner is not caught up;
+    // the reconciler must keep retrying the operation until the gate accepts.
+    final var promoteAttempts = new AtomicInteger();
+    final PartitionChangeExecutor partitionChangeExecutor = mock(PartitionChangeExecutor.class);
+    when(partitionChangeExecutor.promote(1))
+        .thenAnswer(
+            invocation ->
+                promoteAttempts.incrementAndGet() < 3
+                    ? CompletableActorFuture.completedExceptionally(
+                        new RuntimeException("not caught up yet"))
+                    : CompletableActorFuture.completed(null));
+
+    final var persisted =
+        PersistedCurrentClusterConfiguration.ofFile(
+            tmp.resolve("config-promote-restart.meta"), new ProtoBufSerializer());
+    final var manager =
+        new ClusterConfigurationManagerImpl(
+            executor,
+            MEMBER_0,
+            persisted,
+            new TopologyManagerMetrics(new SimpleMeterRegistry()),
+            Duration.ofMillis(1),
+            Duration.ofMillis(1));
+    manager.setCurrentConfigurationGossiper(ignored -> {});
+    manager.registerGlobalChangeAppliers(
+        new GlobalConfigurationChangeAppliersImpl(
+            new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor()));
+    final var group =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                MEMBER_0,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.joining(1, partitionConfig).toLearner())),
+                MEMBER_1,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(2, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var withPendingPromotion =
+        new CurrentClusterConfiguration(
+                CurrentClusterConfiguration.INITIAL_VERSION,
+                new GlobalConfiguration(
+                    1,
+                    Optional.empty(),
+                    Map.of(
+                        MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                        MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+                    Optional.empty(),
+                    Optional.empty(),
+                    Optional.empty()),
+                Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, group),
+                PhasedChangeState.empty())
+            .initPlan(
+                List.of(
+                    PartitionGroupPhase.sequential(
+                        Map.of(
+                            CurrentClusterConfiguration.DEFAULT_GROUP,
+                            List.of(new PartitionPromoteOperation(MEMBER_0, 1))))));
+
+    // when
+    manager.start(() -> CompletableActorFuture.completed(withPendingPromotion)).join();
+    manager.registerPartitionGroupChangeAppliers(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            partitionChangeExecutor,
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+
+    // then — the promotion is retried until the gate accepts and the partition becomes a voting
+    // member
+    Awaitility.await("Promotion is continued after restart and retried until accepted")
+        .untilAsserted(
+            () -> {
+              final var defaultGroup =
+                  configuration(manager).partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+              assertThat(defaultGroup.hasPendingChanges()).isFalse();
+              assertThat(defaultGroup.getMember(MEMBER_0).getPartition(1).state())
+                  .isEqualTo(PartitionState.State.ACTIVE);
+            });
+    assertThat(promoteAttempts.get()).isEqualTo(3);
   }
 
   @Test
