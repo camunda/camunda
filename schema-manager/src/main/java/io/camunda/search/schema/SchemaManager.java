@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -479,11 +480,32 @@ public class SchemaManager implements CloseableSilently {
 
   private int getNumberOfShardsFromConfig(
       final String indexName, final IndexDescriptor descriptor) {
+    final var descriptorDefault = descriptor.getDefaultShardCount();
     final var explicit = config.index().getShardsByIndexName().get(indexName);
     if (explicit != null) {
+      warnIfWideningSingleShardIndex(indexName, explicit, descriptorDefault);
       return explicit;
     }
-    return descriptor.getDefaultShardCount().orElse(config.index().getNumberOfShards());
+    return descriptorDefault.orElse(config.index().getNumberOfShards());
+  }
+
+  /**
+   * Explicit configuration wins over the descriptor default by design, so this only warns. An
+   * operator who raises a single-shard-by-design index above one shard should know they are trading
+   * away the atomic-refresh property that pinning gave them, which is what made the
+   * post-importer-queue watermark skip possible in the first place.
+   */
+  private void warnIfWideningSingleShardIndex(
+      final String indexName, final int configured, final OptionalInt descriptorDefault) {
+    if (configured > 1 && descriptorDefault.orElse(configured) == 1) {
+      LOG.warn(
+          "Index '{}' is single-shard by design but is configured with '{}' primary shards. "
+              + "The explicit configuration wins. Entries are spread across shards that refresh "
+              + "independently, so reads that assume an atomic refresh may skip data - see "
+              + "https://github.com/camunda/camunda/issues/56117.",
+          indexName,
+          configured);
+    }
   }
 
   private int getNumberOfReplicasFromConfig(final String indexName) {

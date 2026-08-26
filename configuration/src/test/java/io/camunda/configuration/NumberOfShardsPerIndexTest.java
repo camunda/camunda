@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.beans.Introspector;
 import java.util.Arrays;
@@ -98,6 +99,36 @@ class NumberOfShardsPerIndexTest {
       // then
       assertThat(shards.toIndexNameMap())
           .containsOnly(Map.entry("list-view", 3), Map.entry("post-importer-queue", 1));
+    }
+  }
+
+  @Nested
+  class ShardCountValidation {
+
+    @Test
+    void shouldRejectAnIndexConfiguredWithFewerThanOneShard() {
+      // given
+      final var elasticsearch = new Elasticsearch();
+      elasticsearch.getNumberOfShardsPerIndex().setListView(0);
+
+      // when / then — the search engine would otherwise reject schema creation with an error
+      // naming neither the property nor the index
+      assertThatThrownBy(elasticsearch::resolveNumberOfShardsPerIndex)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage(
+              "camunda.data.secondary-storage.elasticsearch.number-of-shards-per-index.list-view"
+                  + " must be at least 1, but was 0");
+    }
+
+    @Test
+    void shouldAcceptASingleShard() {
+      // given
+      final var elasticsearch = new Elasticsearch();
+      elasticsearch.getNumberOfShardsPerIndex().setListView(1);
+
+      // when / then
+      assertThat(elasticsearch.resolveNumberOfShardsPerIndex())
+          .containsExactly(Map.entry("list-view", 1));
     }
   }
 

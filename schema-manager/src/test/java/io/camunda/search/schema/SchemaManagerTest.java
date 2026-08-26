@@ -32,11 +32,13 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
+import io.camunda.zeebe.test.util.logging.LogCapturer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -470,6 +472,67 @@ class SchemaManagerTest {
       final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
       verify(client).createIndex(eq(index), captor.capture());
       assertThat(captor.getValue().getNumberOfShards()).isEqualTo(7);
+    }
+
+    @Test
+    void shouldWarnWhenWideningASingleShardByDesignIndex() {
+      // given — post-importer-queue is pinned to 1 shard because entries for one partition must
+      // not scatter across independently refreshing shards
+      final var template = new PostImporterQueueTemplate("test", true);
+      cfg.index().getShardsByIndexName().put(template.getIndexName(), 3);
+      final var mgr = buildManager(List.of(metaIndex), List.of(template));
+
+      // when
+      try (final var logs = LogCapturer.capturing(SchemaManager.class, Level.WARN)) {
+        startupWithRetry(mgr, cfg);
+
+        // then — the override still takes effect, the operator is only told what it costs
+        assertThat(logs.messagesAt(Level.WARN))
+            .anySatisfy(
+                message ->
+                    assertThat(message)
+                        .contains(template.getIndexName())
+                        .contains("single-shard by design")
+                        .contains("issues/56117"));
+      }
+
+      final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
+      verify(client).createIndexTemplate(eq(template), captor.capture(), eq(true));
+      assertThat(captor.getValue().getNumberOfShards()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldNotWarnWhenOverridingAnIndexThatFollowsTheGlobalKnob() {
+      // given — template descriptors carry process-instance volume and are meant to be sharded
+      final var template = new TestTemplateDescriptor("test", "mappings.json");
+      cfg.index().getShardsByIndexName().put(template.getIndexName(), 3);
+      final var mgr = buildManager(List.of(metaIndex), List.of(template));
+
+      // when
+      try (final var logs = LogCapturer.capturing(SchemaManager.class, Level.WARN)) {
+        startupWithRetry(mgr, cfg);
+
+        // then
+        assertThat(logs.messagesAt(Level.WARN))
+            .noneSatisfy(message -> assertThat(message).contains("single-shard by design"));
+      }
+    }
+
+    @Test
+    void shouldNotWarnWhenPinningASingleShardIndexToItsOwnDefault() {
+      // given — restating the descriptor default is not a tradeoff worth warning about
+      final var template = new PostImporterQueueTemplate("test", true);
+      cfg.index().getShardsByIndexName().put(template.getIndexName(), 1);
+      final var mgr = buildManager(List.of(metaIndex), List.of(template));
+
+      // when
+      try (final var logs = LogCapturer.capturing(SchemaManager.class, Level.WARN)) {
+        startupWithRetry(mgr, cfg);
+
+        // then
+        assertThat(logs.messagesAt(Level.WARN))
+            .noneSatisfy(message -> assertThat(message).contains("single-shard by design"));
+      }
     }
   }
 
