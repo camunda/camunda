@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchExistsQuery;
 import io.camunda.search.clients.query.SearchHasChildQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchMatchPhraseQuery;
@@ -377,7 +378,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   @Test
-  public void shouldQueryByErrorMessage() {
+  public void shouldQueryByErrorMessageOfFlowNodeOrProcessLevelIncident() {
     // given
     final String expectedError = "expected error";
     final ProcessInstanceFilter filter =
@@ -399,24 +400,85 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     assertIsSearchTermQuery(
         boolQuery.must().get(0).queryOption(), "joinRelation", "processInstance");
 
+    // Second must clause: the error message either on a flow node child, or, for a process level
+    // incident, on the process instance document itself.
     assertThat(boolQuery.must().get(1).queryOption())
-        .isInstanceOf(SearchHasChildQuery.class)
-        .satisfies(
-            queryOption -> {
-              final SearchHasChildQuery hasChildQuery = (SearchHasChildQuery) queryOption;
-              assertThat(hasChildQuery.type()).isEqualTo("activity");
-              assertThat(hasChildQuery.query().queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            errorMessageQuery -> {
+              assertThat(errorMessageQuery.should()).hasSize(2);
+
+              assertThat(errorMessageQuery.should().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchHasChildQuery.class,
+                      hasChildQuery -> {
+                        assertThat(hasChildQuery.type()).isEqualTo("activity");
+                        assertIsErrorMessageMatch(
+                            hasChildQuery.query().queryOption(), expectedError);
+                      });
+
+              assertIsErrorMessageMatch(
+                  errorMessageQuery.should().get(1).queryOption(), expectedError);
+            });
+  }
+
+  @Test
+  public void shouldQueryByMissingErrorMessage() {
+    // given
+    final ProcessInstanceFilter filter =
+        FilterBuilders.processInstance(
+            f -> f.errorMessageOperations(List.of(Operation.exists(false))));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then: neither a flow node child nor the process instance itself may carry an error message
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    final SearchBoolQuery boolQuery = (SearchBoolQuery) queryVariant;
+    assertThat(boolQuery.must()).hasSize(2);
+
+    assertThat(boolQuery.must().get(1).queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            errorMessageQuery -> {
+              assertThat(errorMessageQuery.must()).hasSize(2);
+
+              assertThat(errorMessageQuery.must().get(0).queryOption())
                   .isInstanceOfSatisfying(
                       SearchBoolQuery.class,
-                      innerBool -> {
-                        assertThat(innerBool.must()).hasSize(1);
-                        assertThat(innerBool.must().get(0).queryOption())
-                            .isInstanceOfSatisfying(
-                                SearchMatchPhraseQuery.class,
-                                searchMatchQuery -> {
-                                  assertThat(searchMatchQuery.field()).isEqualTo("errorMessage");
-                                  assertThat(searchMatchQuery.query()).isEqualTo(expectedError);
-                                });
+                      notHasChild ->
+                          assertThat(notHasChild.mustNot().get(0).queryOption())
+                              .isInstanceOfSatisfying(
+                                  SearchHasChildQuery.class,
+                                  hasChildQuery ->
+                                      assertThat(hasChildQuery.type()).isEqualTo("activity")));
+
+              assertThat(errorMessageQuery.must().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchBoolQuery.class,
+                      notExists ->
+                          assertThat(notExists.mustNot().get(0).queryOption())
+                              .isInstanceOfSatisfying(
+                                  SearchExistsQuery.class,
+                                  existsQuery ->
+                                      assertThat(existsQuery.field()).isEqualTo("errorMessage")));
+            });
+  }
+
+  private void assertIsErrorMessageMatch(
+      final SearchQueryOption queryOption, final String expectedError) {
+    assertThat(queryOption)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            innerBool -> {
+              assertThat(innerBool.must()).hasSize(1);
+              assertThat(innerBool.must().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchMatchPhraseQuery.class,
+                      searchMatchQuery -> {
+                        assertThat(searchMatchQuery.field()).isEqualTo("errorMessage");
+                        assertThat(searchMatchQuery.query()).isEqualTo(expectedError);
                       });
             });
   }
