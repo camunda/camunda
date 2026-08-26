@@ -13,6 +13,8 @@
 #   You must also set the image pull secret to "harbor-registry" in the helm values.
 
 name: Camunda load test
+run-name: "Camunda load test: ${{ inputs.name }}"
+
 on:
   workflow_dispatch:
     inputs:
