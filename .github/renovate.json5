@@ -198,6 +198,10 @@
       matchFileNames: [
         ".github/actions/build-platform-docker/action.yml",
         ".github/actions/setup-build/action.yml",
+<<<<<<< HEAD
+=======
+        ".github/actions/gcs-build-cache-auth/action.yml",
+>>>>>>> 25761bba5 (ci: retry setup-java and GCS WIF auth to survive transient infra blips)
       ],
       matchPackageNames: [
         "Wandalen/wretry.action",
