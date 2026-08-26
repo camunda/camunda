@@ -47,26 +47,26 @@ data:
         metrics: http://connectors.c8-golden-stable-810-elasticsearch-stable:8080/actuator/prometheus
       - name: Operate
         id: operate
-        version: SNAPSHOT
+        version: 8.10.0-alpha4
         url: http://localhost:8080/operate
         readiness: http://camunda.c8-golden-stable-810-elasticsearch-stable:9600/actuator/health/readiness
         metrics: http://camunda.c8-golden-stable-810-elasticsearch-stable:9600/actuator/prometheus
       - name: Tasklist
         id: tasklist
-        version: SNAPSHOT
+        version: 8.10.0-alpha4
         url: http://localhost:8080/tasklist
         readiness: http://camunda.c8-golden-stable-810-elasticsearch-stable:9600/actuator/health/readiness
         metrics: http://camunda.c8-golden-stable-810-elasticsearch-stable:9600/actuator/prometheus
       - name: Orchestration Admin
         id: admin
-        version: SNAPSHOT
+        version: 8.10.0-alpha4
         url: http://localhost:8080/admin
         readiness: http://camunda.c8-golden-stable-810-elasticsearch-stable:9600/actuator/health/readiness
         metrics: http://camunda.c8-golden-stable-810-elasticsearch-stable:9600/actuator/prometheus
     
       - name: Orchestration Cluster
         id: orchestration
-        version: SNAPSHOT
+        version: 8.10.0-alpha4
         urls:
           grpc: http://localhost:26500
           http: http://localhost:8080
