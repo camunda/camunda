@@ -159,9 +159,6 @@ public class RaftPartitionServer implements HealthMonitorable {
    * current leader, making it a full voting member. This is the second phase of the two-phase join
    * flow for members that joined as {@link Type#PROMOTABLE} and have caught up to the leader's log.
    *
-   * <p>Not to be confused with {@link #promote()}, which transfers <em>leadership</em> to this
-   * member (anoint) and is unrelated to member types.
-   *
    * <p>{@code NO_LEADER}, {@code UNAVAILABLE} and {@code PROTOCOL_ERROR} responses are retried
    * internally without a deadline. A {@code CONFIGURATION_ERROR} - the member is not caught up yet,
    * another configuration change is in progress, or the request was built from a stale
@@ -182,9 +179,6 @@ public class RaftPartitionServer implements HealthMonitorable {
    * demote, then {@link #leave()}, so that the removal can commit without the departing member's
    * participation. The target is PASSIVE rather than PROMOTABLE because a departing member has no
    * promotion intent and must not be shipped the leader's uncommitted tail.
-   *
-   * <p>Not to be confused with {@link #promote()}, which transfers <em>leadership</em> (anoint) and
-   * is unrelated to member types.
    *
    * <p>{@code NO_LEADER}, {@code UNAVAILABLE} and {@code PROTOCOL_ERROR} responses are retried
    * internally without a deadline. A {@code CONFIGURATION_ERROR} - e.g. another configuration
@@ -419,8 +413,8 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.stepDown();
   }
 
-  public CompletableFuture<RaftServer> promote() {
-    return server.promote();
+  public CompletableFuture<RaftServer> anoint() {
+    return server.anoint();
   }
 
   public Collection<RaftMember> getMembers() {

@@ -33,7 +33,6 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
-import io.atomix.utils.Builder;
 import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -339,11 +338,11 @@ public interface RaftServer {
   CompletableFuture<RaftServer> leave();
 
   /**
-   * Promotes the server to leader if possible.
+   * Anoints the server to be leader if possible.
    *
-   * @return a future to be completed once the server has been promoted
+   * @return a future to be completed once the server has been anointed
    */
-  CompletableFuture<RaftServer> promote();
+  CompletableFuture<RaftServer> anoint();
 
   /**
    * Force configure the partition to remove all members which are not part of the given
