@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
@@ -30,6 +31,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @WebEndpoint(id = "exporters")
+@NullMarked
 public class ExportersEndpoint {
 
   private final ClusterConfigurationManagementRequestSender requestSender;
@@ -138,10 +140,13 @@ public class ExportersEndpoint {
 
   private ResponseEntity<?> mapQueryResponse(
       final Optional<String> physicalTenant,
-      final Either<ErrorResponse, CurrentClusterConfiguration> response,
-      final Throwable throwable) {
+      final @Nullable Either<ErrorResponse, CurrentClusterConfiguration> response,
+      final @Nullable Throwable throwable) {
     if (throwable != null) {
       return ClusterApiUtils.mapError(throwable);
+    }
+    if (response == null) {
+      throw new IllegalStateException("No response or error was returned");
     }
 
     if (response.isLeft()) {
