@@ -506,7 +506,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tasklist_mode: ${{ fromJSON( (needs.validate-release.outputs.base == 'stable/8.6' || needs.validate-release.outputs.base == 'stable/8.7') && '["v1"]' || (needs.validate-release.outputs.base == 'stable/8.8' || needs.validate-release.outputs.base == 'stable/8.9') && '["v1","v2"]' || '["v2"]' ) }}
+        tasklist_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.6' || needs.validate-branch.outputs.base == 'stable/8.7') && '["v1"]' || (needs.validate-branch.outputs.base == 'stable/8.8' || needs.validate-branch.outputs.base == 'stable/8.9') && '["v1","v2"]' || '["v2"]' ) }}
         camunda_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.9' || needs.validate-branch.outputs.base == 'main') && '["profiles","all-in-one"]' || '["profiles"]' ) }}
     needs: [validate-branch]
     runs-on: ubuntu-latest
