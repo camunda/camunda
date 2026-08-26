@@ -10,7 +10,11 @@ import {View} from './BasePage';
 
 class ShadcnNotifications extends View {
 	getByNotificationTitle(title: string) {
-		return this.page.getByRole('listitem').filter({hasText: title});
+		return this.page.locator('[data-sonner-toast]').filter({hasText: title});
+	}
+
+	getActionButton(title: string, label: string) {
+		return this.getByNotificationTitle(title).getByRole('button', {name: label});
 	}
 }
 

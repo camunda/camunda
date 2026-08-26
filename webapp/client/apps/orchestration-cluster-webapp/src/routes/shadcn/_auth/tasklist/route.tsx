@@ -12,6 +12,7 @@ import {ComponentAccessDeniedError, ComponentNotAvailableError, ForbiddenError} 
 import {queries} from '#/shared/http/queries';
 import {ComponentAccessDeniedPage} from '#/shared/pages/ComponentAccessDeniedPage';
 import {ForbiddenPage} from '#/shared/pages/ForbiddenPage';
+import {PageLayout} from '@camunda/design-system';
 
 export const Route = createFileRoute('/shadcn/_auth/tasklist')({
 	beforeLoad: async ({context: {queryClient}}) => {
@@ -24,7 +25,11 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist')({
 		}
 
 		if (error instanceof ComponentNotAvailableError || error instanceof ForbiddenError) {
-			return <ForbiddenPage />;
+			return (
+				<PageLayout>
+					<ForbiddenPage />
+				</PageLayout>
+			);
 		}
 
 		throw error;

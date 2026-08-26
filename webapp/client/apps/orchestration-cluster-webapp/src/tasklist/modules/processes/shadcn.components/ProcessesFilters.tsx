@@ -79,10 +79,6 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 							input.onChange(event);
 							debouncedHandleSubmit();
 						}}
-						onClear={() => {
-							input.onChange('');
-							handleSubmit();
-						}}
 					/>
 				)}
 			</Field>
@@ -98,6 +94,10 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 									defaultValue="all"
 									value={input.value ?? 'all'}
 									onValueChange={(value) => {
+										if (!value) {
+											return;
+										}
+
 										input.onChange(value === 'all' ? undefined : value);
 										handleSubmit();
 									}}
@@ -129,6 +129,10 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 										defaultValue={tenants[0]?.tenantId}
 										value={input.value}
 										onValueChange={(tenantId) => {
+											if (!tenantId) {
+												return;
+											}
+
 											input.onChange(tenantId);
 											handleSubmit();
 										}}
