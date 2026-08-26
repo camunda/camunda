@@ -16,10 +16,17 @@ PARENT="origin/${GITHUB_BASE_REF}"
 
 # version orchestration-tag setup-path
 VERSIONS=(
-    "main SNAPSHOT load-tests/setup/main/"
-    "stable-89 8.9-SNAPSHOT load-tests/setup/stable-89/"
-    "stable-88 8.8-SNAPSHOT load-tests/setup/stable-88/"
-    "stable-87 8.7-SNAPSHOT load-tests/setup/stable-87/"
+    # version tag path
+    # `path` must be able to match files both in (for "stable-810"):
+    #
+    #   - load-tests/setup/stable-810/**
+    #   - load-tests/setup/test/golden/stable-810/**
+    #
+    "main SNAPSHOT load-tests/setup/.*main/"
+    "stable-810 8.10-SNAPSHOT load-tests/setup/.*stable-810/"
+    "stable-89 8.9-SNAPSHOT load-tests/setup/.*stable-89/"
+    "stable-88 8.8-SNAPSHOT load-tests/setup/.*stable-88/"
+    "stable-87 8.7-SNAPSHOT load-tests/setup/.*stable-87/"
 )
 
 echo "Finding versions changed compared to ${PARENT}..."
@@ -27,15 +34,26 @@ echo "Finding versions changed compared to ${PARENT}..."
 changed="$(git diff --name-only "${PARENT}...HEAD")"
 
 run_all=false
+
+# Run all versions if the load-test workflow changed. This is a precaution
+# because the workflow may have changed in a way that affects all versions.
 if grep -qE '\.github/workflows/camunda-load-test' <<<"$changed"; then
     echo "⇒ Load-test workflow changed, running all versions..."
+    run_all=true
+fi
+
+# The load-test-setup Helm Chart is used by all the versions. It may or may not
+# affect the final output but as a precaution, we run all the versions if this
+# Helm Chart changed.
+if grep -qF 'load-tests/setup/charts/load-test-setup' <<<"$changed"; then
+    echo "⇒ load-test-setup Helm Chart changed, will run all the versions..."
     run_all=true
 fi
 
 matrix_entries=()
 for entry in "${VERSIONS[@]}"; do
     read -r version tag path <<<"$entry"
-    if [[ "$run_all" == "true" ]] || grep -qF "$path" <<<"$changed"; then
+    if [[ "$run_all" == "true" ]] || grep -qE "$path" <<<"$changed"; then
         echo "⇒ Version '${version}' changed..."
         matrix_entries+=("{\"version\":\"${version}\",\"orchestration-tag\":\"${tag}\"}")
     fi
