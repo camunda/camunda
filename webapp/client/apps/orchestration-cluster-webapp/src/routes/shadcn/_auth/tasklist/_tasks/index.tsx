@@ -11,13 +11,13 @@ import {useSuspenseInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query'
 import {NoTaskSelectedPage} from '#/tasklist/pages/shadcn.components/NoTaskSelectedPage';
 import {queries} from '#/shared/http/queries';
 import {getTasksRequestBody} from '#/tasklist/modules/available-tasks/getTasksRequestBody';
-import {tasklistIndexSearchDefaults} from '#/tasklist/modules/available-tasks/searchSchema';
 
 export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks/')({
 	component: function NoTaskSelectedRoute() {
+		const search = Route.useSearch();
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
 		const {data} = useSuspenseInfiniteQuery(
-			queries.queryUserTasks(getTasksRequestBody(tasklistIndexSearchDefaults, {currentUsername: currentUser.username})),
+			queries.queryUserTasks(getTasksRequestBody(search, {currentUsername: currentUser.username})),
 		);
 		const hasNoTasks = data.pages[0]?.items.length === 0;
 
