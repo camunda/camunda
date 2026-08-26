@@ -82,15 +82,13 @@ public class SnapshotRepositoryES implements SnapshotRepository {
             if (ExceptionUtil.isConcurrentSnapshotExecutionException(e)) {
               reason =
                   String.format(
-                      "Could not create snapshot [%s] because because of concurrent snapshot operations.",
+                      "Could not create snapshot [%s] because of concurrent snapshot operations.",
                       snapshotName);
-              LOG.error(reason, e);
             } else if (ExceptionUtil.unwrapCompletionCause(e) instanceof IOException) {
               reason =
                   String.format(
                       "Encountered an error connecting to Elasticsearch while attempting to create snapshot [%s].",
                       snapshotName);
-              LOG.error(reason, e);
             } else {
               reason = String.format("Failed to take snapshot [%s]", snapshotName);
             }
