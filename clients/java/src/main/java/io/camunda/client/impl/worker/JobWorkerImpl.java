@@ -215,10 +215,14 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       LOG.trace("No jobs to activate via polling, will backoff and poll in {}", pollInterval);
     } else {
       pollInterval = initialPollInterval;
-      if (actualRemainingJobs <= 0) {
+      // Normally the jobs just activated go on to free their own capacity as they finish, and each
+      // one that does asks for another poll. A job the executor refused gives its capacity back
+      // while this poll is still running, though, so the poll it asks for finds the poller still
+      // taken and is dropped. Asking again here, now that the poller is free, is what keeps a
+      // worker going that would otherwise sit still until the jobs it did take are done.
+      if (shouldPoll(actualRemainingJobs)) {
         schedulePoll();
       }
-      // if jobs were activated, then successive polling happens due to handleJobFinished
     }
   }
 
