@@ -2344,4 +2344,130 @@ public class AgentInstanceHistoryBatchProcessingTest {
             at a time."""
                 .formatted(agentInstanceKey, ei2, ei1));
   }
+
+  @Test
+  public void
+      shouldRejectStatusOnlyUpdateFromSecondActiveElementInstanceWithoutDisturbingFirstWritersRetry() {
+    // given — same parallel multi-instance setup: EI1 and EI2 both linked to one agent instance,
+    // both jobs ACTIVATED. EI1 pushes history first, so it is the current writer.
+    final var multiInstanceProcessId = "dedup-parallel-multi-instance-status-only-bystander";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(multiInstanceProcessId)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t ->
+                        t.zeebeJobType(helper.getJobType())
+                            .zeebeAiAgentTaskDefinition()
+                            .multiInstance(
+                                m ->
+                                    m.zeebeInputCollectionExpression("items")
+                                        .zeebeInputElement("item")))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(multiInstanceProcessId)
+            .withVariables(Map.of("items", List.of("a", "b")))
+            .create();
+    final var children =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .limit(2)
+            .toList();
+    final var ei1 = children.get(0).getKey();
+    final var ei2 = children.get(1).getKey();
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+
+    ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).activate();
+    final var activatedJobs =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .limit(2)
+            .toList();
+    final var job1Key =
+        activatedJobs.stream()
+            .filter(r -> r.getValue().getElementInstanceKey() == ei1)
+            .findFirst()
+            .orElseThrow()
+            .getKey();
+
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(ei1)
+        .withJobKey(job1Key)
+        .withHistory(
+            List.of(
+                new AgentHistoryRecord()
+                    .setHistoryItemId("item-from-ei1")
+                    .setRole(AgentHistoryRole.USER)
+                    .setLoopIteration(1)
+                    .addContent(
+                        new AgentHistoryMessageContent()
+                            .setContentType(AgentHistoryContentType.TEXT)
+                            .setText("hi"))))
+        .update();
+
+    // when — EI2, a different, still-active element instance whose job is still ACTIVATED, sends
+    // a status-only update while EI1 is still the writer.
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(ei2)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then — rejected: a status-only update gets no exemption from the single-active-writer
+    // rule. Carrying no history doesn't change that EI2 is a different, still-active element
+    // instance touching a writer role it doesn't hold.
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains(
+            """
+            Expected to update agent instance with key '%d' for element instance with key '%d', \
+            but element instance with key '%d' is still the active writer for this agent instance \
+            and has not completed. Only one element instance may write to a given agent instance \
+            at a time."""
+                .formatted(agentInstanceKey, ei2, ei1));
+
+    // and — EI1, the real writer, still succeeds on its own retry (e.g. an HTTP retry after a
+    // timeout): the rejected bystander did not corrupt anything for it.
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(ei1)
+            .withJobKey(job1Key)
+            .withHistory(
+                List.of(
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-from-ei1-retry")
+                        .setRole(AgentHistoryRole.USER)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("hi again"))))
+            .update();
+    assertThat(updated.getIntent()).isEqualTo(AgentInstanceIntent.UPDATED);
+  }
 }
