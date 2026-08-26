@@ -2346,6 +2346,102 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
+  public void shouldAcceptPushFromSecondElementInstanceWhenFirstWritersJobHasFailed() {
+    // given — same setup as the rejection case above: a parallel multi-instance AI-agent service
+    // task produces two element instances, EI1 and EI2, both still active.
+    final var multiInstanceProcessId = "dedup-parallel-multi-instance-failed-writer";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(multiInstanceProcessId)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t ->
+                        t.zeebeJobType(helper.getJobType())
+                            .zeebeAiAgentTaskDefinition()
+                            .multiInstance(
+                                m ->
+                                    m.zeebeInputCollectionExpression("items")
+                                        .zeebeInputElement("item")))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(multiInstanceProcessId)
+            .withVariables(Map.of("items", List.of("a", "b")))
+            .create();
+    final var children =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .limit(2)
+            .toList();
+    final var ei1 = children.get(0).getKey();
+    final var ei2 = children.get(1).getKey();
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+
+    ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).activate();
+    final var activatedJobs =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .limit(2)
+            .toList();
+    final var job1Key =
+        activatedJobs.stream()
+            .filter(r -> r.getValue().getElementInstanceKey() == ei1)
+            .findFirst()
+            .orElseThrow()
+            .getKey();
+    final var job2Key =
+        activatedJobs.stream()
+            .filter(r -> r.getValue().getElementInstanceKey() == ei2)
+            .findFirst()
+            .orElseThrow()
+            .getKey();
+
+    // EI1's job fails with no retries left, raising an incident. EI1 itself stays active — job
+    // failure and element-instance completion are independent, so the element instance does not
+    // reflect that its writer is done.
+    ENGINE.job().withKey(job1Key).withRetries(0).fail();
+
+    // when — EI2 pushes a history batch to the same agent instance. EI1 is still active, but its
+    // job is no longer ACTIVATED, so EI1 can no longer be mid-write.
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(ei2)
+            .withJobKey(job2Key)
+            .withHistory(
+                List.of(
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-from-ei2")
+                        .setRole(AgentHistoryRole.USER)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("hi"))))
+            .update();
+
+    // then — accepted: a failed job cannot still be mid-write, regardless of its element
+    // instance's activity.
+    assertThat(updated.getIntent()).isEqualTo(AgentInstanceIntent.UPDATED);
+  }
+
+  @Test
   public void
       shouldRejectStatusOnlyUpdateFromSecondActiveElementInstanceWithoutDisturbingFirstWritersRetry() {
     // given — same parallel multi-instance setup: EI1 and EI2 both linked to one agent instance,
