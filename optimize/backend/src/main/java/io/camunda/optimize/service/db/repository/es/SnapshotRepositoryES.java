@@ -17,6 +17,7 @@ import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
 import io.camunda.optimize.dto.optimize.rest.SnapshotState;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.repository.SnapshotRepository;
+import io.camunda.optimize.service.util.ExceptionUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
@@ -54,7 +55,8 @@ public class SnapshotRepositoryES implements SnapshotRepository {
   }
 
   @Override
-  public void triggerSnapshot(final String snapshotName, final String[] indexNames) {
+  public CompletableFuture<Void> triggerSnapshot(
+      final String snapshotName, final String[] indexNames) {
     LOG.info("Triggering async snapshot {}.", snapshotName);
     final CreateSnapshotRequest createSnapshotRequest =
         CreateSnapshotRequest.of(
@@ -67,25 +69,32 @@ public class SnapshotRepositoryES implements SnapshotRepository {
                     .indices(Arrays.stream(indexNames).toList())
                     .includeGlobalState(false)
                     .waitForCompletion(true));
-    getCreateSnapshotActionListener(
+    return getCreateSnapshotActionListener(
         esClient.triggerSnapshotAsync(createSnapshotRequest), snapshotName);
   }
 
-  private void getCreateSnapshotActionListener(
+  private CompletableFuture<Void> getCreateSnapshotActionListener(
       final CompletableFuture<CreateSnapshotResponse> future, final String snapshotName) {
-    future.whenComplete(
+    return future.handle(
         (v, e) -> {
           if (e != null) {
-            if (e instanceof IOException) {
-              final String reason =
+            final String reason;
+            if (ExceptionUtil.isConcurrentSnapshotExecutionException(e)) {
+              reason =
+                  String.format(
+                      "Could not create snapshot [%s] because because of concurrent snapshot operations.",
+                      snapshotName);
+              LOG.error(reason, e);
+            } else if (ExceptionUtil.unwrapCompletionCause(e) instanceof IOException) {
+              reason =
                   String.format(
                       "Encountered an error connecting to Elasticsearch while attempting to create snapshot [%s].",
                       snapshotName);
               LOG.error(reason, e);
             } else {
-              final String reason = String.format("Failed to take snapshot [%s]", snapshotName);
-              LOG.error(reason, e);
+              reason = String.format("Failed to take snapshot [%s]", snapshotName);
             }
+            LOG.error(reason, e);
           } else {
             final SnapshotInfo snapshotInfo = v.snapshot();
             switch (SnapshotState.valueOf(snapshotInfo.state())) {
@@ -110,6 +119,7 @@ public class SnapshotRepositoryES implements SnapshotRepository {
                 LOG.warn(reason);
             }
           }
+          return null;
         });
   }
 
