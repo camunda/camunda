@@ -28,11 +28,12 @@ public interface MappingResolver {
    *
    * @param inputMappings the element's input mappings, in modeling order
    * @param processor the pre-scoped expression processor; its evaluation context is already scoped
-   *     to the element instance, so implementations can call {@link
-   *     ScopedExpressionProcessor#getEvaluationContext()}.getVariable() directly
+   *     to the element instance, and carries {@link MappingExpressionProcessor#getMappingContext()}
+   *     with element identity (element ID, scope key, process instance key, process definition key,
+   *     tenant ID) for diagnostic use
    * @return either the resolved result document, or the failure of the first mapping that failed to
    *     evaluate
    */
   Either<Failure, DirectBuffer> resolveInputMappings(
-      InputMappings inputMappings, ScopedExpressionProcessor processor);
+      InputMappings inputMappings, MappingExpressionProcessor processor);
 }

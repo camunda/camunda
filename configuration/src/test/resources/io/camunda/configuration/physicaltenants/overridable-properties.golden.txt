@@ -303,6 +303,7 @@ processing.engine.evaluate-duplicate-output-mapping-targets-in-order
 processing.engine.job.include-variables-in-job-completed-event
 processing.engine.job.timeout-checker-batch-limit
 processing.engine.job.timeout-checker-polling-interval
+processing.engine.mappings.input-comparison-mode
 processing.engine.mappings.input-mode
 processing.engine.max-process-depth
 processing.engine.messages.ttl-checker-batch-limit

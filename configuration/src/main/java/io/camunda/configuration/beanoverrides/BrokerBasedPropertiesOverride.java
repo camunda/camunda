@@ -12,7 +12,7 @@ import io.camunda.configuration.Azure;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
-import io.camunda.configuration.EngineMappings;
+import io.camunda.configuration.EngineMappings.InputMode;
 import io.camunda.configuration.EngineStorageOrdinals;
 import io.camunda.configuration.Export;
 import io.camunda.configuration.Exporter;
@@ -69,7 +69,7 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
-import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
@@ -81,6 +81,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -290,10 +291,21 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getEngine()
         .setInputMappingMode(
-            camunda.getProcessing().getEngine().getMappings().getInputMode()
-                    == EngineMappings.InputMode.COMBINED
-                ? EngineConfiguration.InputMappingMode.COMBINED
-                : EngineConfiguration.InputMappingMode.ORDERED);
+            toEngineMode(camunda.getProcessing().getEngine().getMappings().getInputMode()));
+
+    override
+        .getExperimental()
+        .getEngine()
+        .setInputComparisonMode(
+            toEngineMode(
+                camunda.getProcessing().getEngine().getMappings().getInputComparisonMode()));
+  }
+
+  private static InputMappingMode toEngineMode(final @Nullable InputMode mode) {
+    if (mode == null) {
+      return null;
+    }
+    return mode == InputMode.COMBINED ? InputMappingMode.COMBINED : InputMappingMode.ORDERED;
   }
 
   private static void populateFromDistribution(

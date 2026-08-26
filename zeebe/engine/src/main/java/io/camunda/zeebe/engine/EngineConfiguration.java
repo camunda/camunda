@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine;
 
 import java.time.Duration;
+import org.jspecify.annotations.Nullable;
 
 public final class EngineConfiguration {
 
@@ -167,6 +168,7 @@ public final class EngineConfiguration {
       DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT;
   private boolean enableRpaReexportMigration = DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION;
   private InputMappingMode inputMappingMode = InputMappingMode.COMBINED;
+  private @Nullable InputMappingMode inputComparisonMode = null;
 
   /**
    * Controls uniqueness enforcement of business IDs across active process instances.
@@ -755,6 +757,16 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setInputMappingMode(final InputMappingMode inputMappingMode) {
     this.inputMappingMode = inputMappingMode;
+    return this;
+  }
+
+  public @Nullable InputMappingMode getInputComparisonMode() {
+    return inputComparisonMode;
+  }
+
+  public EngineConfiguration setInputComparisonMode(
+      final @Nullable InputMappingMode inputComparisonMode) {
+    this.inputComparisonMode = inputComparisonMode;
     return this;
   }
 }
