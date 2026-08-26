@@ -43,7 +43,9 @@ import org.slf4j.Logger;
  * <p>If a poll successfully provides jobs, the worker submits each job to the job handler. Every
  * time a job is completed, the worker checks if it still has enough jobs to work on. If not, it
  * will poll for new jobs. To determine what is considered enough jobs it compares its number of
- * {@code remainingJobs} with the {@code activationThreshold}.
+ * {@code remainingJobs} with the {@code activationThreshold}. If the executor refuses a job, the
+ * worker frees up that job's capacity immediately, so that a refused job never takes up capacity
+ * for good.
  *
  * <p>If a poll fails with an error response, a retry is scheduled with a delay using the {@code
  * retryDelaySupplier} to ask for a new {@code pollInterval}. By default, this retry delay supplier
@@ -201,7 +203,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private void onPollSuccess(final JobPoller jobPoller, final int activatedJobs) {
     // first release, then lookup remaining jobs, to allow handleJobFinished() to poll
     releaseJobPoller(jobPoller);
-    final int actualRemainingJobs = remainingJobs.addAndGet(activatedJobs);
+    final int actualRemainingJobs = remainingJobs.get();
 
     if (jobStreamer.isOpen() && activatedJobs == 0) {
       // to keep polling requests to a minimum, if streaming is enabled, and the response is empty,
@@ -242,38 +244,57 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void handleJob(final ActivatedJob job) {
-    handleActivatedJob(job, this::handleJobFinished);
+    // Take a capacity slot for this job before handing it over, and give it back right away if
+    // the executor does not take the job. Taking capacity for the whole response at once would
+    // also count the jobs that were rejected, and that capacity would never be given back.
+    remainingJobs.incrementAndGet();
+    if (!handleActivatedJob(job, this::handleJobFinished)) {
+      releaseCapacity();
+    }
   }
 
   private void handleStreamedJob(final ActivatedJob job) {
     handleActivatedJob(job, this::handleStreamJobFinished);
   }
 
-  private void handleActivatedJob(final ActivatedJob job, final Runnable finalizer) {
+  /**
+   * Hands the job over to the executor that runs the job handler.
+   *
+   * @return true if the executor took the job, in which case the given finalizer is guaranteed to
+   *     run once the handler is done
+   */
+  private boolean handleActivatedJob(final ActivatedJob job, final Runnable finalizer) {
     metrics.jobActivated(1);
     try {
       executor.execute(jobHandlerFactory.create(job, finalizer));
+      return true;
     } catch (final RejectedExecutionException e) {
       if (isClosed()) {
-        return;
+        return false;
       }
 
       if (scheduledExecutorService.isShutdown() || scheduledExecutorService.isTerminated()) {
         LOG.warn("Underlying executor was closed before the worker. Closing the worker now.", e);
         close();
-        return;
+        return false;
       }
 
       LOG.warn(ERROR_MSG, job.getKey(), e);
+      return false;
     }
   }
 
   private void handleJobFinished() {
+    releaseCapacity();
+    metrics.jobHandled(1);
+  }
+
+  /** Gives back the capacity slot taken for a job, and polls again if there is room for more. */
+  private void releaseCapacity() {
     final int actualRemainingJobs = remainingJobs.decrementAndGet();
     if (!isPollScheduled.get() && shouldPoll(actualRemainingJobs)) {
       tryPoll();
     }
-    metrics.jobHandled(1);
   }
 
   private void handleStreamJobFinished() {
