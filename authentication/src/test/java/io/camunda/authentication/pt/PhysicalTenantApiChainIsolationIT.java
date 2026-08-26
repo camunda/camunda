@@ -31,6 +31,7 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -671,14 +672,16 @@ class PhysicalTenantApiChainIsolationIT {
 
   /**
    * Provides the OC host's {@link SecurityPathPort} so CSL's chain builder knows which paths to
-   * protect ({@code /v2/**} among others).
+   * protect ({@code /v2/**} among others). Built from the context {@link Environment} — the same
+   * consumer CSL's properties bean reads, not the {@link MockEnvironment} that {@link
+   * #buildChainsFromProvider} hands to the scope provider.
    */
   @Configuration
   static class OcPathsConfig {
 
     @Bean
-    SecurityPathPort securityPathPort() {
-      return new SecurityPathAdapter();
+    SecurityPathPort securityPathPort(final Environment environment) {
+      return SecurityPathAdapter.fromEnvironment(environment);
     }
   }
 }

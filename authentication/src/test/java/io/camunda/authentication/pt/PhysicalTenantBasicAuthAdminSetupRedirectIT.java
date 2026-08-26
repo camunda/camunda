@@ -38,6 +38,7 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -170,8 +171,8 @@ class PhysicalTenantBasicAuthAdminSetupRedirectIT {
     }
 
     @Bean
-    SecurityPathPort securityPathPort() {
-      return new SecurityPathAdapter();
+    SecurityPathPort securityPathPort(final Environment environment) {
+      return SecurityPathAdapter.fromEnvironment(environment);
     }
 
     @Bean
