@@ -782,6 +782,7 @@ public class CommandDistributionIdempotencyTest {
               // Make sure we have two records on the target partition
               assertThat(
                       RecordingExporter.records()
+                          .onlyCommands()
                           .withPartitionId(scenario.targetPartition())
                           .withValueType(distributionCommand.getValue().getValueType())
                           .withIntent(distributionCommand.getValue().getIntent())
