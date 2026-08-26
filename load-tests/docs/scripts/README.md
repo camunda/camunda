@@ -123,6 +123,9 @@ window; backpressure and backlog first take the highest partition value at each 
 `5m`.
 - `--sample-step <dur>`: sample resolution for averaging dashboard-style window summaries. Default:
 `1m`.
+- `--template camunda|zeebe-gateway`: spreadsheet layout to emit. Use `camunda` for the current
+orchestration cluster layout and `zeebe-gateway` for 8.7-style Zeebe broker plus Zeebe Gateway
+deployments. Default: `camunda`.
 - `--at <time>`: Prometheus query time anchor; the window ends at this RFC3339 or Unix timestamp.
 - `--start <time> --end <time>`: exact reporting window; duration is derived automatically.
 - `--endpoint <url>`: Prometheus base URL. Default: `http://localhost:9090`.
@@ -146,6 +149,16 @@ Exact historical window, TSV row ready to paste into a spreadsheet:
 ./loadTestReport.sh c8-ck-baseline-20260814 \
   --start 2026-08-14T10:00:00Z \
   --end 2026-08-14T10:30:00Z \
+  --format tsv --no-header
+```
+
+8.7-style Zeebe broker plus Zeebe Gateway layout:
+
+```
+./loadTestReport.sh c8-ck-base-8736-endurance \
+  --template zeebe-gateway \
+  --start 2026-08-12T09:00:00Z \
+  --end 2026-08-13T06:00:00Z \
   --format tsv --no-header
 ```
 

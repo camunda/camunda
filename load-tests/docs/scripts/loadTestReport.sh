@@ -14,6 +14,7 @@ Options:
   --duration-seconds <sec>  Query window duration. Default: 600.
   --rate-interval <dur>     Short rate interval for dashboard-style rollups. Default: 5m.
   --sample-step <dur>       Subquery sample resolution for window summaries. Default: 1m.
+  --template <name>         Report template: camunda or zeebe-gateway. Default: camunda.
   --at <time>               Prometheus query time anchor, RFC3339 or Unix timestamp.
                             Queries cover (--duration-seconds) ending at this time.
   --start <time>            Start of the reporting window, RFC3339 or Unix timestamp.
@@ -23,7 +24,7 @@ Options:
   --curl-opts <opts>        Extra curl options string, e.g. '--user "u:p"'.
   --format <format>         Output format: json, csv, or tsv. Default: json.
   --no-header               Omit the CSV/TSV header row.
-  --queries-file <path>     Query definition file. Default: report-queries.json.
+  --queries-file <path>     Query definition file. Overrides --template.
   --output <path>           Write output to a file instead of stdout.
   -h, --help                Show this help message.
 
@@ -86,6 +87,7 @@ NAMESPACE=""
 DURATION_SECONDS="600"
 RATE_INTERVAL="5m"
 SAMPLE_STEP="1m"
+REPORT_TEMPLATE="camunda"
 ENDPOINT="http://localhost:9090"
 EXTRA_OPTS=""
 TIME_ANCHOR=""
@@ -93,7 +95,7 @@ START_TIME=""
 END_TIME=""
 FORMAT="json"
 INCLUDE_HEADER="true"
-QUERIES_FILE="$SCRIPT_DIR/report-queries.json"
+QUERIES_FILE=""
 OUTPUT_FILE=""
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
@@ -126,6 +128,11 @@ while [[ $# -gt 0 ]]; do
     --sample-step)
       [[ $# -ge 2 ]] || die "Missing value for --sample-step."
       SAMPLE_STEP="$2"
+      shift 2
+      ;;
+    --template)
+      [[ $# -ge 2 ]] || die "Missing value for --template."
+      REPORT_TEMPLATE="$2"
       shift 2
       ;;
     --at)
@@ -212,6 +219,20 @@ case "$FORMAT" in
   json|csv|tsv) ;;
   *) die "Unsupported --format '$FORMAT'. Expected json, csv, or tsv." ;;
 esac
+
+if [[ -z "$QUERIES_FILE" ]]; then
+  case "$REPORT_TEMPLATE" in
+    camunda)
+      QUERIES_FILE="$SCRIPT_DIR/report-queries.json"
+      ;;
+    zeebe-gateway)
+      QUERIES_FILE="$SCRIPT_DIR/report-queries-zeebe-gateway.json"
+      ;;
+    *)
+      die "Unsupported --template '$REPORT_TEMPLATE'. Expected camunda or zeebe-gateway."
+      ;;
+  esac
+fi
 
 [[ -f "$QUERIES_FILE" ]] || die "queries file not found at $QUERIES_FILE."
 
