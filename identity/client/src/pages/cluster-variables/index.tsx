@@ -8,9 +8,13 @@
 
 import { FC, lazy, Suspense } from "react";
 import { ListPageFallback } from "src/components/fallbacks";
+import { ListPageFallback as ListPageFallbackV2 } from "src/components/fallbacksV2";
 import PageRoutes from "src/components/router/PageRoutes.tsx";
+import { IS_NEW_DESIGN_SYSTEM_ENABLED } from "src/feature-flags";
 
-const List = lazy(() => import("./List"));
+const List = lazy(() =>
+  IS_NEW_DESIGN_SYSTEM_ENABLED ? import("./ListV2") : import("./List"),
+);
 
 type ClusterVariablesProps = {
   isSaaS: boolean;
@@ -19,7 +23,15 @@ type ClusterVariablesProps = {
 const ClusterVariables: FC<ClusterVariablesProps> = ({ isSaaS }) => (
   <PageRoutes
     indexElement={
-      <Suspense fallback={<ListPageFallback />}>
+      <Suspense
+        fallback={
+          IS_NEW_DESIGN_SYSTEM_ENABLED ? (
+            <ListPageFallbackV2 />
+          ) : (
+            <ListPageFallback />
+          )
+        }
+      >
         <List isSaaS={isSaaS} />
       </Suspense>
     }
