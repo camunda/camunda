@@ -10,9 +10,15 @@ import { FC, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { usePagination } from "src/utility/api";
 import { tenantQueries } from "src/utility/api/tenants/queries";
-import { Dropdown } from "@carbon/react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@camunda/design-system";
+import FormField from "src/components/formV2/FormField";
 import useTranslate from "src/utility/localization";
-import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
 export type TenantDropdownProps = {
   tenantId: string | undefined;
@@ -42,21 +48,35 @@ const ClusterVariableTenantDropdown: FC<TenantDropdownProps> = ({
   }, [tenants, tenantId, onChange]);
 
   return (
-    <Dropdown
-      id="cluster-variable-tenant-id-dropdown"
-      label={t(
-        tenantLoading
-          ? "clusterVariableTenantIdLoadingPlaceholder"
-          : "clusterVariableTenantIdPlaceholder",
+    <FormField label={t("clusterVariableTenantId")}>
+      {({ id }) => (
+        <Select
+          value={
+            tenants?.items.some((tenant) => tenant.tenantId === tenantId)
+              ? tenantId
+              : ""
+          }
+          onValueChange={(value) => onChange(value || undefined)}
+        >
+          <SelectTrigger id={id} className="w-full">
+            <SelectValue
+              placeholder={t(
+                tenantLoading
+                  ? "clusterVariableTenantIdLoadingPlaceholder"
+                  : "clusterVariableTenantIdPlaceholder",
+              )}
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {(tenants?.items ?? []).map((tenant) => (
+              <SelectItem key={tenant.tenantId} value={tenant.tenantId}>
+                {tenant.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
-      titleText={t("clusterVariableTenantId")}
-      items={tenants?.items || []}
-      onChange={({ selectedItem }) => onChange(selectedItem?.tenantId)}
-      itemToString={(item: Tenant) => item.name || ""}
-      selectedItem={tenants?.items.find(
-        (tenant) => tenant.tenantId === tenantId,
-      )}
-    />
+    </FormField>
   );
 };
 

@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
+import { FC, useId } from "react";
 import type { ClusterVariableScope } from "@camunda/camunda-api-zod-schemas/8.10";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { clusterVariableMutations } from "src/utility/api/cluster-variables/mutations";
-import { RadioButton, RadioButtonGroup, Stack } from "@carbon/react";
+import { Label, RadioGroup, RadioGroupItem } from "@camunda/design-system";
 import { Controller, useForm } from "react-hook-form";
 import { useNotifications } from "src/components/notifications";
 import { FormModal, UseModalProps } from "src/components/modalV2";
@@ -36,6 +36,7 @@ export const AddModal: FC<AddModalProps> = ({
   isSaaS,
 }) => {
   const { t } = useTranslate("clusterVariables");
+  const scopeLabelId = useId();
   const { enqueueNotification } = useNotifications();
   const qc = useQueryClient();
   const {
@@ -91,86 +92,83 @@ export const AddModal: FC<AddModalProps> = ({
       loadingDescription={t("creatingClusterVariable")}
       confirmLabel={t("createClusterVariable")}
     >
-      <Stack orientation="vertical" gap="6">
-        <Controller
-          name="name"
-          control={control}
-          rules={{
-            required: t("clusterVariableNameRequired"),
-          }}
-          render={({ field, fieldState }) => (
-            <TextField
-              {...field}
-              label={t("name")}
-              placeholder={t("clusterVariableNamePlaceholder")}
-              errors={fieldState.error?.message}
-              autoFocus
-            />
-          )}
-        />
-        <Controller
-          name="scope"
-          control={control}
-          render={({ field }) => (
-            <RadioButtonGroup
-              name="scopeType"
-              legendText={t("scope")}
-              orientation="horizontal"
-            >
-              <RadioButton
-                value={"GLOBAL"}
-                checked={field.value === "GLOBAL"}
-                onClick={() => field.onChange("GLOBAL")}
-                labelText={<span>{t("clusterVariableScopeTypeGlobal")}</span>}
-                type="radio"
-              />
-              <RadioButton
-                value={"TENANT"}
-                checked={field.value === "TENANT"}
-                onClick={() => field.onChange("TENANT")}
-                labelText={<span>{t("clusterVariableScopeTypeTenant")}</span>}
-                disabled={isSaaS}
-                type="radio"
-              />
-            </RadioButtonGroup>
-          )}
-        />
-        {isTenantScoped && (
-          <Controller
-            name="tenantId"
-            control={control}
-            render={({ field }) => (
-              <ClusterVariableTenantDropdown
-                tenantId={field.value}
-                onChange={(tenantId) => field.onChange(tenantId)}
-              />
-            )}
+      <Controller
+        name="name"
+        control={control}
+        rules={{
+          required: t("clusterVariableNameRequired"),
+        }}
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            label={t("name")}
+            placeholder={t("clusterVariableNamePlaceholder")}
+            errors={fieldState.error?.message}
+            autoFocus
           />
         )}
-        <Controller
-          name="value"
-          control={control}
-          rules={{
-            validate: (value) => {
-              if (!value || !value.trim()) {
-                return t("clusterVariableValueRequired");
-              } else if (!isValid(value.trim())) {
-                return t("clusterVariableValueInvalid");
+      />
+      <Controller
+        name="scope"
+        control={control}
+        render={({ field }) => (
+          <div className="flex flex-col gap-1.5">
+            <Label id={scopeLabelId}>{t("scope")}</Label>
+            <RadioGroup
+              aria-labelledby={scopeLabelId}
+              value={field.value}
+              onValueChange={(value) =>
+                field.onChange(value as ClusterVariableScope)
               }
-
-              return true;
-            },
-          }}
-          render={({ field, fieldState }) => (
-            <JSONEditor
-              {...field}
-              label={t("clusterVariableCreateValue")}
-              errors={fieldState.error?.message}
-              beautify
+              className="flex flex-row gap-4"
+            >
+              <Label className="flex items-center gap-2">
+                <RadioGroupItem value="GLOBAL" />
+                {t("clusterVariableScopeTypeGlobal")}
+              </Label>
+              <Label className="flex items-center gap-2">
+                <RadioGroupItem value="TENANT" disabled={isSaaS} />
+                {t("clusterVariableScopeTypeTenant")}
+              </Label>
+            </RadioGroup>
+          </div>
+        )}
+      />
+      {isTenantScoped && (
+        <Controller
+          name="tenantId"
+          control={control}
+          render={({ field }) => (
+            <ClusterVariableTenantDropdown
+              tenantId={field.value}
+              onChange={(tenantId) => field.onChange(tenantId)}
             />
           )}
         />
-      </Stack>
+      )}
+      <Controller
+        name="value"
+        control={control}
+        rules={{
+          validate: (value) => {
+            if (!value || !value.trim()) {
+              return t("clusterVariableValueRequired");
+            } else if (!isValid(value.trim())) {
+              return t("clusterVariableValueInvalid");
+            }
+
+            return true;
+          },
+        }}
+        render={({ field, fieldState }) => (
+          <JSONEditor
+            {...field}
+            label={t("clusterVariableCreateValue")}
+            errors={fieldState.error?.message}
+            beautify
+          />
+        )}
+      />
     </FormModal>
   );
 };
