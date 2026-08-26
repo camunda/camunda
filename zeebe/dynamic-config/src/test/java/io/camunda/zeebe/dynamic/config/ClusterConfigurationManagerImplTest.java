@@ -1739,6 +1739,16 @@ final class ClusterConfigurationManagerImplTest {
     }
 
     @Override
+    public ActorFuture<Void> promote(final int partitionId) {
+      return mayBeFail();
+    }
+
+    @Override
+    public ActorFuture<Void> demote(final int partitionId) {
+      return mayBeFail();
+    }
+
+    @Override
     public ActorFuture<Void> bootstrap(
         final int partitionId,
         final int priority,

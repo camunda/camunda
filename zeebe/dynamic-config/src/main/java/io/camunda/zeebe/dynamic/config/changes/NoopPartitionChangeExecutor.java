@@ -31,6 +31,16 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
   }
 
   @Override
+  public ActorFuture<Void> promote(final int partitionId) {
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public ActorFuture<Void> demote(final int partitionId) {
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
   public ActorFuture<Void> bootstrap(
       final int partitionId,
       final int priority,
