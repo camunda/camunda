@@ -4,12 +4,12 @@
 #              - upgrade (deploys the base-ref first, then updates to the PR ref to check upgrading from an older setup-code version).
 #              Both chains wait for pod readiness and gateway connectivity after each deploy,
 #              then delete their namespace.
-# calls: load-test.yml (scenario: realistic),
-#        load-test-verify.yml (verify connectivity),
-#        load-test-delete.yml (delete namespace)
+# calls: rt-camunda-load-test.yml (scenario: realistic),
+#        rt-verify-load-test.yml (verify connectivity),
+#        rt-delete-load-test-namespace.yml (delete namespace)
 # type: CI
 # owner: @camunda/reliability-testing
-name: "Load Test: Smoke Test"
+name: "RT: Load test smoke test"
 on:
   workflow_call:
     inputs:
@@ -122,7 +122,7 @@ jobs:
   smoke-install:
     name: Smoke Install
     needs: sanitize-branch-name
-    uses: ./.github/workflows/load-test.yml
+    uses: ./.github/workflows/rt-camunda-load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
@@ -143,7 +143,7 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
-    uses: ./.github/workflows/load-test-verify.yml
+    uses: ./.github/workflows/rt-verify-load-test.yml
     secrets: inherit
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
@@ -155,7 +155,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/load-test-delete.yml
+    uses: ./.github/workflows/rt-delete-load-test-namespace.yml
     secrets: inherit
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
@@ -170,7 +170,7 @@ jobs:
   smoke-upgrade-install:
     name: Smoke Upgrade - Install (base ref)
     needs: sanitize-branch-name
-    uses: ./.github/workflows/load-test.yml
+    uses: ./.github/workflows/rt-camunda-load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
@@ -187,7 +187,7 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
-    uses: ./.github/workflows/load-test-verify.yml
+    uses: ./.github/workflows/rt-verify-load-test.yml
     secrets: inherit
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
@@ -195,7 +195,7 @@ jobs:
   smoke-upgrade-update:
     name: Smoke Upgrade - Update (PR ref)
     needs: [sanitize-branch-name, verify-upgrade-install]
-    uses: ./.github/workflows/load-test.yml
+    uses: ./.github/workflows/rt-camunda-load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
@@ -212,7 +212,7 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
-    uses: ./.github/workflows/load-test-verify.yml
+    uses: ./.github/workflows/rt-verify-load-test.yml
     secrets: inherit
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
@@ -224,7 +224,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/load-test-delete.yml
+    uses: ./.github/workflows/rt-delete-load-test-namespace.yml
     secrets: inherit
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade

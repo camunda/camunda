@@ -1,10 +1,10 @@
 # description: Verifies a load test deployment is healthy. Cleanup is delegated to
-#              load-test-delete.yml and runs regardless of verify outcome.
-# called-by: load-test-scheduled-release.yml
+#              rt-delete-load-test-namespace.yml and runs regardless of verify outcome.
+# called-by: rt-camunda-scheduled-release-load-test.yml
 # type: CI
 # owner: @camunda/reliability-testing
-name: "Load Test: Verify and Cleanup"
-run-name: "Load Test: Verify and Cleanup: ${{ inputs.namespace }}"
+name: "RT: Verify and cleanup load test"
+run-name: "RT: Verify and cleanup load test: ${{ inputs.namespace }}"
 
 on:
   workflow_call:
@@ -25,7 +25,7 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
-    uses: ./.github/workflows/load-test-verify.yml
+    uses: ./.github/workflows/rt-verify-load-test.yml
     secrets: inherit
     with:
       namespace: ${{ inputs.namespace }}
@@ -37,7 +37,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/load-test-delete.yml
+    uses: ./.github/workflows/rt-delete-load-test-namespace.yml
     secrets: inherit
     with:
       namespace: ${{ inputs.namespace }}

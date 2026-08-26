@@ -1,10 +1,10 @@
 # description: Updates the rolling release benchmark weekly with the latest release tag.
 #              Fetches the latest GitHub release, then deploys as 'release-rolling' with
 #              a realistic workload via custom Helm values.
-# calls: load-test.yml
+# calls: rt-camunda-load-test.yml
 # type: CI
 # owner: @camunda/core-features
-name: "Load Test: Long Running Zeebe Migration"
+name: "RT: Zeebe Rolling Release benchmark"
 on:
   workflow_dispatch:
   schedule:
@@ -41,7 +41,7 @@ jobs:
     permissions: {}
     needs:
       - fetch-release
-    uses: ./.github/workflows/load-test.yml
+    uses: ./.github/workflows/rt-camunda-load-test.yml
     secrets: inherit
     with:
       name: release-rolling

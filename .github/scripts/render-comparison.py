@@ -2,7 +2,7 @@
 """Render the PR-vs-daily load-test comparison Markdown table.
 
 Invoked by the `Build comparison markdown` step of the `render-comparison`
-job in `.github/workflows/load-test-pr.yaml`.
+job in `.github/workflows/rt-camunda-pr-load-test.yaml`.
 """
 
 import json

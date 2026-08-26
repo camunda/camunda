@@ -3,12 +3,12 @@
 #              (prefix `c8-` and label `camunda.io/purpose=load-test`), then runs
 #              `kubectl delete ns --wait=false --ignore-not-found`. Idempotent on missing
 #              namespaces, fails loudly on guardrail mismatches.
-# called-by: load-test-verify-and-cleanup.yml, load-test-pr.yaml
+# called-by: rt-verify-and-cleanup-load-test.yml, rt-camunda-pr-load-test.yaml
 # also: triggerable manually via workflow_dispatch for ad-hoc cleanup
 # type: CI
 # owner: @camunda/reliability-testing
-name: "Load Test: Delete"
-run-name: "Load Test: Delete: ${{ inputs.namespace }}"
+name: "RT: Delete load test namespace"
+run-name: "RT: Delete load test namespace: ${{ inputs.namespace }}"
 
 on:
   workflow_call:

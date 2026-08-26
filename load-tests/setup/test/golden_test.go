@@ -214,7 +214,7 @@ func TestGoldenFiles(t *testing.T) {
 }
 
 // TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProvided
-// simulates the real CI invocation (load-test.yml), which always sets
+// simulates the real CI invocation (rt-camunda-load-test.yml), which always sets
 // additional_load_test_setup_configuration on the make command line. In GNU
 // Make, a command-line-origin variable silently suppresses any later `+=` to
 // it inside the Makefile, so a makefile-computed default routed through that

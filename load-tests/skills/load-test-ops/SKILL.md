@@ -93,7 +93,7 @@ workflow.
 
 - Format: `c8-<initials>-<slug>-<YYYYMMDD>` — always prefixed with `c8-`
 - Example: `c8-ck-my-feature-20260427` (ck = ChrisKujawa)
-- `load-test.yml` input `name` may be passed with or without `c8-` (it will add the prefix if missing)
+- `rt-camunda-load-test.yml` input `name` may be passed with or without `c8-` (it will add the prefix if missing)
 - Metrics/profile/delete workflows take the full namespace and require it to start with `c8-`
 **Use a unique name for each new run.** Reusing a namespace mixes the new run's metrics with the
 prior run's data and makes comparisons ambiguous; for intentional in-place iteration (config
@@ -121,7 +121,7 @@ Namespaces carry these labels (set by `newLoadTest.sh`):
 ### Via GHA (builds image from branch)
 
 ```bash
-gh workflow run load-test.yml --repo camunda/camunda \
+gh workflow run rt-camunda-load-test.yml --repo camunda/camunda \
   --field ref=<branch> \
   --field name=ck-<slug>-<YYYYMMDD>
 ```
@@ -141,7 +141,7 @@ Most useful inputs:
 | `enable-optimize`        | Toggle Optimize (defaults to `true`)                          |
 | `ttl`                    | Days before auto-cleanup (defaults to `1`)                    |
 
-The full input list lives in the `inputs:` block of `.github/workflows/load-test.yml`.
+The full input list lives in the `inputs:` block of `.github/workflows/rt-camunda-load-test.yml`.
 
 > **Pick the right tag input — `reuse-tag` and `orchestration-tag` hit different registries:**
 > - `reuse-tag` pulls from the **internal Camunda registry**. Only works for tags built by a
@@ -217,7 +217,7 @@ kubectl get events -n <namespace> --sort-by='.lastTimestamp' | tail -20
 
 ```bash
 # Via GHA (default — works without kubectl)
-gh run list --workflow=load-test.yml --repo camunda/camunda \
+gh run list --workflow=rt-camunda-load-test.yml --repo camunda/camunda \
   --user $(gh api /user --jq .login) --limit 20
 
 # Via kubectl labels (if you have cluster access)
@@ -251,7 +251,7 @@ Default to GHA. Use kubectl only for config-only iteration on an existing image 
 ### Via GHA (default — handles builds and config changes)
 
 ```bash
-gh workflow run load-test.yml --repo camunda/camunda \
+gh workflow run rt-camunda-load-test.yml --repo camunda/camunda \
   --field ref=<branch> \
   --field name=ck-<slug>-<YYYYMMDD>
 ```
@@ -262,7 +262,7 @@ Reuse an existing image to skip the Docker build:
 # Read the previous run's image tag from its GHA step summary
 gh run view <run-id> --repo camunda/camunda
 
-gh workflow run load-test.yml --repo camunda/camunda \
+gh workflow run rt-camunda-load-test.yml --repo camunda/camunda \
   --field ref=<branch> \
   --field name=<name-without-c8-prefix> \
   --field reuse-tag=<image-tag> \
@@ -298,14 +298,14 @@ make max additional_platform_configuration="\
 Profiles all 3 broker pods in parallel (cpu / wall / alloc):
 
 ```bash
-gh workflow run load-test-profile.yml --repo camunda/camunda \
+gh workflow run rt-profile-load-test.yml --repo camunda/camunda \
   --field name=<full-namespace-with-c8-prefix>
 ```
 
 Profile a single pod (cpu only):
 
 ```bash
-gh workflow run load-test-profile.yml --repo camunda/camunda \
+gh workflow run rt-profile-load-test.yml --repo camunda/camunda \
   --field name=<full-namespace-with-c8-prefix> \
   --field pod=camunda-1
 ```
@@ -340,14 +340,14 @@ expose all of them — start there when the headline numbers don't explain what 
 ### Via GHA (default — no kubectl needed)
 
 ```bash
-gh workflow run load-test-metrics.yaml --repo camunda/camunda \
+gh workflow run rt-camunda-load-test-metrics.yaml --repo camunda/camunda \
   --field namespace=<full-namespace-with-c8-prefix> \
   --field duration-seconds=1200
 
 # Chain dispatch → watch → render: capture the run, wait for it,
 # and pull the rendered job summary inline (no "should I wait?" prompt).
 sleep 3   # let GitHub register the dispatched run
-RUN_ID=$(gh run list --workflow=load-test-metrics.yaml --repo camunda/camunda \
+RUN_ID=$(gh run list --workflow=rt-camunda-load-test-metrics.yaml --repo camunda/camunda \
   --limit 1 --json databaseId --jq '.[0].databaseId')
 gh run watch "$RUN_ID" --repo camunda/camunda --exit-status
 gh run view "$RUN_ID" --repo camunda/camunda
@@ -453,7 +453,7 @@ outputs. The metrics workflow's `results-json` makes this scriptable.
 ### Via GHA (default — no kubectl needed)
 
 ```bash
-gh workflow run load-test-delete.yml --repo camunda/camunda \
+gh workflow run rt-delete-load-test-namespace.yml --repo camunda/camunda \
   --field namespace=<full-namespace-with-c8-prefix>
 ```
 

@@ -2,7 +2,7 @@
 # type: CI
 # owner: @camunda/reliability-testing
 ---
-name: "Load Test: Metrics Exporter"
+name: "RT: Camunda load test metrics exporter CI"
 
 on:
   push:
@@ -10,11 +10,11 @@ on:
       - main
     paths:
       - "load-tests/metrics-exporter/**"
-      - ".github/workflows/load-test-metrics-exporter-ci.yaml"
+      - ".github/workflows/rt-camunda-load-test-metrics-exporter-ci.yaml"
   pull_request:
     paths:
       - "load-tests/metrics-exporter/**"
-      - ".github/workflows/load-test-metrics-exporter-ci.yaml"
+      - ".github/workflows/rt-camunda-load-test-metrics-exporter-ci.yaml"
 
 permissions: {}
 

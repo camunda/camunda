@@ -1,5 +1,5 @@
 ---
-applyTo: "load-tests/**,.github/workflows/load-test-*,.github/workflows/load-test.yml,.github/workflows/*benchmark*,.github/scripts/*load*"
+applyTo: "load-tests/**,.github/workflows/rt-*,.github/scripts/*load*"
 ---
 
 # Load Test Review Guidelines
@@ -7,16 +7,17 @@ applyTo: "load-tests/**,.github/workflows/load-test-*,.github/workflows/load-tes
 ## Workflow naming convention
 
 Every GitHub Actions workflow file that belongs to the load test / reliability-testing
-suite must have a filename prefixed with `load-test-` (e.g. `load-test-daily.yml`,
-`load-test-metrics.yaml`), with the single exception of the central reusable workflow
-`load-test.yml` itself. This applies to workflows owned by
-`@camunda/reliability-testing` and to load-test-pipeline workflows owned by other teams
-(e.g. `load-test-profile.yml`, `load-test-ecs-weekly.yml`, owned by
-`@camunda/zeebe-distributed-platform`) — ownership doesn't change the naming rule.
+suite must have a filename prefixed with `rt-` (RT for reliability testing), followed by an
+as-spoken description of what the workflow does (e.g. `rt-camunda-daily-stress-load-test.yml`,
+`rt-camunda-load-test-metrics.yaml`, `rt-camunda-release-load-test.yaml`). The display `name:`
+field follows the same style, prefixed with `RT: ` (e.g. `RT: Camunda Release load test`). This
+applies to workflows owned by `@camunda/reliability-testing` and to load-test-pipeline workflows
+owned by other teams (e.g. `rt-profile-load-test.yml`, `rt-camunda-ecs-weekly-load-test.yml`,
+owned by `@camunda/zeebe-distributed-platform`) — ownership doesn't change the naming rule.
 
 A workflow that is merely a *caller* of the load-test suite (e.g. a team's own benchmark
-workflow that invokes `load-test.yml` as a reusable workflow) is not itself part of the
-suite and does not need the `load-test-` prefix.
+workflow that invokes `rt-camunda-load-test.yml` as a reusable workflow) is not itself part of the
+suite and does not need the `rt-` prefix.
 
 ## Required Review Checks
 
@@ -36,7 +37,7 @@ When reviewing changes to load tests, workflows, or load test infrastructure:
    then review `git diff golden/`. See `load-tests/setup/test/README.md` for the
    suite, layout, and how to add a stable version. Or apply the `generate-golden`
    label to same-repository PRs. Renovate PRs touching `load-tests/setup/**`
-   are handled automatically by `.github/workflows/load-test-golden-update.yml`.
+   are handled automatically by `.github/workflows/rt-update-load-test-golden-files.yml`.
 
 3. **Versioned setup folders**: For changes to `load-tests/setup/`, do **not**
    propose backports to stable branches. Instead, update the relevant versioned
@@ -61,7 +62,7 @@ When reviewing changes to load tests, workflows, or load test infrastructure:
 4. **Command-line flag precedence**: A flag added via `+=` to
    `additional_load_test_setup_configuration` or `additional_load_test_configuration` in a
    `load-tests/setup/*/Makefile` is silently dropped when CI passes that same variable on the
-   `make` command line (as `load-test.yml` always does) — GNU Make blocks any later `+=`
+   `make` command line (as `rt-camunda-load-test.yml` always does) — GNU Make blocks any later `+=`
    to a variable once it has command-line origin, even if the CLI value is empty
    ([Overriding](https://www.gnu.org/software/make/manual/html_node/Overriding.html),
    [Override Directive](https://www.gnu.org/software/make/manual/html_node/Override-Directive.html)).
@@ -99,7 +100,7 @@ if related documentation needs updating:
 
 ## Scheduled Release Load Tests
 
-The file `load-test-scheduled-release.yml` uses hardcoded release tags
+The file `rt-camunda-scheduled-release-load-test.yml` uses hardcoded release tags
 per stable branch. Patch releases do not require updates. When reviewing PRs that
 create a new minor version (e.g., 8.10) or deprecate a stable branch, verify that
 this workflow is updated accordingly.

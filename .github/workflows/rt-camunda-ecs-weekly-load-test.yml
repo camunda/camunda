@@ -4,7 +4,7 @@
 # type: CI
 # owner: @camunda/zeebe-distributed-platform
 
-name: "Load Test: ECS Weekly"
+name: "RT: Camunda ECS Weekly load test"
 
 on:
   workflow_dispatch:

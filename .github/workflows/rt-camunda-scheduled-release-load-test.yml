@@ -3,12 +3,12 @@
 #              updates (e.g., 8.8.17 -> 8.8.18) to avoid version skew between the load-test client
 #              and the pinned server tag — remember to update both the `with: tag:` input and the
 #              Slack "Tested versions" notification text below.
-# calls: load-test-release.yaml (one call per branch),
-#        load-test-verify-and-cleanup.yml (verify + delete namespace per branch)
+# calls: rt-camunda-release-load-test.yaml (one call per branch),
+#        rt-verify-and-cleanup-load-test.yml (verify + delete namespace per branch)
 # notifications: Slack (#reliability-testing-alerts) with per-branch results
 # type: CI
 # owner: @camunda/reliability-testing
-name: "Load Test: Scheduled Release"
+name: "RT: Camunda Scheduled Release load test"
 on:
   schedule:
     - cron: '0 2 * * 1-5' # every weekday (Mon-Fri) at 02:00 UTC
@@ -37,7 +37,7 @@ jobs:
   # - A stable branch is deprecated: remove the corresponding job and update verify-and-cleanup/notify
   release-load-test-8-7:
     name: Release load test (stable/8.7)
-    uses: camunda/camunda/.github/workflows/load-test-release.yaml@stable/8.7
+    uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.7
     secrets: inherit
     with:
       name: schedule-release-8-7-x
@@ -45,7 +45,7 @@ jobs:
 
   release-load-test-8-8:
     name: Release load test (stable/8.8)
-    uses: camunda/camunda/.github/workflows/load-test-release.yaml@stable/8.8
+    uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.8
     secrets: inherit
     with:
       name: schedule-release-8-8-x
@@ -53,7 +53,7 @@ jobs:
 
   release-load-test-8-9:
     name: Release load test (stable/8.9)
-    uses: camunda/camunda/.github/workflows/load-test-release.yaml@stable/8.9
+    uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.9
     secrets: inherit
     with:
       name: schedule-release-8-9-x
@@ -69,7 +69,7 @@ jobs:
 
   release-load-test-main:
     name: Release load test (main)
-    uses: ./.github/workflows/load-test-release.yaml
+    uses: ./.github/workflows/rt-camunda-release-load-test.yaml
     secrets: inherit
     with:
       name: schedule-release-main
@@ -84,7 +84,7 @@ jobs:
     name: Verify and cleanup (stable/8.7)
     needs: [release-load-test-8-7]
     if: always()
-    uses: ./.github/workflows/load-test-verify-and-cleanup.yml
+    uses: ./.github/workflows/rt-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:
       namespace: c8-schedule-release-8-7-x
@@ -93,7 +93,7 @@ jobs:
     name: Verify and cleanup (stable/8.8)
     needs: [release-load-test-8-8]
     if: always()
-    uses: ./.github/workflows/load-test-verify-and-cleanup.yml
+    uses: ./.github/workflows/rt-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:
       namespace: c8-schedule-release-8-8-x
@@ -102,7 +102,7 @@ jobs:
     name: Verify and cleanup (stable/8.9)
     needs: [release-load-test-8-9]
     if: always()
-    uses: ./.github/workflows/load-test-verify-and-cleanup.yml
+    uses: ./.github/workflows/rt-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:
       namespace: c8-schedule-release-8-9-x
@@ -111,7 +111,7 @@ jobs:
     name: Verify and cleanup (stable/8.10)
     needs: [release-load-test-8-10]
     if: always()
-    uses: ./.github/workflows/load-test-verify-and-cleanup.yml
+    uses: ./.github/workflows/rt-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:
       namespace: c8-schedule-release-8-10-x
@@ -120,7 +120,7 @@ jobs:
     name: Verify and cleanup (main)
     needs: [release-load-test-main]
     if: always()
-    uses: ./.github/workflows/load-test-verify-and-cleanup.yml
+    uses: ./.github/workflows/rt-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:
       namespace: c8-schedule-release-main

@@ -8,12 +8,12 @@
 #              When a specific pod is given, profiles that pod with cpu event only.
 #              Uploads flamegraph artifacts named
 #              flamegraph-{test-type}-{event}-{pod}-{date}.
-# called-by: load-test-pr.yaml, load-test-stress.yml (itself called by
-#            load-test-daily.yml)
+# called-by: rt-camunda-pr-load-test.yaml, rt-camunda-stress-load-test.yml (itself called by
+#            rt-camunda-daily-stress-load-test.yml)
 # type: CI
 # owner: @camunda/zeebe-distributed-platform
-name: "Load Test: Profile"
-run-name: "Load Test: Profile: ${{ inputs.name }}"
+name: "RT: Profile load test"
+run-name: "RT: Profile load test: ${{ inputs.name }}"
 
 on:
   workflow_dispatch:
@@ -90,7 +90,7 @@ jobs:
     # GitHub Actions does not support arithmetic in `timeout-minutes` expressions (no
     # +/-/*// operators), so this can't be computed from `inputs.duration-seconds`
     # automatically -- bump it manually if a caller raises duration-seconds. Largest known
-    # caller today: load-test-stress.yml's profile job passes duration-seconds: '1800'
+    # caller today: rt-camunda-stress-load-test.yml's profile job passes duration-seconds: '1800'
     # (30 min), i.e. up to 90 minutes of profiling alone per pod.
     # If the job timeout is increased, make sure to also increase the Teleport
     # "certificate-ttl" below to keep it roughly greater or equal to the job
@@ -187,7 +187,7 @@ jobs:
     # job may time out mid-profile. GitHub Actions does not support arithmetic in
     # `timeout-minutes` expressions (no +/-/*// operators), so this can't be computed from
     # `inputs.duration-seconds` automatically -- bump it manually if a caller raises
-    # duration-seconds. Largest known caller today: load-test-stress.yml's profile job
+    # duration-seconds. Largest known caller today: rt-camunda-stress-load-test.yml's profile job
     # passes duration-seconds: '1800' (30 min).
     timeout-minutes: 60
     if: ${{ inputs.pod != '' }}

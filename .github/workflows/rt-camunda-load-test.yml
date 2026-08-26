@@ -1,9 +1,9 @@
 # description: Central reusable workflow for deploying load tests. All load test creation
 #              routes through this workflow. Builds Docker images (or reuses existing ones),
 #              then deploys via newLoadTest.sh + `make install` to a GKE cluster.
-# called-by: load-test-daily.yml, load-test-weekly.yml,
-#            load-test-pr.yaml, load-test-release.yaml,
-#            load-test-zeebe-migrating-benchmark.yaml
+# called-by: rt-camunda-daily-stress-load-test.yml, rt-camunda-weekly-medic-load-test.yml,
+#            rt-camunda-pr-load-test.yaml, rt-camunda-release-load-test.yaml,
+#            rt-zeebe-rolling-release-benchmark.yaml
 # also: triggerable manually via workflow_dispatch for ad-hoc load tests
 # monitoring: https://dashboard.benchmark.camunda.cloud/
 # type: CI
@@ -15,8 +15,8 @@
 #   To use them in a namespace, the namespace must be labeled with "registry=harbor"
 #   You must also set the image pull secret to "harbor-registry" in the helm values.
 
-name: "Load Test"
-run-name: "Load Test: ${{ inputs.name }}"
+name: "RT: Camunda load test"
+run-name: "RT: Camunda load test: ${{ inputs.name }}"
 
 on:
   workflow_dispatch:
