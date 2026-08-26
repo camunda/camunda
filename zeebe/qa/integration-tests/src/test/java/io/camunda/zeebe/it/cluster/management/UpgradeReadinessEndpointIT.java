@@ -68,10 +68,15 @@ final class UpgradeReadinessEndpointIT {
               assertThat(response.physicalTenants()).containsOnlyKeys(DEFAULT_PHYSICAL_TENANT_ID);
               final var defaultTenant = response.physicalTenants().get(DEFAULT_PHYSICAL_TENANT_ID);
               assertThat(defaultTenant)
-                  .containsKeys("rdbmsSchemaMigrated", "rocksDbMigrated", "exporterMigrated");
+                  .containsKeys(
+                      "rdbmsSchemaMigrated",
+                      "rocksDbMigrated",
+                      "exporterMigrated",
+                      "brokerVersionMigrated");
               assertThat(defaultTenant.get("rdbmsSchemaMigrated").state()).isEqualTo("MIGRATED");
               assertThat(defaultTenant.get("rocksDbMigrated").state()).isEqualTo("MIGRATED");
               assertThat(defaultTenant.get("exporterMigrated").state()).isEqualTo("MIGRATED");
+              assertThat(defaultTenant.get("brokerVersionMigrated").state()).isEqualTo("MIGRATED");
               assertThat(response.upgradeable()).isTrue();
             });
   }

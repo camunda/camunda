@@ -61,7 +61,7 @@ final class ExportingMigrationStatusCalculator {
 
     final var result =
         VersionCompatibilityCheck.check(
-            nextUnexportedRecordVersion, withoutPreReleaseSuffix(currentVersion));
+            nextUnexportedRecordVersion, SemanticVersion.withoutPreReleaseSuffix(currentVersion));
     return switch (result) {
       case Compatible.SameVersion same ->
           migrated(
@@ -103,15 +103,5 @@ final class ExportingMigrationStatusCalculator {
   private static PartitionMigrationStatus unknown(final int partitionId, final String detail) {
     return new PartitionMigrationStatus(
         MigrationStatusCode.UNKNOWN, "partition " + partitionId + ": " + detail);
-  }
-
-  /**
-   * @return {@code version} stripped of any pre-release/build-metadata suffix (e.g. {@code
-   *     8.10.0-SNAPSHOT} → {@code 8.10.0}), or the raw input if it can't be parsed.
-   */
-  private static String withoutPreReleaseSuffix(final String version) {
-    return SemanticVersion.parse(version)
-        .map(sv -> sv.major() + "." + sv.minor() + "." + sv.patch())
-        .orElse(version);
   }
 }

@@ -89,4 +89,21 @@ final class SemanticVersionTest {
     assertThat(new SemanticVersion(8, 10, 0, "SNAPSHOT", null).toMinorVersionString())
         .isEqualTo("8.10");
   }
+
+  @Test
+  void shouldStripThePreReleaseAndBuildMetadataSuffix() {
+    assertThat(new SemanticVersion(8, 10, 0, "SNAPSHOT", "build.1").withoutPreRelease())
+        .isEqualTo(new SemanticVersion(8, 10, 0, null, null));
+    assertThat(new SemanticVersion(8, 10, 0, null, null).withoutPreRelease())
+        .isEqualTo(new SemanticVersion(8, 10, 0, null, null));
+  }
+
+  @Test
+  void shouldStripThePreReleaseSuffixFromAVersionString() {
+    assertThat(SemanticVersion.withoutPreReleaseSuffix("8.10.0-SNAPSHOT")).isEqualTo("8.10.0");
+    assertThat(SemanticVersion.withoutPreReleaseSuffix("8.10.0")).isEqualTo("8.10.0");
+    assertThat(SemanticVersion.withoutPreReleaseSuffix("not-a-version"))
+        .describedAs("falls back to the raw input when it can't be parsed")
+        .isEqualTo("not-a-version");
+  }
 }
