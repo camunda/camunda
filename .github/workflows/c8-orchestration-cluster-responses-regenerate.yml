@@ -1,6 +1,6 @@
 # description: Regenerates two OpenAPI-derived, checked-in artifacts for the C8
 #              Orchestration Cluster E2E test suite across all supported refs
-#              (main, stable/8.9, stable/8.8) via a matrix:
+#              (main, stable/8.10, stable/8.9, stable/8.8) via a matrix:
 #                - json-body-assertions/_generated/responses.json, via
 #                  `npm run responses:regenerate`
 #                - utils/_generated/apiPaths.ts (the `ApiPath` union consumed by
@@ -45,15 +45,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # paths_expected declares whether this ref carries the typed buildUrl
+          # generator. Quoted so the value reaches the shell as plain text,
+          # with no YAML boolean coercion in between.
           - ref: main
             safe: main
+            paths_expected: 'true'
+          - ref: stable/8.10
+            safe: stable-8.10
+            paths_expected: 'true'
           - ref: stable/8.9
             safe: stable-8.9
+            paths_expected: 'false'
           - ref: stable/8.8
             safe: stable-8.8
+            paths_expected: 'false'
 
     # Serialise per ref (not across the whole matrix), so two runs of the same
-    # branch never collide but the three refs still run in parallel.
+    # branch never collide but the refs still run in parallel.
     concurrency:
       group: responses-regenerate-${{ matrix.safe }}
       cancel-in-progress: false
@@ -66,6 +75,7 @@ jobs:
       # instead of interpolating ${{ matrix.* }} directly (injection-safe).
       TARGET_REF: ${{ matrix.ref }}
       SAFE: ${{ matrix.safe }}
+      PATHS_EXPECTED: ${{ matrix.paths_expected }}
 
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
@@ -136,11 +146,17 @@ jobs:
             echo '{"responses":null}' > /tmp/responses.before.json
           fi
 
-      # Only main has the typed buildUrl and its generator script, and that is
-      # deliberate: a rename on a released stable branch would itself be a
-      # breaking change. Gating each apiPaths.ts step on the script being
-      # present lets the other refs skip that half instead of failing, and
-      # starts working on its own if the script ever reaches them.
+      # Not every ref carries the typed buildUrl and its generator script: the
+      # refs predating it do without, and that is deliberate — a rename on a
+      # released stable branch would itself be a breaking change. Gating each
+      # apiPaths.ts step on the script being present lets those refs skip that
+      # half instead of failing.
+      #
+      # Which refs are supposed to have it is declared per matrix row
+      # (paths_expected) rather than matched on a branch name here, so a new
+      # release branch states its answer where it is added. The probe treats a
+      # disagreement between that flag and package.json as fatal, which is what
+      # keeps the flag from going stale in silence.
       - name: Check API paths feature availability
         id: paths-feature
         working-directory: ${{ env.SUITE_DIR }}
@@ -167,14 +183,22 @@ jobs:
               ;;
             3)
               echo "available=false" >> "$GITHUB_OUTPUT"
-              echo "No paths:regenerate script on ${TARGET_REF} — typed buildUrl is main-only, skipping apiPaths.ts regeneration."
+              # The flag says this ref has the generator and package.json says
+              # otherwise. Either the flag is wrong or the branch lost the
+              # script; both leave apiPaths.ts unmaintained, so neither may pass
+              # quietly.
+              if [ "$PATHS_EXPECTED" = "true" ]; then
+                echo "::error::Matrix declares paths_expected=true for ${TARGET_REF}, but ${SUITE_DIR}/package.json has no paths:regenerate script. Fix the flag or the branch."
+                exit 1
+              fi
+              echo "No paths:regenerate script on ${TARGET_REF} — this ref predates the typed buildUrl, skipping apiPaths.ts regeneration."
               ;;
             *)
               echo "available=false" >> "$GITHUB_OUTPUT"
-              # On main the script is expected, so a broken probe is a real
-              # fault and should stop the paths half loudly. On stable refs the
-              # script is absent by design, so warn rather than fail the job.
-              if [ "$TARGET_REF" = "main" ]; then
+              # Where the script is expected, a broken probe is a real fault
+              # and should stop the paths half loudly. Where it is absent by
+              # design, warn rather than fail the job.
+              if [ "$PATHS_EXPECTED" = "true" ]; then
                 echo "::error::Could not probe ${SUITE_DIR}/package.json on ${TARGET_REF} (node exit ${rc}). Path detection is disabled until this is fixed."
                 exit 1
               fi
@@ -542,7 +566,7 @@ jobs:
             echo "## API paths regeneration — \`${TARGET_REF}\`"
             echo ""
             if [ "${PATHS_FEATURE_AVAILABLE:-false}" != "true" ]; then
-              echo ":fast_forward: No \`paths:regenerate\` on this ref (typed \`buildUrl\` is main-only) — skipped."
+              echo ":fast_forward: No \`paths:regenerate\` on this ref (it predates the typed \`buildUrl\`) — skipped."
             elif [ "${CHANGED_PATHS:-false}" = "true" ]; then
               echo ":white_check_mark: API path changes detected."
               if [ -n "${PR_URL_PATHS:-}" ]; then
