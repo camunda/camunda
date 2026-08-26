@@ -33,6 +33,7 @@ public final class Subscriptions {
             subscription.getProcessInstanceKey(),
             subscription.getElementInstanceKey(),
             subscription.getProcessDefinitionKey(),
+            subscription.getSubscriptionKey(),
             false);
     addSubscriptionInternal(newSubscription);
   }
@@ -44,6 +45,8 @@ public final class Subscriptions {
             subscription.getProcessInstanceKey(),
             0L,
             subscription.getProcessDefinitionKey(),
+            // start-event subscriptions have no message-side subscription key
+            -1L,
             true);
     addSubscriptionInternal(newSubscription);
   }
@@ -110,6 +113,7 @@ public final class Subscriptions {
       long processInstanceKey,
       long elementInstanceKey,
       long processDefinitionKey,
+      long subscriptionKey,
       boolean isStartEventSubscription) {
     /* clone the bpmnProcessId buffer */
     public static Subscription cloned(
@@ -117,12 +121,14 @@ public final class Subscriptions {
         final long processInstanceKey,
         final long elementInstanceKey,
         final long processDefinitionKey,
+        final long subscriptionKey,
         final boolean isStartEventSubscription) {
       return new Subscription(
           wrapInBufferIfNeeded(cloneBuffer(bpmnProcessId)),
           processInstanceKey,
           elementInstanceKey,
           processDefinitionKey,
+          subscriptionKey,
           isStartEventSubscription);
     }
 
@@ -133,6 +139,7 @@ public final class Subscriptions {
           subscription.processInstanceKey(),
           subscription.elementInstanceKey(),
           subscription.processDefinitionKey(),
+          subscription.subscriptionKey(),
           subscription.isStartEventSubscription);
     }
   }

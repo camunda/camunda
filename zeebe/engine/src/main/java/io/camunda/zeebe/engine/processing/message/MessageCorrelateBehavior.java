@@ -312,7 +312,8 @@ public final class MessageCorrelateBehavior {
                 messageData.messageKey(),
                 messageData.variables(),
                 messageData.correlationKey(),
-                messageData.tenantId()));
+                messageData.tenantId(),
+                subscription.subscriptionKey()));
   }
 
   /**
