@@ -103,7 +103,8 @@ Builds a wider report for one load-test namespace and emits the values as JSON, 
 CSV/TSV column order follows `report-queries.json`, which is laid out for spreadsheet imports:
 namespace and Docker image, cluster size, Camunda and secondary-storage resources, throughput,
 latency, and backlog metrics.
-Metrics that Prometheus does not return are kept as `null` in JSON and empty cells in CSV/TSV.
+Metrics that Prometheus does not return are kept as `null` in JSON and `NaN` in CSV/TSV by
+default.
 Historical gauge metrics, such as pod counts, limits, PVC sizes, and backlogs, are evaluated over
 the full requested window rather than only at the end timestamp.
 The namespace column comes from the requested namespace. The Docker image column is extracted from
@@ -136,6 +137,7 @@ deployments. Default: `camunda`.
 - `--curl-opts <opts>`: free-form curl options string, e.g. `--user "u:p"`.
 - `--format json|csv|tsv`: output format. Default: `json`.
 - `--no-header`: omit the CSV/TSV header row for direct spreadsheet row pasting.
+- `--missing-value <value>`: placeholder for missing CSV/TSV metrics. Default: `NaN`.
 - `--output <path>`: write the report to a file.
 
 **Examples:**
@@ -155,6 +157,9 @@ Exact historical window, TSV row ready to paste into a spreadsheet:
   --end 2026-08-14T10:30:00Z \
   --format tsv --no-header
 ```
+
+Use `--missing-value null` if your spreadsheet should show `null` instead of `NaN` for missing
+metrics.
 
 8.7-style Zeebe broker plus Zeebe Gateway layout:
 

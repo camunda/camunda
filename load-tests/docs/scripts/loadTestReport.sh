@@ -24,6 +24,7 @@ Options:
   --curl-opts <opts>        Extra curl options string, e.g. '--user "u:p"'.
   --format <format>         Output format: json, csv, or tsv. Default: json.
   --no-header               Omit the CSV/TSV header row.
+  --missing-value <value>   CSV/TSV placeholder for missing metrics. Default: NaN.
   --queries-file <path>     Query definition file. Overrides --template.
   --output <path>           Write output to a file instead of stdout.
   -h, --help                Show this help message.
@@ -95,6 +96,7 @@ START_TIME=""
 END_TIME=""
 FORMAT="json"
 INCLUDE_HEADER="true"
+MISSING_VALUE="NaN"
 QUERIES_FILE=""
 OUTPUT_FILE=""
 
@@ -168,6 +170,11 @@ while [[ $# -gt 0 ]]; do
     --no-header)
       INCLUDE_HEADER="false"
       shift
+      ;;
+    --missing-value)
+      [[ $# -ge 2 ]] || die "Missing value for --missing-value."
+      MISSING_VALUE="$2"
+      shift 2
       ;;
     --queries-file)
       [[ $# -ge 2 ]] || die "Missing value for --queries-file."
@@ -369,6 +376,7 @@ report_json="$(jq -n \
 rendered="$(
   jq -r \
     --arg format "$FORMAT" \
+    --arg missingValue "$MISSING_VALUE" \
     --argjson includeHeader "$INCLUDE_HEADER" \
     --argjson report "$report_json" '
       def row($values):
@@ -378,7 +386,7 @@ rendered="$(
         $report
       else
         ($report.headers) as $headers |
-        ($report.columns | map($report.metrics[.] // "")) as $values |
+        ($report.columns | map(if $report.metrics[.] == null then $missingValue else $report.metrics[.] end)) as $values |
         if $includeHeader then
           row($headers), row($values)
         else
