@@ -225,7 +225,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     if (jobStreamer.isOpen() && activatedJobs == 0) {
       // to keep polling requests to a minimum, if streaming is enabled, and the response is empty,
       // we back off on poll success responses.
-      backoff(jobPoller, streamNoJobsBackoffSupplier);
+      backOffPolling(streamNoJobsBackoffSupplier);
       LOG.trace("No jobs to activate via polling, will backoff and poll in {}", pollInterval);
     } else if (activatedJobs > 0 && refusedJobs == activatedJobs && actualRemainingJobs <= 0) {
       // The executor took none of the jobs in this response and the worker has nothing left
@@ -233,8 +233,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       // repeat as fast as the broker can answer. Both halves of the condition are needed: a worker
       // that is keeping up can finish a whole response before this runs, which leaves no remaining
       // jobs either, and it is the refusals that tell the two apart.
-      getPollInterval(backoffSupplier);
-      schedulePoll();
+      backOffPolling(backoffSupplier);
       LOG.debug(
           "The job handler executor took none of the {} jobs activated, will backoff and poll in {}",
           activatedJobs,
@@ -260,6 +259,17 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
         pollInterval);
   }
 
+  /**
+   * Slows the next poll down and schedules it. Does not touch the job poller, so it is safe for a
+   * caller that has already released it: releasing a poller twice can publish one that another
+   * thread has since claimed and is polling with.
+   */
+  private void backOffPolling(final BackoffSupplier backoffSupplier) {
+    getPollInterval(backoffSupplier);
+    schedulePoll();
+  }
+
+  /** Same, for a caller that is still holding the job poller. */
   private void backoff(final JobPoller jobPoller, final BackoffSupplier backoffSupplier) {
     getPollInterval(backoffSupplier);
     releaseJobPoller(jobPoller);
