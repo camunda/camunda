@@ -9,12 +9,14 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
@@ -1295,5 +1297,87 @@ public final class ProcessStateTest {
     }
 
     return processRecord;
+  }
+
+  @Test
+  public void shouldNotHavePendingDeletionInitially() {
+    // when - nothing recorded
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L)).isFalse();
+    assertThat(processState.hasPendingDeletion(1L, 2)).isFalse();
+  }
+
+  @Test
+  public void shouldAddPendingDeletion() {
+    // when
+    processState.addPendingDeletion(1L, 2);
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L, 2)).isTrue();
+    assertThat(processState.hasPendingDeletion(1L)).isTrue();
+  }
+
+  @Test
+  public void shouldTrackPendingDeletionsPerPartitionIndependently() {
+    // when
+    processState.addPendingDeletion(1L, 2);
+    processState.addPendingDeletion(1L, 3);
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L, 2)).isTrue();
+    assertThat(processState.hasPendingDeletion(1L, 3)).isTrue();
+    assertThat(processState.hasPendingDeletion(1L, 4)).isFalse();
+  }
+
+  @Test
+  public void shouldScopePendingDeletionsPerProcessDefinition() {
+    // when
+    processState.addPendingDeletion(1L, 2);
+
+    // then - another definition is unaffected
+    assertThat(processState.hasPendingDeletion(1L)).isTrue();
+    assertThat(processState.hasPendingDeletion(99L)).isFalse();
+    assertThat(processState.hasPendingDeletion(99L, 2)).isFalse();
+  }
+
+  @Test
+  public void shouldRemovePendingDeletion() {
+    // given
+    processState.addPendingDeletion(1L, 2);
+    processState.addPendingDeletion(1L, 3);
+
+    // when
+    processState.removePendingDeletion(1L, 2);
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L, 2)).isFalse();
+    assertThat(processState.hasPendingDeletion(1L, 3)).isTrue();
+    assertThat(processState.hasPendingDeletion(1L)).isTrue();
+  }
+
+  @Test
+  public void shouldReportNoPendingDeletionOnceAllPartitionsRemoved() {
+    // given
+    processState.addPendingDeletion(1L, 2);
+    processState.addPendingDeletion(1L, 3);
+
+    // when
+    processState.removePendingDeletion(1L, 2);
+    processState.removePendingDeletion(1L, 3);
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L)).isFalse();
+  }
+
+  @Test
+  public void shouldRejectRemovingPendingDeletionThatDoesNotExist() {
+    // given
+    processState.addPendingDeletion(1L, 2);
+
+    // when - removing a partition that was never recorded
+    // then
+    assertThatThrownBy(() -> processState.removePendingDeletion(1L, 99))
+        .isInstanceOf(ZeebeDbInconsistentException.class);
   }
 }
