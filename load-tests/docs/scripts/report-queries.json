@@ -1,6 +1,17 @@
 {
   "queries": [
     {
+      "key": "namespace",
+      "header": "Namespace",
+      "value": "$NAMESPACE"
+    },
+    {
+      "key": "docker_image",
+      "header": "Docker image",
+      "valueLabel": "image",
+      "query": "count by (image) (max_over_time(kube_pod_container_info{namespace=\"$NAMESPACE\", pod=~\"(camunda|zeebe)-[0-9]+\", container=~\".*(orchestration|zeebe|camunda).*\"}[$DURATION_S]))"
+    },
+    {
       "key": "camunda_nodes",
       "header": "Camunda Nodes",
       "query": "count(max_over_time((kube_pod_status_phase{namespace=\"$NAMESPACE\", pod=~\"(camunda|zeebe)-[0-9]+\", phase=\"Running\"} == 1)[$DURATION_S:$SAMPLE_STEP]))"

@@ -286,35 +286,52 @@ declare -a missing_entries=()
 for i in $(seq 0 $((count - 1))); do
   key="$(jq -r ".queries[$i].key" "$QUERIES_FILE")"
   header="$(jq -r ".queries[$i].header // .queries[$i].key" "$QUERIES_FILE")"
-  query="$(jq -r ".queries[$i].query" "$QUERIES_FILE")"
+  query="$(jq -r ".queries[$i].query // empty" "$QUERIES_FILE")"
+  label="$(jq -r ".queries[$i].valueLabel // empty" "$QUERIES_FILE")"
+  static_value="$(jq -r ".queries[$i].value // empty" "$QUERIES_FILE")"
 
-  promql="${query//\$NAMESPACE/$NAMESPACE}"
-  promql="${promql//\$DURATION_S/$DURATION_S}"
-  promql="${promql//\$RATE_INTERVAL/$RATE_INTERVAL_S}"
-  promql="${promql//\$SAMPLE_STEP/$SAMPLE_STEP_S}"
-  value="null"
+  value_json="null"
 
-  if resp="$(curl -sf -G ${EXTRA_OPTS_ARR[@]+"${EXTRA_OPTS_ARR[@]}"} \
-      "${ENDPOINT}/api/v1/query" \
-      --data-urlencode "query=$promql" \
-      ${TIME_ARGS[@]+"${TIME_ARGS[@]}"} 2>/dev/null)"; then
-    if [[ "$(jq -r '.status' <<<"$resp" 2>/dev/null || echo error)" == "success" ]]; then
-      raw_value="$(jq -r '.data.result[0].value[1] // empty' <<<"$resp")"
-      if [[ "$raw_value" =~ ^-?([0-9]+([.][0-9]+)?|[.][0-9]+)([eE][-+]?[0-9]+)?$ ]]; then
-        value="$raw_value"
+  if [[ -n "$static_value" ]]; then
+    static_value="${static_value//\$NAMESPACE/$NAMESPACE}"
+    value_json="$(jq -n --arg v "$static_value" '$v')"
+  else
+    promql="${query//\$NAMESPACE/$NAMESPACE}"
+    promql="${promql//\$DURATION_S/$DURATION_S}"
+    promql="${promql//\$RATE_INTERVAL/$RATE_INTERVAL_S}"
+    promql="${promql//\$SAMPLE_STEP/$SAMPLE_STEP_S}"
+
+    if resp="$(curl -sf -G ${EXTRA_OPTS_ARR[@]+"${EXTRA_OPTS_ARR[@]}"} \
+        "${ENDPOINT}/api/v1/query" \
+        --data-urlencode "query=$promql" \
+        ${TIME_ARGS[@]+"${TIME_ARGS[@]}"} 2>/dev/null)"; then
+      if [[ "$(jq -r '.status' <<<"$resp" 2>/dev/null || echo error)" == "success" ]]; then
+        if [[ -n "$label" ]]; then
+          raw_value="$(jq -r --arg label "$label" '[.data.result[]?.metric[$label] // empty] | unique | join(", ")' <<<"$resp")"
+          if [[ -n "$raw_value" ]]; then
+            value_json="$(jq -n --arg v "$raw_value" '$v')"
+          else
+            missing_entries+=("$(jq -n --arg key "$key" --arg reason "no label sample" '{key: $key, reason: $reason}')")
+          fi
+        else
+          raw_value="$(jq -r '.data.result[0].value[1] // empty' <<<"$resp")"
+          if [[ "$raw_value" =~ ^-?([0-9]+([.][0-9]+)?|[.][0-9]+)([eE][-+]?[0-9]+)?$ ]]; then
+            value_json="$raw_value"
+          else
+            missing_entries+=("$(jq -n --arg key "$key" --arg reason "no numeric sample" '{key: $key, reason: $reason}')")
+          fi
+        fi
       else
-        missing_entries+=("$(jq -n --arg key "$key" --arg reason "no numeric sample" '{key: $key, reason: $reason}')")
+        missing_entries+=("$(jq -n --arg key "$key" --arg reason "Prometheus returned non-success status" '{key: $key, reason: $reason}')")
       fi
     else
-      missing_entries+=("$(jq -n --arg key "$key" --arg reason "Prometheus returned non-success status" '{key: $key, reason: $reason}')")
+      missing_entries+=("$(jq -n --arg key "$key" --arg reason "query failed" '{key: $key, reason: $reason}')")
     fi
-  else
-    missing_entries+=("$(jq -n --arg key "$key" --arg reason "query failed" '{key: $key, reason: $reason}')")
   fi
 
   key_entries+=("$(jq -n --arg v "$key" '$v')")
   header_entries+=("$(jq -n --arg v "$header" '$v')")
-  metric_entries+=("$(jq -n --arg k "$key" --argjson v "$value" '{($k): $v}')")
+  metric_entries+=("$(jq -n --arg k "$key" --argjson v "$value_json" '{($k): $v}')")
 done
 
 keys_json="$(printf '%s\n' "${key_entries[@]}" | jq -s '.')"

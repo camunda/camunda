@@ -101,10 +101,14 @@ zsh users: quote regex-looking arguments to avoid `no matches found` glob errors
 **Usage:**
 Builds a wider report for one load-test namespace and emits the values as JSON, CSV, or TSV. The
 CSV/TSV column order follows `report-queries.json`, which is laid out for spreadsheet imports:
-cluster size, Camunda and secondary-storage resources, throughput, latency, and backlog metrics.
+namespace and Docker image, cluster size, Camunda and secondary-storage resources, throughput,
+latency, and backlog metrics.
 Metrics that Prometheus does not return are kept as `null` in JSON and empty cells in CSV/TSV.
 Historical gauge metrics, such as pod counts, limits, PVC sizes, and backlogs, are evaluated over
 the full requested window rather than only at the end timestamp.
+The namespace column comes from the requested namespace. The Docker image column is extracted from
+`kube_pod_container_info` over the requested window, so deleted namespaces still work while the
+historical series is retained.
 Dashboard-style rates are calculated from short `--rate-interval` samples and then summarized over
 the requested window using `--sample-step`, so long reports do not flatten p50/p99 CPU or
 throughput into one coarse counter rate.
