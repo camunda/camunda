@@ -83,12 +83,14 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeO
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
@@ -544,6 +546,14 @@ public class ProtoBufSerializer
               Topology.PartitionLeaveOperation.newBuilder()
                   .setPartitionId(leaveOperation.partitionId())
                   .setMinimumAllowedReplicas(leaveOperation.minimumAllowedReplicas()));
+      case final PartitionPromoteOperation promoteOperation ->
+          builder.setPartitionPromote(
+              Topology.PartitionPromoteOperation.newBuilder()
+                  .setPartitionId(promoteOperation.partitionId()));
+      case final PartitionDemoteOperation demoteOperation ->
+          builder.setPartitionDemote(
+              Topology.PartitionDemoteOperation.newBuilder()
+                  .setPartitionId(demoteOperation.partitionId()));
       case final MemberJoinOperation memberJoinOperation ->
           builder.setMemberJoin(Topology.MemberJoinOperation.newBuilder().build());
       case final MemberLeaveOperation memberLeaveOperation ->
@@ -878,6 +888,12 @@ public class ProtoBufSerializer
           memberId,
           topologyChangeOperation.getPartitionLeave().getPartitionId(),
           topologyChangeOperation.getPartitionLeave().getMinimumAllowedReplicas());
+    } else if (topologyChangeOperation.hasPartitionPromote()) {
+      return new PartitionPromoteOperation(
+          memberId, topologyChangeOperation.getPartitionPromote().getPartitionId());
+    } else if (topologyChangeOperation.hasPartitionDemote()) {
+      return new PartitionDemoteOperation(
+          memberId, topologyChangeOperation.getPartitionDemote().getPartitionId());
     } else if (topologyChangeOperation.hasMemberJoin()) {
       return new MemberJoinOperation(memberId);
     } else if (topologyChangeOperation.hasMemberLeave()) {
@@ -2455,6 +2471,16 @@ public class ProtoBufSerializer
                   .setPartitionId(op.partitionId())
                   .setMinimumAllowedReplicas(op.minimumAllowedReplicas())
                   .build());
+      case final PartitionPromoteOperation op ->
+          builder.setPartitionPromote(
+              Topology.PartitionPromoteOperation.newBuilder()
+                  .setPartitionId(op.partitionId())
+                  .build());
+      case final PartitionDemoteOperation op ->
+          builder.setPartitionDemote(
+              Topology.PartitionDemoteOperation.newBuilder()
+                  .setPartitionId(op.partitionId())
+                  .build());
       case final PartitionReconfigurePriorityOperation op ->
           builder.setPartitionReconfigurePriority(
               Topology.PartitionReconfigurePriorityOperation.newBuilder()
@@ -2555,6 +2581,10 @@ public class ProtoBufSerializer
           memberId,
           proto.getPartitionLeave().getPartitionId(),
           proto.getPartitionLeave().getMinimumAllowedReplicas());
+    } else if (proto.hasPartitionPromote()) {
+      return new PartitionPromoteOperation(memberId, proto.getPartitionPromote().getPartitionId());
+    } else if (proto.hasPartitionDemote()) {
+      return new PartitionDemoteOperation(memberId, proto.getPartitionDemote().getPartitionId());
     } else if (proto.hasPartitionReconfigurePriority()) {
       return new PartitionReconfigurePriorityOperation(
           memberId,
