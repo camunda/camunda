@@ -247,6 +247,28 @@ public class BrokerHealthCheckServiceTest {
   }
 
   @Test
+  public void shouldBeReadyWhenRecoveringTenantOverridesAStillInstallingBootstrapPartition() {
+    // given a tenant that was still installing a bootstrap partition (e.g. processing mode was
+    // stopped for a mode transition before the partition joined Raft, and its manager never
+    // unregisters its own tenant on stop)
+    final var healthCheckService = newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID);
+    healthCheckService.registerBootstrapPartitions(
+        DEFAULT_PHYSICAL_TENANT_ID, List.of(partition(DEFAULT_PHYSICAL_TENANT_ID, 1)));
+    scheduler.workUntilDone();
+
+    // when the tenant enters recovery mode with no local partitions to recover this time (e.g.
+    // partition distribution changed), leaving the earlier still-installing partition unaccounted
+    // for in the new registration
+    healthCheckService.registerRecoveringPartitions(DEFAULT_PHYSICAL_TENANT_ID, List.of());
+    scheduler.workUntilDone();
+
+    // then the broker is ready: the stale still-installing entry must not survive the mode
+    // transition and block readiness, contradicting recovery's "ready even with nothing to
+    // recover" contract
+    assertThat(healthCheckService.isBrokerReady()).isTrue();
+  }
+
+  @Test
   public void shouldBeReadyWhenRecoveringTenantHasNoLocalPartitions() {
     // given a broker whose only physical tenant recovers with no partitions on this node
     final var healthCheckService = newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID);
