@@ -74,6 +74,16 @@ public class SimpleVoteQuorum implements VoteQuorum {
    */
   @Override
   public void cancel() {
+    if (!complete && !failedStatuses.isEmpty()) {
+      LOG.atLevel(reportLevel())
+          .log(
+              "{} cancelled before completion with {}/{} failed members: {}, pending members: {}",
+              name,
+              failedStatuses.size(),
+              totalMembers,
+              failedStatuses,
+              members);
+    }
     callback = null;
     complete = true;
   }
