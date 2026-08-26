@@ -2398,12 +2398,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
       long userTaskKey);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to create a document.
+   * Command to create a document.
    *
    * <pre>
    *   camundaClient
@@ -2419,12 +2414,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   CreateDocumentCommandStep1 newCreateDocumentCommand();
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to create a batch of documents. Unlike {@link #newCreateDocumentCommand()}, this
+   * Command to create a batch of documents. Unlike {@link #newCreateDocumentCommand()}, this
    * command allows you to create multiple documents in a single request. This can be more efficient
    * than creating each document individually, however, there are multiple limitations to consider.
    * <br>
@@ -2467,12 +2457,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   CreateDocumentBatchCommandStep1 newCreateDocumentBatchCommand();
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to get a document.
+   * Command to get a document.
    *
    * <pre>
    *   camundaClient
@@ -2487,12 +2472,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   DocumentContentGetRequest newDocumentContentGetRequest(String documentId);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to get a document.
+   * Command to get a document.
    *
    * <pre>
    *   camundaClient
@@ -2507,12 +2487,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
       DocumentReferenceResponse documentReferenceResponse);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
+   * Command to create a document link.
    *
    * <pre>
    *   camundaClient
@@ -2528,12 +2503,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(String documentId);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
+   * Command to create a document link.
    *
    * <pre>
    *   camundaClient
@@ -2549,12 +2519,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
       DocumentReferenceResponse documentReferenceResponse);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
+   * Command to delete a document.
    *
    * <pre>
    *   camundaClient
@@ -2569,12 +2534,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   DeleteDocumentCommandStep1 newDeleteDocumentCommand(String documentId);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
+   * Command to delete a document.
    *
    * <pre>
    *   camundaClient
