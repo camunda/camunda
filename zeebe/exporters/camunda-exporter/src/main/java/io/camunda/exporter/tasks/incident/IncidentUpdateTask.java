@@ -11,15 +11,15 @@ import com.google.common.collect.ImmutableList;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
+<<<<<<< HEAD
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
+=======
+>>>>>>> e0d2e15a (refactor: introduce separate classes for incident update task updates)
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NonIncidentBulkUpdate;
 import io.camunda.webapps.operate.TreePath;
-import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
-import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -28,11 +28,9 @@ import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -574,12 +572,21 @@ public final class IncidentUpdateTask implements BackgroundTask {
           index ->
               updates
                   .flowNodeInstanceRequests()
-                  .add(newFlowNodeInstanceUpdate(fniId, index, hasIncident)));
+                  .add(
+                      FlowNodeInstanceUpdate.id(fniId)
+                          .index(index)
+                          .hasIncident(hasIncident)
+                          .build()));
       listViewIndices.forEach(
           index ->
               updates
                   .listViewRequests()
-                  .add(newListViewInstanceUpdate(fniId, index, hasIncident, routing)));
+                  .add(
+                      ListViewInstanceUpdate.id(fniId)
+                          .index(index)
+                          .hasIncident(hasIncident)
+                          .routing(routing)
+                          .build()));
     }
   }
 
@@ -650,14 +657,21 @@ public final class IncidentUpdateTask implements BackgroundTask {
     }
     if (changedState) {
       for (final var index : indexes) {
-        updates.listViewRequests().add(newListViewInstanceUpdate(piId, index, hasIncident, piId));
+        updates
+            .listViewRequests()
+            .add(
+                ListViewInstanceUpdate.id(piId)
+                    .index(index)
+                    .hasIncident(hasIncident)
+                    .routing(piId)
+                    .build());
       }
     }
   }
 
   private CompletableFuture<Integer> notifyIncidents(
       final List<String> updatedIds,
-      final Collection<DocumentUpdate> incidentUpdates,
+      final Collection<IncidentUpdate> incidentUpdates,
       final Collection<IncidentDocument> incidentDocuments) {
     final var incidentsById =
         incidentDocuments.stream()
@@ -679,34 +693,21 @@ public final class IncidentUpdateTask implements BackgroundTask {
     return incidentNotifier.notifyAsync(incidentsToNotify).thenApply(ignored -> updatedIds.size());
   }
 
-  private boolean shouldNotifyAboutUpdate(final DocumentUpdate update) {
-    if (update.doc().containsKey(IncidentTemplate.STATE)) {
-      final var stateUpdate = update.doc().get(IncidentTemplate.STATE);
+  private boolean shouldNotifyAboutUpdate(final IncidentUpdate update) {
+    final var stateUpdate = update.state();
+    if (stateUpdate != null) {
       return IncidentState.RESOLVED != stateUpdate && IncidentState.MIGRATED != stateUpdate;
     }
     return false;
   }
 
-  private DocumentUpdate newIncidentUpdate(
+  private IncidentUpdate newIncidentUpdate(
       final IncidentDocument incident, final IncidentState state, final String treePath) {
-    final Map<String, Object> fields = new HashMap<>();
-    fields.put(IncidentTemplate.STATE, state);
+    var builder = IncidentUpdate.id(incident.id()).index(incident.index()).state(state);
     if (IncidentState.ACTIVE == state) {
-      fields.put(IncidentTemplate.TREE_PATH, treePath);
+      builder = builder.treePath(treePath);
     }
-
-    return new DocumentUpdate(incident.id(), incident.index(), fields, null);
-  }
-
-  private DocumentUpdate newListViewInstanceUpdate(
-      final String id, final String index, final boolean hasIncident, final String routing) {
-    return new DocumentUpdate(id, index, Map.of(ListViewTemplate.INCIDENT, hasIncident), routing);
-  }
-
-  private DocumentUpdate newFlowNodeInstanceUpdate(
-      final String id, final String index, final boolean hasIncident) {
-    return new DocumentUpdate(
-        id, index, Map.of(FlowNodeInstanceTemplate.INCIDENT, hasIncident), null);
+    return builder.build();
   }
 
   private CompletableFuture<Void> mapActiveIncidentsToAffectedInstances(
