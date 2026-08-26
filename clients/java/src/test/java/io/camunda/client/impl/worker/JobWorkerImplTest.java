@@ -423,6 +423,44 @@ public final class JobWorkerImplTest {
   }
 
   @Test
+  public void shouldBackOffWhenTheHandlerExecutorTakesNoJobAtAll() {
+    // given a worker whose handler executor takes no job at all, so that nothing the worker
+    // activates ever runs and nothing is left running to prompt the next poll
+    final int maxJobsActive = 4;
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobHandlingExecutor = Executors.newSingleThreadExecutor();
+    jobHandlingExecutor.shutdown();
+    gateway.respondWith(TestData.jobs(maxJobsActive));
+
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler(NOOP_JOB_HANDLER)
+                .maxJobsActive(maxJobsActive)
+                .pollInterval(Duration.ofMillis(50))
+                .backoffSupplier(prev -> SLOW_POLL_DELAY_IN_MS)
+                .open()) {
+
+      // when the worker keeps activating jobs the executor takes none of
+      // then it slows down, rather than activating and handing back jobs as fast as it can
+      gateway.startMeasuring();
+      Awaitility.await("Worker should slow down its polling")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(gateway.getTimeBetweenLatestPolls())
+                      .isGreaterThan(SLOW_POLL_THRESHOLD));
+    }
+  }
+
+  @Test
   public void shouldKeepPollingWhenHandingARefusedJobBackFails() {
     // given a job client that cannot send commands any more, as it would be while shutting down
     final JobClient brokenJobClient = Mockito.mock(JobClient.class);
