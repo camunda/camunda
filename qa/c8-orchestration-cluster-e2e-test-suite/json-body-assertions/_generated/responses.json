@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "41e537e0520b69fe14f558b1d3a26efe1cc5881d",
-    "generatedAt": "2026-08-23T12:06:29.494Z",
+    "commit": "ef9285267a5556b6f16bd8bb74e263dffb8defc6",
+    "generatedAt": "2026-08-26T08:16:52.348Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "048de6a5e761a29a967478bfb29d98f151fe9d43f9d0c171f339b064369e8b27"
+    "specSha256": "f3cfd5034cd86db5e5236734a4167b2a960704c67ff105a948e7eb54e785c4a2"
   },
   "responses": [
     {
@@ -240,7 +240,7 @@
           },
           {
             "name": "limits",
-            "type": "0",
+            "type": "object",
             "children": {
               "required": [
                 {
@@ -328,7 +328,7 @@
           },
           {
             "name": "tools",
-            "type": "array<items>",
+            "type": "array<object>",
             "children": {
               "required": [
                 {
@@ -447,7 +447,7 @@
                 },
                 {
                   "name": "limits",
-                  "type": "0",
+                  "type": "object",
                   "children": {
                     "required": [
                       {
@@ -535,7 +535,7 @@
                 },
                 {
                   "name": "tools",
-                  "type": "array<items>",
+                  "type": "array<object>",
                   "children": {
                     "required": [
                       {
@@ -586,20 +586,6 @@
               ],
               "optional": []
             }
-          }
-        ],
-        "optional": []
-      }
-    },
-    {
-      "path": "/agent-instances/{agentInstanceKey}/history",
-      "method": "POST",
-      "status": "201",
-      "schema": {
-        "required": [
-          {
-            "name": "historyItemKey",
-            "type": "string"
           }
         ],
         "optional": []
@@ -6839,6 +6825,11 @@
             "type": "array<object>",
             "children": {
               "required": [
+                {
+                  "name": "businessId",
+                  "type": "string",
+                  "nullable": true
+                },
                 {
                   "name": "correlationKey",
                   "type": "string",
