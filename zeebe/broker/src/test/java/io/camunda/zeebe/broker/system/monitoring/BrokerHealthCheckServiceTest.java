@@ -230,6 +230,93 @@ public class BrokerHealthCheckServiceTest {
     }
   }
 
+  @Test
+  public void shouldBeReadyWhenRecoveringPartitionsAreRegistered() {
+    // given a broker whose only physical tenant starts in recovery mode. Recovery partitions never
+    // join Raft, so readiness cannot come from onBecameRaftLeader/Follower; registering them as
+    // recovering is the only installation signal.
+    final var healthCheckService = newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID);
+
+    // when the recovery partition manager registers its local partitions
+    healthCheckService.registerRecoveringPartitions(
+        DEFAULT_PHYSICAL_TENANT_ID, List.of(new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1)));
+    scheduler.workUntilDone();
+
+    // then the broker is ready without any Raft role events
+    assertThat(healthCheckService.isBrokerReady()).isTrue();
+  }
+
+  @Test
+  public void shouldBeReadyWhenRecoveringTenantHasNoLocalPartitions() {
+    // given a broker whose only physical tenant recovers with no partitions on this node
+    final var healthCheckService = newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID);
+
+    // when the recovery partition manager registers an empty partition set
+    healthCheckService.registerRecoveringPartitions(DEFAULT_PHYSICAL_TENANT_ID, List.of());
+    scheduler.workUntilDone();
+
+    // then the broker is ready: the tenant started and simply had nothing to recover
+    assertThat(healthCheckService.isBrokerReady()).isTrue();
+  }
+
+  @Test
+  public void shouldNotBeReadyUntilRecoveringTenantRegisters() {
+    // given a broker with two physical tenants: the default tenant runs in processing mode and
+    // fully installs its partition, while the second tenant is in recovery mode
+    final var healthCheckService =
+        newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID, SECOND_PHYSICAL_TENANT);
+    healthCheckService.registerBootstrapPartitions(
+        DEFAULT_PHYSICAL_TENANT_ID, List.of(partition(DEFAULT_PHYSICAL_TENANT_ID, 1)));
+    healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1), 1);
+    scheduler.workUntilDone();
+
+    // then the broker is not ready while the recovering tenant is unaccounted for
+    assertThat(healthCheckService.isBrokerReady()).isFalse();
+
+    // when the recovering tenant registers its partitions
+    healthCheckService.registerRecoveringPartitions(
+        SECOND_PHYSICAL_TENANT, List.of(new PartitionId(SECOND_PHYSICAL_TENANT, 1)));
+    scheduler.workUntilDone();
+
+    // then the broker is ready: processing and recovering tenants both accounted for
+    assertThat(healthCheckService.isBrokerReady()).isTrue();
+  }
+
+  @Test
+  public void shouldRequireReinstallationAfterPhysicalTenantIsUnregistered() {
+    // given a broker whose only tenant was ready in recovery mode and then exits recovery: the
+    // recovery manager unregisters the tenant on stop, so the stale "installed" marks from
+    // recovery must not carry over into processing mode
+    final var healthCheckService = newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID);
+    healthCheckService.registerRecoveringPartitions(
+        DEFAULT_PHYSICAL_TENANT_ID, List.of(new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1)));
+    scheduler.workUntilDone();
+    assertThat(healthCheckService.isBrokerReady()).isTrue();
+
+    // when the recovery manager stops and unregisters the tenant
+    healthCheckService.unregisterPhysicalTenant(DEFAULT_PHYSICAL_TENANT_ID);
+    scheduler.workUntilDone();
+
+    // then the broker is no longer ready
+    assertThat(healthCheckService.isBrokerReady()).isFalse();
+
+    // when the processing partition manager re-registers the same partition as a bootstrap
+    // partition
+    healthCheckService.registerBootstrapPartitions(
+        DEFAULT_PHYSICAL_TENANT_ID, List.of(partition(DEFAULT_PHYSICAL_TENANT_ID, 1)));
+    scheduler.workUntilDone();
+
+    // then readiness waits for the partition to actually rejoin Raft
+    assertThat(healthCheckService.isBrokerReady()).isFalse();
+
+    // when the partition rejoins Raft
+    healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1), 1);
+    scheduler.workUntilDone();
+
+    // then the broker is ready again
+    assertThat(healthCheckService.isBrokerReady()).isTrue();
+  }
+
   private BrokerHealthCheckService newHealthCheckService(final String... expectedPhysicalTenants) {
     return new BrokerHealthCheckService(
         member, new HealthTreeMetrics(new SimpleMeterRegistry()), Set.of(expectedPhysicalTenants));

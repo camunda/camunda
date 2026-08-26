@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
+import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
@@ -47,6 +48,7 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
+import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
@@ -114,7 +116,8 @@ public final class RecoveryPartitionManager
   private final BrokerInfo brokerInfo;
   private final AtomixServerTransport gatewayBrokerTransport;
   private final @Nullable IntFunction<Long> exportedPositionSupplier;
-  private final String brokerComponentName;
+  private final BrokerHealthCheckService healthCheckService;
+  private final List<HealthMonitorable> registeredHealthComponents = new ArrayList<>();
   private @Nullable BackupStore backupStore;
   private @Nullable ExecutorService restoreExecutor;
 
@@ -130,8 +133,8 @@ public final class RecoveryPartitionManager
       final AtomixServerTransport gatewayBrokerTransport,
       final @Nullable IntFunction<Long> exportedPositionSupplier,
       final TopologyManagerImpl topologyManager,
-      final String brokerComponentName) {
-    this.brokerComponentName = brokerComponentName;
+      final BrokerHealthCheckService healthCheckService) {
+    this.healthCheckService = healthCheckService;
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
     actorSchedulingService = schedulingService;
@@ -190,6 +193,12 @@ public final class RecoveryPartitionManager
     restoreExecutor =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("zeebe-restore-", 0).factory());
     final var localPartitions = localPartitions();
+    // A broker in recovery mode is ready by design: it must accept management traffic (restore
+    // requests) and must not be restarted by the readiness-based liveness probe while a restore is
+    // in progress. Register upfront - including with no local partitions, so an expected physical
+    // tenant is never mistaken for one that failed to start (see registerBootstrapPartitions).
+    healthCheckService.registerRecoveringPartitions(
+        partitionGroup, localPartitions.stream().map(PartitionMetadata::id).toList());
     if (localPartitions.isEmpty()) {
       LOG.info("No local partitions to recover for partition group {}", partitionGroup);
       result.complete(null);
@@ -246,9 +255,17 @@ public final class RecoveryPartitionManager
                       topologyManager.onHealthChanged(
                           p.partitionId().number(), HealthStatus.HEALTHY);
                       p.healthMetrics().setRecovering();
+                      registerHealthComponent(
+                          p.partitionId().number(),
+                          RecoveringPartitionHealth.recovered(p.partitionId()));
                     });
                 failedPartitionIds.forEach(
-                    id -> topologyManager.onHealthChanged(id, HealthStatus.DEAD));
+                    id -> {
+                      topologyManager.onHealthChanged(id, HealthStatus.DEAD);
+                      registerHealthComponent(
+                          id,
+                          RecoveringPartitionHealth.failed(new PartitionId(partitionGroup, id)));
+                    });
                 if (recoveryPartitions.isEmpty()) {
                   if (deactivateError != null) {
                     LOG.error(
@@ -286,10 +303,22 @@ public final class RecoveryPartitionManager
         brokerInfo,
         gatewayBrokerTransport,
         backupStore,
-        brokerComponentName);
+        healthCheckService.componentName());
+  }
+
+  private void registerHealthComponent(
+      final int partitionId, final RecoveringPartitionHealth healthComponent) {
+    registeredHealthComponents.add(healthComponent);
+    healthCheckService.registerMonitoredPartition(partitionId, healthComponent);
   }
 
   private void stopInternal(final ActorFuture<Void> result) {
+    // Unregister the readiness and health state this manager contributed, so the next manager's
+    // registration starts from a clean slate: after exiting recovery, readiness must be gated on
+    // the partitions genuinely rejoining Raft rather than on the recovery-mode "installed" marks.
+    registeredHealthComponents.forEach(healthCheckService::removeMonitoredPartition);
+    registeredHealthComponents.clear();
+    healthCheckService.unregisterPhysicalTenant(partitionGroup);
     final var stopFutures =
         recoveryPartitions.stream()
             .map(RecoveryPartition::stop)
