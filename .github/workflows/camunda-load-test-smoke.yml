@@ -151,7 +151,7 @@ jobs:
 
   cleanup-install:
     name: Cleanup (install chain)
-    needs: [sanitize-branch-name]
+    needs: [sanitize-branch-name, verify-install]
     if: always()
     permissions:
       contents: read
