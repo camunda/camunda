@@ -403,7 +403,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
         && !configuring()
         && !jointConsensus()) {
       return CompletableFuture.completedFuture(
-          logResponse(JoinResponse.builder().withStatus(Status.OK).build()));
+          logResponse(
+              JoinResponse.builder()
+                  .withStatus(Status.OK)
+                  .withIndex(currentConfiguration.index())
+                  .build()));
     }
 
     return onReconfigure(
@@ -427,7 +431,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                     .build();
               }
               if (reconfigureResponse.status() == Status.OK) {
-                return JoinResponse.builder().withStatus(Status.OK).build();
+                return JoinResponse.builder()
+                    .withStatus(Status.OK)
+                    .withIndex(reconfigureResponse.index())
+                    .build();
               } else {
                 return JoinResponse.builder()
                     .withStatus(Status.ERROR)
