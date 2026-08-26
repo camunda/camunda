@@ -224,7 +224,10 @@ public final class PartitionManagerImpl
             brokerMeterRegistry,
             brokerClient,
             gatewayBrokerTransport);
-    context.joinMemberType(RaftMember.Type.ACTIVE);
+    // Join as a learner: replicated to but part of no quorum, so that the join never makes a
+    // quorum depend on this empty-log member. The promote operation that every emitter pairs with
+    // the join makes the member a voting member once it has caught up.
+    context.joinMemberType(RaftMember.Type.PROMOTABLE);
     final var partition = Partition.joining(context);
     final var previousPartition = partitions.putIfAbsent(id, partition);
     if (previousPartition != null) {

@@ -19,12 +19,12 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code
- * PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation}, operating on a single
- * named {@link PartitionGroupConfiguration}. Mirrors the legacy {@code PartitionLeaveApplier} in
- * {@code changes/}, which this does not replace or modify. A partition leave operation is executed
- * when a member wants to stop replicating a partition; this is allowed only when the member is
- * already replicating the partition.
+ * Applier for {@code PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation},
+ * operating on a single named {@link PartitionGroupConfiguration}. A partition leave operation is
+ * executed when a member wants to stop replicating a partition; this is allowed only when the
+ * member is already replicating the partition. In the two-phase leave flow a demote operation
+ * precedes this one and has already marked the partition {@code LEAVING}, which the re-entry branch
+ * below accepts.
  */
 public final class PartitionLeaveApplier implements PartitionGroupConfigurationChangeApplier {
 

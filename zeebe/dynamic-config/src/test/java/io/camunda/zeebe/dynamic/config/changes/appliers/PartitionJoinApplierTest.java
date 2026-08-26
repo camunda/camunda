@@ -243,10 +243,10 @@ final class PartitionJoinApplierTest {
     // when
     final var resultingGroup = applier.apply().join().apply(groupWithJoining);
 
-    // then
+    // then — the member joined as a learner; the promote operation makes the partition ACTIVE
     verify(partitionChangeExecutor, times(1)).join(anyInt(), any(), any());
     Assertions.assertThat(resultingGroup.getMember(localMemberId).getPartition(1).state())
-        .isEqualTo(State.ACTIVE);
+        .isEqualTo(State.LEARNER);
   }
 
   @Test

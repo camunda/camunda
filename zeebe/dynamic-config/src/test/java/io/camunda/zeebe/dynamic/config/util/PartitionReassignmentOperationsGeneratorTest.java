@@ -19,8 +19,10 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import java.util.HashSet;
 import java.util.Map;
@@ -71,8 +73,10 @@ final class PartitionReassignmentOperationsGeneratorTest {
         .containsExactly(
             new PartitionBootstrapOperation(member(0), 1, 2, Optional.of(newTenantConfig), false),
             new PartitionJoinOperation(member(1), 1, 1),
+            new PartitionPromoteOperation(member(1), 1),
             new PartitionBootstrapOperation(member(1), 2, 2, Optional.empty(), false),
-            new PartitionJoinOperation(member(2), 2, 1));
+            new PartitionJoinOperation(member(2), 2, 1),
+            new PartitionPromoteOperation(member(2), 2));
   }
 
   @Test
@@ -153,11 +157,14 @@ final class PartitionReassignmentOperationsGeneratorTest {
         PartitionReassignmentOperationsGenerator.generateOperations(
             currentConfiguration, Set.of(target), Map.of());
 
-    // then — joins first, then leaves, then priority reconfigures
+    // then — joins (with their promotions) first, then demotions and leaves, then priority
+    // reconfigures
     assertThat(operations).containsOnlyKeys("tenantA");
     assertThat(operations.get("tenantA"))
         .containsExactly(
             new PartitionJoinOperation(member(3), 1, 1),
+            new PartitionPromoteOperation(member(3), 1),
+            new PartitionDemoteOperation(member(1), 1),
             new PartitionLeaveOperation(member(1), 1, 1),
             new PartitionReconfigurePriorityOperation(member(2), 1, 2));
   }
@@ -197,7 +204,9 @@ final class PartitionReassignmentOperationsGeneratorTest {
     // then
     assertThat(operations).containsOnlyKeys("tenantA", "tenantB");
     assertThat(operations.get("tenantA"))
-        .containsExactly(new PartitionJoinOperation(member(1), 2, 1));
+        .containsExactly(
+            new PartitionJoinOperation(member(1), 2, 1),
+            new PartitionPromoteOperation(member(1), 2));
     assertThat(operations.get("tenantB"))
         .containsExactly(
             new PartitionBootstrapOperation(member(2), 1, 1, Optional.of(newTenantConfig), false));

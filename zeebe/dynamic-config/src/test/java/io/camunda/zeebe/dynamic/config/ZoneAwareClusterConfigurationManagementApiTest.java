@@ -20,9 +20,11 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartiti
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.util.ZoneFixtures;
 import java.util.List;
@@ -116,6 +118,8 @@ final class ZoneAwareClusterConfigurationManagementApiTest
                 new ZoneAwareConfig(
                     List.of(new ZoneSpec(ZONE_A, 1, 1), new ZoneSpec(ZONE_B, 1, 2)))),
             new PartitionJoinOperation(ZONE_B_0, 1, 2),
+            new PartitionPromoteOperation(ZONE_B_0, 1),
+            new PartitionDemoteOperation(ZONE_A_1, 1),
             new PartitionLeaveOperation(ZONE_A_1, 1, 1));
   }
 }

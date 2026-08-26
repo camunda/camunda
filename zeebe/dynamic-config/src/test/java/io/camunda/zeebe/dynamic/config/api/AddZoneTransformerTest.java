@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRob
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
@@ -80,8 +81,10 @@ final class AddZoneTransformerTest {
             new MemberJoinOperation(ZONE_B_0),
             new UpdatePartitionDistributorConfigOperation(ZONE_A_0, expectedConfig),
             new PartitionJoinOperation(ZONE_B_0, 1, 1),
+            new PartitionPromoteOperation(ZONE_B_0, 1),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 1, 2),
             new PartitionJoinOperation(ZONE_B_0, 2, 1),
+            new PartitionPromoteOperation(ZONE_B_0, 2),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 2, 2));
 
     final var newTopology = TestTopologyChangeSimulator.apply(currentTopology, operations);
