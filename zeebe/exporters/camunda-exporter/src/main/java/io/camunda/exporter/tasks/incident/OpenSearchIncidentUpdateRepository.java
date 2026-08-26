@@ -270,7 +270,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   }
 
   private CompletableFuture<List<String>> bulkUpdate(
-      final Stream<DocumentUpdate> docUpdatesStream, final Refresh refresh) {
+      final Stream<? extends DocumentUpdate> docUpdatesStream, final Refresh refresh) {
     final var updates = docUpdatesStream.map(this::createUpdateOperation).toList();
     if (updates.isEmpty()) {
       return CompletableFuture.completedFuture(List.of());
