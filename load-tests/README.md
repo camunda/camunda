@@ -364,9 +364,9 @@ Example running tests (naming pattern: `medic-y-<year>-cw-<week>-<sha>-<variant>
 
 ### Daily load tests
 
-Daily stress tests run against the state of the **main** branch via the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml).
+Daily stress tests run against the state of the **main** branch via the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), in three variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage (exporters disabled).
 
-**Goal:** Validating the reliability of the current main under stress, and detecting newly introduced instabilities with a short feedback loop.
+**Goal:** Validating the reliability of the current main under stress, and detecting newly introduced instabilities with a short feedback loop. The no-secondary-storage variant only runs this daily `max` leg — it does not get its own multi-week weekly endurance rotation, since that long-horizon engine coverage is not storage-specific and is already provided by the ES/OS/RDBMS weekly runs (see [Weekly load tests](#weekly-load-tests) above).
 
 **Benefits:**
 
@@ -376,7 +376,7 @@ Daily stress tests run against the state of the **main** branch via the [Camunda
 
 **Validation:** TBD — explicit dashboard with KPIs is tracked in [#42274](https://github.com/camunda/camunda/issues/42274).
 
-**Profiling:** unlike the PR-label flow, profiling here is unconditional — after each run's setup job succeeds, the reusable [`profile-load-test.yml`](../.github/workflows/profile-load-test.yml) workflow waits out the same 15-minute warmup as the metrics path, then captures a 30-minute async-profiler flamegraph for both the gRPC and REST runs, in parallel with the 3-hour soak. Flamegraph artifacts upload the same way as the PR path.
+**Profiling:** unlike the PR-label flow, profiling here is unconditional — after each run's setup job succeeds, the reusable [`profile-load-test.yml`](../.github/workflows/profile-load-test.yml) workflow waits out the same 15-minute warmup as the metrics path, then captures a 30-minute async-profiler flamegraph for each of the gRPC, REST, and no-secondary-storage runs, in parallel with the 3-hour soak. Flamegraph artifacts upload the same way as the PR path.
 
 ### Ad-hoc load tests
 

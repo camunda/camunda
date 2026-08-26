@@ -1,12 +1,17 @@
-# description: Runs a daily max-load stress test against main, currently in two variants: gRPC
-#              and REST (both against Elasticsearch). After a 15-minute warmup, profiles the next
-#              30 minutes of each variant via async-profiler. After a 3-hour soak: snapshots
-#              metrics as a GitHub artifact, posts a side-by-side summary table (with flamegraph
-#              links) to Slack, then immediately deletes the namespaces to reduce cost.
+# description: Runs a daily max-load stress test against main, currently in three variants: gRPC
+#              and REST (both against Elasticsearch), and no-secondary-storage (exporters
+#              disabled). After a 15-minute warmup, profiles the next 30 minutes of each variant
+#              via async-profiler. After a 3-hour soak: snapshots metrics as a GitHub artifact,
+#              posts a side-by-side summary table (with flamegraph links) to Slack, then
+#              immediately deletes the namespaces to reduce cost.
 #              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
 #              Each variant's full lifecycle (setup, warmup, profile, soak, collect-metrics,
 #              cleanup) is delegated to the reusable stress-load-test.yml workflow via a
 #              matrix — adding a variant is a one-line matrix entry, not a 6-job copy-paste.
+#              The no-secondary-storage variant only runs this daily `max` leg; it deliberately
+#              does not get its own multi-week weekly endurance rotation, since that long-horizon
+#              engine coverage is not storage-specific and is already provided by the ES/OS/RDBMS
+#              weekly runs.
 # calls: stress-load-test.yml (per variant)
 # type: CI
 # owner: @camunda/reliability-testing
@@ -90,10 +95,17 @@ jobs:
             label: gRPC
             load-test-load: ''
             load-test-setup-helm-values: '--set elasticsearch.storage.requests=64Gi'
+            secondary-storage-type: elasticsearch
           - key: rest
             label: REST
             load-test-load: '--set global.preferRest.enabled=true'
             load-test-setup-helm-values: '--set elasticsearch.storage.requests=64Gi'
+            secondary-storage-type: elasticsearch
+          - key: none
+            label: None
+            load-test-load: ''
+            load-test-setup-helm-values: ''
+            secondary-storage-type: none
     uses: ./.github/workflows/stress-load-test.yml
     secrets: inherit
     with:
@@ -101,6 +113,7 @@ jobs:
       build-frontend: true
       load-test-load: ${{ matrix.variant.load-test-load }}
       load-test-setup-helm-values: ${{ matrix.variant.load-test-setup-helm-values }}
+      secondary-storage-type: ${{ matrix.variant.secondary-storage-type }}
 
   # Aggregates every variant's metrics artifact into one place.
   aggregate-metrics:
@@ -130,7 +143,7 @@ jobs:
           # Keep in sync with the `run-variant` matrix above (key:label pairs) — this determines
           # the Slack summary table's column order, which is not guaranteed by artifact download
           # order. key here must match the -<key> suffix used to build the run-variant name above.
-          VARIANT_ORDER: 'grpc:gRPC rest:REST'
+          VARIANT_ORDER: 'grpc:gRPC rest:REST none:None'
         run: |
           manifest='[]'
           for entry in $VARIANT_ORDER; do
