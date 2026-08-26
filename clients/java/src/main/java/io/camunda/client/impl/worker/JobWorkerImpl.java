@@ -45,7 +45,7 @@ import org.slf4j.Logger;
  * will poll for new jobs. To determine what is considered enough jobs it compares its number of
  * {@code remainingJobs} with the {@code activationThreshold}. If the executor refuses a job, the
  * worker frees up that job's capacity immediately, so that a refused job never takes up capacity
- * for good.
+ * for good. Each job's capacity is freed up exactly once, whether the job ran or was refused.
  *
  * <p>If a poll fails with an error response, a retry is scheduled with a delay using the {@code
  * retryDelaySupplier} to ask for a new {@code pollInterval}. By default, this retry delay supplier
@@ -255,8 +255,13 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     // the executor does not take the job. Taking capacity for the whole response at once would
     // also count the jobs that were rejected, and that capacity would never be given back.
     remainingJobs.incrementAndGet();
-    if (!handleActivatedJob(job, this::handleJobFinished)) {
-      releaseCapacity();
+    // The executor may run the job on the calling thread and still report it as refused, in which
+    // case the job both ran and was refused and the two paths below are taken for the same job.
+    // The flag makes sure the slot taken above is given back only once, as giving it back twice
+    // would let the worker ask the broker for more jobs than it is allowed to run at a time.
+    final AtomicBoolean capacityHeld = new AtomicBoolean(true);
+    if (!handleActivatedJob(job, () -> handleJobFinished(capacityHeld))) {
+      releaseCapacity(capacityHeld);
     }
   }
 
@@ -291,13 +296,19 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     }
   }
 
-  private void handleJobFinished() {
-    releaseCapacity();
+  private void handleJobFinished(final AtomicBoolean capacityHeld) {
+    releaseCapacity(capacityHeld);
     metrics.jobHandled(1);
   }
 
-  /** Gives back the capacity slot taken for a job, and polls again if there is room for more. */
-  private void releaseCapacity() {
+  /**
+   * Gives back the capacity slot taken for a job, and polls again if there is room for more. Does
+   * nothing if the slot was already given back.
+   */
+  private void releaseCapacity(final AtomicBoolean capacityHeld) {
+    if (!capacityHeld.compareAndSet(true, false)) {
+      return;
+    }
     final int actualRemainingJobs = remainingJobs.decrementAndGet();
     if (!isPollScheduled.get() && shouldPoll(actualRemainingJobs)) {
       tryPoll();
