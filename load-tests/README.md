@@ -364,7 +364,7 @@ Example running tests (naming pattern: `medic-y-<year>-cw-<week>-<sha>-<variant>
 
 ### Daily load tests
 
-Daily stress tests run against the state of the **main** branch via the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), in three variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage (exporters disabled).
+Daily stress tests run against the state of the **main** branch via the [Daily load tests GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-daily-load-tests.yml), in three variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage (exporters disabled).
 
 **Goal:** Validating the reliability of the current main under stress, and detecting newly introduced instabilities with a short feedback loop. The no-secondary-storage variant only runs this daily `max` leg — it does not get its own multi-week weekly endurance rotation, since that long-horizon engine coverage is not storage-specific and is already provided by the ES/OS/RDBMS weekly runs (see [Weekly load tests](#weekly-load-tests) above).
 
