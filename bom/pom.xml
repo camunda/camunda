@@ -49,7 +49,7 @@
          override wins; a definition in a child POM would shadow it. -->
     <flatten.updatePomFile>false</flatten.updatePomFile>
     <plugin.version.javadoc>3.12.0</plugin.version.javadoc>
-    <plugin.version.license>5.1.1</plugin.version.license>
+    <plugin.version.license>5.1.2</plugin.version.license>
     <plugin.version.spotless>3.10.0</plugin.version.spotless>
 
     <!--
