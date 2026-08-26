@@ -121,7 +121,7 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
     if (ExceptionUtil.isConcurrentSnapshotExecutionException(e)) {
       reason =
           format(
-              "Could not create snapshot [%s] because because of concurrent snapshot operations.",
+              "Could not create snapshot [%s] because of concurrent snapshot operations.",
               snapshotName);
     } else if (ExceptionUtil.unwrapCompletionCause(e) instanceof IOException) {
       reason =

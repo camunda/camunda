@@ -8,12 +8,13 @@
 package io.camunda.optimize.service.snapshot;
 
 import static io.camunda.optimize.dto.optimize.BackupState.INCOMPLETE;
-import static io.camunda.optimize.service.util.SnapshotUtil.getSnapshotNameForImportIndices;
+import static io.camunda.optimize.service.util.SnapshotUtil.getSnapshotName;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.AbstractCCSMIT;
 import io.camunda.optimize.dto.optimize.rest.BackupInfoDto;
 import io.camunda.optimize.service.BackupService;
+import io.camunda.optimize.service.db.schema.BackupPriority;
 import io.camunda.optimize.service.util.configuration.db.DatabaseBackup;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,7 @@ public class BackupServiceIT extends AbstractCCSMIT {
     databaseIntegrationTestExtension.createRepoSnapshot(VALID_REPOSITORY_NAME);
     databaseIntegrationTestExtension.createSnapshot(
         VALID_REPOSITORY_NAME,
-        getSnapshotNameForImportIndices(VALID_BACKUP_ID),
+        getSnapshotName(BackupPriority.PRIORITY1, VALID_BACKUP_ID),
         databaseIntegrationTestExtension.getIndexNames());
 
     final DatabaseBackup databaseBackup = new DatabaseBackup();

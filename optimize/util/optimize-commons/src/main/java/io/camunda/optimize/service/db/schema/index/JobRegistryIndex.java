@@ -12,6 +12,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FOR
 
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.service.db.DatabaseConstants;
+import io.camunda.optimize.service.db.schema.BackupPriority;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 
 public abstract class JobRegistryIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
@@ -46,8 +47,8 @@ public abstract class JobRegistryIndex<TBuilder> extends DefaultIndexMappingCrea
   }
 
   @Override
-  public boolean isImportIndex() {
-    return true;
+  public BackupPriority getBackupPriority() {
+    return BackupPriority.PRIORITY1;
   }
 
   @Override
