@@ -35,7 +35,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -196,7 +195,7 @@ public class SchemaManager implements CloseableSilently {
       schemaMetadataStore.storeSchemaVersion(currentVersion);
     }
     updateSchemaSettings();
-    warnOnUnappliedShardCounts();
+    checkShardConfiguration();
     createLifecyclePolicies();
     LOG.info("Schema management completed.");
   }
@@ -281,6 +280,36 @@ public class SchemaManager implements CloseableSilently {
   }
 
   /**
+   * Reports per-index shard configuration that will not do what the operator expects.
+   *
+   * <p>Runs once per startup rather than from {@link #getIndexSettingsFromConfig}: that resolver is
+   * called again for every descriptor during template creation, index creation and the settings
+   * update, so warning from there would repeat each message up to three times.
+   */
+  private void checkShardConfiguration() {
+    final var explicitShards = config.index().getShardsByIndexName();
+    if (explicitShards.isEmpty()) {
+      return;
+    }
+
+    final var configuredShardsByIndexName = new HashMap<String, Integer>();
+    allIndexDescriptors.forEach(
+        descriptor ->
+            ofNullable(explicitShards.get(descriptor.getIndexName()))
+                .ifPresent(
+                    shards -> {
+                      warnIfWideningSingleShardIndex(descriptor, shards);
+                      configuredShardsByIndexName.put(descriptor.getFullQualifiedName(), shards);
+                    }));
+
+    if (configuredShardsByIndexName.isEmpty()) {
+      return;
+    }
+
+    warnOnUnappliedShardCounts(configuredShardsByIndexName);
+  }
+
+  /**
    * Reports configured shard counts that an existing index does not actually have.
    *
    * <p>{@link #updateIndexSettings} only pushes {@code number_of_replicas}, because shards are
@@ -291,21 +320,7 @@ public class SchemaManager implements CloseableSilently {
    * <p>Only indices that already exist are compared — a missing one was either just created with
    * the configured count or is not in use.
    */
-  private void warnOnUnappliedShardCounts() {
-    final var explicitShards = config.index().getShardsByIndexName();
-    final var configuredShardsByIndexName = new HashMap<String, Integer>();
-    allIndexDescriptors.forEach(
-        descriptor ->
-            ofNullable(explicitShards.get(descriptor.getIndexName()))
-                .ifPresent(
-                    shards ->
-                        configuredShardsByIndexName.put(
-                            descriptor.getFullQualifiedName(), shards)));
-
-    if (configuredShardsByIndexName.isEmpty()) {
-      return;
-    }
-
+  private void warnOnUnappliedShardCounts(final Map<String, Integer> configuredShardsByIndexName) {
     final Map<String, Integer> actualShardsByIndexName;
     try {
       actualShardsByIndexName =
@@ -532,32 +547,36 @@ public class SchemaManager implements CloseableSilently {
 
   private int getNumberOfShardsFromConfig(
       final String indexName, final IndexDescriptor descriptor) {
-    final var descriptorDefault = descriptor.getDefaultShardCount();
     final var explicit = config.index().getShardsByIndexName().get(indexName);
     if (explicit != null) {
-      warnIfWideningSingleShardIndex(indexName, explicit, descriptorDefault);
       return explicit;
     }
-    return descriptorDefault.orElse(config.index().getNumberOfShards());
+    return descriptor.getDefaultShardCount().orElse(config.index().getNumberOfShards());
   }
 
   /**
-   * Explicit configuration wins over the descriptor default by design, so this only warns. An
-   * operator who raises a single-shard-by-design index above one shard should know they are trading
-   * away the atomic-refresh property that pinning gave them, which is what made the
-   * post-importer-queue watermark skip possible in the first place.
+   * Explicit configuration wins over the descriptor default by design, so this only warns.
+   *
+   * <p>Most single-shard-by-design indices hold configuration or definition data that simply does
+   * not benefit from being spread, so widening one costs a fan-out per read and nothing else. Only
+   * where a reader also assumes a single atomic refresh does it become a correctness risk, which is
+   * why the message offers post-importer-queue as the example rather than asserting the risk
+   * applies to whichever index is being warned about.
    */
   private void warnIfWideningSingleShardIndex(
-      final String indexName, final int configured, final OptionalInt descriptorDefault) {
-    if (configured > 1 && descriptorDefault.orElse(configured) == 1) {
-      LOG.warn(
-          "Index '{}' is single-shard by design but is configured with '{}' primary shards. "
-              + "The explicit configuration wins. Entries are spread across shards that refresh "
-              + "independently, so reads that assume an atomic refresh may skip data - see "
-              + "https://github.com/camunda/camunda/issues/56117.",
-          indexName,
-          configured);
+      final IndexDescriptor descriptor, final int configured) {
+    if (configured <= 1 || descriptor.getDefaultShardCount().orElse(configured) != 1) {
+      return;
     }
+    LOG.warn(
+        "Index '{}' defaults to a single primary shard by design but is configured with '{}'. "
+            + "The explicit configuration wins. Such indices generally hold configuration or "
+            + "definition data that does not benefit from sharding; where a reader additionally "
+            + "assumes an atomic refresh, spreading entries over independently refreshing shards "
+            + "can make it skip data, as it did for post-importer-queue - see "
+            + "https://github.com/camunda/camunda/issues/56117.",
+        descriptor.getIndexName(),
+        configured);
   }
 
   private int getNumberOfReplicasFromConfig(final String indexName) {

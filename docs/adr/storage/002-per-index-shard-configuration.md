@@ -123,15 +123,26 @@ trade.**
   names the property path and the index rather than surfacing as an engine-level
   schema-creation failure.
 - Raising a single-shard-by-design index above 1 shard is a **warning**, not a
-  rejection — rejecting would contradict D3. The warning names the index and links
-  camunda/camunda#56117 so the operator understands that they are trading away the
-  atomic-refresh property.
+  rejection — rejecting would contradict D3. What is traded away differs by index:
+  for most of them one shard is merely the efficient choice for
+  configuration or definition data, and widening costs a fan-out per read; only
+  where a reader also assumes a single atomic refresh is it a correctness risk.
+  The warning therefore names the index and offers post-importer-queue and
+  camunda/camunda#56117 as the example of the latter, rather than asserting that
+  risk of whichever index it fires on.
 - A configured count that differs from an already-created index's actual count is a
   **warning**. Shards are immutable after creation, so such a setting is otherwise a
   silent no-op: the operator sees the value they asked for in their configuration and a
   differently sharded index in the engine, with nothing connecting the two. The check
   reads live settings at startup and is best-effort — a failure to read them is logged
-  at debug and never fails a startup that would otherwise succeed.
+  at debug and never fails a startup that would otherwise succeed. The engine clients
+  deliberately do not log this particular read failure themselves, so that a failure
+  the caller ignores cannot reach an operator's alerting as an ERROR.
+
+All three run once per startup, from a single pass over the descriptors. The settings
+resolver is called again for every descriptor during template creation, index creation
+and the settings update, so warning from there would repeat each message up to three
+times.
 
 ## Consequences
 

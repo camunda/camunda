@@ -253,10 +253,11 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                       .stream())
           .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     } catch (final IOException | ElasticsearchException e) {
-      final var errMsg =
-          String.format("Failed to retrieve shard counts for indices '%s'", indexNames);
-      LOG.error(errMsg, e);
-      throw new SearchEngineException(errMsg, e);
+      // Deliberately not logged here: this read only ever backs a best-effort startup diagnostic,
+      // and logging at ERROR would page an operator about a failure the caller goes on to ignore.
+      // The caller owns the severity.
+      throw new SearchEngineException(
+          String.format("Failed to retrieve shard counts for indices '%s'", indexNames), e);
     }
   }
 

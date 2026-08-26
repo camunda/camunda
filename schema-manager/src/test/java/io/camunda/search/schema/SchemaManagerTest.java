@@ -488,14 +488,15 @@ class SchemaManagerTest {
       try (final var logs = LogCapturer.capturing(SchemaManager.class, Level.WARN)) {
         startupWithRetry(mgr, cfg);
 
-        // then — the override still takes effect, the operator is only told what it costs
+        // then — the override still takes effect, the operator is only told what it costs.
+        // Exactly once: the settings resolver runs three times for a configured template (template
+        // creation, index creation, settings update), so warning from there repeated the message.
         assertThat(logs.messagesAt(Level.WARN))
-            .anySatisfy(
+            .filteredOn(message -> message.contains("defaults to a single primary shard by design"))
+            .singleElement()
+            .satisfies(
                 message ->
-                    assertThat(message)
-                        .contains(template.getIndexName())
-                        .contains("single-shard by design")
-                        .contains("issues/56117"));
+                    assertThat(message).contains(template.getIndexName()).contains("issues/56117"));
       }
 
       final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
@@ -516,7 +517,9 @@ class SchemaManagerTest {
 
         // then
         assertThat(logs.messagesAt(Level.WARN))
-            .noneSatisfy(message -> assertThat(message).contains("single-shard by design"));
+            .noneSatisfy(
+                message ->
+                    assertThat(message).contains("defaults to a single primary shard by design"));
       }
     }
 
@@ -563,15 +566,21 @@ class SchemaManagerTest {
 
     @Test
     void shouldNotFailStartupWhenShardCountsCannotBeRead() {
-      // given — a diagnostic must not be what fails an otherwise healthy startup
-      final var index = new TestIndexDescriptor("test", "mappings.json");
-      cfg.index().getShardsByIndexName().put(index.getIndexName(), 5);
-      final var mgr = buildManager(List.of(metaIndex, index), List.of());
+      // given — a diagnostic must not be what fails an otherwise healthy startup. A template
+      // descriptor follows the global knob, so the only thing that could log here is the read.
+      final var template = new TestTemplateDescriptor("test", "mappings.json");
+      cfg.index().getShardsByIndexName().put(template.getIndexName(), 5);
+      final var mgr = buildManager(List.of(metaIndex), List.of(template));
       when(client.getNumberOfShards(any()))
           .thenThrow(new SearchEngineException("shard counts unavailable"));
 
-      // when / then
-      assertThatCode(() -> startupWithRetry(mgr, cfg)).doesNotThrowAnyException();
+      // when / then — and it stays quiet: a read the startup goes on to ignore must not reach an
+      // operator's alerting as a WARN or an ERROR
+      try (final var logs = LogCapturer.capturing(SchemaManager.class, Level.WARN)) {
+        assertThatCode(() -> startupWithRetry(mgr, cfg)).doesNotThrowAnyException();
+        assertThat(logs.messagesAt(Level.WARN)).isEmpty();
+        assertThat(logs.messagesAt(Level.ERROR)).isEmpty();
+      }
     }
 
     @Test
@@ -600,7 +609,9 @@ class SchemaManagerTest {
 
         // then
         assertThat(logs.messagesAt(Level.WARN))
-            .noneSatisfy(message -> assertThat(message).contains("single-shard by design"));
+            .noneSatisfy(
+                message ->
+                    assertThat(message).contains("defaults to a single primary shard by design"));
       }
     }
   }
