@@ -88,8 +88,21 @@ CWD is the repo root, on a clean or disposable branch (reproduction may start lo
 
 ### Phase 0 — Start the comment
 
-Parse `owner/repo` and issue number from the URL/reference given. Post the initial comment
-immediately, before doing any investigation work, so the engineer sees the agent picked it up:
+Parse `owner/repo` and issue number from the URL/reference given, then check whether this issue is
+already closed or already has a linked PR before doing anything else — including before posting
+any comment:
+
+```bash
+gh issue view <issue_number> --repo <owner>/<repo> --json state,closedByPullRequestsReferences
+```
+
+If `state` is `CLOSED`, or `closedByPullRequestsReferences` is non-empty, stop here and tell the
+engineer directly — don't post a comment, don't investigate. An "investigation in progress"
+comment on an issue someone already closed or is already fixing is exactly the duplicate work this
+check exists to prevent.
+
+Otherwise, post the initial comment immediately, before doing any further investigation work, so
+the engineer sees the agent picked it up:
 
 Write the body to a file, then post it via `jq --rawfile` piped into `gh api --input -` — see
 [GitHub comment lifecycle](#github-comment-lifecycle) for exactly why (a simpler-looking `-f
@@ -131,7 +144,7 @@ first read, not something the reader has to infer from tone or content.
 ### Phase 1 — Read the issue
 
 ```bash
-gh issue view <issue_number> --repo <owner>/<repo> --json title,body,labels,comments,url
+gh issue view <issue_number> --repo <owner>/<repo> --json title,body,labels,comments,url,assignees,author
 ```
 
 Read title, body, **all** comments (later comments often contain reproduction confirmations,
@@ -209,9 +222,24 @@ Update the comment: check off item 4, summarize the root cause in 2–4 sentence
 
 ### Phase 5 — Validate the fix
 
-Before proposing anything, draft a candidate fix and run it through all six checks. All six must
-pass for the fix to count toward High confidence in Phase 6 — a fix that fails any one of these is
-not "mostly validated," it's unvalidated.
+Get a real candidate fix onto disk first — the checks below require actually compiling and running
+code, not reasoning about a description of it:
+
+1. **Check `git status` first.** Note any pre-existing uncommitted changes unrelated to the fix
+   (other in-progress work, this skill's own files, local config) — these must never end up
+   committed as part of the fix later.
+2. **Branch from `origin/main`, not local `main`.** Local `main` can be stale; branching from a
+   behind `main` risks basing the fix on outdated code or missing conflicts a maintainer would hit.
+   `git fetch origin main && git checkout -b <descriptive-branch-name> origin/main`. If this
+   conflicts with in-progress uncommitted changes to files the fix doesn't touch, that's fine —
+   checkout only fails on files with actual content differences, and the fix's own files should
+   still apply cleanly if they match between local `main` and `origin/main` (verify with
+   `git diff --stat main origin/main -- <fix files>` — expect no output).
+3. **Implement the candidate fix** on this branch.
+
+Only then run the fix through all six checks below. All six must pass for the fix to count toward
+High confidence in Phase 6 — a fix that fails any one of these is not "mostly validated," it's
+unvalidated.
 
 1. **Static check** — does it compile/parse cleanly, are types correct?
 2. **Semantic check** — does it address the root cause (not just the symptom), avoid masking the
@@ -285,39 +313,28 @@ where self-identification matters most.
 ## PR creation
 
 Only reached at Medium/High confidence (Hard rule 1). Do this after Phase 5's validated fix and
-before the final Phase 0 comment PATCH, so the PATCH can include the PR link.
+before the final Phase 0 comment PATCH, so the PATCH can include the PR link. The fix branch and
+implementation already exist from Phase 5 — this section only covers committing and opening it.
 
-1. **Check `git status` first.** Note any pre-existing uncommitted changes unrelated to the fix
-   (other in-progress work, this skill's own files, local config) — these must never be committed
-   as part of the fix.
-2. **Branch from `origin/main`, not local `main`.** Local `main` can be stale; branching from a
-   behind `main` risks basing the fix on outdated code or missing conflicts a maintainer would hit.
-   `git fetch origin main && git checkout -b <descriptive-branch-name> origin/main`. If this
-   conflicts with in-progress uncommitted changes to files the fix doesn't touch, that's fine —
-   checkout only fails on files with actual content differences, and the fix's own files should
-   still apply cleanly if they match between local `main` and `origin/main` (verify with
-   `git diff --stat main origin/main -- <fix files>` — expect no output).
-3. **Implement the fix(es)** validated in Phase 5.
-4. **Run the module's test suite** (the reproducing test from Phase 3, plus the existing suite for
-   the touched area) to confirm the reproducing test now passes and nothing else regressed. Follow
-   the repo's `AGENTS.md` build-pipeline conventions (module-scoped builds, `-Dquickly` for fast
-   iteration, full pipeline before committing). **If the fix touches multi-backend query logic
-   (Hard rule 8), run the reproducing test against every backend** — an `@MultiDbTest`-based test
-   run with only one `-Dtest.integration.camunda.database.type` value is not sufficient evidence the
-   fix works; a green RDBMS run says nothing about ES/OS.
-5. **Format**: `./mvnw license:format spotless:apply -T1C` for Java/XML/Markdown changes; the
+1. **Re-run the module's test suite** (the reproducing test from Phase 3, plus the existing suite
+   for the touched area) to confirm the reproducing test still passes and nothing else regressed
+   since Phase 5's checks. Follow the repo's `AGENTS.md` build-pipeline conventions (module-scoped
+   builds, `-Dquickly` for fast iteration, full pipeline before committing). **If the fix touches
+   multi-backend query logic (Hard rule 8), re-run against every backend** — Phase 5's
+   backend-parity check already covered this once, but re-confirm nothing changed since.
+2. **Format**: `./mvnw license:format spotless:apply -T1C` for Java/XML/Markdown changes; the
    relevant `npm run format`/`prettier:format` for frontend changes (see
    `.github/instructions/frontend.instructions.md`).
-6. **Stage only the fix's files by name** (never `git add -A`/`git add .`) — re-check `git status`
-   and confirm nothing from step 1's pre-existing changes got swept in.
-7. **Commit** following the repo's commit message conventions (Conventional Commits, body explains
+3. **Stage only the fix's files by name** (never `git add -A`/`git add .`) — re-check `git status`
+   and confirm nothing from Phase 5's pre-existing-changes check got swept in.
+4. **Commit** following the repo's commit message conventions (Conventional Commits, body explains
    why, `Closes #<issue_number>`).
-8. **Push and open the PR as a draft**: `git push -u origin <branch>`, then
+5. **Push and open the PR as a draft**: `git push -u origin <branch>`, then
    `gh pr create --draft --title "..." --body "..."`. The PR body should include: a summary of the
    root cause and fix, `Closes #<issue_number>`, the validation performed (tests run, pass/fail),
    the confidence level and its weakest input (per the triage guidelines), and — if only a subset of
    a multi-part root cause was fixed — an explicit "out of scope / follow-up needed" section.
-9. **Never mark the PR ready for review** — it stays a draft; a maintainer promotes it once they've
+6. **Never mark the PR ready for review** — it stays a draft; a maintainer promotes it once they've
    looked it over. Don't use `gh pr ready`.
 
 ## GitHub comment lifecycle
@@ -343,7 +360,7 @@ jq -n --rawfile body ./comment.md '{body: $body}' \
   | gh api --method PATCH repos/<owner>/<repo>/issues/comments/<comment_id> --input -
 
 # Read issue / comments (Phase 1)
-gh issue view <issue_number> --repo <owner>/<repo> --json title,body,labels,comments
+gh issue view <issue_number> --repo <owner>/<repo> --json title,body,labels,comments,url,assignees,author
 ```
 
 After posting or PATCHing, always fetch the comment back
@@ -364,7 +381,8 @@ outlives the current file state.
 - **Never** commit or push anything beyond the fix's own files — check `git status` before staging,
   stage by name, never `git add -A`/`git add .` (Hard rule 2).
 - **Never** branch from local `main` without first checking it against `origin/main` — a stale local
-  `main` can silently base the fix on outdated code (Hard rule 2, [PR creation](#pr-creation)).
+  `main` can silently base the fix on outdated code (Hard rule 2,
+  [Phase 5](#phase-5--validate-the-fix)).
 - **Never** skip formatting or the module's test suite before committing — follow the repo's
   `AGENTS.md` build-pipeline conventions in full, same as any other change to this repo.
 - **Never** implement a fix that breaks a public API/contract, exported type, or on-disk/wire
@@ -376,7 +394,8 @@ outlives the current file state.
 - **Never** block on missing logs (Hard rule 4).
 - **Never** leave a reproduction environment running after Phase 3, even on failure or early exit.
 - If the issue is already closed, or already has a linked PR, stop and tell the engineer before
-  investigating — don't duplicate in-flight work.
+  investigating — don't duplicate in-flight work. Checked at the very start of Phase 0, before any
+  comment is posted.
 
 ## Compose with
 

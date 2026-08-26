@@ -74,14 +74,23 @@ disables API authorization for local testing convenience — matches what c8run 
 Wait for healthy — this typically takes ~5–15 seconds (no compilation, just process startup):
 
 ```bash
+attempt=0
 until curl -sf http://localhost:9600/actuator/health | grep -q '"status":"UP"'; do
+  attempt=$((attempt + 1))
+  if [ "$attempt" -ge 24 ]; then   # ~2 minutes at 5s intervals
+    break
+  fi
   sleep 5
 done
+
+if ! curl -sf http://localhost:9600/actuator/health | grep -q '"status":"UP"'; then
+  echo "camunda did not become healthy within 2 minutes" >&2
+fi
 ```
 
-If it never becomes healthy: mark Phase 3 ❌ in the issue comment (per `SKILL.md`), tear down
-(below) anyway, and fall back to code-analysis-only for Phases 4–5. This is an environment failure,
-not evidence the bug doesn't reproduce.
+If it never becomes healthy (the loop above gives up after ~2 minutes): mark Phase 3 ❌ in the
+issue comment (per `SKILL.md`), tear down (below) anyway, and fall back to code-analysis-only for
+Phases 4–5. This is an environment failure, not evidence the bug doesn't reproduce.
 
 **For UI bugs specifically**, also confirm Tasklist/Operate actually render before trusting the
 environment — health can report UP while the web UI itself 500s on a stale or partial build:
@@ -210,9 +219,12 @@ npx playwright test tests/tasklist/user-task-permission-management.spec.ts \
 real failure as a pass in the summary — you want each repeat's true outcome, not a retried one.
 
 Screenshots (`screenshot: 'only-on-failure'` is already configured) and traces land under
-`test-results/` — embed the relevant screenshot directly in the GitHub issue comment (upload via
-`gh api` issue-comment attachment support or reference the failure trace path) rather than just
-describing what it shows.
+`test-results/` locally — these aren't reachable from the issue comment (no `gh api` endpoint
+uploads an image and returns an embeddable URL, and a local path means nothing to an issue
+reader), so don't reference either as if they were. Instead, describe the failure precisely in
+text: quote the actual-vs-expected assertion output from the test's console log, and mention
+that the full screenshot/trace is available locally under `test-results/` for anyone who checks
+out the branch and re-runs it.
 
 ## Method: Generated API script (API/behavior bugs)
 
@@ -247,18 +259,18 @@ run the whole `qa/acceptance-tests` suite per backend, that's what CI's full mat
 
 ```bash
 # RDBMS (H2, no external services needed)
-./mvnw verify -pl qa/acceptance-tests -Dit.test=<TestClass>#<method> \
+./mvnw verify -pl qa/acceptance-tests -Pmulti-db-test -Dit.test=<TestClass>#<method> \
   -Dtest.integration.camunda.database.type=rdbms_h2 -DskipTests=false -DskipUTs -Dquickly
 
 # Elasticsearch — bring the container up first
 docker compose -f db/docker-compose.yml up -d elasticsearch
-./mvnw verify -pl qa/acceptance-tests -Dit.test=<TestClass>#<method> \
+./mvnw verify -pl qa/acceptance-tests -Pmulti-db-test -Dit.test=<TestClass>#<method> \
   -Dtest.integration.camunda.database.type=es -DskipTests=false -DskipUTs -Dquickly
 docker compose -f db/docker-compose.yml down
 
 # OpenSearch — same pattern, different service/value
 docker compose -f db/docker-compose.yml up -d opensearch
-./mvnw verify -pl qa/acceptance-tests -Dit.test=<TestClass>#<method> \
+./mvnw verify -pl qa/acceptance-tests -Pmulti-db-test -Dit.test=<TestClass>#<method> \
   -Dtest.integration.camunda.database.type=os -DskipTests=false -DskipUTs -Dquickly
 docker compose -f db/docker-compose.yml down
 ```

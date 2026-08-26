@@ -58,11 +58,11 @@ combined. A fix cannot score higher than its weakest input.
 | Fix validation (Phase 5)        | All 6 checks pass                                     | 5 of 6 pass, the failing one is minor (e.g. pattern check inconclusive because no prior similar fix exists) | Any of static/semantic checks fail, simulation doesn't clearly resolve the repro, or the backend-parity check fails (fix doesn't cover every backend the bug reproduces on) |
 
 Combine by taking the **minimum** across the three inputs, then apply the diff-size gate from
-`SKILL.md`'s Hard rule 5 (≥ 1000 estimated lines caps the *decision*, not the score, at Medium
+`SKILL.md`'s Hard rule 6 (≥ 1000 estimated lines caps the *decision*, not the score, at Medium
 treatment).
 
 Always name the weakest input in the report — "Medium confidence: root cause is clear and the fix
-passes all four validation checks, but reproduction was not possible without production logs" is a
+passes all six validation checks, but reproduction was not possible without production logs" is a
 useful report; "confidence: Medium" alone is not.
 
 ## What "logs would help" means in practice
@@ -75,5 +75,5 @@ provide more info":
 > `<condition>` is true. Broker logs around the failure timestamp would confirm whether that
 > condition held — this would move confidence from Medium to High.
 
-This is strictly informational. Per `SKILL.md` Hard rule 3, never pause the investigation or wait
+This is strictly informational. Per `SKILL.md` Hard rule 4, never pause the investigation or wait
 for a response before finishing the report.
