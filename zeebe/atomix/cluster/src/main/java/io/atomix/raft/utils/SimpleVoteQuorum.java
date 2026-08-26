@@ -28,17 +28,28 @@ public class SimpleVoteQuorum implements VoteQuorum {
   private final int totalMembers;
   private final int quorum;
   private final Map<MemberId, VoteErrorStatus> failedStatuses;
+  private final String name;
 
   /**
    * @param callback will be called with the result of the vote, either true or false.
    * @param members All members participating, including the local member.
    */
   public SimpleVoteQuorum(final Consumer<Boolean> callback, final Collection<MemberId> members) {
+    this(callback, members, "Quorum");
+  }
+
+  /**
+   * @param name identifies this quorum in failure reports, e.g. to tell the old and new
+   *     configuration apart during joint consensus.
+   */
+  public SimpleVoteQuorum(
+      final Consumer<Boolean> callback, final Collection<MemberId> members, final String name) {
     this.callback = callback;
     this.members = new HashSet<>(members);
     failedStatuses = new HashMap<>();
     totalMembers = members.size();
     quorum = members.size() / 2 + 1;
+    this.name = name;
   }
 
   @Override
@@ -76,7 +87,8 @@ public class SimpleVoteQuorum implements VoteQuorum {
         complete = true;
         LOG.atLevel(reportLevel())
             .log(
-                "Quorum failed with {}/{} failed members: {}",
+                "{} failed with {}/{} failed members: {}",
+                name,
                 failedStatuses.size(),
                 totalMembers,
                 failedStatuses);

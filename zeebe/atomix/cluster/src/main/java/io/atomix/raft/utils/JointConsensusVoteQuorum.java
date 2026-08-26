@@ -24,8 +24,8 @@ public class JointConsensusVoteQuorum implements VoteQuorum {
       final Consumer<Boolean> callback,
       final Collection<MemberId> oldMembers,
       final Collection<MemberId> newMembers) {
-    oldQuorum = new SimpleVoteQuorum(this::finishOldQuorum, oldMembers);
-    newQuorum = new SimpleVoteQuorum(this::finishNewQuorum, newMembers);
+    oldQuorum = new SimpleVoteQuorum(this::finishOldQuorum, oldMembers, "Old configuration quorum");
+    newQuorum = new SimpleVoteQuorum(this::finishNewQuorum, newMembers, "New configuration quorum");
     this.callback = callback;
   }
 
@@ -57,6 +57,10 @@ public class JointConsensusVoteQuorum implements VoteQuorum {
       callback.accept(true);
     } else if (oldState == State.Failed || newState == State.Failed) {
       completed = true;
+      // the joint election is decided; stop the still-pending sub-quorum from processing and
+      // reporting responses for an election that is already over
+      oldQuorum.cancel();
+      newQuorum.cancel();
       callback.accept(false);
     }
   }
