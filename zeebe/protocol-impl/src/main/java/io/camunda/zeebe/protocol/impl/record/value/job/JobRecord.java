@@ -724,7 +724,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
    *     attribution (jobs deployed on 8.9 with this job type and no resolved agent definition still
    *     need attribution). Every other agentic decision uses whether the job's element has a
    *     resolved agent definition instead. Remove once no supported version relies on this prefix
-   *     rule anymore, and affected processes have been redeployed with changed content.
+   *     rule anymore, and affected processes have been redeployed with changed content. Tracked in
+   *     https://github.com/camunda/camunda/issues/60860.
    */
   @Deprecated
   @JsonIgnore
