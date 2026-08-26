@@ -12,5 +12,9 @@ import java.util.concurrent.CompletableFuture;
 public interface SnapshotRepository {
   void deleteOptimizeSnapshots(final Long backupId);
 
+  /**
+   * The returned future always completes normally, even if snapshot creation fails - failures are
+   * logged internally.
+   */
   CompletableFuture<Void> triggerSnapshot(final String snapshotName, final String[] indexNames);
 }
