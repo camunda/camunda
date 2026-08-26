@@ -300,7 +300,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   c8-orchestration-cluster-api-tests-rdbms:
-    if: ${{ needs.validate-branch.outputs.base == 'stable/8.9' || needs.validate-branch.outputs.base == 'main' }}
+    if: ${{ contains(fromJSON('["stable/8.9","stable/8.10","main"]'), needs.validate-branch.outputs.base) }}
     name: C8 Orchestration Cluster API Tests (H2/RDBMS, Mode ${{ matrix.camunda_mode }})
     needs: validate-branch
     runs-on: ubuntu-latest
@@ -309,7 +309,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        camunda_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.9' || needs.validate-branch.outputs.base == 'main') && '["profiles","all-in-one"]' || '["profiles"]' ) }}
+        camunda_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.9' || needs.validate-branch.outputs.base == 'main' || needs.validate-branch.outputs.base == 'stable/8.10') && '["profiles","all-in-one"]' || '["profiles"]' ) }}
     steps:
       - name: Print input and base branch
         shell: bash
@@ -506,7 +506,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tasklist_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.6' || needs.validate-branch.outputs.base == 'stable/8.7') && '["v1"]' || needs.validate-branch.outputs.base == 'main' && '["v2"]' || '["v1","v2"]' ) }}
+        tasklist_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.6' || needs.validate-branch.outputs.base == 'stable/8.7') && '["v1"]' || (needs.validate-branch.outputs.base == 'stable/8.8' || needs.validate-branch.outputs.base == 'stable/8.9') && '["v1","v2"]' || '["v2"]' ) }}
         camunda_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.9' || needs.validate-branch.outputs.base == 'main') && '["profiles","all-in-one"]' || '["profiles"]' ) }}
     needs: [validate-branch]
     runs-on: ubuntu-latest
