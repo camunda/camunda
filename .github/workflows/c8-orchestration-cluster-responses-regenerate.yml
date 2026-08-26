@@ -1,6 +1,6 @@
 # description: Regenerates two OpenAPI-derived, checked-in artifacts for the C8
 #              Orchestration Cluster E2E test suite across all supported refs
-#              (main, stable/8.9, stable/8.8) via a matrix:
+#              (main, stable/8.10, stable/8.9, stable/8.8) via a matrix:
 #                - json-body-assertions/_generated/responses.json, via
 #                  `npm run responses:regenerate`
 #                - utils/_generated/apiPaths.ts (the `ApiPath` union consumed by
@@ -47,13 +47,15 @@ jobs:
         include:
           - ref: main
             safe: main
+          - ref: stable/8.10
+            safe: stable-8.10
           - ref: stable/8.9
             safe: stable-8.9
           - ref: stable/8.8
             safe: stable-8.8
 
     # Serialise per ref (not across the whole matrix), so two runs of the same
-    # branch never collide but the three refs still run in parallel.
+    # branch never collide but the refs still run in parallel.
     concurrency:
       group: responses-regenerate-${{ matrix.safe }}
       cancel-in-progress: false
