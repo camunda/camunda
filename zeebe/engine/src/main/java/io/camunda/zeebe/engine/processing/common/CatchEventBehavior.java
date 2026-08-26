@@ -705,7 +705,8 @@ public final class CatchEventBehavior {
         elementInstanceKey,
         processDefinitionKey,
         messageName,
-        tenantId);
+        tenantId,
+        -1L);
   }
 
   private boolean sendOpenMessageSubscription(

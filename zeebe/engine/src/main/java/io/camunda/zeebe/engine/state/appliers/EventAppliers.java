@@ -732,6 +732,10 @@ public final class EventAppliers implements EventApplier {
         ProcessMessageSubscriptionIntent.CREATING,
         new ProcessMessageSubscriptionCreatingApplier(subscriptionState));
     register(
+        ProcessMessageSubscriptionIntent.CREATING,
+        2,
+        new ProcessMessageSubscriptionCreatingV2Applier(subscriptionState));
+    register(
         ProcessMessageSubscriptionIntent.CREATED,
         new ProcessMessageSubscriptionCreatedApplier(subscriptionState));
     register(

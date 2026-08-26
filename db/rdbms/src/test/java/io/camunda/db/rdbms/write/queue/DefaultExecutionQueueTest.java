@@ -549,6 +549,36 @@ class DefaultExecutionQueueTest {
     verify(session).update(eq("statement3"), any());
   }
 
+  @Test
+  public void shouldPreserveInsertionOrderForMessageSubscriptions() {
+    // given - a CORRELATED update queued before the suspend-restore CREATED upsert (INSERT-typed)
+    // for the same row, mirroring a reusable subscription that correlated and is then restored on
+    // suspend within one flush
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.MESSAGE_SUBSCRIPTION,
+            WriteStatementType.UPDATE,
+            1L,
+            "ms.update",
+            "correlated"));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.MESSAGE_SUBSCRIPTION,
+            WriteStatementType.INSERT,
+            1L,
+            "ms.createIfNotExists",
+            "created"));
+
+    // when
+    executionQueue.flush();
+
+    // then - insertion order is preserved, so the later CREATED restore wins. Under the default
+    // INSERT-before-UPDATE sort the upsert would run first and leave the row stale as CORRELATED.
+    final var inOrder = Mockito.inOrder(session);
+    inOrder.verify(session).update(eq("ms.update"), any());
+    inOrder.verify(session).update(eq("ms.createIfNotExists"), any());
+  }
+
   @ParameterizedTest
   @CsvSource({
     // statementId, expectedResult

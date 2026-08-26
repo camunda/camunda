@@ -31,7 +31,14 @@ public enum ContextType {
   JOB(false),
   JOB_METRICS_BATCH(false),
   MAPPING_RULE(false),
-  MESSAGE_SUBSCRIPTION(false),
+  // the suspend/resume restore re-emits CREATED (createIfNotExists, an INSERT-typed upsert) on a
+  // row that may already be CORRELATED (an UPDATE). The default INSERT-before-UPDATE sort would run
+  // the restore-CREATED upsert before an earlier-queued CORRELATED update in the same flush,
+  // leaving
+  // the row stale as CORRELATED. Preserve insertion order so the later engine event wins; the
+  // normal
+  // create-before-update order is insertion order too, so it stays correct.
+  MESSAGE_SUBSCRIPTION(true),
   // draining-deletion issues markDraining and markDeleted as two UPDATEs on the same row, their
   // order must be preserved so the state is updated correctly
   PROCESS_DEFINITION(true),
