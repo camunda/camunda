@@ -56,6 +56,12 @@ ADR for that domain is written.
   `TenantFilter`, and `MappingRuleFilter`; Identity entities are filtered by their
   business string IDs only, with `AuthorizationFilter.authorizationKey` and sort
   fields explicitly out of scope (camunda/camunda#41657).
+- `storage/002-per-index-shard-configuration.md` — the global `number-of-shards`
+  knob no longer applies to `index/` indices; the descriptor hierarchy is the
+  single source of per-index shard defaults (the single-shard-by-design
+  taxonomy), explicit config always wins, and `number-of-shards-per-index`
+  becomes a typed POJO so it binds from environment variables
+  (camunda/camunda#56246, camunda/camunda#56245, camunda/camunda#56117).
 - `security/002-tenant-access-provider-ownership-and-seam.md` — CSL `core` owns
   the concrete tenant-access provider and the `TenantOwnedEntity` contract; a
   uniform `TenantAccessProvider` seam across the read (search) and write
