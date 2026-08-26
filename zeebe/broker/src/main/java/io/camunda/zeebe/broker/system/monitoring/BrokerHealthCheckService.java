@@ -157,8 +157,11 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     if (partitionInstallStatus == null) {
       partitionInstallStatus = new ConcurrentHashMap<>();
     }
-    // put, not putIfAbsent: entering recovery from processing mode must override a partition that
-    // was still installing, since readiness in recovery does not depend on Raft roles
+    // Clear this tenant's previous entries first: its partition manager may have stopped for the
+    // mode transition without unregistering (e.g. a processing-mode manager never does), leaving
+    // a still-installing ("false") or now-stale partition behind. Left in place, that entry would
+    // permanently block isBrokerReady() even though recovery does not depend on Raft roles.
+    partitionInstallStatus.keySet().removeIf(id -> id.group().equals(physicalTenantId));
     partitions.forEach(partitionId -> partitionInstallStatus.put(partitionId, true));
     actor.run(this::logBrokerReadyOnce);
   }
