@@ -130,6 +130,7 @@
 
 # Performance + Load testing
 /.github/renovate/team-reliability-testing.json5 @camunda/reliability-testing
+/.github/scripts/load-test* @camunda/reliability-testing
 /.github/workflows/*load-test*.yml @camunda/reliability-testing
 /.tool-versions @camunda/reliability-testing
 /load-tests/ @camunda/reliability-testing
