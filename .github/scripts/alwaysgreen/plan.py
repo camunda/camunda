@@ -57,13 +57,16 @@ PR_LOCK_TTL_DAYS = 2
 
 
 def pr_lock_expired(
-    created_at: str, now: datetime, ttl_days: int = PR_LOCK_TTL_DAYS
+    created_at: str | None, now: datetime, ttl_days: int = PR_LOCK_TTL_DAYS
 ) -> bool:
     """Whether an open fix PR is too old to keep holding its dispatch key.
 
     A missing or unparseable timestamp keeps the lock, and `ttl_days <= 0` disables
     expiry altogether: the bias matches the `ok` flags in discover's key lookups,
     where an unproven state suppresses rather than risks a duplicate PR.
+
+    Either timestamp is read as UTC when it carries no offset, so a naive `now` does
+    not raise against GitHub's offset-aware `createdAt`.
     """
     if ttl_days <= 0:
         return False
@@ -76,6 +79,8 @@ def pr_lock_expired(
         return False
     if created.tzinfo is None:
         created = created.replace(tzinfo=timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
     return now - created > timedelta(days=ttl_days)
 
 

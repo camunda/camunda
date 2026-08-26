@@ -508,8 +508,14 @@ def test_unreadable_timestamp_keeps_the_lock():
         assert plan.pr_lock_expired(value, NOW, 2) is False
 
 
-def test_naive_timestamp_is_read_as_utc():
+def test_naive_created_at_is_read_as_utc():
     assert plan.pr_lock_expired("2026-08-20T14:56:44", NOW, 2) is True
+
+
+def test_naive_now_does_not_raise_against_an_offset_aware_created_at():
+    naive_now = NOW.replace(tzinfo=None)
+    assert plan.pr_lock_expired("2026-08-20T14:56:44Z", naive_now, 2) is True
+    assert plan.pr_lock_expired(_ago(hours=6), naive_now, 2) is False
 
 
 def test_zero_ttl_restores_the_never_expiring_lock():
