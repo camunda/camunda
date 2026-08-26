@@ -39,6 +39,11 @@ FIX_LABEL = os.environ.get("ALWAYSGREEN_FIX_LABEL", "alwaysgreen-fix")
 KEY_LABEL_PREFIX = "alwaysgreen-key:"
 #: How long a no-fix verdict keeps its fingerprints out of dispatch.
 NO_FIX_COOLDOWN_DAYS = int(os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS", "7"))
+#: How long an open fix PR keeps holding its dispatch key; see
+#: planning.PR_LOCK_TTL_DAYS. Set to 0 to restore the old never-expiring lock.
+PR_LOCK_TTL_DAYS = int(
+    os.environ.get("ALWAYSGREEN_PR_LOCK_TTL_DAYS", str(planning.PR_LOCK_TTL_DAYS))
+)
 #: Cap on artifact downloads while reading past verdicts, so a burst of agent runs
 #: cannot make triage slow.
 NO_FIX_MAX_RUNS = 20
@@ -350,17 +355,22 @@ def open_fix_pr_keys() -> tuple[set[str], bool]:
     stamps, not from the PR body: the body's coverage block is written by the agent
     and cannot be relied on to exist.
 
+    A PR past PR_LOCK_TTL_DAYS stops holding its key, so a fix PR left unreviewed
+    cannot wedge its surface shut for good; `covered_fingerprints` still suppresses a
+    repeat of the specs it already claims.
+
     Returns (keys, ok). As with `inflight_keys`, a failed lookup makes the caller
     suppress rather than risk a duplicate PR.
     """
     out: set[str] = set()
     ok = True
+    now = datetime.now(timezone.utc)
     for repo in FIX_PR_REPOS:
         prs, err = gh_json_ex(
             [
                 "pr", "list", "--repo", repo,
                 "--search", f"label:{FIX_LABEL} is:open",
-                "--limit", "100", "--json", "labels",
+                "--limit", "100", "--json", "labels,number,createdAt",
             ],
             None,
         )
@@ -369,12 +379,24 @@ def open_fix_pr_keys() -> tuple[set[str], bool]:
             ok = False
             continue
         for pr in prs if isinstance(prs, list) else []:
+            keys: set[str] = set()
             for label in pr.get("labels") or []:
                 name = (label.get("name") or "").strip()
                 if name.startswith(KEY_LABEL_PREFIX):
                     key = name[len(KEY_LABEL_PREFIX) :].strip()
                     if key:
-                        out.add(key)
+                        keys.add(key)
+            if not keys:
+                continue
+            if planning.pr_lock_expired(
+                pr.get("createdAt") or "", now, PR_LOCK_TTL_DAYS
+            ):
+                log(
+                    f"lock expired after {PR_LOCK_TTL_DAYS}d: {repo}#{pr.get('number')} "
+                    f"no longer holds {', '.join(sorted(keys))}"
+                )
+                continue
+            out |= keys
     return out, ok
 
 
@@ -631,6 +653,9 @@ def serialise(result: planning.Plan, blame: classify.Blame, run_id: str) -> dict
                 "surface": c.surface,
                 "dispatch_key": c.key,
                 "job_name": classify.job_leaf_name(c.job_name),
+                "also_failing_jobs": [
+                    classify.job_leaf_name(n) for n in c.also_failing_jobs
+                ],
                 "evidence_run_url": c.evidence_run_url,
                 "evidence_repo": c.evidence_repo,
                 "job_level": c.job_level,
