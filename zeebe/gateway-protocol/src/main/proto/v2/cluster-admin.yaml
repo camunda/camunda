@@ -78,6 +78,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ClusterStatusResponse'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/topology:
     servers:
@@ -126,6 +127,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/exporting:
     servers:
@@ -178,6 +180,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/exporting/pause:
     servers:
@@ -231,6 +234,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/exporting/resume:
     servers:
@@ -276,6 +280,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/mode:
     servers:
@@ -342,6 +347,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/restore:
     servers:
@@ -423,6 +429,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/backups/runtime:
     servers:
@@ -562,6 +569,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ClusterTakeRuntimeBackupResponse'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
     get:
       x-eventually-consistent: false
       tags:
@@ -629,6 +637,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/backups/runtime/state:
     servers:
@@ -694,6 +703,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
     delete:
       x-eventually-consistent: false
       tags:
@@ -744,6 +754,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/backups/runtime/state/sync:
     servers:
@@ -816,6 +827,7 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/backups/runtime/{backupId}:
     servers:
@@ -891,6 +903,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
     delete:
       x-eventually-consistent: false
       tags:
@@ -951,6 +964,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/backups/history:
     servers:
@@ -1044,6 +1058,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
     get:
       x-eventually-consistent: false
       tags:
@@ -1124,6 +1139,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/backups/history/{backupId}:
     servers:
@@ -1201,6 +1217,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
     delete:
       x-eventually-consistent: false
       tags:
@@ -1280,6 +1297,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/rebalance:
     servers:
@@ -1374,6 +1392,7 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
     get:
       x-eventually-consistent: false
       tags:
@@ -1425,6 +1444,7 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
     delete:
       x-eventually-consistent: false
       tags:
@@ -1480,6 +1500,7 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
 ## Schema definitions
 

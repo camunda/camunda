@@ -12,6 +12,7 @@ functions:
   - verifyResponsePropertiesRequired
   - verifyDeprecatedEnumMembers
   - verifyAddedInVersion
+  - verifyScope
   - verifySemanticKindsRegistered
   - verifyNoAmbiguousIdentifierProperty
   - verifySecurityDeclared
@@ -161,6 +162,19 @@ rules:
     message: "{{error}}"
     then:
       function: verifyAddedInVersion
+
+  # ── x-scope (camunda/camunda#61157) ──
+  # Marks whether an operation is cluster-wide or scoped to a single physical
+  # tenant, so the docs API reference can render a scope badge without
+  # fragmenting the existing tag-based grouping. See
+  # https://github.com/camunda/camunda-docs/issues/8886#issuecomment-5414815612.
+  require-scope:
+    description: "Every operation must have a valid `x-scope` (`cluster-wide` or `physical-tenant`)."
+    severity: error
+    given: $.paths[*][*]
+    message: "{{error}}"
+    then:
+      function: verifyScope
 
   # ── x-required-permissions (camunda/camunda#54727) ──
   # Canonical endpoint -> required-permission(s) binding. Two rules:
