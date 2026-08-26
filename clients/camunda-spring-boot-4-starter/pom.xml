@@ -137,6 +137,13 @@
           <compilerArgs>
             <arg>-parameters</arg>
           </compilerArgs>
+          <testExcludes>
+            <!-- Exclude test that uses org.springframework.boot.actuate.health, which is the
+                 Spring Boot 3.x package; camunda-spring-boot-starter's own
+                 CamundaClientHealthIndicator targets Spring Boot 3.x, while this module's local
+                 override under org.springframework.boot.health.contributor targets Spring Boot 4.x -->
+            <exclude>io/camunda/client/spring/actuator/CamundaClientHealthIndicatorTest.java</exclude>
+          </testExcludes>
         </configuration>
       </plugin>
 
