@@ -797,6 +797,8 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
             .waitUntil()
             .taskIsCreated("subProcessTask")
             .and()
+            .taskVariableExists("processVar")
+            .and()
             .getAllTasks();
     final String taskId = response.get("$.data.tasks[0].id");
 
