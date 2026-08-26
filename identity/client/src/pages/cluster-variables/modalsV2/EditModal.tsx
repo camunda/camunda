@@ -108,6 +108,7 @@ const EditModal: FC<UseEntityModalProps<ClusterVariable>> = ({
             label={t("clusterVariableDetailsValue")}
             errors={fieldState.error?.message}
             beautify
+            autoFocus
           />
         )}
       />

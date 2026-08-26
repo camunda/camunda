@@ -25,6 +25,7 @@ type JSONEditorProps = {
   value: string;
   onChange?: (value: string) => void;
   readOnly?: boolean;
+  autoFocus?: boolean;
   onValidate?: (isValid: boolean) => void;
   onMount?: (editor: {
     showMarkers: () => void;
@@ -37,6 +38,7 @@ const JSONEditor: FC<JSONEditorProps> = observer(
     value,
     onChange,
     readOnly = false,
+    autoFocus = false,
     onValidate = () => {},
     onMount = () => {},
   }) => {
@@ -52,7 +54,9 @@ const JSONEditor: FC<JSONEditorProps> = observer(
           onChange?.(value ?? "");
         }}
         onMount={(editor, monaco) => {
-          editor.focus();
+          if (autoFocus) {
+            editor.focus();
+          }
 
           onMount({
             showMarkers: () => {
@@ -83,6 +87,7 @@ type JSONEditorFieldProps = {
   value: string;
   errors?: string[] | string;
   readOnly?: boolean;
+  autoFocus?: boolean;
   onChange?: (newValue: string) => void;
   beautify?: boolean;
   copy?: boolean;
@@ -94,6 +99,7 @@ const JSONEditorField: FC<JSONEditorFieldProps> = ({
   value,
   errors = [],
   readOnly = false,
+  autoFocus = false,
   onChange,
   beautify = false,
   copy = false,
@@ -167,6 +173,7 @@ const JSONEditorField: FC<JSONEditorFieldProps> = ({
         value={value}
         onChange={onChange}
         readOnly={readOnly}
+        autoFocus={autoFocus}
         onValidate={setIsValid}
         onMount={(editor) => {
           editorRef.current = editor;
