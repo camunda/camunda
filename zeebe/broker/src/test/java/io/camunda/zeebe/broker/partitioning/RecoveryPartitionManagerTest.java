@@ -115,7 +115,7 @@ final class RecoveryPartitionManagerTest {
     // observe the readiness and health the recovery manager reports to the broker probes
     healthCheckService =
         new BrokerHealthCheckService(
-            MemberId.from("0"), new HealthTreeMetrics(new SimpleMeterRegistry()), Set.of(GROUP));
+            MemberId.from("0"), new HealthTreeMetrics(meterRegistry), Set.of(GROUP));
     actorScheduler.submitActor(healthCheckService).join();
     healthCheckService.setBrokerStarted();
 
