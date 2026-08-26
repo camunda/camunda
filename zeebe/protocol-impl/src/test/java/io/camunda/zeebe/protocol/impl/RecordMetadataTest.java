@@ -11,11 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.RecordMetadataEncoder;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;

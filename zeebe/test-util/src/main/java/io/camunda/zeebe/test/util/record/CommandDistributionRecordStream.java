@@ -8,8 +8,8 @@
 package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import java.util.stream.Stream;
 

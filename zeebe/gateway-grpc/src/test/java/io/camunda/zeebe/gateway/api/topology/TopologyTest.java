@@ -17,7 +17,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBr
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
-import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import io.camunda.zeebe.protocol.record.sbe.PartitionHealthStatus;
 import java.util.Optional;
 import org.junit.Test;
 

@@ -8,7 +8,7 @@
   -->
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude"
-  package="io.atomix.cluster.messaging" id="10" version="2"
+  package="io.atomix.cluster.messaging.sbe" id="10" version="2"
   semanticVersion="0.1.0" description="Broker messages" byteOrder="littleEndian"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://fixprotocol.io/2016/sbe http://fixprotocol.io/2016/sbe/sbe.xsd">

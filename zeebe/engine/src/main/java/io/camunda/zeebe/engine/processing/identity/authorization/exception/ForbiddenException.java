@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.identity.authorization.exception;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
-import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
 
 /**
  * Signals that an authorization check failed, provides a user-facing error message derived from the

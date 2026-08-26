@@ -13,10 +13,10 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.protocol.record.BrokerInfoEncoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
-import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
-import io.camunda.zeebe.protocol.record.PartitionRole;
+import io.camunda.zeebe.protocol.record.sbe.BrokerInfoEncoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.sbe.PartitionHealthStatus;
+import io.camunda.zeebe.protocol.record.sbe.PartitionRole;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;

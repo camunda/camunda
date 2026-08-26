@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableSignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;

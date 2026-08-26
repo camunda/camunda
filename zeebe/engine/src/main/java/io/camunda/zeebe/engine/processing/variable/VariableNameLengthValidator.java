@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.variable;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
 import io.camunda.zeebe.util.Either;
 import org.agrona.DirectBuffer;
 

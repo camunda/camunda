@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl.metrics;
 
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.stream.impl.ProcessingStateMachine.ErrorHandlingPhase;
 import io.camunda.zeebe.stream.impl.metrics.StreamMetricsDoc.ErrorHandlingPhaseKeys;
 import io.camunda.zeebe.stream.impl.metrics.StreamMetricsDoc.ProcessingDurationKeys;

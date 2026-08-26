@@ -13,8 +13,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.util.SemanticVersion;
 import java.util.Collections;
 import java.util.List;

@@ -14,11 +14,11 @@ import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -193,7 +193,7 @@ public class CreateAuthorizationMultipartitionTest {
 
     // then
     assertThat(rejection.getRejectionType())
-        .isEqualTo(io.camunda.zeebe.protocol.record.RejectionType.NOT_FOUND);
+        .isEqualTo(io.camunda.zeebe.protocol.record.sbe.RejectionType.NOT_FOUND);
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
             "Expected to create or update authorization with ownerId or resourceId '%s', but a mapping rule with this ID does not exist."

@@ -14,8 +14,8 @@ import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.exporter.rdbms.utils.ExportUtil;
 import io.camunda.search.entities.AgentDefinitionEntity.AgentType;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.AgentDefinitionRecordValue;
 import java.util.Set;
 

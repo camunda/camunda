@@ -20,7 +20,7 @@ import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;

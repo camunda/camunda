@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
-import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.ErrorCode;
 
 public interface ClientStreamMetrics {
   /** Invoked whenever the count of known servers in the registry changes */

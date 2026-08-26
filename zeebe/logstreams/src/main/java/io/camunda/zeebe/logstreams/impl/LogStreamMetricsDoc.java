@@ -454,7 +454,7 @@ public enum LogStreamMetricsDoc implements ExtendedMeterDocumentation {
   public enum RecordAppendedKeyNames implements KeyName {
     /**
      * The record type of the appended record; see {@link
-     * io.camunda.zeebe.protocol.record.RecordType} for possible values
+     * io.camunda.zeebe.protocol.record.sbe.RecordType} for possible values
      */
     RECORD_TYPE {
       @Override
@@ -465,7 +465,7 @@ public enum LogStreamMetricsDoc implements ExtendedMeterDocumentation {
 
     /**
      * The value type of the record value of the appended record; see {@link
-     * io.camunda.zeebe.protocol.record.ValueType} for possible values
+     * io.camunda.zeebe.protocol.record.sbe.ValueType} for possible values
      */
     VALUE_TYPE {
       @Override

@@ -11,10 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.stream.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;

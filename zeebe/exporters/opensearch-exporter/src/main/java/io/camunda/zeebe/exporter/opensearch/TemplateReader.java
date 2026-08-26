@@ -9,7 +9,7 @@ package io.camunda.zeebe.exporter.opensearch;
 
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
 import jakarta.json.stream.JsonParser;
 import java.io.IOException;

@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record;
 
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.EnumSet;
 import java.util.stream.Stream;
 

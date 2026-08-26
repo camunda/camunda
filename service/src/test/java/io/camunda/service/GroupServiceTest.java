@@ -33,8 +33,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberReque
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;

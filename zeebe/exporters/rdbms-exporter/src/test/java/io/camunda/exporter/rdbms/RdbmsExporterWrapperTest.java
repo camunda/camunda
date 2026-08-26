@@ -48,7 +48,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantEntityAuditL
 import io.camunda.zeebe.exporter.common.auditlog.transformers.UserAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.UserTaskAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.VariableAddUpdateAuditLogTransformer;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;

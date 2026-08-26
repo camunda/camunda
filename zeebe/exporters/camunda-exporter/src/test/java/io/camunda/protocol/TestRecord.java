@@ -8,12 +8,12 @@
 package io.camunda.protocol;
 
 import io.camunda.zeebe.protocol.record.Agent;
-import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.ChannelType;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.Map;
 
 public record TestRecord(long position, ValueType valueType) implements Record<TestValue> {

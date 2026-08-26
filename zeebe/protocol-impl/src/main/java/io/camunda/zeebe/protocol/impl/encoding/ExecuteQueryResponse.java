@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
-import io.camunda.zeebe.protocol.record.ExecuteQueryResponseDecoder;
-import io.camunda.zeebe.protocol.record.ExecuteQueryResponseEncoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.sbe.ExecuteQueryResponseDecoder;
+import io.camunda.zeebe.protocol.record.sbe.ExecuteQueryResponseEncoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderEncoder;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;

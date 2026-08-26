@@ -14,8 +14,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobTimeoutReques
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import org.junit.Test;
 
 public class UpdateJobTimeoutTest extends GatewayTest {

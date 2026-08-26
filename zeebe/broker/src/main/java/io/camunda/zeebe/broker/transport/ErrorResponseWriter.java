@@ -12,9 +12,9 @@ import static java.lang.String.format;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
-import io.camunda.zeebe.protocol.record.ErrorCode;
-import io.camunda.zeebe.protocol.record.ErrorResponseEncoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.sbe.ErrorCode;
+import io.camunda.zeebe.protocol.record.sbe.ErrorResponseEncoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderEncoder;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;
 import io.camunda.zeebe.util.EnsureUtil;

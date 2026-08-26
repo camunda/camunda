@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
-import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.ExecuteCommandRequestDecoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import java.util.Map;

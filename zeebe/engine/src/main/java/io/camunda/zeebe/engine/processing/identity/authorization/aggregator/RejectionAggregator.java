@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.identity.authorization.aggregator;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.result.AuthorizationRejection;
-import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;

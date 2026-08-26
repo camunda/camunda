@@ -14,8 +14,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import org.junit.jupiter.api.Test;
 

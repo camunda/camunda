@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
-import static io.camunda.zeebe.protocol.record.RecordType.COMMAND;
-import static io.camunda.zeebe.protocol.record.RecordType.COMMAND_REJECTION;
-import static io.camunda.zeebe.protocol.record.RecordType.EVENT;
+import static io.camunda.zeebe.protocol.record.sbe.RecordType.COMMAND;
+import static io.camunda.zeebe.protocol.record.sbe.RecordType.COMMAND_REJECTION;
+import static io.camunda.zeebe.protocol.record.sbe.RecordType.EVENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 

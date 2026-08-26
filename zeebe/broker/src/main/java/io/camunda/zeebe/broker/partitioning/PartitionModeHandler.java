@@ -12,8 +12,8 @@ import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.Mode;
-import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
-import io.camunda.zeebe.protocol.record.PartitionRole;
+import io.camunda.zeebe.protocol.record.sbe.PartitionHealthStatus;
+import io.camunda.zeebe.protocol.record.sbe.PartitionRole;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;

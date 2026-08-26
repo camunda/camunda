@@ -7,29 +7,29 @@
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
-import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.clusterSizeNullValue;
-import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.nodeIdNullValue;
-import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.partitionGroupHeaderLength;
-import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.versionHeaderLength;
-import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.zoneHeaderLength;
+import static io.camunda.zeebe.protocol.record.sbe.BrokerInfoEncoder.clusterSizeNullValue;
+import static io.camunda.zeebe.protocol.record.sbe.BrokerInfoEncoder.nodeIdNullValue;
+import static io.camunda.zeebe.protocol.record.sbe.BrokerInfoEncoder.partitionGroupHeaderLength;
+import static io.camunda.zeebe.protocol.record.sbe.BrokerInfoEncoder.versionHeaderLength;
+import static io.camunda.zeebe.protocol.record.sbe.BrokerInfoEncoder.zoneHeaderLength;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.protocol.impl.Loggers;
-import io.camunda.zeebe.protocol.record.BrokerInfoDecoder;
-import io.camunda.zeebe.protocol.record.BrokerInfoDecoder.AddressesDecoder;
-import io.camunda.zeebe.protocol.record.BrokerInfoDecoder.PartitionHealthDecoder;
-import io.camunda.zeebe.protocol.record.BrokerInfoDecoder.PartitionLeaderTermsDecoder;
-import io.camunda.zeebe.protocol.record.BrokerInfoDecoder.PartitionRolesDecoder;
-import io.camunda.zeebe.protocol.record.BrokerInfoEncoder;
-import io.camunda.zeebe.protocol.record.BrokerInfoEncoder.AddressesEncoder;
-import io.camunda.zeebe.protocol.record.BrokerInfoEncoder.PartitionHealthEncoder;
-import io.camunda.zeebe.protocol.record.BrokerInfoEncoder.PartitionLeaderTermsEncoder;
-import io.camunda.zeebe.protocol.record.BrokerInfoEncoder.PartitionRolesEncoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
-import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
-import io.camunda.zeebe.protocol.record.PartitionRole;
+import io.camunda.zeebe.protocol.record.sbe.BrokerInfoDecoder;
+import io.camunda.zeebe.protocol.record.sbe.BrokerInfoDecoder.AddressesDecoder;
+import io.camunda.zeebe.protocol.record.sbe.BrokerInfoDecoder.PartitionHealthDecoder;
+import io.camunda.zeebe.protocol.record.sbe.BrokerInfoDecoder.PartitionLeaderTermsDecoder;
+import io.camunda.zeebe.protocol.record.sbe.BrokerInfoDecoder.PartitionRolesDecoder;
+import io.camunda.zeebe.protocol.record.sbe.BrokerInfoEncoder;
+import io.camunda.zeebe.protocol.record.sbe.BrokerInfoEncoder.AddressesEncoder;
+import io.camunda.zeebe.protocol.record.sbe.BrokerInfoEncoder.PartitionHealthEncoder;
+import io.camunda.zeebe.protocol.record.sbe.BrokerInfoEncoder.PartitionLeaderTermsEncoder;
+import io.camunda.zeebe.protocol.record.sbe.BrokerInfoEncoder.PartitionRolesEncoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.sbe.PartitionHealthStatus;
+import io.camunda.zeebe.protocol.record.sbe.PartitionRole;
 import io.camunda.zeebe.util.MemberIdUtil;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;

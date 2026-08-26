@@ -32,7 +32,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse.PartitionBac
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
-import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.sbe.ErrorCode;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Duration;
 import java.time.Instant;

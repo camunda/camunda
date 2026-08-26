@@ -15,7 +15,7 @@ import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplate
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;

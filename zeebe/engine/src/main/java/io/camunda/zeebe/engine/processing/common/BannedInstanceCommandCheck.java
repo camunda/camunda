@@ -11,7 +11,7 @@ import static io.camunda.zeebe.engine.Engine.ERROR_MESSAGE_BANNED_PI;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
-import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.util.Either;
 

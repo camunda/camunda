@@ -18,7 +18,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.PhysicalTenantContext;
-import io.camunda.zeebe.protocol.record.ChannelType;
+import io.camunda.zeebe.protocol.record.sbe.ChannelType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.modelcontextprotocol.common.McpTransportContext;

@@ -12,7 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.isEmpty;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
-import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
+import static io.camunda.zeebe.protocol.record.sbe.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.protocol.model.Changeset;

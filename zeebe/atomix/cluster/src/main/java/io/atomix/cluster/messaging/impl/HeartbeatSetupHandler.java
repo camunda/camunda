@@ -9,14 +9,14 @@ package io.atomix.cluster.messaging.impl;
 
 import static io.atomix.cluster.messaging.SbeUtil.*;
 
-import io.atomix.cluster.messaging.BooleanType;
-import io.atomix.cluster.messaging.HeartbeatSetupRequestDecoder;
-import io.atomix.cluster.messaging.HeartbeatSetupRequestEncoder;
-import io.atomix.cluster.messaging.HeartbeatSetupResponseDecoder;
-import io.atomix.cluster.messaging.HeartbeatSetupResponseEncoder;
-import io.atomix.cluster.messaging.MessageHeaderDecoder;
-import io.atomix.cluster.messaging.MessageHeaderEncoder;
 import io.atomix.cluster.messaging.impl.ProtocolReply.Status;
+import io.atomix.cluster.messaging.sbe.BooleanType;
+import io.atomix.cluster.messaging.sbe.HeartbeatSetupRequestDecoder;
+import io.atomix.cluster.messaging.sbe.HeartbeatSetupRequestEncoder;
+import io.atomix.cluster.messaging.sbe.HeartbeatSetupResponseDecoder;
+import io.atomix.cluster.messaging.sbe.HeartbeatSetupResponseEncoder;
+import io.atomix.cluster.messaging.sbe.MessageHeaderDecoder;
+import io.atomix.cluster.messaging.sbe.MessageHeaderEncoder;
 import io.atomix.utils.net.Address;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;

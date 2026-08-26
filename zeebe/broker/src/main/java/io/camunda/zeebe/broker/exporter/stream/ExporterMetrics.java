@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.exporter.stream;
 
 import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc.ExporterActionKeyNames;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.collection.Table;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;

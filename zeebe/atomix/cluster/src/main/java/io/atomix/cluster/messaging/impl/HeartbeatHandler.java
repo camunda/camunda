@@ -3,12 +3,12 @@
  */
 package io.atomix.cluster.messaging.impl;
 
-import io.atomix.cluster.messaging.HeartbeatRequestEncoder;
-import io.atomix.cluster.messaging.HeartbeatResponseDecoder;
-import io.atomix.cluster.messaging.HeartbeatResponseEncoder;
-import io.atomix.cluster.messaging.MessageHeaderDecoder;
-import io.atomix.cluster.messaging.MessageHeaderEncoder;
 import io.atomix.cluster.messaging.impl.ProtocolReply.Status;
+import io.atomix.cluster.messaging.sbe.HeartbeatRequestEncoder;
+import io.atomix.cluster.messaging.sbe.HeartbeatResponseDecoder;
+import io.atomix.cluster.messaging.sbe.HeartbeatResponseEncoder;
+import io.atomix.cluster.messaging.sbe.MessageHeaderDecoder;
+import io.atomix.cluster.messaging.sbe.MessageHeaderEncoder;
 import io.atomix.utils.net.Address;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;

@@ -8,11 +8,11 @@
 package io.camunda.zeebe.protocol.impl.encoding;
 
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
-import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.sbe.RecordMetadataDecoder;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import org.agrona.DirectBuffer;
 
 /**

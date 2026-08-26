@@ -11,11 +11,11 @@ import static io.camunda.zeebe.util.StringUtil.getBytes;
 import static io.camunda.zeebe.util.VarDataUtil.readBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.sbe.ExecuteCommandResponseDecoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;

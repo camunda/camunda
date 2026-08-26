@@ -20,7 +20,7 @@ import io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe.SnapshotChunkRe
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe.SnapshotRequestSerializer;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe.SnapshotResponseDeserializer;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
-import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;

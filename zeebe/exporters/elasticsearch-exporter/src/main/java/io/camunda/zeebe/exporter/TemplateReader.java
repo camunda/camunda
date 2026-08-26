@@ -10,7 +10,7 @@ package io.camunda.zeebe.exporter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.exporter.dto.Template.MutableCopyBuilder;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.InputStream;

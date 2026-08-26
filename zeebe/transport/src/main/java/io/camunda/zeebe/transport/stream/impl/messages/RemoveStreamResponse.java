@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.transport.stream.impl.messages;
 
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.MessageHeaderDecoder;
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.MessageHeaderEncoder;
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.RemoveStreamResponseDecoder;
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.RemoveStreamResponseEncoder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 

@@ -20,8 +20,8 @@ import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Map;
@@ -119,7 +119,8 @@ class AuditLogExportHandlerTest {
             .setProcessInstanceKey(value.getProcessInstanceKey())
             .setEntityVersion(record.getRecordVersion())
             .setEntityValueType(
-                io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION.value())
+                io.camunda.zeebe.protocol.record.sbe.ValueType.PROCESS_INSTANCE_MODIFICATION
+                    .value())
             .setEntityOperationIntent(
                 io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent.MODIFIED
                     .value())
@@ -175,7 +176,7 @@ class AuditLogExportHandlerTest {
     assertThat(entity.entityVersion()).isEqualTo(record.getRecordVersion());
     assertThat(entity.entityValueType())
         .isEqualTo(
-            io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION.value());
+            io.camunda.zeebe.protocol.record.sbe.ValueType.PROCESS_INSTANCE_MODIFICATION.value());
     assertThat(entity.entityOperationIntent())
         .isEqualTo(
             io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent.MODIFIED
@@ -229,7 +230,8 @@ class AuditLogExportHandlerTest {
             .setProcessInstanceKey(value.getProcessInstanceKey())
             .setEntityVersion(record.getRecordVersion())
             .setEntityValueType(
-                io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION.value())
+                io.camunda.zeebe.protocol.record.sbe.ValueType.PROCESS_INSTANCE_MODIFICATION
+                    .value())
             .setEntityOperationIntent(
                 io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent.MODIFIED
                     .value())

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.jobstream;
 
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
-import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.ErrorCode;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;

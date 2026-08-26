@@ -12,7 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_MISSING_TENANT;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.createProblemDetail;
 import static io.camunda.security.validation.IdentifierValidator.TENANT_ID_MASK;
-import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
+import static io.camunda.zeebe.protocol.record.sbe.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;

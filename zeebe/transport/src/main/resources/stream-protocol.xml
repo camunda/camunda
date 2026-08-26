@@ -7,7 +7,7 @@
   ~ except in compliance with the Camunda License 1.0.
   -->
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
-  xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.transport.stream.impl.messages"
+  xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.transport.stream.impl.messages.sbe"
   id="2" version="2" semanticVersion="${project.version}"
   description="Zeebe Protocol" byteOrder="littleEndian">
 

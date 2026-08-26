@@ -23,7 +23,6 @@ import io.camunda.exporter.analytics.handler.TenantCreatedHandler;
 import io.camunda.exporter.analytics.handler.TenantDeletedHandler;
 import io.camunda.exporter.analytics.handler.UserTaskAssignedHandler;
 import io.camunda.exporter.analytics.handler.UserTaskCreatedHandler;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -33,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.Set;
 
 /**

@@ -8,9 +8,9 @@
 package io.camunda.zeebe.logstreams.impl.log;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.List;
 
 public final class LogAppendEntryMetadata {

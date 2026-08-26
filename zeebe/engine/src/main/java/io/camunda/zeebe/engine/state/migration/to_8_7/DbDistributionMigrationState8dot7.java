@@ -20,7 +20,7 @@ import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.distribution.PersistedCommandDistribution;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;

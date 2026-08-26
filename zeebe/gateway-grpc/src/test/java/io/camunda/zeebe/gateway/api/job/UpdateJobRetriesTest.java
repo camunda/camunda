@@ -14,8 +14,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesReques
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import org.junit.Test;
 
 public final class UpdateJobRetriesTest extends GatewayTest {

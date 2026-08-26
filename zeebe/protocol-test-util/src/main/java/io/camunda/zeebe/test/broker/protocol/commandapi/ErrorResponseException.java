@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.test.broker.protocol.commandapi;
 
-import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.sbe.ErrorCode;
 
 public final class ErrorResponseException extends RuntimeException {
 

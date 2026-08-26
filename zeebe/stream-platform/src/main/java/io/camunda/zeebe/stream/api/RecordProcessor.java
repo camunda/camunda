@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.stream.api;
 
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**

@@ -17,9 +17,9 @@ import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromMessa
 import io.camunda.exporter.rdbms.utils.DateUtil;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.ImmutableMessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;

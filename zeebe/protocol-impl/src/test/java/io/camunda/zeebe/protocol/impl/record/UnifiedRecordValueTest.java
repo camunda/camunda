@@ -9,7 +9,7 @@ package io.camunda.zeebe.protocol.impl.record;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Stream;

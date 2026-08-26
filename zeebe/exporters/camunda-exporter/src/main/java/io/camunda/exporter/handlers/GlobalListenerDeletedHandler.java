@@ -13,8 +13,8 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.util.GlobalListenerUtil;
 import io.camunda.webapps.schema.entities.globallistener.GlobalListenerEntity;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import java.util.List;
 

@@ -31,7 +31,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import io.camunda.zeebe.protocol.record.sbe.PartitionHealthStatus;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;

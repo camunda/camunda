@@ -7,17 +7,17 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
-import static io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder.keyNullValue;
-import static io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder.partitionIdNullValue;
-import static io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder.valueHeaderLength;
+import static io.camunda.zeebe.protocol.record.sbe.ExecuteCommandResponseEncoder.keyNullValue;
+import static io.camunda.zeebe.protocol.record.sbe.ExecuteCommandResponseEncoder.partitionIdNullValue;
+import static io.camunda.zeebe.protocol.record.sbe.ExecuteCommandResponseEncoder.valueHeaderLength;
 
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.ExecuteCommandResponseEncoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;

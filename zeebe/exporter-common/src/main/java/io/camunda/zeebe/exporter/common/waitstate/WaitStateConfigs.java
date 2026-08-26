@@ -8,13 +8,13 @@
 package io.camunda.zeebe.exporter.common.waitstate;
 
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 
 /**
  * Predefined {@link WaitStateTransformerConfig}s for common use cases, e.g. for jobs. These can be

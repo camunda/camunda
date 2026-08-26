@@ -30,7 +30,7 @@ import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
-import io.camunda.zeebe.protocol.record.ChannelType;
+import io.camunda.zeebe.protocol.record.sbe.ChannelType;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;

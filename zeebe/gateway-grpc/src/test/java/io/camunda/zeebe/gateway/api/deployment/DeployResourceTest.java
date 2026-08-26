@@ -18,8 +18,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FormMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import org.junit.Test;
 
 public final class DeployResourceTest extends GatewayTest {

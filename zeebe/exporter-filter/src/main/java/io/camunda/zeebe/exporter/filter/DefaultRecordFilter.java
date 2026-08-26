@@ -13,8 +13,8 @@ import static io.camunda.zeebe.exporter.filter.NameFilterRule.Type.STARTS_WITH;
 
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;

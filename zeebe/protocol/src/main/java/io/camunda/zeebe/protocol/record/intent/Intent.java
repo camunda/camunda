@@ -17,9 +17,9 @@ package io.camunda.zeebe.protocol.record.intent;
 
 import static java.util.Objects.requireNonNull;
 
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;

@@ -12,7 +12,7 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import io.camunda.zeebe.protocol.record.sbe.PartitionHealthStatus;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.HashMap;
 import java.util.HashSet;

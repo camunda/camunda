@@ -32,9 +32,9 @@ import io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.RecordAppendedKeyNam
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.collection.Map3D;
 import io.camunda.zeebe.util.collection.Table;

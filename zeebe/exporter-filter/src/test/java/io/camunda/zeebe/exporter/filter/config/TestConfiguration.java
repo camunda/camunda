@@ -9,8 +9,8 @@ package io.camunda.zeebe.exporter.filter.config;
 
 import io.camunda.zeebe.exporter.filter.DefaultRecordFilter;
 import io.camunda.zeebe.exporter.filter.FilterConfiguration;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.EnumMap;
 import java.util.Map;
 

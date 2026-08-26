@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.optimize.AbstractCCSMIT;
 import io.camunda.optimize.OptimizeRequestExecutor;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.micrometer.core.instrument.Statistic;
 import java.util.function.Supplier;
 import java.util.stream.Stream;

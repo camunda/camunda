@@ -8,12 +8,12 @@
 package io.camunda.zeebe.journal.record;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
-import io.camunda.zeebe.journal.file.MessageHeaderDecoder;
-import io.camunda.zeebe.journal.file.MessageHeaderEncoder;
-import io.camunda.zeebe.journal.file.RecordDataDecoder;
-import io.camunda.zeebe.journal.file.RecordDataEncoder;
-import io.camunda.zeebe.journal.file.RecordMetadataDecoder;
-import io.camunda.zeebe.journal.file.RecordMetadataEncoder;
+import io.camunda.zeebe.journal.file.sbe.MessageHeaderDecoder;
+import io.camunda.zeebe.journal.file.sbe.MessageHeaderEncoder;
+import io.camunda.zeebe.journal.file.sbe.RecordDataDecoder;
+import io.camunda.zeebe.journal.file.sbe.RecordDataEncoder;
+import io.camunda.zeebe.journal.file.sbe.RecordMetadataDecoder;
+import io.camunda.zeebe.journal.file.sbe.RecordMetadataEncoder;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.BufferOverflowException;

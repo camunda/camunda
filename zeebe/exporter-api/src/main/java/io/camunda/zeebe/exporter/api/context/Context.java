@@ -16,9 +16,9 @@
 package io.camunda.zeebe.exporter.api.context;
 
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import org.slf4j.Logger;

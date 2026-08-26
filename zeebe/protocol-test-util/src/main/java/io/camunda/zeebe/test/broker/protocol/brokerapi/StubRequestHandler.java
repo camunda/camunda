@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
-import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.sbe.ExecuteCommandRequestDecoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderDecoder;
 import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
 import io.camunda.zeebe.transport.RequestHandler;
 import io.camunda.zeebe.transport.ServerOutput;

@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.store;
 
-import static io.camunda.zeebe.protocol.record.ValueType.JOB;
-import static io.camunda.zeebe.protocol.record.ValueType.NULL_VAL;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.JOB;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.NULL_VAL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;

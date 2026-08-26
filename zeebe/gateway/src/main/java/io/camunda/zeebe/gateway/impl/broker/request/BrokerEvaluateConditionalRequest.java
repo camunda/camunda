@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import org.agrona.DirectBuffer;
 
 public final class BrokerEvaluateConditionalRequest

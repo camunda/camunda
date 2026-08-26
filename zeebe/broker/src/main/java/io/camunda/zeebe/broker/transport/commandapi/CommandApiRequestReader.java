@@ -7,17 +7,17 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
-import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder.TEMPLATE_ID;
+import static io.camunda.zeebe.protocol.record.sbe.ExecuteCommandRequestDecoder.TEMPLATE_ID;
 
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.RequestReaderException;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.record.ChannelType;
-import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.ValueTypes;
+import io.camunda.zeebe.protocol.record.sbe.ChannelType;
+import io.camunda.zeebe.protocol.record.sbe.ExecuteCommandRequestDecoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderDecoder;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 

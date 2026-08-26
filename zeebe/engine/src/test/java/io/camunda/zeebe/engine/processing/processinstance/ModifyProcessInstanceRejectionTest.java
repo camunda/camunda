@@ -13,9 +13,9 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -1298,7 +1298,7 @@ public class ModifyProcessInstanceRejectionTest {
     // then
     assertThat(event)
         .describedAs("Expect that activation with valid ancestor scope key is accepted")
-        .hasRecordType(io.camunda.zeebe.protocol.record.RecordType.EVENT)
+        .hasRecordType(io.camunda.zeebe.protocol.record.sbe.RecordType.EVENT)
         .hasIntent(ProcessInstanceModificationIntent.MODIFIED);
   }
 
@@ -1341,7 +1341,7 @@ public class ModifyProcessInstanceRejectionTest {
     assertThat(event)
         .describedAs(
             "Expect activation with valid ancestor scope key in event subprocess is accepted")
-        .hasRecordType(io.camunda.zeebe.protocol.record.RecordType.EVENT)
+        .hasRecordType(io.camunda.zeebe.protocol.record.sbe.RecordType.EVENT)
         .hasIntent(ProcessInstanceModificationIntent.MODIFIED);
   }
 

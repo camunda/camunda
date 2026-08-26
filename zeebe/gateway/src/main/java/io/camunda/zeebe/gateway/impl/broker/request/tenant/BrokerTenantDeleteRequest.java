@@ -10,8 +10,8 @@ package io.camunda.zeebe.gateway.impl.broker.request.tenant;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import org.agrona.DirectBuffer;
 
 public class BrokerTenantDeleteRequest extends BrokerExecuteCommand<TenantRecord> {

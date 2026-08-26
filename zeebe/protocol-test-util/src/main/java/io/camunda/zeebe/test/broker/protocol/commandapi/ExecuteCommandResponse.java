@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.test.broker.protocol.commandapi;
 
-import io.camunda.zeebe.protocol.record.ErrorResponseDecoder;
-import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.ErrorResponseDecoder;
+import io.camunda.zeebe.protocol.record.sbe.ExecuteCommandResponseDecoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import java.io.IOException;

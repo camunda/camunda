@@ -17,8 +17,8 @@ import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRec
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.StatusMetrics;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;

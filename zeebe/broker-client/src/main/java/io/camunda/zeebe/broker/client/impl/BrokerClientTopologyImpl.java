@@ -12,7 +12,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import io.camunda.zeebe.protocol.record.sbe.PartitionHealthStatus;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;

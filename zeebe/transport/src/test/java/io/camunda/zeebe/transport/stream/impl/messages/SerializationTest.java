@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.transport.stream.api.StreamResponseException.ErrorDetail;
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.ErrorCode;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.util.UUID;

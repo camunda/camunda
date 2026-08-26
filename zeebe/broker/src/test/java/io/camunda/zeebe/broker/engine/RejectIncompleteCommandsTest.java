@@ -11,7 +11,7 @@ import static io.camunda.zeebe.protocol.record.intent.MessageIntent.PUBLISH;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.test.broker.protocol.commandapi.CommandApiRule;
 import io.camunda.zeebe.test.broker.protocol.commandapi.ExecuteCommandRequestBuilder;
 import org.junit.ClassRule;

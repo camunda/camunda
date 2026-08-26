@@ -9,8 +9,8 @@ package io.camunda.exporter.handlers.operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;

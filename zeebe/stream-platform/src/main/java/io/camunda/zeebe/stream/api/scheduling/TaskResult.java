@@ -16,8 +16,8 @@ public interface TaskResult {
   /**
    * Returns the resulting record batch, which can be empty or consist of multiple {@link
    * RecordBatchEntry}s. These entries are the result of the current task execution. If an entry is
-   * of type {@link io.camunda.zeebe.protocol.record.RecordType#COMMAND} it will be later processed
-   * as follow-up command by the {@link RecordProcessor}
+   * of type {@link io.camunda.zeebe.protocol.record.sbe.RecordType#COMMAND} it will be later
+   * processed as follow-up command by the {@link RecordProcessor}
    *
    * @return returns the resulting immutable record batch
    */

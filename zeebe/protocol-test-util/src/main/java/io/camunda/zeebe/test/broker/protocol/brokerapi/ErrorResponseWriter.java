@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
-import io.camunda.zeebe.protocol.record.ErrorCode;
-import io.camunda.zeebe.protocol.record.ErrorResponseEncoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.sbe.ErrorCode;
+import io.camunda.zeebe.protocol.record.sbe.ErrorResponseEncoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderEncoder;
 import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
 import java.nio.charset.StandardCharsets;
 import org.agrona.MutableDirectBuffer;

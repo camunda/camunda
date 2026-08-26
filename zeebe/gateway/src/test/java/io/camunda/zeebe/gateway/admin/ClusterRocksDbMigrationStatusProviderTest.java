@@ -27,7 +27,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
 import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusPayload;
 import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
-import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import io.camunda.zeebe.protocol.record.sbe.PartitionHealthStatus;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;

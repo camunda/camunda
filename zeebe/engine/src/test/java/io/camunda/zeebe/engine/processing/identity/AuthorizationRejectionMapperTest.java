@@ -13,7 +13,7 @@ import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
 import org.junit.jupiter.api.Test;
 
 class AuthorizationRejectionMapperTest {

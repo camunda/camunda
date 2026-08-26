@@ -111,8 +111,8 @@ public final class CslTenantCheck {
    * check, and do not remove this skip without auditing every caller.
    *
    * <p>Callers own the rejection semantics: {@code notAssignedRejection} carries the {@link
-   * io.camunda.zeebe.protocol.record.RejectionType} — {@code FORBIDDEN} to signal "not assigned to
-   * tenant", or {@code NOT_FOUND} to mask an existing resource — and the message.
+   * io.camunda.zeebe.protocol.record.sbe.RejectionType} — {@code FORBIDDEN} to signal "not assigned
+   * to tenant", or {@code NOT_FOUND} to mask an existing resource — and the message.
    *
    * @param value the value to return on success (mirrors {@link CslAuthorizationCheck#check};
    *     enables {@code flatMap} composition with it)

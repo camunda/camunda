@@ -8,7 +8,7 @@
 package io.camunda.zeebe.exporter.opensearch;
 
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.EnumMap;
 import java.util.Map;
 

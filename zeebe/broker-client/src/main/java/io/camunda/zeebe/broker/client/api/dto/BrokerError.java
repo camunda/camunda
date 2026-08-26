@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.client.api.dto;
 
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
-import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.sbe.ErrorCode;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public record BrokerError(ErrorCode code, String message) {

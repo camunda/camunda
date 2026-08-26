@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.file.sbe.MessageHeaderDecoder;
 import io.camunda.zeebe.journal.record.JournalRecordReaderUtil;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import java.io.BufferedInputStream;

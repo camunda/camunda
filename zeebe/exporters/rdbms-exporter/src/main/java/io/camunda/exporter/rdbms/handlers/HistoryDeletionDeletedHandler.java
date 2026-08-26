@@ -17,8 +17,8 @@ import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTy
 import io.camunda.db.rdbms.write.service.HistoryDeletionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import org.slf4j.Logger;

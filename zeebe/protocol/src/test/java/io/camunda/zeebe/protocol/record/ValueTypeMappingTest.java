@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.protocol.record.ValueTypeMapping.Mapping;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.EnumSet;
 import java.util.Set;
 import org.junit.jupiter.api.Test;

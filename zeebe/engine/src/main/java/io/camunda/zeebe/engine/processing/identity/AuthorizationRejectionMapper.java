@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 

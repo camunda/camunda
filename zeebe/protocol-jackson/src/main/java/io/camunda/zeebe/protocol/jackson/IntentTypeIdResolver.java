@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.protocol.jackson;
 
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import io.camunda.zeebe.protocol.record.ValueTypeMapping.Mapping;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.Objects;
 
 /**

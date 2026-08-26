@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
-import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.sbe.ErrorCode;
 import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
 import java.util.function.Consumer;
 

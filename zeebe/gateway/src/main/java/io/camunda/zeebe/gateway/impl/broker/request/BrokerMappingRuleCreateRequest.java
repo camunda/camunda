@@ -10,8 +10,8 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import org.agrona.DirectBuffer;
 
 public class BrokerMappingRuleCreateRequest extends BrokerExecuteCommand<MappingRuleRecord> {

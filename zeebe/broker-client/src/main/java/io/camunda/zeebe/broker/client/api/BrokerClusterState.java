@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.client.api;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import io.camunda.zeebe.protocol.record.sbe.PartitionHealthStatus;
 import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;

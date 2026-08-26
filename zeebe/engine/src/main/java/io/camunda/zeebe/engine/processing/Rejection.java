@@ -7,6 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing;
 
-import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
 
 public record Rejection(RejectionType type, String reason) {}

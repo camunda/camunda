@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.migration.to_8_7;
 import io.camunda.zeebe.engine.state.migration.MigrationTask;
 import io.camunda.zeebe.engine.state.migration.MigrationTaskContext;
 import io.camunda.zeebe.engine.state.migration.MutableMigrationTaskContext;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IdempotentCommandDistributionMigration implements MigrationTask {

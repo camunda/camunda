@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.protocol;
 
-import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
+import io.camunda.zeebe.protocol.record.sbe.ExecuteCommandRequestDecoder;
 import java.nio.ByteOrder;
 
 public final class Protocol {

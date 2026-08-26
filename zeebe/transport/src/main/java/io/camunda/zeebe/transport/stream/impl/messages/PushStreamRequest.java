@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.transport.stream.impl.messages;
 
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.MessageHeaderDecoder;
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.MessageHeaderEncoder;
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.PushStreamRequestDecoder;
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.PushStreamRequestEncoder;
 import io.camunda.zeebe.util.SbeUtil;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;

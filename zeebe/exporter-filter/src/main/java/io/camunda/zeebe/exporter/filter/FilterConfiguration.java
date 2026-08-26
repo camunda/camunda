@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.exporter.filter;
 
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.List;
 
 /**

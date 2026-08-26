@@ -14,8 +14,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerBroadcastSignalRequest
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.test.util.MsgPackUtil;

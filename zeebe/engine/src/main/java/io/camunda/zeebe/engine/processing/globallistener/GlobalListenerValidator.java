@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.globallistener;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
 import io.camunda.zeebe.util.Either;
 import java.util.Set;
 import java.util.stream.Collectors;

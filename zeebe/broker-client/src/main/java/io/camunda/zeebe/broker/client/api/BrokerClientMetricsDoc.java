@@ -159,7 +159,7 @@ public enum BrokerClientMetricsDoc implements ExtendedMeterDocumentation {
 
     /**
      * The error type when a request from a gateway to a broker fails; one of {@link
-     * io.camunda.zeebe.protocol.record.ErrorCode} or {@link AdditionalErrorCodes}.
+     * io.camunda.zeebe.protocol.record.sbe.ErrorCode} or {@link AdditionalErrorCodes}.
      */
     ERROR {
       @Override

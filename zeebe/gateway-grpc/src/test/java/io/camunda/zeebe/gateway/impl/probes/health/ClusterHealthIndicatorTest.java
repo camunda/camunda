@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
-import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import io.camunda.zeebe.protocol.record.sbe.PartitionHealthStatus;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;

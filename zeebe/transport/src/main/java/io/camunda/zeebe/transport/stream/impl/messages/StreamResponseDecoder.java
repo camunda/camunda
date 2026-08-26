@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.transport.stream.impl.messages;
 
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.ErrorCode;
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.ErrorResponseDecoder;
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.MessageHeaderDecoder;
 import io.camunda.zeebe.util.Either;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

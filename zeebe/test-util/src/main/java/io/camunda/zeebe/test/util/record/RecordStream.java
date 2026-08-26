@@ -9,8 +9,8 @@ package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;

@@ -10,9 +10,9 @@ package io.camunda.zeebe.broker.transport.commandapi;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
-import io.camunda.zeebe.protocol.record.ErrorCode;
-import io.camunda.zeebe.protocol.record.ErrorResponseDecoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.sbe.ErrorCode;
+import io.camunda.zeebe.protocol.record.sbe.ErrorResponseDecoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;

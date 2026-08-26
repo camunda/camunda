@@ -14,8 +14,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

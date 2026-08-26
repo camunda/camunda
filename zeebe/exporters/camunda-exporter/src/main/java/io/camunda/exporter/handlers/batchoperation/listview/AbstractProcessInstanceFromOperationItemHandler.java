@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.handlers.batchoperation.listview;
 
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
+import static io.camunda.zeebe.protocol.record.sbe.RecordMetadataDecoder.batchOperationReferenceNullValue;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.batchoperation.AbstractOperationHandler;

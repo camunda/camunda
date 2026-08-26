@@ -14,10 +14,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import io.camunda.zeebe.protocol.record.Agent;
-import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.ChannelType;
 
 /**
  * This annotation mixin is used by Jackson during deserialization of {@link Record} objects. It's

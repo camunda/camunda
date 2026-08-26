@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.asyncrequest.AsyncRequestMetadataValue;
 import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.Optional;
 import java.util.stream.Stream;
 

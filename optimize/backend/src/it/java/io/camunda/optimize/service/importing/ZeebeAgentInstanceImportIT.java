@@ -17,9 +17,9 @@ import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceDataDto.Age
 import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceDataDto.AgentMetricsValueDto;
 import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceDataDto.AgentToolValueDto;
 import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceRecordDto;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import java.time.OffsetDateTime;
 import java.util.List;

@@ -17,11 +17,11 @@ package io.camunda.zeebe.protocol;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.protocol.record.ErrorCode;
-import io.camunda.zeebe.protocol.record.ErrorResponseDecoder;
-import io.camunda.zeebe.protocol.record.ErrorResponseEncoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.sbe.ErrorCode;
+import io.camunda.zeebe.protocol.record.sbe.ErrorResponseDecoder;
+import io.camunda.zeebe.protocol.record.sbe.ErrorResponseEncoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderEncoder;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 

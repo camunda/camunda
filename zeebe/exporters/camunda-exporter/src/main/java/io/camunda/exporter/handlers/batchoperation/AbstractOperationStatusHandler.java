@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
+import static io.camunda.zeebe.protocol.record.sbe.RecordMetadataDecoder.batchOperationReferenceNullValue;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.index.TargetIndex;
@@ -20,8 +20,8 @@ import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.util.DateUtil;
 import java.util.HashMap;
 import java.util.List;

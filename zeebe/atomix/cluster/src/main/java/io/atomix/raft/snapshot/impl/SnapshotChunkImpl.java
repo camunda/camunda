@@ -17,6 +17,8 @@
 package io.atomix.raft.snapshot.impl;
 
 import io.atomix.raft.snapshot.SbeBufferWriterReader;
+import io.atomix.raft.snapshot.impl.sbe.SnapshotChunkDecoder;
+import io.atomix.raft.snapshot.impl.sbe.SnapshotChunkEncoder;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;

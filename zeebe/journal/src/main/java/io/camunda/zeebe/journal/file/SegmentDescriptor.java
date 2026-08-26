@@ -18,6 +18,8 @@ package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import io.camunda.zeebe.journal.file.sbe.SegmentDescriptorEncoder;
+
 /**
  * The segment descriptor stores the metadata of a single segment {@link Segment} of a {@link
  * SegmentedJournal}. The descriptor is stored in the first bytes of the segment. The number of

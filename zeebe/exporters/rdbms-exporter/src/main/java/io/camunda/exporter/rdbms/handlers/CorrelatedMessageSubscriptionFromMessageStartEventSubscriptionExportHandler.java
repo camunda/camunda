@@ -14,9 +14,9 @@ import io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel.Bui
 import io.camunda.db.rdbms.write.service.CorrelatedMessageSubscriptionWriter;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import java.util.Set;
 

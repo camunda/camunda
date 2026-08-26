@@ -7,17 +7,17 @@
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
-import static io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder.keyNullValue;
-import static io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder.partitionIdNullValue;
+import static io.camunda.zeebe.protocol.record.sbe.ExecuteCommandResponseEncoder.keyNullValue;
+import static io.camunda.zeebe.protocol.record.sbe.ExecuteCommandResponseEncoder.partitionIdNullValue;
 
-import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
-import io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.ExecuteCommandResponseDecoder;
+import io.camunda.zeebe.protocol.record.sbe.ExecuteCommandResponseEncoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;

@@ -11,8 +11,8 @@ import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.gateway.impl.broker.PublishMessageDispatchStrategy;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 

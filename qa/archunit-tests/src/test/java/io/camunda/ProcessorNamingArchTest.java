@@ -18,8 +18,8 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.*;
 
 @AnalyzeClasses(
@@ -41,7 +41,7 @@ public final class ProcessorNamingArchTest {
                   // <ValueType><Intent>Processor
                   // where:
                   // - <ValueType> is the name of the value type being processed (from the
-                  // io.camunda.zeebe.protocol.record.ValueType enum)
+                  // io.camunda.zeebe.protocol.record.sbe.ValueType enum)
                   // - <Intent> is the name of the intent being processed (from the
                   // io.camunda.zeebe.protocol.record.intent.<ValueType>Intent enum)
                   // - "Processor" is the suffix indicating that this class is a processor

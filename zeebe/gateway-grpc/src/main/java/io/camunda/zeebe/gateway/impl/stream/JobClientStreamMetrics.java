@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.impl.stream;
 import io.camunda.zeebe.gateway.impl.stream.JobClientStreamMetricsDoc.PushKeyNames;
 import io.camunda.zeebe.gateway.impl.stream.JobClientStreamMetricsDoc.PushResultTag;
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
-import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.ErrorCode;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;

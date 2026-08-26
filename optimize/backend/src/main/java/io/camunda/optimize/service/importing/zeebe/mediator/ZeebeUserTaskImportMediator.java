@@ -18,7 +18,7 @@ import io.camunda.optimize.service.importing.zeebe.db.ZeebeUserTaskFetcher;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeUserTaskImportIndexHandler;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.List;
 
 public class ZeebeUserTaskImportMediator

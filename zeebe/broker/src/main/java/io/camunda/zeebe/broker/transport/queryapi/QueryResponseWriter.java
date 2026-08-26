@@ -8,8 +8,8 @@
 package io.camunda.zeebe.broker.transport.queryapi;
 
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
-import io.camunda.zeebe.protocol.record.ExecuteQueryResponseEncoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.sbe.ExecuteQueryResponseEncoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderEncoder;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;
 import org.agrona.DirectBuffer;

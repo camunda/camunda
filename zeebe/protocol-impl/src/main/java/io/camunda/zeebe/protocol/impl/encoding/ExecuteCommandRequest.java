@@ -7,18 +7,18 @@
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
-import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.keyNullValue;
-import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.operationReferenceNullValue;
-import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.partitionIdNullValue;
+import static io.camunda.zeebe.protocol.record.sbe.ExecuteCommandRequestEncoder.keyNullValue;
+import static io.camunda.zeebe.protocol.record.sbe.ExecuteCommandRequestEncoder.operationReferenceNullValue;
+import static io.camunda.zeebe.protocol.record.sbe.ExecuteCommandRequestEncoder.partitionIdNullValue;
 
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.record.ChannelType;
-import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
-import io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.ChannelType;
+import io.camunda.zeebe.protocol.record.sbe.ExecuteCommandRequestDecoder;
+import io.camunda.zeebe.protocol.record.sbe.ExecuteCommandRequestEncoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.sbe.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;

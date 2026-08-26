@@ -8,6 +8,12 @@
 package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
+import io.camunda.zeebe.journal.file.sbe.DescriptorMetadataDecoder;
+import io.camunda.zeebe.journal.file.sbe.DescriptorMetadataEncoder;
+import io.camunda.zeebe.journal.file.sbe.MessageHeaderDecoder;
+import io.camunda.zeebe.journal.file.sbe.MessageHeaderEncoder;
+import io.camunda.zeebe.journal.file.sbe.SegmentDescriptorDecoder;
+import io.camunda.zeebe.journal.file.sbe.SegmentDescriptorEncoder;
 import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;

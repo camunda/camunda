@@ -16,6 +16,7 @@
 package io.atomix.raft.storage.serializer;
 
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.storage.serializer.sbe.MemberType;
 
 public class SerializerUtil {
 

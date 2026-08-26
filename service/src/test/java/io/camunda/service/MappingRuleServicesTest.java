@@ -31,8 +31,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingRuleCreateReque
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingRuleDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingRuleUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

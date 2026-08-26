@@ -12,7 +12,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.gateway.query.QueryApi;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.grpc.Context;
 import java.time.Duration;
 import java.util.Objects;

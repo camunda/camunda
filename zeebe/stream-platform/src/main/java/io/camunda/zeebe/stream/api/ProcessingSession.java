@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.stream.api;
 
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
+import static io.camunda.zeebe.protocol.record.sbe.RecordMetadataDecoder.batchOperationReferenceNullValue;
+import static io.camunda.zeebe.protocol.record.sbe.RecordMetadataDecoder.operationReferenceNullValue;
 
 import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Agent;
-import io.camunda.zeebe.protocol.record.ChannelType;
+import io.camunda.zeebe.protocol.record.sbe.ChannelType;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 

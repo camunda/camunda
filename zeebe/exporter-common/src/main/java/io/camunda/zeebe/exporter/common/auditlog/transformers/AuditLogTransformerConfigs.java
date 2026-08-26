@@ -7,30 +7,28 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
-import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
-import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CREATION;
-import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
-import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
-import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
-import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
-import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
-import static io.camunda.zeebe.protocol.record.ValueType.HISTORY_DELETION;
-import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
-import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
-import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
-import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
-import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
-import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
-import static io.camunda.zeebe.protocol.record.ValueType.TENANT;
-import static io.camunda.zeebe.protocol.record.ValueType.USER;
-import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
-import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent.MODIFIED;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.AUTHORIZATION;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.BATCH_OPERATION_CREATION;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.DECISION;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.DECISION_EVALUATION;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.DECISION_REQUIREMENTS;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.GROUP;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.HISTORY_DELETION;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.MAPPING_RULE;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.PROCESS;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.PROCESS_INSTANCE_CREATION;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.PROCESS_INSTANCE_MIGRATION;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.PROCESS_INSTANCE_MODIFICATION;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.ROLE;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.TENANT;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.USER;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.USER_TASK;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.VARIABLE;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
-import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -52,6 +50,8 @@ import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Map;
 

@@ -12,9 +12,9 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
-import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
-import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.RecordMetadataDecoder;
+import io.camunda.zeebe.protocol.record.sbe.RecordMetadataEncoder;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
 
 public interface TypedRecord<T extends UnifiedRecordValue> extends Record<T> {
 

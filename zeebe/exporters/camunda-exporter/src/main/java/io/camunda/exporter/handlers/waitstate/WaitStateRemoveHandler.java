@@ -15,7 +15,7 @@ import io.camunda.webapps.schema.entities.waitstate.WaitStateEntity;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.WaitStateRelated;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.List;

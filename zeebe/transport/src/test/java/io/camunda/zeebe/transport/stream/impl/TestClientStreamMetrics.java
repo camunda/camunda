@@ -8,7 +8,7 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
-import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.ErrorCode;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;

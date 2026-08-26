@@ -28,8 +28,8 @@ import org.junit.Test;
  * Event-subprocess arm of the non-start {@code businessId} filter. A message-start event inside an
  * event subprocess does <b>not</b> create a root process instance — it correlates into an already
  * running instance via an instance-scoped {@link
- * io.camunda.zeebe.protocol.record.ValueType#PROCESS_MESSAGE_SUBSCRIPTION} (the same record type as
- * an intermediate catch or boundary event), never a definition-scoped {@code
+ * io.camunda.zeebe.protocol.record.sbe.ValueType#PROCESS_MESSAGE_SUBSCRIPTION} (the same record
+ * type as an intermediate catch or boundary event), never a definition-scoped {@code
  * MessageStartEventSubscription}. Therefore the start-event {@code businessId} <em>uniqueness</em>
  * constraint must not apply here: {@code businessId} is a plain catch-style filter only.
  *

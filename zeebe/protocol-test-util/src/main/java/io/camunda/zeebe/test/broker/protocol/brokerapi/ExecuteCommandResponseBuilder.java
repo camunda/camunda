@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.RecordType;
+import io.camunda.zeebe.protocol.record.sbe.RejectionType;
 import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
 import io.camunda.zeebe.test.util.collection.MapFactoryBuilder;
 import java.util.Map;

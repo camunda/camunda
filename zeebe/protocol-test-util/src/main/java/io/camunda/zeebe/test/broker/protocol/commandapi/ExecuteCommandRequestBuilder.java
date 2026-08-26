@@ -8,8 +8,8 @@
 package io.camunda.zeebe.test.broker.protocol.commandapi;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
 import io.camunda.zeebe.test.util.collection.MapBuilder;
 import io.camunda.zeebe.transport.ClientTransport;

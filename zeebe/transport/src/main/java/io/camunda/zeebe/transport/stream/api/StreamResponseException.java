@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
-import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
+import io.camunda.zeebe.transport.stream.impl.messages.sbe.ErrorCode;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.util.ArrayList;
 import java.util.List;

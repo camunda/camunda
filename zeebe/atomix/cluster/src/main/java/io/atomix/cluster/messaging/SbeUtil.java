@@ -7,6 +7,8 @@
  */
 package io.atomix.cluster.messaging;
 
+import io.atomix.cluster.messaging.sbe.BooleanType;
+
 public class SbeUtil {
   public static BooleanType toSBE(final boolean value) {
     return value ? BooleanType.TRUE : BooleanType.FALSE;

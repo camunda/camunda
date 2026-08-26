@@ -8,7 +8,7 @@
 package io.camunda.optimize.service.importing.zeebe.mediator;
 
 import static io.camunda.optimize.MetricEnum.NEW_PAGE_FETCH_TIME_METRIC;
-import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
+import static io.camunda.zeebe.protocol.record.sbe.ValueType.VARIABLE;
 
 import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;

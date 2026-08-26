@@ -8,7 +8,7 @@
 package io.camunda.exporter.handlers.batchoperation.listview;
 
 import static io.camunda.exporter.utils.ExporterUtil.map;
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
+import static io.camunda.zeebe.protocol.record.sbe.RecordMetadataDecoder.batchOperationReferenceNullValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;

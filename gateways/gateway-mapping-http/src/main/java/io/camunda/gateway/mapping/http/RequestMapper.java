@@ -30,7 +30,7 @@ import static io.camunda.gateway.mapping.http.validator.ResourceRequestValidator
 import static io.camunda.gateway.mapping.http.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator.validateUpdateRequest;
-import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
+import static io.camunda.zeebe.protocol.record.sbe.RejectionType.INVALID_ARGUMENT;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.AD_HOC_SUB_PROCESS;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.USER_TASK;
 

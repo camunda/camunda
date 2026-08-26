@@ -14,8 +14,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerEvaluateDecisionReques
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.sbe.ValueType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.test.util.MsgPackUtil;

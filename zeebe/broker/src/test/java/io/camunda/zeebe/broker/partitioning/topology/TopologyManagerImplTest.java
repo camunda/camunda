@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import io.camunda.zeebe.protocol.record.sbe.PartitionHealthStatus;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
