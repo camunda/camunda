@@ -58,6 +58,7 @@ final class RecoveryPartitionManagerTest {
   private static final String GROUP = PartitionManagerImpl.DEFAULT_GROUP_NAME;
   private static final int PARTITION_ID = 1;
   private static final int PARTITION_ID_2 = 2;
+  private static final String BROKER_COMPONENT_NAME = "Broker-0";
 
   private ActorScheduler actorScheduler;
   private Actor controlActor;
@@ -69,6 +70,7 @@ final class RecoveryPartitionManagerTest {
   private TopologyManagerImpl topologyManager;
   private BrokerInfo brokerInfo;
   private AtomixServerTransport transport;
+  private SimpleMeterRegistry meterRegistry;
 
   @BeforeEach
   void setUp() {
@@ -104,6 +106,7 @@ final class RecoveryPartitionManagerTest {
         .thenReturn(CompletableActorFuture.completed(null));
     when(transport.unsubscribe(any(), any())).thenReturn(CompletableActorFuture.completed(null));
 
+    meterRegistry = new SimpleMeterRegistry();
     partitionManager = buildManager(new BrokerCfg(), actorScheduler);
   }
 
@@ -117,10 +120,11 @@ final class RecoveryPartitionManagerTest {
         clusterConfigurationService,
         clusterServices.getMembershipService(),
         schedulingService,
-        new SimpleMeterRegistry(),
+        meterRegistry,
         transport,
         null,
-        topologyManager);
+        topologyManager,
+        BROKER_COMPONENT_NAME);
   }
 
   private PartitionMetadata localPartitionMetadata(final int partitionId) {
@@ -246,6 +250,95 @@ final class RecoveryPartitionManagerTest {
                               .containsEntry(PARTITION_ID, PartitionHealthStatus.HEALTHY)
                               .containsEntry(PARTITION_ID_2, PartitionHealthStatus.HEALTHY));
             });
+  }
+
+  @Test
+  void shouldReportRecoveringHealthMetricAfterStartCompletes() {
+    // when
+    assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
+
+    // then - each successfully recovered partition's zeebe.health gauge reports the recovering
+    // code (distinct from 1=healthy/0=unhealthy/-1=dead), since these partitions are inactive and
+    // not yet processing, just kept alive for read-only backup access during broker restore
+    assertThat(healthGaugeValue(PARTITION_ID)).isEqualTo(2);
+    assertThat(healthGaugeValue(PARTITION_ID_2)).isEqualTo(2);
+  }
+
+  @Test
+  void shouldRemoveHealthGaugeOnStop() {
+    // given - the gauge exists once recovery has started
+    assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(healthGaugeValue(PARTITION_ID)).isEqualTo(2);
+
+    // when
+    assertThat(partitionManager.stop()).succeedsWithin(Duration.ofSeconds(10));
+
+    // then - the gauge is fully unregistered rather than left stale; Micrometer's
+    // Gauge.builder(...).register() silently ignores a re-registration under the same name+tags,
+    // so leaving it behind would make the next HealthMetrics registered for this partition (e.g.
+    // by the normal ZeebePartition once the cluster exits recovery mode) permanently stuck at 2
+    assertThat(
+            meterRegistry
+                .find("zeebe.health")
+                .tags("physicalTenant", GROUP, "partition", String.valueOf(PARTITION_ID))
+                .gauge())
+        .isNull();
+  }
+
+  @Test
+  void shouldReportRecoveringInHealthTreeAfterStartCompletes() {
+    // when
+    assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
+
+    // then - the partition also appears as a node in the component health tree that feeds the
+    // "Health status timeline" panel, under the same id and path the normal ZeebePartition uses,
+    // so the row stays in place across the mode switch instead of disappearing during recovery
+    assertThat(healthTreeGaugeValue(PARTITION_ID)).isEqualTo(2);
+    assertThat(healthTreeGaugeValue(PARTITION_ID_2)).isEqualTo(2);
+  }
+
+  @Test
+  void shouldRemoveHealthTreeNodeOnStop() {
+    // given
+    assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(healthTreeGaugeValue(PARTITION_ID)).isEqualTo(2);
+
+    // when
+    assertThat(partitionManager.stop()).succeedsWithin(Duration.ofSeconds(10));
+
+    // then - the node is unregistered, so the normal ZeebePartition can claim the same id/path
+    // once the cluster leaves recovery mode
+    assertThat(
+            meterRegistry
+                .find("zeebe.broker.health.nodes")
+                .tags("physicalTenant", GROUP, "partition", String.valueOf(PARTITION_ID))
+                .gauge())
+        .isNull();
+  }
+
+  private double healthTreeGaugeValue(final int partitionId) {
+    final var componentName = "Partition-%s-%d".formatted(GROUP, partitionId);
+    return meterRegistry
+        .get("zeebe.broker.health.nodes")
+        .tags(
+            "physicalTenant",
+            GROUP,
+            "partition",
+            String.valueOf(partitionId),
+            "id",
+            componentName,
+            "path",
+            BROKER_COMPONENT_NAME + "/" + componentName)
+        .gauge()
+        .value();
+  }
+
+  private double healthGaugeValue(final int partitionId) {
+    return meterRegistry
+        .get("zeebe.health")
+        .tags("physicalTenant", GROUP, "partition", String.valueOf(partitionId))
+        .gauge()
+        .value();
   }
 
   @Test
