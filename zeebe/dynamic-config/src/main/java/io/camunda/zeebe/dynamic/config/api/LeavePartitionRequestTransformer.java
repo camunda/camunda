@@ -12,7 +12,9 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
@@ -54,8 +56,22 @@ public final class LeavePartitionRequestTransformer implements ConfigurationChan
                   .formatted(partitionId, groupId)));
     }
 
+    // A two-phase leave: the member is demoted to a non-voting member first, so that the removal
+    // commits without its participation. The demotion is only allowed when another active replica
+    // remains - otherwise the leave is emitted alone and rejected by its applier, as before.
+    final var group = clusterConfiguration.partitionGroup(groupId);
+    final var otherActiveReplicaExists =
+        group.members().entrySet().stream()
+            .filter(entry -> !entry.getKey().equals(memberId))
+            .map(entry -> entry.getValue().getPartition(partitionId))
+            .anyMatch(
+                partition -> partition != null && partition.state() == PartitionState.State.ACTIVE);
     final List<PartitionGroupOperation> operations =
-        List.of(new PartitionLeaveOperation(memberId, partitionId, MINIMUM_ALLOWED_REPLICAS));
+        otherActiveReplicaExists
+            ? List.of(
+                new PartitionDemoteOperation(memberId, partitionId),
+                new PartitionLeaveOperation(memberId, partitionId, MINIMUM_ALLOWED_REPLICAS))
+            : List.of(new PartitionLeaveOperation(memberId, partitionId, MINIMUM_ALLOWED_REPLICAS));
     return Either.right(List.of(PartitionGroupPhase.sequential(Map.of(groupId, operations))));
   }
 }

@@ -27,8 +27,10 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
@@ -66,22 +68,40 @@ final class ZoneMigrationRequestTransformerTest {
             new MemberJoinOperation(ZONE_A_1),
             new MemberJoinOperation(ZONE_A_2),
             new PartitionJoinOperation(ZONE_A_0, 1, 3),
+            new PartitionPromoteOperation(ZONE_A_0, 1),
             new PartitionJoinOperation(ZONE_A_1, 1, 2),
+            new PartitionPromoteOperation(ZONE_A_1, 1),
             new PartitionJoinOperation(ZONE_A_2, 1, 1),
+            new PartitionPromoteOperation(ZONE_A_2, 1),
+            new PartitionDemoteOperation(BARE_0, 1),
             new PartitionLeaveOperation(BARE_0, 1, 1),
+            new PartitionDemoteOperation(BARE_1, 1),
             new PartitionLeaveOperation(BARE_1, 1, 1),
+            new PartitionDemoteOperation(BARE_2, 1),
             new PartitionLeaveOperation(BARE_2, 1, 1),
             new PartitionJoinOperation(ZONE_A_0, 2, 1),
+            new PartitionPromoteOperation(ZONE_A_0, 2),
             new PartitionJoinOperation(ZONE_A_1, 2, 3),
+            new PartitionPromoteOperation(ZONE_A_1, 2),
             new PartitionJoinOperation(ZONE_A_2, 2, 2),
+            new PartitionPromoteOperation(ZONE_A_2, 2),
+            new PartitionDemoteOperation(BARE_0, 2),
             new PartitionLeaveOperation(BARE_0, 2, 1),
+            new PartitionDemoteOperation(BARE_1, 2),
             new PartitionLeaveOperation(BARE_1, 2, 1),
+            new PartitionDemoteOperation(BARE_2, 2),
             new PartitionLeaveOperation(BARE_2, 2, 1),
             new PartitionJoinOperation(ZONE_A_0, 3, 2),
+            new PartitionPromoteOperation(ZONE_A_0, 3),
             new PartitionJoinOperation(ZONE_A_1, 3, 1),
+            new PartitionPromoteOperation(ZONE_A_1, 3),
             new PartitionJoinOperation(ZONE_A_2, 3, 3),
+            new PartitionPromoteOperation(ZONE_A_2, 3),
+            new PartitionDemoteOperation(BARE_0, 3),
             new PartitionLeaveOperation(BARE_0, 3, 1),
+            new PartitionDemoteOperation(BARE_1, 3),
             new PartitionLeaveOperation(BARE_1, 3, 1),
+            new PartitionDemoteOperation(BARE_2, 3),
             new PartitionLeaveOperation(BARE_2, 3, 1),
             new MemberLeaveOperation(BARE_0),
             new MemberLeaveOperation(BARE_1),
@@ -115,12 +135,20 @@ final class ZoneMigrationRequestTransformerTest {
             new MemberJoinOperation(ZONE_B_0),
             new MemberJoinOperation(ZONE_B_1),
             new PartitionJoinOperation(ZONE_B_0, 1, 3),
+            new PartitionPromoteOperation(ZONE_B_0, 1),
             new PartitionJoinOperation(ZONE_B_1, 1, 1),
+            new PartitionPromoteOperation(ZONE_B_1, 1),
+            new PartitionDemoteOperation(BARE_1, 1),
             new PartitionLeaveOperation(BARE_1, 1, 1),
+            new PartitionDemoteOperation(BARE_3, 1),
             new PartitionLeaveOperation(BARE_3, 1, 1),
             new PartitionJoinOperation(ZONE_B_0, 2, 4),
+            new PartitionPromoteOperation(ZONE_B_0, 2),
             new PartitionJoinOperation(ZONE_B_1, 2, 2),
+            new PartitionPromoteOperation(ZONE_B_1, 2),
+            new PartitionDemoteOperation(BARE_1, 2),
             new PartitionLeaveOperation(BARE_1, 2, 1),
+            new PartitionDemoteOperation(BARE_3, 2),
             new PartitionLeaveOperation(BARE_3, 2, 1),
             new MemberLeaveOperation(BARE_1),
             new MemberLeaveOperation(BARE_3));

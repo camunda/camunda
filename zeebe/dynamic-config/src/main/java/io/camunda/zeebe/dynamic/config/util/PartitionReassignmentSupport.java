@@ -11,8 +11,10 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -326,9 +328,10 @@ public final class PartitionReassignmentSupport {
   }
 
   /**
-   * An existing partition changing shape: join new members, have removed members leave, and
-   * reconfigure the priority of any member present in both whose priority changed. A target
-   * identical to the current state produces no operations at all.
+   * An existing partition changing shape: join new members as learners promoted once caught up,
+   * demote and have removed members leave, and reconfigure the priority of any member present in
+   * both whose priority changed. A target identical to the current state produces no operations at
+   * all.
    */
   public static List<PartitionGroupOperation> movePartition(
       final PartitionMetadata current, final PartitionMetadata target) {
@@ -338,21 +341,27 @@ public final class PartitionReassignmentSupport {
     final var membersToJoin =
         target.members().stream()
             .filter(member -> !current.members().contains(member))
-            .map(
-                newMember ->
-                    (PartitionGroupOperation)
-                        new PartitionJoinOperation(
-                            newMember, partitionId, target.getPriority(newMember)))
-            .sorted(Comparator.comparing(PartitionGroupOperation::memberId))
+            .sorted()
+            .<PartitionGroupOperation>mapMulti(
+                (newMember, downstream) -> {
+                  downstream.accept(
+                      new PartitionJoinOperation(
+                          newMember, partitionId, target.getPriority(newMember)));
+                  downstream.accept(new PartitionPromoteOperation(newMember, partitionId));
+                })
             .toList();
+    // Demoting before leaving is safe unconditionally here: every join is emitted before any
+    // leave, and the target - which the generator validates to be non-empty - stays active, so
+    // another active replica always remains when the demotion runs.
     final var membersToLeave =
         current.members().stream()
             .filter(member -> !target.members().contains(member))
-            .map(
-                oldMember ->
-                    (PartitionGroupOperation)
-                        new PartitionLeaveOperation(oldMember, partitionId, 1))
-            .sorted(Comparator.comparing(PartitionGroupOperation::memberId))
+            .sorted()
+            .<PartitionGroupOperation>mapMulti(
+                (oldMember, downstream) -> {
+                  downstream.accept(new PartitionDemoteOperation(oldMember, partitionId));
+                  downstream.accept(new PartitionLeaveOperation(oldMember, partitionId, 1));
+                })
             .toList();
     final var membersToChangePriority =
         current.members().stream()

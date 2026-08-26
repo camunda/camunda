@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -183,7 +184,10 @@ public final class PartitionReassignmentOperationsGenerator {
     }
   }
 
-  /** A partition with no prior state: bootstrap the primary, then join every other member. */
+  /**
+   * A partition with no prior state: bootstrap the primary, then join every other member as a
+   * learner and promote it once caught up.
+   */
   private static List<PartitionGroupOperation> bootstrapPartition(
       final PartitionMetadata target,
       final Optional<DynamicPartitionConfig> config,
@@ -200,6 +204,7 @@ public final class PartitionReassignmentOperationsGenerator {
     for (final MemberId member : target.members().stream().sorted().toList()) {
       if (!member.equals(primary)) {
         operations.add(new PartitionJoinOperation(member, partitionId, target.getPriority(member)));
+        operations.add(new PartitionPromoteOperation(member, partitionId));
       }
     }
     return operations;

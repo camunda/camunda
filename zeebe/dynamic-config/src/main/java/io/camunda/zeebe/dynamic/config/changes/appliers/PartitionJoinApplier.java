@@ -25,19 +25,18 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code
- * PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation}, operating on a single
- * named {@link PartitionGroupConfiguration} instead of the legacy {@code ClusterConfiguration}.
- * Mirrors the legacy {@code PartitionJoinApplier} in {@code changes/}, which this does not replace
- * or modify.
+ * Applier for {@code PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation},
+ * operating on a single named {@link PartitionGroupConfiguration}. The member joins the partition's
+ * replication group as a non-voting learner - the first phase of a two-phase join - and the
+ * partition ends in the {@code LEARNER} state, from which the subsequent promote operation makes it
+ * a voting member. The {@code JOINING} state only spans the join itself and is deliberately not
+ * part of the partition distribution, so a restart within it retries the join from scratch; {@code
+ * LEARNER} is, so a restart after it recovers the partition from disk.
  *
- * <p>Unlike the legacy model — where every cluster member is always visible in the one flat member
- * map, so joining a partition is always an update to an existing {@code MemberState} — a broker may
- * not yet be a member of this particular partition group at all (e.g. its first partition
- * assignment in this group). This applier must therefore branch between {@link
+ * <p>A broker may not yet be a member of this particular partition group at all (e.g. its first
+ * partition assignment in this group). This applier must therefore branch between {@link
  * PartitionGroupConfiguration#addMember} (broker not yet in this group) and {@link
  * PartitionGroupConfiguration#updateMember} (broker already has other partitions in this group).
- * This distinction does not exist in the legacy applier.
  */
 public final class PartitionJoinApplier implements PartitionGroupConfigurationChangeApplier {
 
@@ -135,7 +134,7 @@ public final class PartitionJoinApplier implements PartitionGroupConfigurationCh
                         group.updateMember(
                             memberId,
                             broker ->
-                                broker.updatePartition(partitionId, PartitionState::toActive)));
+                                broker.updatePartition(partitionId, PartitionState::toLearner)));
               } else {
                 result.completeExceptionally(error);
               }
