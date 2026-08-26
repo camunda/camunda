@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.entities.listview;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -54,6 +55,16 @@ public class ProcessInstanceForListViewEntity
 
   private Long position;
   private Set<String> tags;
+
+  /**
+   * Message of an incident raised at the process level, i.e. one that is not attached to any flow
+   * node. Incidents attached to a flow node carry their message on the corresponding {@link
+   * FlowNodeInstanceForListViewEntity} instead.
+   *
+   * <p>Attention! This field will be filled in only for data imported after v. 8.8.37.
+   */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String errorMessage;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -263,6 +274,15 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public ProcessInstanceForListViewEntity setErrorMessage(final String errorMessage) {
+    this.errorMessage = errorMessage;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -285,7 +305,8 @@ public class ProcessInstanceForListViewEntity
         tenantId,
         joinRelation,
         position,
-        tags);
+        tags,
+        errorMessage);
   }
 
   @Override
@@ -316,6 +337,7 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(joinRelation, that.joinRelation)
         && Objects.equals(position, that.position)
-        && Objects.equals(tags, that.tags);
+        && Objects.equals(tags, that.tags)
+        && Objects.equals(errorMessage, that.errorMessage);
   }
 }
