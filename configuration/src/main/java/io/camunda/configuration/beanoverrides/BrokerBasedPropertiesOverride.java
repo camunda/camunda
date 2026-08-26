@@ -26,6 +26,7 @@ import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
+import io.camunda.configuration.beans.LegacySearchEngineConnectProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -60,7 +61,10 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@EnableConfigurationProperties(LegacyBrokerBasedProperties.class)
+@EnableConfigurationProperties({
+  LegacyBrokerBasedProperties.class,
+  LegacySearchEngineConnectProperties.class
+})
 @Profile(value = {"broker", "restore"})
 @DependsOn("unifiedConfigurationHelper")
 public class BrokerBasedPropertiesOverride {
@@ -71,12 +75,15 @@ public class BrokerBasedPropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
+  private final LegacySearchEngineConnectProperties legacySearchEngineConnectProperties;
 
   public BrokerBasedPropertiesOverride(
       final UnifiedConfiguration unifiedConfiguration,
-      final LegacyBrokerBasedProperties properties) {
+      final LegacyBrokerBasedProperties properties,
+      final LegacySearchEngineConnectProperties legacySearchEngineConnectProperties) {
     this.unifiedConfiguration = unifiedConfiguration;
     legacyBrokerBasedProperties = properties;
+    this.legacySearchEngineConnectProperties = legacySearchEngineConnectProperties;
   }
 
   @Bean
@@ -484,8 +491,49 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(args, "connect.indexPrefix", database.getIndexPrefix());
 
+    populateConnectionPool(args);
+
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
+  }
+
+  /**
+   * Propagates the connection-pool limits configured under 'camunda.database' to the exporter's
+   * search client, which otherwise falls back to the Apache HttpClient defaults no matter what the
+   * operator configured.
+   *
+   * <p>Unlike the fields above, an existing exporter argument is left alone rather than
+   * overwritten: sizing the exporter's pool differently from the webapps' pool is a legitimate
+   * setup, since the exporter drives the archiver. So 'camunda.database' only supplies the value
+   * the exporter has no answer for.
+   */
+  private void populateConnectionPool(final Map<String, Object> args) {
+    setConnectArgIfAbsent(
+        args, "maxConnections", legacySearchEngineConnectProperties.getMaxConnections());
+    setConnectArgIfAbsent(
+        args,
+        "maxConnectionsPerRoute",
+        legacySearchEngineConnectProperties.getMaxConnectionsPerRoute());
+  }
+
+  private void setConnectArgIfAbsent(
+      final Map<String, Object> args, final String key, final Integer value) {
+    if (value != null && !hasConnectArg(args, key)) {
+      setArg(args, "connect." + key, value);
+    }
+  }
+
+  /**
+   * Args keys reach the map exactly as the operator spelled them. Compare them the way the exporter
+   * itself reads them (case-insensitively, hyphens significant), so that a key the exporter would
+   * ignore does not suppress the value coming from 'camunda.database'.
+   */
+  private boolean hasConnectArg(final Map<String, Object> args, final String key) {
+    if (!(args.get("connect") instanceof final Map<?, ?> connectArgs)) {
+      return false;
+    }
+    return connectArgs.keySet().stream()
+        .anyMatch(existingKey -> key.equalsIgnoreCase(String.valueOf(existingKey)));
   }
 
   @SuppressWarnings("unchecked")

@@ -49,6 +49,11 @@ public class SecondaryStorageElasticsearchTest {
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
 
+  private static final int EXPECTED_MAX_CONNECTIONS = 50;
+  private static final int EXPECTED_MAX_CONNECTIONS_PER_ROUTE = 25;
+  private static final int EXPECTED_EXPORTER_MAX_CONNECTIONS = 200;
+  private static final int EXPECTED_EXPORTER_MAX_CONNECTIONS_PER_ROUTE = 100;
+
   @Nested
   @TestPropertySource(
       properties = {
@@ -396,7 +401,9 @@ public class SecondaryStorageElasticsearchTest {
 
       assertThat(exporterConfiguration.getConnect())
           .returns(null, ConnectConfiguration::getSocketTimeout)
-          .returns(null, ConnectConfiguration::getConnectTimeout);
+          .returns(null, ConnectConfiguration::getConnectTimeout)
+          .returns(null, ConnectConfiguration::getMaxConnections)
+          .returns(null, ConnectConfiguration::getMaxConnectionsPerRoute);
     }
 
     @Test
@@ -404,6 +411,110 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(searchEngineConnectProperties)
           .returns(null, SearchEngineConnectProperties::getSocketTimeout)
           .returns(null, SearchEngineConnectProperties::getConnectTimeout);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
+        "camunda.database.max-connections=" + EXPECTED_MAX_CONNECTIONS,
+        "camunda.database.max-connections-per-route=" + EXPECTED_MAX_CONNECTIONS_PER_ROUTE,
+      })
+  class WithConnectionPoolSet {
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    WithConnectionPoolSet(
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    @Test
+    void shouldApplyConnectionPoolToCamundaExporter() {
+      // given
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getConnect())
+          .returns(EXPECTED_MAX_CONNECTIONS, ConnectConfiguration::getMaxConnections)
+          .returns(
+              EXPECTED_MAX_CONNECTIONS_PER_ROUTE, ConnectConfiguration::getMaxConnectionsPerRoute);
+    }
+
+    @Test
+    void shouldApplyConnectionPoolToSearchEngineConnectProperties() {
+      // then
+      assertThat(searchEngineConnectProperties)
+          .returns(EXPECTED_MAX_CONNECTIONS, SearchEngineConnectProperties::getMaxConnections)
+          .returns(
+              EXPECTED_MAX_CONNECTIONS_PER_ROUTE,
+              SearchEngineConnectProperties::getMaxConnectionsPerRoute);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
+        "camunda.database.max-connections=" + EXPECTED_MAX_CONNECTIONS,
+        "camunda.database.max-connections-per-route=" + EXPECTED_MAX_CONNECTIONS_PER_ROUTE,
+        "zeebe.broker.exporters.camundaexporter.class-name=io.camunda.exporter.CamundaExporter",
+        "zeebe.broker.exporters.camundaexporter.args.connect.maxConnections="
+            + EXPECTED_EXPORTER_MAX_CONNECTIONS,
+        "zeebe.broker.exporters.camundaexporter.args.connect.maxConnectionsPerRoute="
+            + EXPECTED_EXPORTER_MAX_CONNECTIONS_PER_ROUTE,
+      })
+  class WithConnectionPoolSetOnBothTheDatabaseAndTheExporter {
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    WithConnectionPoolSetOnBothTheDatabaseAndTheExporter(
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    @Test
+    void shouldKeepTheConnectionPoolConfiguredOnTheExporter() {
+      // given
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getConnect())
+          .returns(EXPECTED_EXPORTER_MAX_CONNECTIONS, ConnectConfiguration::getMaxConnections)
+          .returns(
+              EXPECTED_EXPORTER_MAX_CONNECTIONS_PER_ROUTE,
+              ConnectConfiguration::getMaxConnectionsPerRoute);
+    }
+
+    @Test
+    void shouldKeepTheConnectionPoolConfiguredOnTheDatabaseForTheSearchClient() {
+      // then
+      assertThat(searchEngineConnectProperties)
+          .returns(EXPECTED_MAX_CONNECTIONS, SearchEngineConnectProperties::getMaxConnections)
+          .returns(
+              EXPECTED_MAX_CONNECTIONS_PER_ROUTE,
+              SearchEngineConnectProperties::getMaxConnectionsPerRoute);
     }
   }
 }
