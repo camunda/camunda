@@ -30,6 +30,11 @@ export const docsUrl = "https://docs.camunda.io/docs/next";
 
 export const isSaaS = Boolean(getClientConfigString("organizationId"));
 
+export const isNewDesignSystemEnabled = getClientConfigBoolean(
+  "isNewDesignSystemEnabled",
+  true,
+);
+
 export const resourcePermissions = getClientConfigObject(
   "resourcePermissions",
   {} as Record<ResourceType, PermissionType[]>,

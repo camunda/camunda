@@ -16,6 +16,7 @@ export declare global {
     idPattern?: string;
     resourcePermissions?: Record<string, string[]>;
     defaultRoleIds?: string[];
+    isNewDesignSystemEnabled?: string;
   }
 
   interface Window {

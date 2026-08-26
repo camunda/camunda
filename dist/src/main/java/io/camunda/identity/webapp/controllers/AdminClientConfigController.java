@@ -12,12 +12,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.SaasConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.swagger.v3.oas.annotations.Hidden;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -33,13 +36,19 @@ public class AdminClientConfigController {
   private static final String ID_PATTERN = "idPattern";
   private static final String RESOURCE_PERMISSIONS = "resourcePermissions";
   private static final String DEFAULT_ROLE_IDS = "defaultRoleIds";
+  private static final String IS_NEW_DESIGN_SYSTEM_ENABLED = "isNewDesignSystemEnabled";
   private static final String FALLBACK_CONFIG_JS = "window.clientConfig = {};";
   private static final String CONFIG_JS_TEMPLATE = "window.clientConfig = %s;";
 
   private final String clientConfigAsJS;
   private final ObjectMapper objectMapper;
+  private final Boolean newDesignSystemEnabledOverride;
 
-  public AdminClientConfigController(final CamundaSecurityLibraryProperties cslProperties) {
+  public AdminClientConfigController(
+      final CamundaSecurityLibraryProperties cslProperties,
+      @Value("${camunda.identity.new-design-system-enabled:#{null}}")
+          final Boolean newDesignSystemEnabledOverride) {
+    this.newDesignSystemEnabledOverride = newDesignSystemEnabledOverride;
     objectMapper = new ObjectMapper();
     clientConfigAsJS = generateClientConfig(cslProperties);
   }
@@ -69,8 +78,23 @@ public class AdminClientConfigController {
     config.put(ID_PATTERN, cslProperties.getIdValidationPattern());
     config.put(RESOURCE_PERMISSIONS, AuthorizationResourceType.buildResourcePermissionsMap());
     config.put(DEFAULT_ROLE_IDS, DefaultRole.ids());
+    config.put(
+        IS_NEW_DESIGN_SYSTEM_ENABLED,
+        String.valueOf(resolveNewDesignSystemEnabled(saasConfiguration)));
 
     return config;
+  }
+
+  /**
+   * Effective value of the new design system flag: an explicit {@code
+   * camunda.identity.new-design-system-enabled} always wins, otherwise it's enabled for
+   * Self-Managed and disabled for SaaS.
+   */
+  private boolean resolveNewDesignSystemEnabled(final SaasConfiguration saasConfiguration) {
+    if (newDesignSystemEnabledOverride != null) {
+      return newDesignSystemEnabledOverride;
+    }
+    return saasConfiguration == null || !StringUtils.hasText(saasConfiguration.getOrganizationId());
   }
 
   private boolean isOidcAuthentication(final CamundaSecurityLibraryProperties cslProperties) {
