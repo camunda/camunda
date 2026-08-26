@@ -70,6 +70,8 @@ public final class DatabaseConstants {
   public static final String INDEX_SUFFIX = "-000001";
   public static final String INDEX = "_index";
   public static final String TOO_MANY_BUCKETS_EXCEPTION_TYPE = "too_many_buckets_exception";
+  public static final String CONCURRENT_SNAPSHOT_EXECUTION_EXCEPTION_TYPE =
+      "concurrent_snapshot_execution_exception";
   public static final String INDEX_NOT_FOUND_EXCEPTION_TYPE = "index_not_found_exception";
   public static final String INDEX_ALREADY_EXISTS_EXCEPTION_TYPE =
       "resource_already_exists_exception";
