@@ -46,12 +46,14 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingSt
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
@@ -424,6 +426,14 @@ final class ClusterApiUtils {
               new Operation()
                   .operation(OperationEnum.PARTITION_LEAVE)
                   .partitionId(leave.partitionId());
+          case final PartitionPromoteOperation promote ->
+              new Operation()
+                  .operation(OperationEnum.PARTITION_PROMOTE)
+                  .partitionId(promote.partitionId());
+          case final PartitionDemoteOperation demote ->
+              new Operation()
+                  .operation(OperationEnum.PARTITION_DEMOTE)
+                  .partitionId(demote.partitionId());
           case final PartitionReconfigurePriorityOperation reconfigure ->
               new Operation()
                   .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
@@ -983,6 +993,16 @@ final class ClusterApiUtils {
                   .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_LEAVE)
                   .brokerId(brokerIdValue(leave.memberId()))
                   .partitionId(leave.partitionId());
+          case final PartitionPromoteOperation promote ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_PROMOTE)
+                  .brokerId(brokerIdValue(promote.memberId()))
+                  .partitionId(promote.partitionId());
+          case final PartitionDemoteOperation demote ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_DEMOTE)
+                  .brokerId(brokerIdValue(demote.memberId()))
+                  .partitionId(demote.partitionId());
           case final PartitionReconfigurePriorityOperation reconfigure ->
               new TopologyChangeCompletedInner()
                   .operation(

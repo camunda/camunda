@@ -589,6 +589,8 @@ schemas:
           - AWAIT_MODE_CHANGE
           - EXPORTING_STATE_CHANGE
           - REMOVE_PHYSICAL_TENANT
+          - PARTITION_PROMOTE
+          - PARTITION_DEMOTE
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
