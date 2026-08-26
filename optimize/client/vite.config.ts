@@ -83,11 +83,14 @@ export default defineConfig(({mode}) => ({
         target: 'http://localhost:8090',
         bypass: (req) => {
           const path = req.url;
-          if (path?.includes('/sso-callback')) {
+          if (path?.includes('/sso-callback') || path?.includes('/logout')) {
             return;
           }
 
+          // CSL mints `X-CSRF-TOKEN` on login, so it means authenticated; `camunda-session` exists
+          // before login too (it holds the OIDC authorization request) and cannot stand in for it.
           if (
+            req.headers.cookie?.includes('X-CSRF-TOKEN') ||
             req.headers.cookie?.includes('X-Optimize-Authorization_0') ||
             req.headers.cookie?.includes('X-Optimize-Refresh-Token')
           ) {
