@@ -495,14 +495,32 @@ public abstract class DocumentBasedSecondaryStorageDatabase
    *
    * <p>The legacy properties are still a raw map, so the reconciliation happens on the projected
    * map shape rather than on the typed fields.
+   *
+   * @throws IllegalArgumentException if any index is configured with fewer than one shard
    */
   public Map<String, Integer> resolveNumberOfShardsPerIndex() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        prefix() + ".number-of-shards-per-index",
-        numberOfShardsPerIndex.toIndexNameMap(),
-        ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
-        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
-        legacyShardsByIndexNameProperties());
+    final var shardsByIndexName =
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            prefix() + ".number-of-shards-per-index",
+            numberOfShardsPerIndex.toIndexNameMap(),
+            ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
+            BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+            legacyShardsByIndexNameProperties());
+
+    // An index cannot be created with zero shards, and shards are immutable afterwards, so the
+    // search engine would reject the whole schema creation on startup with an error that names
+    // neither the property nor the index.
+    shardsByIndexName.forEach(
+        (indexName, shards) -> {
+          if (shards < 1) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "%s.number-of-shards-per-index.%s must be at least 1, but was %d",
+                    prefix(), indexName, shards));
+          }
+        });
+
+    return shardsByIndexName;
   }
 
   public Map<String, String> getRefreshIntervalByIndexName() {
