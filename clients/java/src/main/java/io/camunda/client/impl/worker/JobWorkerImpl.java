@@ -279,13 +279,24 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
    * @param onRefused what to do with a job the executor would not take, which differs between a job
    *     the worker asked for and one the broker pushed to it
    * @return true if the executor took the job, in which case the given finalizer is guaranteed to
-   *     run once the handler is done
+   *     run once the handler is done. A false answer does not mean the handler never ran: an
+   *     executor may run the job on the calling thread and report it as refused all the same, so
+   *     anything the caller does with a refused job has to cope with the job having run.
    */
   private boolean handleActivatedJob(
       final ActivatedJob job, final Runnable finalizer, final Consumer<ActivatedJob> onRefused) {
     metrics.jobActivated(1);
+    // The executor may run the job on the calling thread and still report it as refused. Once the
+    // handler has started, only it knows what became of the job, so the flag below keeps the
+    // worker from stepping in afterwards.
+    final AtomicBoolean handlerStarted = new AtomicBoolean(false);
     try {
-      executor.execute(jobHandlerFactory.create(job, finalizer));
+      final Runnable jobRunnable = jobHandlerFactory.create(job, finalizer);
+      executor.execute(
+          () -> {
+            handlerStarted.set(true);
+            jobRunnable.run();
+          });
       return true;
     } catch (final RejectedExecutionException e) {
       if (isClosed()) {
@@ -295,6 +306,15 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       if (scheduledExecutorService.isShutdown() || scheduledExecutorService.isTerminated()) {
         LOG.warn("Underlying executor was closed before the worker. Closing the worker now.", e);
         close();
+        return false;
+      }
+
+      if (handlerStarted.get()) {
+        LOG.debug(
+            "Job with key {} ran on the calling thread even though the executor reported it as "
+                + "refused. Leaving the job to the handler that ran it.",
+            job.getKey(),
+            e);
         return false;
       }
 
