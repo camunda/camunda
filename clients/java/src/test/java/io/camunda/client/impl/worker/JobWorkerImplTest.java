@@ -537,6 +537,41 @@ final class JobWorkerImplTest {
   }
 
   @Test
+  void shouldNotHandBackAJobWhoseHandlerAlreadyRan() {
+    // given a worker whose handler executor runs a job and then reports it as refused
+    final int maxJobsActive = 3;
+    final AtomicInteger handledJobs = new AtomicInteger();
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobHandlingExecutor = new RunsThenRefusesExecutor();
+    gateway.respondWith(TestData.jobs(maxJobsActive));
+
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler((c, job) -> handledJobs.incrementAndGet())
+                .maxJobsActive(maxJobsActive)
+                .pollInterval(Duration.ofMillis(50))
+                .open()) {
+
+      // when the handler has run several rounds of jobs
+      Awaitility.await("Handler should run the activated jobs")
+          .atMost(Duration.ofSeconds(10))
+          .untilAtomic(handledJobs, Matchers.greaterThan(maxJobsActive * 2));
+
+      // then those jobs are left to the handler that ran them. Handing them back would have the
+      // broker offer them again, so a job the handler already completed could be run a second time
+      assertThat(gateway.getFailedJobs()).isEmpty();
+    }
+  }
+
+  @Test
   void shouldCloseIfExecutorIsClosed() {
     // given
     final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
