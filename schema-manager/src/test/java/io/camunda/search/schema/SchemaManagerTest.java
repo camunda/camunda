@@ -12,6 +12,7 @@ import static io.camunda.search.schema.utils.SchemaTestUtil.startupWithRetry;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.ID;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
+import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.utils.TestIndexDescriptor;
 import io.camunda.search.schema.utils.TestTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -516,6 +518,73 @@ class SchemaManagerTest {
         assertThat(logs.messagesAt(Level.WARN))
             .noneSatisfy(message -> assertThat(message).contains("single-shard by design"));
       }
+    }
+
+    @Test
+    void shouldWarnWhenAnExistingIndexDoesNotHaveTheConfiguredShardCount() {
+      // given — the index already exists with 1 shard, the operator now asks for 5
+      final var index = new TestIndexDescriptor("test", "mappings.json");
+      cfg.index().getShardsByIndexName().put(index.getIndexName(), 5);
+      final var mgr = buildManager(List.of(metaIndex, index), List.of());
+      when(client.getNumberOfShards(any())).thenReturn(Map.of(index.getFullQualifiedName(), 1));
+
+      // when
+      try (final var logs = LogCapturer.capturing(SchemaManager.class, Level.WARN)) {
+        startupWithRetry(mgr, cfg);
+
+        // then — shards are immutable, so the setting is a silent no-op without this
+        assertThat(logs.messagesAt(Level.WARN))
+            .anySatisfy(
+                message ->
+                    assertThat(message)
+                        .contains(index.getFullQualifiedName())
+                        .contains("cannot be changed after creation"));
+      }
+    }
+
+    @Test
+    void shouldNotWarnWhenAnExistingIndexAlreadyHasTheConfiguredShardCount() {
+      // given
+      final var index = new TestIndexDescriptor("test", "mappings.json");
+      cfg.index().getShardsByIndexName().put(index.getIndexName(), 5);
+      final var mgr = buildManager(List.of(metaIndex, index), List.of());
+      when(client.getNumberOfShards(any())).thenReturn(Map.of(index.getFullQualifiedName(), 5));
+
+      // when
+      try (final var logs = LogCapturer.capturing(SchemaManager.class, Level.WARN)) {
+        startupWithRetry(mgr, cfg);
+
+        // then
+        assertThat(logs.messagesAt(Level.WARN))
+            .noneSatisfy(
+                message -> assertThat(message).contains("cannot be changed after creation"));
+      }
+    }
+
+    @Test
+    void shouldNotFailStartupWhenShardCountsCannotBeRead() {
+      // given — a diagnostic must not be what fails an otherwise healthy startup
+      final var index = new TestIndexDescriptor("test", "mappings.json");
+      cfg.index().getShardsByIndexName().put(index.getIndexName(), 5);
+      final var mgr = buildManager(List.of(metaIndex, index), List.of());
+      when(client.getNumberOfShards(any()))
+          .thenThrow(new SearchEngineException("shard counts unavailable"));
+
+      // when / then
+      assertThatCode(() -> startupWithRetry(mgr, cfg)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldNotReadShardCountsWhenNoIndexIsExplicitlyConfigured() {
+      // given
+      final var index = new TestIndexDescriptor("test", "mappings.json");
+      final var mgr = buildManager(List.of(metaIndex, index), List.of());
+
+      // when
+      startupWithRetry(mgr, cfg);
+
+      // then — no configured override means nothing to compare against
+      verify(client, never()).getNumberOfShards(any());
     }
 
     @Test

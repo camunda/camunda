@@ -196,6 +196,7 @@ public class SchemaManager implements CloseableSilently {
       schemaMetadataStore.storeSchemaVersion(currentVersion);
     }
     updateSchemaSettings();
+    warnOnUnappliedShardCounts();
     createLifecyclePolicies();
     LOG.info("Schema management completed.");
   }
@@ -277,6 +278,57 @@ public class SchemaManager implements CloseableSilently {
     final boolean performCleanup = config.schemaManager().isPerformCleanup();
     final SchemaCleanup schemaCleanup = new SchemaCleanup(performCleanup, searchEngineClient);
     CompletableFuture.runAsync(schemaCleanup::performCleanup, virtualThreadExecutor);
+  }
+
+  /**
+   * Reports configured shard counts that an existing index does not actually have.
+   *
+   * <p>{@link #updateIndexSettings} only pushes {@code number_of_replicas}, because shards are
+   * immutable once an index exists. Changing {@code number-of-shards-per-index} on a running
+   * installation is therefore a silent no-op: the operator sees the setting they asked for in their
+   * configuration and a differently sharded index in the engine, with nothing connecting the two.
+   *
+   * <p>Only indices that already exist are compared — a missing one was either just created with
+   * the configured count or is not in use.
+   */
+  private void warnOnUnappliedShardCounts() {
+    final var explicitShards = config.index().getShardsByIndexName();
+    final var configuredShardsByIndexName = new HashMap<String, Integer>();
+    allIndexDescriptors.forEach(
+        descriptor ->
+            ofNullable(explicitShards.get(descriptor.getIndexName()))
+                .ifPresent(
+                    shards ->
+                        configuredShardsByIndexName.put(
+                            descriptor.getFullQualifiedName(), shards)));
+
+    if (configuredShardsByIndexName.isEmpty()) {
+      return;
+    }
+
+    final Map<String, Integer> actualShardsByIndexName;
+    try {
+      actualShardsByIndexName =
+          searchEngineClient.getNumberOfShards(configuredShardsByIndexName.keySet());
+    } catch (final Exception e) {
+      // A diagnostic must never be the thing that fails a startup that would otherwise succeed.
+      LOG.debug("Could not read shard counts to check them against the configuration", e);
+      return;
+    }
+
+    actualShardsByIndexName.forEach(
+        (indexName, actual) -> {
+          final var configured = configuredShardsByIndexName.get(indexName);
+          if (configured != null && !configured.equals(actual)) {
+            LOG.warn(
+                "Index '{}' is configured with '{}' primary shards but was created with '{}'. "
+                    + "Shards cannot be changed after creation, so the configured value has no "
+                    + "effect on this index; it applies only to newly created indices.",
+                indexName,
+                configured,
+                actual);
+          }
+        });
   }
 
   private void updateSchemaSettings() {
