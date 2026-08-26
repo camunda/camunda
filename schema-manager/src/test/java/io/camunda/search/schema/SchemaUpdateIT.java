@@ -154,6 +154,7 @@ class SchemaUpdateIT {
       for (final var thread : threads) {
         thread.join(Duration.ofSeconds(10));
       }
+      assertThat(threads).allMatch(thread -> !thread.isAlive());
 
       // then
       assertThat(exceptions).isEmpty();
