@@ -27,7 +27,7 @@ inputs:
     default: "false"
   harbor:
     description: |
-      If enabled, logs into Harbor with a CI account.
+      If enabled, logs into Harbor with a Harbor robot account.
       Harbor login is automatically disabled for fork PRs.
     required: false
     default: "false"
