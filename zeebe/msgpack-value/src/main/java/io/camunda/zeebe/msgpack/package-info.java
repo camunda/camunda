@@ -5,22 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+@NullMarked
 package io.camunda.zeebe.msgpack;
 
-import org.jspecify.annotations.Nullable;
-
-public class MsgpackException extends RuntimeException {
-  public MsgpackException() {}
-
-  public MsgpackException(final String message) {
-    super(message);
-  }
-
-  public MsgpackException(final String message, final @Nullable Throwable cause) {
-    super(message, cause);
-  }
-
-  public MsgpackException(final Throwable cause) {
-    super(cause);
-  }
-}
+import org.jspecify.annotations.NullMarked;
