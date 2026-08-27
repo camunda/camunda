@@ -33,17 +33,23 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const [passwordError, setPasswordError] = useState("");
   const [submitError, setSubmitError] = useState("");
 
-  const validateUsername = useCallback((value: string) => {
-    const isValid = value.trim().length > 0;
-    setUsernameError(isValid ? "" : "Username is required");
-    return isValid;
-  }, []);
+  const validateUsername = useCallback(
+    (value: string) => {
+      const isValid = value.trim().length > 0;
+      setUsernameError(isValid ? "" : t("usernameRequired"));
+      return isValid;
+    },
+    [t],
+  );
 
-  const validatePassword = useCallback((value: string) => {
-    const isValid = value.trim().length > 0;
-    setPasswordError(isValid ? "" : "Password is required");
-    return isValid;
-  }, []);
+  const validatePassword = useCallback(
+    (value: string) => {
+      const isValid = value.trim().length > 0;
+      setPasswordError(isValid ? "" : t("passwordRequired"));
+      return isValid;
+    },
+    [t],
+  );
 
   const submit = useCallback(
     (event: React.SubmitEvent) => {
