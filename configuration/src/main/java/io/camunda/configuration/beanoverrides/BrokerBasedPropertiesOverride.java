@@ -282,7 +282,6 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getEngine()
         .setMaxProcessDepth(camunda.getProcessing().getEngine().getMaxProcessDepth());
-
     override
         .getExperimental()
         .getEngine()

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration.engine;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -37,6 +38,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
   private StartupCfg startup = new StartupCfg();
   private StorageOrdinalsCfg storageOrdinals = new StorageOrdinalsCfg();
+  @JsonIgnore private boolean userTaskCompletionVariableAuditEnabled;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -208,6 +210,15 @@ public final class EngineCfg implements ConfigurationEntry {
     this.storageOrdinals = storageOrdinals;
   }
 
+  public boolean isUserTaskCompletionVariableAuditEnabled() {
+    return userTaskCompletionVariableAuditEnabled;
+  }
+
+  public void setUserTaskCompletionVariableAuditEnabled(
+      final boolean userTaskCompletionVariableAuditEnabled) {
+    this.userTaskCompletionVariableAuditEnabled = userTaskCompletionVariableAuditEnabled;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -309,6 +320,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setMessageStartLockReleasePollBatchLimit(
             processInstanceCreation.getMessageStartLockReleasePollBatchLimit())
         .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent())
+        .setUserTaskCompletionVariableAuditEnabled(userTaskCompletionVariableAuditEnabled)
         .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled())
         .setArchiverlessEnabled(storageOrdinals.isEnableArchiverless())
         .setFixedStorageOrdinalKey(storageOrdinals.getFixedStorageOrdinalKey())

@@ -107,6 +107,7 @@ public final class EngineConfiguration {
   public static final int DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT = 64;
 
   public static final boolean DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION = true;
+  public static final boolean DEFAULT_USER_TASK_COMPLETION_VARIABLE_AUDIT_ENABLED = false;
 
   public static final boolean DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS = false;
   public static final int DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL_KEY = -1;
@@ -228,6 +229,16 @@ public final class EngineConfiguration {
   public EngineConfiguration setMessagesTtlCheckerInterval(
       final Duration messagesTtlCheckerInterval) {
     this.messagesTtlCheckerInterval = messagesTtlCheckerInterval;
+    return this;
+  }
+
+  public boolean isUserTaskCompletionVariableAuditEnabled() {
+    return userTaskCompletionVariableAuditEnabled;
+  }
+
+  public EngineConfiguration setUserTaskCompletionVariableAuditEnabled(
+      final boolean userTaskCompletionVariableAuditEnabled) {
+    this.userTaskCompletionVariableAuditEnabled = userTaskCompletionVariableAuditEnabled;
     return this;
   }
 
