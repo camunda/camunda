@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pathlib
+import re
 from datetime import datetime, timedelta, timezone
 
 import classify
@@ -201,6 +203,25 @@ def test_every_supported_base_ref_is_dispatchable():
     for ref in plan.SUPPORTED_BASE_REFS:
         result = _plan([_cand(base_ref=ref)])
         assert len(result.dispatches) == 1, ref
+
+
+def test_supported_base_refs_match_the_fix_workflow_whitelist():
+    # These two lists drifted the moment stable/8.10 was cut: the branch got the whole
+    # pipeline and started running AlwaysGreen, while both whitelists still ended at
+    # stable/8.9, so every 8.10 failure was withheld. Assert them equal rather than
+    # trusting a comment to keep them in step.
+    workflow = (
+        pathlib.Path(__file__).resolve().parents[2]
+        / "workflows"
+        / "alwaysgreen-fix.yml"
+    ).read_text()
+    # Tolerant of formatting so this fails on drift and not on a reflow: `[^)]` spans
+    # newlines for a wrapped list, whitespace is allowed around each `|`, and every
+    # token is stripped before comparing.
+    match = re.search(r"^\s*(main\s*\|[^)]*)\)\s*;;", workflow, re.M)
+    assert match, "no base_ref case statement found in alwaysgreen-fix.yml"
+    refs = {token.strip() for token in match.group(1).split("|")} - {""}
+    assert refs == set(plan.SUPPORTED_BASE_REFS)
 
 
 def test_unsupported_ref_is_reported_before_any_other_reason():

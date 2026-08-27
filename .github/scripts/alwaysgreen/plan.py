@@ -41,7 +41,9 @@ SUPPRESSED_CAP = "per-run-cap-reached"
 #: statement in alwaysgreen-fix.yml: dispatching anything else spends a runner only to
 #: fail on the agent's first step, which is what happened to run 31115770750 on
 #: `ci/alwaysgreen-helm-live-check`.
-SUPPORTED_BASE_REFS = frozenset({"main", "stable/8.7", "stable/8.8", "stable/8.9"})
+SUPPORTED_BASE_REFS = frozenset(
+    {"main", "stable/8.7", "stable/8.8", "stable/8.9", "stable/8.10"}
+)
 
 
 #: How long an open fix PR's key label keeps holding its dispatch key. The lock is
