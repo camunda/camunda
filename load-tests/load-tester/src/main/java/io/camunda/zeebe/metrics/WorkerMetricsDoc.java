@@ -112,6 +112,64 @@ public enum WorkerMetricsDoc implements ExtendedMeterDocumentation {
   },
 
   /**
+   * The round-trip duration of the job completion dispatched at the end of job handling, from
+   * sending the command until the response arrives. The completion is sent without being awaited,
+   * so its latency never shows up in {@link #HANDLE_DURATION} — yet it delays the broker observing
+   * the job as done, and with it the creation of the next job in the process instance. That makes
+   * it the signal that explains throughput loss which the per-thread occupancy metrics cannot see.
+   *
+   * <p>Buckets are dense around one second because that is the fixed retry interval Apache HC5
+   * applies to a retried REST request (HTTP 429/503 or a stale connection), so a single retry is
+   * distinguishable from a genuinely slow broker.
+   */
+  COMPLETE_DURATION {
+    private static final KeyName[] KEY_NAMES = new KeyName[] {WorkerMetricKeyNames.OUTCOME};
+
+    private static final Duration[] BUCKETS = {
+      Duration.ofMillis(5),
+      Duration.ofMillis(10),
+      Duration.ofMillis(25),
+      Duration.ofMillis(50),
+      Duration.ofMillis(75),
+      Duration.ofMillis(100),
+      Duration.ofMillis(250),
+      Duration.ofMillis(500),
+      Duration.ofMillis(750),
+      Duration.ofSeconds(1),
+      Duration.ofMillis(1250),
+      Duration.ofMillis(1500),
+      Duration.ofSeconds(2),
+      Duration.ofSeconds(5),
+      Duration.ofSeconds(10)
+    };
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
+    @Override
+    public String getDescription() {
+      return "The round-trip duration of the dispatched job completion, tagged by outcome.";
+    }
+
+    @Override
+    public String getName() {
+      return "worker.complete.duration";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return BUCKETS;
+    }
+  },
+
+  /**
    * The number of dispatched job completions whose response has not been checked yet. A growing
    * value means completions are being sent faster than the broker answers them; once it reaches the
    * queue capacity, tracking is dropped for further completions.

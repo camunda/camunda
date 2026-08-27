@@ -19,6 +19,7 @@ import io.camunda.zeebe.metrics.WorkerMetricsDoc.WorkerMetricKeyNames;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.worker.ResponseChecker.PendingRequest;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PostConstruct;
@@ -28,7 +29,6 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
@@ -47,7 +47,7 @@ public class Worker {
   private final CamundaClient client;
   private final WorkerProperties workerCfg;
   private final String variables;
-  private final BlockingQueue<Future<?>> requestFutures =
+  private final BlockingQueue<PendingRequest> requestFutures =
       new ArrayBlockingQueue<>(REQUEST_FUTURES_CAPACITY);
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
@@ -64,7 +64,7 @@ public class Worker {
     this.client = client;
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
-    responseChecker = new ResponseChecker(requestFutures);
+    responseChecker = new ResponseChecker(requestFutures, registry);
     this.connectionMonitor = connectionMonitor;
 
     handleDurationTimer =
@@ -150,7 +150,8 @@ public class Worker {
 
     final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
     addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
-    if (!requestFutures.offer(command.send())) {
+    final long completeStartNanos = System.nanoTime();
+    if (!requestFutures.offer(new PendingRequest(command.send(), completeStartNanos))) {
       // Non-blocking: if the response-check queue is saturated, drop tracking for this
       // completion rather than stalling the job handler thread (which would cascade into
       // broker timeouts). We lose visibility into its eventual result — log throttled so

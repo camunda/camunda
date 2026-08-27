@@ -278,6 +278,43 @@ histogram_quantile(0.99, sum by (le) (rate(worker_handle_duration_seconds_bucket
 
 ---
 
+### Worker job-completion latency
+
+Round-trip time of the complete command the worker dispatches at the end of job handling. Tagged by
+`outcome` (`success`, `backpressure`, `error`), where `backpressure` covers both transports —
+`RESOURCE_EXHAUSTED` over gRPC and HTTP 429/503 over REST.
+
+The completion is sent without being awaited, so this latency is invisible in the job-handling
+duration above — but it still delays the broker observing the job as done, and with it the next job
+of the process instance. That makes it the metric to check when throughput drops while the
+job-handling duration stays flat.
+
+- **Unit:** seconds (quantiles)
+- **Measurement:** p50, p90, p99
+
+```promql
+histogram_quantile(0.99, sum by (le) (rate(worker_complete_duration_seconds_bucket{namespace=~"$namespace", outcome="success"}[$__rate_interval])))
+```
+
+---
+
+### Worker completion-queue depth
+
+Number of dispatched completions whose response has not been checked yet. By Little's law this is
+the completion latency multiplied by the completion rate, so it rises whenever completions are sent
+faster than the broker answers them. It is a coarser view of the metric above and predates it;
+prefer the latency histogram, and read the depth as the saturation signal — once it reaches the
+queue capacity (10 000), response tracking is dropped for further completions.
+
+- **Unit:** count
+- **Measurement:** current value
+
+```promql
+max by (pod) (worker_completion_queue_depth{namespace=~"$namespace"})
+```
+
+---
+
 ## Resources
 
 The following metrics apply to all running applications (Camunda and secondary storage). Replace
