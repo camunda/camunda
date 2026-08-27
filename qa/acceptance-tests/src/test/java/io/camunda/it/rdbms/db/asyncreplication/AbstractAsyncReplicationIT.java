@@ -125,11 +125,13 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
                       .getRdbms()
                       .getAsyncReplication()
                       .setPauseOnMaxLagExceeded(true);
-                  cfg.getData()
-                      .getSecondaryStorage()
-                      .getRdbms()
-                      .getAsyncReplication()
-                      .setDelay(Duration.ofSeconds(5));
+                  if (getReplicationType() == ReplicationType.DELAY) {
+                    cfg.getData()
+                        .getSecondaryStorage()
+                        .getRdbms()
+                        .getAsyncReplication()
+                        .setDelay(Duration.ofSeconds(30));
+                  }
                   cfg.getData()
                       .getSecondaryStorage()
                       .getRdbms()
