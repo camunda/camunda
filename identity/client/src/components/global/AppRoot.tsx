@@ -9,13 +9,17 @@
 import styled, { createGlobalStyle } from "styled-components";
 import { FC, ReactNode, useEffect } from "react";
 import { styles } from "@carbon/elements";
-import { IS_NAV_V2_ENABLED } from "src/feature-flags";
+import {
+  IS_NAV_V2_ENABLED,
+  IS_NEW_DESIGN_SYSTEM_ENABLED,
+} from "src/feature-flags";
 import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";
 import { useQuery } from "@tanstack/react-query";
 import { useSessionHeartbeat } from "@camunda/session-heartbeat/react";
 import { authenticationQueries } from "src/utility/api/authentication/queries";
-import ForbiddenComponent from "src/pages/forbidden/ForbiddenPage";
+import ForbiddenComponentV1 from "src/pages/forbidden/ForbiddenPage";
+import ForbiddenComponentV2 from "src/pages/forbiddenV2/ForbiddenPage";
 import LateLoading from "src/components/layout/LateLoading";
 import { activateSession, disableSession } from "src/utility/auth";
 import { ApiError, getCsrfToken } from "src/utility/api/request";
@@ -24,6 +28,10 @@ import { queryClient } from "src/utility/api/queryClient";
 import { getSessionHeartbeatApiUrl } from "src/configuration/urlConfig";
 import { C3Provider } from "../layout/C3Provider";
 import { ThemeProvider } from "src/common/theme/ThemeProvider";
+
+const ForbiddenComponent = IS_NEW_DESIGN_SYSTEM_ENABLED
+  ? ForbiddenComponentV2
+  : ForbiddenComponentV1;
 
 const GlobalStyle = createGlobalStyle`
   body {
