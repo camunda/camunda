@@ -11,6 +11,7 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Shared resilience4j {@link Retry} configuration for search-client calls made on the
@@ -40,20 +41,35 @@ public final class TransientRetry {
    * @return {@code true} if {@code throwable} indicates a transient infrastructure problem (e.g. a
    *     connection drop or a search-server error such as a shard-availability outage) rather than a
    *     request or configuration problem that a retry cannot fix. Anything else — including a plain
-   *     {@link RuntimeException} from a programming error — is attempted once and never retried, so
-   *     it propagates instead of being silently swallowed.
+   *     {@link RuntimeException} from a programming error — is attempted once and never retried;
+   *     what happens to it afterwards is the caller's decision.
    *     <p>{@link CamundaSearchException.Reason#UNKNOWN} is deliberately not transient: the search
    *     clients classify every real infrastructure failure explicitly, so UNKNOWN only ever reaches
    *     here from a deterministic error raised without a reason (e.g. no matching resource-access
    *     controller, or a malformed authorization filter), which a retry cannot fix.
    */
   public static boolean isTransient(final Throwable throwable) {
-    if (throwable instanceof final CamundaSearchException cse) {
-      return switch (cse.getReason()) {
-        case CONNECTION_FAILED, SEARCH_CLIENT_FAILED, SEARCH_SERVER_FAILED -> true;
-        default -> false;
-      };
+    // Callers that reach the search layer through the *Services API see the failure only after
+    // ErrorMapper has rewrapped it as a ServiceException whose Status collapses several reasons
+    // onto INTERNAL; the preserved cause is what still carries the precise reason.
+    final var searchException = findSearchException(throwable);
+    if (searchException == null) {
+      return false;
     }
-    return false;
+    return switch (searchException.getReason()) {
+      case CONNECTION_FAILED, SEARCH_CLIENT_FAILED, SEARCH_SERVER_FAILED -> true;
+      default -> false;
+    };
+  }
+
+  private static @Nullable CamundaSearchException findSearchException(final Throwable throwable) {
+    for (Throwable current = throwable;
+        current != null && current != current.getCause();
+        current = current.getCause()) {
+      if (current instanceof final CamundaSearchException cse) {
+        return cse;
+      }
+    }
+    return null;
   }
 }
