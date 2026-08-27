@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
@@ -104,8 +105,27 @@ class ProcessDefinitionDeletionJobHandlerTest {
     handler.handle(job());
 
     // then
+    verify(processDefinitionWriter).markDefinitionAsDeleted(DEFINITION_ID);
     verify(processInstanceWriter).deleteInstancesByDefinitionId(BPMN_PROCESS_ID, DEFINITION_ID);
     verify(processDefinitionWriter).deleteDefinition(DEFINITION_ID);
+  }
+
+  @Test
+  void shouldMarkDefinitionAsDeletedBeforeDeletingInstancesAndHardDeletingLast() {
+    // given
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definition()));
+
+    // when
+    handler.handle(job());
+
+    // then
+    final var order = inOrder(processDefinitionWriter, processInstanceWriter);
+    order.verify(processDefinitionWriter).markDefinitionAsDeleted(DEFINITION_ID);
+    order
+        .verify(processInstanceWriter)
+        .deleteInstancesByDefinitionId(BPMN_PROCESS_ID, DEFINITION_ID);
+    order.verify(processDefinitionWriter).deleteDefinition(DEFINITION_ID);
   }
 
   @Test
@@ -118,11 +138,30 @@ class ProcessDefinitionDeletionJobHandlerTest {
     handler.handle(job());
 
     // then
+    verify(processDefinitionWriter, never()).markDefinitionAsDeleted(anyString());
     verify(processInstanceWriter, never()).deleteInstancesByDefinitionId(anyString(), anyString());
     verify(processDefinitionWriter, never()).deleteDefinition(anyString());
     verify(reportService, never()).clearCachedReportXml(anyString(), any());
     verify(definitionService, never())
         .invalidateProcessDefinitionIfLatest(anyString(), any(), anyString());
+  }
+
+  @Test
+  void shouldRetryOnRetryableErrorWhenMarkingDefinitionAsDeleted() {
+    // given
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definition()));
+    doThrow(new OptimizeRuntimeException("transient", new SocketTimeoutException("boom")))
+        .doNothing()
+        .when(processDefinitionWriter)
+        .markDefinitionAsDeleted(DEFINITION_ID);
+
+    // when
+    handler.handle(job());
+
+    // then
+    verify(processDefinitionWriter, times(2)).markDefinitionAsDeleted(DEFINITION_ID);
+    verify(processDefinitionWriter).deleteDefinition(DEFINITION_ID);
   }
 
   @Test
@@ -202,7 +241,7 @@ class ProcessDefinitionDeletionJobHandlerTest {
   }
 
   @Test
-  void shouldCheckRemainingVersionsAfterDeletingSoAConcurrentSiblingDeleteIsNeverMissed() {
+  void shouldCheckRemainingVersionsAfterMarkingThisOneAsDeletedSoItIsNeverCountedAsRemaining() {
     when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
         .thenReturn(Optional.of(definition()));
     when(definitionReader.getDefinitionVersions(
@@ -214,10 +253,11 @@ class ProcessDefinitionDeletionJobHandlerTest {
 
     // then
     final var order = inOrder(definitionReader, processDefinitionWriter);
-    order.verify(processDefinitionWriter).deleteDefinition(DEFINITION_ID);
+    order.verify(processDefinitionWriter).markDefinitionAsDeleted(DEFINITION_ID);
     order
         .verify(definitionReader)
         .getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of(TENANT_ID));
+    order.verify(processDefinitionWriter).deleteDefinition(DEFINITION_ID);
   }
 
   @Test
@@ -339,6 +379,33 @@ class ProcessDefinitionDeletionJobHandlerTest {
     verify(processInstanceWriter, times(1))
         .deleteInstancesByDefinitionId(BPMN_PROCESS_ID, DEFINITION_ID);
     verify(processDefinitionWriter, never()).deleteDefinition(anyString());
+  }
+
+  @Test
+  void shouldResumeCleanupOnANewHandleCallAfterAPriorTerminalFailure() {
+    // given -- the first attempt fails terminally right after the definition was marked deleted, so
+    // nothing else in the cleanup tail ran
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definition()));
+    doThrow(new IllegalStateException("not retryable"))
+        .when(processInstanceWriter)
+        .deleteInstancesByDefinitionId(BPMN_PROCESS_ID, DEFINITION_ID);
+    assertThatThrownBy(() -> handler.handle(job())).isInstanceOf(IllegalStateException.class);
+    verify(processDefinitionWriter).markDefinitionAsDeleted(DEFINITION_ID);
+    verify(processDefinitionWriter, never()).deleteDefinition(anyString());
+
+    // when -- the job is retried: the definition lookup still finds the soft-deleted definition
+    // and this time the instance deletion succeeds
+    doNothing()
+        .when(processInstanceWriter)
+        .deleteInstancesByDefinitionId(BPMN_PROCESS_ID, DEFINITION_ID);
+    handler.handle(job());
+
+    // then -- the remainder of the cleanup tail, including the final hard-delete, now completes
+    verify(reportService).clearCachedReportXml(BPMN_PROCESS_ID, TENANT_ID);
+    verify(definitionService)
+        .invalidateProcessDefinitionIfLatest(BPMN_PROCESS_ID, TENANT_ID, VERSION);
+    verify(processDefinitionWriter).deleteDefinition(DEFINITION_ID);
   }
 
   private JobRegistryEntryDto job() {

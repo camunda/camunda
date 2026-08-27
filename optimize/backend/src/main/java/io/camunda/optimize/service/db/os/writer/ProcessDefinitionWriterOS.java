@@ -77,12 +77,14 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
   @Override
   public void markDefinitionAsDeleted(final String definitionId) {
     LOG.debug("Marking process definition with ID {} as deleted", definitionId);
+    // Refresh immediately: callers rely on a subsequent search seeing this delete right away
     final UpdateRequest.Builder updateReqBuilder =
         new UpdateRequest.Builder<>()
             .index(PROCESS_DEFINITION_INDEX_NAME)
             .id(definitionId)
             .script(MARK_AS_DELETED_SCRIPT)
-            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+            .refresh(Refresh.True);
     final String errorMessage =
         String.format(
             "There was a problem when trying to mark process definition with ID %s as deleted",
