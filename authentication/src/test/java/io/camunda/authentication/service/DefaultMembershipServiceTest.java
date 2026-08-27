@@ -10,11 +10,14 @@ package io.camunda.authentication.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.utils.TransientRetry;
+import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -24,14 +27,19 @@ import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.security.core.port.out.MembershipPort.PrincipalType;
 import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.service.registry.DefaultServiceRegistry;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +55,10 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 class DefaultMembershipServiceTest {
 
   private static final String TENANT_A = "tenanta";
+
+  // Never used on the search path — GroupServices only needs it to be non-null at construction.
+  private static final ApiServicesExecutorProvider EXECUTOR_PROVIDER =
+      new ApiServicesExecutorProvider(Executors.newVirtualThreadPerTaskExecutor());
 
   @Mock private MappingRuleServices mappingRuleServices;
   @Mock private TenantServices tenantServices;
@@ -84,6 +96,16 @@ class DefaultMembershipServiceTest {
 
   private MembershipQuery baseQuery() {
     return new MembershipQuery(Map.of("sub", "alice"), "alice", PrincipalType.USER);
+  }
+
+  /**
+   * The exception a {@code *Services} lookup actually throws: every search failure is rewrapped by
+   * {@link ErrorMapper} on its way out, so stubbing a raw {@link CamundaSearchException} would test
+   * a shape the retry never meets in production.
+   */
+  private static ServiceException translatedSearchFailure(
+      final Reason reason, final String message) {
+    return ErrorMapper.mapSearchError(new CamundaSearchException(message, reason));
   }
 
   @Test
@@ -136,9 +158,42 @@ class DefaultMembershipServiceTest {
   }
 
   @Test
+  void groupIdsFallsBackToEmptyWhenTheRealServiceRewrapsTheSearchFailure() {
+    // given — a real GroupServices, so the failure travels the production path through
+    // SearchQueryService.executeSearchRequest, which rewraps the CamundaSearchException before the
+    // retry ever sees it. A service mocked to throw the raw exception skips that boundary and
+    // cannot show whether the retry survives it.
+    final var searchClient = mock(GroupSearchClient.class);
+    when(searchClient.withSecurityContext(any())).thenReturn(searchClient);
+    when(searchClient.searchGroups(any()))
+        .thenThrow(new CamundaSearchException("all shards failed", Reason.SEARCH_CLIENT_FAILED));
+    final var serviceUnderTest = serviceWithRealGroupServices(searchClient);
+    final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
+
+    // when / then
+    assertThat(serviceUnderTest.groupIds(query)).isEmpty();
+    verify(searchClient, times(TransientRetry.MAX_ATTEMPTS)).searchGroups(any());
+  }
+
+  private DefaultMembershipService serviceWithRealGroupServices(
+      final GroupSearchClient searchClient) {
+    final var realGroupServices =
+        new GroupServices(
+            "default", null, new SecurityContextProvider(), searchClient, EXECUTOR_PROVIDER, null);
+    final var registry =
+        DefaultServiceRegistry.of(
+            b ->
+                b.mappingRuleServices("default", mappingRuleServices)
+                    .groupServices("default", realGroupServices)
+                    .roleServices("default", roleServices)
+                    .tenantServices("default", tenantServices));
+    return new DefaultMembershipService(registry, new CamundaSecurityLibraryProperties());
+  }
+
+  @Test
   void groupIdsFallsBackToEmptyAfterExhaustingRetriesOnTransientFailure() {
     when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
-        .thenThrow(new CamundaSearchException("shards unavailable", Reason.SEARCH_SERVER_FAILED));
+        .thenThrow(translatedSearchFailure(Reason.SEARCH_SERVER_FAILED, "shards unavailable"));
     final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
 
     assertThat(service.groupIds(query)).isEmpty();
@@ -148,7 +203,7 @@ class DefaultMembershipServiceTest {
   @Test
   void groupIdsRecoversAfterTransientFailureWithinRetryBudget() {
     when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
-        .thenThrow(new CamundaSearchException("connection refused", Reason.CONNECTION_FAILED))
+        .thenThrow(translatedSearchFailure(Reason.CONNECTION_FAILED, "connection refused"))
         .thenReturn(List.of(new GroupEntity(1L, "g1", "group", null)));
     final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
 
@@ -159,10 +214,10 @@ class DefaultMembershipServiceTest {
   @Test
   void groupIdsPropagatesNonTransientFailureWithoutRetry() {
     when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
-        .thenThrow(new CamundaSearchException("invalid query", Reason.INVALID_ARGUMENT));
+        .thenThrow(translatedSearchFailure(Reason.INVALID_ARGUMENT, "invalid query"));
     final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
 
-    assertThatThrownBy(() -> service.groupIds(query)).isInstanceOf(CamundaSearchException.class);
+    assertThatThrownBy(() -> service.groupIds(query)).isInstanceOf(ServiceException.class);
     verify(groupServices, times(1)).getGroupsByMemberTypeAndMemberIds(any(), any());
   }
 
@@ -185,10 +240,12 @@ class DefaultMembershipServiceTest {
     // resource-access controller). The search clients always classify real infrastructure
     // failures explicitly, so UNKNOWN must not be swallowed as "no memberships found".
     when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
-        .thenThrow(new CamundaSearchException("no matching resource access controller found"));
+        .thenThrow(
+            translatedSearchFailure(
+                Reason.UNKNOWN, "no matching resource access controller found"));
     final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
 
-    assertThatThrownBy(() -> service.groupIds(query)).isInstanceOf(CamundaSearchException.class);
+    assertThatThrownBy(() -> service.groupIds(query)).isInstanceOf(ServiceException.class);
     verify(groupServices, times(1)).getGroupsByMemberTypeAndMemberIds(any(), any());
   }
 
@@ -204,7 +261,7 @@ class DefaultMembershipServiceTest {
   @Test
   void roleIdsFallsBackToEmptyAfterExhaustingRetriesOnTransientFailure() {
     when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
-        .thenThrow(new CamundaSearchException("shards unavailable", Reason.SEARCH_SERVER_FAILED));
+        .thenThrow(translatedSearchFailure(Reason.SEARCH_SERVER_FAILED, "shards unavailable"));
     final var query = baseQuery().withMappingRuleIds(List.of()).withGroupIds(List.of("g1"));
 
     assertThat(service.roleIds(query)).isEmpty();
@@ -214,10 +271,10 @@ class DefaultMembershipServiceTest {
   @Test
   void roleIdsPropagatesNonTransientFailureWithoutRetry() {
     when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
-        .thenThrow(new CamundaSearchException("forbidden", Reason.FORBIDDEN));
+        .thenThrow(translatedSearchFailure(Reason.FORBIDDEN, "forbidden"));
     final var query = baseQuery().withMappingRuleIds(List.of()).withGroupIds(List.of("g1"));
 
-    assertThatThrownBy(() -> service.roleIds(query)).isInstanceOf(CamundaSearchException.class);
+    assertThatThrownBy(() -> service.roleIds(query)).isInstanceOf(ServiceException.class);
     verify(roleServices, times(1)).getRolesByMemberTypeAndMemberIds(any(), any());
   }
 
@@ -237,7 +294,7 @@ class DefaultMembershipServiceTest {
   @Test
   void tenantIdsFallsBackToEmptyAfterExhaustingRetriesOnTransientFailure() {
     when(tenantServices.getTenantsByMemberTypeAndMemberIds(any(), any()))
-        .thenThrow(new CamundaSearchException("shards unavailable", Reason.SEARCH_SERVER_FAILED));
+        .thenThrow(translatedSearchFailure(Reason.SEARCH_SERVER_FAILED, "shards unavailable"));
     final var query =
         baseQuery()
             .withMappingRuleIds(List.of())
@@ -251,21 +308,21 @@ class DefaultMembershipServiceTest {
   @Test
   void tenantIdsPropagatesNonTransientFailureWithoutRetry() {
     when(tenantServices.getTenantsByMemberTypeAndMemberIds(any(), any()))
-        .thenThrow(new CamundaSearchException("not found", Reason.NOT_FOUND));
+        .thenThrow(translatedSearchFailure(Reason.NOT_FOUND, "not found"));
     final var query =
         baseQuery()
             .withMappingRuleIds(List.of())
             .withGroupIds(List.of("g1"))
             .withRoleIds(List.of("r1"));
 
-    assertThatThrownBy(() -> service.tenantIds(query)).isInstanceOf(CamundaSearchException.class);
+    assertThatThrownBy(() -> service.tenantIds(query)).isInstanceOf(ServiceException.class);
     verify(tenantServices, times(1)).getTenantsByMemberTypeAndMemberIds(any(), any());
   }
 
   @Test
   void mappingRuleIdsFallsBackToEmptyAfterExhaustingRetriesOnTransientFailure() {
     when(mappingRuleServices.getMatchingMappingRules(any(), any()))
-        .thenThrow(new CamundaSearchException("shards unavailable", Reason.SEARCH_SERVER_FAILED));
+        .thenThrow(translatedSearchFailure(Reason.SEARCH_SERVER_FAILED, "shards unavailable"));
 
     assertThat(service.mappingRuleIds(baseQuery())).isEmpty();
     verify(mappingRuleServices, times(3)).getMatchingMappingRules(any(), any());
@@ -274,10 +331,10 @@ class DefaultMembershipServiceTest {
   @Test
   void mappingRuleIdsPropagatesNonTransientFailureWithoutRetry() {
     when(mappingRuleServices.getMatchingMappingRules(any(), any()))
-        .thenThrow(new CamundaSearchException("not unique", Reason.NOT_UNIQUE));
+        .thenThrow(translatedSearchFailure(Reason.NOT_UNIQUE, "not unique"));
 
     assertThatThrownBy(() -> service.mappingRuleIds(baseQuery()))
-        .isInstanceOf(CamundaSearchException.class);
+        .isInstanceOf(ServiceException.class);
     verify(mappingRuleServices, times(1)).getMatchingMappingRules(any(), any());
   }
 
