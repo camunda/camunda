@@ -17,6 +17,27 @@ import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {isTaskTimeoutError} from './taskErrorHandling';
 import {parseDenialReason} from './parseDenialReason';
+import {toast} from '@camunda/design-system';
+
+type NotifyOptions = {
+	kind: 'error' | 'info' | 'success';
+	title: string;
+	description?: string;
+};
+
+function notify({kind, title, description}: NotifyOptions, isShadcn: boolean) {
+	if (isShadcn) {
+		toast[kind](title, {description});
+		return;
+	}
+
+	notificationsStore.displayNotification({
+		kind,
+		title,
+		subtitle: description,
+		isDismissable: true,
+	});
+}
 
 type CompletionFailure = {reason: 'timeout'} | {reason: 'failed'; subtitle?: string};
 
@@ -26,6 +47,7 @@ type MachineInput = {
 	currentUser: string;
 	initialTaskState: UserTask['state'];
 	initialAssignee: string | null;
+	isShadcn?: boolean;
 };
 
 type MachineContext = Omit<MachineInput, 'initialTaskState' | 'initialAssignee'> & {
@@ -127,13 +149,15 @@ const taskCompletionMachine = setup({
 				});
 			}
 		},
-		notifyCompletionDelayed: () => {
-			notificationsStore.displayNotification({
-				kind: 'info',
-				title: t('tasklist.taskDetailsCompletionDelayInfoTitle'),
-				subtitle: t('tasklist.taskDetailsCompletionDelayInfoSubtitle'),
-				isDismissable: true,
-			});
+		notifyCompletionDelayed: ({context}) => {
+			notify(
+				{
+					kind: 'info',
+					title: t('tasklist.taskDetailsCompletionDelayInfoTitle'),
+					description: t('tasklist.taskDetailsCompletionDelayInfoSubtitle'),
+				},
+				context.isShadcn ?? false,
+			);
 		},
 		commitTask: ({context}, params: {task: UserTask | undefined}) => {
 			const {queryClient, userTaskKey} = context;
@@ -144,23 +168,27 @@ const taskCompletionMachine = setup({
 
 			queryClient.invalidateQueries({queryKey: ['userTasks']});
 		},
-		notifyCompletionSuccess: () => {
-			notificationsStore.displayNotification({
-				kind: 'success',
-				title: t('tasklist.taskCompletedNotification'),
-				isDismissable: true,
-			});
+		notifyCompletionSuccess: ({context}) => {
+			notify(
+				{
+					kind: 'success',
+					title: t('tasklist.taskCompletedNotification'),
+				},
+				context.isShadcn ?? false,
+			);
 		},
 		storeCompletionLocally: () => {
 			storeStateLocally('tasklist.hasCompletedTask', true);
 		},
-		notifyCompletionFailure: (_, params: {error: CompletionFailure | undefined}) => {
-			notificationsStore.displayNotification({
-				kind: 'error',
-				title: t('tasklist.taskCouldNotBeCompletedNotification'),
-				subtitle: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
-				isDismissable: true,
-			});
+		notifyCompletionFailure: ({context}, params: {error: CompletionFailure | undefined}) => {
+			notify(
+				{
+					kind: 'error',
+					title: t('tasklist.taskCouldNotBeCompletedNotification'),
+					description: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
+				},
+				context.isShadcn ?? false,
+			);
 		},
 		complete: emit({type: 'task.completed'}),
 		resetRetryCount: assign({pollRetryCount: 0}),
@@ -186,6 +214,7 @@ const taskCompletionMachine = setup({
 		initialTaskState: input.initialTaskState,
 		taskState: input.initialTaskState,
 		assignee: input.initialAssignee,
+		isShadcn: input.isShadcn ?? false,
 		pollRetryCount: 0,
 	}),
 	initial: 'Idle',

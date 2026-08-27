@@ -14,16 +14,20 @@ import {useTranslation} from 'react-i18next';
 type Props = {
 	currentUser: CurrentUser;
 	assignee: string | null | undefined;
+	isShortFormat?: boolean;
 };
 
-const AssigneeBadge: React.FC<Props> = ({currentUser, assignee}) => {
+const AssigneeBadge: React.FC<Props> = ({currentUser, assignee, isShortFormat = true}) => {
 	const {t} = useTranslation();
 	const isAssigned = typeof assignee === 'string';
 	const isAssignedToCurrentUser = assignee === currentUser.username;
 
 	if (!isAssigned) {
 		return (
-			<Badge title={t('tasklist.assigneeTagUnassignedTitle')}>
+			<Badge
+				className="border-transparent bg-transparent text-neutral-foreground-subtle"
+				title={t('tasklist.assigneeTagUnassignedTitle')}
+			>
 				<CircleDashed aria-hidden />
 				{t('tasklist.assigneeTagUnassigned')}
 			</Badge>
@@ -32,17 +36,23 @@ const AssigneeBadge: React.FC<Props> = ({currentUser, assignee}) => {
 
 	if (isAssignedToCurrentUser) {
 		return (
-			<Badge variant="accent" title={t('tasklist.assigneeTagAssignedToMeAria')}>
+			<Badge
+				className="border-transparent bg-neutral-background-strong text-neutral-foreground-strong"
+				title={t('tasklist.assigneeTagAssignedToMeAria')}
+			>
 				<CircleUserRound aria-hidden />
-				{t('tasklist.assigneeTagAssignedToMeShortForm')}
+				{isShortFormat ? t('tasklist.assigneeTagAssignedToMeShortForm') : t('tasklist.assigneeTagAssignedToMe')}
 			</Badge>
 		);
 	}
 
 	return (
-		<Badge variant="accent" title={t('tasklist.assigneeTagAssignedToXAria', {assignee})}>
+		<Badge
+			className="border-transparent bg-transparent text-neutral-foreground-strong"
+			title={t('tasklist.assigneeTagAssignedToXAria', {assignee})}
+		>
 			<UserRound aria-hidden />
-			{assignee}
+			{isShortFormat ? assignee : t('tasklist.assigneeTagAssignedToX', {assignee})}
 		</Badge>
 	);
 };

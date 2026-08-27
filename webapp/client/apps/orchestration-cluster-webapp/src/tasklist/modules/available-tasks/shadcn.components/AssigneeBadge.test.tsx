@@ -26,14 +26,26 @@ describe('<AssigneeBadge />', () => {
 	});
 
 	it('should display "Me"', async () => {
-		const screen = await render(<AssigneeBadge currentUser={currentUser} assignee="demo" />);
+		const screen = await render(<AssigneeBadge currentUser={currentUser} assignee="demo" isShortFormat />);
 
 		await expect.element(screen.getByText('Me')).toBeVisible();
 	});
 
+	it('should display "Assigned to me"', async () => {
+		const screen = await render(<AssigneeBadge currentUser={currentUser} assignee="demo" isShortFormat={false} />);
+
+		await expect.element(screen.getByText('Assigned to me')).toBeVisible();
+	});
+
 	it('should display the assignee username', async () => {
-		const screen = await render(<AssigneeBadge currentUser={currentUser} assignee="john.doe" />);
+		const screen = await render(<AssigneeBadge currentUser={currentUser} assignee="john.doe" isShortFormat />);
 
 		await expect.element(screen.getByText('john.doe')).toBeVisible();
+	});
+
+	it('should display "Assigned to john.doe"', async () => {
+		const screen = await render(<AssigneeBadge currentUser={currentUser} assignee="john.doe" isShortFormat={false} />);
+
+		await expect.element(screen.getByText('Assigned to john.doe')).toBeVisible();
 	});
 });

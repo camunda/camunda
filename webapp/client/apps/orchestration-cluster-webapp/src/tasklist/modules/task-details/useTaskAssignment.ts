@@ -40,16 +40,18 @@ function useTaskAssignment({
 	currentUser,
 	taskState,
 	assignee,
+	isShadcn = false,
 }: {
 	userTaskKey: string;
 	currentUser: string;
 	taskState: UserTask['state'];
 	assignee: string | null;
+	isShadcn?: boolean;
 }) {
 	const queryClient = useQueryClient();
 
 	const actorRef = useActorRef(taskAssignmentMachine, {
-		input: {queryClient, userTaskKey, currentUser, initialTaskState: taskState, initialAssignee: assignee},
+		input: {queryClient, userTaskKey, currentUser, initialTaskState: taskState, initialAssignee: assignee, isShadcn},
 	});
 
 	const status = useSelector(actorRef, deriveAssignmentStatus);

@@ -17,10 +17,11 @@ import {useMemo} from 'react';
 type Props = {
 	task: UserTask;
 	currentUser: CurrentUser;
+	assignButton: React.ReactNode;
 	children: React.ReactNode;
 };
 
-const TaskDetailsLayout: React.FC<Props> = ({task, currentUser, children}) => {
+const TaskDetailsLayout: React.FC<Props> = ({task, currentUser, assignButton, children}) => {
 	const {t} = useTranslation();
 	const hasRouteMatch = useHasRouteMatch();
 	const tabs = useMemo<TabItem[]>(
@@ -56,6 +57,10 @@ const TaskDetailsLayout: React.FC<Props> = ({task, currentUser, children}) => {
 				<TaskDetailsHeader
 					taskName={task.name ?? task.elementId}
 					processName={task.processName ?? task.processDefinitionId}
+					assignee={task.assignee ?? null}
+					taskState={task.state}
+					user={currentUser}
+					assignButton={assignButton}
 				/>
 				<TabListNav label={t('tasklist.taskDetailsNavLabel')} items={tabs} userTaskKey={task.userTaskKey}>
 					{children}

@@ -12,11 +12,12 @@ import {TaskDetailsLayout} from '#/tasklist/modules/task-details/shadcn.componen
 type Props = {
 	task: UserTask;
 	currentUser: CurrentUser;
+	assignButton: React.ReactNode;
 	children: React.ReactNode;
 };
 
-const TaskDetailPage: React.FC<Props> = ({task, currentUser, children}) => (
-	<TaskDetailsLayout task={task} currentUser={currentUser}>
+const TaskDetailPage: React.FC<Props> = ({task, currentUser, assignButton, children}) => (
+	<TaskDetailsLayout task={task} currentUser={currentUser} assignButton={assignButton}>
 		{children}
 	</TaskDetailsLayout>
 );
