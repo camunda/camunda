@@ -211,6 +211,12 @@ test.describe('process instance page', () => {
     await expect(
       page.getByRole('heading', {name: 'Edit a new Variable'}),
     ).toBeVisible();
+    await processInstancePage.variablesEditor.hideCaret();
+    await page.addStyleTag({
+      content:
+        '.monaco-editor :is(.scrollbar, .decorationsOverviewRuler) {opacity: 0 !important;}',
+    });
+    await page.mouse.move(0, 0);
 
     await expect(page).toHaveScreenshot();
   });
