@@ -14,6 +14,7 @@ import {t} from 'i18next';
 import {queries} from '#/shared/http/queries';
 import {requestErrorSchema} from '#/shared/http/request';
 import {DetailsSkeleton} from '#/tasklist/modules/task-details/shadcn.components/DetailsSkeleton';
+import {AssignButton} from '#/tasklist/modules/task-details/shadcn.components/AssignButton';
 import {TaskDetailPage} from '#/tasklist/pages/shadcn.components/TaskDetailPage';
 
 const POLLING_STATES: UserTask['state'][] = ['CANCELING', 'UPDATING', 'COMPLETING', 'ASSIGNING'];
@@ -52,7 +53,19 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks/$userTaskKey
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
 
 		return (
-			<TaskDetailPage task={task} currentUser={currentUser}>
+			<TaskDetailPage
+				task={task}
+				currentUser={currentUser}
+				assignButton={
+					<AssignButton
+						key={task.userTaskKey}
+						userTaskKey={task.userTaskKey}
+						taskState={task.state}
+						assignee={task.assignee ?? null}
+						currentUser={currentUser.username}
+					/>
+				}
+			>
 				<Outlet />
 			</TaskDetailPage>
 		);
