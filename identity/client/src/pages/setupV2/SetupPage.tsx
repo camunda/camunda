@@ -8,21 +8,13 @@
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PasswordInput, TextInput } from "@carbon/react";
-import { UserAdmin } from "@carbon/react/icons";
+import { Button, Heading, Separator } from "@camunda/design-system";
+import { UserCog } from "lucide-react";
 import useTranslate from "src/utility/localization";
 import CamundaLogo from "src/assets/images/camunda.svg";
-import {
-  SetupFormContainer,
-  SetupPageContainer,
-  Content,
-  Header,
-  PageTitle,
-  InlineNotification,
-  Button,
-} from "src/pages/setup/styled.ts";
-// TODO: Remove and use Separator from Camunda design system.
-import Divider from "src/components/form/Divider";
+import Page from "src/components/layoutV2/Page";
+import TextField from "src/components/formV2/TextField";
+import { ErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
 import { useMutation } from "@tanstack/react-query";
 import { setupMutations } from "src/utility/api/setup/mutations";
 import { ApiError, isDetailedError } from "src/utility/api/request";
@@ -77,29 +69,16 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
   };
 
   return (
-    <SetupFormContainer $hasError={!!submitError}>
-      {submitError && (
-        <InlineNotification
-          title={submitError}
-          hideCloseButton
-          kind="error"
-          role="alert"
-          lowContrast
-        />
-      )}
-      <TextInput
-        id="username"
-        name="username"
+    <div className="flex w-full flex-col gap-6">
+      {submitError && <ErrorInlineNotification title={submitError} />}
+      <TextField
+        label={t("setupUsernameLabel")}
         value={username}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setUsername(e.target.value.trim())
-        }
-        labelText={t("setupUsernameLabel")}
-        invalid={usernameError.hasError}
-        invalidText={usernameError.errorText}
+        onChange={(value) => setUsername(value.trim())}
+        errors={usernameError.hasError ? usernameError.errorText : undefined}
         placeholder={t("setupUsernamePlaceholder")}
-        onBlur={({ target }) => {
-          if (target.value.trim().length < 1) {
+        onBlur={(value) => {
+          if (value.trim().length < 1) {
             setUsernameError({
               hasError: true,
               errorText: t("setupUsernameRequired"),
@@ -112,31 +91,21 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
           }
         }}
       />
-      <PasswordInput
-        id="password"
-        name="password"
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setPassword(e.target.value.trim())
-        }
-        value={password}
+      <TextField
         type="password"
-        hidePasswordLabel={t("hidePassword")}
-        showPasswordLabel={t("showPassword")}
-        labelText={t("setupPasswordLabel")}
-        invalid={passwordError.hasError}
-        invalidText={passwordError.errorText}
+        label={t("setupPasswordLabel")}
+        value={password}
+        onChange={(value) => setPassword(value.trim())}
+        errors={passwordError.hasError ? passwordError.errorText : undefined}
         placeholder={t("setupPasswordPlaceholder")}
         helperText={t("setupPasswordHelperText")}
-        onBlur={({ target }) => {
-          if (target.value.trim().length < 1) {
+        onBlur={(value) => {
+          if (value.trim().length < 1) {
             setPasswordError({
               hasError: true,
               errorText: t("setupPasswordRequired"),
             });
-          } else if (
-            target.value.trim().length < 6 ||
-            !/\d/.test(target.value)
-          ) {
+          } else if (value.trim().length < 6 || !/\d/.test(value)) {
             setPasswordError({
               hasError: true,
               errorText: t("setupPasswordHelperText"),
@@ -149,27 +118,24 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
           }
         }}
       />
-      <PasswordInput
-        id="confirmPassword"
-        name="confirmPassword"
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setConfirmPassword(e.target.value.trim())
-        }
-        value={confirmPassword}
+      <TextField
         type="password"
-        hidePasswordLabel={t("hidePassword")}
-        showPasswordLabel={t("showPassword")}
-        labelText={t("setupConfirmPasswordLabel")}
-        invalid={confirmPasswordError.hasError}
-        invalidText={confirmPasswordError.errorText}
+        label={t("setupConfirmPasswordLabel")}
+        value={confirmPassword}
+        onChange={(value) => setConfirmPassword(value.trim())}
+        errors={
+          confirmPasswordError.hasError
+            ? confirmPasswordError.errorText
+            : undefined
+        }
         placeholder={t("setupConfirmPasswordPlaceholder")}
-        onBlur={({ target }) => {
-          if (target.value.trim().length < 1) {
+        onBlur={(value) => {
+          if (value.trim().length < 1) {
             setConfirmPasswordError({
               hasError: true,
               errorText: t("setupConfirmPasswordRequired"),
             });
-          } else if (target.value.trim() !== password.trim()) {
+          } else if (value.trim() !== password.trim()) {
             setConfirmPasswordError({
               hasError: true,
               errorText: t("setupConfirmPasswordMismatch"),
@@ -182,33 +148,21 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
           }
         }}
       />
-      <Divider $highContrast $noMargin />
-      <TextInput
-        id="name"
-        name="name"
+      <Separator />
+      <TextField
+        label={t("setupNameLabel")}
         value={name}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setName(e.target.value.trim())
-        }
-        labelText={t("setupNameLabel")}
+        onChange={(value) => setName(value.trim())}
         placeholder={t("setupNamePlaceholder")}
       />
-      <TextInput
-        id="email"
-        name="email"
+      <TextField
+        label={t("setupEmailLabel")}
         value={email}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setEmail(e.target.value.trim())
-        }
-        labelText={t("setupEmailLabel")}
-        invalid={emailError.hasError}
-        invalidText={emailError.errorText}
+        onChange={(value) => setEmail(value.trim())}
+        errors={emailError.hasError ? emailError.errorText : undefined}
         placeholder={t("setupEmailPlaceholder")}
-        onBlur={({ target }) => {
-          if (
-            target.value.trim().length > 1 &&
-            !isValidEmail(target.value.trim())
-          ) {
+        onBlur={(value) => {
+          if (value.trim().length > 1 && !isValidEmail(value.trim())) {
             setEmailError({
               hasError: true,
               errorText: t("setupEmailInvalid"),
@@ -222,6 +176,7 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
         }}
       />
       <Button
+        type="button"
         onClick={handleSubmit}
         disabled={
           !username ||
@@ -232,11 +187,11 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
           confirmPasswordError.hasError ||
           emailError.hasError
         }
-        renderIcon={UserAdmin}
       >
+        <UserCog aria-hidden="true" />
         {t("setupCreateUser")}
       </Button>
-    </SetupFormContainer>
+    </div>
   );
 };
 
@@ -248,14 +203,16 @@ export const SetupPage: React.FC = () => {
     void navigate(`/login`);
   };
   return (
-    <SetupPageContainer>
-      <Content>
-        <Header>
+    <Page className="min-h-screen">
+      <div className="m-auto flex w-100 flex-col gap-6">
+        <div className="flex justify-center">
           <CamundaLogo />
-        </Header>
-        <PageTitle>{t("setupCreateAdminUser")}</PageTitle>
+        </div>
+        <Heading as="h1" variant="heading-lg" className="text-center">
+          {t("setupCreateAdminUser")}
+        </Heading>
         <SetupForm onSuccess={onSuccess} />
-      </Content>
-    </SetupPageContainer>
+      </div>
+    </Page>
   );
 };
