@@ -45,12 +45,12 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
     return record.getValueType() == ValueType.PROCESS
         && (record.getIntent() == ProcessIntent.CREATED
             || record.getIntent() == ProcessIntent.DRAINING
-            || record.getIntent() == ProcessIntent.DELETED);
+            || record.getIntent() == ProcessIntent.FULLY_DELETED);
   }
 
   @Override
   public void export(final Record<Process> record) {
-    if (record.getIntent() == ProcessIntent.DELETED) {
+    if (record.getIntent() == ProcessIntent.FULLY_DELETED) {
       processDefinitionWriter.markDeleted(record.getValue().getProcessDefinitionKey());
       return;
     }

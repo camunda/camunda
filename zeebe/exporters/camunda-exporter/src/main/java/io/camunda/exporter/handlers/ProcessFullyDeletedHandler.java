@@ -19,11 +19,11 @@ import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.util.List;
 import java.util.Map;
 
-public class ProcessDeletedHandler implements ExportHandler<ProcessEntity, Process> {
+public class ProcessFullyDeletedHandler implements ExportHandler<ProcessEntity, Process> {
 
   private final String indexName;
 
-  public ProcessDeletedHandler(final String indexName) {
+  public ProcessFullyDeletedHandler(final String indexName) {
     this.indexName = indexName;
   }
 
@@ -39,7 +39,7 @@ public class ProcessDeletedHandler implements ExportHandler<ProcessEntity, Proce
 
   @Override
   public boolean handlesRecord(final Record<Process> record) {
-    return record.getIntent() == ProcessIntent.DELETED;
+    return record.getIntent() == ProcessIntent.FULLY_DELETED;
   }
 
   @Override
