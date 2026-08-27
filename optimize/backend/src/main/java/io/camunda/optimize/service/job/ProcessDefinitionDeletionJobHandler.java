@@ -116,12 +116,13 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
     final String tenantId = definition.get().getTenantId();
     final String version = definition.get().getVersion();
 
-    deleteWithRetry(
+    // Soft-delete first so a terminal failure anywhere below leaves the deletion retriable
+    withRetry(
+        "mark process definition as deleted " + definitionId,
+        () -> processDefinitionWriter.markDefinitionAsDeleted(definitionId));
+    withRetry(
         "delete process instances for definition " + definitionId,
         () -> processInstanceWriter.deleteInstancesByDefinitionId(bpmnProcessId, definitionId));
-    deleteWithRetry(
-        "delete process definition " + definitionId,
-        () -> processDefinitionWriter.deleteDefinition(definitionId));
 
     // Scoped to this definition's own tenant: a bpmnProcessId can exist independently per
     // tenant, so a version still live under a different tenant must not block clearing the
@@ -135,14 +136,19 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
             .isEmpty();
 
     if (isLastRemainingVersion) {
-      deleteWithRetry(
+      withRetry(
           "clear cached XML for reports referencing " + bpmnProcessId,
           () -> reportService.clearCachedReportXml(bpmnProcessId, tenantId));
     }
     definitionService.invalidateProcessDefinitionIfLatest(bpmnProcessId, tenantId, version);
+
+    // Hard-delete last
+    withRetry(
+        "delete process definition " + definitionId,
+        () -> processDefinitionWriter.deleteDefinition(definitionId));
   }
 
-  private void deleteWithRetry(final String description, final Runnable deletion) {
+  private void withRetry(final String description, final Runnable deletion) {
     withRetry(
         description,
         () -> {

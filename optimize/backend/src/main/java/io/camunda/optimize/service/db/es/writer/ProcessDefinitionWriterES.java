@@ -82,12 +82,14 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
   public void markDefinitionAsDeleted(final String definitionId) {
     LOG.debug("Marking process definition with ID {} as deleted", definitionId);
     try {
+      // Refresh immediately: callers rely on a subsequent search seeing this update right away
       esClient.update(
           new OptimizeUpdateRequestBuilderES<>()
               .optimizeIndex(esClient, PROCESS_DEFINITION_INDEX_NAME)
               .id(definitionId)
               .script(MARK_AS_DELETED_SCRIPT)
               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+              .refresh(Refresh.True)
               .build(),
           Object.class);
     } catch (final Exception e) {
