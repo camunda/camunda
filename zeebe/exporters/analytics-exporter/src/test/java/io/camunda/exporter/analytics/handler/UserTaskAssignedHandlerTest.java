@@ -66,7 +66,7 @@ class UserTaskAssignedHandlerTest {
   }
 
   @Test
-  void shouldEmitEmptyAssigneeHashAndNoOtherAssigneeDerivedData() {
+  void shouldEmitEventWithoutAnyAssigneeDerivedData() {
     // given
     final var record = assignedRecord(ASSIGNEE);
 
@@ -83,9 +83,6 @@ class UserTaskAssignedHandlerTest {
               assertThat(attrs)
                   .containsEntry(
                       AnalyticsAttributes.Event.NAME, AnalyticsAttributes.Event.USER_TASK_ASSIGNED)
-                  // for 8.10 this is always an empty string — no hash of the assignee is
-                  // computed. A salted hashing mechanism is planned for 8.11.
-                  .containsEntry(AnalyticsAttributes.UserTask.ASSIGNEE_HASH, "")
                   .containsEntry(AnalyticsAttributes.UserTask.KEY, 77L)
                   .containsEntry(AnalyticsAttributes.Process.INSTANCE_KEY, 100L)
                   .containsEntry(AnalyticsAttributes.Tenant.ID, "tenant-a")
@@ -96,7 +93,7 @@ class UserTaskAssignedHandlerTest {
                   .isEqualTo(TimeUnit.MILLISECONDS.toNanos(record.getTimestamp()));
 
               // PII must not appear anywhere in any attribute value, and no assignee-derived
-              // attribute (e.g. a real hash) is ever emitted.
+              // attribute (e.g. a hash) is emitted at all.
               final var allValues = attrs.values().stream().map(Object::toString).toList();
               assertThat(allValues)
                   .noneMatch(v -> v.contains(ASSIGNEE))
@@ -133,11 +130,8 @@ class UserTaskAssignedHandlerTest {
         .singleElement()
         .satisfies(
             logRecord ->
-                assertThat(logRecord.getAttributes().asMap())
-                    .containsEntry(
-                        AnalyticsAttributes.Event.NAME,
-                        AnalyticsAttributes.Event.USER_TASK_ASSIGNED)
-                    .containsEntry(AnalyticsAttributes.UserTask.ASSIGNEE_HASH, ""));
+                assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                    .isEqualTo(AnalyticsAttributes.Event.USER_TASK_ASSIGNED));
   }
 
   @Test
