@@ -41,8 +41,8 @@ runs:
         -D aether.transport.http.retryHandler.count=5
         -D aether.enhancedLocalRepository.split=true
         -D aether.enhancedLocalRepository.splitRemote=true
-        -D aether.syncContext.named.nameMapper=file-gav
-        -D aether.syncContext.named.factory=file-lock
+        -D aether.syncContext.named.nameMapper=gav
+        -D aether.syncContext.named.factory=rwlock-local
         -D aether.syncContext.named.time=180
         -D maven.artifact.threads=32
         -D aether.dependencyCollector.impl=bf
