@@ -78,47 +78,62 @@ public class SnapshotRepositoryES implements SnapshotRepository {
     return future.handle(
         (v, e) -> {
           if (e != null) {
-            final String reason;
-            if (ExceptionUtil.isConcurrentSnapshotExecutionException(e)) {
-              reason =
-                  String.format(
-                      "Could not create snapshot [%s] because of concurrent snapshot operations.",
-                      snapshotName);
-            } else if (ExceptionUtil.unwrapCompletionCause(e) instanceof IOException) {
-              reason =
-                  String.format(
-                      "Encountered an error connecting to Elasticsearch while attempting to create snapshot [%s].",
-                      snapshotName);
-            } else {
-              reason = String.format("Failed to take snapshot [%s]", snapshotName);
-            }
-            LOG.error(reason, e);
+            onCreateSnapshotError(snapshotName, e);
           } else {
-            final SnapshotInfo snapshotInfo = v.snapshot();
-            switch (SnapshotState.valueOf(snapshotInfo.state())) {
-              // should not be null as waitForCompletion is true on snapshot request
-              case SUCCESS:
-                LOG.info("Successfully taken snapshot [{}].", snapshotInfo.snapshot());
-                break;
-              case FAILED:
-              case INCOMPATIBLE:
-                String reason =
-                    String.format(
-                        "Snapshot execution failed for [%s], reason: %s",
-                        snapshotInfo.snapshot(), snapshotInfo.reason());
-                LOG.error(reason);
-                break;
-              case PARTIAL:
-              default:
-                reason =
-                    String.format(
-                        "Snapshot status [%s] for snapshot with ID [%s]",
-                        snapshotInfo.state(), snapshotInfo.snapshot());
-                LOG.warn(reason);
-            }
+            onCreateSnapshotCompletion(v);
           }
           return null;
         });
+  }
+
+  private static void onCreateSnapshotCompletion(final CreateSnapshotResponse response) {
+    // should not be null as waitForCompletion is true on snapshot request
+    final SnapshotInfo snapshotInfo = response.snapshot();
+    try {
+      final SnapshotState snapshotState = SnapshotState.valueOf(snapshotInfo.state());
+      switch (snapshotState) {
+        case SUCCESS:
+          LOG.info("Successfully taken snapshot [{}].", snapshotInfo.snapshot());
+          break;
+        case FAILED:
+        case INCOMPATIBLE:
+          LOG.error(
+              "Snapshot execution failed for [{}], reason: {}",
+              snapshotInfo.snapshot(),
+              snapshotInfo.reason());
+          break;
+        case PARTIAL:
+        default:
+          LOG.warn(
+              "Snapshot status [{}] for snapshot with ID [{}]",
+              snapshotInfo.state(),
+              snapshotInfo.snapshot());
+      }
+    } catch (final IllegalArgumentException ex) {
+      LOG.error(
+          "Snapshot state [{}] for snapshot with ID [{}] is not a valid SnapshotState enum value.",
+          snapshotInfo.state(),
+          snapshotInfo.snapshot(),
+          ex);
+    }
+  }
+
+  private static void onCreateSnapshotError(final String snapshotName, final Throwable e) {
+    final String reason;
+    if (ExceptionUtil.isConcurrentSnapshotExecutionException(e)) {
+      reason =
+          String.format(
+              "Could not create snapshot [%s] because of concurrent snapshot operations.",
+              snapshotName);
+    } else if (ExceptionUtil.unwrapCompletionCause(e) instanceof IOException) {
+      reason =
+          String.format(
+              "Encountered an error connecting to Elasticsearch while attempting to create snapshot [%s].",
+              snapshotName);
+    } else {
+      reason = String.format("Failed to take snapshot [%s]", snapshotName);
+    }
+    LOG.error(reason, e);
   }
 
   private void getDeleteSnapshotActionListener(
