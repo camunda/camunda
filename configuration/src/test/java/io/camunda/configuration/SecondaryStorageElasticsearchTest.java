@@ -54,6 +54,15 @@ public class SecondaryStorageElasticsearchTest {
   private static final int EXPECTED_EXPORTER_MAX_CONNECTIONS = 200;
   private static final int EXPECTED_EXPORTER_MAX_CONNECTIONS_PER_ROUTE = 100;
 
+  private static Map<String, Object> camundaExporterArgs(
+      final BrokerBasedProperties brokerBasedProperties) {
+    final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+    assertThat(camundaExporter).isNotNull();
+    final Map<String, Object> args = camundaExporter.getArgs();
+    assertThat(args).isNotNull();
+    return args;
+  }
+
   @Nested
   @TestPropertySource(
       properties = {
@@ -553,14 +562,5 @@ public class SecondaryStorageElasticsearchTest {
           .returns(null, SearchEngineConnectProperties::getMaxConnections)
           .returns(null, SearchEngineConnectProperties::getMaxConnectionsPerRoute);
     }
-  }
-
-  private static Map<String, Object> camundaExporterArgs(
-      final BrokerBasedProperties brokerBasedProperties) {
-    final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
-    assertThat(camundaExporter).isNotNull();
-    final Map<String, Object> args = camundaExporter.getArgs();
-    assertThat(args).isNotNull();
-    return args;
   }
 }
