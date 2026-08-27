@@ -141,11 +141,10 @@ final class VariableInputMappingTransformerTest {
         Map.of("orders", asMsgPack("[{'id':1}, {'id':2}]")),
         "{'first':null, 'last':2}"
       },
-      // malformed targets are deploy-time rejected in practice; shows what the naive
-      // split("\\.") would do if one ever reached the transformer
-      {List.of(mapping("x", "a..b")), Map.of("x", asMsgPack("1")), "{'a':{'':{'b':1}}}"},
+      // a trailing '.' has its empty segment dropped by String.split, so a. → target "a" — valid
       {List.of(mapping("x", "a.")), Map.of("x", asMsgPack("1")), "{'a':1}"},
-      {List.of(mapping("x", "`a.b`")), Map.of("x", asMsgPack("1")), "{'`a':{'b`':1}}"},
+      // a..b and `a.b` produce unparseable FEEL context keys → tested in
+      // shouldRejectWhenCombinedFeelContextIsUnparseable as IllegalStateException
       // reserved-word/space targets are also deploy-time rejected, but would work fine here since
       // input targets are plain path segments, never FEEL identifiers
       {List.of(mapping("x", "for")), Map.of("x", asMsgPack("1")), "{'for':1}"},
