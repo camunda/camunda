@@ -24,6 +24,7 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
+import io.camunda.zeebe.broker.client.api.PartitionInRecoveryException;
 import io.camunda.zeebe.broker.client.api.PartitionInactiveException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
@@ -206,6 +207,10 @@ public class ErrorMapper {
             "Expected to handle request, but the target partition is currently inactive";
         LOGGER.trace(message, rootError);
         yield new ServiceError(message, UNAVAILABLE);
+      }
+      case final PartitionInRecoveryException e -> {
+        LOGGER.trace(e.getMessage(), rootError);
+        yield new ServiceError(e.getMessage(), UNAVAILABLE);
       }
       case final NoTopologyAvailableException ignored -> {
         final var message =

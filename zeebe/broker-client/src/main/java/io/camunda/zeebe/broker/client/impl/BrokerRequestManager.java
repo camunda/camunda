@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerResponseException;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
+import io.camunda.zeebe.broker.client.api.PartitionInRecoveryException;
 import io.camunda.zeebe.broker.client.api.PartitionInactiveException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
@@ -136,6 +137,11 @@ final class BrokerRequestManager extends Actor {
       metrics.registerFailedRequest(
           request.getPartitionId(), request.getType(), AdditionalErrorCodes.PARTITION_INACTIVE);
       return;
+    } catch (final PartitionInRecoveryException e) {
+      returnFuture.completeExceptionally(e);
+      metrics.registerFailedRequest(
+          request.getPartitionId(), request.getType(), AdditionalErrorCodes.PARTITION_IN_RECOVERY);
+      return;
     }
 
     final ActorFuture<DirectBuffer> responseFuture =
@@ -224,7 +230,8 @@ final class BrokerRequestManager extends Actor {
       if (topology != null && !topology.getPartitions().contains(request.getPartitionId())) {
         throw new PartitionNotFoundException(request.getPartitionId());
       }
-      throwIfPartitionInactive(partitionGroup, request.getPartitionId());
+      throwIfPartitionInactive(
+          partitionGroup, request.getPartitionId(), request.shouldRouteToRecovery());
       if (request.shouldRouteToRecovery()) {
         return BrokerAddressProvider.leaderOrAnyRecovery(
             topologyManager, new PartitionId(partitionGroup, request.getPartitionId()));
@@ -244,7 +251,7 @@ final class BrokerRequestManager extends Actor {
       }
       request.setPartitionId(partitionId);
 
-      throwIfPartitionInactive(partitionGroup, partitionId);
+      throwIfPartitionInactive(partitionGroup, partitionId, request.shouldRouteToRecovery());
 
       return BrokerAddressProvider.leader(
           topologyManager, partitionGroup, request.getPartitionId());
@@ -254,7 +261,8 @@ final class BrokerRequestManager extends Actor {
     }
   }
 
-  private void throwIfPartitionInactive(final String partitionGroup, final int partitionId) {
+  private void throwIfPartitionInactive(
+      final String partitionGroup, final int partitionId, final boolean recoveryRoutable) {
     final BrokerClusterState topology = topologyManager.getTopology(partitionGroup);
     if (topology == null) {
       throw new NoTopologyAvailableException();
@@ -264,9 +272,10 @@ final class BrokerRequestManager extends Actor {
     final var someNodesInactive = !inactiveNodes.isEmpty();
     final var leaderNode = topology.getLeaderForPartition(partitionId);
 
-    // If nodes are in recovery, do not throw so that requests can be routed to the
-    // recovering partitions. Whether a request is actually routed there is decided separately,
-    // based on BrokerRequest#shouldRouteToRecovery, when picking the BrokerAddressProvider.
+    if (!someNodesInactive || leaderNode != null) {
+      return;
+    }
+
     final var clusterConfiguration = topologyManager.getClusterConfiguration();
     final var nodeInRecovery =
         inactiveNodes.stream()
@@ -281,8 +290,13 @@ final class BrokerRequestManager extends Actor {
                   return member != null && member.mode() == Mode.RECOVERING;
                 });
 
-    if (someNodesInactive && leaderNode == null && !nodeInRecovery) {
+    if (!nodeInRecovery) {
       throw new PartitionInactiveException(partitionId);
+    }
+
+    // Only recovery-routable requests can be served by a recovering partition
+    if (!recoveryRoutable) {
+      throw new PartitionInRecoveryException(partitionId);
     }
   }
 
