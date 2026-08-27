@@ -11,13 +11,14 @@ import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public final class EnumValue<E extends Enum<E>> extends BaseValue {
   private final StringValue decodedValue = new StringValue();
-  private E value;
+  private @Nullable E value;
   private final Class<E> klass;
 
-  public EnumValue(final Class<E> e, final E defaultValue) {
+  public EnumValue(final Class<E> e, final @Nullable E defaultValue) {
     klass = e;
     value = defaultValue;
     if (value != null) {
@@ -29,7 +30,7 @@ public final class EnumValue<E extends Enum<E>> extends BaseValue {
     this(e, null);
   }
 
-  public E getValue() {
+  public @Nullable E getValue() {
     return value;
   }
 
