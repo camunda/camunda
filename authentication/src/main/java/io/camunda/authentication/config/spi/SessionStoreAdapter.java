@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.config.spi;
 
+import io.camunda.authentication.utils.OutageLog;
 import io.camunda.authentication.utils.TransientRetry;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
@@ -16,6 +17,8 @@ import io.camunda.security.core.port.out.SessionStorePort;
 import io.github.resilience4j.retry.Retry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -32,9 +35,11 @@ import org.slf4j.LoggerFactory;
  * request — even during Spring Session's commit phase, which runs after the request scope is torn
  * down.
  *
- * <p>Every operation retries transient storage failures with exponential backoff, then logs and
- * swallows the failure so a storage blip never fails the request: reads degrade to "nothing found",
- * writes are dropped. This policy lives here rather than in the library because it inspects the
+ * <p>Every operation retries transient storage failures with exponential backoff. All but {@link
+ * #delete} then log and swallow, so a storage blip never fails the request: reads degrade to
+ * "nothing found" and an unsaved session is simply lost, both of which grant less access rather
+ * than more. Deletion is the one operation whose degraded outcome grants <em>more</em>, so it
+ * propagates instead. This policy lives here rather than in the library because it inspects the
  * search-specific {@link CamundaSearchException} reasons to decide what is transient.
  */
 public final class SessionStoreAdapter implements SessionStorePort {
@@ -47,6 +52,10 @@ public final class SessionStoreAdapter implements SessionStorePort {
   private static final Retry GET_ALL_RETRY = TransientRetry.of("web-session-get-all");
 
   private final PersistentWebSessionClient client;
+
+  // Per adapter, so an outage of one physical tenant's store never suppresses the report for
+  // another; keyed by operation, so a failing read does not suppress the report of a failing write.
+  private final Map<String, OutageLog> outageLogs = new ConcurrentHashMap<>();
 
   public SessionStoreAdapter(final PersistentWebSessionClient client) {
     this.client = client;
@@ -66,7 +75,10 @@ public final class SessionStoreAdapter implements SessionStorePort {
 
   @Override
   public void delete(final String sessionId) {
-    runWithRetry(DELETE_RETRY, "delete", () -> client.deletePersistentWebSession(sessionId));
+    // Retried but never swallowed: a failed delete leaves the record readable with its original
+    // authenticated context, so reporting the invalidation as done would let a copied cookie be
+    // replayed until the session expires on its own.
+    Retry.decorateRunnable(DELETE_RETRY, () -> client.deletePersistentWebSession(sessionId)).run();
   }
 
   @Override
@@ -81,7 +93,7 @@ public final class SessionStoreAdapter implements SessionStorePort {
     return result;
   }
 
-  private static <T> T runWithRetry(
+  private <T> T runWithRetry(
       final Retry retry, final String operation, final Supplier<T> action, final T fallback) {
     final var attempts = new AtomicInteger();
     final Supplier<T> countedAction =
@@ -89,10 +101,13 @@ public final class SessionStoreAdapter implements SessionStorePort {
           attempts.incrementAndGet();
           return action.get();
         };
+    final var outage = outageLogs.computeIfAbsent(operation, op -> new OutageLog(LOGGER));
     try {
-      return Retry.decorateSupplier(retry, countedAction).get();
+      final var result = Retry.decorateSupplier(retry, countedAction).get();
+      outage.recovery("Persistent web session {} works again", operation);
+      return result;
     } catch (final CamundaSearchException e) {
-      LOGGER.warn(
+      outage.failure(
           "Failed to {} persistent web session after {} attempt(s): {} (reason: {})",
           operation,
           attempts.get(),
@@ -101,7 +116,7 @@ public final class SessionStoreAdapter implements SessionStorePort {
           e);
       return fallback;
     } catch (final RuntimeException e) {
-      LOGGER.warn(
+      outage.failure(
           "Failed to {} persistent web session after {} attempt(s): {}",
           operation,
           attempts.get(),
@@ -111,8 +126,7 @@ public final class SessionStoreAdapter implements SessionStorePort {
     }
   }
 
-  private static void runWithRetry(
-      final Retry retry, final String operation, final Runnable action) {
+  private void runWithRetry(final Retry retry, final String operation, final Runnable action) {
     runWithRetry(
         retry,
         operation,

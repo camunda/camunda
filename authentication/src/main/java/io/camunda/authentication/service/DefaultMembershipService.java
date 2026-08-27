@@ -10,6 +10,7 @@ package io.camunda.authentication.service;
 import static io.camunda.security.api.model.authz.EntityType.GROUP;
 import static io.camunda.security.api.model.authz.EntityType.MAPPING_RULE;
 
+import io.camunda.authentication.utils.OutageLog;
 import io.camunda.authentication.utils.TransientRetry;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
@@ -29,7 +30,9 @@ import io.github.resilience4j.retry.Retry;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -53,6 +56,10 @@ public class DefaultMembershipService implements MembershipPort {
   private final ServiceRegistry serviceRegistry;
   private final OidcGroupsExtractor oidcGroupsExtractor;
   private final boolean isGroupsClaimConfigured;
+
+  // Keyed by lookup, so an outage of the group index does not suppress the report of a later,
+  // unrelated outage of the tenant index.
+  private final Map<String, OutageLog> lookupOutages = new ConcurrentHashMap<>();
 
   public DefaultMembershipService(
       final ServiceRegistry serviceRegistry, final CamundaSecurityLibraryProperties cslProperties) {
@@ -159,11 +166,14 @@ public class DefaultMembershipService implements MembershipPort {
    * over an index outage. A non-transient failure propagates unchanged.
    */
   private <T> List<T> resolveWithRetry(final String label, final Supplier<List<T>> lookup) {
+    final var outage = lookupOutages.computeIfAbsent(label, l -> new OutageLog(LOG));
     try {
-      return Retry.decorateSupplier(MEMBERSHIP_LOOKUP_RETRY, lookup).get();
+      final var ids = Retry.decorateSupplier(MEMBERSHIP_LOOKUP_RETRY, lookup).get();
+      outage.recovery("Resolving {} works again", label);
+      return ids;
     } catch (final RuntimeException e) {
       if (TransientRetry.isTransient(e)) {
-        LOG.warn(
+        outage.failure(
             "Failed to resolve {} after {} attempts, falling back to empty: {}",
             label,
             TransientRetry.MAX_ATTEMPTS,
