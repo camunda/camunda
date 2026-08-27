@@ -6,20 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from "styled-components";
 import { FC, ReactNode } from "react";
 import Failmunda from "src/assets/images/failmunda.svg";
-// TODO: Replace with Tailwind classes
-import Flex from "src/components/layout/Flex";
-import { cssSize } from "src/utility/style.ts";
 import Page from "src/components/layoutV2/Page";
-
-const CenterWrapper = styled(Flex)`
-  margin: ${cssSize(10)} auto;
-  max-width: ${cssSize(50)};
-  align-items: start;
-  flex-direction: column;
-`;
 
 type ErrorPageProps = {
   title: ReactNode;
@@ -28,11 +17,11 @@ type ErrorPageProps = {
 
 const ErrorPage: FC<ErrorPageProps> = ({ title, children }) => (
   <Page>
-    <CenterWrapper>
+    <div className="mx-auto my-20 flex max-w-100 flex-col items-start gap-3">
       <Failmunda />
       <h1>{title}</h1>
       {children}
-    </CenterWrapper>
+    </div>
   </Page>
 );
 

@@ -6,40 +6,69 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { ReactNode, useEffect } from "react";
 import {
-  Tab,
-  TabList,
-  TabPanel as CarbonTabPanel,
-  TabPanels,
-  Tabs as CarbonTabs,
-} from "@carbon/react";
-import useTranslate from "src/utility/localization";
+  createContext,
+  FC,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+} from "react";
+import {
+  Tabs as DSTabs,
+  TabsContent as DSTabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@camunda/design-system";
 import { useNavigate } from "react-router-dom";
-import styled from "styled-components";
+import useTranslate from "src/utility/localization";
 
-export type TabsProps<
-  T extends { key: string; label: string; content: ReactNode },
-> = {
-  path: string;
-  tabs: readonly T[];
-  selectedTabKey: string;
+export type TabItem = {
+  key: string;
+  label: string;
+  content: ReactNode;
 };
 
-const TabPanel = styled(CarbonTabPanel)`
-  padding-left: 0;
-  padding-right: 0;
-`;
+type TabsContextValue = {
+  tabs: readonly TabItem[];
+  activeTabKey: string;
+};
 
-const Tabs = <T extends { key: string; label: string; content: ReactNode }>({
+const TabsContext = createContext<TabsContextValue | null>(null);
+
+const useTabsContext = () => {
+  const context = useContext(TabsContext);
+  if (!context) {
+    throw new Error(
+      "Tabs.* components must be rendered within a <Tabs> from src/components/tabsV2",
+    );
+  }
+  return context;
+};
+
+export type TabsProps = {
+  path: string;
+  tabs: readonly TabItem[];
+  selectedTabKey: string;
+  children: ReactNode;
+};
+
+/**
+ * Compound root: owns tab-in-URL navigation and provides tab state to
+ * `TabsHeaderList` and `TabsContent`, so those can be placed independently
+ * (e.g. `TabsHeaderList` inside a `PageHeader`'s `tabs` slot, `TabsContent`
+ * below it) instead of being rendered as one fixed block.
+ */
+export const Tabs: FC<TabsProps> = ({
   path,
-  selectedTabKey,
   tabs,
-}: TabsProps<T>) => {
+  selectedTabKey,
+  children,
+}) => {
   const navigate = useNavigate();
-  const { t } = useTranslate("components");
 
   const selectedTabIndex = tabs.findIndex(({ key }) => key === selectedTabKey);
+  const activeTabKey = selectedTabIndex > -1 ? selectedTabKey : tabs[0].key;
 
   useEffect(() => {
     if (selectedTabIndex === -1) {
@@ -47,25 +76,44 @@ const Tabs = <T extends { key: string; label: string; content: ReactNode }>({
     }
   }, [navigate, path, selectedTabIndex, tabs]);
 
+  const contextValue = useMemo(
+    () => ({ tabs, activeTabKey }),
+    [tabs, activeTabKey],
+  );
+
   return (
-    <CarbonTabs
-      selectedIndex={selectedTabIndex > -1 ? selectedTabIndex : 0}
-      onChange={({ selectedIndex }: { selectedIndex: number }) =>
-        navigate(`${path}/${tabs[selectedIndex].key}`)
-      }
-    >
-      <TabList aria-label={t("Tabs")}>
-        {tabs.map(({ key, label }) => (
-          <Tab key={`tab-${key}`}>{label}</Tab>
-        ))}
-      </TabList>
-      <TabPanels>
-        {tabs.map(({ key, content }) => (
-          <TabPanel key={`tab-panel-${key}`}>{content}</TabPanel>
-        ))}
-      </TabPanels>
-    </CarbonTabs>
+    <TabsContext.Provider value={contextValue}>
+      <DSTabs
+        value={activeTabKey}
+        onValueChange={(key) => void navigate(`${path}/${key}`)}
+      >
+        {children}
+      </DSTabs>
+    </TabsContext.Provider>
   );
 };
 
-export default Tabs;
+export const TabsHeaderList: FC = () => {
+  const { tabs } = useTabsContext();
+  const { t } = useTranslate("components");
+
+  return (
+    <TabsList variant="line" aria-label={t("Tabs")}>
+      {tabs.map(({ key, label }) => (
+        <TabsTrigger key={key} value={key}>
+          {label}
+        </TabsTrigger>
+      ))}
+    </TabsList>
+  );
+};
+
+export const TabsContent: FC = () => {
+  const { tabs } = useTabsContext();
+
+  return tabs.map(({ key, content }) => (
+    <DSTabsContent key={key} value={key}>
+      {content}
+    </DSTabsContent>
+  ));
+};

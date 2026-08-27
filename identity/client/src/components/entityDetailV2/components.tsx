@@ -6,14 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from "styled-components";
-import { StructuredListCell } from "@carbon/react";
-import { cssSize } from "src/utility/style";
+import { FC, ReactNode } from "react";
 
-export const Cell = styled(StructuredListCell)`
-  border-top: 0 none;
-`;
+type CellProps = { children: ReactNode };
 
-export const HeadCell = styled(StructuredListCell)`
-  width: ${cssSize(32)};
-`;
+export const Cell: FC<CellProps> = ({ children }) => (
+  <dd className="m-0 flex-1">{children}</dd>
+);
+
+export const HeadCell: FC<CellProps> = ({ children }) => (
+  <dt className="w-64 shrink-0 whitespace-nowrap font-medium text-neutral-foreground-strong">
+    {children}
+  </dt>
+);

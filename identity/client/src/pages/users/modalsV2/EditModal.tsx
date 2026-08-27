@@ -9,10 +9,9 @@
 import { FC, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Heading, Separator, Text } from "@camunda/design-system";
 import TextField from "src/components/formV2/TextField";
 import useTranslate from "src/utility/localization";
-// TODO: Replace `Divider` with `Separator` from Camunda design system.
-import Divider from "src/components/form/Divider";
 import { FormModal, UseEntityModalProps } from "src/components/modalV2";
 import { userMutations } from "src/utility/api/users/mutations";
 import { isValidEmail } from "src/utility/validate";
@@ -113,9 +112,13 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
           />
         )}
       />
-      <Divider />
-      <h3>{t("resetPassword")}</h3>
-      <div>{t("resetPasswordInfo")}</div>
+      <Separator />
+      <div className="grid gap-1">
+        <Heading as="h3" variant="heading-xs">
+          {t("resetPassword")}
+        </Heading>
+        <Text as="p">{t("resetPasswordInfo")}</Text>
+      </div>
       <Controller
         name="password"
         control={control}

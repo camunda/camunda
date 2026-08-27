@@ -8,7 +8,7 @@
 
 import styled from "styled-components";
 
-// TODO: Replace with Design system heading and Tailwind component
+/** @deprecated Use `PageHeader` from `@camunda/design-system` instead. */
 const PageHeadline = styled.h1`
   min-width: 0;
   overflow: hidden;

@@ -12,6 +12,7 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbPage,
   BreadcrumbSeparator,
   PageHeader as DSPageHeader,
   PageLayout,
@@ -55,7 +56,8 @@ export const PageHeader: FC<PageHeaderProps> = ({
 
 type BreadcrumbsProps = {
   items: {
-    href: string;
+    // Omit `href` for the current page — it renders as non-interactive text.
+    href?: string;
     title: ReactNode;
   }[];
 };
@@ -64,12 +66,16 @@ export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items }) => (
   <Breadcrumb>
     <BreadcrumbList>
       {items.map(({ href, title }, index) => (
-        <Fragment key={href}>
+        <Fragment key={href ?? index}>
           {index > 0 && <BreadcrumbSeparator />}
           <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to={href}>{title}</Link>
-            </BreadcrumbLink>
+            {href ? (
+              <BreadcrumbLink asChild>
+                <Link to={href}>{title}</Link>
+              </BreadcrumbLink>
+            ) : (
+              <BreadcrumbPage>{title}</BreadcrumbPage>
+            )}
           </BreadcrumbItem>
         </Fragment>
       ))}
