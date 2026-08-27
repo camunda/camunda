@@ -1653,6 +1653,7 @@ camunda: # Type: io.camunda.configuration.Camunda
 
     enterprise: null # Type: Boolean, Env: CAMUNDA_WEBAPP_ENTERPRISE
     login-delegated: null # Type: Boolean, Env: CAMUNDA_WEBAPP_LOGINDELEGATED
+    new-design-system-enabled: null # Type: Boolean, Env: CAMUNDA_WEBAPP_NEWDESIGNSYSTEMENABLED
 
   webapps: # Type: io.camunda.configuration.Webapps
     identity: # Type: io.camunda.configuration.Webapp
