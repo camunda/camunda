@@ -102,6 +102,7 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
+          wizos: true
       - name: Import Snyk token from Vault
         id: snyk-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0

@@ -425,6 +425,7 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
+          wizos: true
       # Same class of check as camunda.Dockerfile gets in the docker-checks job
       # (.github/workflows/ci.yml), but here it's a metadata-only resolve since this job never
       # builds the image. The pinned digest is content-addressable, so we must resolve it by digest

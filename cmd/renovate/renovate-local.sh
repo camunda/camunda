@@ -58,6 +58,8 @@ VAULT_SECRET_PATH="products/camunda/ci/github-actions"
 vault_field_for_secret() {
   case "$1" in
     INFRA_MINIMUS_REGISTRY_TOKEN) echo "REGISTRY_MINIMUS_PSW" ;;
+    INFRA_WIZOS_REGISTRY_USERNAME) echo "REGISTRY_WIZ_USR" ;;
+    INFRA_WIZOS_REGISTRY_TOKEN) echo "REGISTRY_WIZ_PSW" ;;
     *) echo "" ;;
   esac
 }

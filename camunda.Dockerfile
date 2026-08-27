@@ -3,13 +3,13 @@
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
 
-ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:25-dev"
-ARG BASE_DIGEST="sha256:feafa1cdd5fd39be1fbd53a71cb9e601b793bc075be4d52bff9e63418f2dcd89"
+ARG BASE_IMAGE="registry.os.wiz.io/openjdk-jre:25"
+ARG BASE_DIGEST="sha256:d4497b2ae98ef2826bd3fef1f9b3abdb8778e2bedb0552c4215ec4cd575e26f8"
 ARG JATTACH_VERSION="v2.2"
 ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
 
-# If you don't have access to Minimus hardened base images, you can use public
+# If you don't have access to WizOS hardened base images, you can use public
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
 ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.4_7-jre-noble"
@@ -23,6 +23,20 @@ ARG DIST="distball"
 # hadolint ignore=DL3006
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
 
+# The WizOS base ships no zone data, no glibc locale data, no bash, no terminfo database
+# and a headless JRE without a font manager. Do not drop these packages: without them
+# `sun.jnu.encoding` falls back to ASCII and the JVM silently mangles non-ASCII paths,
+# arguments and log output, TZ lookups resolve to the wrong zone, `bash` scripts fail,
+# `tput`/`clear` reject every $TERM so an interactive `docker exec` has no terminal
+# capabilities, and the first AWT font call throws UnsatisfiedLinkError. glibc-i18n is
+# removed in the same layer that adds it, since a delete in a later layer would not
+# reclaim the space.
+# hadolint ignore=DL3018
+RUN apk add --no-cache bash ncurses-terminfo-base tzdata openjdk25-jre font-dejavu && \
+    apk add --no-cache --virtual .locale-deps glibc-i18n && \
+    localedef -i en_US -f UTF-8 en_US.UTF-8 && \
+    apk del --no-network .locale-deps
+
 ### Base Public Application Image ###
 # hadolint ignore=DL3006
 FROM ${BASE_IMAGE_PUBLIC}@${BASE_DIGEST_PUBLIC} AS base-public
@@ -31,8 +45,6 @@ FROM ${BASE_IMAGE_PUBLIC}@${BASE_DIGEST_PUBLIC} AS base-public
 # hadolint ignore=DL3006
 FROM base-${BASE} AS build
 
-# hadolint ignore=DL3002
-USER root
 WORKDIR /camunda
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
@@ -168,8 +180,6 @@ ENV ROCKSDB_MUSL_LIBC=false
 WORKDIR ${CAMUNDA_HOME}
 EXPOSE 8080 26500 26501 26502
 
-# Switch to root to allow setting up our own user
-USER root
 RUN addgroup --gid 1001 camunda && \
     adduser -S -G camunda -u 1001 -h ${CAMUNDA_HOME} camunda && \
     chmod g=u /etc/passwd && \
