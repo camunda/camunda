@@ -436,7 +436,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
-          maven-cache-key-modifier: it-${{ matrix.group }}
+          maven-cache-key-modifier: it-${{ matrix.group }}-inc7474cold
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -628,7 +628,7 @@ jobs:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
         with:
-          maven-cache-key-modifier: docker-checks
+          maven-cache-key-modifier: docker-checks-inc7474cold
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
