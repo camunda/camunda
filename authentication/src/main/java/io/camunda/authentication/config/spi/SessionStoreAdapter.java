@@ -16,6 +16,7 @@ import io.camunda.security.core.port.out.SessionStorePort;
 import io.github.resilience4j.retry.Retry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,22 +85,28 @@ public final class SessionStoreAdapter implements SessionStorePort {
 
   private static <T> T runWithRetry(
       final Retry retry, final String operation, final Supplier<T> action, final T fallback) {
+    final var attempts = new AtomicInteger();
+    final Supplier<T> countedAction =
+        () -> {
+          attempts.incrementAndGet();
+          return action.get();
+        };
     try {
-      return Retry.decorateSupplier(retry, action).get();
+      return Retry.decorateSupplier(retry, countedAction).get();
     } catch (final CamundaSearchException e) {
       LOGGER.warn(
-          "Failed to {} persistent web session after {} attempts: {} (reason: {})",
+          "Failed to {} persistent web session after {} attempt(s): {} (reason: {})",
           operation,
-          TransientRetry.MAX_ATTEMPTS,
+          attempts.get(),
           e.getMessage(),
           e.getReason(),
           e);
       return fallback;
     } catch (final RuntimeException e) {
       LOGGER.warn(
-          "Failed to {} persistent web session after {} attempts: {}",
+          "Failed to {} persistent web session after {} attempt(s): {}",
           operation,
-          TransientRetry.MAX_ATTEMPTS,
+          attempts.get(),
           e.getMessage(),
           e);
       return fallback;

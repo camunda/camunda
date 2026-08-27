@@ -61,14 +61,14 @@ class SessionStoreAdapterTest {
 
   @Test
   void shouldRetryTransientUpsertFailureThenSwallow() {
-    // given — a client that always fails transiently
+    // given — a client that always fails with a recognized transient search reason
     final var attempts = new AtomicInteger();
     final PersistentWebSessionClient failing =
         new PersistentWebSessionClientStub() {
           @Override
           public void upsertPersistentWebSession(final PersistentWebSessionEntity entity) {
             attempts.incrementAndGet();
-            throw new RuntimeException("Connection refused");
+            throw new CamundaSearchException("connection refused", Reason.CONNECTION_FAILED);
           }
         };
     final var adapter = new SessionStoreAdapter(failing);
@@ -77,6 +77,27 @@ class SessionStoreAdapterTest {
     assertThatNoException()
         .isThrownBy(() -> adapter.upsert(new PersistentSession("s1", 1L, 2L, 1800L, Map.of())));
     assertThat(attempts.get()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldSwallowGenericRuntimeExceptionOnUpsertWithoutRetry() {
+    // given — a plain RuntimeException is not a recognized transient search failure, so it is
+    // not worth retrying; upsert still swallows it since a session save is best-effort
+    final var attempts = new AtomicInteger();
+    final PersistentWebSessionClient failing =
+        new PersistentWebSessionClientStub() {
+          @Override
+          public void upsertPersistentWebSession(final PersistentWebSessionEntity entity) {
+            attempts.incrementAndGet();
+            throw new RuntimeException("boom");
+          }
+        };
+    final var adapter = new SessionStoreAdapter(failing);
+
+    // when / then — not retried, and the failure never propagates to the save path
+    assertThatNoException()
+        .isThrownBy(() -> adapter.upsert(new PersistentSession("s1", 1L, 2L, 1800L, Map.of())));
+    assertThat(attempts.get()).isEqualTo(1);
   }
 
   @Test
