@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { Help } from "@carbon/react/icons";
+import { HelpCircle } from "lucide-react";
 import {
   Button,
   DropdownMenu,
@@ -48,7 +48,7 @@ const InfoMenu = () => {
           size="icon"
           aria-label={t("info")}
         >
-          <Help aria-hidden className="size-4" />
+          <HelpCircle aria-hidden className="size-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end">
