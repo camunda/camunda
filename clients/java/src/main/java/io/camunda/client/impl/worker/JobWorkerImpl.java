@@ -359,6 +359,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
         return false;
       }
 
+      metrics.jobRefused(1);
       onRefused.accept(job, e);
       return false;
     }
