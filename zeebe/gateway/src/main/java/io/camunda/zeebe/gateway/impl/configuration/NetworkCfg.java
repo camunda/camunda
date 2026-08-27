@@ -24,18 +24,18 @@ public final class NetworkCfg {
 
   /**
    * Maximum age of a gRPC connection before the server proactively closes it (via GOAWAY), forcing
-   * the client to reconnect. Set to {@code null} (the default) to disable, i.e. keep grpc-java's
-   * own default of unbounded connection age.
+   * the client to reconnect. Defaults to 5 minutes. Set to {@code null} to disable, i.e. keep
+   * grpc-java's own default of unbounded connection age.
    */
-  private @Nullable Duration maxConnectionAge;
+  private @Nullable Duration maxConnectionAge = Duration.ofMinutes(5);
 
   /**
    * Grace period, after {@link #maxConnectionAge} elapses, during which existing calls on the
    * connection may finish before it is forcibly terminated. Only takes effect when {@link
-   * #maxConnectionAge} is set. Set to {@code null} (the default) to disable, i.e. keep grpc-java's
-   * own default of an infinite grace period.
+   * #maxConnectionAge} is set. Defaults to 1 minute. Set to {@code null} to disable, i.e. keep
+   * grpc-java's own default of an infinite grace period.
    */
-  private @Nullable Duration maxConnectionAgeGrace;
+  private @Nullable Duration maxConnectionAgeGrace = Duration.ofMinutes(1);
 
   public void init(final String defaultHost) {
     if (host == null) {

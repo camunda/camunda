@@ -31,6 +31,27 @@ import org.springframework.util.unit.DataSize;
 @ActiveProfiles("broker")
 public class ApiGrpcBrokerPropertiesTest {
   @Nested
+  class WithNothingSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithNothingSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldUseDefaultMaxConnectionAge() {
+      assertThat(brokerCfg.getGateway().getNetwork().getMaxConnectionAge())
+          .isEqualTo(Duration.ofMinutes(5));
+    }
+
+    @Test
+    void shouldUseDefaultMaxConnectionAgeGrace() {
+      assertThat(brokerCfg.getGateway().getNetwork().getMaxConnectionAgeGrace())
+          .isEqualTo(Duration.ofMinutes(1));
+    }
+  }
+
+  @Nested
   @TestPropertySource(
       properties = {
         "camunda.api.grpc.address=10.0.0.7",

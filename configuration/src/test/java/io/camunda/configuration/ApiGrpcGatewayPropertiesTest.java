@@ -29,6 +29,26 @@ import org.springframework.util.unit.DataSize;
 })
 public class ApiGrpcGatewayPropertiesTest {
   @Nested
+  class WithNothingSet {
+    final GatewayBasedProperties gatewayCfg;
+
+    WithNothingSet(@Autowired final GatewayBasedProperties gatewayCfg) {
+      this.gatewayCfg = gatewayCfg;
+    }
+
+    @Test
+    void shouldUseDefaultMaxConnectionAge() {
+      assertThat(gatewayCfg.getNetwork().getMaxConnectionAge()).isEqualTo(Duration.ofMinutes(5));
+    }
+
+    @Test
+    void shouldUseDefaultMaxConnectionAgeGrace() {
+      assertThat(gatewayCfg.getNetwork().getMaxConnectionAgeGrace())
+          .isEqualTo(Duration.ofMinutes(1));
+    }
+  }
+
+  @Nested
   @TestPropertySource(
       properties = {
         "camunda.api.grpc.address=10.0.0.7",
