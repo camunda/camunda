@@ -69,9 +69,13 @@ class PostgresFailoverIT extends AbstractAsyncReplicationIT<PostgresReplicationC
     final var duringOutageUser = "failover-outage-user-" + UUID.randomUUID();
     createUser(duringOutageUser);
 
-    // sanity check - well within REPLICATION_DELAY, so the outage traffic must not be
-    // acknowledged yet (the delay strategy never pauses, it just always waits this long)
-    awaitExporterPositionAdvances(acknowledgedPositionBeforeOutage);
+    // sanity check - keep this within the DELAY window so outage traffic is not acknowledged yet
+    Awaitility.await("exporter position advances while acknowledgments are still delayed")
+        .atMost(Duration.ofSeconds(20))
+        .untilAsserted(
+            () ->
+                assertThat(getCurrentExporterPosition())
+                    .isGreaterThan(acknowledgedPositionBeforeOutage));
     assertAcknowledgedPositionNotAdvancedBeyond(acknowledgedPositionBeforeOutage);
 
     try (final var replayLog = LogCapturer.capturing(RdbmsExporter.class, Level.INFO)) {
