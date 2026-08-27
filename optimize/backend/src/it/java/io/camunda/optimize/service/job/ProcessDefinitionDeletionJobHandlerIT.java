@@ -165,6 +165,71 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
   }
 
   @Test
+  void
+      shouldClearCachedXmlWhenLastVersionForThisTenantIsDeletedEvenIfOtherTenantsStillHaveVersions() {
+    // given the same bpmnProcessId has one version under tenant A and one under tenant B
+    final String bpmnProcessId = "definition-deletion-multi-tenant-test-" + UUID.randomUUID();
+    final String definitionIdTenantA = bpmnProcessId + ":1:tenant-a:" + UUID.randomUUID();
+    final String definitionIdTenantB = bpmnProcessId + ":1:tenant-b:" + UUID.randomUUID();
+    persistProcessDefinitions(
+        List.of(
+            definitionFor(bpmnProcessId, definitionIdTenantA, "1", ZEEBE_DEFAULT_TENANT_ID),
+            definitionFor(bpmnProcessId, definitionIdTenantB, "1", "tenant-b")));
+
+    // the report is scoped to tenant A specifically, i.e. the tenant whose data is about to
+    // become entirely gone, even though the bpmnProcessId still lives on under tenant B
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setProcessDefinitionKey(bpmnProcessId);
+    reportData.setTenantIds(List.of(ZEEBE_DEFAULT_TENANT_ID));
+    reportData.getConfiguration().setXml("<definitions>cached</definitions>");
+    final String reportId =
+        reportWriter
+            .createNewSingleProcessReport("demo", reportData, "Test Report", null, null)
+            .getId();
+    refreshAllIndices();
+
+    // when -- only tenant A's (only) version is deleted
+    handler.handle(job(definitionIdTenantA));
+    refreshAllIndices();
+
+    // then
+    assertThat(getProcessDefinition(definitionIdTenantA)).isEmpty();
+    assertThat(getProcessDefinition(definitionIdTenantB)).isPresent();
+    assertThat(getCachedXml(reportId)).isNull();
+  }
+
+  @Test
+  void shouldClearCachedXmlOnReportSharedAcrossTenantsWhenOnlyOneOfItsTenantsIsDeleted() {
+    // given a report spanning both tenants, but only tenant A's (only) version is deleted
+    final String bpmnProcessId = "definition-deletion-shared-report-test-" + UUID.randomUUID();
+    final String definitionIdTenantA = bpmnProcessId + ":1:tenant-a:" + UUID.randomUUID();
+    final String definitionIdTenantB = bpmnProcessId + ":1:tenant-b:" + UUID.randomUUID();
+    persistProcessDefinitions(
+        List.of(
+            definitionFor(bpmnProcessId, definitionIdTenantA, "1", ZEEBE_DEFAULT_TENANT_ID),
+            definitionFor(bpmnProcessId, definitionIdTenantB, "1", "tenant-b")));
+
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setProcessDefinitionKey(bpmnProcessId);
+    reportData.setTenantIds(List.of(ZEEBE_DEFAULT_TENANT_ID, "tenant-b"));
+    reportData.getConfiguration().setXml("<definitions>cached</definitions>");
+    final String reportId =
+        reportWriter
+            .createNewSingleProcessReport("demo", reportData, "Test Report", null, null)
+            .getId();
+    refreshAllIndices();
+
+    // when -- only tenant A's (only) version is deleted; tenant B's version is untouched
+    handler.handle(job(definitionIdTenantA));
+    refreshAllIndices();
+
+    // then
+    assertThat(getProcessDefinition(definitionIdTenantA)).isEmpty();
+    assertThat(getProcessDefinition(definitionIdTenantB)).isPresent();
+    assertThat(getCachedXml(reportId)).isNull();
+  }
+
+  @Test
   void shouldClearCachedXmlOnComparisonReportWhereKeyIsFirstDefinition() {
     // given -- a comparison report referencing bpmnProcessId as its first of two definitions
     final String bpmnProcessId = "definition-deletion-comparison-first-test-" + UUID.randomUUID();
@@ -329,13 +394,21 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
 
   private ProcessDefinitionOptimizeDto definitionFor(
       final String bpmnProcessId, final String definitionId, final String version) {
+    return definitionFor(bpmnProcessId, definitionId, version, ZEEBE_DEFAULT_TENANT_ID);
+  }
+
+  private ProcessDefinitionOptimizeDto definitionFor(
+      final String bpmnProcessId,
+      final String definitionId,
+      final String version,
+      final String tenantId) {
     return ProcessDefinitionOptimizeDto.builder()
         .id(definitionId)
         .key(bpmnProcessId)
         .version(version)
         .name(bpmnProcessId)
         .dataSource(new ZeebeDataSourceDto("test-source", 1))
-        .tenantId(ZEEBE_DEFAULT_TENANT_ID)
+        .tenantId(tenantId)
         .bpmn20Xml("<definitions/>")
         .build();
   }

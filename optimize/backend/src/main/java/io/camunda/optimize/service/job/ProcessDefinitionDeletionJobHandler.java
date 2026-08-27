@@ -23,9 +23,9 @@ import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
@@ -121,12 +121,17 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
         "delete process definition " + definitionId,
         () -> processDefinitionWriter.deleteDefinition(definitionId));
 
+    // Scoped to this definition's own tenant: a bpmnProcessId can exist independently per
+    // tenant, so a version still live under a different tenant must not block clearing the
+    // cached XML for reports whose data is, for this tenant, now entirely gone.
     final boolean isLastRemainingVersion =
         withRetry(
                 "check remaining versions of process definition " + bpmnProcessId,
                 () ->
                     definitionReader.getDefinitionVersions(
-                        DefinitionType.PROCESS, bpmnProcessId, Set.of()))
+                        DefinitionType.PROCESS,
+                        bpmnProcessId,
+                        Collections.singleton(definition.get().getTenantId())))
             .isEmpty();
 
     if (isLastRemainingVersion) {
