@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -99,6 +100,11 @@ class UserTaskAssignedHandlerTest {
                   .noneMatch(v -> v.contains(ASSIGNEE))
                   .noneMatch(v -> v.contains("alice@example.com"))
                   .noneMatch(v -> v.contains("finance-team"));
+
+              // the assignee_hash attribute key itself must be absent, not just its value.
+              assertThat(attrs.keySet())
+                  .extracting(AttributeKey::getKey)
+                  .doesNotContain("camunda.user_task.assignee_hash");
             });
   }
 
