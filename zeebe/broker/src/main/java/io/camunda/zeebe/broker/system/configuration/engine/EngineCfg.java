@@ -210,6 +210,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + startup
         + ", storageOrdinals="
         + storageOrdinals
+        + ", inputMappingMode="
+        + inputMappingMode
         + '}';
   }
 
