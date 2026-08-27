@@ -391,9 +391,9 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         mappingRuleId:
-          allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The ID of the mapping rule.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
 
     MappingRuleFilter:
       description: Mapping rule search filter.

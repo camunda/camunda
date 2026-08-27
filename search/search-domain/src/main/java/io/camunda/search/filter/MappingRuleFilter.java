@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 public record MappingRuleFilter(
-    String mappingRuleId,
+    List<Operation<String>> mappingRuleIdOperations,
     String claimName,
     List<String> claimNames,
     String claimValue,
@@ -32,7 +32,7 @@ public record MappingRuleFilter(
 
   public MappingRuleFilter.Builder toBuilder() {
     return new Builder()
-        .mappingRuleId(mappingRuleId)
+        .mappingRuleIdOperations(mappingRuleIdOperations)
         .claimName(claimName)
         .claimNames(claimNames)
         .claimValue(claimValue)
@@ -46,7 +46,7 @@ public record MappingRuleFilter(
   }
 
   public static final class Builder implements ObjectBuilder<MappingRuleFilter> {
-    private String mappingRuleId;
+    private List<Operation<String>> mappingRuleIdOperations;
     private Set<String> mappingRuleIds;
     private String claimName;
     private List<String> claimNames;
@@ -58,9 +58,25 @@ public record MappingRuleFilter(
     private String roleId;
     private List<MappingRuleFilter> orFilters;
 
-    public Builder mappingRuleId(final String value) {
-      mappingRuleId = value;
+    public Builder mappingRuleIdOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        mappingRuleIdOperations = addValuesToList(mappingRuleIdOperations, operations);
+      }
       return this;
+    }
+
+    public Builder mappingRuleId(final String value, final String... values) {
+      final var vals = FilterUtil.mapDefaultToOperation(value, values);
+      if (vals != null) {
+        return mappingRuleIdOperations(vals);
+      }
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder mappingRuleIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return mappingRuleIdOperations(collectValues(operation, operations));
     }
 
     public Builder claimName(final String value) {
@@ -148,7 +164,7 @@ public record MappingRuleFilter(
     @Override
     public MappingRuleFilter build() {
       return new MappingRuleFilter(
-          mappingRuleId,
+          mappingRuleIdOperations,
           claimName,
           claimNames,
           claimValue,

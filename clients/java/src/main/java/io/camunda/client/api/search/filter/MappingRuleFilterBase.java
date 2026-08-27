@@ -29,6 +29,8 @@ public interface MappingRuleFilterBase extends SearchRequestFilter {
    */
   MappingRuleFilterBase mappingRuleId(final String mappingRuleId);
 
+  MappingRuleFilterBase mappingRuleId(Consumer<StringProperty> fn);
+
   /**
    * Filter mapping rules by the specified claim name.
    *

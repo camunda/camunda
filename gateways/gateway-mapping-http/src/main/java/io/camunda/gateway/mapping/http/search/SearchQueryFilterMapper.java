@@ -870,7 +870,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
       ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
       ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
-      ofNullable(filter.getMappingRuleId()).ifPresent(builder::mappingRuleId);
+      ofNullable(filter.getMappingRuleId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::mappingRuleIdOperations);
     }
     return builder;
   }

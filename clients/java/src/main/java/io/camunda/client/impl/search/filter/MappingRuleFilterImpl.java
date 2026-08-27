@@ -37,7 +37,14 @@ public class MappingRuleFilterImpl
 
   @Override
   public MappingRuleFilter mappingRuleId(final String mappingRuleId) {
-    filter.setMappingRuleId(mappingRuleId);
+    return mappingRuleId(b -> b.eq(mappingRuleId));
+  }
+
+  @Override
+  public MappingRuleFilter mappingRuleId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setMappingRuleId(provideSearchRequestProperty(property));
     return this;
   }
 
