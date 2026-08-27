@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 public class SnapshotUtilTest {
   @Test
-  public void getSnapshotName() {
+  public void shouldGetSnapshotName() {
     // when/then
     assertThat(SnapshotUtil.getSnapshotName(BackupPriority.PRIORITY1, 123L))
         .isEqualTo(String.format("camunda_optimize_123_%s_part_1_of_2", VERSION));
@@ -25,13 +25,13 @@ public class SnapshotUtilTest {
   }
 
   @Test
-  public void getSnapshotPrefixWithBackupId() {
+  public void shouldGetSnapshotPrefixWithBackupId() {
     // when/then
     assertThat(SnapshotUtil.getSnapshotPrefixWithBackupId(123L)).isEqualTo("camunda_optimize_123_");
   }
 
   @Test
-  public void getBackupIdFromSnapshotName() {
+  public void shouldGetBackupIdFromSnapshotName() {
     // when/then
     assertThat(SnapshotUtil.getBackupIdFromSnapshotName("camunda_optimize_123_3.9.0_part_1_of_2"))
         .isEqualTo(
