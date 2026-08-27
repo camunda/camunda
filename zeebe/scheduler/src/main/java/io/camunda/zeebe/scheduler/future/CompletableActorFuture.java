@@ -335,7 +335,8 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   }
 
   @Override
-  public <U> ActorFuture<U> andThen(final Supplier<ActorFuture<U>> next, final Executor executor) {
+  public <U extends @Nullable Object> ActorFuture<U> andThen(
+      final Supplier<ActorFuture<U>> next, final Executor executor) {
     return andThen(
         ignored -> {
           try {
@@ -366,7 +367,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   }
 
   @Override
-  public <U> ActorFuture<U> andThen(
+  public <U extends @Nullable Object> ActorFuture<U> andThen(
       final BiFunction<V, @Nullable Throwable, ActorFuture<U>> next, final Executor executor) {
     final ActorFuture<U> nextFuture = new CompletableActorFuture<>();
     onComplete(
@@ -383,7 +384,8 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   }
 
   @Override
-  public <U> ActorFuture<U> thenApply(final Function<V, U> next, final Executor executor) {
+  public <U extends @Nullable Object> ActorFuture<U> thenApply(
+      final Function<V, U> next, final Executor executor) {
     final ActorFuture<U> nextFuture = new CompletableActorFuture<>();
     onComplete(
         (value, error) -> {
@@ -403,7 +405,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   }
 
   @Override
-  public <U> ActorFuture<U> thenApply(final Function<V, U> next) {
+  public <U extends @Nullable Object> ActorFuture<U> thenApply(final Function<V, U> next) {
     if (ActorThread.isCalledFromActorThread()) {
       final ActorControl actorControl = ActorControl.current();
       return thenApply(next, actorControl);
