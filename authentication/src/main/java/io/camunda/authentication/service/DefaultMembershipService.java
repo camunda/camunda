@@ -9,6 +9,7 @@ package io.camunda.authentication.service;
 
 import static io.camunda.security.api.model.authz.EntityType.GROUP;
 import static io.camunda.security.api.model.authz.EntityType.MAPPING_RULE;
+import static java.util.Objects.requireNonNullElse;
 
 import io.camunda.authentication.utils.OutageLog;
 import io.camunda.authentication.utils.TransientRetry;
@@ -57,8 +58,10 @@ public class DefaultMembershipService implements MembershipPort {
   private final OidcGroupsExtractor oidcGroupsExtractor;
   private final boolean isGroupsClaimConfigured;
 
-  // Keyed by lookup, so an outage of the group index does not suppress the report of a later,
-  // unrelated outage of the tenant index.
+  // This service is a singleton shared by every physical tenant, and each lookup routes to the
+  // store of the tenant in context. An outage therefore belongs to the (tenant, lookup) pair: keyed
+  // by lookup alone, a healthy call for one tenant would close another tenant's outage and make the
+  // next failure report it again.
   private final Map<String, OutageLog> lookupOutages = new ConcurrentHashMap<>();
 
   public DefaultMembershipService(
@@ -166,16 +169,20 @@ public class DefaultMembershipService implements MembershipPort {
    * over an index outage. A non-transient failure propagates unchanged.
    */
   private <T> List<T> resolveWithRetry(final String label, final Supplier<List<T>> lookup) {
-    final var outage = lookupOutages.computeIfAbsent(label, l -> new OutageLog(LOG));
+    // currentOrNull rather than current: deriving the key must not decide the outcome. A call with
+    // no tenant bound is already doomed — the lookup itself resolves the tenant and throws.
+    final var subject =
+        requireNonNullElse(PhysicalTenantContext.currentOrNull(), "unknown") + "/" + label;
+    final var outage = lookupOutages.computeIfAbsent(subject, s -> new OutageLog(LOG));
     try {
       final var ids = Retry.decorateSupplier(MEMBERSHIP_LOOKUP_RETRY, lookup).get();
-      outage.recovery("Resolving {} works again", label);
+      outage.recovery("Resolving {} works again", subject);
       return ids;
     } catch (final RuntimeException e) {
       if (TransientRetry.isTransient(e)) {
         outage.failure(
             "Failed to resolve {} after {} attempts, falling back to empty: {}",
-            label,
+            subject,
             TransientRetry.MAX_ATTEMPTS,
             e.getMessage(),
             e);
