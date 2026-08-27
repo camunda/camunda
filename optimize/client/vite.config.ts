@@ -14,6 +14,9 @@ import sbom from 'rollup-plugin-sbom';
 
 const outDir = 'dist';
 
+const backend = 'http://localhost:8090';
+let sessionRejected = false;
+
 const plugins: PluginOption[] = [
   {
     name: 'treat-js-files-as-jsx',
@@ -77,22 +80,26 @@ export default defineConfig(({mode}) => ({
     open: true,
     proxy: {
       '^/(api|external/api|external/static)': {
-        target: 'http://localhost:8090',
+        target: backend,
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            sessionRejected = proxyRes.statusCode === 401;
+          });
+        },
       },
       '^/': {
-        target: 'http://localhost:8090',
+        target: backend,
         bypass: (req) => {
           const path = req.url;
           if (path?.includes('/sso-callback') || path?.includes('/logout')) {
             return;
           }
 
-          // CSL mints `X-CSRF-TOKEN` on login, so it means authenticated; `camunda-session` exists
-          // before login too (it holds the OIDC authorization request) and cannot stand in for it.
           if (
-            req.headers.cookie?.includes('X-CSRF-TOKEN') ||
-            req.headers.cookie?.includes('X-Optimize-Authorization_0') ||
-            req.headers.cookie?.includes('X-Optimize-Refresh-Token')
+            !sessionRejected &&
+            (req.headers.cookie?.includes('X-CSRF-TOKEN') ||
+              req.headers.cookie?.includes('X-Optimize-Authorization_0') ||
+              req.headers.cookie?.includes('X-Optimize-Refresh-Token'))
           ) {
             return path;
           }
