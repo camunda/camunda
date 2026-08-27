@@ -1,3 +1,9 @@
+> [!CAUTION]
+> This folder in the branch `stable/8.7` is unused and should not be updated.
+> To deploy a load test for the Camunda Platform 8.7, use the `stable-87` folder from the `main` branch instead.
+
+---
+
 # Manual set up a load test
 
 Welcome to the manual setup of a load test. :wave:
