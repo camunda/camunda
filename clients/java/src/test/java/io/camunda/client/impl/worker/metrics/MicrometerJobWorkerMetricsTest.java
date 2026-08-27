@@ -59,6 +59,17 @@ final class MicrometerJobWorkerMetricsTest {
   }
 
   @Test
+  void shouldCountRefusedJobs() {
+    // when
+    metrics.jobRefused(4);
+
+    // then
+    Assertions.assertThat(meterRegistry).has(hasCounter(Names.JOB_REFUSED, tags));
+    Assertions.assertThat(meterRegistry.counter(Names.JOB_REFUSED.asString(), tags))
+        .has(hasCount(4));
+  }
+
+  @Test
   void shouldCountStreamInactivityRecreations() {
     // when
     metrics.streamInactivityRecreated();
