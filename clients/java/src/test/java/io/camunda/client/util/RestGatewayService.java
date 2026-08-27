@@ -21,6 +21,8 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.client.protocol.rest.AgentDefinitionResult;
+import io.camunda.client.protocol.rest.AgentDefinitionSearchQueryResult;
 import io.camunda.client.protocol.rest.AgentInstanceCreationResult;
 import io.camunda.client.protocol.rest.AgentInstanceHistorySearchQueryResult;
 import io.camunda.client.protocol.rest.AgentInstanceResult;
@@ -402,6 +404,15 @@ public class RestGatewayService {
   public void onBatchOperationRequest(
       final String batchOperationKey, final BatchOperationResponse response) {
     registerGet(RestGatewayPaths.getBatchOperationUrl(batchOperationKey), response);
+  }
+
+  public void onAgentDefinitionGetRequest(
+      final long agentDefinitionKey, final AgentDefinitionResult response) {
+    registerGet(RestGatewayPaths.getAgentDefinitionUrl(agentDefinitionKey), response);
+  }
+
+  public void onAgentDefinitionSearchRequest(final AgentDefinitionSearchQueryResult response) {
+    registerPost(RestGatewayPaths.getAgentDefinitionsSearchUrl(), response);
   }
 
   public void onCreateAgentInstanceRequest(final AgentInstanceCreationResult response) {
