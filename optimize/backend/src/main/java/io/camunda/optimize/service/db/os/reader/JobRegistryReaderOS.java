@@ -18,12 +18,9 @@ import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.reader.JobRegistryReader;
 import io.camunda.optimize.service.db.schema.index.JobRegistryIndex;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
@@ -111,45 +108,6 @@ public class JobRegistryReaderOS implements JobRegistryReader {
       return Optional.empty();
     }
     return Optional.ofNullable(searchResponse.hits().hits().getFirst().source());
-  }
-
-  @Override
-  public Set<String> findEntityIdsWithJob(
-      final JobType jobType, final EntityType entityType, final Collection<String> entityIds) {
-    if (entityIds.isEmpty()) {
-      return Set.of();
-    }
-    LOG.debug(
-        "Fetching entity IDs with [{}] job entries for entity type [{}] among [{}] candidates.",
-        jobType,
-        entityType,
-        entityIds.size());
-
-    final BoolQuery boolQuery =
-        jobTypeAndEntityTypeQuery(jobType, entityType)
-            .must(QueryDSL.stringTerms(JobRegistryIndex.ENTITY_ID, entityIds))
-            .build();
-
-    final SearchRequest.Builder searchReqBuilder =
-        new SearchRequest.Builder()
-            .index(JOB_REGISTRY_INDEX_NAME)
-            .size(entityIds.size())
-            .query(boolQuery.toQuery())
-            .collapse(c -> c.field(JobRegistryIndex.ENTITY_ID))
-            .source(QueryDSL.sourceInclude(List.of(JobRegistryIndex.ENTITY_ID)));
-
-    final String errorMessage =
-        String.format(
-            "Was not able to fetch entity IDs with [%s] job entries for entity type [%s].",
-            jobType, entityType);
-    final SearchResponse<JobRegistryEntryDto> searchResponse =
-        osClient.search(searchReqBuilder, JobRegistryEntryDto.class, errorMessage);
-
-    return searchResponse.hits().hits().stream()
-        .map(Hit::source)
-        .filter(Objects::nonNull)
-        .map(JobRegistryEntryDto::getEntityId)
-        .collect(Collectors.toSet());
   }
 
   @Override

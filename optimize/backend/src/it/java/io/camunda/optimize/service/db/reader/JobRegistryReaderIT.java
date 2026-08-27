@@ -19,7 +19,6 @@ import io.camunda.optimize.service.security.util.LocalDateUtil;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -256,58 +255,6 @@ public class JobRegistryReaderIT extends AbstractBrokerlessZeebeCCSMIT {
       final Optional<JobRegistryEntryDto> found =
           jobRegistryReader.findLastByJobTypeAndEntityId(
               JobType.DELETE, EntityType.PROCESS_DEFINITION, "does-not-exist");
-
-      // then
-      assertThat(found).isEmpty();
-    }
-  }
-
-  @Nested
-  class FindEntityIdsWithJob {
-
-    @Test
-    void shouldFindEntityIdsWithJobAmongCandidates() {
-      // given
-      jobRegistryWriter.createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, "1");
-      jobRegistryWriter.createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, "2");
-      // "3" has no job registry entry at all
-
-      // when
-      final Set<String> found =
-          jobRegistryReader.findEntityIdsWithJob(
-              JobType.DELETE, EntityType.PROCESS_DEFINITION, List.of("1", "2", "3"));
-
-      // then
-      assertThat(found).containsExactlyInAnyOrder("1", "2");
-    }
-
-    @Test
-    void shouldFindAllRequestedEntityIdsWhenOneHasDuplicateRegistryEntries() {
-      // given
-      final JobRegistryEntryDto failedEntry =
-          jobRegistryWriter.createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, "1");
-      jobRegistryWriter.updateJobStatus(failedEntry.getId(), JobStatus.FAILED, "boom");
-      jobRegistryWriter.createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, "1");
-      jobRegistryWriter.createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, "2");
-
-      // when
-      final Set<String> found =
-          jobRegistryReader.findEntityIdsWithJob(
-              JobType.DELETE, EntityType.PROCESS_DEFINITION, List.of("1", "2"));
-
-      // then
-      assertThat(found).containsExactlyInAnyOrder("1", "2");
-    }
-
-    @Test
-    void shouldReturnEmptySetWhenNoneOfTheCandidatesHaveAJobEntry() {
-      // given
-      jobRegistryWriter.createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, "1");
-
-      // when
-      final Set<String> found =
-          jobRegistryReader.findEntityIdsWithJob(
-              JobType.DELETE, EntityType.PROCESS_DEFINITION, List.of("does-not-exist"));
 
       // then
       assertThat(found).isEmpty();
