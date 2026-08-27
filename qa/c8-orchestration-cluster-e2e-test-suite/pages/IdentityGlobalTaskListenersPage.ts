@@ -60,7 +60,7 @@ export class IdentityGlobalTaskListenersPage {
     this.deleteGlobalTaskListenerButton = (rowName) =>
       this.globalTaskListenersList
         .getByRole('row', {name: rowName})
-        .getByLabel('Delete');
+        .getByRole('button', {name: 'Delete', exact: true});
 
     this.createGlobalTaskListenerModal = page.getByRole('dialog', {
       name: 'Create user task listener',

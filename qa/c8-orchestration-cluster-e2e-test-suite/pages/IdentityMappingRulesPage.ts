@@ -61,7 +61,7 @@ export class IdentityMappingRulesPage {
     this.deleteMappingRuleButton = (rowName) =>
       this.mappingRulesList
         .getByRole('row', {name: rowName})
-        .getByLabel('Delete');
+        .getByRole('button', {name: 'Delete', exact: true});
 
     this.createMappingRuleModal = page.getByRole('dialog', {
       name: 'Create new mapping rule',
