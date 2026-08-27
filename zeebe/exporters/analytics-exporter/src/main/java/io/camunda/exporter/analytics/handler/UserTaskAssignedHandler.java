@@ -18,8 +18,13 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Emits a {@code camunda.user_task.assigned} OTel event for each user task assignment. The assignee
- * is PII and no assignee-derived data (raw or hashed) is emitted; the event only signals that an
+ * is PII and no assignee-derived data is computed or emitted; the event only signals that an
  * assignment happened.
+ *
+ * <p>The {@code camunda.user_task.assignee_hash} attribute is always emitted as an empty string for
+ * 8.10 — no hash of the assignee is computed. The attribute is kept in the schema (rather than
+ * removed) because downstream dashboards expect it to exist. A salted hashing mechanism is planned
+ * for 8.11.
  *
  * <p>Records with an empty assignee are skipped, matching the engine's assignment guard.
  */
@@ -48,7 +53,8 @@ public final class UserTaskAssignedHandler implements AnalyticsHandler<UserTaskR
         AnalyticsAttributes.Event.USER_TASK_ASSIGNED,
         record.getPosition(),
         log ->
-            log.setAttribute(AnalyticsAttributes.UserTask.KEY, value.getUserTaskKey())
+            log.setAttribute(AnalyticsAttributes.UserTask.ASSIGNEE_HASH, "")
+                .setAttribute(AnalyticsAttributes.UserTask.KEY, value.getUserTaskKey())
                 .setAttribute(
                     AnalyticsAttributes.Process.INSTANCE_KEY, value.getProcessInstanceKey())
                 .setAttribute(AnalyticsAttributes.Tenant.ID, value.getTenantId())

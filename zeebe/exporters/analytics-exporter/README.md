@@ -220,15 +220,18 @@ Note: unlike `camunda.process.instance.activated`, this event does not carry
 
 **`camunda.user_task.assigned`**
 
-|           Attribute            |  Type  |      Description      |
-|--------------------------------|--------|-----------------------|
-| `camunda.user_task.key`        | long   | User task key.        |
-| `camunda.process.instance_key` | long   | Process instance key. |
-| `camunda.tenant.id`            | string | Tenant ID.            |
+|             Attribute             |  Type  |                         Description                          |
+|-----------------------------------|--------|--------------------------------------------------------------|
+| `camunda.user_task.key`           | long   | User task key.                                               |
+| `camunda.user_task.assignee_hash` | string | Always an empty string in this release; no hash is computed. |
+| `camunda.process.instance_key`    | long   | Process instance key.                                        |
+| `camunda.tenant.id`               | string | Tenant ID.                                                   |
 
 No assignee-derived data (raw or hashed) is exported; the event only signals that an assignment
-happened, giving a count of assignment events per cluster/process definition. Assignments with an
-empty assignee produce no event, matching the engine's assignment guard.
+happened, giving a count of assignment events per cluster/process definition. The
+`assignee_hash` attribute is kept in the schema for downstream compatibility but is always an
+empty string for 8.10 — a salted hashing mechanism is planned for 8.11. Assignments with an empty
+assignee produce no event, matching the engine's assignment guard.
 
 **`camunda.tenant.created`**
 
