@@ -199,7 +199,6 @@
       matchFileNames: [
         ".github/actions/build-platform-docker/action.yml",
         ".github/actions/setup-build/action.yml",
-        ".github/actions/gcs-build-cache-auth/action.yml",
       ],
       matchPackageNames: [
         "Wandalen/wretry.action",
