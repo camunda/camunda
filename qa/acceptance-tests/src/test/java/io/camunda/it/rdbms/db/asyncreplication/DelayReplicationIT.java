@@ -21,11 +21,9 @@ import io.micrometer.core.instrument.Measurement;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.Objects;
-import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
@@ -45,7 +43,6 @@ import org.junit.jupiter.api.TestMethodOrder;
  * <p>Tagged {@code async-repl} so it runs in the path-scoped async-replication CI job once
  * re-enabled, rather than nightly-only.
  */
-@Disabled("shouldNotAcknowledgeBeforeDelayExpires currently failing - INC-6678")
 @Tag("async-repl")
 @TestInstance(Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
@@ -156,7 +153,7 @@ public class DelayReplicationIT {
         .untilAsserted(
             () ->
                 assertThat(getCurrentExporterPosition())
-                    .isCloseTo(getCurrentAcknowledgedExporterPosition(), Offset.offset(5L)));
+                    .isEqualTo(getCurrentAcknowledgedExporterPosition()));
   }
 
   private long getCurrentExporterPosition() {
