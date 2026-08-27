@@ -38,4 +38,9 @@ public class EngineMappings {
   public void setInputMode(final InputMode inputMode) {
     this.inputMode = inputMode;
   }
+
+  @Override
+  public String toString() {
+    return "EngineMappings{inputMode=" + inputMode + '}';
+  }
 }
