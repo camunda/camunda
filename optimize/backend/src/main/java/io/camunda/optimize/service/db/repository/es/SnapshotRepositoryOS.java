@@ -77,10 +77,10 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
         .handle(
             (createSnapshotResponse, throwable) -> {
               if (createSnapshotResponse != null) {
-                onSnapshotCreated(createSnapshotResponse);
+                onCreateSnapshotCompletion(createSnapshotResponse);
               }
               if (throwable != null) {
-                onSnapshotCreationFailed(throwable, snapshotName);
+                onCreateSnapshotError(throwable, snapshotName);
               }
               return null;
             });
@@ -116,7 +116,7 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
     }
   }
 
-  private void onSnapshotCreationFailed(final Throwable e, final String snapshotName) {
+  private void onCreateSnapshotError(final Throwable e, final String snapshotName) {
     final String reason;
     if (ExceptionUtil.isConcurrentSnapshotExecutionException(e)) {
       reason =
@@ -134,10 +134,10 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
     LOG.error(reason, e);
   }
 
-  private void onSnapshotCreated(final CreateSnapshotResponse createSnapshotResponse) {
+  private void onCreateSnapshotCompletion(final CreateSnapshotResponse createSnapshotResponse) {
+    // should not be null as waitForCompletion is true on snapshot request
     final SnapshotInfo snapshotInfo = createSnapshotResponse.snapshot();
-    switch (snapshotInfo
-        .state()) { // should not be null as waitForCompletion is true on snapshot request
+    switch (snapshotInfo.state()) {
       case SUCCESS -> LOG.info("Successfully taken snapshot [{}].", snapshotInfo.snapshot());
       case FAILED -> {
         final String reason =
