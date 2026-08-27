@@ -36,6 +36,7 @@ import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.report.ReportService;
 import java.net.SocketTimeoutException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -49,6 +50,7 @@ class ProcessDefinitionDeletionJobHandlerTest {
 
   private static final String DEFINITION_ID = "definition-1";
   private static final String BPMN_PROCESS_ID = "invoice-process";
+  private static final String TENANT_ID = "tenant-1";
 
   private ProcessDefinitionReader processDefinitionReader;
   private ProcessInstanceWriter processInstanceWriter;
@@ -126,7 +128,8 @@ class ProcessDefinitionDeletionJobHandlerTest {
     // given -- post-delete query finds no other version left
     when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
         .thenReturn(Optional.of(definition()));
-    when(definitionReader.getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of()))
+    when(definitionReader.getDefinitionVersions(
+            DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of(TENANT_ID)))
         .thenReturn(List.of());
 
     // when
@@ -142,7 +145,8 @@ class ProcessDefinitionDeletionJobHandlerTest {
     // given -- post-delete query still finds a sibling version
     when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
         .thenReturn(Optional.of(definition()));
-    when(definitionReader.getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of()))
+    when(definitionReader.getDefinitionVersions(
+            DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of(TENANT_ID)))
         .thenReturn(List.of(new DefinitionVersionResponseDto("2", null)));
 
     // when
@@ -157,7 +161,8 @@ class ProcessDefinitionDeletionJobHandlerTest {
     // given
     when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
         .thenReturn(Optional.of(definition()));
-    when(definitionReader.getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of()))
+    when(definitionReader.getDefinitionVersions(
+            DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of(TENANT_ID)))
         .thenReturn(List.of(new DefinitionVersionResponseDto("2", null)));
 
     // when
@@ -168,10 +173,47 @@ class ProcessDefinitionDeletionJobHandlerTest {
   }
 
   @Test
+  void shouldScopeRemainingVersionsLookupToTheDeletedDefinitionsTenantNotAllTenants() {
+    // given
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definition()));
+    when(definitionReader.getDefinitionVersions(
+            DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of(TENANT_ID)))
+        .thenReturn(List.of());
+
+    // when
+    handler.handle(job());
+
+    // then
+    verify(definitionReader, never())
+        .getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of());
+    verify(reportService).clearCachedReportXml(BPMN_PROCESS_ID);
+  }
+
+  @Test
+  void shouldCheckRemainingVersionsScopedToTheDeletedDefinitionsTenantWhenTenantIsNull() {
+    // given -- single-tenant setups store a null tenantId; the scoped lookup must tolerate that
+    final ProcessDefinitionOptimizeDto definitionWithNullTenant = definition();
+    definitionWithNullTenant.setTenantId(null);
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definitionWithNullTenant));
+    when(definitionReader.getDefinitionVersions(
+            DefinitionType.PROCESS, BPMN_PROCESS_ID, Collections.singleton(null)))
+        .thenReturn(List.of());
+
+    // when
+    handler.handle(job());
+
+    // then
+    verify(reportService).clearCachedReportXml(BPMN_PROCESS_ID);
+  }
+
+  @Test
   void shouldCheckRemainingVersionsAfterDeletingSoAConcurrentSiblingDeleteIsNeverMissed() {
     when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
         .thenReturn(Optional.of(definition()));
-    when(definitionReader.getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of()))
+    when(definitionReader.getDefinitionVersions(
+            DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of(TENANT_ID)))
         .thenReturn(List.of());
 
     // when
@@ -182,7 +224,7 @@ class ProcessDefinitionDeletionJobHandlerTest {
     order.verify(processDefinitionWriter).deleteDefinition(DEFINITION_ID);
     order
         .verify(definitionReader)
-        .getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of());
+        .getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of(TENANT_ID));
   }
 
   @Test
@@ -315,6 +357,7 @@ class ProcessDefinitionDeletionJobHandlerTest {
     definition.setId(DEFINITION_ID);
     definition.setKey(BPMN_PROCESS_ID);
     definition.setVersion("1");
+    definition.setTenantId(TENANT_ID);
     return definition;
   }
 }
