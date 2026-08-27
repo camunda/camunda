@@ -263,6 +263,66 @@ public class RoleQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSearchRolesWithRoleIdLikeFilter() {
+    // given
+    when(roleServices.search(any(RoleQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(new RoleEntity(100L, "role-top", "Role Top", "description 1")))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(ROLE_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "roleId": { "$like": "role-*" }
+              }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "name": "Role Top",
+                 "roleId": "role-top",
+                 "description": "description 1"
+               }
+             ],
+             "page": {
+               "totalItems": 1,
+               "startCursor": "f",
+               "endCursor": "v",
+               "hasMoreTotalItems": false
+             }
+           }""",
+            JsonCompareMode.STRICT);
+
+    verify(roleServices)
+        .search(
+            eq(
+                new RoleQuery.Builder()
+                    .filter(
+                        new RoleFilter.Builder().roleIdOperations(Operation.like("role-*")).build())
+                    .build()),
+            any());
+  }
+
+  @Test
   void shouldSortAndPaginateSearchResult() {
     // given
     when(roleServices.search(any(RoleQuery.class), any()))

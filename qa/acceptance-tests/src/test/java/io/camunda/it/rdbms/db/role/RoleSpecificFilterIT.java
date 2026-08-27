@@ -30,6 +30,7 @@ import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.fixtures.UserFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsDataJdbcTest;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.RoleQuery;
@@ -277,6 +278,25 @@ public class RoleSpecificFilterIT {
     assertThat(searchResult.items())
         .extracting(RoleEntity::roleId)
         .containsExactly(roleIdMatchingBoth);
+  }
+
+  @Test
+  public void shouldFilterRolesByRoleIdLike() {
+    final var matchingRoleId = "like-test-" + Strings.newRandomValidIdentityId();
+    final var nonMatchingRoleId = Strings.newRandomValidIdentityId();
+    createAndSaveRole(rdbmsWriters, RoleFixtures.createRandomized(b -> b.roleId(matchingRoleId)));
+    createAndSaveRole(
+        rdbmsWriters, RoleFixtures.createRandomized(b -> b.roleId(nonMatchingRoleId)));
+
+    final var searchResult =
+        roleReader.search(
+            new RoleQuery(
+                new RoleFilter.Builder().roleIdOperations(Operation.like("like-test-*")).build(),
+                RoleSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).extracting(RoleEntity::roleId).containsExactly(matchingRoleId);
   }
 
   static List<RoleFilter> shouldFindWithSpecificFilterParameters() {

@@ -167,8 +167,21 @@ public class SearchRoleTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     assertThat(filter.getName().get$Eq()).isEqualTo("Admin");
     assertThat(filter.get$Or()).hasSize(2);
-    assertThat(filter.get$Or().get(0).getRoleId()).isEqualTo("role-1");
-    assertThat(filter.get$Or().get(1).getRoleId()).isEqualTo("role-2");
+    assertThat(filter.get$Or().get(0).getRoleId().get$Eq()).isEqualTo("role-1");
+    assertThat(filter.get$Or().get(1).getRoleId().get$Eq()).isEqualTo("role-2");
+  }
+
+  @Test
+  void shouldSearchRolesByRoleIdLike() {
+    // when
+    client.newRolesSearchRequest().filter(f -> f.roleId(b -> b.like("role*"))).send().join();
+
+    // then
+    final RoleSearchQueryRequest request =
+        gatewayService.getLastRequest(RoleSearchQueryRequest.class);
+    final RoleFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getRoleId().get$Like()).isEqualTo("role*");
   }
 
   @Test

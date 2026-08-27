@@ -475,6 +475,66 @@ public class GroupQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSearchGroupsWithNameLikeFilter() {
+    // given
+    when(groupServices.search(any(GroupQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(new GroupEntity(111L, "group-top", "Group Top", "description 1")))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(GROUP_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "name": { "$like": "Group*" }
+              }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "groupId": "group-top",
+                 "name": "Group Top",
+                 "description": "description 1"
+               }
+             ],
+             "page": {
+               "totalItems": 1,
+               "startCursor": "f",
+               "endCursor": "v",
+               "hasMoreTotalItems": false
+             }
+           }""",
+            JsonCompareMode.STRICT);
+
+    verify(groupServices)
+        .search(
+            eq(
+                new GroupQuery.Builder()
+                    .filter(
+                        new GroupFilter.Builder().nameOperations(Operation.like("Group*")).build())
+                    .build()),
+            any());
+  }
+
+  @Test
   void shouldSearchGroupsWithIdsWithEmptyQuery() throws JsonProcessingException {
     // given
     final var groupKey1 = 111L;
