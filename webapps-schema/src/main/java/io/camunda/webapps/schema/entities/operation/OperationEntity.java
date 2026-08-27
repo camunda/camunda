@@ -12,7 +12,6 @@ import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.SinceVersion;
 import java.time.OffsetDateTime;
 import java.util.Objects;
-import java.util.UUID;
 
 public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
 
@@ -239,14 +238,6 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
 
   public OperationEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
     this.rootProcessInstanceKey = rootProcessInstanceKey;
-    return this;
-  }
-
-  public OperationEntity withGeneratedId() {
-    // Operation reference has to be positive and `UUID.randomUUID().getMostSignificantBits()` can
-    // generate negative values
-    final long operationReference = UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE;
-    setId(String.valueOf(operationReference));
     return this;
   }
 
