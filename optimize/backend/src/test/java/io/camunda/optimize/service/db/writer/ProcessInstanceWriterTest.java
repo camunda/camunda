@@ -20,9 +20,15 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.query.job.EntityType;
+import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.service.db.helper.ImportRequestDtoFactory;
+import io.camunda.optimize.service.db.reader.JobRegistryReader;
 import io.camunda.optimize.service.db.repository.IndexRepository;
 import io.camunda.optimize.service.db.repository.ProcessInstanceRepository;
+import io.camunda.optimize.service.util.configuration.CacheConfiguration;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.GlobalCacheConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -32,10 +38,12 @@ import org.mockito.ArgumentCaptor;
 
 class ProcessInstanceWriterTest {
 
+  private static final int TEST_MAX_SIZE = 10;
+
   private IndexRepository indexRepository;
   private ImportRequestDtoFactory importRequestDtoFactory;
   private ProcessInstanceRepository processInstanceRepository;
-  private DeletedProcessDefinitionCache deletedProcessDefinitionCache;
+  private JobRegistryReader jobRegistryReader;
   private ProcessInstanceWriter writer;
 
   @BeforeEach
@@ -43,14 +51,21 @@ class ProcessInstanceWriterTest {
     indexRepository = mock(IndexRepository.class);
     importRequestDtoFactory = mock(ImportRequestDtoFactory.class);
     processInstanceRepository = mock(ProcessInstanceRepository.class);
-    deletedProcessDefinitionCache = mock(DeletedProcessDefinitionCache.class);
+    jobRegistryReader = mock(JobRegistryReader.class);
+    final CacheConfiguration cacheConfig = new CacheConfiguration();
+    cacheConfig.setMaxSize(TEST_MAX_SIZE);
+    cacheConfig.setDefaultTtlMillis(300_000);
+    final GlobalCacheConfiguration globalCacheConfiguration = mock(GlobalCacheConfiguration.class);
+    when(globalCacheConfiguration.getDeletedProcessDefinitions()).thenReturn(cacheConfig);
+    final ConfigurationService configurationService = mock(ConfigurationService.class);
+    when(configurationService.getCaches()).thenReturn(globalCacheConfiguration);
     writer =
         new ProcessInstanceWriter(
             indexRepository,
             new ObjectMapper(),
             importRequestDtoFactory,
             processInstanceRepository,
-            new DeletedProcessDefinitionFilter(deletedProcessDefinitionCache));
+            new DeletedProcessDefinitionFilter(jobRegistryReader, configurationService));
     when(importRequestDtoFactory.createImportRequestForProcessInstance(
             any(ProcessInstanceDto.class), anySet(), any(String.class)))
         .thenAnswer(
@@ -83,7 +98,9 @@ class ProcessInstanceWriterTest {
     final ProcessInstanceDto suppressed =
         instance("sharedKey", "deletedDefinitionId", "instance-1");
     final ProcessInstanceDto kept = instance("sharedKey", "keptDefinitionId", "instance-2");
-    when(deletedProcessDefinitionCache.isSuppressed("deletedDefinitionId")).thenReturn(true);
+    when(jobRegistryReader.findNewestEntityIds(
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, TEST_MAX_SIZE))
+        .thenReturn(List.of("deletedDefinitionId"));
 
     // when
     final List<ImportRequestDto> requests =
@@ -99,7 +116,9 @@ class ProcessInstanceWriterTest {
   void shouldSuppressEntireBatchWhenAllDefinitionsAreDeleted() {
     // given
     final ProcessInstanceDto instanceA = instance("definitionKeyA", "definitionIdA", "instance-1");
-    when(deletedProcessDefinitionCache.isSuppressed("definitionIdA")).thenReturn(true);
+    when(jobRegistryReader.findNewestEntityIds(
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, TEST_MAX_SIZE))
+        .thenReturn(List.of("definitionIdA"));
 
     // when
     final List<ImportRequestDto> requests =
@@ -116,7 +135,9 @@ class ProcessInstanceWriterTest {
     final ProcessInstanceDto suppressed =
         instance("sharedKey", "deletedDefinitionId", "instance-1");
     final ProcessInstanceDto kept = instance("sharedKey", "keptDefinitionId", "instance-2");
-    when(deletedProcessDefinitionCache.isSuppressed("deletedDefinitionId")).thenReturn(true);
+    when(jobRegistryReader.findNewestEntityIds(
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, TEST_MAX_SIZE))
+        .thenReturn(List.of("deletedDefinitionId"));
 
     // when
     final List<ImportRequestDto> requests =
@@ -134,7 +155,9 @@ class ProcessInstanceWriterTest {
     final ProcessInstanceDto suppressed =
         instance("sharedKey", "deletedDefinitionId", "instance-1");
     final ProcessInstanceDto kept = instance("sharedKey", "keptDefinitionId", "instance-2");
-    when(deletedProcessDefinitionCache.isSuppressed("deletedDefinitionId")).thenReturn(true);
+    when(jobRegistryReader.findNewestEntityIds(
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, TEST_MAX_SIZE))
+        .thenReturn(List.of("deletedDefinitionId"));
 
     // when
     final List<ImportRequestDto> requests =
@@ -152,7 +175,7 @@ class ProcessInstanceWriterTest {
     writer.deleteByIds("someDefinitionKey", List.of("instance-1"));
 
     // then
-    verifyNoInteractions(deletedProcessDefinitionCache);
+    verifyNoInteractions(jobRegistryReader);
   }
 
   private ProcessInstanceDto instance(
