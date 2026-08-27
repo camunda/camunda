@@ -7,37 +7,38 @@
  */
 
 import { FC } from "react";
-import { Link, Stack } from "@carbon/react";
-import { Launch } from "@carbon/react/icons";
+import { Heading, Text } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
-import { Content, Description, Grid, Title } from "./components";
 import ForbiddenIcon from "src/assets/images/forbidden.svg";
-import { useDocsUrl } from "src/components/documentation/DocsUrlContext";
+import { DocumentationLink } from "src/components/documentationV2";
 
 const ForbiddenPage: FC = () => {
   const { t, Translate } = useTranslate();
-  const docsUrl = useDocsUrl();
 
   return (
-    <Grid>
-      <Content gap={6}>
-        <ForbiddenIcon />
-        <Stack gap={3}>
-          <Title>{t("forbiddenPageTitle")}</Title>
-          <Description>
-            <Translate
-              i18nKey="forbiddenPageDesc"
-              components={{
-                strong: <strong />,
-              }}
-            />
-          </Description>
-        </Stack>
-        <Link href={docsUrl} target="_blank" renderIcon={Launch}>
-          {t("forbiddenPageLinkLabel")}
-        </Link>
-      </Content>
-    </Grid>
+    <div className="flex h-full flex-col px-10 pt-8 pb-12">
+      <div className="grid flex-1 content-center p-20">
+        <div className="flex max-w-100 flex-col gap-6">
+          <ForbiddenIcon />
+          <div className="flex flex-col gap-2">
+            <Heading as="h3" variant="heading-md">
+              {t("forbiddenPageTitle")}
+            </Heading>
+            <Text as="p" variant="body-md">
+              <Translate
+                i18nKey="forbiddenPageDesc"
+                components={{
+                  strong: <strong />,
+                }}
+              />
+            </Text>
+          </div>
+          <DocumentationLink withIcon>
+            {t("forbiddenPageLinkLabel")}
+          </DocumentationLink>
+        </div>
+      </div>
+    </div>
   );
 };
 
