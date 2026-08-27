@@ -11,6 +11,10 @@ import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInsta
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
 import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
@@ -26,13 +30,17 @@ import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.DefinitionService;
+import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.db.reader.JobRegistryReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessOverviewReader;
 import io.camunda.optimize.service.db.reader.ReportReader;
 import io.camunda.optimize.service.db.writer.JobRegistryWriter;
+import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
+import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.db.writer.ProcessOverviewWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
+import io.camunda.optimize.service.report.ReportService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -401,6 +409,57 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
 
     // when / then -- re-invoking against already-deleted data is a no-op, not an exception
     assertThatCode(() -> handler.handle(job(definitionId))).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldLeaveDefinitionResumableAfterATerminalFailureAndCompleteCleanupOnRetry() {
+    // given -- the deletion job will fail terminally right after the definition instances are
+    // deleted, before the remaining-versions check, XML clear, cache eviction, and hard-delete run
+    final String bpmnProcessId = "definition-deletion-resume-test-" + UUID.randomUUID();
+    final String definitionId = bpmnProcessId + ":1:" + UUID.randomUUID();
+    persistProcessInstances(List.of(instanceFor(bpmnProcessId, definitionId, "1")));
+    final String reportId = createSingleProcessReportWithCachedXml(bpmnProcessId);
+    refreshAllIndices();
+
+    final ProcessInstanceWriter realProcessInstanceWriter =
+        embeddedOptimizeExtension.getBean(ProcessInstanceWriter.class);
+    final ProcessInstanceWriter failOnceThenDelegateWriter = mock(ProcessInstanceWriter.class);
+    doThrow(new IllegalStateException("simulated terminal failure"))
+        .doAnswer(
+            invocation -> {
+              realProcessInstanceWriter.deleteInstancesByDefinitionId(
+                  invocation.getArgument(0), invocation.getArgument(1));
+              return null;
+            })
+        .when(failOnceThenDelegateWriter)
+        .deleteInstancesByDefinitionId(anyString(), anyString());
+    final ProcessDefinitionDeletionJobHandler resumableHandler =
+        new ProcessDefinitionDeletionJobHandler(
+            processDefinitionReader,
+            failOnceThenDelegateWriter,
+            embeddedOptimizeExtension.getBean(ProcessDefinitionWriter.class),
+            embeddedOptimizeExtension.getBean(DefinitionReader.class),
+            embeddedOptimizeExtension.getBean(ReportService.class),
+            definitionService);
+
+    // when -- the first attempt fails terminally
+    assertThatThrownBy(() -> resumableHandler.handle(job(definitionId)))
+        .isInstanceOf(IllegalStateException.class);
+    refreshAllIndices();
+
+    // then -- the definition is soft-deleted, so a retry can still find and finish it
+    final ProcessDefinitionOptimizeDto softDeleted =
+        getProcessDefinition(definitionId).orElseThrow();
+    assertThat(softDeleted.isDeleted()).isTrue();
+    assertThat(getCachedXml(reportId)).isEqualTo("<definitions>cached</definitions>");
+
+    // when -- the job is retried; this time the instance deletion succeeds
+    resumableHandler.handle(job(definitionId));
+    refreshAllIndices();
+
+    // then -- the remainder of the cleanup tail, including the final hard-delete, now completes
+    assertThat(getProcessDefinition(definitionId)).isEmpty();
+    assertThat(getCachedXml(reportId)).isNull();
   }
 
   @Test
