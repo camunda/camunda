@@ -16,7 +16,7 @@ public class GlobalCacheConfiguration {
   private CloudUserCacheConfiguration cloudUsers;
   private CacheConfiguration cloudTenantAuthorizations;
   private CacheConfiguration users;
-  private DeletedProcessDefinitionCacheConfiguration deletedProcessDefinitions;
+  private CacheConfiguration deletedProcessDefinitions;
 
   public GlobalCacheConfiguration() {}
 
@@ -60,12 +60,11 @@ public class GlobalCacheConfiguration {
     this.users = users;
   }
 
-  public DeletedProcessDefinitionCacheConfiguration getDeletedProcessDefinitions() {
+  public CacheConfiguration getDeletedProcessDefinitions() {
     return deletedProcessDefinitions;
   }
 
-  public void setDeletedProcessDefinitions(
-      final DeletedProcessDefinitionCacheConfiguration deletedProcessDefinitions) {
+  public void setDeletedProcessDefinitions(final CacheConfiguration deletedProcessDefinitions) {
     this.deletedProcessDefinitions = deletedProcessDefinitions;
   }
 

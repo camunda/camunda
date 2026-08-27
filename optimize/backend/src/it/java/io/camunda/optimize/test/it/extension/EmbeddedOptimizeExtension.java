@@ -23,7 +23,6 @@ import io.camunda.optimize.service.cleanup.CleanupScheduler;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import io.camunda.optimize.service.db.writer.DeletedProcessDefinitionCache;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.importing.AbstractImportScheduler;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -219,10 +218,6 @@ public class EmbeddedOptimizeExtension
 
   public CleanupScheduler getCleanupScheduler() {
     return getBean(CleanupScheduler.class);
-  }
-
-  public DeletedProcessDefinitionCache getDeletedProcessDefinitionCache() {
-    return getBean(DeletedProcessDefinitionCache.class);
   }
 
   public OptimizeRequestExecutor getRequestExecutor() {

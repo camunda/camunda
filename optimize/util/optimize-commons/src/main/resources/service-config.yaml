@@ -734,11 +734,13 @@ caches:
     maxSize: ${CAMUNDA_OPTIMIZE_CACHES_USERS_MAX_SIZE:10000}
     defaultTtlMillis: ${CAMUNDA_OPTIMIZE_CACHES_USERS_DEFAULT_TTL_MILLIS:600000}
   # This cache tracks process definitions that have a pending or completed delete job, so Zeebe
-  # import can suppress writes for them without a database round trip per import batch.
+  # import can suppress writes for them without a database round trip per import batch. maxSize
+  # caps the newest-first job registry fetch used to populate the cache; job registry entries are
+  # never cleaned up, so if the number of deleted process definitions ever exceeds maxSize, the
+  # oldest ones silently drop out of suppression and their data can be reimported.
   deletedProcessDefinitions:
     maxSize: ${CAMUNDA_OPTIMIZE_DELETED_PROCESS_DEFINITION_CACHE_MAX_SIZE:10000}
-    # how often (in seconds) the cache re-fetches the newest matching job registry entries
-    refreshIntervalSeconds: ${CAMUNDA_OPTIMIZE_DELETED_PROCESS_DEFINITION_CACHE_REFRESH_INTERVAL_SECONDS:5}
+    defaultTtlMillis: ${CAMUNDA_OPTIMIZE_DELETED_PROCESS_DEFINITION_CACHE_DEFAULT_TTL_MILLIS:300000}
 
 externalVariable:
   import:
