@@ -8,26 +8,18 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import {
-  InlineNotification,
-  Link,
-  PasswordInput,
-  TextInput,
-} from "@carbon/react";
+import { Button, cn, Heading, Text } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import { disableSession, isLoggedIn, login } from "src/utility/auth";
 import { getCopyrightNoticeText } from "src/utility/copyright.ts";
 import CamundaLogo from "src/assets/images/camunda.svg";
 import { useLicense } from "src/utility/license.ts";
-import {
-  LoginFormContainer,
-  LoginPageContainer,
-  Content,
-  CopyrightNotice,
-  Header,
-  LicenseInfo,
-  Button,
-} from "src/pages/login/styled.ts";
+import TextField from "src/components/formV2/TextField";
+import { ErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
+import Page from "src/components/layoutV2/Page";
+
+const textLinkClassName =
+  "text-info-action-default underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -37,113 +29,73 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const { t } = useTranslate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [usernameError, setUsernameError] = useState({
-    hasError: false,
-    errorText: "",
-  });
-  const [passwordError, setPasswordError] = useState({
-    hasError: false,
-    errorText: "",
-  });
+  const [usernameError, setUsernameError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [submitError, setSubmitError] = useState("");
 
-  const submit = useCallback(() => {
-    if (!username) {
-      setUsernameError({
-        hasError: true,
-        errorText: "Username is required",
-      });
-    }
+  const validateUsername = useCallback((value: string) => {
+    const isValid = value.trim().length > 0;
+    setUsernameError(isValid ? "" : "Username is required");
+    return isValid;
+  }, []);
 
-    if (!password) {
-      setPasswordError({
-        hasError: true,
-        errorText: "Password is required",
-      });
-    }
+  const validatePassword = useCallback((value: string) => {
+    const isValid = value.trim().length > 0;
+    setPasswordError(isValid ? "" : "Password is required");
+    return isValid;
+  }, []);
 
-    if (username && password) {
-      void login(username, password).then(({ success, message }) => {
-        if (success) {
-          onSuccess();
-        } else {
-          setSubmitError(message);
-        }
-      });
-    }
-  }, [onSuccess, username, password]);
+  const submit = useCallback(
+    (event: React.SubmitEvent) => {
+      event.preventDefault();
+      const isUsernameValid = validateUsername(username);
+      const isPasswordValid = validatePassword(password);
+
+      if (isUsernameValid && isPasswordValid) {
+        void login(username, password).then(({ success, message }) => {
+          if (success) {
+            onSuccess();
+          } else {
+            setSubmitError(message);
+          }
+        });
+      }
+    },
+    [onSuccess, username, password, validateUsername, validatePassword],
+  );
 
   return (
-    <LoginFormContainer $hasError={!!submitError}>
-      {submitError && (
-        <InlineNotification
-          title={submitError}
-          hideCloseButton
-          kind="error"
-          role="alert"
-          lowContrast
-        />
+    <form
+      onSubmit={submit}
+      className={cn(
+        "flex w-full flex-col gap-8 pb-8",
+        submitError ? "pt-0" : "pt-8",
       )}
-      <TextInput
-        id="username"
-        name="username"
+    >
+      {submitError && <ErrorInlineNotification title={submitError} />}
+      <TextField
+        label={t("username")}
         value={username}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setUsername(e.target.value.trim())
-        }
-        labelText={t("username")}
-        invalid={usernameError.hasError}
-        invalidText={usernameError.errorText}
+        onChange={(value) => setUsername(value.trim())}
+        onBlur={validateUsername}
+        errors={usernameError}
         placeholder={t("username")}
-        onBlur={({ target }) => {
-          if (target.value.trim().length < 1) {
-            setUsernameError({
-              hasError: true,
-              errorText: "Username is required",
-            });
-          } else {
-            setUsernameError({
-              hasError: false,
-              errorText: "",
-            });
-          }
-        }}
+        name="username"
+        autoComplete="username"
       />
-      <PasswordInput
-        id="password"
-        name="password"
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setPassword(e.target.value.trim())
-        }
-        value={password}
+      <TextField
         type="password"
-        hidePasswordLabel={t("hidePassword")}
-        showPasswordLabel={t("showPassword")}
-        onKeyDown={(e: React.KeyboardEvent) => {
-          if (e.key === "Enter") {
-            submit();
-          }
-        }}
-        labelText={t("password")}
-        invalid={passwordError.hasError}
-        invalidText={passwordError.errorText}
+        label={t("password")}
+        value={password}
+        onChange={(value) => setPassword(value.trim())}
+        onBlur={validatePassword}
+        errors={passwordError}
         placeholder={t("password")}
-        onBlur={({ target }) => {
-          if (target.value.trim().length < 1) {
-            setPasswordError({
-              hasError: true,
-              errorText: "Password is required",
-            });
-          } else {
-            setPasswordError({
-              hasError: false,
-              errorText: "",
-            });
-          }
-        }}
+        name="password"
+        autoComplete="current-password"
       />
-      <Button onClick={submit}>{t("login")}</Button>
-    </LoginFormContainer>
+      <Button type="submit">{t("login")}</Button>
+    </form>
   );
 };
 
@@ -178,35 +130,49 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultRedirectUrl }) => {
   const hasProductionLicense = license?.isCommercial;
 
   return (
-    <LoginPageContainer>
-      <Content>
-        <Header>
+    <Page className="min-h-screen">
+      <div className="mx-auto flex w-100 flex-col">
+        <div className="m-8 flex flex-col items-center gap-2">
           <CamundaLogo />
-          <h1>{t("admin")}</h1>
-        </Header>
+          <Heading as="h1" variant="heading-xl">
+            {t("admin")}
+          </Heading>
+        </div>
         <LoginForm onSuccess={onSuccess} />
         {!hasProductionLicense && (
-          <LicenseInfo>
+          <Text as="p" variant="helper" className="w-full text-center">
             <Translate i18nKey="licenseInfo">
               Non-Production License. If you would like information on
               production usage, please refer to our{" "}
-              <Link
+              <a
                 href="https://legal.camunda.com/#self-managed-non-production-terms"
                 target="_blank"
-                inline
+                rel="noreferrer noopener"
+                className={textLinkClassName}
               >
                 terms & conditions page
-              </Link>{" "}
+              </a>{" "}
               or{" "}
-              <Link href="https://camunda.com/contact/" target="_blank" inline>
+              <a
+                href="https://camunda.com/contact/"
+                target="_blank"
+                rel="noreferrer noopener"
+                className={textLinkClassName}
+              >
                 contact sales
-              </Link>
+              </a>
               .
             </Translate>
-          </LicenseInfo>
+          </Text>
         )}
-      </Content>
-      <CopyrightNotice>{getCopyrightNoticeText()}</CopyrightNotice>
-    </LoginPageContainer>
+      </div>
+      <Text
+        as="p"
+        variant="helper"
+        className="absolute inset-x-0 bottom-0 p-4 text-center"
+      >
+        {getCopyrightNoticeText()}
+      </Text>
+    </Page>
   );
 };
