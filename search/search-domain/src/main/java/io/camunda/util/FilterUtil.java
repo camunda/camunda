@@ -8,9 +8,9 @@
 package io.camunda.util;
 
 import io.camunda.search.filter.Operation;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
+import org.apache.commons.lang3.ObjectUtils;
 
 public final class FilterUtil {
 
@@ -36,11 +36,7 @@ public final class FilterUtil {
 
   public static boolean hasAnyNonEmpty(final Object... values) {
     for (final var value : values) {
-      if (value instanceof Collection<?> collection) {
-        if (!collection.isEmpty()) {
-          return true;
-        }
-      } else if (value != null) {
+      if (ObjectUtils.isNotEmpty(value)) {
         return true;
       }
     }
