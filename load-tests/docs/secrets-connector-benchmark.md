@@ -96,6 +96,16 @@ select the branch, name the test, choose the `secrets-connector` scenario, and *
 `platform-chart-from-main` checkbox** so the unreleased `orchestration.secretStore.file` is
 available.
 
+Also set the **`connectors-tag`** input to a build that includes the legacy secret-resolution
+switch (`CAMUNDA_CONNECTOR_SECRET_RESOLVER_LEGACY_MODE` / `CentralStoreSecretProvider` /
+`camunda_connector_secret_legacy_resolutions_total`) — e.g. `SNAPSHOT` (built from `connectors@main`)
+or `8.10.0-alpha5-rc1`+. The Helm chart's default pinned Connectors version may predate this
+feature: an older image silently ignores the env vars (the leftover `{{secrets.BENCHMARK_TOKEN0}}`
+placeholder is sent as-is in the header, which the connectors pod's own `/actuator/health` doesn't
+validate), so the job still completes and throughput/latency panels look healthy while no secret
+is ever actually resolved — the giveaway is "Legacy secret resolutions" and the "Secret cache"
+panels staying at zero/no-data even though "Outbound invocation throughput" is nonzero.
+
 Manually (see the [setup README](../setup/README.md) for prerequisites):
 
 ```sh
