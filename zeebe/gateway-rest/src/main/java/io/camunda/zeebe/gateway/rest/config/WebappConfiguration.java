@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.config;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public class WebappConfiguration {
 
@@ -16,6 +17,7 @@ public class WebappConfiguration {
   private boolean loginDelegated = false;
   private Cloud cloud = new Cloud();
   private List<String> activeComponents = new ArrayList<>();
+  private @Nullable Boolean newDesignSystemEnabled;
 
   public boolean isEnterprise() {
     return enterprise;
@@ -47,6 +49,18 @@ public class WebappConfiguration {
 
   public void setActiveComponents(final List<String> activeComponents) {
     this.activeComponents = activeComponents;
+  }
+
+  public @Nullable Boolean getNewDesignSystemEnabled() {
+    return newDesignSystemEnabled;
+  }
+
+  public void setNewDesignSystemEnabled(final @Nullable Boolean newDesignSystemEnabled) {
+    this.newDesignSystemEnabled = newDesignSystemEnabled;
+  }
+
+  public boolean resolveNewDesignSystemEnabled(final boolean isSaas) {
+    return newDesignSystemEnabled != null ? newDesignSystemEnabled : !isSaas;
   }
 
   public static class Cloud {
