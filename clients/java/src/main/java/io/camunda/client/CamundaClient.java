@@ -113,6 +113,7 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.AgentDefinitionGetRequest;
 import io.camunda.client.api.fetch.AgentInstanceGetRequest;
 import io.camunda.client.api.fetch.AuditLogGetRequest;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
@@ -148,6 +149,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.request.AgentDefinitionSearchRequest;
 import io.camunda.client.api.search.request.AgentInstanceHistorySearchRequest;
 import io.camunda.client.api.search.request.AgentInstanceSearchRequest;
 import io.camunda.client.api.search.request.AuditLogSearchRequest;
@@ -3706,6 +3708,37 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for searching global task listeners
    */
   GlobalTaskListenerSearchRequest newGlobalTaskListenerSearchRequest();
+
+  /**
+   * Creates a request to fetch an agent definition by its key.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentDefinitionGetRequest(agentDefinitionKey)
+   *       .send();
+   * </pre>
+   *
+   * @param agentDefinitionKey the key of the agent definition to retrieve
+   * @return a builder for fetching an agent definition
+   */
+  AgentDefinitionGetRequest newAgentDefinitionGetRequest(long agentDefinitionKey);
+
+  /**
+   * Creates a request to search for agent definitions.
+   *
+   * <p>Agent definitions can be searched with filtering and sorting capabilities:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentDefinitionSearchRequest()
+   *       .filter(f -> f.agentType(AgentDefinitionType.AI_AGENT_SUB_PROCESS))
+   *       .sort(s -> s.processDefinitionKey().desc())
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for searching agent definitions
+   */
+  AgentDefinitionSearchRequest newAgentDefinitionSearchRequest();
 
   /**
    * Creates a request to fetch an agent instance by its key.

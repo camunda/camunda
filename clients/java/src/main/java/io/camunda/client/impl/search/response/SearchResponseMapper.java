@@ -20,6 +20,7 @@ import io.camunda.client.api.response.Resource;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.AgentDefinition;
 import io.camunda.client.api.search.response.AgentInstance;
 import io.camunda.client.api.search.response.AgentInstanceHistory;
 import io.camunda.client.api.search.response.AuditLogResult;
@@ -72,6 +73,18 @@ import java.util.stream.Collectors;
 public final class SearchResponseMapper {
 
   private SearchResponseMapper() {}
+
+  public static AgentDefinition toAgentDefinitionGetResponse(final AgentDefinitionResult result) {
+    return new AgentDefinitionImpl(result);
+  }
+
+  public static SearchResponse<AgentDefinition> toAgentDefinitionSearchResponse(
+      final AgentDefinitionSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<AgentDefinition> instances =
+        toSearchResponseInstances(response.getItems(), AgentDefinitionImpl::new);
+    return new SearchResponseImpl<>(instances, page);
+  }
 
   public static AgentInstance toAgentInstanceGetResponse(final AgentInstanceResult result) {
     return new AgentInstanceImpl(result);
