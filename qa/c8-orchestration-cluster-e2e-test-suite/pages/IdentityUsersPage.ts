@@ -56,7 +56,7 @@ export class IdentityUsersPage {
     this.deleteUserButton = (rowName) =>
       this.usersList
         .getByRole('row', {name: rowName})
-        .getByLabel('Delete', {exact: true});
+        .getByRole('button', {name: 'Delete', exact: true});
 
     this.createUserModal = page.getByRole('dialog', {
       name: 'Create user',
