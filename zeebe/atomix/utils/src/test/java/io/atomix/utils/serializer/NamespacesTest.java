@@ -68,17 +68,30 @@ final class NamespacesTest {
   }
 
   @Test
+<<<<<<< HEAD
   void shouldNotJavaDeserializeIncomingMapEntry() {
+=======
+  void shouldRejectUnregisteredTypeInIncomingMapEntry() {
+>>>>>>> ddff64a6 (fix: enforce the Kryo registration allowlist for map entries on the cluster transport)
     // given - bytes an attacker could put on the cluster transport, produced here by the
     // registration this namespace used before the fix
     final byte[] bytes =
         javaSerializingNamespace().serialize(new SimpleImmutableEntry<>(new Unregistered(), "v"));
 
+<<<<<<< HEAD
     // when - then the payload is now read as Kryo rather than handed to ObjectInputStream, so it
     // fails to decode and, more importantly, never reaches Java deserialization
     assertThatThrownBy(() -> Namespaces.BASIC.deserialize(bytes)).isInstanceOf(KryoException.class);
     assertThat(JAVA_DESERIALIZATION_REACHED)
         .withFailMessage("Expected Java deserialization to never run while decoding a map entry")
+=======
+    // when - then
+    assertThatThrownBy(() -> Namespaces.BASIC.deserialize(bytes))
+        .isInstanceOf(KryoException.class)
+        .hasMessageContaining("unregistered");
+    assertThat(JAVA_DESERIALIZATION_REACHED)
+        .withFailMessage("Expected Java deserialization to never run for an unregistered type")
+>>>>>>> ddff64a6 (fix: enforce the Kryo registration allowlist for map entries on the cluster transport)
         .isFalse();
   }
 
@@ -100,9 +113,14 @@ final class NamespacesTest {
   /**
    * {@link Namespaces#BASIC} with {@link SimpleImmutableEntry} registered through a {@link
    * JavaSerializer} again, so that it produces the same bytes a pre-fix broker would. Copying the
+<<<<<<< HEAD
    * registration blocks keeps every class id identical, so {@link Namespaces#BASIC} recognises the
    * entry and attempts to decode it — the point of the test is what happens next, not that the
    * decode succeeds.
+=======
+   * registration blocks keeps every class id identical, which is what makes the output readable by
+   * {@link Namespaces#BASIC}.
+>>>>>>> ddff64a6 (fix: enforce the Kryo registration allowlist for map entries on the cluster transport)
    */
   private static Namespace javaSerializingNamespace() {
     final List<RegistrationBlock> blocks =
