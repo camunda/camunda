@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  id="Definitions_call_activity_business_id_parent"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <!--
+    Parametrized parent for the Call Activity Business ID specs. The process id, the
+    called child process id, and the businessId attribute value on zeebe:calledElement
+    are placeholders substituted per test case via deployWithSubstitutions so each case
+    runs in isolation. Do not remove the placeholders.
+  -->
+  <bpmn:process id="__PARENT_PROCESS_ID__" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>flow_to_call</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="flow_to_call" sourceRef="start" targetRef="call_child" />
+    <bpmn:callActivity id="call_child" name="Call Child">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="__CHILD_PROCESS_ID__" businessId="__BUSINESS_ID_ATTR__" propagateAllChildVariables="false" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow_to_call</bpmn:incoming>
+      <bpmn:outgoing>flow_to_end</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="flow_to_end" sourceRef="call_child" targetRef="end" />
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>flow_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>
