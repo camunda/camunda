@@ -2378,16 +2378,58 @@
                     },
                     "refId": "C"
                   }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "hidden": false,
+                    "query": {
+                      "datasource": {
+                        "name": "${DS_PROMETHEUS}"
+                      },
+                      "group": "prometheus",
+                      "kind": "DataQuery",
+                      "spec": {
+                        "editorMode": "code",
+                        "expr": "sum by (type) (rate(zeebe_job_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", type=~\"$jobType\", action=\"timed out\"}[$__rate_interval]))",
+                        "legendFormat": "{{type}} timed out (ops/s)",
+                        "range": true
+                      },
+                      "version": "v0"
+                    },
+                    "refId": "D"
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "hidden": false,
+                    "query": {
+                      "datasource": {
+                        "name": "${DS_PROMETHEUS}"
+                      },
+                      "group": "prometheus",
+                      "kind": "DataQuery",
+                      "spec": {
+                        "editorMode": "code",
+                        "expr": "sum(rate(zeebe_broker_jobs_push_fail_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval]))",
+                        "legendFormat": "yields attempted, all job types (ops/s)",
+                        "range": true
+                      },
+                      "version": "v0"
+                    },
+                    "refId": "E"
+                  }
                 }
               ],
               "queryOptions": {},
               "transformations": []
             }
           },
-          "description": "Activation requests currently parked at the gateway waiting for a job to appear. A worker whose poll is long-polling correctly keeps a request parked essentially all the time, so this sits at or above 1 for its job type; the poll then returns the instant a job becomes available, which is how jobs yielded by a failed stream push get recovered within milliseconds.\n\nZero for a job type whose worker is actively polling means long polling is not engaging: the activation returns an empty response immediately, and the client's poll interval then backs off — with a job stream open, up to a one-minute cap — so yielded jobs accumulate unrecovered until a poll happens to coincide with one.\n\nThe protocol tag separates REST from gRPC activations, so a transport-specific failure is visible directly on this panel.\n\nThe notification rate is the wake-up signal itself: a yielded job broadcasts one (JobYieldProcessor), and it is what releases a parked request. Notifications without matching poll recovery means the signal is emitted but never reaches the parked request, so the request sits until its long-poll timeout returns an empty response.",
+          "description": "The full path a job takes after its stream push failed, on one axis. A failed push has the broker append a YIELD command (RemoteStreamPusher increments the push-failure counter and calls the yield error handler in the same breath, so 'yields attempted' is that rate); the yield makes the job activatable again and broadcasts a notification; the notification releases a parked activation request, which recovers the job.\n\nRead it as a chain, each step against the one before:\n\n- notified far below yields attempted: the yield itself is not completing. A rejected YIELD notifies nothing, and an unwritten one logs 'job will remain activated until it times out'. The job stays ACTIVATED, which is not activatable, so no poll can ever recover it.\n- timed out rising to meet yields attempted, lagged by one job timeout: confirms exactly that. Job expiry is then the only recovery path, and the throughput deficit is the yield rate.\n- notified matching yields attempted but recovery near zero: the wake-up is emitted and never reaches the parked request.\n\nParked is the gauge of activation requests waiting at the gateway, tagged by protocol so a transport-specific failure is visible directly. With a continuous supply of jobs it sits near zero because the poll gets jobs on its first attempt; it only climbs when polls have to wait.\n\nEverything except 'yields attempted' is scoped to the Job type variable — the broker's push-failure counter carries no job type, so it aggregates the namespace and is only comparable when the variable is on All.",
           "id": 14,
           "links": [],
-          "title": "Long-Polling Requests Parked (by job type)",
+          "title": "Yield Recovery Path (parked polls, notification, recovery)",
           "vizConfig": {
             "group": "timeseries",
             "kind": "VizConfig",
