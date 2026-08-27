@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.writer;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Ticker;
+import com.google.common.annotations.VisibleForTesting;
 import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.service.db.reader.JobRegistryReader;
@@ -46,6 +47,7 @@ public class DeletedProcessDefinitionFilter {
     this(jobRegistryReader, configurationService, Ticker.systemTicker());
   }
 
+  @VisibleForTesting
   DeletedProcessDefinitionFilter(
       final JobRegistryReader jobRegistryReader,
       final ConfigurationService configurationService,
@@ -111,6 +113,12 @@ public class DeletedProcessDefinitionFilter {
     final List<String> entityIds =
         jobRegistryReader.findNewestEntityIds(
             JobType.DELETE, EntityType.PROCESS_DEFINITION, maxSize);
+    if (entityIds.size() >= maxSize) {
+      LOG.warn(
+          "Fetched the maximum number of results ({}). There may be more deleted process"
+              + " definitions not included in the result set, whose data could be reimported.",
+          maxSize);
+    }
     return Set.copyOf(entityIds);
   }
 }
