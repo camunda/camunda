@@ -48,6 +48,7 @@ public final class PostgresReplicationClusterContainer
   private final Network network = Network.newNetwork();
   private final GenericContainer<?> replica;
   private volatile boolean replicaStopped = false;
+  private volatile boolean primaryStopped = false;
 
   public PostgresReplicationClusterContainer() {
     super(POSTGRES_IMAGE);
@@ -70,6 +71,7 @@ public final class PostgresReplicationClusterContainer
             .withEnv("POSTGRESQL_REPLICATION_USER", REPLICATION_USER)
             .withEnv("POSTGRESQL_REPLICATION_PASSWORD", REPLICATION_PASSWORD)
             .withEnv("POSTGRESQL_PASSWORD", PASSWORD)
+            .withExposedPorts(5432)
             .withStartupTimeout(Duration.ofMinutes(5));
   }
 
@@ -88,7 +90,7 @@ public final class PostgresReplicationClusterContainer
       stopReplica();
     } finally {
       try {
-        super.stop();
+        stopPrimary();
       } finally {
         network.close();
       }
@@ -128,6 +130,83 @@ public final class PostgresReplicationClusterContainer
     replica.start();
     waitForReplication();
     return CompletableFuture.completedFuture(Unit.unit());
+  }
+
+  /** Host on which the replica's Postgres port is reachable from the test JVM. */
+  public String getReplicaHost() {
+    return replica.getHost();
+  }
+
+  /** Mapped host port for the replica's Postgres port (5432). */
+  public int getReplicaPort() {
+    return replica.getMappedPort(5432);
+  }
+
+  /**
+   * A multi-host JDBC URL listing both the primary and the replica, with {@code
+   * targetServerType=primary} so the PostgreSQL JDBC driver always routes new connections to
+   * whichever listed host is currently writable.
+   */
+  public String getFailoverJdbcUrl() {
+    return "jdbc:postgresql://%s:%d,%s:%d/%s?targetServerType=primary&connectTimeout=10&socketTimeout=15"
+        .formatted(
+            getHost(), getMappedPort(5432), getReplicaHost(), getReplicaPort(), DATABASE_NAME);
+  }
+
+  /**
+   * Stops only the primary, leaving the replica (if still running) untouched. Used to simulate the
+   * primary database going down during a failover.
+   */
+  public Future<Void> stopPrimary() {
+    if (!primaryStopped) {
+      LOG.info("Stopping PostgreSQL primary");
+      primaryStopped = true;
+      super.stop();
+      LOG.info("PostgreSQL primary stopped");
+    }
+    return CompletableFuture.completedFuture(Unit.unit());
+  }
+
+  /**
+   * Severs replication from the primary's side, so the replica stops receiving new WAL from this
+   * point on, without stopping or restarting either container.
+   */
+  public void disconnectReplicaFromPrimary() {
+    LOG.info("Disconnecting PostgreSQL replica from the primary");
+    try (final Connection conn = primaryConnection();
+        final Statement stmt = conn.createStatement()) {
+      stmt.execute("ALTER ROLE " + REPLICATION_USER + " WITH NOLOGIN");
+      stmt.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_replication");
+    } catch (final Exception e) {
+      throw new IllegalStateException("Failed to disconnect PostgreSQL replica", e);
+    }
+    LOG.info("PostgreSQL replica disconnected from primary");
+  }
+
+  /**
+   * Promotes the (still-running) replica to a standalone writable primary via {@code pg_promote()}.
+   */
+  public void promoteReplica() {
+    LOG.info("Promoting PostgreSQL replica to primary");
+    try (final Connection conn = replicaConnection();
+        final Statement stmt = conn.createStatement();
+        final ResultSet rs = stmt.executeQuery("SELECT pg_promote(true, 60)")) {
+      rs.next();
+      final boolean promoted = rs.getBoolean(1);
+      if (!promoted) {
+        throw new IllegalStateException("pg_promote() returned false, replica was not promoted");
+      }
+    } catch (final Exception e) {
+      throw new IllegalStateException("Failed to promote PostgreSQL replica", e);
+    }
+    LOG.info("PostgreSQL replica promoted to primary");
+  }
+
+  private Connection replicaConnection() throws Exception {
+    return DriverManager.getConnection(
+        "jdbc:postgresql://%s:%d/%s".formatted(getReplicaHost(), getReplicaPort(), DATABASE_NAME),
+        USERNAME,
+        PASSWORD);
   }
 
   private void waitForReplication() {
