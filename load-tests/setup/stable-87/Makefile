@@ -10,6 +10,6 @@ rdbms_storages =
 optimize_self_sufficient_storages =
 scenario_max_override_key = zeebe.extraConfiguration.application-override\.yml=
 install_storage_target =
-physical_tenants_rdbms_values_file =
+physical_tenants_supported = false
 
 include ../common.mk
