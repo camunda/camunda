@@ -90,6 +90,23 @@ CWD is the repo root, on a clean or disposable branch (reproduction may start lo
    an answer that will never come, the same failure mode as Phase 3's health-check loop without a
    timeout. Autonomous invocations must say so explicitly and skip the question entirely, defaulting
    to posting.
+10. **Never substitute a similarly-named file for a verbatim identifier from the issue, and never
+    conclude "no fix needed" or "issue premise is wrong" without matching that identifier exactly.**
+    When the issue's logs, stack trace, or error message name a fully-qualified class, a log
+    format string, or exact error text, that string is ground truth — grep for it verbatim (Phase 2)
+    before treating any similarly-named class in a different package/module as "the relevant file."
+    If the exact string isn't found on `main`, and the issue names a specific released version,
+    check that version's `stable/X.Y` branch (or tag) before concluding the code doesn't exist at
+    all — a class removed or renamed on `main` while still shipping on a supported release branch is
+    a common, distinct case from "doesn't exist anywhere," and confusing the two produces a
+    confident-but-wrong "already fixed, no action needed" conclusion. If Phase 5's fix attempt fails
+    with a structural error unrelated to the fix's own logic (e.g. "Ambiguous `@ExceptionHandler`",
+    a missing bean, a type that doesn't resolve), treat that as a signal you may be editing the wrong
+    file, not as evidence the real app already handles it correctly — re-open Phase 2 before drawing
+    any conclusion. This rule exists because a real investigation matched a similarly-named
+    controller in the wrong module, reproduced the wrong endpoint, hit exactly this kind of
+    structural failure when attempting a fix there, and told the reporter no fix was needed — when
+    the actual reported class, never located, was still broken on every supported release branch.
 
 ## Procedure
 
@@ -175,6 +192,11 @@ bug type — this drives Phase 3's reproduction method:
 Read `references/triage-guidelines.md` for how severity/likelihood/urgency labels should shape the
 tone and urgency of the final report.
 
+**If the issue body, comments, or attached logs contain a fully-qualified class name, an exact log
+message format string, or a stack trace**, extract it verbatim now — this is the ground-truth
+identifier Phase 2 must match exactly (Hard rule 10). A component label or a vague description of
+"the controller" is not a substitute for the FQCN itself when one is available.
+
 Update the comment: check off item 1.
 
 ### Phase 2 — Find relevant files
@@ -194,6 +216,22 @@ storage backend**, find all the backend-specific implementations, not just the o
 happens to point at — per Hard rule 8, look for the RDBMS mapper (`db/rdbms/src/main/resources/
 mapper/`) and the ES/OS transformer (`search/search-client-query-transformer/`) as a pair, and note
 both file sets in the comment even before confirming which ones are actually broken.
+
+**If Phase 1 extracted a verbatim identifier (Hard rule 10)** — a fully-qualified class name, log
+format string, or stack trace frame — grep for that exact string first, not a fuzzy name match on
+the class's short name alone. If it isn't found on `main` and the issue names a specific released
+version, check the corresponding `stable/X.Y` branch (or version tag) before concluding the class
+doesn't exist in the repo:
+
+```bash
+git fetch origin stable/X.Y
+git ls-tree -r origin/stable/X.Y --name-only | grep <ClassName>
+```
+
+Do not substitute a similarly-named class from a different package/module as "the relevant file"
+unless you've confirmed the exact identifier truly doesn't exist anywhere across `main` and the
+reported version's branch. If you do fall back to an unconfirmed similar match, say so explicitly
+in the comment as a guess — never present it as the finding.
 
 Update the comment: check off item 2, list the files found so far.
 
@@ -218,6 +256,11 @@ Reproduction outcome feeds directly into Phase 6's confidence score:
 - **Environment failed to start** (c8run didn't come up, Playwright couldn't launch) → mark this
   step ❌ in the comment, continue to Phase 4 with code analysis alone. A broken local environment
   is not the same as "bug not reproducible."
+- **Wrong branch/version tested** — if Phase 2's verbatim identifier (Hard rule 10) isn't present in
+  the branch/build actually being exercised, a "could not reproduce" result here proves nothing
+  about the reported bug. Don't score it as "could not reproduce" (which only caps confidence at
+  Medium per the triage guidelines) — it's an incomplete investigation. Go check the version-specific
+  branch (Phase 2) before drawing any conclusion.
 
 **Tear down the reproduction environment now**, regardless of outcome, before moving to Phase 4 —
 see `references/reproduction.md` for the teardown command. Don't defer cleanup to the end of the
@@ -287,13 +330,25 @@ unvalidated.
    to Phase 6, or, if that's genuinely out of reach in this pass, treat the whole fix as not yet
    validated (not "validated for one backend") and let Phase 6 route it to report-only.
 
+If a fix attempt fails with a structural error unrelated to the fix's own logic — "Ambiguous
+`@ExceptionHandler`", a missing bean, a type that doesn't resolve, an annotation that has no effect
+where you placed it — don't read that as "this bug doesn't need a code fix after all." It's far more
+often a sign the fix landed on the wrong file or module (Hard rule 10) than a sign the real app
+already works correctly. Re-open Phase 2 and re-confirm the file identity against the issue's
+verbatim identifier before concluding no fix is needed.
+
 Update the comment: check off item 5, note which of the six passed/failed.
 
 ### Phase 6 — Score confidence and decide
 
 Score confidence using the table in
 [`references/triage-guidelines.md`](references/triage-guidelines.md#confidence-scoring) and act on
-it:
+it. Before scoring the "issue premise looks wrong" row specifically, confirm every verbatim
+identifier extracted in Phase 1 (Hard rule 10) was actually matched during the investigation — not
+approximated by a similarly-named class or a different endpoint. An unmatched identifier means the
+investigation hasn't actually located the reported code path; that's "blocked by missing info" (the
+row above), not "premise looks wrong" — the latter tells the reporter to consider closing their own
+possibly-still-valid bug.
 
 | Confidence                                                                                                              | Diff size    | Action                                                                                                                                                                                                                                                       |
 | ----------------------------------------------------------------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -413,6 +468,10 @@ outlives the current file state.
   first, or don't open the PR at all (Hard rule 8, Phase 5's backend-parity check).
 - **Never** post a second top-level comment for progress — always PATCH the one from Phase 0.
 - **Never** block on missing logs (Hard rule 4).
+- **Never** conclude "issue premise is wrong" or "no fix needed" without matching every verbatim
+  identifier (FQCN, log message, stack trace) the issue provided — a near-miss match in a different
+  module is not confirmation, and treating it as one has previously led to telling a reporter their
+  bug wasn't real when it still reproduced on every supported release branch (Hard rule 10).
 - **Never** leave a reproduction environment running after Phase 3, even on failure or early exit.
 - If the issue is already closed, or already has a linked PR, stop and tell the engineer before
   investigating — don't duplicate in-flight work. Checked at the very start of Phase 0, before any

@@ -51,6 +51,13 @@ saw first):
 Confidence is not a single signal — it's built from three inputs, each independently capped, then
 combined. A fix cannot score higher than its weakest input.
 
+Before scoring any of the three inputs, confirm the code you investigated actually matches the
+issue: if the issue supplied a verbatim identifier (a fully-qualified class name, log message, or
+stack trace frame — see `SKILL.md` Hard rule 10) and you never found it, don't score Root cause
+clarity from whatever similar-looking code you did find. A plausible-sounding root cause in the
+wrong file isn't a weak signal on one input — it invalidates Reproduction and Root cause clarity
+both, since neither actually examined the reported code path.
+
 | Input                          | High (contributes ≥ 0.80)                          | Medium (contributes 0.50–0.79)         | Low (contributes < 0.50)                |
 |---------------------------------|-------------------------------------------------------|-------------------------------------------|---------------------------------------------|
 | Reproduction (Phase 3)          | Confirmed — bug actually observed                    | Could not reproduce, but root cause is still clear from code + issue | Environment failed to start, or evidence is contradictory |
