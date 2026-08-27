@@ -127,4 +127,144 @@ class SessionStoreAdapterTest {
   void shouldReturnNullOnGetWhenAbsent() {
     assertThat(new SessionStoreAdapter(new PersistentWebSessionClientStub()).get("x")).isNull();
   }
+
+  @Test
+  void shouldRetryTransientGetFailureThenReturnNull() {
+    // given — a client that always fails transiently on read
+    final var attempts = new AtomicInteger();
+    final PersistentWebSessionClient failing =
+        new PersistentWebSessionClientStub() {
+          @Override
+          public PersistentWebSessionEntity getPersistentWebSession(final String sessionId) {
+            attempts.incrementAndGet();
+            throw new CamundaSearchException("connection refused", Reason.CONNECTION_FAILED);
+          }
+        };
+    final var adapter = new SessionStoreAdapter(failing);
+
+    // when / then — retried three times, then treated as "no session found"
+    assertThat(adapter.get("s1")).isNull();
+    assertThat(attempts.get()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldRecoverGetAfterTransientFailure() {
+    // given — a client that fails transiently once, then succeeds
+    final var attempts = new AtomicInteger();
+    final PersistentWebSessionClient recovering =
+        new PersistentWebSessionClientStub() {
+          @Override
+          public PersistentWebSessionEntity getPersistentWebSession(final String sessionId) {
+            if (attempts.incrementAndGet() == 1) {
+              throw new CamundaSearchException("connection refused", Reason.CONNECTION_FAILED);
+            }
+            return super.getPersistentWebSession(sessionId);
+          }
+        };
+    final var adapter = new SessionStoreAdapter(recovering);
+    recovering.upsertPersistentWebSession(
+        new PersistentWebSessionEntity("s1", 1L, 2L, 1800L, Map.of()));
+    attempts.set(0);
+
+    // when / then — retried once and the second attempt succeeded
+    assertThat(adapter.get("s1")).isNotNull();
+    assertThat(attempts.get()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldNotThrowOnNonTransientGetFailure() {
+    // given — a failure reason that is not retried
+    final var attempts = new AtomicInteger();
+    final PersistentWebSessionClient failing =
+        new PersistentWebSessionClientStub() {
+          @Override
+          public PersistentWebSessionEntity getPersistentWebSession(final String sessionId) {
+            attempts.incrementAndGet();
+            throw new CamundaSearchException("invalid session", Reason.INVALID_ARGUMENT);
+          }
+        };
+    final var adapter = new SessionStoreAdapter(failing);
+
+    // when / then — not retried, and the failure never propagates to the caller
+    assertThat(adapter.get("s1")).isNull();
+    assertThat(attempts.get()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldRetryTransientDeleteFailureThenSwallow() {
+    // given — a client that always fails transiently on delete
+    final var attempts = new AtomicInteger();
+    final PersistentWebSessionClient failing =
+        new PersistentWebSessionClientStub() {
+          @Override
+          public void deletePersistentWebSession(final String sessionId) {
+            attempts.incrementAndGet();
+            throw new CamundaSearchException("connection refused", Reason.CONNECTION_FAILED);
+          }
+        };
+    final var adapter = new SessionStoreAdapter(failing);
+
+    // when / then — retried three times, and the failure never propagates to the caller
+    assertThatNoException().isThrownBy(() -> adapter.delete("s1"));
+    assertThat(attempts.get()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldNotThrowOnNonTransientDeleteFailure() {
+    // given — a failure reason that is not retried
+    final var attempts = new AtomicInteger();
+    final PersistentWebSessionClient failing =
+        new PersistentWebSessionClientStub() {
+          @Override
+          public void deletePersistentWebSession(final String sessionId) {
+            attempts.incrementAndGet();
+            throw new CamundaSearchException("invalid session", Reason.INVALID_ARGUMENT);
+          }
+        };
+    final var adapter = new SessionStoreAdapter(failing);
+
+    // when / then — not retried, and the failure never propagates to the caller
+    assertThatNoException().isThrownBy(() -> adapter.delete("s1"));
+    assertThat(attempts.get()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldRetryTransientGetAllFailureThenReturnEmptyList() {
+    // given — a client that always fails transiently on getAll
+    final var attempts = new AtomicInteger();
+    final PersistentWebSessionClient failing =
+        new PersistentWebSessionClientStub() {
+          @Override
+          public io.camunda.search.query.SearchQueryResult<PersistentWebSessionEntity>
+              getAllPersistentWebSessions() {
+            attempts.incrementAndGet();
+            throw new CamundaSearchException("connection refused", Reason.CONNECTION_FAILED);
+          }
+        };
+    final var adapter = new SessionStoreAdapter(failing);
+
+    // when / then — retried three times, then treated as "no sessions found"
+    assertThat(adapter.getAll()).isEmpty();
+    assertThat(attempts.get()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldNotThrowOnNonTransientGetAllFailure() {
+    // given — a failure reason that is not retried
+    final var attempts = new AtomicInteger();
+    final PersistentWebSessionClient failing =
+        new PersistentWebSessionClientStub() {
+          @Override
+          public io.camunda.search.query.SearchQueryResult<PersistentWebSessionEntity>
+              getAllPersistentWebSessions() {
+            attempts.incrementAndGet();
+            throw new CamundaSearchException("invalid session", Reason.INVALID_ARGUMENT);
+          }
+        };
+    final var adapter = new SessionStoreAdapter(failing);
+
+    // when / then — not retried, and the failure never propagates to the caller
+    assertThat(adapter.getAll()).isEmpty();
+    assertThat(attempts.get()).isEqualTo(1);
+  }
 }

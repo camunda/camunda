@@ -16,6 +16,7 @@ import io.camunda.security.core.port.out.SessionStorePort;
 import io.github.resilience4j.retry.Retry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,16 +31,21 @@ import org.slf4j.LoggerFactory;
  * request — even during Spring Session's commit phase, which runs after the request scope is torn
  * down.
  *
- * <p>Upserts are retried on transient storage failures with exponential backoff; once retries are
- * exhausted the failure is logged and swallowed so a storage blip never propagates into the session
- * save path. This resilience policy lives here (rather than in the library) because it inspects the
- * search-specific {@link CamundaSearchException} reasons to decide what is transient.
+ * <p>Every operation is retried on transient storage failures with exponential backoff; once
+ * retries are exhausted (or the failure is not transient), the failure is logged and swallowed so a
+ * storage blip never fails the request. Reads (get, getAll) degrade to "nothing found"; writes
+ * (upsert, delete) are simply dropped. This resilience policy lives here (rather than in the
+ * library) because it inspects the search-specific {@link CamundaSearchException} reasons to decide
+ * what is transient.
  */
 public final class SessionStoreAdapter implements SessionStorePort {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SessionStoreAdapter.class);
 
+  private static final Retry GET_RETRY = TransientRetry.of("web-session-get");
   private static final Retry UPSERT_RETRY = TransientRetry.of("web-session-upsert");
+  private static final Retry DELETE_RETRY = TransientRetry.of("web-session-delete");
+  private static final Retry GET_ALL_RETRY = TransientRetry.of("web-session-get-all");
 
   private final PersistentWebSessionClient client;
 
@@ -49,43 +55,67 @@ public final class SessionStoreAdapter implements SessionStorePort {
 
   @Override
   public PersistentSession get(final String sessionId) {
-    return toPersistentSession(client.getPersistentWebSession(sessionId));
+    return toPersistentSession(
+        runWithRetry(GET_RETRY, "read", () -> client.getPersistentWebSession(sessionId), null));
   }
 
   @Override
   public void upsert(final PersistentSession session) {
     final var entity = toEntity(session);
-    try {
-      Retry.decorateRunnable(UPSERT_RETRY, () -> client.upsertPersistentWebSession(entity)).run();
-    } catch (final CamundaSearchException e) {
-      LOGGER.warn(
-          "Failed to save web session to persistent storage after {} attempts: {} (reason: {})",
-          TransientRetry.MAX_ATTEMPTS,
-          e.getMessage(),
-          e.getReason(),
-          e);
-    } catch (final RuntimeException e) {
-      LOGGER.warn(
-          "Failed to save web session to persistent storage after {} attempts: {}",
-          TransientRetry.MAX_ATTEMPTS,
-          e.getMessage(),
-          e);
-    }
+    runWithRetry(UPSERT_RETRY, "save", () -> client.upsertPersistentWebSession(entity));
   }
 
   @Override
   public void delete(final String sessionId) {
-    client.deletePersistentWebSession(sessionId);
+    runWithRetry(DELETE_RETRY, "delete", () -> client.deletePersistentWebSession(sessionId));
   }
 
   @Override
   public List<PersistentSession> getAll() {
+    final var items =
+        runWithRetry(
+            GET_ALL_RETRY, "read all", () -> client.getAllPersistentWebSessions().items(), null);
     final var result = new ArrayList<PersistentSession>();
-    final var items = client.getAllPersistentWebSessions().items();
     if (items != null) {
       items.stream().map(SessionStoreAdapter::toPersistentSession).forEach(result::add);
     }
     return result;
+  }
+
+  private static <T> T runWithRetry(
+      final Retry retry, final String operation, final Supplier<T> action, final T fallback) {
+    try {
+      return Retry.decorateSupplier(retry, action).get();
+    } catch (final CamundaSearchException e) {
+      LOGGER.warn(
+          "Failed to {} persistent web session after {} attempts: {} (reason: {})",
+          operation,
+          TransientRetry.MAX_ATTEMPTS,
+          e.getMessage(),
+          e.getReason(),
+          e);
+      return fallback;
+    } catch (final RuntimeException e) {
+      LOGGER.warn(
+          "Failed to {} persistent web session after {} attempts: {}",
+          operation,
+          TransientRetry.MAX_ATTEMPTS,
+          e.getMessage(),
+          e);
+      return fallback;
+    }
+  }
+
+  private static void runWithRetry(
+      final Retry retry, final String operation, final Runnable action) {
+    runWithRetry(
+        retry,
+        operation,
+        () -> {
+          action.run();
+          return null;
+        },
+        null);
   }
 
   static PersistentSession toPersistentSession(final PersistentWebSessionEntity entity) {
