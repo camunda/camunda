@@ -11,6 +11,7 @@ import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {
 	mockCurrentUserEndpoint,
+	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryUserTasksEndpoint,
@@ -118,14 +119,17 @@ test.describe('Tasks panel', () => {
 	});
 
 	test('should navigate to the task details', async ({network, page, shadcnTasklistIndexPage}) => {
+		const task = createUserTask({userTaskKey: '2251799813685281', name: 'Sign document'});
+
 		network.use(
 			mockQueryUserTasksEndpoint({
 				successResponse: HttpResponse.json(
 					createQueryUserTasksResponse({
-						items: [createUserTask({userTaskKey: '2251799813685281', name: 'Sign document'})],
+						items: [task],
 					}),
 				),
 			}),
+			mockGetUserTaskEndpoint({successResponse: HttpResponse.json(task)}),
 		);
 
 		await shadcnTasklistIndexPage.goto();
