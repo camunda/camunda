@@ -7,14 +7,13 @@
  */
 package io.camunda.authentication.config.spi;
 
+import io.camunda.authentication.utils.TransientSearchRetry;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.api.model.session.PersistentSession;
 import io.camunda.security.core.port.out.SessionStorePort;
-import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.Retry;
-import io.github.resilience4j.retry.RetryConfig;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -39,17 +38,8 @@ import org.slf4j.LoggerFactory;
 public final class SessionStoreAdapter implements SessionStorePort {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SessionStoreAdapter.class);
-  private static final int MAX_RETRY_ATTEMPTS = 3;
-  private static final long INITIAL_RETRY_DELAY_MS = 100;
 
-  private static final Retry UPSERT_RETRY =
-      Retry.of(
-          "web-session-upsert",
-          RetryConfig.custom()
-              .maxAttempts(MAX_RETRY_ATTEMPTS)
-              .intervalFunction(IntervalFunction.ofExponentialBackoff(INITIAL_RETRY_DELAY_MS, 2))
-              .retryOnException(SessionStoreAdapter::isTransientFailure)
-              .build());
+  private static final Retry UPSERT_RETRY = TransientSearchRetry.of("web-session-upsert");
 
   private final PersistentWebSessionClient client;
 
@@ -70,14 +60,14 @@ public final class SessionStoreAdapter implements SessionStorePort {
     } catch (final CamundaSearchException e) {
       LOGGER.warn(
           "Failed to save web session to persistent storage after {} attempts: {} (reason: {})",
-          MAX_RETRY_ATTEMPTS,
+          TransientSearchRetry.MAX_ATTEMPTS,
           e.getMessage(),
           e.getReason(),
           e);
     } catch (final RuntimeException e) {
       LOGGER.warn(
           "Failed to save web session to persistent storage after {} attempts: {}",
-          MAX_RETRY_ATTEMPTS,
+          TransientSearchRetry.MAX_ATTEMPTS,
           e.getMessage(),
           e);
     }
@@ -96,16 +86,6 @@ public final class SessionStoreAdapter implements SessionStorePort {
       items.stream().map(SessionStoreAdapter::toPersistentSession).forEach(result::add);
     }
     return result;
-  }
-
-  static boolean isTransientFailure(final Throwable throwable) {
-    if (throwable instanceof final CamundaSearchException cse) {
-      return switch (cse.getReason()) {
-        case CONNECTION_FAILED, SEARCH_CLIENT_FAILED, SEARCH_SERVER_FAILED, UNKNOWN -> true;
-        default -> false;
-      };
-    }
-    return throwable instanceof RuntimeException;
   }
 
   static PersistentSession toPersistentSession(final PersistentWebSessionEntity entity) {
