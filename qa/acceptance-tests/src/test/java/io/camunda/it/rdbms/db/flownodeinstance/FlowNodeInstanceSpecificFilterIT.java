@@ -103,6 +103,15 @@ public class FlowNodeInstanceSpecificFilterIT {
         FlowNodeInstanceFilter.of(b -> b.tenantIds("unique-tenant-1")),
         FlowNodeInstanceFilter.of(b -> b.hasIncident(true)),
         FlowNodeInstanceFilter.of(b -> b.incidentKeys(125L)),
-        FlowNodeInstanceFilter.of(b -> b.treePaths("unique-tree-path-42")));
+        FlowNodeInstanceFilter.of(b -> b.treePaths("unique-tree-path-42")),
+        FlowNodeInstanceFilter.of(
+            b ->
+                b.flowNodeInstanceKeys(42L)
+                    .orFilters(
+                        List.of(
+                            new FlowNodeInstanceFilter.Builder().build(),
+                            new FlowNodeInstanceFilter.Builder()
+                                .states(FlowNodeState.COMPLETED.name())
+                                .build()))));
   }
 }
