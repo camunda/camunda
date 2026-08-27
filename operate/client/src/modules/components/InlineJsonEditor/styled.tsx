@@ -114,7 +114,7 @@ const ReadOnlyEditorWrapper = styled.div<{
 
       .operate-nav-v2 & {
         border: 1px solid var(--cds-border-subtle-01);
-        border-radius: var(--operate-input-border-radius);
+        border-radius: var(--cds-spacing-03);
       }
     `};
 `;
@@ -175,7 +175,7 @@ const WriteModeEditor = styled.div<{
 
     .operate-nav-v2 & {
       border: 1px solid var(--cds-border-subtle-01);
-      border-radius: var(--operate-input-border-radius);
+      border-radius: var(--cds-spacing-03);
       overflow: hidden;
     }
 
