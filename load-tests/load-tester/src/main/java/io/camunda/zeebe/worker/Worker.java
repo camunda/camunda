@@ -11,6 +11,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
@@ -52,12 +53,17 @@ public class Worker {
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
   private final Timer handleDurationTimer;
+  private final Timer intakeDelayTimer;
+  // Null when no job timeout is configured, in which case the job deadline cannot be resolved back
+  // to an activation instant and the intake delay is not recorded at all.
+  private final Duration jobTimeout;
   private final Map<PublishOutcome, Timer> publishDurationTimers =
       new EnumMap<>(PublishOutcome.class);
 
   public Worker(
       final CamundaClient client,
       final LoadTesterProperties properties,
+      final CamundaClientProperties clientProperties,
       final PayloadReader payloadReader,
       final ConnectionMonitor connectionMonitor,
       final MeterRegistry registry) {
@@ -66,9 +72,11 @@ public class Worker {
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
     responseChecker = new ResponseChecker(requestFutures, registry);
     this.connectionMonitor = connectionMonitor;
+    jobTimeout = clientProperties.getWorker().getDefaults().getTimeout();
 
     handleDurationTimer =
         MicrometerUtil.buildTimer(WorkerMetricsDoc.HANDLE_DURATION).register(registry);
+    intakeDelayTimer = MicrometerUtil.buildTimer(WorkerMetricsDoc.INTAKE_DELAY).register(registry);
     for (final var outcome : PublishOutcome.values()) {
       publishDurationTimers.put(
           outcome,
@@ -111,11 +119,25 @@ public class Worker {
   public void handleJob(final JobClient jobClient, final ActivatedJob job) {
     final long startHandlingTime = System.currentTimeMillis();
     final long startHandlingNanos = System.nanoTime();
+    recordIntakeDelay(job, startHandlingTime);
     try {
       handleJobInternal(jobClient, job, startHandlingTime);
     } finally {
       handleDurationTimer.record(System.nanoTime() - startHandlingNanos, TimeUnit.NANOSECONDS);
     }
+  }
+
+  /**
+   * The broker sets the job deadline to the instant it activated the job plus the configured job
+   * timeout, so the time already spent on delivery is what the timeout minus the remaining lease
+   * leaves.
+   */
+  private void recordIntakeDelay(final ActivatedJob job, final long startHandlingTime) {
+    if (jobTimeout == null) {
+      return;
+    }
+    final long remainingLease = job.getDeadline() - startHandlingTime;
+    intakeDelayTimer.record(jobTimeout.toMillis() - remainingLease, TimeUnit.MILLISECONDS);
   }
 
   private void handleJobInternal(

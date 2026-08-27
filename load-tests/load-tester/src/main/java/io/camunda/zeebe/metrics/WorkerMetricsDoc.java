@@ -16,6 +16,60 @@ import java.time.Duration;
 public enum WorkerMetricsDoc implements ExtendedMeterDocumentation {
 
   /**
+   * How long a job waited between the broker activating it and a handler thread picking it up: the
+   * delivery path, covering broker, gateway, the client's job stream or activation response, and
+   * the client's own handler queue. It is the only segment of the job round-trip that none of the
+   * other timers here cover, which makes it the one to read when the worker has idle threads and
+   * still falls short of the offered job rate.
+   *
+   * <p>Derived from the job's deadline, which the broker sets to the activation instant plus the
+   * configured job timeout, so it measures against the broker's clock rather than the worker's: a
+   * clock offset between the two shifts every sample by the same amount. Compare runs on the same
+   * pods and read the difference, not the absolute value. Samples that skew negative are dropped by
+   * the timer.
+   *
+   * <p>The bucket at 100ms is the default client poll interval: polled jobs spread evenly below it,
+   * whereas streamed jobs are pushed on creation and should sit far lower.
+   */
+  INTAKE_DELAY {
+    private static final Duration[] BUCKETS = {
+      Duration.ofMillis(1),
+      Duration.ofMillis(5),
+      Duration.ofMillis(10),
+      Duration.ofMillis(25),
+      Duration.ofMillis(50),
+      Duration.ofMillis(100),
+      Duration.ofMillis(150),
+      Duration.ofMillis(250),
+      Duration.ofMillis(500),
+      Duration.ofMillis(750),
+      Duration.ofSeconds(1),
+      Duration.ofMillis(1500),
+      Duration.ofSeconds(2)
+    };
+
+    @Override
+    public String getDescription() {
+      return "The delay between the broker activating a job and a handler thread picking it up.";
+    }
+
+    @Override
+    public String getName() {
+      return "worker.intake.delay";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return BUCKETS;
+    }
+  },
+
+  /**
    * The duration of the synchronous message publication issued while handling a job, from sending
    * the command until the response arrives (or the wait times out). Isolates the latency of the
    * publish call from the rest of the job handling, so its contribution to thread occupancy — e.g.

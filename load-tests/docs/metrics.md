@@ -243,6 +243,31 @@ histogram_quantile(0.99, sum by (le) (rate(starter_response_latency_seconds_buck
 
 ---
 
+### Worker job-intake delay
+
+Time a job spends between the broker activating it and a worker thread picking it up: the whole
+delivery path — broker, gateway, the client's job stream or activation response, and the client's
+own handler queue. It is the only segment of the job round-trip none of the timers below cover,
+which makes it the one to read when the worker has idle threads and still falls short of the offered
+job rate.
+
+Derived from the job deadline, which the broker sets to the activation instant plus the configured
+job timeout, so it is measured against the broker's clock rather than the worker's. A clock offset
+between the two shifts every sample by the same amount: compare runs on the same pods and read the
+difference, not the absolute value. Samples that skew negative are dropped.
+
+The bucket at 100 ms is the default client poll interval — polled jobs spread evenly below it,
+whereas streamed jobs are pushed on creation and should sit far lower.
+
+- **Unit:** seconds (quantiles)
+- **Measurement:** p50, p90, p99
+
+```promql
+histogram_quantile(0.99, sum by (le) (rate(worker_intake_delay_seconds_bucket{namespace=~"$namespace"}[$__rate_interval])))
+```
+
+---
+
 ### Worker message-publish latency
 
 Time the worker spends on the synchronous message publication it issues while handling a job, from

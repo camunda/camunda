@@ -24,6 +24,7 @@ import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCo
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.PublishMessageResponse;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
@@ -42,6 +43,7 @@ class WorkerTest {
   private static final String CORRELATION_KEY_VALUE = "abc";
   private static final String MESSAGE_NAME = "messageName";
   private static final Duration COMPLETION_DELAY = Duration.ofMillis(250);
+  private static final Duration JOB_TIMEOUT = Duration.ofSeconds(30);
 
   private final MeterRegistry registry = new SimpleMeterRegistry();
 
@@ -156,6 +158,37 @@ class WorkerTest {
     assertThat(gauge.value()).isEqualTo(1);
   }
 
+  @Test
+  void shouldRecordIntakeDelayFromTheLeaseAlreadySpentOnDelivery() {
+    // given — a job the broker activated 400ms ago, so 400ms of its lease went on delivery
+    final var worker = newWorker(mock(CamundaClient.class), new WorkerProperties());
+    final var job = mockJob(Duration.ofMillis(400));
+
+    // when
+    final var jobClient = mock(JobClient.class);
+    mockCompleteJob(jobClient);
+    worker.handleJob(jobClient, job);
+
+    // then
+    final var timer = registry.get("worker.intake.delay").timer();
+    assertThat(timer.count()).isOne();
+    assertThat(timer.totalTime(TimeUnit.MILLISECONDS)).isBetween(350d, 450d);
+  }
+
+  @Test
+  void shouldSkipIntakeDelayWhenNoJobTimeoutIsConfigured() {
+    // given — without a configured timeout the deadline cannot be resolved to an activation instant
+    final var worker = newWorker(mock(CamundaClient.class), new WorkerProperties(), null);
+
+    // when
+    final var jobClient = mock(JobClient.class);
+    mockCompleteJob(jobClient);
+    worker.handleJob(jobClient, mockJob());
+
+    // then — no sample rather than a wrong one
+    assertThat(registry.find("worker.intake.delay").timer().count()).isZero();
+  }
+
   private static long timeHandleJob(
       final Worker worker, final JobClient jobClient, final ActivatedJob job) {
     final long start = System.currentTimeMillis();
@@ -164,9 +197,16 @@ class WorkerTest {
   }
 
   private static ActivatedJob mockJob() {
+    return mockJob(Duration.ZERO);
+  }
+
+  /** A job the broker activated {@code intakeDelay} ago, i.e. with that much of its lease spent. */
+  private static ActivatedJob mockJob(final Duration intakeDelay) {
     final var job = mock(ActivatedJob.class);
     when(job.getKey()).thenReturn(42L);
     when(job.getVariable(CORRELATION_KEY_VAR)).thenReturn(CORRELATION_KEY_VALUE);
+    when(job.getDeadline())
+        .thenReturn(System.currentTimeMillis() + JOB_TIMEOUT.toMillis() - intakeDelay.toMillis());
     return job;
   }
 
@@ -180,12 +220,20 @@ class WorkerTest {
   }
 
   private Worker newWorker(final CamundaClient client, final WorkerProperties workerProps) {
+    return newWorker(client, workerProps, JOB_TIMEOUT);
+  }
+
+  private Worker newWorker(
+      final CamundaClient client, final WorkerProperties workerProps, final Duration jobTimeout) {
     final var properties = new LoadTesterProperties();
     properties.setWorker(workerProps);
+    final var clientProperties = new CamundaClientProperties();
+    clientProperties.getWorker().getDefaults().setTimeout(jobTimeout);
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(anyString())).thenReturn("{}");
     final var connectionMonitor = mock(ConnectionMonitor.class);
-    return new Worker(client, properties, payloadReader, connectionMonitor, registry);
+    return new Worker(
+        client, properties, clientProperties, payloadReader, connectionMonitor, registry);
   }
 
   private static void mockFailingPublish(final CamundaClient client) throws Exception {
