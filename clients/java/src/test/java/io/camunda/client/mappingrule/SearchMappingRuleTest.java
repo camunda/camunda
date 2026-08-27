@@ -99,7 +99,7 @@ public class SearchMappingRuleTest extends ClientRestTest {
 
     final MappingRuleFilter filter = requestBody.getFilter();
     assertThat(filter).isNotNull();
-    assertThat(filter.getName()).isEqualTo("ruleName");
+    assertThat(filter.getName().get$Eq()).isEqualTo("ruleName");
   }
 
   @Test

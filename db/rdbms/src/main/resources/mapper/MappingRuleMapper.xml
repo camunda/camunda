@@ -107,8 +107,11 @@
           (CLAIM_NAME = #{claim.name} AND CLAIM_VALUE = #{claim.value})
         </foreach>
       </if>
-      <if test="filter.name != null">
-        AND NAME = #{filter.name}
+      <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+        <foreach collection="filter.nameOperations" item="operation">
+          AND NAME
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
       </if>
       <if test="filter.groupId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM
         ${prefix}GROUP_MEMBER
