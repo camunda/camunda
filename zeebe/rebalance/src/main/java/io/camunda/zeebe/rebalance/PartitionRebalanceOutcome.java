@@ -12,8 +12,8 @@ package io.camunda.zeebe.rebalance;
  *
  * <p>Mirrors {@link io.atomix.raft.LeadershipTransferResult} so that a partition's outcome
  * preserves exactly what the leader reported. The only additions are outcomes the rebalance
- * coordinator itself produces: {@link #NO_LEADER}, {@link #NO_RESPONSE}, {@link #CANCELLED} and
- * {@link #PHYSICAL_TENANT_DISABLED}.
+ * coordinator itself produces: {@link #NO_LEADER}, {@link #NO_RESPONSE}, {@link #CANCELLED}, {@link
+ * #PHYSICAL_TENANT_DISABLED} and {@link #PHYSICAL_TENANT_RECOVERING}.
  */
 public enum PartitionRebalanceOutcome {
   /** The desired leader was promoted and took over leadership. */
@@ -61,5 +61,10 @@ public enum PartitionRebalanceOutcome {
   /** The rebalance was cancelled before this partition's transfer completed. */
   CANCELLED,
   /** The partition's physical tenant was disabled after the rebalance was planned. */
-  PHYSICAL_TENANT_DISABLED
+  PHYSICAL_TENANT_DISABLED,
+  /**
+   * The partition's physical tenant entered recovery after the rebalance was planned and before
+   * this partition's transfer began.
+   */
+  PHYSICAL_TENANT_RECOVERING
 }

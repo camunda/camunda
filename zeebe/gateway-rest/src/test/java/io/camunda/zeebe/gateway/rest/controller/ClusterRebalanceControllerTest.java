@@ -494,7 +494,9 @@ class ClusterRebalanceControllerTest extends RestControllerTest {
         Arguments.of(PartitionRebalanceOutcome.NO_RESPONSE, "NO_RESPONSE"),
         Arguments.of(PartitionRebalanceOutcome.CANCELLED, "CANCELLED"),
         Arguments.of(
-            PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED, "PHYSICAL_TENANT_DISABLED"));
+            PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED, "PHYSICAL_TENANT_DISABLED"),
+        Arguments.of(
+            PartitionRebalanceOutcome.PHYSICAL_TENANT_RECOVERING, "PHYSICAL_TENANT_RECOVERING"));
   }
 
   @ParameterizedTest

@@ -39,6 +39,11 @@ public interface ClusterRebalanceRestClient {
   @Headers("Accept: application/json")
   Response triggerRebalance();
 
+  /** Reports the plan a rebalance would carry out, without transferring any leadership. */
+  @RequestLine("POST ?dryRun=true")
+  @Headers("Accept: application/json")
+  Response triggerDryRun();
+
   /** Returns the status of the cluster's rebalance. */
   @RequestLine("GET")
   @Headers("Accept: application/json")

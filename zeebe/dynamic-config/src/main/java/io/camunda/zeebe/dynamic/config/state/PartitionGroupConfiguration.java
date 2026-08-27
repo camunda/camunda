@@ -262,6 +262,11 @@ public record PartitionGroupConfiguration(
     return availability.state() != TenantAvailability.State.ENABLED;
   }
 
+  /** Whether any member of this group is currently in {@link Mode#RECOVERING}. */
+  public boolean isRecovering() {
+    return members.values().stream().anyMatch(member -> member.mode() == Mode.RECOVERING);
+  }
+
   /**
    * Marks this tenant as disabled, e.g. because it was removed from the local static configuration.
    * Does not change {@code version} or touch {@code members} — the partition assignment is retained

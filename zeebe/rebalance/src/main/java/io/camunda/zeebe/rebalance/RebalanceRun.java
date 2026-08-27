@@ -32,6 +32,7 @@ public final class RebalanceRun {
   private final List<PartitionRebalance> partitions = new ArrayList<>();
 
   private final Set<String> disabledPhysicalTenants = new HashSet<>();
+  private final Set<String> recoveringPhysicalTenants = new HashSet<>();
 
   private long partitionStartedAtNanos = System.nanoTime();
   private boolean cancelRequested;
@@ -113,22 +114,39 @@ public final class RebalanceRun {
   }
 
   /**
-   * Notes which of the planned physical tenants {@code current} no longer runs, so that the runner
-   * can complete their partitions rather than wait out {@code leaderWaitTimeout} for a leader that
-   * will never appear.
+   * Notes which of the planned physical tenants {@code current} no longer runs, or is currently
+   * recovering, so that the runner can complete their partitions rather than wait out {@code
+   * leaderWaitTimeout} for a leader that will never appear.
    */
   public void observeConfiguration(final CurrentClusterConfiguration current) {
-    final var active = current.activePartitionGroups().keySet();
+    final var active = current.activePartitionGroups();
     disabledPhysicalTenants.clear();
+    recoveringPhysicalTenants.clear();
     partitions.stream()
         .map(PartitionRebalance::physicalTenantId)
-        .filter(physicalTenantId -> !active.contains(physicalTenantId))
-        .forEach(disabledPhysicalTenants::add);
+        .distinct()
+        .forEach(
+            physicalTenantId -> {
+              final var group = active.get(physicalTenantId);
+              if (group == null) {
+                disabledPhysicalTenants.add(physicalTenantId);
+              } else if (group.isRecovering()) {
+                recoveringPhysicalTenants.add(physicalTenantId);
+              }
+            });
   }
 
   /** Whether this physical tenant has stopped running since the rebalance was planned. */
   public boolean isPhysicalTenantDisabled(final String physicalTenantId) {
     return disabledPhysicalTenants.contains(physicalTenantId);
+  }
+
+  /**
+   * Whether this physical tenant is currently recovering. Level-triggered: a later configuration
+   * that shows the tenant processing again clears it.
+   */
+  public boolean isPhysicalTenantRecovering(final String physicalTenantId) {
+    return recoveringPhysicalTenants.contains(physicalTenantId);
   }
 
   public PartitionRebalance partition(final int index) {
