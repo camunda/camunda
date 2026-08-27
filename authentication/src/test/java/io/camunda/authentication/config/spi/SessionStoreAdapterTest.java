@@ -9,6 +9,7 @@ package io.camunda.authentication.config.spi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
@@ -212,7 +213,7 @@ class SessionStoreAdapterTest {
   }
 
   @Test
-  void shouldRetryTransientDeleteFailureThenSwallow() {
+  void shouldRetryTransientDeleteFailureThenPropagate() {
     // given — a client that always fails transiently on delete
     final var attempts = new AtomicInteger();
     final PersistentWebSessionClient failing =
@@ -225,13 +226,14 @@ class SessionStoreAdapterTest {
         };
     final var adapter = new SessionStoreAdapter(failing);
 
-    // when / then — retried three times, and the failure never propagates to the caller
-    assertThatNoException().isThrownBy(() -> adapter.delete("s1"));
+    // when / then — retried three times, then surfaced: the stored session is still readable, so
+    // reporting the invalidation as successful would let a copied cookie be replayed
+    assertThatThrownBy(() -> adapter.delete("s1")).isInstanceOf(CamundaSearchException.class);
     assertThat(attempts.get()).isEqualTo(3);
   }
 
   @Test
-  void shouldNotThrowOnNonTransientDeleteFailure() {
+  void shouldPropagateNonTransientDeleteFailureWithoutRetrying() {
     // given — a failure reason that is not retried
     final var attempts = new AtomicInteger();
     final PersistentWebSessionClient failing =
@@ -244,8 +246,8 @@ class SessionStoreAdapterTest {
         };
     final var adapter = new SessionStoreAdapter(failing);
 
-    // when / then — not retried, and the failure never propagates to the caller
-    assertThatNoException().isThrownBy(() -> adapter.delete("s1"));
+    // when / then
+    assertThatThrownBy(() -> adapter.delete("s1")).isInstanceOf(CamundaSearchException.class);
     assertThat(attempts.get()).isEqualTo(1);
   }
 
