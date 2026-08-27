@@ -49,10 +49,12 @@ public final class ComparingMappingResolver implements MappingResolver {
       final InputMappings inputMappings, final MappingExpressionProcessor processor) {
     final var primaryResult = primary.resolveInputMappings(inputMappings, processor);
 
+    // Snapshot before the comparison run: CombinedMappingResolver returns a view into a shared
+    // evaluation buffer that the comparison resolver will overwrite on its own evaluation pass.
+    // Returning the snapshot (a clone) instead of primaryResult shields the caller from corruption.
+    final var snapshot = snapshot(primaryResult);
+
     try {
-      // Snapshot before the comparison run: CombinedMappingResolver returns a view into a
-      // shared evaluation buffer that the comparison resolver will overwrite.
-      final var snapshot = snapshot(primaryResult);
       final var comparisonResult = comparison.resolveInputMappings(inputMappings, processor);
 
       if (!equivalent(snapshot, comparisonResult)) {
@@ -71,7 +73,7 @@ public final class ComparingMappingResolver implements MappingResolver {
           e);
     }
 
-    return primaryResult;
+    return snapshot;
   }
 
   private static Either<Failure, DirectBuffer> snapshot(
