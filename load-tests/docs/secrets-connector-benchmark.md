@@ -31,14 +31,21 @@ task is a single `io.camunda:http-json:1` service task, activated and completed 
 `connectors` component (already part of every load-test cluster; see
 [`camunda-platform-values-defaults.yaml`](../setup/main/values/camunda-platform-values-defaults.yaml)).
 
-The task's `headers` input contains a `{{secrets.BENCHMARK_TOKEN0}}` placeholder. Before issuing
-the HTTP call, the connector runtime resolves it via `CentralStoreSecretProvider` (legacy
-`FALLBACK` mode, configured on the `connectors` component by
+The task's `headers` input is built from `batchSize` placeholders of the form
+`{{secrets.<keyPrefix><index>}}`, where `index` is `modulo(businessKey + modulo(i, uniquePerBatch),
+poolSize)` and `businessKey` is the Starter's own per-instance monotonic counter. Before issuing the
+HTTP call, the connector runtime resolves every one of them via `CentralStoreSecretProvider`
+(legacy `FALLBACK` mode, configured on the `connectors` component by
 [`camunda-platform-values-secrets-connector.yaml`](../setup/main/values/camunda-platform-values-secrets-connector.yaml)),
 which calls the same gateway `/v2/secrets/resolve` endpoint the old driver benchmarked directly —
 but through the client that actually calls it in production. `secret-filter.mode=STRICT` (required
 whenever `legacy.mode=FALLBACK`) derives its allow-list from the task's own input mappings, so no
 separate allow-list config is needed.
+
+`batchSize`, `uniquePerBatch`, `poolSize` and `keyPrefix` are process variables read from the
+Starter's `payloadPath` (see [Test scenarios](#test-scenarios) below), so tuning them requires no
+BPMN or code change — only a different payload file and, when `poolSize` grows past the seeded
+secret count, a matching `secretsConnectorBenchmark.count` override.
 
 The task calls the `connectors` pod's own `/actuator/health` endpoint rather than an external
 service: the goal is to measure secret-resolution overhead added to a job activation, not to
@@ -62,6 +69,61 @@ chart when the variable is unset. The
 [load test workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml)
 exposes this as the **`platform-chart-from-main` checkbox**, which sets the ref to `main` — enable
 it for any run that needs an unreleased chart feature.
+
+## Test scenarios
+
+The default payload
+([`connectorSecretResolutionPayload.json`](../load-tester/src/main/resources/bpmn/secrets/connectorSecretResolutionPayload.json),
+`batchSize=1, uniquePerBatch=1, poolSize=1`) reproduces the original single-secret behavior: every
+job resolves the same one secret, which stays cache-warm for the whole run (cache-first). Two
+presets cover the other cache/store behaviors from
+[issue #56590](https://github.com/camunda/camunda/issues/56590)'s benchmark plan, selected by
+overriding `load-tester.starter.payloadPath` (and, where noted, the seeded secret count):
+
+| Scenario | Payload | `secretsConnectorBenchmark.count` | What it measures |
+| --- | --- | --- | --- |
+| Cache-first (default) | `connectorSecretResolutionPayload.json` | `1` (default) | Baseline resolve latency/throughput once the single secret is cached. |
+| Batch-dedup | `connectorSecretResolutionPayload-dedup.json` (`batchSize=20, uniquePerBatch=4, poolSize=20`) | `20` | Each job resolves 20 secret placeholders drawn from only 4 distinct names — the connector re-resolves the same 4 names 5x per job, so `camunda_secret_cache_result_total{result="HIT"}` should dominate within a job even before any cross-job cache warm-up, isolating the in-request dedup effect from cross-job caching. |
+| Store-miss | `connectorSecretResolutionPayload-store-miss.json` (`batchSize=1, uniquePerBatch=1, poolSize=5000`) | `5000` | `modulo(businessKey, 5000)` cycles through 5000 distinct secrets, so — unless the cache holds all 5000 entries — most resolves are cache misses that fall through to a real store read. Compare `camunda_secret_cache_result_total{result="MISS"}` and `camunda_connector_outbound_execution_time_seconds_*` against the cache-first run to quantify the store-read cost.
+
+Example, running the batch-dedup preset:
+
+```sh
+make secrets-connector additional_load_test_configuration="--set load-tester.starter.payloadPath=bpmn/secrets/connectorSecretResolutionPayload-dedup.json" additional_load_test_setup_configuration="--set secretsConnectorBenchmark.count=20"
+```
+
+`poolSize` and `secretsConnectorBenchmark.count` must match: a `poolSize` larger than the seeded
+count sends resolve requests for secrets that don't exist, which fail rather than exercising a
+real store-miss read.
+
+### Concurrency ramp
+
+To observe how resolve latency/throughput scale with concurrency (the issue's `1 → 5 → 10 → 25 →
+50 → 100` ramp),
+[`secrets-connector-rate-ramp.sh`](../setup/scripts/secrets-connector-rate-ramp.sh) re-runs the
+same scenario at increasing `load-tester.starter.rate` values against an already-deployed
+namespace, each step a separate `helm upgrade`, so results between steps stay isolated and
+comparable:
+
+```sh
+cd load-tests/setup/<name>
+../scripts/secrets-connector-rate-ramp.sh <namespace> 300  # 300s dwell (warm-up+measure+cool-down) per step
+# or with custom rates:
+../scripts/secrets-connector-rate-ramp.sh <namespace> 300 1 10 50
+```
+
+Use the dashboard's time range to bound each step and compare RPS/p50/p95/p99/error-rate/cache-hit
+ratio panels across steps.
+
+### Coverage vs. issue #56590
+
+This scenario, plus the presets above, benchmarks `POST /v2/secrets/resolve` across cache-first,
+store-miss, batch-dedup, and concurrency-ramp scenarios — through the real connector code path.
+It does **not** exercise `POST /v2/secrets/list`: the connector resolves secrets in-process via
+`CentralStoreSecretProvider`/`SecretProviderAggregator.getSecret()`, never calling the gateway's
+list REST endpoint. If `/v2/secrets/list` coverage is needed, it requires either reviving the
+driver-based approach from [PR #60742](https://github.com/camunda/camunda/pull/60742) for that one
+call, or a dedicated connector/task that calls it directly.
 
 ## Metrics
 
