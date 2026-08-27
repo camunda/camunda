@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.authentication.exception.CamundaAuthenticationException;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import io.camunda.search.exception.CamundaSearchException;
@@ -227,8 +228,14 @@ class SessionStoreAdapterTest {
     final var adapter = new SessionStoreAdapter(failing);
 
     // when / then — retried three times, then surfaced: the stored session is still readable, so
-    // reporting the invalidation as successful would let a copied cookie be replayed
-    assertThatThrownBy(() -> adapter.delete("s1")).isInstanceOf(CamundaSearchException.class);
+    // reporting the invalidation as successful would let a copied cookie be replayed. It surfaces
+    // as an auth-domain failure, keeping the search exception as the cause for diagnosis. The
+    // session id stays out of the message: it is the cookie value, so anything that reaches a log
+    // is replayable.
+    assertThatThrownBy(() -> adapter.delete("cookie-value-abc123"))
+        .isInstanceOf(CamundaAuthenticationException.class)
+        .hasCauseInstanceOf(CamundaSearchException.class)
+        .hasMessageNotContaining("cookie-value-abc123");
     assertThat(attempts.get()).isEqualTo(3);
   }
 
@@ -247,7 +254,9 @@ class SessionStoreAdapterTest {
     final var adapter = new SessionStoreAdapter(failing);
 
     // when / then
-    assertThatThrownBy(() -> adapter.delete("s1")).isInstanceOf(CamundaSearchException.class);
+    assertThatThrownBy(() -> adapter.delete("s1"))
+        .isInstanceOf(CamundaAuthenticationException.class)
+        .hasCauseInstanceOf(CamundaSearchException.class);
     assertThat(attempts.get()).isEqualTo(1);
   }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.config.spi;
 
+import io.camunda.authentication.exception.CamundaAuthenticationException;
 import io.camunda.authentication.utils.OutageLog;
 import io.camunda.authentication.utils.TransientRetry;
 import io.camunda.search.clients.PersistentWebSessionClient;
@@ -39,8 +40,9 @@ import org.slf4j.LoggerFactory;
  * #delete} then log and swallow, so a storage blip never fails the request: reads degrade to
  * "nothing found" and an unsaved session is simply lost, both of which grant less access rather
  * than more. Deletion is the one operation whose degraded outcome grants <em>more</em>, so it
- * propagates instead. This policy lives here rather than in the library because it inspects the
- * search-specific {@link CamundaSearchException} reasons to decide what is transient.
+ * propagates instead, as a {@link CamundaAuthenticationException} — the search layer's exception
+ * type stops at this boundary. This policy lives here rather than in the library because it
+ * inspects the search-specific {@link CamundaSearchException} reasons to decide what is transient.
  */
 public final class SessionStoreAdapter implements SessionStorePort {
 
@@ -78,7 +80,14 @@ public final class SessionStoreAdapter implements SessionStorePort {
     // Retried but never swallowed: a failed delete leaves the record readable with its original
     // authenticated context, so reporting the invalidation as done would let a copied cookie be
     // replayed until the session expires on its own.
-    Retry.decorateRunnable(DELETE_RETRY, () -> client.deletePersistentWebSession(sessionId)).run();
+    try {
+      Retry.decorateRunnable(DELETE_RETRY, () -> client.deletePersistentWebSession(sessionId))
+          .run();
+    } catch (final CamundaSearchException e) {
+      // The session id is the cookie value, so it stays out of the message — an exception message
+      // ends up in a log, and a logged session id is a replayable one.
+      throw new CamundaAuthenticationException("Failed to delete the persistent web session", e);
+    }
   }
 
   @Override
