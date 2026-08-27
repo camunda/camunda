@@ -29,6 +29,8 @@ public interface RoleFilterBase extends SearchRequestFilter {
    */
   RoleFilterBase roleId(final String roleId);
 
+  RoleFilterBase roleId(Consumer<StringProperty> fn);
+
   /**
    * Filter roles by the specified name.
    *

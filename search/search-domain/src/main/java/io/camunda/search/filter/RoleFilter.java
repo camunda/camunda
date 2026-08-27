@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 public record RoleFilter(
-    String roleId,
+    List<Operation<String>> roleIdOperations,
     List<Operation<String>> nameOperations,
     String description,
     Set<String> memberIds,
@@ -38,7 +38,7 @@ public record RoleFilter(
 
   public Builder toBuilder() {
     return new Builder()
-        .roleId(roleId)
+        .roleIdOperations(roleIdOperations)
         .nameOperations(nameOperations)
         .description(description)
         .memberIds(memberIds)
@@ -50,7 +50,7 @@ public record RoleFilter(
   }
 
   public static final class Builder implements ObjectBuilder<RoleFilter> {
-    private String roleId;
+    private List<Operation<String>> roleIdOperations;
     private List<Operation<String>> nameOperations;
     private String description;
     private Set<String> memberIds;
@@ -60,9 +60,25 @@ public record RoleFilter(
     private Map<EntityType, Set<String>> memberIdsByType;
     private List<RoleFilter> orFilters;
 
-    public Builder roleId(final String value) {
-      roleId = value;
+    public Builder roleIdOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        roleIdOperations = addValuesToList(roleIdOperations, operations);
+      }
       return this;
+    }
+
+    public Builder roleId(final String value, final String... values) {
+      final var vals = FilterUtil.mapDefaultToOperation(value, values);
+      if (vals != null) {
+        return roleIdOperations(vals);
+      }
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder roleIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return roleIdOperations(collectValues(operation, operations));
     }
 
     public Builder nameOperations(final List<Operation<String>> operations) {
@@ -147,7 +163,7 @@ public record RoleFilter(
         throw new IllegalArgumentException("If memberIds is set, childMemberType must be set too");
       }
       return new RoleFilter(
-          roleId,
+          roleIdOperations,
           nameOperations,
           description,
           memberIds,

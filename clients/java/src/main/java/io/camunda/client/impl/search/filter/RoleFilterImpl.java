@@ -37,7 +37,14 @@ public class RoleFilterImpl
 
   @Override
   public RoleFilter roleId(final String roleId) {
-    filter.setRoleId(roleId);
+    return roleId(b -> b.eq(roleId));
+  }
+
+  @Override
+  public RoleFilter roleId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setRoleId(provideSearchRequestProperty(property));
     return this;
   }
 

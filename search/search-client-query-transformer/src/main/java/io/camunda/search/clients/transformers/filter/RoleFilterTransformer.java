@@ -45,8 +45,8 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
 
   private ArrayList<SearchQuery> toSearchQueryFields(final RoleFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    if (filter.roleId() != null) {
-      queries.add(term(RoleIndex.ROLE_ID, filter.roleId()));
+    if (filter.roleIdOperations() != null && !filter.roleIdOperations().isEmpty()) {
+      queries.addAll(stringOperations(RoleIndex.ROLE_ID, filter.roleIdOperations()));
     }
     if (filter.nameOperations() != null && !filter.nameOperations().isEmpty()) {
       queries.addAll(stringOperations(RoleIndex.NAME, filter.nameOperations()));
