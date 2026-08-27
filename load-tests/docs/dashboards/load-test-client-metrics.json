@@ -2759,6 +2759,122 @@
             "version": "13.2.0"
           }
         }
+      },
+      "panel-17": {
+        "kind": "Panel",
+        "spec": {
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "hidden": false,
+                    "query": {
+                      "datasource": {
+                        "name": "${DS_PROMETHEUS}"
+                      },
+                      "group": "prometheus",
+                      "kind": "DataQuery",
+                      "spec": {
+                        "editorMode": "code",
+                        "expr": "zeebe_long_polling_queued_current{cluster=~\"$cluster\", namespace=~\"$namespace\", type=~\"$jobType\"}",
+                        "legendFormat": "{{type}} — {{protocol}} / {{physicalTenant}}",
+                        "range": true
+                      },
+                      "version": "v0"
+                    },
+                    "refId": "A"
+                  }
+                }
+              ],
+              "queryOptions": {},
+              "transformations": []
+            }
+          },
+          "description": "The same parked-request gauge as the yield-recovery panel, but keeping the physicalTenant label instead of summing it away. That label is the tenant half of the key a parked request is filed under: the gateway builds the gauge with the same string it uses for the JobTypeKey, taken from the activation request's partition group.\n\nA job-available notification is looked up under the tenant its subscription was created with, so the two only meet when the strings are identical. If a protocol's series carries a physicalTenant the notifications do not use, its parked requests can never be woken: the wake-up misses the key, no activation is retried, and jobs yielded by a failed stream push are never recovered.\n\nA frozen value is itself the signal. The gauge is only updated through the state object that owns the request, so a state nobody ever looks up keeps its last reading indefinitely — a flat line here means unreachable, not busy. Compare against the tenant named in the gateway's own log line, which is emitted at TRACE by the io.camunda.zeebe.gateway.longPolling logger.",
+          "id": 17,
+          "links": [],
+          "title": "Parked Activation Requests by Notification Key",
+          "vizConfig": {
+            "group": "timeseries",
+            "kind": "VizConfig",
+            "spec": {
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "showValues": false,
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": 0
+                      }
+                    ]
+                  },
+                  "unit": "short",
+                  "min": 0,
+                  "decimals": 0
+                },
+                "overrides": []
+              },
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "mean",
+                    "max"
+                  ],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "desc"
+                }
+              }
+            },
+            "version": "13.2.0"
+          }
+        }
       }
     },
     "layout": {
@@ -2971,6 +3087,19 @@
               "width": 24,
               "x": 0,
               "y": 73
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-17"
+              },
+              "height": 8,
+              "width": 24,
+              "x": 0,
+              "y": 81
             }
           }
         ]
