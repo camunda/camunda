@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.logging.RecordingAppender;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -205,5 +206,59 @@ final class ComparingMappingResolverTest {
 
     assertThat(result.isRight()).isTrue();
     assertThat(recorder.getAppendedEvents()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnOriginalPrimaryContentWhenComparisonOverwritesSharedBuffer() {
+    // Simulates CombinedMappingResolver returning a view into a shared write buffer.
+    // When the comparison resolver runs, it overwrites the shared buffer's backing bytes.
+    // The resolver must return the snapshot (clone taken before comparison), not the live view.
+    final var original = msgPackOf("{\"a\":1}");
+    final var different = msgPackOf("{\"a\":2}");
+
+    // Use a mutable UnsafeBuffer wrapping original's bytes
+    final var sharedView = new UnsafeBuffer(BufferUtil.cloneBuffer(original));
+
+    final MappingResolver primary = (m, p) -> Either.right(sharedView);
+    final MappingResolver comparison =
+        (m, p) -> {
+          // Overwrite the shared buffer's backing bytes in-place, as the FEEL engine does
+          sharedView.putBytes(0, BufferUtil.bufferAsArray(different), 0, different.capacity());
+          return Either.right(different);
+        };
+    final var resolver = new ComparingMappingResolver(primary, comparison);
+
+    final var result = resolver.resolveInputMappings(INPUT_MAPPINGS, PROCESSOR);
+
+    assertThat(result.isRight()).isTrue();
+    // The returned buffer must contain the snapshot (original), not the overwritten bytes
+    MsgPackUtil.assertEquality(result.get(), "{'a':1}");
+    // Confirm sharedView was actually mutated, proving the snapshot was load-bearing
+    assertThat(BufferUtil.equals(sharedView, original)).isFalse();
+    // Divergence (original a:1 vs comparison a:2) should be logged
+    assertThat(recorder.getAppendedEvents()).hasSize(1);
+  }
+
+  @Test
+  void shouldReturnPrimaryResultAndLogWarnWhenComparisonThrows() {
+    final var buf = bufferOf("value");
+    final MappingResolver primary = (m, p) -> Either.right(buf);
+    final MappingResolver comparison =
+        (m, p) -> {
+          throw new RuntimeException("unexpected comparison failure");
+        };
+    final var resolver = new ComparingMappingResolver(primary, comparison);
+
+    final var result = resolver.resolveInputMappings(INPUT_MAPPINGS, PROCESSOR);
+
+    assertThat(result.isRight()).isTrue();
+    assertThat(recorder.getAppendedEvents())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            e -> {
+              assertThat(e.getLevel()).isEqualTo(Level.WARN);
+              assertThat(e.getMessage().getFormattedMessage()).contains("threw unexpectedly");
+            });
   }
 }
