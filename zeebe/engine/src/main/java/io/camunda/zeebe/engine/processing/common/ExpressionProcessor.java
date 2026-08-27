@@ -470,23 +470,26 @@ public final class ExpressionProcessor {
   }
 
   /**
-   * Evaluates the source expression of a single variable mapping and returns the result as buffer.
-   * A single mapping's source may produce a value of any type, which is then stored under the
-   * mapping's target path.
+   * Evaluates the source expression of a single variable mapping. A single mapping's source may
+   * produce a value of any type, which is then stored under the mapping's target path.
+   *
+   * <p>The result is returned un-serialized so that a later mapping in the same list reads it as
+   * the FEEL value it is. Serializing here would flatten a duration, date or time to a string
+   * before the next mapping ever sees it; that type boundary belongs where the accumulated document
+   * becomes variables, not between every pair of mappings.
    *
    * @param expression the mapping's source expression to evaluate
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
    * @param tenantId the tenant owning the scope, used to resolve variables in multi-tenant setups
-   * @return either the evaluation result as buffer, or a failure with {@link
-   *     ErrorType#IO_MAPPING_ERROR}
+   * @return either the evaluation result, or a failure with {@link ErrorType#IO_MAPPING_ERROR}
    * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
    */
-  public Either<Failure, DirectBuffer> evaluateVariableMappingExpression(
+  public Either<Failure, EvaluationResult> evaluateVariableMappingExpression(
       final Expression expression, final long scopeKey, final String tenantId) {
     return evaluateExpressionAsEither(expression, scopeKey, tenantId)
-        .mapLeft(failure -> new Failure(failure.getMessage(), ErrorType.IO_MAPPING_ERROR, scopeKey))
-        .map(EvaluationResult::toBuffer);
+        .mapLeft(
+            failure -> new Failure(failure.getMessage(), ErrorType.IO_MAPPING_ERROR, scopeKey));
   }
 
   private Either<Failure, EvaluationResult> typeCheck(

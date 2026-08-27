@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
@@ -212,10 +213,11 @@ final class VariableInputMappingTransformerTest {
       final EvaluationContext context =
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            return Either.left(
+                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+      resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));
     }
 
     // then
@@ -245,10 +247,11 @@ final class VariableInputMappingTransformerTest {
       final EvaluationContext context =
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            return Either.left(
+                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+      resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));
     }
 
     // then
@@ -287,10 +290,11 @@ final class VariableInputMappingTransformerTest {
       final EvaluationContext context =
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            return Either.left(
+                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
           };
       final var result = language.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+      resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));
     }
     return resultBuilder.toDocument();
   }

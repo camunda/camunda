@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.container;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
@@ -416,7 +417,9 @@ public final class MultiInstanceBodyProcessor
 
     final ExpressionProcessor primaryContextExpressionProcessor =
         expressionBehavior.prependContext(
-            (variableName -> Either.left(getVariable(context.getFlowScopeKey(), variableName))));
+            (variableName ->
+                Either.left(
+                    ContextValue.msgPack(getVariable(context.getFlowScopeKey(), variableName)))));
     if (completionCondition.isPresent()) {
       return primaryContextExpressionProcessor.evaluateBooleanExpression(
           completionCondition.get(), context.getElementInstanceKey(), context.getTenantId());
