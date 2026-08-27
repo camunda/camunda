@@ -103,8 +103,13 @@ public class DefinitionService implements ConfigurationReloadable {
     latestDecisionDefinitionCache.invalidateAll();
   }
 
-  public void invalidateProcessDefinition(final String key) {
-    latestProcessDefinitionCache.invalidate(key);
+  public void invalidateProcessDefinitionIfLatest(
+      final String key, final String tenantId, final String version) {
+    final DefinitionOptimizeResponseDto cachedLatest =
+        getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, key).get(tenantId);
+    if (cachedLatest != null && version.equals(cachedLatest.getVersion())) {
+      latestProcessDefinitionCache.invalidate(key);
+    }
   }
 
   public String getLatestVersionToKey(final DefinitionType type, final String key) {
