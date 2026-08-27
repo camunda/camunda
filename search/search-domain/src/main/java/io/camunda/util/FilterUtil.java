@@ -8,6 +8,7 @@
 package io.camunda.util;
 
 import io.camunda.search.filter.Operation;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
@@ -31,5 +32,18 @@ public final class FilterUtil {
   public static <T, R> Operation<T> mapDefaultToOperation(
       final Function<R, T> typeMapper, final R value, final R... values) {
     return mapDefaultToOperation(CollectionUtil.collectValues(typeMapper, value, values));
+  }
+
+  public static boolean hasAnyNonEmpty(final Object... values) {
+    for (final var value : values) {
+      if (value instanceof Collection<?> collection) {
+        if (!collection.isEmpty()) {
+          return true;
+        }
+      } else if (value != null) {
+        return true;
+      }
+    }
+    return false;
   }
 }
