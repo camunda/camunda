@@ -23,6 +23,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.AC
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_STATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BATCH_OPERATION_IDS;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BUSINESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.END_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
@@ -126,6 +127,8 @@ public class ProcessDefinitionStatisticsFilterTransformer
     Optional.of(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
     ofNullable(filter.hasIncident()).ifPresent(value -> queries.add(term(INCIDENT, value)));
     Optional.of(stringOperations(TENANT_ID, filter.tenantIdOperations()))
+        .ifPresent(queries::addAll);
+    Optional.of(stringOperations(BUSINESS_ID, filter.businessIdOperations()))
         .ifPresent(queries::addAll);
     Optional.ofNullable(
             stringMatchPhraseInSingleHasChild(
