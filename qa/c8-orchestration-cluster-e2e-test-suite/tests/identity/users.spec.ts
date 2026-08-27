@@ -64,7 +64,7 @@ test.describe.serial('users CRUD', () => {
       'Please enter a valid username',
     );
     await expect(identityUsersPage.createUsernameField).toHaveAttribute(
-      'data-invalid',
+      'aria-invalid',
       'true',
     );
   });

@@ -69,7 +69,7 @@ test.describe.serial('global task listeners CRUD', () => {
       );
       await expect(
         identityGlobalTaskListenersPage.createGlobalTaskListenerTypeField,
-      ).toHaveAttribute('data-invalid', 'true');
+      ).toHaveAttribute('aria-invalid', 'true');
     });
   });
 
