@@ -7,8 +7,17 @@
  */
 package io.camunda.optimize.service.db.writer;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import io.camunda.optimize.dto.optimize.query.job.EntityType;
+import io.camunda.optimize.dto.optimize.query.job.JobType;
+import io.camunda.optimize.service.db.reader.JobRegistryReader;
+import io.camunda.optimize.service.util.configuration.CacheConfiguration;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -16,16 +25,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+/**
+ * Filters out entries whose process definition has a DELETE job registry entry (any status), backed
+ * by a cache of suppressed process definition ids. The whole set is held as a single cache entry
+ * that expires after a configurable TTL and is re-fetched wholesale on the next lookup.
+ */
 @Component
 public class DeletedProcessDefinitionFilter {
 
   private static final Logger LOG = LoggerFactory.getLogger(DeletedProcessDefinitionFilter.class);
+  private static final String SUPPRESSED_IDS_CACHE_KEY = "suppressedProcessDefinitionIds";
 
-  private final DeletedProcessDefinitionCache deletedProcessDefinitionCache;
+  private final JobRegistryReader jobRegistryReader;
+  private final int maxSize;
+  private final Cache<String, Set<String>> cache;
 
   public DeletedProcessDefinitionFilter(
-      final DeletedProcessDefinitionCache deletedProcessDefinitionCache) {
-    this.deletedProcessDefinitionCache = deletedProcessDefinitionCache;
+      final JobRegistryReader jobRegistryReader, final ConfigurationService configurationService) {
+    this.jobRegistryReader = jobRegistryReader;
+    final CacheConfiguration cacheConfig =
+        configurationService.getCaches().getDeletedProcessDefinitions();
+    maxSize = cacheConfig.getMaxSize();
+    cache =
+        Caffeine.newBuilder()
+            .maximumSize(1)
+            .expireAfterWrite(Duration.ofMillis(cacheConfig.getDefaultTtlMillis()))
+            .build();
   }
 
   /**
@@ -36,8 +61,10 @@ public class DeletedProcessDefinitionFilter {
     if (processDefinitionIds.isEmpty()) {
       return Set.of();
     }
+    final Set<String> suppressedIds = getSuppressedIds();
     return processDefinitionIds.stream()
-        .filter(deletedProcessDefinitionCache::isSuppressed)
+        .filter(Objects::nonNull)
+        .filter(suppressedIds::contains)
         .collect(Collectors.toSet());
   }
 
@@ -65,5 +92,16 @@ public class DeletedProcessDefinitionFilter {
         entries.size() - filteredEntries.size(),
         suppressedIds);
     return filteredEntries;
+  }
+
+  private Set<String> getSuppressedIds() {
+    return cache.get(SUPPRESSED_IDS_CACHE_KEY, key -> fetchSuppressedIds());
+  }
+
+  private Set<String> fetchSuppressedIds() {
+    final List<String> entityIds =
+        jobRegistryReader.findNewestEntityIds(
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, maxSize);
+    return Set.copyOf(entityIds);
   }
 }
