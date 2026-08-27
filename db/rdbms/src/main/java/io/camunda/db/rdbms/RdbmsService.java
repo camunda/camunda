@@ -33,6 +33,7 @@ import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionMessageSubscriptionStatisticsDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
 import io.camunda.db.rdbms.read.service.RoleMemberDbReader;
@@ -86,6 +87,7 @@ public class RdbmsService {
   private final ProcessDefinitionMessageSubscriptionStatisticsDbReader
       processDefinitionMessageSubscriptionStatisticsDbReader;
   private final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader;
+  private final ProcessDefinitionStatisticsDbReader processDefinitionStatisticsReade;
   private final ProcessDefinitionInstanceStatisticsDbReader
       processDefinitionInstanceStatisticsDbReader;
   private final ProcessDefinitionInstanceVersionStatisticsDbReader
@@ -131,6 +133,7 @@ public class RdbmsService {
       final ProcessDefinitionMessageSubscriptionStatisticsDbReader
           processDefinitionMessageSubscriptionStatisticsDbReader,
       final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader,
+      final ProcessDefinitionStatisticsDbReader processDefinitionStatisticsReade,
       final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsDbReader,
       final ProcessDefinitionInstanceVersionStatisticsDbReader
           processDefinitionInstanceVersionStatisticsDbReader,
@@ -173,6 +176,7 @@ public class RdbmsService {
     this.processDefinitionMessageSubscriptionStatisticsDbReader =
         processDefinitionMessageSubscriptionStatisticsDbReader;
     this.correlatedMessageSubscriptionReader = correlatedMessageSubscriptionReader;
+    this.processDefinitionStatisticsReade = processDefinitionStatisticsReade;
     this.processDefinitionInstanceStatisticsDbReader = processDefinitionInstanceStatisticsDbReader;
     this.processDefinitionInstanceVersionStatisticsDbReader =
         processDefinitionInstanceVersionStatisticsDbReader;
@@ -311,6 +315,10 @@ public class RdbmsService {
 
   public RdbmsWriters createWriter(final long partitionId) { // todo fix in all itests afterwards?
     return createWriter(new RdbmsWriterConfig.Builder().partitionId((int) partitionId).build());
+  }
+
+  public ProcessDefinitionStatisticsDbReader getProcessDefinitionStatisticsReader() {
+    return processDefinitionStatisticsReade;
   }
 
   public ProcessDefinitionInstanceStatisticsDbReader
