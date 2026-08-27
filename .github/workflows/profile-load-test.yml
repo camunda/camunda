@@ -11,7 +11,7 @@
 # called-by: camunda-pr-load-test.yml, stress-load-test.yml (itself called by
 #            camunda-daily-load-tests.yml)
 # type: CI
-# owner: @camunda/zeebe-distributed-platform
+# owner: @camunda/reliability-testing
 name: Profile running load test
 run-name: "Profile running load test: ${{ inputs.name }}"
 
@@ -70,6 +70,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/reliability-testing'
   CLUSTER: camunda-benchmark-prod
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
 
