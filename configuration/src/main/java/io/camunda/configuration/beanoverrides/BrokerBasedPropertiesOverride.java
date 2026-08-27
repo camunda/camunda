@@ -12,6 +12,7 @@ import io.camunda.configuration.Azure;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
+import io.camunda.configuration.EngineMappings;
 import io.camunda.configuration.EngineStorageOrdinals;
 import io.camunda.configuration.Export;
 import io.camunda.configuration.Exporter;
@@ -68,6 +69,7 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
@@ -283,6 +285,15 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getEngine()
         .setMaxProcessDepth(camunda.getProcessing().getEngine().getMaxProcessDepth());
+
+    override
+        .getExperimental()
+        .getEngine()
+        .setInputMappingMode(
+            camunda.getProcessing().getEngine().getMappings().getInputMode()
+                    == EngineMappings.InputMode.COMBINED
+                ? EngineConfiguration.InputMappingMode.COMBINED
+                : EngineConfiguration.InputMappingMode.ORDERED);
   }
 
   private static void populateFromDistribution(
