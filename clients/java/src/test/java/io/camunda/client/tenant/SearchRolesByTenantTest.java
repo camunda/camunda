@@ -52,7 +52,7 @@ public class SearchRolesByTenantTest extends ClientRestTest {
     final String requestBody = lastRequest.getBodyAsString();
 
     assertThat(requestBody).contains("\"roleId\":\"roleId\"");
-    assertThat(requestBody).contains("\"name\":\"roleName\"");
+    assertThat(requestBody).contains("\"name\":{\"$eq\":\"roleName\",\"$in\":[],\"$notIn\":[]}");
   }
 
   @Test
