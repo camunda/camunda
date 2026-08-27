@@ -11,11 +11,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class MappingRuleFilterTransformerTest extends AbstractTransformerTest {
+
+  @Test
+  void shouldQueryByMappingRuleIdWithLikeOperation() {
+    // given
+    final var filter =
+        FilterBuilders.mappingRule(f -> f.mappingRuleIdOperations(Operation.like("mapping-*")));
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    assertThat(searchQuery.queryOption())
+        .isInstanceOfSatisfying(
+            SearchWildcardQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("mappingRuleId");
+              assertThat(t.value()).isEqualTo("mapping-*");
+            });
+  }
 
   @Test
   void shouldCombineOrFiltersWithOrLogic() {
