@@ -25,6 +25,7 @@ import io.camunda.optimize.service.relations.ReportRelationService;
 import io.camunda.optimize.service.security.AuthorizedCollectionService;
 import io.camunda.optimize.service.security.ReportAuthorizationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +67,7 @@ class ReportServiceTest {
         .thenReturn(List.of(report));
 
     // when
-    reportService.clearCachedReportXml(BPMN_PROCESS_ID);
+    reportService.clearCachedReportXml(BPMN_PROCESS_ID, null);
 
     // then
     verify(reportWriter).clearReportDefinitionXmlForReportIds(List.of("report-1"));
@@ -85,7 +86,7 @@ class ReportServiceTest {
         .thenReturn(List.of(report));
 
     // when
-    reportService.clearCachedReportXml(BPMN_PROCESS_ID);
+    reportService.clearCachedReportXml(BPMN_PROCESS_ID, null);
 
     // then
     verify(reportWriter).clearReportDefinitionXmlForReportIds(List.of("report-3"));
@@ -104,7 +105,7 @@ class ReportServiceTest {
         .thenReturn(List.of(report));
 
     // when
-    reportService.clearCachedReportXml(BPMN_PROCESS_ID);
+    reportService.clearCachedReportXml(BPMN_PROCESS_ID, null);
 
     // then
     verify(reportWriter, never()).clearReportDefinitionXmlForReportIds(anyList());
@@ -120,10 +121,58 @@ class ReportServiceTest {
         .thenReturn(List.of(combinedReport));
 
     // when
-    reportService.clearCachedReportXml(BPMN_PROCESS_ID);
+    reportService.clearCachedReportXml(BPMN_PROCESS_ID, null);
 
     // then
     verify(reportWriter, never()).clearReportDefinitionXmlForReportIds(anyList());
+  }
+
+  @Test
+  void shouldNotClearXmlWhenReportIsScopedToADifferentTenant() {
+    // given -- the report only covers tenant B; tenant A's data is what was deleted
+    final SingleProcessReportDefinitionRequestDto report =
+        singleProcessReport("report-4", BPMN_PROCESS_ID);
+    report.getData().setTenantIds(new ArrayList<>(List.of("tenant-b")));
+    when(reportReader.getAllReportsForProcessDefinitionKeyOmitXml(BPMN_PROCESS_ID))
+        .thenReturn(List.of(report));
+
+    // when
+    reportService.clearCachedReportXml(BPMN_PROCESS_ID, "tenant-a");
+
+    // then
+    verify(reportWriter, never()).clearReportDefinitionXmlForReportIds(anyList());
+  }
+
+  @Test
+  void shouldClearXmlWhenReportIncludesTheAffectedTenantAmongMultiple() {
+    // given -- the report spans both tenants, one of which was just deleted
+    final SingleProcessReportDefinitionRequestDto report =
+        singleProcessReport("report-5", BPMN_PROCESS_ID);
+    report.getData().setTenantIds(new ArrayList<>(List.of("tenant-a", "tenant-b")));
+    when(reportReader.getAllReportsForProcessDefinitionKeyOmitXml(BPMN_PROCESS_ID))
+        .thenReturn(List.of(report));
+
+    // when
+    reportService.clearCachedReportXml(BPMN_PROCESS_ID, "tenant-a");
+
+    // then
+    verify(reportWriter).clearReportDefinitionXmlForReportIds(List.of("report-5"));
+  }
+
+  @Test
+  void shouldClearXmlWhenReportsTenantIdsIsNull() {
+    // given -- a report has a null tenantIds list on its first definition
+    final SingleProcessReportDefinitionRequestDto report =
+        singleProcessReport("report-6", BPMN_PROCESS_ID);
+    report.getData().setTenantIds(null);
+    when(reportReader.getAllReportsForProcessDefinitionKeyOmitXml(BPMN_PROCESS_ID))
+        .thenReturn(List.of(report));
+
+    // when
+    reportService.clearCachedReportXml(BPMN_PROCESS_ID, "tenant-a");
+
+    // then
+    verify(reportWriter).clearReportDefinitionXmlForReportIds(List.of("report-6"));
   }
 
   @Test
@@ -133,7 +182,7 @@ class ReportServiceTest {
         .thenReturn(List.of());
 
     // when
-    reportService.clearCachedReportXml(BPMN_PROCESS_ID);
+    reportService.clearCachedReportXml(BPMN_PROCESS_ID, null);
 
     // then
     verify(reportWriter, never()).clearReportDefinitionXmlForReportIds(anyList());

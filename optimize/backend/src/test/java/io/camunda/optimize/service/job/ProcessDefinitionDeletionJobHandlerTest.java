@@ -51,6 +51,7 @@ class ProcessDefinitionDeletionJobHandlerTest {
   private static final String DEFINITION_ID = "definition-1";
   private static final String BPMN_PROCESS_ID = "invoice-process";
   private static final String TENANT_ID = "tenant-1";
+  private static final String VERSION = "1";
 
   private ProcessDefinitionReader processDefinitionReader;
   private ProcessInstanceWriter processInstanceWriter;
@@ -119,12 +120,13 @@ class ProcessDefinitionDeletionJobHandlerTest {
     // then
     verify(processInstanceWriter, never()).deleteInstancesByDefinitionId(anyString(), anyString());
     verify(processDefinitionWriter, never()).deleteDefinition(anyString());
-    verify(reportService, never()).clearCachedReportXml(anyString());
-    verify(definitionService, never()).invalidateProcessDefinition(anyString());
+    verify(reportService, never()).clearCachedReportXml(anyString(), any());
+    verify(definitionService, never())
+        .invalidateProcessDefinitionIfLatest(anyString(), any(), anyString());
   }
 
   @Test
-  void shouldClearCachedXmlAndInvalidateCacheWhenDeletingTheOnlyRemainingVersion() {
+  void shouldClearCachedXmlAndDelegateCacheInvalidationWhenDeletingTheOnlyRemainingVersion() {
     // given -- post-delete query finds no other version left
     when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
         .thenReturn(Optional.of(definition()));
@@ -136,8 +138,9 @@ class ProcessDefinitionDeletionJobHandlerTest {
     handler.handle(job());
 
     // then
-    verify(reportService).clearCachedReportXml(BPMN_PROCESS_ID);
-    verify(definitionService).invalidateProcessDefinition(BPMN_PROCESS_ID);
+    verify(reportService).clearCachedReportXml(BPMN_PROCESS_ID, TENANT_ID);
+    verify(definitionService)
+        .invalidateProcessDefinitionIfLatest(BPMN_PROCESS_ID, TENANT_ID, VERSION);
   }
 
   @Test
@@ -153,23 +156,9 @@ class ProcessDefinitionDeletionJobHandlerTest {
     handler.handle(job());
 
     // then
-    verify(reportService, never()).clearCachedReportXml(anyString());
-  }
-
-  @Test
-  void shouldInvalidateDefinitionCacheEvenWhenOtherVersionsRemain() {
-    // given
-    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
-        .thenReturn(Optional.of(definition()));
-    when(definitionReader.getDefinitionVersions(
-            DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of(TENANT_ID)))
-        .thenReturn(List.of(new DefinitionVersionResponseDto("2", null)));
-
-    // when
-    handler.handle(job());
-
-    // then
-    verify(definitionService).invalidateProcessDefinition(BPMN_PROCESS_ID);
+    verify(reportService, never()).clearCachedReportXml(anyString(), any());
+    verify(definitionService)
+        .invalidateProcessDefinitionIfLatest(BPMN_PROCESS_ID, TENANT_ID, VERSION);
   }
 
   @Test
@@ -187,7 +176,7 @@ class ProcessDefinitionDeletionJobHandlerTest {
     // then
     verify(definitionReader, never())
         .getDefinitionVersions(DefinitionType.PROCESS, BPMN_PROCESS_ID, Set.of());
-    verify(reportService).clearCachedReportXml(BPMN_PROCESS_ID);
+    verify(reportService).clearCachedReportXml(BPMN_PROCESS_ID, TENANT_ID);
   }
 
   @Test
@@ -205,7 +194,11 @@ class ProcessDefinitionDeletionJobHandlerTest {
     handler.handle(job());
 
     // then
-    verify(reportService).clearCachedReportXml(BPMN_PROCESS_ID);
+    verify(definitionReader)
+        .getDefinitionVersions(
+            DefinitionType.PROCESS, BPMN_PROCESS_ID, Collections.singleton(null));
+    verify(reportService).clearCachedReportXml(BPMN_PROCESS_ID, null);
+    verify(definitionService).invalidateProcessDefinitionIfLatest(BPMN_PROCESS_ID, null, VERSION);
   }
 
   @Test

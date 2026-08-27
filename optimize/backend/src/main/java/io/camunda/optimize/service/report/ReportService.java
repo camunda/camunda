@@ -452,12 +452,15 @@ public class ReportService implements CollectionReferencingService {
 
   /**
    * Clears the cached BPMN XML ({@code data.configuration.xml}) on every single-process report
-   * whose first-listed definition is {@code processDefinitionKey}.
+   * whose first-listed definition is {@code processDefinitionKey} and whose tenants include {@code
+   * tenantId}. A report scoped to other tenants only is left untouched, since its cached XML still
+   * reflects data that is unaffected by this tenant's deletion.
    */
-  public void clearCachedReportXml(final String processDefinitionKey) {
+  public void clearCachedReportXml(final String processDefinitionKey, final String tenantId) {
     final List<String> reportIdsToClear =
         getAllReportsForProcessDefinitionKeyOmitXml(processDefinitionKey).stream()
-            .filter(report -> isFirstDefinition(report, processDefinitionKey))
+            .filter(
+                report -> matchesFirstDefinitionAndTenant(report, processDefinitionKey, tenantId))
             .map(ReportDefinitionDto::getId)
             .toList();
     if (!reportIdsToClear.isEmpty()) {
@@ -465,10 +468,18 @@ public class ReportService implements CollectionReferencingService {
     }
   }
 
-  private boolean isFirstDefinition(
-      final ReportDefinitionDto<?> report, final String processDefinitionKey) {
-    return report.getData() instanceof final SingleReportDataDto singleReportData
-        && processDefinitionKey.equals(singleReportData.getDefinitionKey());
+  private boolean matchesFirstDefinitionAndTenant(
+      final ReportDefinitionDto<?> report,
+      final String processDefinitionKey,
+      final String tenantId) {
+    if (!(report.getData() instanceof final SingleReportDataDto singleReportData)
+        || !processDefinitionKey.equals(singleReportData.getDefinitionKey())) {
+      return false;
+    }
+    // getTenantIds() is null when the underlying definition's tenant list is itself null. Treat it
+    // as "unknown, always matches"
+    final List<String> tenantIds = singleReportData.getTenantIds();
+    return tenantIds == null || tenantIds.contains(tenantId);
   }
 
   public void updateSingleDecisionReport(
