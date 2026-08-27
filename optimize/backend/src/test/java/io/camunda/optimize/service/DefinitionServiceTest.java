@@ -79,24 +79,72 @@ class DefinitionServiceTest {
   }
 
   @Test
-  void shouldEvictProcessDefinitionFromCacheOnInvalidation() {
+  void shouldEvictWhenDeletedVersionIsTheCachedLatestForTenant() {
     // given
     final String definitionKey = "invoice-process";
     final ProcessDefinitionOptimizeDto definition = new ProcessDefinitionOptimizeDto();
     definition.setKey(definitionKey);
-    definition.setTenantId(null);
+    definition.setTenantId("tenant-a");
+    definition.setVersion("3");
     when(definitionReader.getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
             DefinitionType.PROCESS, definitionKey))
         .thenReturn(List.of(definition));
-    // populate the cache
+    // populate the cache with tenant-a's latest at version 3
     underTest.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, definitionKey);
 
-    // when
-    underTest.invalidateProcessDefinition(definitionKey);
+    // when -- the deleted definition is version 3, the tenant's cached latest
+    underTest.invalidateProcessDefinitionIfLatest(definitionKey, "tenant-a", "3");
     underTest.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, definitionKey);
 
     // then -- the loader had to be called again since the entry was evicted
     verify(definitionReader, times(2))
+        .getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+            DefinitionType.PROCESS, definitionKey);
+  }
+
+  @Test
+  void shouldNotEvictWhenDeletedVersionIsNotTheCachedLatestForTenant() {
+    // given
+    final String definitionKey = "invoice-process";
+    final ProcessDefinitionOptimizeDto definition = new ProcessDefinitionOptimizeDto();
+    definition.setKey(definitionKey);
+    definition.setTenantId("tenant-a");
+    definition.setVersion("3");
+    when(definitionReader.getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+            DefinitionType.PROCESS, definitionKey))
+        .thenReturn(List.of(definition));
+    // populate the cache with tenant-a's latest at version 3
+    underTest.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, definitionKey);
+
+    // when -- an older version than the cached latest was deleted
+    underTest.invalidateProcessDefinitionIfLatest(definitionKey, "tenant-a", "2");
+    underTest.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, definitionKey);
+
+    // then -- the cache entry is untouched, so the loader is not called again
+    verify(definitionReader, times(1))
+        .getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+            DefinitionType.PROCESS, definitionKey);
+  }
+
+  @Test
+  void shouldNotEvictWhenTenantHasNoCachedLatestDefinition() {
+    // given -- the cache only holds a latest definition for tenant-a
+    final String definitionKey = "invoice-process";
+    final ProcessDefinitionOptimizeDto definition = new ProcessDefinitionOptimizeDto();
+    definition.setKey(definitionKey);
+    definition.setTenantId("tenant-a");
+    definition.setVersion("3");
+    when(definitionReader.getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+            DefinitionType.PROCESS, definitionKey))
+        .thenReturn(List.of(definition));
+    underTest.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, definitionKey);
+
+    // when -- a definition for a different, uncached tenant was deleted
+    underTest.invalidateProcessDefinitionIfLatest(definitionKey, "tenant-b", "1");
+    underTest.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, definitionKey);
+
+    // then -- nothing to invalidate, so the loader is not called again
+    verify(definitionReader, times(1))
         .getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
             DefinitionType.PROCESS, definitionKey);
   }

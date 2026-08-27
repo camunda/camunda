@@ -113,6 +113,8 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
       return;
     }
     final String bpmnProcessId = definition.get().getKey();
+    final String tenantId = definition.get().getTenantId();
+    final String version = definition.get().getVersion();
 
     deleteWithRetry(
         "delete process instances for definition " + definitionId,
@@ -129,17 +131,15 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
                 "check remaining versions of process definition " + bpmnProcessId,
                 () ->
                     definitionReader.getDefinitionVersions(
-                        DefinitionType.PROCESS,
-                        bpmnProcessId,
-                        Collections.singleton(definition.get().getTenantId())))
+                        DefinitionType.PROCESS, bpmnProcessId, Collections.singleton(tenantId)))
             .isEmpty();
 
     if (isLastRemainingVersion) {
       deleteWithRetry(
           "clear cached XML for reports referencing " + bpmnProcessId,
-          () -> reportService.clearCachedReportXml(bpmnProcessId));
+          () -> reportService.clearCachedReportXml(bpmnProcessId, tenantId));
     }
-    definitionService.invalidateProcessDefinition(bpmnProcessId);
+    definitionService.invalidateProcessDefinitionIfLatest(bpmnProcessId, tenantId, version);
   }
 
   private void deleteWithRetry(final String description, final Runnable deletion) {
