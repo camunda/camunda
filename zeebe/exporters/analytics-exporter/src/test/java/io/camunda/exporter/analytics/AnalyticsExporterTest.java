@@ -659,9 +659,13 @@ class AnalyticsExporterTest {
                   .isEqualTo(AnalyticsAttributes.Event.USER_TASK_ASSIGNED);
               assertThat(logRecord.getAttributes().get(AnalyticsAttributes.UserTask.KEY))
                   .isEqualTo(value.getUserTaskKey());
-              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.UserTask.ASSIGNEE_HASH))
-                  .isNotEqualTo("john.doe@example.com")
-                  .hasSize(64);
+
+              // no assignee-derived attribute (raw or hashed) is emitted at all
+              final var allValues =
+                  logRecord.getAttributes().asMap().values().stream()
+                      .map(Object::toString)
+                      .toList();
+              assertThat(allValues).noneMatch(v -> v.contains("john.doe@example.com"));
             });
   }
 
