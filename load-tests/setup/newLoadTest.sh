@@ -170,7 +170,7 @@ mkdir -p "$TARGET_DIRECTORY"
 # camunda-platform-values-${secondary_storage}.yaml. Flat layout so the
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
 cp -v  "$VERSION_DIR/Makefile"                                                  "$TARGET_DIRECTORY/"
-cp -rv "$SCRIPT_DIR/charts/"                                                    "$TARGET_DIRECTORY/"
+cp -rv "$SCRIPT_DIR/charts"                                                     "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-override-values.yaml"              "$TARGET_DIRECTORY/"
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-defaults.yaml"                 "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/values-stable.yaml"                                 "$TARGET_DIRECTORY/"
@@ -203,11 +203,6 @@ case "$secondary_storage" in
 
     if [ "$secondary_storage" = "postgresql" ]; then
       postgresqlEnabled=true
-    fi
-
-    physical_tenants_rdbms_config_file="$VERSION_DIR/values/camunda-platform-two-physical-tenants-shared-rdbms.yaml"
-    if [[ -f "$physical_tenants_rdbms_config_file" ]]; then
-      cp -v "$physical_tenants_rdbms_config_file" "$TARGET_DIRECTORY/"
     fi
 
     secondary_storage_config_file="$VERSION_DIR/databases/${secondary_storage}.yaml"
