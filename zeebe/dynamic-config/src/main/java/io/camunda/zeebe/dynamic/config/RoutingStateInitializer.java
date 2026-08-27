@@ -14,19 +14,17 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Optional;
 
 /**
- * Initializes the routing state of the cluster configuration if the partition scaling feature is
- * enabled. All members will initialize the same routing state (as long as their statically
- * configured partition counts match).
+ * Initializes a missing {@link RoutingState} from the partitions already present in the cluster
+ * configuration. Used on upgrades from versions that did not persist routing state. New clusters
+ * already get a routing state from {@link
+ * io.camunda.zeebe.dynamic.config.util.ConfigurationUtil#getClusterConfigFrom}.
  */
 public class RoutingStateInitializer implements ClusterConfigurationModifier {
 
   private final boolean enablePartitionScaling;
-  private final int staticPartitionCount;
 
-  public RoutingStateInitializer(
-      final boolean enablePartitionScaling, final int staticPartitionCount) {
+  public RoutingStateInitializer(final boolean enablePartitionScaling) {
     this.enablePartitionScaling = enablePartitionScaling;
-    this.staticPartitionCount = staticPartitionCount;
   }
 
   @Override
@@ -35,7 +33,12 @@ public class RoutingStateInitializer implements ClusterConfigurationModifier {
       return CompletableActorFuture.completed(configuration);
     }
 
-    final var routingState = RoutingState.initializeWithPartitionCount(staticPartitionCount);
+    final int partitionCount = configuration.partitionCount();
+    if (partitionCount < 1) {
+      return CompletableActorFuture.completed(configuration);
+    }
+
+    final var routingState = RoutingState.initializeWithPartitionCount(partitionCount);
     final var withRoutingState =
         new ClusterConfiguration(
             configuration.version(),

@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.util.Map;
@@ -37,6 +38,9 @@ final class ClusterConfigurationModifierTest {
   @Nested
   final class RoutingStateInitializerTest {
 
+    private static final DynamicPartitionConfig PARTITION_CONFIG =
+        new DynamicPartitionConfig(new ExportersConfig(Map.of()));
+
     private final MemberId localMemberId = MemberId.from("0");
     private final ClusterConfiguration currentConfiguration =
         ClusterConfiguration.init()
@@ -48,33 +52,88 @@ final class ClusterConfigurationModifierTest {
                         PartitionState.active(
                             1, new DynamicPartitionConfig(new ExportersConfig(Map.of()))))));
 
+    private final RoutingStateInitializer routingStateInitializer =
+        new RoutingStateInitializer(true);
+
     @Test
     void shouldNotInitializeRoutingStateIfPartitionScalingIsDisabled() {
       // given
-      final var routingStateInitializer = new RoutingStateInitializer(false, 3);
+      final var disabledRoutingStateInitializer = new RoutingStateInitializer(false);
 
       // when
-      final var newConfiguration = routingStateInitializer.modify(currentConfiguration).join();
+      final var newConfiguration =
+          disabledRoutingStateInitializer.modify(currentConfiguration).join();
 
       // then
       ClusterConfigurationAssert.assertThatClusterTopology(newConfiguration).hasNoRoutingState();
     }
 
     @Test
-    void shouldInitializeRoutingStateIfPartitionScalingIsEnabled() {
+    void shouldInitializeRoutingStateFromClusterConfigurationPartitionCount() {
       // given
-      final var routingStateInitializer = new RoutingStateInitializer(true, 5);
+      final var configurationWithThreePartitions =
+          ClusterConfiguration.init()
+              .addMember(
+                  localMemberId,
+                  MemberState.initializeAsActive(
+                      Map.of(
+                          1, PartitionState.active(1, PARTITION_CONFIG),
+                          2, PartitionState.active(1, PARTITION_CONFIG),
+                          3, PartitionState.active(1, PARTITION_CONFIG))));
 
       // when
-      final var newConfiguration = routingStateInitializer.modify(currentConfiguration).join();
+      final var newConfiguration =
+          routingStateInitializer.modify(configurationWithThreePartitions).join();
 
       // then
       ClusterConfigurationAssert.assertThatClusterTopology(newConfiguration).hasRoutingState();
       ClusterConfigurationAssert.assertThatClusterTopology(newConfiguration)
           .routingState()
           .hasVersion(1)
-          .hasActivatedPartitions(5)
-          .correlatesMessagesToPartitions(5);
+          .hasActivatedPartitions(3)
+          .correlatesMessagesToPartitions(3);
+    }
+
+    @Test
+    void shouldPreserveExistingRoutingState() {
+      // given
+      final var existingRoutingState = RoutingState.initializeWithPartitionCount(3);
+      final var configurationWithoutRoutingState =
+          ClusterConfiguration.init()
+              .addMember(
+                  localMemberId,
+                  MemberState.initializeAsActive(
+                      Map.of(
+                          1, PartitionState.active(1, PARTITION_CONFIG),
+                          2, PartitionState.active(1, PARTITION_CONFIG),
+                          3, PartitionState.active(1, PARTITION_CONFIG))));
+      final var configurationWithRoutingState =
+          new ClusterConfiguration(
+              configurationWithoutRoutingState.version(),
+              configurationWithoutRoutingState.members(),
+              configurationWithoutRoutingState.lastChange(),
+              configurationWithoutRoutingState.pendingChanges(),
+              Optional.of(existingRoutingState));
+
+      // when
+      final var newConfiguration =
+          routingStateInitializer.modify(configurationWithRoutingState).join();
+
+      // then
+      assertThat(newConfiguration).isEqualTo(configurationWithRoutingState);
+    }
+
+    @Test
+    void shouldNotInventRoutingStateWhenConfigurationHasNoPartitions() {
+      // given
+      final var emptyConfiguration = ClusterConfiguration.init();
+
+      // when
+      final var newConfiguration = routingStateInitializer.modify(emptyConfiguration).join();
+
+      // then
+      assertThat(newConfiguration).isEqualTo(emptyConfiguration);
+      ClusterConfigurationAssert.assertThatClusterTopology(newConfiguration).hasNoRoutingState();
     }
   }
 
