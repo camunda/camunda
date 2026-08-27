@@ -54,11 +54,11 @@ class TransientRetryTest {
 
   @Test
   void shouldNotTreatTranslatedNonTransientFailureAsTransient() {
-    // given — INVALID_ARGUMENT and SEARCH_CLIENT_FAILED are indistinguishable by Status alone once
-    // translated, so this is what proves the classification reads the cause rather than the Status
+    // given — UNKNOWN is the non-transient reason that collapses onto the same Status.INTERNAL as
+    // the transient ones, so it is the case that proves the classification reads the cause: a
+    // Status-based check would see INTERNAL here and wrongly retry
     final ServiceException translated =
-        ErrorMapper.mapSearchError(
-            new CamundaSearchException("bad query", Reason.INVALID_ARGUMENT));
+        ErrorMapper.mapSearchError(new CamundaSearchException("wiring error", Reason.UNKNOWN));
 
     assertThat(TransientRetry.isTransient(translated)).isFalse();
   }
