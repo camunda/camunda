@@ -147,4 +147,10 @@ public interface ProcessDefinitionStatisticsFilterBase extends StatisticsRequest
 
   /** Filter by incidentErrorHashCode using {@link IntegerProperty} */
   ProcessDefinitionStatisticsFilterBase incidentErrorHashCode(final Consumer<IntegerProperty> fn);
+
+  /** Filter by businessId */
+  ProcessDefinitionStatisticsFilterBase businessId(final String businessId);
+
+  /** Filter by businessId using {@link StringProperty} consumer */
+  ProcessDefinitionStatisticsFilterBase businessId(final Consumer<StringProperty> fn);
 }
