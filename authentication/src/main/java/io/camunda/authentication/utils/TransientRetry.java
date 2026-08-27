@@ -15,9 +15,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Shared resilience4j {@link Retry} configuration for search-client calls made on the
- * authentication path, plus the classification of which failures are worth retrying. A
- * shard-availability blip on the underlying index is transient; a malformed request or a permission
- * problem is not, and retrying it would only delay a failure that a retry can't fix.
+ * authentication path, plus the classification of which failures are worth retrying.
  */
 public final class TransientRetry {
 
@@ -38,20 +36,17 @@ public final class TransientRetry {
   }
 
   /**
-   * @return {@code true} if {@code throwable} indicates a transient infrastructure problem (e.g. a
-   *     connection drop or a search-server error such as a shard-availability outage) rather than a
-   *     request or configuration problem that a retry cannot fix. Anything else — including a plain
-   *     {@link RuntimeException} from a programming error — is attempted once and never retried;
-   *     what happens to it afterwards is the caller's decision.
+   * @return {@code true} if {@code throwable} carries a {@link CamundaSearchException} reporting an
+   *     infrastructure problem. Anything else is attempted once and never retried; what happens to
+   *     it afterwards is the caller's decision.
    *     <p>{@link CamundaSearchException.Reason#UNKNOWN} is deliberately not transient: the search
    *     clients classify every real infrastructure failure explicitly, so UNKNOWN only ever reaches
-   *     here from a deterministic error raised without a reason (e.g. no matching resource-access
-   *     controller, or a malformed authorization filter), which a retry cannot fix.
+   *     here from a deterministic error raised without a reason, which a retry cannot fix.
    */
   public static boolean isTransient(final Throwable throwable) {
-    // Callers that reach the search layer through the *Services API see the failure only after
-    // ErrorMapper has rewrapped it as a ServiceException whose Status collapses several reasons
-    // onto INTERNAL; the preserved cause is what still carries the precise reason.
+    // Callers reaching the search layer through the *Services API only see the failure after
+    // ErrorMapper rewrapped it as a ServiceException whose Status collapses several reasons onto
+    // INTERNAL; the preserved cause is what still carries the precise reason.
     final var searchException = findSearchException(throwable);
     if (searchException == null) {
       return false;

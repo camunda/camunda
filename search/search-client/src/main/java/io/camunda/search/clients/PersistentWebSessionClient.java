@@ -13,10 +13,9 @@ import io.camunda.search.query.SearchQueryResult;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Implementations must surface infrastructure failures (e.g. a dropped connection) as a {@link
- * CamundaSearchException} with the matching {@link CamundaSearchException.Reason}, never as a bare
- * backend-specific exception — callers such as {@code SessionStoreAdapter} rely on this to tell a
- * transient failure worth retrying apart from a programming error.
+ * Implementations must surface infrastructure failures as a {@link CamundaSearchException} with the
+ * matching {@link CamundaSearchException.Reason}, never as a bare backend-specific exception —
+ * callers rely on this to tell a transient failure worth retrying apart from a permanent one.
  */
 public interface PersistentWebSessionClient {
 

@@ -68,10 +68,9 @@ public class ErrorMapper {
 
   /**
    * Maps a search failure onto the API-facing {@link ServiceException}, keeping the original as the
-   * cause. Several reasons collapse onto the same {@link Status} — {@code INTERNAL} in particular
-   * covers both search-layer failures and the catch-all — so the cause is the only remaining way to
-   * recover the precise reason, which internal callers such as the authentication layer need in
-   * order to tell a retryable outage from a permanent error.
+   * cause. Several reasons collapse onto the same {@link ServiceException.Status}, so the cause is
+   * the only remaining way to recover the precise reason — internal callers such as the
+   * authentication layer rely on it to tell a retryable outage from a permanent error.
    */
   public static ServiceException mapSearchError(final CamundaSearchException cse) {
     final String errorMessage = cse.getMessage();
