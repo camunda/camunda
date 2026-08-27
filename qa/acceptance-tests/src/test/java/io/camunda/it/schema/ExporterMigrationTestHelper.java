@@ -7,6 +7,7 @@
  */
 package io.camunda.it.schema;
 
+import static org.apache.commons.lang3.StringUtils.isNumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.net.URI;
@@ -35,10 +37,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import org.awaitility.Awaitility;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
@@ -54,13 +59,24 @@ public class ExporterMigrationTestHelper {
 
   private static final Logger LOG = LoggerFactory.getLogger(ExporterMigrationTestHelper.class);
 
+  /**
+   * Matches Docker Hub's actual pre-release tag shapes for camunda/camunda: plain alpha ({@code
+   * 8.10.0-alpha4}, optionally with a sub-patch suffix like {@code -alpha4.1}), alpha plus rc
+   * ({@code 8.10.0-alpha4-rc2}), or a final rc with no alpha stage ({@code 8.10.0-rc1}).
+   * Deliberately a positive allow-list rather than "not GA and not snapshot" — Docker Hub tags are
+   * external data, and a variant/build tag we don't know about yet must not be picked up as if it
+   * were a genuine pre-release stage.
+   */
+  private static final Pattern PRE_RELEASE_PATTERN =
+      Pattern.compile("^\\d+\\.\\d+\\.\\d+-(alpha\\d+(\\.\\d+)?(-rc\\d+)?|rc\\d+)$");
+
   private static final String CONTAINER_DATA_PATH = "/usr/local/camunda/data";
   private static final String HTTP_PREFIX = "http://";
   private static final String PI_INDEX = "zeebe-record_process-instance_*";
   private static final String VARIABLE_INDEX = "zeebe-record_variable_*";
   private static final String USER_TASK_INDEX = "zeebe-record_user-task_*";
   private static final String INCIDENT_INDEX = "zeebe-record_incident_*";
-  private static final String DEPLOYMENT_INDEX = "zeebe-record_deployment_*";
+  private static final String PROCESS_INDEX = "zeebe-record_process_*";
   private static final String ZEEBE_RECORD_INDEXES = "zeebe-record*";
 
   private static final String CURRENT_MINOR_VERSION = getCurrentMinorVersion();
@@ -252,7 +268,7 @@ public class ExporterMigrationTestHelper {
       completeJobs(clientPrevious, 1);
       log.info("Completed job for instance #1");
 
-      awaitExported("deployment records should be exported to " + engineName, DEPLOYMENT_INDEX);
+      awaitExported("process records should be exported to " + engineName, PROCESS_INDEX);
       awaitExported("process instance records should be exported to " + engineName, PI_INDEX);
       awaitExported("user task records should be exported to " + engineName, USER_TASK_INDEX);
 
@@ -435,7 +451,7 @@ public class ExporterMigrationTestHelper {
             .isGreaterThanOrEqualTo(instanceKeys.size());
 
         // Verify that deployment records are in ES/OS
-        final long deploymentCount = countDocuments(DEPLOYMENT_INDEX);
+        final long deploymentCount = countDocuments(PROCESS_INDEX);
         log.info("Total deployment records in {}: {}", engineName, deploymentCount);
         assertThat(deploymentCount)
             .as("deployment records should be exported across upgrade")
@@ -612,31 +628,9 @@ public class ExporterMigrationTestHelper {
       throw e;
     }
 
-    final List<String> allVersions = new ArrayList<>();
-    for (final String tag : allTags) {
-      if (!tag.startsWith(PREVIOUS_MINOR_VERSION)) {
-        continue;
-      }
-
-      final String[] components = tag.split("\\.");
-      if (components.length != 3) {
-        continue;
-      }
-
-      try {
-        Integer.parseInt(components[2]);
-      } catch (final NumberFormatException ignored) {
-        continue;
-      }
-
-      allVersions.add(tag);
-    }
-
-    if (allVersions.isEmpty()) {
-      throw new NoSuchElementException("No release images found for " + PREVIOUS_MINOR_VERSION);
-    }
-
-    allVersions.sort(ExporterMigrationTestHelper::comparePatches);
+    final List<String> allPreviousVersions =
+        findAllPatchVersionsOrLatestAlphaOrReleaseCandidate(PREVIOUS_MINOR_VERSION, allTags);
+    final List<String> allVersions = new ArrayList<>(allPreviousVersions);
 
     final String snapshotVersion = PREVIOUS_MINOR_VERSION + "-SNAPSHOT";
     if (allTags.contains(snapshotVersion)) {
@@ -644,6 +638,55 @@ public class ExporterMigrationTestHelper {
     }
 
     return allVersions;
+  }
+
+  static List<String> findAllPatchVersionsOrLatestAlphaOrReleaseCandidate(
+      final String previousMinorVersion, final List<String> allTags) {
+
+    final List<SemanticVersion> allPreviousVersions = new ArrayList<>();
+    for (final String tag : allTags) {
+      if (!tag.startsWith(previousMinorVersion)) {
+        continue;
+      }
+
+      SemanticVersion.parse(tag).ifPresent(allPreviousVersions::add);
+    }
+
+    if (allPreviousVersions.isEmpty()) {
+      throw new NoSuchElementException("No images found for " + previousMinorVersion);
+    }
+
+    allPreviousVersions.sort(ExporterMigrationTestHelper::compareSemanticVersions);
+
+    final List<String> releaseVersions =
+        allPreviousVersions.stream()
+            .filter(version -> !version.isPreRelease())
+            .map(SemanticVersion::toString)
+            .toList();
+
+    if (!releaseVersions.isEmpty()) {
+      return releaseVersions;
+    }
+
+    final List<String> preReleaseVersions =
+        allPreviousVersions.stream()
+            .filter(SemanticVersion::isPreRelease)
+            .map(SemanticVersion::toString)
+            .filter(version -> PRE_RELEASE_PATTERN.matcher(version).matches())
+            .toList();
+
+    if (preReleaseVersions.isEmpty()) {
+      throw new NoSuchElementException(
+          "No release or pre-release images found for " + previousMinorVersion);
+    }
+
+    final var latestNonReleaseVersion = preReleaseVersions.getLast();
+
+    LOG.warn(
+        "No release versions found for {}, returning latest alpha or release candidate ({})",
+        previousMinorVersion,
+        latestNonReleaseVersion);
+    return List.of(latestNonReleaseVersion);
   }
 
   private static String getCurrentMinorVersion() {
@@ -669,5 +712,72 @@ public class ExporterMigrationTestHelper {
     }
 
     return String.format("%s.%s", components[0], String.valueOf(minor - 1));
+  }
+
+  // need to slightly customize how we do version comparisons here
+  // in particular we want to ensure that we correctly sort alpha and rc versions, but also
+  // want to ensure that alpha rc versions are not considered "later" than the final alpha version
+  // e.g. 8.10.0-alpha4-rc1 < 8.10.0-alpha4 < 8.10.0-alpha11 < 8.10.0
+  private static int compareSemanticVersions(final SemanticVersion v1, final SemanticVersion v2) {
+    if (v1.major() != v2.major()) {
+      return Integer.compare(v1.major(), v2.major());
+    }
+    if (v1.minor() != v2.minor()) {
+      return Integer.compare(v1.minor(), v2.minor());
+    }
+    if (v1.patch() != v2.patch()) {
+      return Integer.compare(v1.patch(), v2.patch());
+    }
+    return comparePreRelease(v1, v2);
+  }
+
+  private static int comparePreRelease(final SemanticVersion v1, final SemanticVersion v2) {
+    if (v1.preRelease() == null && v2.preRelease() == null) {
+      return 0;
+    } else if (v1.preRelease() != null && v2.preRelease() == null) {
+      return -1;
+    } else if (v1.preRelease() == null && v2.preRelease() != null) {
+      return 1;
+    }
+
+    final var preReleaseParts = splitPreRelease(v1.preRelease());
+    final var otherPreReleaseParts = splitPreRelease(v2.preRelease());
+
+    // sort by comparing the numeric parts as actual numbers (human readable) and the non-numeric
+    // parts lexicographically (ASCII sort order)
+    // this means that things like alpha2 will come before alpha10
+    for (int i = 0; i < Math.min(preReleaseParts.size(), otherPreReleaseParts.size()); i++) {
+      final var thisPart = preReleaseParts.get(i);
+      final var otherPart = otherPreReleaseParts.get(i);
+
+      if (isNumeric(thisPart) && isNumeric(otherPart)) {
+        // Identifiers consisting of only digits are compared numerically.
+        final var thisNumericPart = Integer.parseInt(thisPart);
+        final var otherNumericPart = Integer.parseInt(otherPart);
+        if (thisNumericPart != otherNumericPart) {
+          return Integer.compare(thisNumericPart, otherNumericPart);
+        }
+      } else if (isNumeric(thisPart)) {
+        // Numeric identifiers always have higher precedence than non-numeric identifiers.
+        return 1;
+      } else if (isNumeric(otherPart)) {
+        return -1;
+      } else {
+        final var comparison = thisPart.compareTo(otherPart);
+        if (comparison != 0) {
+          return comparison;
+        }
+      }
+    }
+
+    // prefer the shorter version as that will indicate we have a non-RC version
+    // e.g. 8.9.1-alpha1 is a later version than 8.9.1-alpha1-rc1
+    return -Integer.compare(preReleaseParts.size(), otherPreReleaseParts.size());
+  }
+
+  private static List<String> splitPreRelease(final String preRelease) {
+    return Arrays.stream(Objects.requireNonNull(preRelease).splitWithDelimiters("\\d+", 0))
+        .filter(s -> !s.isEmpty())
+        .toList();
   }
 }

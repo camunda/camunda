@@ -19,7 +19,6 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
@@ -98,10 +97,6 @@ class ElasticsearchExporterMigrationIT {
     }
   }
 
-  @Disabled(
-      "No 8.10 release images are published yet after bumping the development version to "
-          + "8.11.0-SNAPSHOT, so there is no previous-minor patch to migrate from. Re-enable once "
-          + "8.10 has a released patch on Docker Hub.")
   @ParameterizedTest(name = "Migrate from {0} to current version")
   @MethodSource(
       "io.camunda.it.schema.ExporterMigrationTestHelper#fetchLatestPatchFromPreviousMinor")
