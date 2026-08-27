@@ -127,7 +127,7 @@ jobs:
       - name: Wait for warmup period
         run: sleep "${WARMUP_SECONDS}"
 
-  # Profile the first 30 minutes post-warmup via async-profiler. Runs concurrently with soak (not
+  # Profile the first 10 minutes post-warmup via async-profiler. Runs concurrently with soak (not
   # on its critical path).
   profile:
     name: Profile pods
@@ -142,7 +142,7 @@ jobs:
       name: c8-${{ inputs.name }}
       pod: ''
       test-type: ${{ inputs.name }}
-      duration-seconds: '1800'
+      duration-seconds: '600'
 
   # Wait 3 hours, anchored to this variant's own setup completion, before taking its metrics
   # snapshot. Variants build+deploy independently and don't reliably finish at the same time, so

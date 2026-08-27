@@ -1,11 +1,10 @@
 # description: Profiles a running load test cluster using async-profiler.
-#              When no pod is specified, profiles all 3 pods in parallel (3 parallel jobs,
-#              one per pod). Each pod's job runs all 3 profile types (cpu, wall, alloc
-#              events) *sequentially*, since async-profiler only supports one active
-#              profiling session per JVM and the profiling script writes to fixed
-#              intermediate paths on the pod -- profiling the same pod with two events at
-#              once would collide.
-#              When a specific pod is given, profiles that pod with cpu event only.
+#              Profiles all 3 pods (camunda-0, camunda-1, camunda-2) in parallel when no pod
+#              is specified, or just the given pod otherwise. Every pod gets all 3 profile
+#              types (cpu, wall, alloc events), run *sequentially*, since async-profiler only
+#              supports one active profiling session per JVM and the profiling script writes
+#              to fixed intermediate paths on the pod -- profiling the same pod with two
+#              events at once would collide.
 #              Uploads flamegraph artifacts named
 #              flamegraph-{test-type}-{event}-{pod}-{date}.
 # called-by: camunda-pr-load-test.yml, stress-load-test.yml (itself called by
@@ -22,7 +21,7 @@ on:
         description: 'Specifies the name of the load test to profile'
         required: true
       pod:
-        description: 'Specifies the pod name to profile. Leave empty to profile all three pods (camunda-0, camunda-1, camunda-2) with different events, or specify a pod name for CPU profiling only.'
+        description: 'Specifies the pod name to profile. Leave empty to profile all three pods (camunda-0, camunda-1, camunda-2), or specify a pod name to profile just that one.'
         default: ''
         required: false
       profiler_options:
@@ -44,7 +43,7 @@ on:
         required: true
         type: string
       pod:
-        description: 'Specifies the pod name to profile. Leave empty to profile all three pods with different events, or specify a pod name for CPU profiling only.'
+        description: 'Specifies the pod name to profile. Leave empty to profile all three pods, or specify a pod name to profile just that one.'
         default: ''
         required: false
         type: string
@@ -74,43 +73,77 @@ env:
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
 
   NAME: ${{ inputs.name }}
-  POD: ${{ inputs.pod }}
   PROFILER_OPTIONS: ${{ inputs.profiler_options }}
   PROFILING_DURATION: ${{ inputs.duration-seconds }}
   TEST_TYPE: ${{ inputs.test-type }}
 
 jobs:
-  profile-all-pods:
-    name: Profile all events on ${{ matrix.pod }}
+  compute-pods:
+    name: Compute pods matrix
     runs-on: ubuntu-latest
-    # INVARIANT: timeout-minutes * 60 must stay > duration-seconds * 3, since this job now
+    permissions: {}
+    outputs:
+      pods: ${{ steps.compute.outputs.pods }}
+    env:
+      POD: ${{ inputs.pod }}
+    steps:
+      # A specific pod (inputs.pod set) becomes the matrix's single entry; otherwise the
+      # matrix defaults to all three pods. Every pod in the matrix gets all 3 events (cpu,
+      # wall, alloc) below.
+      - name: Compute pods matrix
+        id: compute
+        run: |
+          if [ -n "${POD}" ]; then
+            pods=$(jq -cn --arg pod "${POD}" '[$pod]')
+          else
+            pods='["camunda-0","camunda-1","camunda-2"]'
+          fi
+          echo "pods=${pods}" >> "$GITHUB_OUTPUT"
+
+  profile:
+    name: Profile ${{ matrix.pod }}
+    needs: compute-pods
+    runs-on: ubuntu-latest
+    # INVARIANT: timeout-minutes * 60 must stay > duration-seconds * 3, since this job
     # profiles cpu, wall and alloc *sequentially* against its pod (see the matrix comment
     # below for why the events can't run in parallel against the same pod), plus a buffer
     # for the checkout/teleport-auth/kubectl-context/upload-artifact/summary steps.
-    # GitHub Actions does not support arithmetic in `timeout-minutes` expressions (no
-    # +/-/*// operators), so this can't be computed from `inputs.duration-seconds`
-    # automatically -- bump it manually if a caller raises duration-seconds. Largest known
-    # caller today: stress-load-test.yml's profile job passes duration-seconds: '1800'
-    # (30 min), i.e. up to 90 minutes of profiling alone per pod.
+    # Profiling is best-effort so this is not sized to let every retry play out
+    # -- a run that fails or times out here is fine. GitHub Actions does not
+    # support arithmetic in `timeout-minutes` expressions (no +/-/*//
+    # operators), so this can't be computed from `inputs.duration-seconds`
+    # automatically -- bump it manually if a caller raises duration-seconds.
+    # Largest known caller today: stress-load-test.yml's profile job passes
+    # duration-seconds: '600' (10 min), i.e. up to 30 minutes of profiling
+    # alone per pod.
     # If the job timeout is increased, make sure to also increase the Teleport
     # "certificate-ttl" below to keep it roughly greater or equal to the job
     # timeout.
-    timeout-minutes: 120
-    if: ${{ inputs.pod == '' }}
+    timeout-minutes: 40
     permissions:
       contents: 'read'
       id-token: 'write'
     strategy:
       fail-fast: false
       matrix:
-        # One parallel job per pod. Events (cpu/wall/alloc) are intentionally NOT a
-        # matrix dimension: async-profiler only supports one active profiling session
-        # per JVM, and executeProfiling.sh copies/removes a fixed-path asprof binary
-        # and libasyncProfiler.so on the pod. Two events profiling the *same* pod at
-        # the same time would collide (attach failures and/or one event's cleanup
-        # deleting files the other event is still using). Events are instead run
-        # sequentially within each pod's job below, via a shell loop.
-        pod: [camunda-0, camunda-1, camunda-2]
+        # Events (cpu/wall/alloc) are intentionally NOT a matrix dimension:
+        # async-profiler only supports one active profiling session per JVM,
+        # and executeProfiling.sh copies/removes a fixed-path asprof binary and
+        # libasyncProfiler.so on the pod. Two events profiling the *same* pod
+        # at the same time would collide (attach failures and/or one event's
+        # cleanup deleting files the other event is still using). Events are
+        # instead run via separate sequential steps below.
+        pod: ${{ fromJSON(needs.compute-pods.outputs.pods) }}
+
+    env:
+      POD: ${{ matrix.pod }}
+      # Shared nick-fields/retry settings for the "Profile ..." steps below, so tuning them
+      # only has to happen in one place instead of once per event.
+      PROFILE_RETRY_MAX_ATTEMPTS: 5
+      # Give enough time for a preempted pod to come back, if any.
+      PROFILE_RETRY_WAIT_SECONDS: 120
+      PROFILE_RETRY_TIMEOUT_MINUTES: 15
+
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -140,25 +173,52 @@ jobs:
       - name: Compute run date
         id: run-date
         run: echo "date=$(date +%Y%m%d)" >> "$GITHUB_OUTPUT"
-      - name: Execute profiling (cpu, wall, alloc sequentially)
-        env:
-          POD: ${{ matrix.pod }}
-        run: |
-          for event in cpu wall alloc; do
-            ./load-tests/docs/scripts/executeProfiling.sh "${POD}" "${event}" "${PROFILER_OPTIONS}" "${TEST_TYPE}"
-          done
+      # Profiling is best-effort: continue-on-error keeps a permanently-failing event from
+      # failing this job, so a single flaky/preempted pod doesn't spuriously fail the whole
+      # load test run -- the remaining "Profile ..." steps below still run regardless, and
+      # whichever flamegraphs did succeed are still published by the upload-artifact steps.
+      - name: Profile cpu on ${{ matrix.pod }}
+        continue-on-error: true
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: ${{ env.PROFILE_RETRY_MAX_ATTEMPTS }}
+          retry_on: error
+          retry_wait_seconds: ${{ env.PROFILE_RETRY_WAIT_SECONDS }}
+          timeout_minutes: ${{ env.PROFILE_RETRY_TIMEOUT_MINUTES }}
+          command: ./load-tests/docs/scripts/executeProfiling.sh "${POD}" cpu "${PROFILER_OPTIONS}" "${TEST_TYPE}"
+      - name: Profile wall on ${{ matrix.pod }}
+        continue-on-error: true
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: ${{ env.PROFILE_RETRY_MAX_ATTEMPTS }}
+          retry_on: error
+          retry_wait_seconds: ${{ env.PROFILE_RETRY_WAIT_SECONDS }}
+          timeout_minutes: ${{ env.PROFILE_RETRY_TIMEOUT_MINUTES }}
+          command: ./load-tests/docs/scripts/executeProfiling.sh "${POD}" wall "${PROFILER_OPTIONS}" "${TEST_TYPE}"
+      - name: Profile alloc on ${{ matrix.pod }}
+        continue-on-error: true
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: ${{ env.PROFILE_RETRY_MAX_ATTEMPTS }}
+          retry_on: error
+          retry_wait_seconds: ${{ env.PROFILE_RETRY_WAIT_SECONDS }}
+          timeout_minutes: ${{ env.PROFILE_RETRY_TIMEOUT_MINUTES }}
+          command: ./load-tests/docs/scripts/executeProfiling.sh "${POD}" alloc "${PROFILER_OPTIONS}" "${TEST_TYPE}"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: flamegraph-${{ inputs.test-type }}-cpu-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
           path: ${{ matrix.pod }}-flamegraph*-cpu-*.html
+          if-no-files-found: warn
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: flamegraph-${{ inputs.test-type }}-wall-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
           path: ${{ matrix.pod }}-flamegraph*-wall-*.html
+          if-no-files-found: warn
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: flamegraph-${{ inputs.test-type }}-alloc-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
           path: ${{ matrix.pod }}-flamegraph*-alloc-*.html
+          if-no-files-found: warn
       - name: Summarize profiling
         if: success()
         run: |
@@ -166,75 +226,12 @@ jobs:
             ## Profiling \`${NAME}\` on ${POD}
             Async profiling (cpu, wall, alloc) has been executed sequentially on ${NAME}-${POD}. Please download the artifacts.
           EOF
-        env:
-          POD: ${{ matrix.pod }}
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "Profile all events on ${{ matrix.pod }}"
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
-  profile-single-pod:
-    name: Profile CPU on single pod ${{ inputs.pod }}
-    runs-on: ubuntu-latest
-    # INVARIANT: timeout-minutes * 60 must stay > duration-seconds (plus a buffer for the
-    # checkout/teleport-auth/kubectl-context/upload-artifact/summary steps), otherwise the
-    # job may time out mid-profile. GitHub Actions does not support arithmetic in
-    # `timeout-minutes` expressions (no +/-/*// operators), so this can't be computed from
-    # `inputs.duration-seconds` automatically -- bump it manually if a caller raises
-    # duration-seconds. Largest known caller today: stress-load-test.yml's profile job
-    # passes duration-seconds: '1800' (30 min).
-    timeout-minutes: 60
-    if: ${{ inputs.pod != '' }}
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Set up Teleport
-        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
-        with:
-          proxy: camunda.teleport.sh:443
-          version: auto
-
-      - name: Authenticate to Cluster using Teleport
-        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
-        with:
-          proxy: camunda.teleport.sh:443
-          token: ${{ env.TELEPORT_JOIN_TOKEN }}
-          kubernetes-cluster: ${{ env.CLUSTER }}
-      - name: Set right namespace
-        run: |
-          kubectl config set-context --current --namespace="${NAME}"
-      - name: Compute run date
-        id: run-date
-        run: echo "date=$(date +%Y%m%d)" >> "$GITHUB_OUTPUT"
-      - name: Execute profiling
-        run: >
-          ./load-tests/docs/scripts/executeProfiling.sh "${POD}" cpu "${PROFILER_OPTIONS}" "${TEST_TYPE}"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: flamegraph-${{ inputs.test-type }}-cpu-${{ inputs.pod }}-${{ steps.run-date.outputs.date }}
-          path: ${{ inputs.pod }}*
-      - name: Summarize profiling
-        if: success()
-        run: |
-          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            ## Profiling \`${NAME}\` - CPU on ${POD}
-            Async profiling (CPU) has been executed on ${NAME}-${POD}. Please download the artifact.
-          EOF
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
+          job_name: "Profile ${{ matrix.pod }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
