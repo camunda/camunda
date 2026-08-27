@@ -24,6 +24,7 @@ import io.camunda.it.rdbms.db.fixtures.GroupMemberFixtures;
 import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsDataJdbcTest;
 import io.camunda.search.filter.GroupFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.sort.GroupSort;
@@ -162,6 +163,29 @@ public class GroupSpecificFilterIT {
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldFilterGroupsByNameLike() {
+    final var matchingName = "like-test-name-" + java.util.UUID.randomUUID();
+    final var matchingGroup = createRandomized(b -> b.name(matchingName));
+    final var nonMatchingGroup = createRandomized(b -> b);
+    createAndSaveGroup(rdbmsWriters, matchingGroup);
+    createAndSaveGroup(rdbmsWriters, nonMatchingGroup);
+
+    final var searchResult =
+        groupReader.search(
+            new GroupQuery(
+                new GroupFilter.Builder()
+                    .nameOperations(Operation.like("like-test-name-*"))
+                    .build(),
+                GroupSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items())
+        .extracting(item -> item.groupId())
+        .containsExactly(matchingGroup.groupId());
   }
 
   static List<GroupFilter> shouldFindWithSpecificFilterParameters() {

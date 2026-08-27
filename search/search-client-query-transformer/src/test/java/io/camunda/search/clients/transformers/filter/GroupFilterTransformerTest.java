@@ -11,11 +11,38 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class GroupFilterTransformerTest extends AbstractTransformerTest {
+
+  @Test
+  void shouldQueryByNameWithLikeOperation() {
+    // given
+    final var filter = FilterBuilders.group(f -> f.nameOperations(Operation.like("Group*")));
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    assertThat(searchQuery.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            bool -> {
+              // must contains the wildcard query plus the unconditional JOIN term
+              assertThat(bool.must()).hasSize(2);
+              assertThat(bool.must().getFirst().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchWildcardQuery.class,
+                      t -> {
+                        assertThat(t.field()).isEqualTo("name");
+                        assertThat(t.value()).isEqualTo("Group*");
+                      });
+            });
+  }
 
   @Test
   void shouldCombineOrFiltersWithOrLogic() {

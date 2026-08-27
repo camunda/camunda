@@ -256,6 +256,19 @@ public class GroupSearchTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSearchGroupsByNameLike() {
+    // when
+    client.newGroupsSearchRequest().filter(f -> f.name(b -> b.like("Group*"))).send().join();
+
+    // then
+    final GroupSearchQueryRequest request =
+        gatewayService.getLastRequest(GroupSearchQueryRequest.class);
+    final GroupFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getName().get$Like()).isEqualTo("Group*");
+  }
+
+  @Test
   void shouldHaveMatchingFilterMethodsInBaseAndFullInterfaces() {
     final Set<String> baseMethods = publicMethodSignatures(GroupFilterBase.class);
     final Set<String> fullMethods =
