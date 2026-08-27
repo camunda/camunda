@@ -618,13 +618,13 @@ jobs:
             "${PERFORM_READ_BENCHMARKS}" \
             "${ENABLE_OPTIMIZE}" \
             "${ENABLE_OPTIMIZE_METRICS}" \
+            "${METRICS_EXPORTER_TAG}" \
             "${ENABLE_CHAOS}" \
             "${PHYSICAL_TENANT_COUNT}" \
             --optimize-tag "${OPTIMIZE_TAG}" \
             --orchestration-tag "${ORCHESTRATION_TAG}" \
             --identity-tag "${IDENTITY_TAG}" \
             --connectors-tag "${CONNECTORS_TAG}" \
-            --metrics-exporter-tag "${METRICS_EXPORTER_TAG}" \
             --load-test-load "${LOAD_TEST_LOAD}" \
             --platform-helm-values "${PLATFORM_HELM_VALUES}" \
             --load-test-setup-helm-values "${LOAD_TEST_SETUP_HELM_VALUES}" \

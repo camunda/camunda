@@ -11,7 +11,7 @@
 # Usage: load-test-install-camunda-platform.sh <namespace> <install-target> <image-tag> \
 #          <image-repository> <image-registry> <camunda-repo> <optimize-repo> \
 #          <perform-read-benchmarks> <enable-optimize> <enable-optimize-metrics> \
-#          <enable-chaos> <physical-tenant-count> [OPTIONS]
+#          <metrics-exporter-tag> <enable-chaos> <physical-tenant-count> [OPTIONS]
 #
 #   namespace                  Load-test namespace (also the setup folder name)
 #   install-target             Make target to run (install or install-stable)
@@ -23,6 +23,9 @@
 #   perform-read-benchmarks    Run continuous read benchmarks (true/false)
 #   enable-optimize            Whether Optimize is part of this deployment (true/false)
 #   enable-optimize-metrics    Enable the load-tester Optimize report-evaluation meter (true/false)
+#   metrics-exporter-tag       Explicit metrics-exporter image tag (empty to use the Helm
+#                              chart's "latest" default; the metrics-exporter has its own
+#                              versioning, independent of image-tag above)
 #   enable-chaos               Enable chaos-killer (true/false)
 #   physical-tenant-count      Number of extra physical tenants (pt1..ptN) to deploy (0 = disabled)
 #
@@ -31,9 +34,6 @@
 #   --orchestration-tag TAG       Docker Hub orchestration tag (empty when using a custom build)
 #   --identity-tag TAG            Explicit Identity image tag
 #   --connectors-tag TAG          Explicit Connectors image tag
-#   --metrics-exporter-tag TAG    Explicit metrics-exporter image tag (empty to use the Helm
-#                                 chart's "latest" default; the metrics-exporter has its own
-#                                 versioning, independent of image-tag above)
 #   --load-test-load VALUE        Extra --set args for the load-tester Helm chart
 #   --platform-helm-values VALUE  Extra --set args for the platform Helm chart
 #   --load-test-setup-helm-values VALUE  Extra --set args for the load-test-setup Helm chart
@@ -51,15 +51,15 @@ optimize_repo="$7"
 perform_read_benchmarks="$8"
 enable_optimize="$9"
 enable_optimize_metrics="${10}"
-enable_chaos="${11}"
-physical_tenant_count="${12}"
-shift 12
+metrics_exporter_tag="${11}"
+enable_chaos="${12}"
+physical_tenant_count="${13}"
+shift 13
 
 optimize_tag=""
 orchestration_tag=""
 identity_tag=""
 connectors_tag=""
-metrics_exporter_tag=""
 load_test_load=""
 platform_helm_values=""
 load_test_setup_helm_values=""
@@ -71,7 +71,6 @@ while [[ $# -gt 0 ]]; do
     --orchestration-tag) orchestration_tag="$2"; shift 2 ;;
     --identity-tag) identity_tag="$2"; shift 2 ;;
     --connectors-tag) connectors_tag="$2"; shift 2 ;;
-    --metrics-exporter-tag) metrics_exporter_tag="$2"; shift 2 ;;
     --load-test-load) load_test_load="$2"; shift 2 ;;
     --platform-helm-values) platform_helm_values="$2"; shift 2 ;;
     --load-test-setup-helm-values) load_test_setup_helm_values="$2"; shift 2 ;;
