@@ -8,7 +8,10 @@
 package io.camunda.authentication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -16,6 +19,8 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.security.core.port.out.MembershipPort.PrincipalType;
 import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
@@ -131,12 +136,63 @@ class DefaultMembershipServiceTest {
   }
 
   @Test
+  void groupIdsFallsBackToEmptyAfterExhaustingRetriesOnTransientFailure() {
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenThrow(new CamundaSearchException("shards unavailable", Reason.SEARCH_SERVER_FAILED));
+    final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
+
+    assertThat(service.groupIds(query)).isEmpty();
+    verify(groupServices, times(3)).getGroupsByMemberTypeAndMemberIds(any(), any());
+  }
+
+  @Test
+  void groupIdsRecoversAfterTransientFailureWithinRetryBudget() {
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenThrow(new CamundaSearchException("connection refused", Reason.CONNECTION_FAILED))
+        .thenReturn(List.of(new GroupEntity(1L, "g1", "group", null)));
+    final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
+
+    assertThat(service.groupIds(query)).containsExactly("g1");
+    verify(groupServices, times(2)).getGroupsByMemberTypeAndMemberIds(any(), any());
+  }
+
+  @Test
+  void groupIdsPropagatesNonTransientFailureWithoutRetry() {
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenThrow(new CamundaSearchException("invalid query", Reason.INVALID_ARGUMENT));
+    final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
+
+    assertThatThrownBy(() -> service.groupIds(query)).isInstanceOf(CamundaSearchException.class);
+    verify(groupServices, times(1)).getGroupsByMemberTypeAndMemberIds(any(), any());
+  }
+
+  @Test
   void roleIdsIncludesGroupsInOwnerMap() {
     when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
         .thenReturn(List.of(new RoleEntity(1L, "r1", "role", null)));
     final var query = baseQuery().withMappingRuleIds(List.of()).withGroupIds(List.of("g1"));
 
     assertThat(service.roleIds(query)).containsExactly("r1");
+  }
+
+  @Test
+  void roleIdsFallsBackToEmptyAfterExhaustingRetriesOnTransientFailure() {
+    when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
+        .thenThrow(new CamundaSearchException("shards unavailable", Reason.SEARCH_SERVER_FAILED));
+    final var query = baseQuery().withMappingRuleIds(List.of()).withGroupIds(List.of("g1"));
+
+    assertThat(service.roleIds(query)).isEmpty();
+    verify(roleServices, times(3)).getRolesByMemberTypeAndMemberIds(any(), any());
+  }
+
+  @Test
+  void roleIdsPropagatesNonTransientFailureWithoutRetry() {
+    when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
+        .thenThrow(new CamundaSearchException("forbidden", Reason.FORBIDDEN));
+    final var query = baseQuery().withMappingRuleIds(List.of()).withGroupIds(List.of("g1"));
+
+    assertThatThrownBy(() -> service.roleIds(query)).isInstanceOf(CamundaSearchException.class);
+    verify(roleServices, times(1)).getRolesByMemberTypeAndMemberIds(any(), any());
   }
 
   @Test
@@ -150,6 +206,53 @@ class DefaultMembershipServiceTest {
             .withRoleIds(List.of("r1"));
 
     assertThat(service.tenantIds(query)).containsExactly("t1");
+  }
+
+  @Test
+  void tenantIdsFallsBackToEmptyAfterExhaustingRetriesOnTransientFailure() {
+    when(tenantServices.getTenantsByMemberTypeAndMemberIds(any(), any()))
+        .thenThrow(new CamundaSearchException("shards unavailable", Reason.SEARCH_SERVER_FAILED));
+    final var query =
+        baseQuery()
+            .withMappingRuleIds(List.of())
+            .withGroupIds(List.of("g1"))
+            .withRoleIds(List.of("r1"));
+
+    assertThat(service.tenantIds(query)).isEmpty();
+    verify(tenantServices, times(3)).getTenantsByMemberTypeAndMemberIds(any(), any());
+  }
+
+  @Test
+  void tenantIdsPropagatesNonTransientFailureWithoutRetry() {
+    when(tenantServices.getTenantsByMemberTypeAndMemberIds(any(), any()))
+        .thenThrow(new CamundaSearchException("not found", Reason.NOT_FOUND));
+    final var query =
+        baseQuery()
+            .withMappingRuleIds(List.of())
+            .withGroupIds(List.of("g1"))
+            .withRoleIds(List.of("r1"));
+
+    assertThatThrownBy(() -> service.tenantIds(query)).isInstanceOf(CamundaSearchException.class);
+    verify(tenantServices, times(1)).getTenantsByMemberTypeAndMemberIds(any(), any());
+  }
+
+  @Test
+  void mappingRuleIdsFallsBackToEmptyAfterExhaustingRetriesOnTransientFailure() {
+    when(mappingRuleServices.getMatchingMappingRules(any(), any()))
+        .thenThrow(new CamundaSearchException("shards unavailable", Reason.SEARCH_SERVER_FAILED));
+
+    assertThat(service.mappingRuleIds(baseQuery())).isEmpty();
+    verify(mappingRuleServices, times(3)).getMatchingMappingRules(any(), any());
+  }
+
+  @Test
+  void mappingRuleIdsPropagatesNonTransientFailureWithoutRetry() {
+    when(mappingRuleServices.getMatchingMappingRules(any(), any()))
+        .thenThrow(new CamundaSearchException("not unique", Reason.NOT_UNIQUE));
+
+    assertThatThrownBy(() -> service.mappingRuleIds(baseQuery()))
+        .isInstanceOf(CamundaSearchException.class);
+    verify(mappingRuleServices, times(1)).getMatchingMappingRules(any(), any());
   }
 
   @Test
