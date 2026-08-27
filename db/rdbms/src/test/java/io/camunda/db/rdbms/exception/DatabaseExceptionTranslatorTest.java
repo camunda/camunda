@@ -60,6 +60,50 @@ class DatabaseExceptionTranslatorTest {
   }
 
   @Test
+  void shouldTranslateConnectionFailureSqlException() {
+    // given – SQLState class 08 is the standard "Connection Exception" class, shared across
+    // Oracle/Postgres/MySQL/H2 drivers
+    final var sqlException = new SQLException("Connection refused", "08006");
+    final var exception = new RuntimeException("Wrapper", sqlException);
+
+    // when
+    final var result = DatabaseExceptionTranslator.translateIfNeeded(exception);
+
+    // then
+    assertThat(result).isInstanceOf(CamundaSearchException.class);
+    final var cse = (CamundaSearchException) result;
+    assertThat(cse.getReason()).isEqualTo(Reason.CONNECTION_FAILED);
+    assertThat(cse.getCause()).isSameAs(exception);
+  }
+
+  @Test
+  void shouldTranslateConnectionFailureWrappedMultipleLayersDeep() {
+    // given – simulate MyBatis wrapping a driver-level connection SQLException
+    final var sqlException = new SQLException("The connection is closed", "08003");
+    final var persistence = new PersistenceException(sqlException);
+
+    // when
+    final var result = DatabaseExceptionTranslator.translateIfNeeded(persistence);
+
+    // then
+    assertThat(result).isInstanceOf(CamundaSearchException.class);
+    assertThat(((CamundaSearchException) result).getReason()).isEqualTo(Reason.CONNECTION_FAILED);
+  }
+
+  @Test
+  void shouldReturnOriginalExceptionForNonConnectionSqlState() {
+    // given – SQLState class 42 (syntax error/access rule violation) is not a connection issue
+    final var sqlException = new SQLException("Some other error", "42000");
+    final var exception = new RuntimeException("Wrapper", sqlException);
+
+    // when
+    final var result = DatabaseExceptionTranslator.translateIfNeeded(exception);
+
+    // then
+    assertThat(result).isSameAs(exception);
+  }
+
+  @Test
   void shouldReturnOriginalExceptionForNonDatabaseErrors() {
     // given
     final var original = new RuntimeException("Some other error");
