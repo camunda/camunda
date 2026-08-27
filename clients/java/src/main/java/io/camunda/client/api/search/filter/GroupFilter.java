@@ -42,6 +42,9 @@ public interface GroupFilter extends GroupFilterBase {
   @Override
   GroupFilter name(final String name);
 
+  @Override
+  GroupFilter name(Consumer<StringProperty> fn);
+
   /**
    * Combine this filter with a list of alternative filter groups using OR logic.
    *

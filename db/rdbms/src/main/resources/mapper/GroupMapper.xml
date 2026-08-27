@@ -107,7 +107,12 @@ SELECT
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.name != null">AND g.NAME = #{filter.name}</if>
+    <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+      <foreach collection="filter.nameOperations" item="operation">
+        AND g.NAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
     <if test="filter.description != null">AND g.DESCRIPTION = #{filter.description}</if>
     <if
       test="filter.memberIds != null and !filter.memberIds.isEmpty() and filter.childMemberType != null">

@@ -21,7 +21,7 @@ import java.util.function.Function;
 
 public record GroupFilter(
     List<Operation<String>> groupIdOperations,
-    String name,
+    List<Operation<String>> nameOperations,
     String description,
     Set<String> memberIds,
     String tenantId,
@@ -39,7 +39,7 @@ public record GroupFilter(
   public Builder toBuilder() {
     return new Builder()
         .groupIdOperations(groupIdOperations)
-        .name(name)
+        .nameOperations(nameOperations)
         .description(description)
         .memberIds(memberIds)
         .tenantId(tenantId)
@@ -51,7 +51,7 @@ public record GroupFilter(
 
   public static final class Builder implements ObjectBuilder<GroupFilter> {
     private List<Operation<String>> groupIdOperations;
-    private String name;
+    private List<Operation<String>> nameOperations;
     private String description;
     private Set<String> memberIds;
     private String tenantId;
@@ -89,9 +89,33 @@ public record GroupFilter(
       return groupIdOperations(collectValues(operation, operations));
     }
 
-    public Builder name(final String value) {
-      name = value;
+    public Builder nameOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        nameOperations = addValuesToList(nameOperations, operations);
+      }
       return this;
+    }
+
+    public Builder names(final Set<String> value) {
+      final var vals = FilterUtil.mapDefaultToOperation(new ArrayList<>(value));
+      if (vals != null) {
+        return nameOperations(vals);
+      }
+      return this;
+    }
+
+    public Builder name(final String value, final String... values) {
+      final var vals = FilterUtil.mapDefaultToOperation(value, values);
+      if (vals != null) {
+        return nameOperations(vals);
+      }
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder nameOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return nameOperations(collectValues(operation, operations));
     }
 
     public Builder description(final String value) {
@@ -145,7 +169,7 @@ public record GroupFilter(
     public GroupFilter build() {
       return new GroupFilter(
           groupIdOperations,
-          name,
+          nameOperations,
           description,
           memberIds,
           tenantId,

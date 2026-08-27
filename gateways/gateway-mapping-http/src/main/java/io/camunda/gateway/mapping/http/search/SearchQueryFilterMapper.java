@@ -826,7 +826,7 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getGroupId())
           .map(mapToStringOperations())
           .ifPresent(builder::groupIdOperations);
-      ofNullable(filter.getName()).ifPresent(builder::name);
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     }
     return builder;
   }
@@ -846,7 +846,9 @@ public class SearchQueryFilterMapper {
       final io.camunda.gateway.protocol.model.@Nullable RoleFilterFields filter) {
     final var builder = FilterBuilders.role();
     if (filter != null) {
-      ofNullable(filter.getRoleId()).ifPresent(builder::roleId);
+      ofNullable(filter.getRoleId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::roleIdOperations);
       ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     }
     return builder;

@@ -30,6 +30,9 @@ public interface RoleFilter extends RoleFilterBase {
   @Override
   RoleFilter roleId(final String roleId);
 
+  @Override
+  RoleFilter roleId(Consumer<StringProperty> fn);
+
   /**
    * Filter roles by the specified name.
    *

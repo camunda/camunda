@@ -1015,7 +1015,7 @@ components:
         roleId:
           description: The role ID search filters.
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/RoleId'
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         name:
           description: The role name search filters.
           allOf:

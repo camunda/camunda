@@ -928,7 +928,8 @@ components:
             - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
         name:
           description: The group name search filters.
-          type: string
+          allOf:
+            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
 
     GroupFilter:
       description: Group filter request
