@@ -29,6 +29,7 @@ import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsDataJdbcTest;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.filter.MappingRuleFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.sort.MappingRuleSort;
@@ -177,6 +178,30 @@ public class MappingRuleSpecificFilterIT {
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldFilterMappingRulesByMappingRuleIdLike() {
+    final var matchingId = "like-test-" + Strings.newRandomValidIdentityId();
+    final var nonMatchingId = Strings.newRandomValidIdentityId();
+    createAndSaveMappingRule(
+        rdbmsWriters, MappingRuleFixtures.createRandomized(b -> b.mappingRuleId(matchingId)));
+    createAndSaveMappingRule(
+        rdbmsWriters, MappingRuleFixtures.createRandomized(b -> b.mappingRuleId(nonMatchingId)));
+
+    final var searchResult =
+        mappingRuleReader.search(
+            new MappingRuleQuery(
+                new MappingRuleFilter.Builder()
+                    .mappingRuleIdOperations(Operation.like("like-test-*"))
+                    .build(),
+                MappingRuleSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items())
+        .extracting(MappingRuleEntity::mappingRuleId)
+        .containsExactly(matchingId);
   }
 
   private void assignMappingRuleToGroup(final String groupId, final String mappingRuleId) {

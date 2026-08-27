@@ -91,7 +91,25 @@ public class SearchMappingRuleTest extends ClientRestTest {
 
     final MappingRuleFilter filter = requestBody.getFilter();
     assertThat(filter).isNotNull();
-    assertThat(filter.getMappingRuleId()).isEqualTo("rule123");
+    assertThat(filter.getMappingRuleId().get$Eq()).isEqualTo("rule123");
+  }
+
+  @Test
+  void shouldSearchMappingRulesByMappingRuleIdLike() {
+    // when
+    client
+        .newMappingRulesSearchRequest()
+        .filter(f -> f.mappingRuleId(b -> b.like("rule*")))
+        .send()
+        .join();
+
+    // then
+    final MappingRuleSearchQueryRequest requestBody =
+        gatewayService.getLastRequest(MappingRuleSearchQueryRequest.class);
+
+    final MappingRuleFilter filter = requestBody.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getMappingRuleId().get$Like()).isEqualTo("rule*");
   }
 
   @Test
@@ -150,7 +168,7 @@ public class SearchMappingRuleTest extends ClientRestTest {
         gatewayService.getLastRequest(MappingRuleSearchQueryRequest.class);
     final MappingRuleFilter filter = requestBody.getFilter();
     assertThat(filter).isNotNull();
-    assertThat(filter.getMappingRuleId()).isEqualTo("rule123");
+    assertThat(filter.getMappingRuleId().get$Eq()).isEqualTo("rule123");
 
     assertThat(requestBody.getSort()).isEmpty();
     assertThat(requestBody.getPage()).isNull();
@@ -212,8 +230,8 @@ public class SearchMappingRuleTest extends ClientRestTest {
     final MappingRuleFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.get$Or()).hasSize(2);
-    assertThat(filter.get$Or().get(0).getMappingRuleId()).isEqualTo("rule-1");
-    assertThat(filter.get$Or().get(1).getMappingRuleId()).isEqualTo("rule-2");
+    assertThat(filter.get$Or().get(0).getMappingRuleId().get$Eq()).isEqualTo("rule-1");
+    assertThat(filter.get$Or().get(1).getMappingRuleId().get$Eq()).isEqualTo("rule-2");
   }
 
   @Test
