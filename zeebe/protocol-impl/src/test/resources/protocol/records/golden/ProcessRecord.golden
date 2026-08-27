@@ -12,15 +12,20 @@ import static io.camunda.zeebe.protocol.impl.record.value.processinstance.Proces
 import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.VERSION_KEY;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -36,9 +41,11 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
   private final BooleanProperty deleteHistoryProp = new BooleanProperty("deleteHistory", false);
+  private final ArrayProperty<IntegerValue> drainPartitionsProp =
+      new ArrayProperty<>("drainPartitions", IntegerValue::new);
 
   public ProcessRecord() {
-    super(10);
+    super(11);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
@@ -48,7 +55,8 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
         .declareProperty(versionTagProp)
-        .declareProperty(deleteHistoryProp);
+        .declareProperty(deleteHistoryProp)
+        .declareProperty(drainPartitionsProp);
   }
 
   public ProcessRecord wrap(final ProcessMetadata metadata, final byte[] resource) {
@@ -230,6 +238,25 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
 
   public ProcessRecord setDeleteHistory(final boolean deleteHistory) {
     deleteHistoryProp.setValue(deleteHistory);
+    return this;
+  }
+
+  /** Partitions frozen at DRAINING time to seed drain-aggregation. Only set on DRAINING events. */
+  @JsonIgnore
+  public List<Integer> getDrainPartitions() {
+    final List<Integer> result = new ArrayList<>();
+    for (final IntegerValue partitionId : drainPartitionsProp) {
+      result.add(partitionId.getValue());
+    }
+    return result;
+  }
+
+  public ProcessRecord setDrainPartitions(final Collection<Integer> partitionIds) {
+    drainPartitionsProp.reset();
+    // Sort to keep the serialized record deterministic across runs.
+    partitionIds.stream()
+        .sorted()
+        .forEach(partitionId -> drainPartitionsProp.add().setValue(partitionId));
     return this;
   }
 }

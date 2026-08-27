@@ -21,15 +21,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 /**
  * Finalizes local deletion of a {@link PersistedProcessState#DRAINING} definition once its last
- * active instance completes or terminates. On this partition it appends the ordinary {@link
- * ProcessIntent#DELETING}/{@link ProcessIntent#DELETED} follow-up events (physically removing the
- * definition locally, reusing the existing appliers), then emits a {@link
- * ProcessIntent#DELETE_COMPLETE} command so {@code ProcessDeleteCompleteProcessor} can aggregate
- * the per-partition reports cluster-wide.
- *
- * <p>Known limitation: {@link ElementInstanceState#hasActiveProcessInstances} excludes banned
- * instances, which never complete/terminate, so a definition whose last instance is banned stays
- * {@code DRAINING} until that instance is resolved.
+ * active instance completes or terminates. Banned instances are excluded from the active-instance
+ * check, as they never complete or terminate.
  */
 public final class BpmnProcessDeletionBehavior {
 

@@ -102,8 +102,7 @@ public final class ProcessDeleteCompleteProcessor
       final TypedRecord<ProcessRecord> command, final ProcessRecord process) {
     // delete the history first, then emit FULLY_DELETED as the terminal marker of the deletion
     if (process.isDeleteHistory()) {
-      historyDeletionBehavior.deleteProcessInstanceHistory(
-          command.getKey(), process.getProcessDefinitionKey());
+      historyDeletionBehavior.deleteProcessInstanceHistory(process.getProcessDefinitionKey());
     }
 
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessIntent.FULLY_DELETED, process);

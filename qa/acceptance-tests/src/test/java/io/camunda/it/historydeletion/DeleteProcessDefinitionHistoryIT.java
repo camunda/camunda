@@ -20,6 +20,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeleteResourceResponse;
+import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.configuration.HistoryDeletion;
@@ -81,10 +82,8 @@ public class DeleteProcessDefinitionHistoryIT {
             .send()
             .join();
 
-    // then
-    final var batchOperationKey = result.getCreateBatchOperationResponse().getBatchOperationKey();
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, 1);
-    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 1, 0);
+    // then - no batch is returned; draining finalizes the deletion asynchronously
+    assertThat(result.getCreateBatchOperationResponse()).isNull();
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey);
     assertProcessDefinitionDeleted(camundaClient, processDefinitionKey);
   }
@@ -115,10 +114,8 @@ public class DeleteProcessDefinitionHistoryIT {
             .send()
             .join();
 
-    // then - deletion should be successful
-    final var batchOperationKey = result.getCreateBatchOperationResponse().getBatchOperationKey();
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, 3);
-    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 3, 0);
+    // then - no batch is returned; draining finalizes the deletion asynchronously
+    assertThat(result.getCreateBatchOperationResponse()).isNull();
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey1);
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey2);
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey3);
@@ -211,6 +208,65 @@ public class DeleteProcessDefinitionHistoryIT {
   }
 
   @Test
+  void shouldMarkProcessDefinitionAsDrainingWhileInstanceStillRunning() {
+    // given - a definition kept alive by a still-running instance (a user task never completes on
+    // its own, so the instance stays active and prevents the deletion from finalizing)
+    final var processId = Strings.newRandomValidBpmnId();
+    final var process =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processId).startEvent().userTask("wait").endEvent().done(),
+            processId + ".bpmn");
+    final var processDefinitionKey = process.getProcessDefinitionKey();
+    startProcessInstance(camundaClient, processId);
+    waitForProcessInstances(
+        camundaClient, f -> f.processDefinitionId(processId).state(ProcessInstanceState.ACTIVE), 1);
+
+    // when - delete: the running instance blocks finalization, so the definition drains rather than
+    // being deleted outright
+    final DeleteResourceResponse result =
+        camundaClient
+            .newDeleteResourceCommand(processDefinitionKey)
+            .deleteHistory(false)
+            .send()
+            .join();
+    assertThat(result.getCreateBatchOperationResponse()).isNull();
+
+    // then - the DRAINING state is propagated into secondary storage
+    Awaitility.await("Process definition should be marked as draining")
+        .atMost(DELETION_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var draining =
+                  camundaClient
+                      .newProcessDefinitionSearchRequest()
+                      .filter(
+                          f ->
+                              f.processDefinitionKey(processDefinitionKey)
+                                  .state(ProcessDefinitionState.DRAINING))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(draining).hasSize(1);
+              assertThat(draining.getFirst().getState()).isEqualTo(ProcessDefinitionState.DRAINING);
+            });
+
+    // and - a draining definition is no longer returned as ACTIVE
+    final var active =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .filter(
+                f ->
+                    f.processDefinitionKey(processDefinitionKey)
+                        .state(ProcessDefinitionState.ACTIVE))
+            .send()
+            .join()
+            .items();
+    assertThat(active).isEmpty();
+  }
+
+  @Test
   void shouldDeleteProcessDefinitionHistoryAfterDeletingWithoutHistory() {
     // given - a deployed process definition with completed process instances
     final var processId = Strings.newRandomValidBpmnId();
@@ -245,9 +301,16 @@ public class DeleteProcessDefinitionHistoryIT {
             .send()
             .join();
 
-    // then - the batch operation should be created and complete successfully
-    final var batchOperationKey =
-        resultWithHistory.getCreateBatchOperationResponse().getBatchOperationKey();
+    // then - the definition is already gone from primary storage, so this delete purges the
+    // leftover history directly and returns the batch operation details
+    final var batchOperation = resultWithHistory.getCreateBatchOperationResponse();
+    assertThat(batchOperation).isNotNull();
+    assertThat(batchOperation.getBatchOperationKey()).isNotNull();
+    assertThat(Long.valueOf(batchOperation.getBatchOperationKey())).isGreaterThan(0);
+    assertThat(batchOperation.getBatchOperationType())
+        .isEqualTo(BatchOperationType.DELETE_PROCESS_INSTANCE);
+
+    final var batchOperationKey = batchOperation.getBatchOperationKey();
     waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, 2);
     waitForBatchOperationCompleted(camundaClient, batchOperationKey, 2, 0);
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey1);
@@ -277,9 +340,7 @@ public class DeleteProcessDefinitionHistoryIT {
             .deleteHistory(true)
             .send()
             .join();
-    final var batchOperationKey =
-        firstResult.getCreateBatchOperationResponse().getBatchOperationKey();
-    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 1, 0);
+    assertThat(firstResult.getCreateBatchOperationResponse()).isNull();
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey);
     assertProcessDefinitionDeleted(camundaClient, processDefinitionKey);
 
