@@ -59,7 +59,8 @@ public record ProcessDefinitionStatisticsFilter(
         flowNodeIdOperations,
         hasFlowNodeInstanceIncident,
         flowNodeInstanceStateOperations,
-        incidentErrorHashCodeOperations);
+        incidentErrorHashCodeOperations,
+        businessIdOperations);
   }
 
   public Builder toBuilder() {
