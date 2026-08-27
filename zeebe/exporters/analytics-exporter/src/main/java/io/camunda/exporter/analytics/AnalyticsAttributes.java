@@ -112,10 +112,6 @@ public final class AnalyticsAttributes {
   public static final class UserTask {
     public static final AttributeKey<Long> KEY = AttributeKey.longKey("camunda.user_task.key");
 
-    /** SHA-256 hex of the assignee. The raw assignee is PII and must never be emitted. */
-    public static final AttributeKey<String> ASSIGNEE_HASH =
-        AttributeKey.stringKey("camunda.user_task.assignee_hash");
-
     private UserTask() {}
   }
 

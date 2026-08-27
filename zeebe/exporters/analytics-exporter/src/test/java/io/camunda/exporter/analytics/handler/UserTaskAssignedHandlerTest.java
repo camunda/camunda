@@ -19,10 +19,8 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,15 +32,7 @@ class UserTaskAssignedHandlerTest {
 
   private static final String ASSIGNEE = "john.doe@example.com";
 
-  /** Independently computed: {@code printf 'john.doe@example.com' | shasum -a 256}. */
-  private static final String ASSIGNEE_SHA_256 =
-      "836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f";
-
   private static final String WHITESPACE_ASSIGNEE = "  ";
-
-  /** SHA-256 of two space characters, independently computed with {@code shasum -a 256}. */
-  private static final String WHITESPACE_ASSIGNEE_SHA_256 =
-      "6c179f21e6f62b629055d8ab40f454ed02e48b68563913473b857d3638e23b28";
 
   private InMemoryLogRecordExporter logExporter;
   private UserTaskAssignedHandler handler;
@@ -77,7 +67,7 @@ class UserTaskAssignedHandlerTest {
   }
 
   @Test
-  void shouldEmitHashedAssigneeAndNeverTheRawValue() {
+  void shouldEmitEventWithoutAnyAssigneeDerivedData() {
     // given
     final var record = assignedRecord(ASSIGNEE);
 
@@ -94,7 +84,6 @@ class UserTaskAssignedHandlerTest {
               assertThat(attrs)
                   .containsEntry(
                       AnalyticsAttributes.Event.NAME, AnalyticsAttributes.Event.USER_TASK_ASSIGNED)
-                  .containsEntry(AnalyticsAttributes.UserTask.ASSIGNEE_HASH, ASSIGNEE_SHA_256)
                   .containsEntry(AnalyticsAttributes.UserTask.KEY, 77L)
                   .containsEntry(AnalyticsAttributes.Process.INSTANCE_KEY, 100L)
                   .containsEntry(AnalyticsAttributes.Tenant.ID, "tenant-a")
@@ -104,12 +93,18 @@ class UserTaskAssignedHandlerTest {
               assertThat(logRecord.getTimestampEpochNanos())
                   .isEqualTo(TimeUnit.MILLISECONDS.toNanos(record.getTimestamp()));
 
-              // PII must not appear anywhere in any attribute value
+              // PII must not appear anywhere in any attribute value, and no assignee-derived
+              // attribute (e.g. a hash) is emitted at all.
               final var allValues = attrs.values().stream().map(Object::toString).toList();
               assertThat(allValues)
                   .noneMatch(v -> v.contains(ASSIGNEE))
                   .noneMatch(v -> v.contains("alice@example.com"))
                   .noneMatch(v -> v.contains("finance-team"));
+
+              // the assignee_hash attribute key itself must be absent, not just its value.
+              assertThat(attrs.keySet())
+                  .extracting(AttributeKey::getKey)
+                  .doesNotContain("camunda.user_task.assignee_hash");
             });
   }
 
@@ -120,32 +115,6 @@ class UserTaskAssignedHandlerTest {
 
     // then
     assertThat(logExporter.getFinishedLogRecordItems()).isEmpty();
-  }
-
-  @Test
-  void shouldProduceIndependentHashesAcrossReusedHandlerInstance() throws Exception {
-    // given — the handler caches a single MessageDigest field and reuses it on every handle()
-    // call (see AGENTS.md: handlers run on the single exporter/partition actor thread, so the
-    // non-thread-safe MessageDigest can be shared). This verifies reuse never leaks state
-    // between records: each hash is computed independently of the implementation's cached
-    // digest, using a fresh MessageDigest per expectation.
-    final var secondAssignee = "jane.roe@example.com";
-    final var expectedSecondHash =
-        HexFormat.of()
-            .formatHex(
-                MessageDigest.getInstance("SHA-256")
-                    .digest(secondAssignee.getBytes(StandardCharsets.UTF_8)));
-
-    // when
-    handler.handle(typed(assignedRecord(ASSIGNEE)));
-    handler.handle(typed(assignedRecord(secondAssignee)));
-
-    // then
-    assertThat(logExporter.getFinishedLogRecordItems())
-        .extracting(
-            logRecord ->
-                logRecord.getAttributes().asMap().get(AnalyticsAttributes.UserTask.ASSIGNEE_HASH))
-        .containsExactly(ASSIGNEE_SHA_256, expectedSecondHash);
   }
 
   @Test
@@ -167,9 +136,8 @@ class UserTaskAssignedHandlerTest {
         .singleElement()
         .satisfies(
             logRecord ->
-                assertThat(logRecord.getAttributes().asMap())
-                    .containsEntry(
-                        AnalyticsAttributes.UserTask.ASSIGNEE_HASH, WHITESPACE_ASSIGNEE_SHA_256));
+                assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                    .isEqualTo(AnalyticsAttributes.Event.USER_TASK_ASSIGNED));
   }
 
   @Test

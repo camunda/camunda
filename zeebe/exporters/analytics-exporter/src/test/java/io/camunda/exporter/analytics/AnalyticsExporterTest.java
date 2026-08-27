@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
@@ -659,9 +660,16 @@ class AnalyticsExporterTest {
                   .isEqualTo(AnalyticsAttributes.Event.USER_TASK_ASSIGNED);
               assertThat(logRecord.getAttributes().get(AnalyticsAttributes.UserTask.KEY))
                   .isEqualTo(value.getUserTaskKey());
-              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.UserTask.ASSIGNEE_HASH))
-                  .isNotEqualTo("john.doe@example.com")
-                  .hasSize(64);
+
+              // no assignee-derived attribute (raw or hashed) is emitted at all
+              final var attrs = logRecord.getAttributes().asMap();
+              final var allValues = attrs.values().stream().map(Object::toString).toList();
+              assertThat(allValues).noneMatch(v -> v.contains("john.doe@example.com"));
+
+              // the assignee_hash attribute key itself must be absent, not just its value.
+              assertThat(attrs.keySet())
+                  .extracting(AttributeKey::getKey)
+                  .doesNotContain("camunda.user_task.assignee_hash");
             });
   }
 
