@@ -624,6 +624,33 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   @Test
+  public void shouldIgnoreOrClauseWhenItContainsAnEmptyFilter() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(
+            f ->
+                f.processInstanceKeys(123L)
+                    .orFilters(
+                        List.of(
+                            new ProcessInstanceFilter.Builder().build(),
+                            new ProcessInstanceFilter.Builder().states("ACTIVE").build())));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            query -> {
+              assertThat(query.must()).hasSize(2);
+              assertIsSearchTermQuery(
+                  query.must().get(0).queryOption(), "joinRelation", "processInstance");
+              assertIsSearchTermQuery(query.must().get(1).queryOption(), "key", 123L);
+            });
+  }
+
+  @Test
   public void shouldCreateDefaultFilter() {
     // given
 

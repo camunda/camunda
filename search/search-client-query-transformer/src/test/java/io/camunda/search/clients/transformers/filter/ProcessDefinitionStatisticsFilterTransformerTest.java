@@ -414,6 +414,28 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
   }
 
   @Test
+  public void shouldIgnoreOrClauseWhenItContainsAnEmptyFilter() {
+    // given
+    final var filter =
+        FilterBuilders.processDefinitionStatisticsFilter(
+            PROCESS_DEFINITION_KEY,
+            f ->
+                f.orFilters(
+                    List.of(
+                        new ProcessDefinitionStatisticsFilter.Builder(PROCESS_DEFINITION_KEY)
+                            .build(),
+                        new ProcessDefinitionStatisticsFilter.Builder(PROCESS_DEFINITION_KEY)
+                            .states("ACTIVE")
+                            .build())));
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    assertIsSearchBoolQueryWithDefaultFilter(searchQuery.queryOption(), 2);
+  }
+
+  @Test
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =

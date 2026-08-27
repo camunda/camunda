@@ -43,7 +43,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFilter> {
+public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFilter>
+    implements OrFilterTransformer<UserTaskFilter> {
 
   private static final Logger LOG = LoggerFactory.getLogger(UserTaskFilterTransformer.class);
 
@@ -60,17 +61,12 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     final var queries = new ArrayList<>(toSearchQueryFields(filter));
     queries.add(exists("flowNodeInstanceId")); // Default to task
     queries.add(stringTerms(IMPLEMENTATION, List.of(TaskImplementation.ZEEBE_USER_TASK.name())));
-
-    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
-      final var orQueries = new ArrayList<SearchQuery>();
-      filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).forEach(orQueries::add);
-      queries.add(or(orQueries));
-    }
-
+    toOrClause(filter).ifPresent(queries::add);
     return and(queries);
   }
 
-  private List<SearchQuery> toSearchQueryFields(final UserTaskFilter filter) {
+  @Override
+  public List<SearchQuery> toSearchQueryFields(final UserTaskFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(getUserTaskKeysQuery(filter.userTaskKeys())).ifPresent(queries::add);
     queries.addAll(getProcessInstanceKeyQuery(filter.processInstanceKeyOperations()));
