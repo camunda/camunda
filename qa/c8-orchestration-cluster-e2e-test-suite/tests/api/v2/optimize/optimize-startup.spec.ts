@@ -37,10 +37,22 @@ test.describe('Optimize startup and accessibility', () => {
         .toBe(302);
     });
 
-    await test.step('redirect targets the Optimize OIDC login', () => {
-      expect(redirectLocation).toContain('/protocol/openid-connect/auth');
-      expect(redirectLocation).toContain('client_id=optimize');
-      expect(redirectLocation).toContain('audience=optimize-api');
+    await test.step('redirect targets the Optimize OIDC login', async () => {
+      // Optimize routes unauthenticated users through the Spring Security
+      // OAuth2 login entry point (`/oauth2/authorization/oidc`), which in turn
+      // redirects to the OIDC provider's authorize endpoint. Follow that
+      // second hop to assert on the eventual login target.
+      expect(redirectLocation).toContain('/oauth2/authorization/oidc');
+
+      const oidcResponse = await request.get(redirectLocation, {
+        maxRedirects: 0,
+        timeout: 5000,
+      });
+      const oidcLocation = oidcResponse.headers()['location'] ?? '';
+
+      expect(oidcLocation).toContain('/protocol/openid-connect/auth');
+      expect(oidcLocation).toContain('client_id=optimize');
+      expect(oidcLocation).toContain('audience=optimize-api');
     });
   });
 });
