@@ -8,23 +8,18 @@
 
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
 import { useQuery } from "@tanstack/react-query";
+import { Pencil, Trash2 } from "lucide-react";
+import { Button, PageHeader } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import { roleQueries } from "src/utility/api/roles/queries";
 import NotFound from "src/pages/not-foundV2";
 import { Breadcrumbs, StackPage } from "src/components/layoutV2/Page";
 import { DetailPageHeaderFallback } from "src/components/fallbacksV2";
-// TODO: Replace with Tailwind
-import Flex from "src/components/layout/Flex";
-import PageHeadline from "src/components/layoutV2/PageHeadline";
-// TODO: Overhaul to work with `PageHeader`. Implementation reference users/detailV2/index.tsx for example.
 import { Tabs, TabsContent, TabsHeaderList } from "src/components/tabsV2";
 import { useEntityModal } from "src/components/modalV2";
 import DeleteModal from "src/pages/roles/modalsV2/DeleteModal";
 import EditModal from "src/pages/roles/modalsV2/EditModal";
-// TODO: Use `PageHeader` description directly?
-import { Description } from "src/components/layoutV2/DetailsPageDescription";
 import Members from "src/pages/roles/detailV2/members";
 import Groups from "src/pages/roles/detailV2/groups";
 import MappingRules from "src/pages/roles/detailV2/mapping-rules";
@@ -60,47 +55,10 @@ const Details: FC<DetailsProps> = ({
   return (
     <StackPage>
       <>
-        <Stack gap="2">
-          <Breadcrumbs items={[{ href: "/roles", title: t("roles") }]} />
-          {loading && !role ? (
-            <DetailPageHeaderFallback hasOverflowMenu={false} />
-          ) : (
-            <Flex>
-              {role && (
-                <Stack gap="3">
-                  <Stack orientation="horizontal" gap="1">
-                    <PageHeadline>{role.name}</PageHeadline>
-                    {!defaultRoleIds.includes(role.roleId) && (
-                      <OverflowMenu ariaLabel={t("openRoleContextMenu")}>
-                        <OverflowMenuItem
-                          itemText={t("editRole")}
-                          onClick={() => editRole(role)}
-                        />
-                        <OverflowMenuItem
-                          itemText={t("delete")}
-                          isDelete
-                          onClick={() => {
-                            deleteRole(role);
-                          }}
-                        />
-                      </OverflowMenu>
-                    )}
-                  </Stack>
-                  <p>
-                    {t("roleId")}: {role.roleId}
-                  </p>
-                  {role?.description && (
-                    <Description>
-                      {t("description")}: {role.description}
-                    </Description>
-                  )}
-                </Stack>
-              )}
-            </Flex>
-          )}
-        </Stack>
-        {role && (
-          <Section>
+        {loading && !role ? (
+          <DetailPageHeaderFallback hasOverflowMenu={false} />
+        ) : (
+          role && (
             <Tabs
               tabs={[
                 {
@@ -136,10 +94,46 @@ const Details: FC<DetailsProps> = ({
               selectedTabKey={tab}
               path={`../${id}`}
             >
-              <TabsHeaderList />
+              <PageHeader
+                title={role.name}
+                description={role.description ?? undefined}
+                breadcrumb={
+                  <Breadcrumbs
+                    items={[
+                      { href: "..", title: t("roles") },
+                      { title: role.roleId },
+                    ]}
+                  />
+                }
+                actions={
+                  !defaultRoleIds.includes(role.roleId) && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => editRole(role)}
+                      >
+                        <Pencil aria-hidden="true" />
+                        {t("editRole")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteRole(role)}
+                      >
+                        <Trash2 aria-hidden="true" />
+                        {t("delete")}
+                      </Button>
+                    </>
+                  )
+                }
+                tabs={<TabsHeaderList />}
+              />
               <TabsContent />
             </Tabs>
-          </Section>
+          )
         )}
       </>
       {editModal}
