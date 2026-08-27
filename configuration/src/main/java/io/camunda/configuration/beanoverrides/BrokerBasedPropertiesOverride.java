@@ -310,6 +310,11 @@ public class BrokerBasedPropertiesOverride {
         .getEngine()
         .setOutputComparisonMode(
             outputComparisonMode != null ? toEngineOutputMode(outputComparisonMode) : null);
+    override
+        .getExperimental()
+        .getEngine()
+        .setUserTaskCompletionVariableAuditEnabled(
+            camunda.getData().getAuditLog().isUserTaskCompletionVariableAuditEnabled());
   }
 
   private static InputMappingMode toEngineMode(final InputMode mode) {
