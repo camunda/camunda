@@ -225,7 +225,10 @@ public final class AgentHistoryBatchBehavior {
    *
    * <p><strong>Mutates {@code target} in place</strong> (metrics, definition, tools, limits,
    * history) and does not itself emit any event — the caller is responsible for turning {@code
-   * target.getHistory()} into {@code AGENT_HISTORY:CREATED} follow-up events.
+   * target.getHistory()} into {@code AGENT_HISTORY:CREATED} follow-up events. An item already
+   * pending under the same {@code (jobKey, jobLease)} pair is echoed back with {@code isDuplicate}
+   * set instead: it is skipped for metrics/configuration application, and the caller must filter it
+   * out rather than turn it into a {@code CREATED} event.
    *
    * @param applyConfigurationChanges whether a CONFIGURATION item's changes should be applied onto
    *     {@code target} immediately, rather than deferred until the item is committed
