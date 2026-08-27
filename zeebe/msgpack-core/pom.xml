@@ -22,6 +22,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.msgpack</groupId>
       <artifactId>msgpack-core</artifactId>
       <scope>test</scope>

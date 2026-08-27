@@ -49,7 +49,9 @@ import org.agrona.MutableDirectBuffer;
  * instead of 2^33 - 1, etc.
  */
 public final class MsgPackWriter {
+  @SuppressWarnings("NullAway.Init")
   private MutableDirectBuffer buffer;
+
   private int offset;
 
   public MsgPackWriter wrap(final MutableDirectBuffer buffer, final int offset) {
