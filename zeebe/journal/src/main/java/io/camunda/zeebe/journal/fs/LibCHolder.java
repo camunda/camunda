@@ -7,6 +7,11 @@
  */
 package io.camunda.zeebe.journal.fs;
 
+import io.camunda.zeebe.journal.fs.LibC.InvalidLibC;
+import io.camunda.zeebe.util.Loggers;
+import java.util.Map;
+import jnr.ffi.LibraryLoader;
+import jnr.ffi.LibraryOption;
 import jnr.ffi.Platform;
 
 /**
@@ -19,8 +24,23 @@ import jnr.ffi.Platform;
  * public API.
  */
 final class LibCHolder {
-  static final LibC INSTANCE =
-      LibC.ofNativeLibrary(Platform.getNativePlatform().getStandardCLibraryName());
+  static final LibC INSTANCE = bind(Platform.getNativePlatform().getStandardCLibraryName());
 
   private LibCHolder() {}
+
+  /**
+   * Binds a fresh {@link LibC} instance to the given library, falling back to {@link InvalidLibC}
+   * if the library cannot be linked. Production code must use the shared {@link #INSTANCE} instead;
+   * see {@link LibC#ofNativeLibrary()}.
+   */
+  static LibC bind(final String libraryName) {
+    try {
+      return LibraryLoader.loadLibrary(
+          LibC.class, Map.of(LibraryOption.LoadNow, true), libraryName);
+    } catch (final UnsatisfiedLinkError e) {
+      Loggers.FILE_LOGGER.warn(
+          "Failed to load C library; any native calls will not be available", e);
+      return new InvalidLibC();
+    }
+  }
 }
