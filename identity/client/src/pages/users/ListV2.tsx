@@ -47,7 +47,7 @@ const List: FC = () => {
   const showDetails = ({ username }: User) => navigate(`${username}`);
 
   const shouldShowEmptyState =
-    success && !search && !userSearchResults?.items.length;
+    success && !search && userSearchResults.items.length === 0;
 
   const pageHeader = (
     <PageHeader
@@ -76,7 +76,7 @@ const List: FC = () => {
     <Page>
       {pageHeader}
       <EntityList
-        data={userSearchResults == null ? [] : userSearchResults.items}
+        data={userSearchResults?.items}
         headers={[
           {
             header: t("username"),

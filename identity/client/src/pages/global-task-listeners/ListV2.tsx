@@ -46,7 +46,7 @@ const List: FC = () => {
     useEntityModal(DeleteModal, noop);
 
   const shouldShowEmptyState =
-    success && !search && !globalTaskListeners?.items.length;
+    success && !search && globalTaskListeners.items.length === 0;
 
   const pageHeader = (
     <PageHeader
@@ -84,7 +84,7 @@ const List: FC = () => {
     <Page>
       {pageHeader}
       <EntityList
-        data={transformedData ?? []}
+        data={transformedData}
         headers={[
           {
             header: t("globalTaskListenerId"),
