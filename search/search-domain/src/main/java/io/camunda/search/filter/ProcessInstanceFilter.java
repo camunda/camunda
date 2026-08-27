@@ -212,6 +212,12 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder replaceParentProcessInstanceKeyOperations(
+        final List<Operation<Long>> operations) {
+      parentProcessInstanceKeyOperations = new ArrayList<>(operations);
+      return this;
+    }
+
     public Builder parentProcessInstanceKeys(final Long value, final Long... values) {
       return parentProcessInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
@@ -220,6 +226,12 @@ public record ProcessInstanceFilter(
     public final Builder parentProcessInstanceKeyOperations(
         final Operation<Long> operation, final Operation<Long>... operations) {
       return parentProcessInstanceKeyOperations(collectValues(operation, operations));
+    }
+
+    @SafeVarargs
+    public final Builder replaceParentProcessInstanceKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return replaceParentProcessInstanceKeyOperations(collectValues(operation, operations));
     }
 
     public Builder parentFlowNodeInstanceKeyOperations(final List<Operation<Long>> operations) {
@@ -265,14 +277,29 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder replaceStateOperations(final List<Operation<String>> operations) {
+      stateOperations = new ArrayList<>(operations);
+      return this;
+    }
+
     public Builder states(final String value, final String... values) {
       return stateOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder replaceStates(final String value, final String... values) {
+      return replaceStateOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
     public final Builder stateOperations(
         final Operation<String> operation, final Operation<String>... operations) {
       return stateOperations(collectValues(operation, operations));
+    }
+
+    @SafeVarargs
+    public final Builder replaceStateOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return replaceStateOperations(collectValues(operation, operations));
     }
 
     public Builder hasIncident(final Boolean value) {
