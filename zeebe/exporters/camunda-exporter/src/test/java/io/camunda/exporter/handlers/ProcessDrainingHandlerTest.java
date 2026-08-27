@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.ProcessDefinitionState;
@@ -118,17 +117,16 @@ class ProcessDrainingHandlerTest {
   }
 
   @Test
-  void shouldFlushPartialUpdateWithStateDraining() throws Exception {
+  void shouldFlushPartialUpdateWithStateDraining() {
     // given
     final ProcessEntity entity = new ProcessEntity().setId("789");
-    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(index, entity, mockRequest);
+    underTest.flush(entity, mockRequest);
 
     // then
     verify(mockRequest)
-        .update(index, "789", Map.of(ProcessIndex.STATE, ProcessDefinitionState.DRAINING));
+        .update(indexName, "789", Map.of(ProcessIndex.STATE, ProcessDefinitionState.DRAINING));
   }
 }

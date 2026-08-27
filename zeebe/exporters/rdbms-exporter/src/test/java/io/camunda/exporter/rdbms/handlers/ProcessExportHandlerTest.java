@@ -13,7 +13,6 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
-import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -33,10 +32,7 @@ class ProcessExportHandlerTest {
 
   @SuppressWarnings("unchecked")
   private final ProcessExportHandler underTest =
-      new ProcessExportHandler(
-          processDefinitionWriter,
-          mock(ExporterEntityCache.class),
-          mock(ExtensionPropertyConfiguration.class));
+      new ProcessExportHandler(processDefinitionWriter, mock(ExporterEntityCache.class));
 
   @ParameterizedTest
   @EnumSource(
