@@ -7,6 +7,7 @@
  */
 package io.camunda.search.filter;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,7 @@ public interface OrFilter<T extends OrFilter<T>> extends FilterBase {
   List<T> orFilters();
 
   /** Whether this filter carries no criteria of its own (ignoring {@link #orFilters()}). */
+  @JsonIgnore
   boolean isEmpty();
 
   // An empty group has no criteria of its own, so it matches every document; ORing anything
