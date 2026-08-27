@@ -101,8 +101,11 @@
   </sql>
 
   <sql id="searchFilter">
-    <if test="filter.mappingRuleId != null">
-      AND MAPPING_RULE_ID = #{filter.mappingRuleId}
+    <if test="filter.mappingRuleIdOperations != null and !filter.mappingRuleIdOperations.isEmpty()">
+      <foreach collection="filter.mappingRuleIdOperations" item="operation">
+        AND MAPPING_RULE_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
     </if>
     <if test="filter.claimName != null">
       AND CLAIM_NAME = #{filter.claimName}

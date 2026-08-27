@@ -30,6 +30,9 @@ public interface MappingRuleFilter extends MappingRuleFilterBase {
   @Override
   MappingRuleFilter mappingRuleId(final String mappingRuleId);
 
+  @Override
+  MappingRuleFilter mappingRuleId(Consumer<StringProperty> fn);
+
   /**
    * Filter mapping rules by the specified claim name.
    *

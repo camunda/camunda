@@ -53,8 +53,8 @@ public class MappingRuleFilterTransformer extends IndexFilterTransformer<Mapping
     if (filter.nameOperations() != null && !filter.nameOperations().isEmpty()) {
       queries.addAll(stringOperations(NAME, filter.nameOperations()));
     }
-    if (filter.mappingRuleId() != null) {
-      queries.add(term(MAPPING_RULE_ID, filter.mappingRuleId()));
+    if (filter.mappingRuleIdOperations() != null && !filter.mappingRuleIdOperations().isEmpty()) {
+      queries.addAll(stringOperations(MAPPING_RULE_ID, filter.mappingRuleIdOperations()));
     }
     if (filter.claims() != null) {
       queries.add(
