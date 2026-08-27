@@ -56,6 +56,22 @@ chaosKiller:
   # -- Space-separated shell glob patterns. One pod matching any pattern is deleted per run.
   targetPatterns: "camunda-* elastic-* postgresql-*"
 
+# -- Seeds the file-store-shaped Secret used by the secrets-connector-e2e benchmark scenario
+# (scenario=secrets-connector). See templates/benchmark-secrets.yaml and
+# load-tests/docs/secrets-connector-benchmark.md.
+secretsConnectorBenchmark:
+  # -- Render the Secret only for the secrets-connector-e2e benchmark scenario.
+  enabled: false
+  # -- Name of the Secret, referenced by camunda-platform-values-secrets-connector.yaml.
+  secretName: benchmark-secrets
+  # -- Bare-name prefix; the connectorSecretResolution process resolves secrets.<keyPrefix>0
+  # (index 0, since count is 1).
+  keyPrefix: "BENCHMARK_TOKEN"
+  # -- Number of distinct secrets to seed. A single secret is enough since one BPMN process
+  # resolves one reference per job; kept configurable in case a future scenario variant needs
+  # a pool (e.g. to exercise cache-miss behavior).
+  count: 1
+
 # -- load-tester subchart toggle. Set to false to skip deploying the load
 # generators (e.g. for a bare cluster setup).
 load-tester:
