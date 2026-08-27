@@ -23,6 +23,8 @@ public final class EngineCfg implements ConfigurationEntry {
   private JobMetricsCfg jobMetrics = new JobMetricsCfg();
   private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
+  private EngineConfiguration.InputMappingMode inputMappingMode =
+      EngineConfiguration.InputMappingMode.ORDERED;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
   private ExpressionCfg expression = new ExpressionCfg();
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
@@ -117,6 +119,14 @@ public final class EngineCfg implements ConfigurationEntry {
 
   public void setMaxProcessDepth(final int maxProcessDepth) {
     this.maxProcessDepth = maxProcessDepth;
+  }
+
+  public EngineConfiguration.InputMappingMode getInputMappingMode() {
+    return inputMappingMode;
+  }
+
+  public void setInputMappingMode(final EngineConfiguration.InputMappingMode inputMappingMode) {
+    this.inputMappingMode = inputMappingMode;
   }
 
   public GlobalListenersCfg getGlobalListeners() {
@@ -261,6 +271,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent())
         .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled())
         .setArchiverlessEnabled(storageOrdinals.isEnableArchiverless())
-        .setFixedStorageOrdinalKey(storageOrdinals.getFixedStorageOrdinalKey());
+        .setFixedStorageOrdinalKey(storageOrdinals.getFixedStorageOrdinalKey())
+        .setInputMappingMode(inputMappingMode);
   }
 }
