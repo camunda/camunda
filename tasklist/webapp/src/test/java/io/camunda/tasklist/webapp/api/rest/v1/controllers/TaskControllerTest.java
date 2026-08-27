@@ -1079,6 +1079,22 @@ class TaskControllerTest {
     }
 
     @Test
+    void completeTaskWithUnsupportedContentType() throws Exception {
+      // Given
+      final var taskId = "55555555";
+
+      // When
+      mockMvc
+          .perform(
+              patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId)
+                  .characterEncoding(StandardCharsets.UTF_8.name())
+                  .content("{}")
+                  .contentType(MediaType.TEXT_PLAIN))
+          // Then
+          .andExpect(status().isUnsupportedMediaType());
+    }
+
+    @Test
     void completeTaskWithoutTenantAccess() throws Exception {
       final var taskId = "55555555";
       final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
