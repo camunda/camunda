@@ -37,10 +37,17 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.registry.DefaultServiceRegistry;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.spring.utils.PhysicalTenantContext;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -401,6 +408,64 @@ class DefaultMembershipServiceTest {
     // then
     assertThat(result).containsExactly("mra1");
     verifyNoInteractions(mappingRuleServices);
+  }
+
+  @Test
+  void shouldReportAnOutageOncePerPhysicalTenant() {
+    // given — the group store is down for tenant A while the default tenant's is healthy
+    when(tenantAGroupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenThrow(translatedSearchFailure(Reason.SEARCH_SERVER_FAILED, "shards unavailable"));
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new GroupEntity(1L, "g1", "group", null)));
+    final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
+
+    // when — tenant A's outage is interleaved with healthy traffic for the default tenant, as it
+    // would be on a shared gateway
+    final var events = new ArrayList<LogEvent>();
+    withLogCapture(
+        events,
+        () -> {
+          inPhysicalTenant(TENANT_A, () -> service.groupIds(query));
+          inPhysicalTenant("default", () -> service.groupIds(query));
+          inPhysicalTenant(TENANT_A, () -> service.groupIds(query));
+        });
+
+    // then — one report for tenant A's outage. A healthy call for another tenant must not close it,
+    // or every interleaved request would re-report the same ongoing outage.
+    assertThat(events)
+        .filteredOn(event -> event.getLevel() == Level.WARN)
+        .singleElement()
+        .satisfies(
+            event ->
+                assertThat(event.getMessage().getFormattedMessage())
+                    .contains(TENANT_A)
+                    .contains("groupIds"));
+  }
+
+  private void inPhysicalTenant(final String physicalTenantId, final Runnable call) {
+    final var request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, physicalTenantId);
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    call.run();
+  }
+
+  private static void withLogCapture(final List<LogEvent> sink, final Runnable body) {
+    final var loggerName = DefaultMembershipService.class.getName();
+    final var appender = new ListAppender("membership-outage-appender");
+    appender.start();
+    final var context = (LoggerContext) LogManager.getContext(false);
+    final var loggerConfig = new LoggerConfig(loggerName, Level.ALL, true);
+    loggerConfig.addAppender(appender, null, null);
+    context.getConfiguration().addLogger(loggerName, loggerConfig);
+    context.updateLoggers();
+    try {
+      body.run();
+      sink.addAll(appender.getEvents());
+    } finally {
+      context.getConfiguration().removeLogger(loggerName);
+      context.updateLoggers();
+      appender.stop();
+    }
   }
 
   private DefaultMembershipService serviceWithGroupsClaim(final String claim) {
