@@ -68,18 +68,17 @@ final class NamespacesTest {
   }
 
   @Test
-  void shouldRejectUnregisteredTypeInIncomingMapEntry() {
+  void shouldNotJavaDeserializeIncomingMapEntry() {
     // given - bytes an attacker could put on the cluster transport, produced here by the
     // registration this namespace used before the fix
     final byte[] bytes =
         javaSerializingNamespace().serialize(new SimpleImmutableEntry<>(new Unregistered(), "v"));
 
-    // when - then
-    assertThatThrownBy(() -> Namespaces.BASIC.deserialize(bytes))
-        .isInstanceOf(KryoException.class)
-        .hasMessageContaining("unregistered");
+    // when - then the payload is now read as Kryo rather than handed to ObjectInputStream, so it
+    // fails to decode and, more importantly, never reaches Java deserialization
+    assertThatThrownBy(() -> Namespaces.BASIC.deserialize(bytes)).isInstanceOf(KryoException.class);
     assertThat(JAVA_DESERIALIZATION_REACHED)
-        .withFailMessage("Expected Java deserialization to never run for an unregistered type")
+        .withFailMessage("Expected Java deserialization to never run while decoding a map entry")
         .isFalse();
   }
 
@@ -101,8 +100,9 @@ final class NamespacesTest {
   /**
    * {@link Namespaces#BASIC} with {@link SimpleImmutableEntry} registered through a {@link
    * JavaSerializer} again, so that it produces the same bytes a pre-fix broker would. Copying the
-   * registration blocks keeps every class id identical, which is what makes the output readable by
-   * {@link Namespaces#BASIC}.
+   * registration blocks keeps every class id identical, so {@link Namespaces#BASIC} recognises the
+   * entry and attempts to decode it — the point of the test is what happens next, not that the
+   * decode succeeds.
    */
   private static Namespace javaSerializingNamespace() {
     final List<RegistrationBlock> blocks =
