@@ -18,12 +18,12 @@ import io.github.resilience4j.retry.RetryConfig;
  * shard-availability blip on the underlying index is transient; a malformed request or a permission
  * problem is not, and retrying it would only delay a failure that a retry can't fix.
  */
-public final class TransientSearchRetry {
+public final class TransientRetry {
 
   public static final int MAX_ATTEMPTS = 3;
   private static final long INITIAL_DELAY_MS = 100;
 
-  private TransientSearchRetry() {}
+  private TransientRetry() {}
 
   /** Creates a new {@link Retry} instance, retrying only on {@link #isTransient} failures. */
   public static Retry of(final String name) {
@@ -32,7 +32,7 @@ public final class TransientSearchRetry {
         RetryConfig.custom()
             .maxAttempts(MAX_ATTEMPTS)
             .intervalFunction(IntervalFunction.ofExponentialBackoff(INITIAL_DELAY_MS, 2))
-            .retryOnException(TransientSearchRetry::isTransient)
+            .retryOnException(TransientRetry::isTransient)
             .build());
   }
 

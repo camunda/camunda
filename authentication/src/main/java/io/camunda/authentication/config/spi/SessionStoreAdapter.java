@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.config.spi;
 
-import io.camunda.authentication.utils.TransientSearchRetry;
+import io.camunda.authentication.utils.TransientRetry;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import io.camunda.search.exception.CamundaSearchException;
@@ -39,7 +39,7 @@ public final class SessionStoreAdapter implements SessionStorePort {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SessionStoreAdapter.class);
 
-  private static final Retry UPSERT_RETRY = TransientSearchRetry.of("web-session-upsert");
+  private static final Retry UPSERT_RETRY = TransientRetry.of("web-session-upsert");
 
   private final PersistentWebSessionClient client;
 
@@ -60,14 +60,14 @@ public final class SessionStoreAdapter implements SessionStorePort {
     } catch (final CamundaSearchException e) {
       LOGGER.warn(
           "Failed to save web session to persistent storage after {} attempts: {} (reason: {})",
-          TransientSearchRetry.MAX_ATTEMPTS,
+          TransientRetry.MAX_ATTEMPTS,
           e.getMessage(),
           e.getReason(),
           e);
     } catch (final RuntimeException e) {
       LOGGER.warn(
           "Failed to save web session to persistent storage after {} attempts: {}",
-          TransientSearchRetry.MAX_ATTEMPTS,
+          TransientRetry.MAX_ATTEMPTS,
           e.getMessage(),
           e);
     }

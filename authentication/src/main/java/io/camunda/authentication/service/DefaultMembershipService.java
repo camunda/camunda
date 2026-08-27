@@ -10,7 +10,7 @@ package io.camunda.authentication.service;
 import static io.camunda.security.api.model.authz.EntityType.GROUP;
 import static io.camunda.security.api.model.authz.EntityType.MAPPING_RULE;
 
-import io.camunda.authentication.utils.TransientSearchRetry;
+import io.camunda.authentication.utils.TransientRetry;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -48,7 +48,7 @@ import org.springframework.stereotype.Service;
 @ConditionalOnSecondaryStorageEnabled
 public class DefaultMembershipService implements MembershipPort {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultMembershipService.class);
-  private static final Retry MEMBERSHIP_LOOKUP_RETRY = TransientSearchRetry.of("membership-lookup");
+  private static final Retry MEMBERSHIP_LOOKUP_RETRY = TransientRetry.of("membership-lookup");
 
   private final ServiceRegistry serviceRegistry;
   private final OidcGroupsExtractor oidcGroupsExtractor;
@@ -154,20 +154,20 @@ public class DefaultMembershipService implements MembershipPort {
 
   /**
    * Runs {@code lookup}, retrying on transient search failures (see {@link
-   * TransientSearchRetry#isTransient}). If retries are exhausted on a transient failure, falls back
-   * to an empty list so authorization can still be evaluated against direct grants rather than
-   * failing the whole request over an index outage. A non-transient failure (bad request,
-   * permission problem) is not retried and propagates unchanged.
+   * TransientRetry#isTransient}). If retries are exhausted on a transient failure, falls back to an
+   * empty list so authorization can still be evaluated against direct grants rather than failing
+   * the whole request over an index outage. A non-transient failure (bad request, permission
+   * problem) is not retried and propagates unchanged.
    */
   private <T> List<T> resolveWithRetry(final String label, final Supplier<List<T>> lookup) {
     try {
       return Retry.decorateSupplier(MEMBERSHIP_LOOKUP_RETRY, lookup).get();
     } catch (final RuntimeException e) {
-      if (TransientSearchRetry.isTransient(e)) {
+      if (TransientRetry.isTransient(e)) {
         LOG.warn(
             "Failed to resolve {} after {} attempts, falling back to empty: {}",
             label,
-            TransientSearchRetry.MAX_ATTEMPTS,
+            TransientRetry.MAX_ATTEMPTS,
             e.getMessage(),
             e);
         return List.of();
