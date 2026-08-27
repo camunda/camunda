@@ -179,6 +179,20 @@ class DefaultMembershipServiceTest {
   }
 
   @Test
+  void groupIdsPropagatesUnknownReasonFailureWithoutRetry() {
+    // UNKNOWN is the default reason for a CamundaSearchException raised without one, which in
+    // practice means a deterministic wiring or request-construction error (e.g. no matching
+    // resource-access controller). The search clients always classify real infrastructure
+    // failures explicitly, so UNKNOWN must not be swallowed as "no memberships found".
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenThrow(new CamundaSearchException("no matching resource access controller found"));
+    final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
+
+    assertThatThrownBy(() -> service.groupIds(query)).isInstanceOf(CamundaSearchException.class);
+    verify(groupServices, times(1)).getGroupsByMemberTypeAndMemberIds(any(), any());
+  }
+
+  @Test
   void roleIdsIncludesGroupsInOwnerMap() {
     when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
         .thenReturn(List.of(new RoleEntity(1L, "r1", "role", null)));

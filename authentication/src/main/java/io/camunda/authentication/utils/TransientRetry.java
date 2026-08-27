@@ -39,15 +39,18 @@ public final class TransientRetry {
   /**
    * @return {@code true} if {@code throwable} indicates a transient infrastructure problem (e.g. a
    *     connection drop or a search-server error such as a shard-availability outage) rather than a
-   *     request or configuration problem that a retry cannot fix. Anything other than a {@link
-   *     CamundaSearchException} with one of the recognized transient reasons — including a plain
-   *     {@link RuntimeException} from a programming error — is treated as non-transient, so it is
-   *     retried at most once and propagates instead of being silently swallowed.
+   *     request or configuration problem that a retry cannot fix. Anything else — including a plain
+   *     {@link RuntimeException} from a programming error — is attempted once and never retried, so
+   *     it propagates instead of being silently swallowed.
+   *     <p>{@link CamundaSearchException.Reason#UNKNOWN} is deliberately not transient: the search
+   *     clients classify every real infrastructure failure explicitly, so UNKNOWN only ever reaches
+   *     here from a deterministic error raised without a reason (e.g. no matching resource-access
+   *     controller, or a malformed authorization filter), which a retry cannot fix.
    */
   public static boolean isTransient(final Throwable throwable) {
     if (throwable instanceof final CamundaSearchException cse) {
       return switch (cse.getReason()) {
-        case CONNECTION_FAILED, SEARCH_CLIENT_FAILED, SEARCH_SERVER_FAILED, UNKNOWN -> true;
+        case CONNECTION_FAILED, SEARCH_CLIENT_FAILED, SEARCH_SERVER_FAILED -> true;
         default -> false;
       };
     }
