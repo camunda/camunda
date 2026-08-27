@@ -59,7 +59,7 @@ additional_load_test_configuration ?=
 helm_chart_platform = charts/camunda-platform
 
 # Scenario: controls the workload profile for the load test.
-# Options: latency, realistic, typical, max, archiver
+# Options: latency, realistic, typical, max, archiver, secrets-connector
 # Use named targets (make max) or pass directly: make install scenario=max
 scenario ?=
 
@@ -81,6 +81,19 @@ _scenario_platform_flags = --set-file '$(scenario_max_override_key)./camunda-pla
 else ifeq ($(scenario),archiver)
 _scenario_load_test_flags = --set load-tester.starter.rate=1 --set load-tester.starter.rateDuration=10m --set load-tester.starter.processId=multiInstanceElements --set load-tester.starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set load-tester.starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set load-tester.workers.worker.replicas=0
 _scenario_platform_flags =
+else ifeq ($(scenario),secrets-connector)
+# Benchmark secret resolution through the real outbound-connector code path: the Starter
+# creates connectorSecretResolution process instances (load-tester-values-secrets-connector.yaml),
+# whose single io.camunda:http-json:1 job is activated/completed by the connectors component,
+# resolving a legacy secret via /v2/secrets/resolve before issuing its HTTP call. Seed the
+# store data (secretsConnectorBenchmark, from the load-test-setup chart) and configure the
+# connectors component + orchestration cluster's file store + SECRET authorization (platform
+# flags). The file store is wired via the chart's first-class orchestration.secretStore.file
+# (camunda-platform-helm#6721), which is unreleased — so this scenario requires the platform
+# chart to be sourced from git main via LOAD_TEST_PLATFORM_CHART_GIT_REF (see newLoadTest.sh and
+# load-tests/docs/secrets-connector-benchmark.md).
+_scenario_load_test_flags = --set secretsConnectorBenchmark.enabled=true -f load-tester-values-secrets-connector.yaml
+_scenario_platform_flags = -f camunda-platform-values-secrets-connector.yaml
 else
 _scenario_load_test_flags =
 _scenario_platform_flags =
@@ -375,7 +388,7 @@ install-stable-chaos:
 
 # Workload scenario shortcuts — each runs 'make install' with the corresponding scenario profile.
 # For stable VMs, use: make install-stable scenario=<name>
-.PHONY: latency realistic typical max archiver
+.PHONY: latency realistic typical max archiver secrets-connector
 latency:
 	$(MAKE) install scenario=latency
 realistic:
@@ -386,6 +399,8 @@ max:
 	$(MAKE) install scenario=max
 archiver:
 	$(MAKE) install scenario=archiver
+secrets-connector:
+	$(MAKE) install scenario=secrets-connector
 
 .PHONY: clean
 clean:
