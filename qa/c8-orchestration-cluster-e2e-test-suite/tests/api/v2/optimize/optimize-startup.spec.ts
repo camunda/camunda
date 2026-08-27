@@ -41,7 +41,10 @@ test.describe('Optimize startup and accessibility', () => {
       // Optimize routes unauthenticated users through the Spring Security
       // OAuth2 login entry point (`/oauth2/authorization/oidc`), which in turn
       // redirects to the OIDC provider's authorize endpoint. Follow that
-      // second hop to assert on the eventual login target.
+      // second hop to assert on the eventual login target. No audience param
+      // is asserted: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE feeds oidc.audiences,
+      // which validates incoming JWTs, and is never added to the
+      // authorization request.
       expect(redirectLocation).toContain('/oauth2/authorization/oidc');
 
       const oidcResponse = await request.get(redirectLocation, {
@@ -52,7 +55,7 @@ test.describe('Optimize startup and accessibility', () => {
 
       expect(oidcLocation).toContain('/protocol/openid-connect/auth');
       expect(oidcLocation).toContain('client_id=optimize');
-      expect(oidcLocation).toContain('audience=optimize-api');
+      expect(oidcLocation).toContain('/api/authentication/callback');
     });
   });
 });
