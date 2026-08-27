@@ -58,4 +58,13 @@ public class EngineMappings {
   public void setInputComparisonMode(final @Nullable InputMode inputComparisonMode) {
     this.inputComparisonMode = inputComparisonMode;
   }
+
+  @Override
+  public String toString() {
+    return "EngineMappings{inputMode="
+        + inputMode
+        + ", inputComparisonMode="
+        + inputComparisonMode
+        + '}';
+  }
 }
