@@ -10,10 +10,8 @@ package io.camunda.authentication.pt;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.config.spi.SecurityPathAdapter;
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityConfiguration;
 import io.camunda.security.spring.handler.AuthFailureHandlerConfiguration;
 import io.camunda.security.spring.oidc.JWSKeySelectorFactory;
@@ -35,7 +33,6 @@ import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -214,20 +211,6 @@ class PhysicalTenantDefaultAliasChainIT {
     @Bean
     ObjectMapper objectMapper() {
       return new ObjectMapper();
-    }
-  }
-
-  /**
-   * The OC host's {@link SecurityPathPort}, so CSL knows {@code /v2/**} is an API path. Built from
-   * the context {@link Environment} — the same consumer CSL's properties bean reads, not the {@link
-   * MockEnvironment} that {@link #rootOnlyEnv()} hands to the scope provider.
-   */
-  @Configuration
-  static class OcPathsConfig {
-
-    @Bean
-    SecurityPathPort securityPathPort(final Environment environment) {
-      return SecurityPathAdapter.fromEnvironment(environment);
     }
   }
 }

@@ -15,13 +15,11 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.config.spi.AdminUserPresenceAdapter;
-import io.camunda.authentication.config.spi.SecurityPathAdapter;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.core.port.out.AdminUserPresencePort;
-import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityConfiguration;
 import io.camunda.security.spring.handler.AuthFailureHandlerConfiguration;
 import io.camunda.security.spring.security.AdminUserCheckFilterConfiguration;
@@ -38,7 +36,6 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.env.Environment;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -145,7 +142,7 @@ class PhysicalTenantBasicAuthAdminSetupRedirectIT {
 
   private WebApplicationContextRunner buildRunner() {
     return new WebApplicationContextRunner()
-        .withUserConfiguration(TestBeansConfig.class)
+        .withUserConfiguration(TestBeansConfig.class, OcPathsConfig.class)
         .withConfiguration(
             AutoConfigurations.of(
                 CamundaSecurityConfiguration.class,
@@ -168,11 +165,6 @@ class PhysicalTenantBasicAuthAdminSetupRedirectIT {
     @Bean
     ObjectMapper objectMapper() {
       return new ObjectMapper();
-    }
-
-    @Bean
-    SecurityPathPort securityPathPort(final Environment environment) {
-      return SecurityPathAdapter.fromEnvironment(environment);
     }
 
     @Bean
