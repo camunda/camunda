@@ -220,11 +220,11 @@ Note: unlike `camunda.process.instance.activated`, this event does not carry
 
 **`camunda.user_task.assigned`**
 
-|             Attribute             |  Type  |             Description             |
-|-----------------------------------|--------|-------------------------------------|
-| `camunda.user_task.key`           | long   | User task key.                      |
-| `camunda.process.instance_key`    | long   | Process instance key.               |
-| `camunda.tenant.id`               | string | Tenant ID.                          |
+|           Attribute            |  Type  |      Description      |
+|--------------------------------|--------|-----------------------|
+| `camunda.user_task.key`        | long   | User task key.        |
+| `camunda.process.instance_key` | long   | Process instance key. |
+| `camunda.tenant.id`            | string | Tenant ID.            |
 
 No assignee-derived data (raw or hashed) is exported; the event only signals that an assignment
 happened, giving a count of assignment events per cluster/process definition. Assignments with an
