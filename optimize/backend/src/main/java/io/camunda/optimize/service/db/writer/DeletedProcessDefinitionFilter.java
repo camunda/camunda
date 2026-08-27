@@ -9,6 +9,7 @@ package io.camunda.optimize.service.db.writer;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Ticker;
 import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.service.db.reader.JobRegistryReader;
@@ -42,6 +43,13 @@ public class DeletedProcessDefinitionFilter {
 
   public DeletedProcessDefinitionFilter(
       final JobRegistryReader jobRegistryReader, final ConfigurationService configurationService) {
+    this(jobRegistryReader, configurationService, Ticker.systemTicker());
+  }
+
+  DeletedProcessDefinitionFilter(
+      final JobRegistryReader jobRegistryReader,
+      final ConfigurationService configurationService,
+      final Ticker ticker) {
     this.jobRegistryReader = jobRegistryReader;
     final CacheConfiguration cacheConfig =
         configurationService.getCaches().getDeletedProcessDefinitions();
@@ -50,6 +58,7 @@ public class DeletedProcessDefinitionFilter {
         Caffeine.newBuilder()
             .maximumSize(1)
             .expireAfterWrite(Duration.ofMillis(cacheConfig.getDefaultTtlMillis()))
+            .ticker(ticker)
             .build();
   }
 

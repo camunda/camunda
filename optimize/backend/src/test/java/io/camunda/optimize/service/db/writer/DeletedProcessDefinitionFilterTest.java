@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.github.benmanes.caffeine.cache.Ticker;
 import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.service.db.reader.JobRegistryReader;
@@ -23,6 +24,8 @@ import io.camunda.optimize.service.util.configuration.GlobalCacheConfiguration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -101,6 +104,54 @@ class DeletedProcessDefinitionFilterTest {
 
     // then
     assertThat(result).containsExactly("2");
+  }
+
+  @Test
+  void shouldRefetchAndReplaceTheSuppressedIdSetOnceTheTtlExpires() {
+    // given a cache with a fake ticker so TTL expiry can be advanced deterministically, instead of
+    // waiting on a real clock
+    final int ttlMillis = 60_000;
+    final AtomicLong nanoTime = new AtomicLong(0);
+    final Ticker fakeTicker = nanoTime::get;
+    final CacheConfiguration cacheConfig = new CacheConfiguration();
+    cacheConfig.setMaxSize(TEST_MAX_SIZE);
+    cacheConfig.setDefaultTtlMillis(ttlMillis);
+    final GlobalCacheConfiguration globalCacheConfiguration = mock(GlobalCacheConfiguration.class);
+    when(globalCacheConfiguration.getDeletedProcessDefinitions()).thenReturn(cacheConfig);
+    final ConfigurationService configurationService = mock(ConfigurationService.class);
+    when(configurationService.getCaches()).thenReturn(globalCacheConfiguration);
+
+    final DeletedProcessDefinitionFilter tickerControlledFilter =
+        new DeletedProcessDefinitionFilter(jobRegistryReader, configurationService, fakeTicker);
+
+    when(jobRegistryReader.findNewestEntityIds(
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, TEST_MAX_SIZE))
+        .thenReturn(List.of("1"));
+
+    // when the first lookup populates the cache
+    assertThat(tickerControlledFilter.suppressedDefinitionIds(List.of("1", "2")))
+        .containsExactly("1");
+    verify(jobRegistryReader, times(1))
+        .findNewestEntityIds(JobType.DELETE, EntityType.PROCESS_DEFINITION, TEST_MAX_SIZE);
+
+    // then a lookup just before TTL expiry still reuses the cached snapshot
+    nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(ttlMillis - 1));
+    assertThat(tickerControlledFilter.suppressedDefinitionIds(List.of("1", "2")))
+        .containsExactly("1");
+    verify(jobRegistryReader, times(1))
+        .findNewestEntityIds(JobType.DELETE, EntityType.PROCESS_DEFINITION, TEST_MAX_SIZE);
+
+    // when the job registry now reflects a different deletion and the ticker advances past the TTL
+    when(jobRegistryReader.findNewestEntityIds(
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, TEST_MAX_SIZE))
+        .thenReturn(List.of("2"));
+    nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(2));
+
+    // then the next lookup triggers a fresh fetch, and the snapshot is fully replaced
+    assertThat(tickerControlledFilter.suppressedDefinitionIds(List.of("1", "2")))
+        .containsExactly("2");
+    verify(jobRegistryReader, times(2))
+        .findNewestEntityIds(JobType.DELETE, EntityType.PROCESS_DEFINITION, TEST_MAX_SIZE);
   }
 
   @Test
