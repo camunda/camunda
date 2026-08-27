@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -62,6 +63,20 @@ public abstract class ApiErrorController {
   @ExceptionHandler(NotFoundException.class)
   public ResponseEntity<Error> handleNotFound(NotFoundException exception) {
     return handleNotFound(new NotFoundApiException(exception.getMessage(), exception));
+  }
+
+  @Hidden
+  @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+  @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+  public ResponseEntity<Error> handleException(HttpMediaTypeNotSupportedException exception) {
+    logger.warn(exception.getMessage(), exception);
+    final Error error =
+        new Error()
+            .setStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value())
+            .setMessage(exception.getMessage());
+    return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(error);
   }
 
   @Hidden
