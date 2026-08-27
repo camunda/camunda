@@ -42,9 +42,9 @@ class OrFilterIsEmptyCoverageArchTest {
   // Every OrFilter implementation has orFilters as a structural component (the $or list itself,
   // not a criterion), so it's the default. Only additional structural components - join keys,
   // query hints - need to be listed here per class.
-  private static final Set<String> DEFAULT_STRUCTURAL_COMPONENTS = Set.of("orFilters");
+  static final Set<String> DEFAULT_STRUCTURAL_COMPONENTS = Set.of("orFilters");
 
-  private static final Map<String, Set<String>> STRUCTURAL_COMPONENTS =
+  static final Map<String, Set<String>> STRUCTURAL_COMPONENTS =
       Map.of(
           "FlowNodeInstanceFilter",
           // useTreePathPrefix is a query-hint flag - whether treePath filtering should use a
