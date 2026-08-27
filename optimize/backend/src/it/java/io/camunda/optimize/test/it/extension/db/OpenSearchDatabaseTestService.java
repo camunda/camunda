@@ -903,8 +903,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     if (indices.isEmpty()) {
       return;
     }
-    // Wrap in a catch so that an ephemeral index (e.g. camunda-history-deletion in Zeebe 8.9)
-    // that vanishes between listing and deletion does not fail the cleanup.
+    // Wrap in a catch so that indices that vanish between listing and deletion do not fail the
+    // cleanup.
     try {
       getOptimizeOpenSearchClient()
           .getOpenSearchClient()
