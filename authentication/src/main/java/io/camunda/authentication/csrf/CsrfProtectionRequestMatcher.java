@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.csrf;
 
-import io.camunda.authentication.config.spi.SecurityPathAdapter;
+import io.camunda.authentication.config.spi.SecurityPaths;
 import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.MalformedURLException;
@@ -70,8 +70,8 @@ public class CsrfProtectionRequestMatcher implements RequestMatcher {
 
   private Pattern getAllowedPathsPattern() {
     final Set<String> paths = new HashSet<>();
-    paths.addAll(SecurityPathAdapter.INSTANCE.unprotectedPaths());
-    paths.addAll(SecurityPathAdapter.INSTANCE.unprotectedApiPaths());
+    paths.addAll(SecurityPaths.UNPROTECTED_PATHS);
+    paths.addAll(SecurityPaths.UNPROTECTED_API_PATHS);
     paths.add(CamundaSecurityFilterChainConstants.LOGIN_URL);
     paths.add(CamundaSecurityFilterChainConstants.LOGOUT_URL);
     final String patternAsString =

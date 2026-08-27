@@ -10,8 +10,6 @@ package io.camunda.authentication.pt;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.config.WebSecurityConfig;
-import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityConfiguration;
 import io.camunda.security.spring.handler.AuthFailureHandlerConfiguration;
 import io.camunda.security.spring.scope.ScopedSecurityChainConfiguration;
@@ -27,7 +25,6 @@ import org.springframework.boot.test.context.assertj.AssertableWebApplicationCon
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -148,19 +145,6 @@ class PhysicalTenantScopedChainStartupIT {
     @Bean
     ObjectMapper objectMapper() {
       return new ObjectMapper();
-    }
-  }
-
-  /**
-   * Builds the path port exactly as production does, so the {@code webapp-enabled} gate under test
-   * is the real wiring and not a copy of it.
-   */
-  @Configuration
-  static class OcPathsConfig {
-
-    @Bean
-    SecurityPathPort securityPathPort(final Environment environment) {
-      return new WebSecurityConfig().securityPathPort(environment);
     }
   }
 }
