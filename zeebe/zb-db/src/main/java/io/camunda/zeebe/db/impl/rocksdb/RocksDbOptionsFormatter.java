@@ -19,8 +19,6 @@ import org.slf4j.LoggerFactory;
 /** Helper class to format RocksDB options. */
 final class RocksDbOptionsFormatter {
   private static final Logger LOG = LoggerFactory.getLogger(RocksDbOptionsFormatter.class);
-  private static LibC libC;
-  private static boolean libCUnavailable = false;
 
   static String format(final boolean value) {
     return String.valueOf(value);
@@ -42,11 +40,11 @@ final class RocksDbOptionsFormatter {
    * @see <a href="https://github.com/facebook/rocksdb/issues/13841">facebook/rocksdb#13841</a>
    */
   static String format(final double value) {
-    if (ensureLibCIsAvailable()) {
+    if (Holder.LIB_C != null) {
       try {
         // fits the longest "%f" output, -Double.MAX_VALUE (317 chars), plus the terminator
         final var buffer = new byte[320];
-        final var bytesWritten = libC.sprintf(buffer, "%f", value);
+        final var bytesWritten = Holder.LIB_C.sprintf(buffer, "%f", value);
 
         if (bytesWritten >= 0) {
           return new String(buffer, 0, bytesWritten, StandardCharsets.US_ASCII);
@@ -66,26 +64,6 @@ final class RocksDbOptionsFormatter {
     return String.format("%,f", value);
   }
 
-  private static boolean ensureLibCIsAvailable() {
-    if (libC != null) {
-      return true;
-    }
-    if (libCUnavailable) {
-      return false;
-    }
-    try {
-      if (Platform.getNativePlatform().getOS() == OS.WINDOWS) {
-        libC = LibraryLoader.create(LibC.class).load("msvcrt");
-      } else {
-        libC = LibraryLoader.create(LibC.class).load("c");
-      }
-    } catch (final Throwable e) {
-      libCUnavailable = true;
-      LOG.warn("Failed to load libc for sprintf formatting, will fall back to String.format", e);
-    }
-    return true;
-  }
-
   /** Interface to access libc functions via JNR-FFI. */
   public interface LibC {
     /**
@@ -97,5 +75,36 @@ final class RocksDbOptionsFormatter {
      * @return number of characters written (excluding null terminator)
      */
     int sprintf(@Out byte[] str, @In String format, double value);
+  }
+
+  /**
+   * Lazy-init holder which binds libc at most once per JVM. The JVM guarantees the static
+   * initializer runs exactly once, under the class-init lock, which provides both mutual exclusion
+   * (jnr-ffi's {@link LibraryLoader} is not safe to call concurrently, see {@code
+   * io.camunda.zeebe.journal.fs.LibC#ofNativeLibrary()}) and safe publication of the fields.
+   *
+   * <p>A bind failure is caught inside the initializer and leaves the field null, so callers
+   * permanently fall back to {@link String#format}; it must not escape, or any later access to this
+   * class would throw {@link NoClassDefFoundError}.
+   */
+  private static final class Holder {
+    private static final LibC LIB_C;
+
+    static {
+      LibC libC = null;
+      try {
+        if (Platform.getNativePlatform().getOS() == OS.WINDOWS) {
+          libC = LibraryLoader.create(LibC.class).load("msvcrt");
+        } else {
+          libC = LibraryLoader.create(LibC.class).load("c");
+        }
+      } catch (final Throwable e) {
+        LOG.warn("Failed to load libc for sprintf formatting, will fall back to String.format", e);
+        libC = null;
+      }
+      LIB_C = libC;
+    }
+
+    private Holder() {}
   }
 }
