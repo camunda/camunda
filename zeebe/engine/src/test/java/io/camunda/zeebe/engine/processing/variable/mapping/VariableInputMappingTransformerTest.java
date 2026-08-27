@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
@@ -141,10 +142,9 @@ final class VariableInputMappingTransformerTest {
         Map.of("orders", asMsgPack("[{'id':1}, {'id':2}]")),
         "{'first':null, 'last':2}"
       },
-      // a trailing '.' has its empty segment dropped by String.split, so a. → target "a" — valid
+      // malformed targets: a. is valid (trailing empty segment dropped by String.split),
+      // a..b and `a.b` produce unparseable FEEL context keys and throw — see unparseableTargets()
       {List.of(mapping("x", "a.")), Map.of("x", asMsgPack("1")), "{'a':1}"},
-      // a..b and `a.b` produce unparseable FEEL context keys → tested in
-      // shouldRejectWhenCombinedFeelContextIsUnparseable as IllegalStateException
       // reserved-word/space targets are also deploy-time rejected, but would work fine here since
       // input targets are plain path segments, never FEEL identifiers
       {List.of(mapping("x", "for")), Map.of("x", asMsgPack("1")), "{'for':1}"},
@@ -194,6 +194,24 @@ final class VariableInputMappingTransformerTest {
       final Map<String, DirectBuffer> variables,
       final String expectedOutput) {
     MsgPackUtil.assertEquality(evaluate(mappings, variables, expressionLanguage), expectedOutput);
+  }
+
+  static Object[][] unparseableTargets() {
+    return new Object[][] {
+      // a..b splits to ["a","","b"] — empty segment is not a valid FEEL identifier
+      {mapping("x", "a..b")},
+      // `a.b` splits to ["`a","b`"] — backtick-wrapped segments are not valid FEEL identifiers
+      {mapping("x", "`a.b`")},
+    };
+  }
+
+  @ParameterizedTest(name = "target ''{0}''")
+  @MethodSource("unparseableTargets")
+  void shouldThrowWhenTargetCreatesUnparseableCombinedExpression(final ZeebeMapping mapping) {
+    assertThatThrownBy(
+            () -> transformer.transformInputMappings(List.of(mapping), expressionLanguage))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageStartingWith("Failed to build variable mapping expression:");
   }
 
   @Test
