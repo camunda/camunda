@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -157,9 +158,10 @@ public class OpensearchClientIT {
       disabledReason = "AWS OS IT runners currently support only STS-based authentication")
   void shouldAuthenticateWithBasicAuth() {
     // given
-    SEARCH_DB.testClient().putUser("user", "^AHq>z@)&l;RJU=\"", List.of("admin"));
+    final var password = "^Aa1" + UUID.randomUUID();
+    SEARCH_DB.testClient().putUser("user", password, List.of("admin"));
     SEARCH_DB.config().getAuthentication().setUsername("user");
-    SEARCH_DB.config().getAuthentication().setPassword("^AHq>z@)&l;RJU=\"");
+    SEARCH_DB.config().getAuthentication().setPassword(password);
 
     // when
     // force recreating the client
