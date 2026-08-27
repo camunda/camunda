@@ -44,12 +44,11 @@ const JSONEditor: FC<JSONEditorProps> = observer(
   }) => {
     return (
       <Editor
+        className="w-full h-86"
         options={{ ...options, readOnly }}
         language="json"
         theme={themeStore.actualTheme === "dark" ? "vs-dark" : "light"}
         value={value}
-        height="32vh"
-        width="100%"
         onChange={(value) => {
           onChange?.(value ?? "");
         }}
