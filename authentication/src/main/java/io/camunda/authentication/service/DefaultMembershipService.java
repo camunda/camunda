@@ -154,10 +154,9 @@ public class DefaultMembershipService implements MembershipPort {
 
   /**
    * Runs {@code lookup}, retrying on transient search failures (see {@link
-   * TransientRetry#isTransient}). If retries are exhausted on a transient failure, falls back to an
-   * empty list so authorization can still be evaluated against direct grants rather than failing
-   * the whole request over an index outage. A non-transient failure (bad request, permission
-   * problem) is not retried and propagates unchanged.
+   * TransientRetry#isTransient}). Once retries are exhausted, falls back to an empty list so
+   * authorization is still evaluated against direct grants rather than failing the whole request
+   * over an index outage. A non-transient failure propagates unchanged.
    */
   private <T> List<T> resolveWithRetry(final String label, final Supplier<List<T>> lookup) {
     try {

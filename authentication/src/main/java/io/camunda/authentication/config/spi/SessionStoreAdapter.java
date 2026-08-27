@@ -32,12 +32,10 @@ import org.slf4j.LoggerFactory;
  * request — even during Spring Session's commit phase, which runs after the request scope is torn
  * down.
  *
- * <p>Every operation is retried on transient storage failures with exponential backoff; once
- * retries are exhausted (or the failure is not transient), the failure is logged and swallowed so a
- * storage blip never fails the request. Reads (get, getAll) degrade to "nothing found"; writes
- * (upsert, delete) are simply dropped. This resilience policy lives here (rather than in the
- * library) because it inspects the search-specific {@link CamundaSearchException} reasons to decide
- * what is transient.
+ * <p>Every operation retries transient storage failures with exponential backoff, then logs and
+ * swallows the failure so a storage blip never fails the request: reads degrade to "nothing found",
+ * writes are dropped. This policy lives here rather than in the library because it inspects the
+ * search-specific {@link CamundaSearchException} reasons to decide what is transient.
  */
 public final class SessionStoreAdapter implements SessionStorePort {
 
