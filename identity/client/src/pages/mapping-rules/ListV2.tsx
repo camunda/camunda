@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { Edit, TrashCan } from "@carbon/react/icons";
+import { Pencil, Trash2 } from "lucide-react";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
 import { useQuery } from "@tanstack/react-query";
@@ -96,12 +96,12 @@ const List: FC = () => {
         menuItems={[
           {
             label: t("edit"),
-            icon: Edit,
+            icon: Pencil,
             onClick: editMappingRule,
           },
           {
             label: t("delete"),
-            icon: TrashCan,
+            icon: Trash2,
             isDangerous: true,
             onClick: deleteMappingRule,
           },

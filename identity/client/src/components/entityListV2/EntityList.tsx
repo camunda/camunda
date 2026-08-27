@@ -19,7 +19,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@camunda/design-system";
-import { Add, CarbonIconType } from "@carbon/react/icons";
+import { LucideIcon, Plus } from "lucide-react";
 import { DocumentationLink } from "src/components/documentationV2";
 import useTranslate from "src/utility/localization";
 import { PageResult, SortConfig } from "src/utility/api";
@@ -55,7 +55,7 @@ type TextMenuItem<D> = {
 };
 
 type MenuItem<D> = TextMenuItem<D> & {
-  icon?: CarbonIconType;
+  icon?: LucideIcon;
 };
 
 type EntityListProps<D extends EntityData> = {
@@ -288,7 +288,7 @@ const EntityList = <D extends EntityData>({
           )}
           {addEntityLabel && (
             <Button onClick={onAddEntity} disabled={addEntityDisabled}>
-              <Add data-icon="inline-start" aria-hidden="true" />
+              <Plus data-icon="inline-start" aria-hidden="true" />
               {addEntityLabel}
             </Button>
           )}
