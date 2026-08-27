@@ -144,7 +144,7 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId(),
                 managerActor,
                 false))
-        .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()));
+        .andThen(new RoutingStateInitializer());
     // This initializer does not set the cluster ID, as it is not required for non-coordinators.
     // Non-coordinators will receive the cluster ID from the coordinator via gossip.
   }
@@ -170,7 +170,7 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId(),
                 managerActor,
                 true))
-        .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
+        .andThen(new RoutingStateInitializer())
         .andThen(new ClusterIdInitializer(staticConfiguration.clusterId()));
   }
 
