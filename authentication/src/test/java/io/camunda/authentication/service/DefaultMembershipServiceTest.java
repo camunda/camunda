@@ -167,6 +167,18 @@ class DefaultMembershipServiceTest {
   }
 
   @Test
+  void groupIdsPropagatesGenericRuntimeExceptionWithoutRetry() {
+    // a plain RuntimeException (e.g. a missing PhysicalTenantContext, or any other programming
+    // error) is not a search-layer failure and must never be swallowed as "no memberships found"
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenThrow(new IllegalStateException("no PhysicalTenantContext bound to this thread"));
+    final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
+
+    assertThatThrownBy(() -> service.groupIds(query)).isInstanceOf(IllegalStateException.class);
+    verify(groupServices, times(1)).getGroupsByMemberTypeAndMemberIds(any(), any());
+  }
+
+  @Test
   void roleIdsIncludesGroupsInOwnerMap() {
     when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
         .thenReturn(List.of(new RoleEntity(1L, "r1", "role", null)));
