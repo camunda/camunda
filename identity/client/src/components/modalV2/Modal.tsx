@@ -6,56 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, ReactNode, useEffect, useRef } from "react";
+import { ComponentProps, FC, ReactNode } from "react";
 import {
-  ButtonSet,
-  ComposedModal,
-  InlineLoading,
-  Modal as CarbonModal,
-  ModalBody,
-  ModalFooter,
-  ModalHeader,
-} from "@carbon/react";
-import styled from "styled-components";
+  Button,
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
-
-const ModalWrapper = styled.div<{ $overflowVisible: boolean }>`
-  ${({ $overflowVisible }) =>
-    $overflowVisible
-      ? `
-  & .cds--modal-content,
-  & .cds--modal-container {
-    overflow: visible;
-    max-height: none;
-  }
-  &.cds--modal, & .cds--modal {
-    overflow: auto;
-  }
-  & .cds--modal-content {
-    margin-bottom: 0;
-    padding-bottom: 3rem;
-  }
-  /*
-   * Carbon's cds--modal-scroll-content adds border-block-end and a
-   * last-child margin that change the content's height. With max-height
-   * removed above, that toggles isScrollable on every render and produces
-   * a flicker when the content sits near the scroll threshold (e.g. a
-   * single dropdown entry). Neutralize those height contributions so the
-   * measurement stays stable.
-   */
-  & .cds--modal-content.cds--modal-scroll-content {
-    border-block-end-width: 0;
-  }
-  & .cds--modal-content.cds--modal-scroll-content > *:last-child {
-    margin-block-end: 0;
-  }
-  `
-      : ""}
-`;
-
-const FooterButtonSet = styled(ButtonSet)`
-  width: 100%;
-`;
 
 type BaseModalProps = {
   open: boolean;
@@ -63,13 +24,13 @@ type BaseModalProps = {
   onClose: () => void;
   children?: ReactNode;
   danger?: boolean;
-  overflowVisible?: boolean;
   onSubmit?: () => unknown;
   submitDisabled?: boolean;
   loading?: boolean;
   loadingDescription?: string | null;
   buttons?: ReactNode[];
-  size?: "xs" | "sm" | "md" | "lg";
+  /** Semantic size token from the Camunda design system. */
+  size?: ComponentProps<typeof DialogContent>["size"];
   preventCloseOnClickOutside?: boolean;
 };
 
@@ -94,77 +55,57 @@ const Modal: FC<ModalProps> = ({
   headline,
   confirmLabel,
   danger = false,
-  overflowVisible = false,
   onSubmit = () => undefined,
   submitDisabled = false,
   loading = false,
   loadingDescription,
   buttons,
-  size,
+  size = "lg",
   passiveModal = false,
   preventCloseOnClickOutside = false,
 }) => {
   const { t } = useTranslate("components");
-  const submitLoading = (
-    <InlineLoading description={loadingDescription || t("loading")} />
-  );
-
-  const modalRef = useRef<HTMLDivElement>(null);
-  const findFocusableCandidate = (
-    container: HTMLDivElement,
-  ): HTMLInputElement | undefined => {
-    return container.querySelector(
-      "button:not([disabled])",
-    ) as HTMLInputElement;
-  };
-
-  useEffect(() => {
-    if (
-      modalRef.current &&
-      !modalRef.current.contains(document.activeElement)
-    ) {
-      const focusableInput = findFocusableCandidate(modalRef.current);
-      focusableInput?.focus();
-    }
-  }, []);
-  const modal =
-    buttons === undefined ? (
-      <CarbonModal
-        size={size}
-        modalHeading={headline}
-        aria-label={headline}
-        open={open}
-        passiveModal={passiveModal}
-        preventCloseOnClickOutside={preventCloseOnClickOutside}
-        primaryButtonText={loading ? submitLoading : confirmLabel}
-        primaryButtonDisabled={submitDisabled || loading}
-        closeButtonLabel={t("close")}
-        secondaryButtonText={t("cancel")}
-        onRequestSubmit={onSubmit}
-        onRequestClose={onClose}
-        onSecondarySubmit={onClose}
-        danger={danger}
-        ref={modalRef}
-      >
-        {children}
-      </CarbonModal>
-    ) : (
-      <ComposedModal
-        aria-label={headline}
-        open={open}
-        onClose={onClose}
-        ref={modalRef}
-      >
-        <ModalHeader title={headline} />
-        <ModalBody hasForm>{children}</ModalBody>
-        <ModalFooter>
-          <FooterButtonSet>{buttons}</FooterButtonSet>
-        </ModalFooter>
-      </ComposedModal>
-    );
 
   return (
-    <ModalWrapper $overflowVisible={overflowVisible}>{modal}</ModalWrapper>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose();
+      }}
+    >
+      <DialogContent
+        size={size}
+        onPointerDownOutside={
+          preventCloseOnClickOutside ? (e) => e.preventDefault() : undefined
+        }
+      >
+        <DialogHeader>
+          <DialogTitle>{headline}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>{children}</DialogBody>
+        {passiveModal ? null : (
+          <DialogFooter>
+            {buttons !== undefined ? (
+              buttons
+            ) : (
+              <>
+                <Button variant="secondary" onClick={onClose}>
+                  {t("cancel")}
+                </Button>
+                <Button
+                  variant={danger ? "destructive" : "default"}
+                  loading={loading}
+                  disabled={submitDisabled}
+                  onClick={() => onSubmit()}
+                >
+                  {loading ? loadingDescription || t("loading") : confirmLabel}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -175,7 +116,7 @@ export const DeleteModal: FC<
   const { t } = useTranslate("components");
 
   return (
-    <Modal confirmLabel={t("delete")} {...modalProps} danger size="sm">
+    <Modal confirmLabel={t("delete")} {...modalProps} danger size="md">
       {children}
     </Modal>
   );
