@@ -10,10 +10,8 @@ package io.camunda.optimize.service.db.reader;
 import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public interface JobRegistryReader {
 
@@ -29,13 +27,6 @@ public interface JobRegistryReader {
    */
   Optional<JobRegistryEntryDto> findLastByJobTypeAndEntityId(
       JobType jobType, EntityType entityType, String entityId);
-
-  /**
-   * Returns the subset of {@code entityIds} that have at least one job registry entry (in any
-   * status) matching the given jobType and entityType.
-   */
-  Set<String> findEntityIdsWithJob(
-      JobType jobType, EntityType entityType, Collection<String> entityIds);
 
   /**
    * Returns the distinct entityIds of up to {@code limit} job registry entries for the given
