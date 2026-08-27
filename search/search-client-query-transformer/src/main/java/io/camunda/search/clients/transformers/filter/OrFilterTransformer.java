@@ -30,7 +30,7 @@ public interface OrFilterTransformer<T extends OrFilter<T>> {
     if (filter.orFilters() == null || filter.orFilters().isEmpty() || filter.hasEmptyOrFilter()) {
       return Optional.empty();
     }
-    return Optional.of(
+    return Optional.ofNullable(
         or(filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).toList()));
   }
 
