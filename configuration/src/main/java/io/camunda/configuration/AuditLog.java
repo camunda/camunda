@@ -13,6 +13,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 /** Configuration for audit logging, including separate settings for user and client operations. */
 public class AuditLog {
   private boolean enabled = true;
+  private boolean userTaskCompletionVariableAuditEnabled;
 
   @NestedConfigurationProperty private AuditLogEntry user = AuditLogEntry.logAll();
   @NestedConfigurationProperty private AuditLogEntry client = AuditLogEntry.logNone();
@@ -24,6 +25,15 @@ public class AuditLog {
 
   public void setEnabled(final boolean enabled) {
     this.enabled = enabled;
+  }
+
+  public boolean isUserTaskCompletionVariableAuditEnabled() {
+    return userTaskCompletionVariableAuditEnabled;
+  }
+
+  public void setUserTaskCompletionVariableAuditEnabled(
+      final boolean userTaskCompletionVariableAuditEnabled) {
+    this.userTaskCompletionVariableAuditEnabled = userTaskCompletionVariableAuditEnabled;
   }
 
   public AuditLogEntry getClient() {

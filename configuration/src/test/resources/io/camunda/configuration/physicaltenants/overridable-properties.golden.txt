@@ -13,6 +13,7 @@ cluster.partition-count
 data.audit-log.client.categories
 data.audit-log.client.excludes
 data.audit-log.enabled
+data.audit-log.user-task-completion-variable-audit-enabled
 data.audit-log.unknown.categories
 data.audit-log.unknown.excludes
 data.audit-log.user.categories
