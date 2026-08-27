@@ -42,7 +42,6 @@ import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.utils.VoteQuorum;
 import io.atomix.raft.utils.VoteQuorum.VoteErrorStatus;
-import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -319,8 +318,7 @@ public final class FollowerRole extends ActiveRole {
 
     if (isRunning() && !complete.get()) {
       if (error != null) {
-        logRequestFailure("Poll", member, error);
-        quorum.fail(member.memberId(), VoteErrorStatus.of(error));
+        quorum.fail(member.memberId(), logRequestFailure("Poll", member, error));
       } else {
         final boolean respondedWithGreaterTerm = response.term() > raft.getTerm();
         if (respondedWithGreaterTerm) {

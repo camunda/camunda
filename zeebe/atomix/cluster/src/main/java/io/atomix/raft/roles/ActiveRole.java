@@ -16,7 +16,6 @@
  */
 package io.atomix.raft.roles;
 
-import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
@@ -24,9 +23,9 @@ import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
+import io.atomix.raft.utils.VoteQuorum.VoteErrorStatus;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import org.slf4j.event.Level;
 
 /** Abstract active state. */
 public abstract class ActiveRole extends PassiveRole {
@@ -36,18 +35,18 @@ public abstract class ActiveRole extends PassiveRole {
   }
 
   /**
-   * Logs a failed poll or vote request to a member, demoting the expected failure mode - the member
-   * is not in the membership view, e.g. while it boots or after it was removed - to TRACE to avoid
-   * flooding the log on every election round.
+   * Logs a failed poll or vote request to a member and returns how the failure was classified, so
+   * the caller reports the same status to the vote quorum it just logged. The status decides the
+   * level, see {@link VoteErrorStatus#logLevel()}.
    */
-  protected void logRequestFailure(
+  protected VoteErrorStatus logRequestFailure(
       final String requestType, final RaftMember member, final Throwable error) {
     // request futures complete exceptionally with the cause wrapped in a CompletionException
-    final var cause =
-        error instanceof CompletionException && error.getCause() != null ? error.getCause() : error;
-    final var logLevel = cause instanceof NoSuchMemberException ? Level.TRACE : Level.WARN;
-    log.atLevel(logLevel)
-        .log("{} request to {} failed: {}", requestType, member.memberId(), cause.getMessage());
+    final var cause = FuturesUtil.unwrapCompletionException(error);
+    final var status = VoteErrorStatus.of(cause);
+    log.atLevel(status.logLevel())
+        .log("{} request to {} failed with {}: {}", requestType, member.memberId(), status, cause);
+    return status;
   }
 
   @Override

@@ -255,8 +255,7 @@ public final class CandidateRole extends ActiveRole {
                 () -> sendVoteRequestToMember(complete, quorum, member, request));
       }
     } else {
-      logRequestFailure("Vote", member, error);
-      quorum.fail(member.memberId(), VoteErrorStatus.of(error));
+      quorum.fail(member.memberId(), logRequestFailure("Vote", member, error));
     }
   }
 
