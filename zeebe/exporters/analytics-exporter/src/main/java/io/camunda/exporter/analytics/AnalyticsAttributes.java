@@ -112,14 +112,6 @@ public final class AnalyticsAttributes {
   public static final class UserTask {
     public static final AttributeKey<Long> KEY = AttributeKey.longKey("camunda.user_task.key");
 
-    /**
-     * Always emitted as an empty string for 8.10 — no hash of the assignee is computed. A salted
-     * hashing mechanism is planned for 8.11. Kept as a constant (rather than removed) because
-     * downstream dashboards expect this attribute to exist.
-     */
-    public static final AttributeKey<String> ASSIGNEE_HASH =
-        AttributeKey.stringKey("camunda.user_task.assignee_hash");
-
     private UserTask() {}
   }
 

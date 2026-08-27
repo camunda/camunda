@@ -660,12 +660,7 @@ class AnalyticsExporterTest {
               assertThat(logRecord.getAttributes().get(AnalyticsAttributes.UserTask.KEY))
                   .isEqualTo(value.getUserTaskKey());
 
-              // assignee_hash is always an empty string for 8.10 — no hash of the assignee is
-              // computed. A salted hashing mechanism is planned for 8.11.
-              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.UserTask.ASSIGNEE_HASH))
-                  .isEqualTo("");
-
-              // no other assignee-derived (raw or hashed) data is emitted
+              // no assignee-derived attribute (raw or hashed) is emitted at all
               final var allValues =
                   logRecord.getAttributes().asMap().values().stream()
                       .map(Object::toString)
