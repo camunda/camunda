@@ -85,6 +85,15 @@ public class TaskRepositoryES extends TaskRepository {
       final Script updateScript,
       final Query filterQuery,
       final String... indices) {
+    return tryUpdateByQueryRequest(updateItemIdentifier, updateScript, filterQuery, false, indices);
+  }
+
+  public boolean tryUpdateByQueryRequest(
+      final String updateItemIdentifier,
+      final Script updateScript,
+      final Query filterQuery,
+      final boolean failOnVersionConflicts,
+      final String... indices) {
     LOG.debug("Updating {}", updateItemIdentifier);
     final boolean clusterTaskCheckingEnabled =
         configurationService
@@ -97,7 +106,7 @@ public class TaskRepositoryES extends TaskRepository {
             b ->
                 b.index(esClient.addPrefixesToIndices(indices))
                     .query(filterQuery)
-                    .conflicts(Conflicts.Proceed)
+                    .conflicts(failOnVersionConflicts ? Conflicts.Abort : Conflicts.Proceed)
                     .script(updateScript)
                     .waitForCompletion(!clusterTaskCheckingEnabled)
                     .refresh(true));

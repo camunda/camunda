@@ -327,10 +327,13 @@ public class ReportWriterES implements ReportWriter {
                     .source(ReportWriter.CLEAR_DEFINITION_XML_IF_STILL_MATCHING_SCRIPT)
                     .params(scriptParams));
 
+    // Abort on version conflicts so a report edited concurrently with this write can be retried by
+    // the caller instead of keeping stale XML.
     taskRepositoryES.tryUpdateByQueryRequest(
         updateItem,
         clearDefinitionXmlScript,
         Query.of(q -> q.ids(i -> i.values(reportIds))),
+        true,
         SINGLE_PROCESS_REPORT_INDEX_NAME);
   }
 
