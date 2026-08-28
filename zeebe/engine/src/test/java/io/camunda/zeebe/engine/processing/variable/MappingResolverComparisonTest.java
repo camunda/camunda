@@ -261,6 +261,23 @@ class MappingResolverComparisonTest {
       // then
       Helpers.assertSame(results, "{'a':2,'b':2}");
     }
+
+    @Test
+    @DisplayName(
+        "5.6 nested target from an earlier mapping used as source in a later mapping"
+            + " -- both resolvers agree via FEEL context-literal sibling scoping")
+    void shouldSeeANestedTargetFromAnEarlierMappingInALaterSource() {
+      // given: mapping 1 produces a.b=1; mapping 2 reads a.b as its source
+      final var mappings = List.of(Helpers.mapping("=1", "a.b"), Helpers.mapping("=a.b", "c"));
+
+      // when
+      final var results = Helpers.resolve(mappings, Map.of());
+
+      // then: ordered sees a.b=1 in the per-mapping accumulator when mapping 2 runs;
+      // combined's single FEEL context is {a:{b:1},c:a.b} -- FEEL resolves the bare 'a'
+      // in 'a.b' against the context literal's own 'a' entry ({b:1}), so both land on c=1
+      Helpers.assertSame(results, "{'a':{'b':1},'c':1}");
+    }
   }
 
   @Nested
@@ -412,28 +429,53 @@ class MappingResolverComparisonTest {
       Helpers.assertDiffers(
           results, "{'x':{'a':3},'y':{'a':3,'b':2}}", "{'x':{'a':3},'y':{'a':3}}");
     }
+
+    @Test
+    @DisplayName(
+        "7.6 partial shadowing when the variable lives in the element's own (nearest) scope"
+            + " -- simulates multi-instance inputElement, diverges from 8.9.0")
+    void shouldLayerOverAVariableInTheElementsOwnScope() {
+      // given: 'item' is in the nearest scope, as a multi-instance inputElement variable would be;
+      // mapping 1 partially shadows item by overriding item.a; mapping 2 reads the whole item back
+      final var mappings = List.of(Helpers.mapping("=3", "item.a"), Helpers.mapping("=item", "z"));
+      final Map<String, Object> elementScope = Map.of("item", Map.of("a", 1, "b", 2));
+
+      // when
+      final var results = Helpers.resolveWithScopeChain(mappings, elementScope, Map.of());
+
+      // then: ordered's fallback readback merges the nearest scope's untouched 'b' into z;
+      // combined's FEEL context is {item:{a:3},z:item} -- 'item' in 'z:item' resolves against
+      // the context literal's own 'item' entry ({a:3}), so 'b' from the element scope is lost
+      Helpers.assertDiffers(
+          results, "{'item':{'a':3},'z':{'a':3,'b':2}}", "{'item':{'a':3},'z':{'a':3}}");
+    }
   }
 
   @Nested
   @DisplayName(
-      "Rule 8: types survive across input mappings, but not across variables (confirmed bug"
-          + " camunda/camunda#60011 -- these assert today's actual behavior, which loses the type"
-          + " at every mapping boundary instead of only at the variable-write boundary)")
+      "Rule 8: types survive across input mappings within one resolver context, but not when"
+          + " written through MsgPack (confirmed bug camunda/camunda#60011). OrderedMappingResolver"
+          + " is the broken party here: it loses the FEEL type at every mapping boundary via the"
+          + " MsgPack round-trip. CombinedMappingResolver evaluates all mappings in one FEEL"
+          + " context expression, so the type survives. When input-comparison-mode=ORDERED is used"
+          + " with the COMBINED default, any mapping that reads a FEEL-typed value set by an"
+          + " earlier mapping WILL trigger comparison warnings -- that is expected and correct."
+          + " These tests will need updating once #60011 is fixed.")
   class Rule8TypesSurviveAcrossMappingsNotVariables {
 
     @Test
-    @DisplayName("8.1 across input mappings, back-referencing a duration -- diverges from 8.9.0")
-    void shouldLoseTheFeelTypeAcrossMappingsToday() {
-      // given
+    @DisplayName(
+        "8.1 OrderedMappingResolver loses the FEEL type at the mapping boundary (bug #60011);"
+            + " CombinedMappingResolver preserves it within the single FEEL context")
+    void shouldLoseTheFeelTypeAcrossMappingsInOrderedButNotInCombined() {
       final var mappings =
           List.of(Helpers.mapping("=duration(\"P1DT2H\")", "x"), Helpers.mapping("=x.days", "y"));
 
-      // when
       final var results = Helpers.resolve(mappings, Map.of());
 
-      // then: 8.9.0's single combined FEEL context let mapping 2 read mapping 1's result as a
-      // live FEEL duration; today's per-mapping round-trip through MsgPack loses the type, so
-      // x.days resolves against a plain string
+      // ORDERED: x is stored as MsgPack string after mapping 1; x.days in mapping 2 sees a
+      // plain string, not a duration → y=null. COMBINED: x stays a live FEEL duration inside
+      // the single context expression → x.days=1.
       Helpers.assertDiffers(results, "{'x':'P1DT2H','y':null}", "{'x':'P1DT2H','y':1}");
     }
 
@@ -531,6 +573,23 @@ class MappingResolverComparisonTest {
 
       // then
       Helpers.assertSame(results, "{'num':'1'}");
+    }
+
+    @Test
+    @DisplayName(
+        "non-numeric static source (no leading '=') is preserved as its string value"
+            + " in both resolvers")
+    void shouldPreserveNonNumericStaticSourceAsStringValue() {
+      // given: source "hello" has no leading '=' so the transformer treats it as a static literal
+      // and wraps it in FEEL double-quotes ("\"hello\""); it must never be mistaken for a
+      // variable reference or FEEL expression
+      final var mappings = List.of(Helpers.mapping("hello", "greeting"));
+
+      // when
+      final var results = Helpers.resolve(mappings, Map.of());
+
+      // then: both resolvers evaluate the static FEEL string literal and write the plain string
+      Helpers.assertSame(results, "{'greeting':'hello'}");
     }
 
     @Test
@@ -641,11 +700,11 @@ class MappingResolverComparisonTest {
             }
             return Either.left(null);
           };
+      // scopeKey=-1 → ExpressionProcessor uses the context directly (no processScoped call),
+      // which is correct: the in-memory context owns its own lookup and ignores the key
       return new ScopedExpressionProcessor(
           new ExpressionProcessor(EXPRESSION_LANGUAGE, context, DEFAULT_TIMEOUT)
               .withSecretReferenceContext(),
-          // scopeKey=-1 → ExpressionProcessor uses the context directly (no processScoped call),
-          // which is correct: the in-memory context owns its own lookup and ignores the key
           -1L,
           "");
     }
