@@ -40,20 +40,39 @@ HTTP call, the connector runtime resolves every one of them via `CentralStoreSec
 which calls the same gateway `/v2/secrets/resolve` endpoint the old driver benchmarked directly —
 but through the client that actually calls it in production.
 
-`secret-filter.mode` is `DISABLED`, not `STRICT`/`LAX`: both of those derive their per-element
-allow-list by statically regex-scanning the BPMN XML's `zeebe:input source` text for literal
-`{{secrets.<name>}}` occurrences (`ProcessDefinitionSecretKeyCache`/`SecretUtil` in connectors).
-This scenario's placeholder is built at runtime by a FEEL expression
-(`"{{secrets." + keyPrefix + string(...) + "}}"`), so no literal name ever appears in the BPMN XML
-— the scan finds none, both modes cache that empty allow-list, and every reference is filtered out
-from then on (`LazyLoadingSecretFilter` only falls back to allow-all on an exception during the
-scan, not on a legitimately-empty result). This was confirmed empirically: with `STRICT`, a full
-run produced zero `/v2/secrets/resolve` calls and zero `camunda_secret_cache_result_total`
+`connectors.image.tag` is pinned to `8.10.0-alpha5-rc2`, above the chart's default
+(`8.10.0-alpha4`): `CentralStoreSecretProvider` (the class behind `LEGACY_MODE=FALLBACK`) does not
+exist before `8.10.0-alpha5-rc1` (connectors#8368), so on the older default image every
+`CAMUNDA_CONNECTOR_SECRET_RESOLVER_*` env var below is read by no code at all and secrets never
+resolve — every job throws `Secret with name '<X>' is not available` instead, with no error on
+either the orchestration or the connectors side pointing at the actual cause.
+
+`secret-filter.mode` is `STRICT`, and has to be: `ConnectorsAutoConfiguration.legacyFallbackSecretFilterGuard`
+refuses to start (`IllegalStateException`) whenever `LEGACY_MODE=FALLBACK` is paired with anything
+else — a runtime value (the FEEL-computed header, here) may reach the cluster's secret stores only
+if the deployed model's own `zeebe:input` mappings name it, and `STRICT`'s allow-list is the only
+mode that enforces that.
+
+`STRICT` derives its per-element allow-list by statically regex-scanning every `zeebe:input
+source` string on the element for literal `{{secrets.<name>}}` occurrences
+(`ProcessDefinitionSecretKeyCache`/`SecretUtil` in connectors) — it never evaluates the FEEL
+expression. This scenario's placeholder is computed at runtime
+(`"{{secrets." + keyPrefix + string(...) + "}}"`), so no literal name would ever appear in the
+BPMN XML on its own — the scan would find none, `LazyLoadingSecretFilter` would cache that empty
+allow-list permanently (it only falls back to allow-all on an exception during the scan, not on a
+legitimately-empty result), and every reference would be filtered out from then on. This was
+confirmed empirically before the workaround below existed: with `STRICT` and no allow-list seed, a
+full run produced zero `/v2/secrets/resolve` calls and zero `camunda_secret_cache_result_total`
 increments on any orchestration pod, even though jobs kept completing — the target
 (`connectors:8080/actuator/health`) never validates headers, so a filtered-out, unresolved
-placeholder still "succeeds". `DISABLED` is the only mode that skips the filter
-(`SecretFilter.allowAll()`), so it is the only one compatible with a dynamically-parameterized
-secret name.
+placeholder still "succeeds".
+
+The BPMN works around this with an extra, otherwise-unused `_secretAllowlistSeed` input whose
+value is a static string literally containing every `BENCHMARK_TOKEN0`..`BENCHMARK_TOKEN4999`
+name (covering the largest `poolSize` any preset payload uses). Nothing ever reads that value —
+its only purpose is to be found by the regex scan, so it seeds the allow-list with every name any
+preset's dynamic expression could compute, and the real, dynamically-selected name is always
+already on the list by the time the filter checks it.
 
 `batchSize`, `uniquePerBatch`, `poolSize` and `keyPrefix` are process variables read from the
 Starter's `payloadPath` (see [Test scenarios](#test-scenarios) below), so tuning them requires no
