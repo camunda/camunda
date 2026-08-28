@@ -1384,6 +1384,7 @@ public class BrokerBasedPropertiesOverride {
     secretResolutionCfg.setRetryMaxDelay(engineSecrets.getRetryMaxDelay());
     secretResolutionCfg.setRetryBackoffFactor(engineSecrets.getRetryBackoffFactor());
     secretResolutionCfg.setBatchResolutionLimit(engineSecrets.getBatchResolutionLimit());
+    secretResolutionCfg.setWakeDelay(engineSecrets.getWakeDelay());
   }
 
   private static void populateFromStorageOrdinals(

@@ -260,6 +260,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setSecretResolutionRetryMaxDelay(secretResolution.getRetryMaxDelay())
         .setSecretResolutionRetryBackoffFactor(secretResolution.getRetryBackoffFactor())
         .setSecretResolutionBatchLimit(secretResolution.getBatchResolutionLimit())
+        .setSecretResolutionWakeDelay(secretResolution.getWakeDelay())
         .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
         .setJobMetricsExportInterval(jobMetrics.getExportInterval())
         .setJobMetricsExportEnabled(jobMetrics.isEnabled())
