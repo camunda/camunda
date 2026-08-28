@@ -14,6 +14,8 @@ import {z} from 'zod';
 
 const processInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'TERMINATED']);
 type ProcessInstanceState = z.infer<typeof processInstanceStateSchema>;
+const processDefinitionStateSchema = z.enum(['ACTIVE', 'DRAINING', 'DELETED']);
+type ProcessDefinitionState = z.infer<typeof processDefinitionStateSchema>;
 type StatisticName = 'element-instances';
 
 const processInstanceSchema = z.object({
@@ -44,6 +46,7 @@ const processDefinitionSchema = z.object({
 	tenantId: z.string(),
 	processDefinitionKey: z.string(),
 	hasStartForm: z.boolean(),
+	state: processDefinitionStateSchema,
 });
 type ProcessDefinition = z.infer<typeof processDefinitionSchema>;
 
@@ -56,5 +59,18 @@ const processDefinitionStatisticSchema = z.object({
 });
 type ProcessDefinitionStatistic = z.infer<typeof processDefinitionStatisticSchema>;
 
-export {processInstanceStateSchema, processInstanceSchema, processDefinitionSchema, processDefinitionStatisticSchema};
-export type {ProcessInstance, ProcessInstanceState, StatisticName, ProcessDefinition, ProcessDefinitionStatistic};
+export {
+	processInstanceStateSchema,
+	processDefinitionStateSchema,
+	processInstanceSchema,
+	processDefinitionSchema,
+	processDefinitionStatisticSchema,
+};
+export type {
+	ProcessInstance,
+	ProcessInstanceState,
+	ProcessDefinitionState,
+	StatisticName,
+	ProcessDefinition,
+	ProcessDefinitionStatistic,
+};
