@@ -18,8 +18,9 @@
 #   camunda-platform-values-optimize-elasticsearch.yaml fallback file.
 #
 # - scenario_max_override_key
-#   Helm --set-file key, including the trailing '=', used by the `max` scenario
-#   to override platform configuration. This differs by chart version.
+#   Helm --set-file key, including the trailing '=', used by the `max`, `secrets`
+#   and `secrets-control` scenarios to override platform configuration. This
+#   differs by chart version.
 #
 # - install_storage_target
 #   Set to `install-storage` for versions that deploy their own secondary
@@ -59,7 +60,7 @@ additional_load_test_configuration ?=
 helm_chart_platform = charts/camunda-platform
 
 # Scenario: controls the workload profile for the load test.
-# Options: latency, realistic, typical, max, archiver
+# Options: latency, realistic, typical, max, archiver, secrets, secrets-control
 # Use named targets (make max) or pass directly: make install scenario=max
 scenario ?=
 
@@ -78,6 +79,25 @@ $(error scenario=max requires scenario_max_override_key to be declared by the ve
 endif
 _scenario_load_test_flags = --set load-tester.starter.rate=300
 _scenario_platform_flags = --set-file '$(scenario_max_override_key)./camunda-platform-override-values.yaml'
+else ifeq ($(scenario),secrets)
+ifeq ($(scenario_max_override_key),)
+$(error scenario=secrets requires scenario_max_override_key to be declared by the version Makefile)
+endif
+# Secret resolution at job activation: 100 jobs/s, each on one of 1500 process definition
+# variants carrying a distinct static secret reference, over a ~30KB / 10-level-deep
+# payload. Against the 1000-entry secret cache, ~1/3 of the jobs take the cache miss path
+# (park, background resolution, reactivation). See load-tests/setup/README.md.
+_scenario_load_test_flags = -f load-tester-values-secret-benchmark.yaml --set load-tester.starter.rate=100 --set load-tester.starter.processId=secret-bench --set load-tester.starter.bpmnXmlPath=bpmn/secret_task.bpmn --set load-tester.starter.payloadPath=bpmn/deep_payload_30kb.json --set load-tester.workers.worker.replicas=6 --set load-tester.workers.worker.payloadPath=bpmn/emptyPayload.json
+_scenario_platform_flags = --set-file '$(scenario_max_override_key)./camunda-platform-override-values-secrets.yaml' -f camunda-platform-values-secrets.yaml
+else ifeq ($(scenario),secrets-control)
+ifeq ($(scenario_max_override_key),)
+$(error scenario=secrets-control requires scenario_max_override_key to be declared by the version Makefile)
+endif
+# The attribution run for `secrets`: same rate, same payload, same number of process
+# definition variants, but an input mapping that reads a plain process variable instead of
+# a secret. The difference between the two runs is the secret resolution itself.
+_scenario_load_test_flags = -f load-tester-values-secret-benchmark.yaml --set load-tester.starter.rate=100 --set load-tester.starter.processId=secret-bench --set load-tester.starter.bpmnXmlPath=bpmn/secret_task_control.bpmn --set load-tester.starter.payloadPath=bpmn/deep_payload_30kb.json --set load-tester.workers.worker.replicas=6 --set load-tester.workers.worker.payloadPath=bpmn/emptyPayload.json
+_scenario_platform_flags = --set-file '$(scenario_max_override_key)./camunda-platform-override-values-secrets.yaml' -f camunda-platform-values-secrets.yaml
 else ifeq ($(scenario),archiver)
 _scenario_load_test_flags = --set load-tester.starter.rate=1 --set load-tester.starter.rateDuration=10m --set load-tester.starter.processId=multiInstanceElements --set load-tester.starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set load-tester.starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set load-tester.workers.worker.replicas=0
 _scenario_platform_flags =
@@ -375,7 +395,7 @@ install-stable-chaos:
 
 # Workload scenario shortcuts — each runs 'make install' with the corresponding scenario profile.
 # For stable VMs, use: make install-stable scenario=<name>
-.PHONY: latency realistic typical max archiver
+.PHONY: latency realistic typical max archiver secrets secrets-control
 latency:
 	$(MAKE) install scenario=latency
 realistic:
@@ -386,6 +406,10 @@ max:
 	$(MAKE) install scenario=max
 archiver:
 	$(MAKE) install scenario=archiver
+secrets:
+	$(MAKE) install scenario=secrets
+secrets-control:
+	$(MAKE) install scenario=secrets-control
 
 .PHONY: clean
 clean:
