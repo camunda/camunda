@@ -21,9 +21,11 @@ import {
 } from './common';
 import {
 	processDefinitionSchema,
+	processDefinitionStateSchema,
 	processDefinitionStatisticSchema,
 	processInstanceStateSchema,
 	type ProcessDefinition,
+	type ProcessDefinitionState,
 	type StatisticName,
 	type ProcessDefinitionStatistic,
 } from './processes';
@@ -243,6 +245,7 @@ export {
 	getProcessDefinitionStatistics,
 	queryProcessDefinitions,
 	processDefinitionSchema,
+	processDefinitionStateSchema,
 	processDefinitionResponseSchema,
 	processDefinitionStatisticSchema,
 	getProcessDefinitionStatisticsRequestBodySchema,
@@ -260,6 +263,7 @@ export {
 };
 export type {
 	ProcessDefinition,
+	ProcessDefinitionState,
 	GetProcessDefinitionResponseBody,
 	GetProcessDefinitionXmlResponseBody,
 	GetProcessStartFormResponseBody,
