@@ -16,9 +16,7 @@ export class IdentityAuthorizationsPage {
   readonly createAuthorizationButton: Locator;
   readonly authorizationsList: Locator;
   readonly createAuthorizationModal: Locator;
-  readonly createAuthorizationOwnerComboBox: Locator;
   readonly createAuthorizationOwnerSearchInput: Locator;
-  readonly createAuthorizationOwnerOption: (name: string) => Locator;
   readonly createAuthorizationResourceIdField: Locator;
   readonly createAuthorizationAccessPermission: (name: string) => Locator;
   readonly accessPermissionCheckbox: (name: string) => Locator;
@@ -52,14 +50,8 @@ export class IdentityAuthorizationsPage {
     this.createAuthorizationModal = page.getByRole('dialog', {
       name: 'Create authorization',
     });
-    this.createAuthorizationOwnerComboBox =
-      this.createAuthorizationModal.getByPlaceholder('Select an owner');
     this.createAuthorizationOwnerSearchInput =
       this.createAuthorizationModal.getByPlaceholder('Search by owner ID');
-    this.createAuthorizationOwnerOption = (name) =>
-      this.createAuthorizationModal.getByRole('option', {
-        name,
-      });
     this.createAuthorizationResourceIdField =
       this.createAuthorizationModal.getByRole('textbox', {
         name: 'Resource ID',
@@ -118,13 +110,6 @@ export class IdentityAuthorizationsPage {
 
   async clickCreateAuthorizationButton() {
     await this.createAuthorizationButton.click();
-  }
-
-  async clickOwnerDropdown() {
-    await this.createAuthorizationOwnerComboBox.click();
-  }
-  async selectOwnerFromDropdown(name: string) {
-    await this.createAuthorizationOwnerOption(name).click();
   }
 
   async clickOwnerTypeDropdown() {
@@ -250,36 +235,15 @@ export class IdentityAuthorizationsPage {
   }
 
   async selectAuthorizationOwner(authorization: {ownerId: string}) {
-    if (await this.createAuthorizationOwnerSearchInput.isVisible()) {
-      await this.createAuthorizationOwnerSearchInput.fill(
-        authorization.ownerId,
-      );
-      // The owner search is debounced + server-driven; the menu item for a
-      // just-created user can take longer than 20s to surface under load.
-      const ownerOption = this.createAuthorizationModal
-        .locator('.cds--list-box__menu-item')
-        .filter({hasText: authorization.ownerId})
-        .first();
-      await expect(ownerOption).toBeVisible({timeout: 60000});
-      await ownerOption.click({timeout: 20000, force: true});
-      return;
-    }
-
-    await this.createAuthorizationOwnerComboBox.click();
-    try {
-      await this.createAuthorizationOwnerOption(authorization.ownerId).click({
-        timeout: 60000,
-        force: true,
-      });
-    } catch (error) {
-      // Fall back to free-typing the owner id for owners that are not a
-      // selectable option (e.g. a not-yet-persisted owner used only to reach a
-      // later validation step). Reloading here would close the modal, so keep
-      // the dialog open and type the value directly.
-      console.log('Error while selecting owner' + error);
-      await this.createAuthorizationOwnerComboBox.fill(authorization.ownerId);
-      await this.createAuthorizationOwnerComboBox.press('Tab');
-    }
+    await this.createAuthorizationOwnerSearchInput.fill(authorization.ownerId);
+    // The owner search is debounced + server-driven; the menu item for a
+    // just-created user can take longer than 20s to surface under load.
+    const ownerOption = this.createAuthorizationModal
+      .locator('.cds--list-box__menu-item')
+      .filter({hasText: authorization.ownerId})
+      .first();
+    await expect(ownerOption).toBeVisible({timeout: 60000});
+    await ownerOption.click({timeout: 20000, force: true});
   }
 
   async findAuthorizationInPaginatedList(

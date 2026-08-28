@@ -34,7 +34,7 @@ export class IdentityTenantsPage {
   readonly assignUserButton: Locator;
   readonly assignUserModal: Locator;
   readonly assignUserSearchbox: Locator;
-  readonly assignUserNameOption: (name: string) => Locator;
+  readonly assignUserOption: (username: string) => Locator;
   readonly confirmAssignmentButton: Locator;
   readonly openTenantDetails: (rowName: string) => Locator;
   readonly removeUserButton: (rowName?: string) => Locator;
@@ -122,9 +122,9 @@ export class IdentityTenantsPage {
     this.assignUserSearchbox = this.assignUserModal.getByRole('searchbox', {
       name: 'Search by username',
     });
-    this.assignUserNameOption = (name) =>
+    this.assignUserOption = (username) =>
       this.assignUserModal.locator('.cds--list-box__menu-item', {
-        hasText: name,
+        hasText: username,
       });
     this.confirmAssignmentButton = this.assignUserModal.getByRole('button', {
       name: 'Assign user',
@@ -166,18 +166,17 @@ export class IdentityTenantsPage {
     await this.tenantDescriptionField.fill(description);
   }
 
-  async fillAssignUserName(userName: string) {
-    await this.assignUserSearchbox.fill(userName);
+  async fillAssignUserSearch(username: string) {
+    await this.assignUserSearchbox.fill(username);
   }
 
-  async assignUserToTenant(user: {id: string; name: string}) {
+  async assignUserToTenant(user: {id: string}) {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
-    // The assign-user search (#51442) filters users by `username` and lists the
-    // username as the option title; search and select by `id` (the username),
-    // not the display name.
-    await this.fillAssignUserName(user.id);
-    await this.assignUserNameOption(user.id).click();
+    // The assign-user search filters users by `username` and renders the
+    // username as the option title, so `user.id` drives both steps.
+    await this.fillAssignUserSearch(user.id);
+    await this.assignUserOption(user.id).click();
     await this.confirmAssignmentButton.click();
     await expect(this.assignUserModal).toBeHidden();
   }
