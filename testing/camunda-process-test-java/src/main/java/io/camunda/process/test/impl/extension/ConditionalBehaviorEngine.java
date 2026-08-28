@@ -201,7 +201,6 @@ public class ConditionalBehaviorEngine {
     private final List<Runnable> actions = new CopyOnWriteArrayList<>();
     private final AtomicInteger actionIndex = new AtomicInteger(0);
     private final AtomicInteger fireCount = new AtomicInteger(0);
-    private final AtomicInteger failureCount = new AtomicInteger(0);
     private final AtomicLong nextAllowedFireTimeMillis = new AtomicLong(0);
     private volatile String name;
 
@@ -266,19 +265,12 @@ public class ConditionalBehaviorEngine {
       final Runnable action = actions.get(clampToLastAction(actionIndex.get()));
       try {
         action.run();
-        failureCount.set(0);
       } catch (final Throwable t) {
-        final int failures = failureCount.incrementAndGet();
-        final long backoffMillis =
-            Math.min(
-                resetTimeout.toMillis(),
-                pollInterval.toMillis() * Math.min(32, (1L << Math.min(failures, 6))));
-        nextAllowedFireTimeMillis.set(System.currentTimeMillis() + backoffMillis);
+        nextAllowedFireTimeMillis.set(System.currentTimeMillis() + resetTimeout.toMillis());
         LOGGER.warn(
-            "Behavior '{}' action threw an exception (attempt {}), backoff for {}ms",
+            "Behavior '{}' action threw an exception, will retry after {}s",
             name,
-            failures,
-            backoffMillis,
+            resetTimeout.toSeconds(),
             t);
         return false;
       }
