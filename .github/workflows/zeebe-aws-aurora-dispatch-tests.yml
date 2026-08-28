@@ -25,7 +25,7 @@ defaults:
 jobs:
   integration-tests:
     name: "[IT] Camunda QA Integration Module. Aurora"
-    timeout-minutes: 60
+    timeout-minutes: 70
     permissions:
       contents: read
       actions: write
