@@ -35,6 +35,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizatio
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
@@ -98,7 +99,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final boolean evaluateDuplicateOutputMappingTargetsInOrder,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
-      final SecretStoreRegistry secretStoreRegistry) {
+      final SecretStoreRegistry secretStoreRegistry,
+      final SecretResolutionScheduler secretResolutionScheduler) {
 
     // The expression endpoint reports which trusted secrets an evaluation touched; only its
     // contexts record into the collector. The BPMN path uses collector-free contexts, so its
@@ -230,7 +232,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             cslCheck,
             tenantCheck,
             secretStoreRegistry,
-            incidentBehavior);
+            incidentBehavior,
+            secretResolutionScheduler);
 
     multiInstanceInputCollectionBehavior =
         new MultiInstanceInputCollectionBehavior(
