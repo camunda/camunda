@@ -25,7 +25,7 @@ import io.atomix.raft.roles.LeaderRole;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -33,6 +33,9 @@ public class CatchUpWaitTest {
 
   /** Ample budget, so a wait ends for the reason under test rather than for lack of time. */
   private static final Duration CATCH_UP_BUDGET = Duration.ofMinutes(1);
+
+  /** Short enough that a test can wait out the deadline, long enough not to fire prematurely. */
+  private static final Duration SHORT_CATCH_UP_BUDGET = Duration.ofSeconds(1);
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
 
@@ -44,28 +47,42 @@ public class CatchUpWaitTest {
     final var targetId = memberId(raftRule.getFollower().orElseThrow());
 
     // when
-    final var caughtUp = awaitCaughtUp(leader, targetId, committed + 5, CATCH_UP_BUDGET);
+    final var wait = awaitCaughtUp(leader, targetId, committed + 5, CATCH_UP_BUDGET);
     raftRule.appendEntries(5);
 
     // then
-    assertThat(caughtUp).succeedsWithin(Duration.ofSeconds(15)).isEqualTo(Optional.empty());
+    assertThat(wait.result()).succeedsWithin(Duration.ofSeconds(15)).isEqualTo(Optional.empty());
   }
 
   @Test
-  public void shouldReportNotMemberWhenTheDesiredLeaderLeavesThePartition() throws Exception {
+  public void shouldCompleteImmediatelyWhenTheDesiredLeaderIsAlreadyAtTheTargetIndex()
+      throws Exception {
     // given
     final long committed = raftRule.appendEntries(5);
     final var leader = raftRule.getLeader().orElseThrow();
     final var target = raftRule.getFollower().orElseThrow();
+    awaitReplicated(leader, memberId(target), committed);
 
     // when
-    final var caughtUp =
-        awaitCaughtUp(leader, memberId(target), committed + 1_000, CATCH_UP_BUDGET);
-    target.leave().get(30, TimeUnit.SECONDS);
+    final var wait = awaitCaughtUp(leader, memberId(target), committed, CATCH_UP_BUDGET);
 
     // then
-    assertThat(caughtUp)
-        .succeedsWithin(Duration.ofSeconds(15))
+    assertThat(wait.result()).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(Optional.empty());
+  }
+
+  @Test
+  public void shouldReportNotMemberWhenTheDesiredLeaderIsNotInThePartition() throws Exception {
+    // given
+    final long committed = raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+
+    // when
+    final var wait =
+        awaitCaughtUp(leader, MemberId.from("not-a-member"), committed + 1, CATCH_UP_BUDGET);
+
+    // then
+    assertThat(wait.result())
+        .succeedsWithin(Duration.ofSeconds(5))
         .isEqualTo(Optional.of(LeadershipTransferResult.NOT_MEMBER));
   }
 
@@ -77,42 +94,114 @@ public class CatchUpWaitTest {
     final var targetId = memberId(raftRule.getFollower().orElseThrow());
 
     // when
-    final var caughtUp = awaitCaughtUp(leader, targetId, committed + 1_000, Duration.ofSeconds(1));
+    final var wait = awaitCaughtUp(leader, targetId, committed + 1_000, SHORT_CATCH_UP_BUDGET);
 
     // then
-    assertThat(caughtUp)
+    assertThat(wait.result())
         .succeedsWithin(Duration.ofSeconds(15))
         .isEqualTo(Optional.of(LeadershipTransferResult.REPLICATION_TIMED_OUT));
   }
 
-  private static CompletableFuture<Optional<LeadershipTransferResult>> awaitCaughtUp(
+  @Test
+  public void shouldReportLeaderChangedWhenTheLeaderStops() throws Exception {
+    // given
+    final long committed = raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var targetId = memberId(raftRule.getFollower().orElseThrow());
+    final var wait = awaitCaughtUp(leader, targetId, committed + 1_000, CATCH_UP_BUDGET);
+
+    // when
+    onRaftThread(leader, wait.phase()::onLeaderStopped);
+
+    // then
+    assertThat(wait.result())
+        .succeedsWithin(Duration.ofSeconds(5))
+        .isEqualTo(Optional.of(LeadershipTransferResult.LEADER_CHANGED));
+  }
+
+  @Test
+  public void shouldReportPauseFailedWhenThePauseClears() throws Exception {
+    // given
+    final long committed = raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var targetId = memberId(raftRule.getFollower().orElseThrow());
+    final var wait = awaitCaughtUp(leader, targetId, committed + 1_000, CATCH_UP_BUDGET);
+
+    // when
+    onRaftThread(leader, wait.phase()::onPauseCleared);
+
+    // then
+    assertThat(wait.result())
+        .succeedsWithin(Duration.ofSeconds(5))
+        .isEqualTo(Optional.of(LeadershipTransferResult.PAUSE_FAILED));
+  }
+
+  @Test
+  public void shouldKeepTheSuccessfulResultWhenTheDeadlinePasses() throws Exception {
+    // given
+    final long committed = raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var target = raftRule.getFollower().orElseThrow();
+    awaitReplicated(leader, memberId(target), committed);
+
+    // when
+    final var wait = awaitCaughtUp(leader, memberId(target), committed, Duration.ofMillis(200));
+
+    // then
+    assertThat(wait.result()).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(Optional.empty());
+    Awaitility.await("the result stays successful past the deadline")
+        .during(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(wait.result().join()).isEqualTo(Optional.empty()));
+  }
+
+  private static void awaitReplicated(
+      final RaftServer leader, final MemberId memberId, final long index) {
+    Awaitility.await("until " + memberId + " has replicated up to " + index)
+        .atMost(Duration.ofSeconds(15))
+        .until(
+            () -> {
+              final var context = leader.getContext().getCluster().getMemberContext(memberId);
+              return context != null && context.getMatchIndex() >= index;
+            });
+  }
+
+  private static StartedWait awaitCaughtUp(
       final RaftServer leader,
       final MemberId desiredLeader,
       final long targetIndex,
       final Duration catchUpBudget) {
     final var deadlineMs = System.currentTimeMillis() + catchUpBudget.toMillis();
-    final var caughtUp = new CompletableFuture<Optional<LeadershipTransferResult>>();
+    final var result = new CompletableFuture<Optional<LeadershipTransferResult>>();
+    final var started = new CompletableFuture<CatchUpWait>();
     leader
         .getContext()
         .getThreadContext()
         .execute(
-            () ->
-                new CatchUpWait(
-                        leader.getContext(),
-                        leaderRole(leader)::isRunning,
-                        desiredLeader,
-                        targetIndex,
-                        deadlineMs)
-                    .start()
-                    .whenComplete(
-                        (result, error) -> {
-                          if (error != null) {
-                            caughtUp.completeExceptionally(error);
-                          } else {
-                            caughtUp.complete(result);
-                          }
-                        }));
-    return caughtUp;
+            () -> {
+              final var wait =
+                  new CatchUpWait(
+                      leader.getContext(),
+                      leaderRole(leader),
+                      desiredLeader,
+                      targetIndex,
+                      deadlineMs);
+              started.complete(wait);
+              wait.start()
+                  .whenComplete(
+                      (outcome, error) -> {
+                        if (error != null) {
+                          result.completeExceptionally(error);
+                        } else {
+                          result.complete(outcome);
+                        }
+                      });
+            });
+    return new StartedWait(started.join(), result);
+  }
+
+  private static void onRaftThread(final RaftServer leader, final Runnable action) {
+    CompletableFuture.runAsync(action, leader.getContext().getThreadContext()).join();
   }
 
   private static LeaderRole leaderRole(final RaftServer leader) {
@@ -122,4 +211,7 @@ public class CatchUpWaitTest {
   private static MemberId memberId(final RaftServer server) {
     return server.getContext().getCluster().getLocalMember().memberId();
   }
+
+  private record StartedWait(
+      CatchUpWait phase, CompletableFuture<Optional<LeadershipTransferResult>> result) {}
 }
