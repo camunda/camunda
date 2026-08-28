@@ -2,9 +2,7 @@
 
 Benchmarks secret resolution (`POST /v2/secrets/resolve`) through the code path a customer
 actually exercises — an outbound connector job resolving a legacy secret before its HTTP call —
-instead of a standalone driver hammering the gateway API directly. A second, parallel branch also
-exercises `POST /v2/secrets/list`, via a small dedicated job worker rather than a connector (no
-connector code path calls `list`).
+instead of a standalone driver hammering the gateway API directly.
 
 ## Background
 
@@ -16,38 +14,24 @@ addresses:
 
 - **Architectural**: the load-tester Helm chart (`camunda-load-tests-helm`) already provides a
   Starter/Worker deployment model; adding a bespoke driver deployment duplicates that
-  infrastructure instead of reusing it. This scenario adds no new Deployment templates — it only
-  adds a BPMN process and reuses the vendored Starter and Worker deployments (`resolveSecret` via
-  the `connectors` component every load-test cluster already deploys, `listSecrets` via a small
-  `ListSecretsWorker` job worker added to this module and deployed through the existing `workers:`
-  mechanism), rather than a bespoke driver deployment.
+  infrastructure instead of reusing it. This scenario adds no new Deployment templates —
+  it only adds a BPMN process and reuses the vendored Starter, plus the `connectors` component
+  every load-test cluster already deploys.
 - **Product relevance**: recurring standalone API benchmarks in isolation aren't very actionable.
   The customer-relevant path is secret resolution for **connectors** (the actual caller of
   `/v2/secrets/resolve` in production), so measuring it there — not via an API-shaped proxy for it
   — gives baseline numbers that are directly meaningful to the Connectors team and to customers.
-  `/v2/secrets/list` has no equivalent customer-relevant caller in this codebase, so its branch
-  remains a direct API call, same as before — only without a separate driver deployment.
-
 
 ## How it works
 
 The [`secrets-connector` scenario](../setup/common.mk) configures the Starter to create instances
 of the [`connectorSecretResolution`](../load-tester/src/main/resources/bpmn/secrets/connectorSecretResolution.bpmn)
-process instead of its default `one_task` process. Each instance forks into two branches off a
-parallel gateway, so neither one's latency affects the other's measurement:
+process instead of its default `one_task` process, and deploys no workers — the process's only
+task is a single `io.camunda:http-json:1` service task, activated and completed by the
+`connectors` component (already part of every load-test cluster; see
+[`camunda-platform-values-defaults.yaml`](../setup/main/values/camunda-platform-values-defaults.yaml)).
 
-- `resolveSecret`: a single `io.camunda:http-json:1` service task, activated and completed by the
-  `connectors` component (already part of every load-test cluster; see
-  [`camunda-platform-values-defaults.yaml`](../setup/main/values/camunda-platform-values-defaults.yaml)).
-- `listSecrets`: a `benchmark-list-secrets` job, completed by a dedicated `ListSecretsWorker` job
-  worker (in this module, not a connector) deployed as the `list-secrets` worker (see
-  [`load-tester-values-secrets-connector.yaml`](../setup/scenarios/load-tester-values-secrets-connector.yaml)).
-  The connector runtime has no code path that ever calls `/v2/secrets/list` — its
-  `CentralStoreSecretProvider` only resolves references one name at a time — so this branch exists
-  purely to give the benchmark real, proportional list traffic, at the same instance rate as
-  `resolveSecret`, without needing a bespoke standalone driver.
-
-The `resolveSecret` task's `headers` input is built from `batchSize` placeholders of the form
+The task's `headers` input is built from `batchSize` placeholders of the form
 `{{secrets.<keyPrefix><index>}}`, where `index` is `modulo(businessKey + modulo(i, uniquePerBatch),
 poolSize)` and `businessKey` is the Starter's own per-instance monotonic counter. Before issuing the
 HTTP call, the connector runtime resolves every one of them via `CentralStoreSecretProvider`
@@ -166,13 +150,12 @@ ratio panels across steps.
 ### Coverage vs. issue #56590
 
 This scenario, plus the presets above, benchmarks `POST /v2/secrets/resolve` across cache-first,
-store-miss, batch-dedup, and concurrency-ramp scenarios — through the real connector code path —
-and `POST /v2/secrets/list`, once per instance, via the `list-secrets` job worker: the connector
-itself never calls `list` (it resolves in-process via
-`CentralStoreSecretProvider`/`SecretProviderAggregator.getSecret()`, never the gateway's list REST
-endpoint), so that branch runs as a dedicated Zeebe job worker (`ListSecretsWorker`) instead of a
-connector, in parallel with `resolveSecret` so it neither delays nor is delayed by the resolve
-measurement.
+store-miss, batch-dedup, and concurrency-ramp scenarios — through the real connector code path.
+It does **not** exercise `POST /v2/secrets/list`: the connector resolves secrets in-process via
+`CentralStoreSecretProvider`/`SecretProviderAggregator.getSecret()`, never calling the gateway's
+list REST endpoint. If `/v2/secrets/list` coverage is needed, it requires either reviving the
+driver-based approach from [PR #60742](https://github.com/camunda/camunda/pull/60742) for that one
+call, or a dedicated connector/task that calls it directly.
 
 ## Metrics
 
@@ -189,14 +172,6 @@ scraped by the existing Prometheus/Grafana pipeline):
 - The engine-side `camunda_secret_cache_*` and `camunda_secret_resolution_duration_seconds_*`
   metrics, which measure the gateway-side resolve cost independent of which client called it, and
   remain valid baselines from the earlier driver-based benchmark.
-- `http_server_requests_seconds_count{uri=~"/v2/secrets.*"}` on the orchestration pods already
-  differentiates `resolve` from `list` via the `uri` label (standard Spring Boot Micrometer
-  HTTP-server instrumentation) — no extra config needed to split them. `camunda_secret_cache_*` is
-  deliberately not split this way: both the REST resolve/list path and the job-activation FEEL
-  lookup land in the same counter by design.
-- The `list-secrets` worker itself exposes no new metric; its jobs complete with a
-  `listedSecretCount` process variable (the number of references returned), useful for spot-checks
-  but not scraped by Prometheus.
 
 A ready-made dashboard,
 [`monitor/grafana/dashboards/secrets-connector-benchmark.json`](../../monitor/grafana/dashboards/secrets-connector-benchmark.json),
