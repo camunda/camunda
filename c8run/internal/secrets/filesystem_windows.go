@@ -18,13 +18,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func ensureDirectory(path, _ string) error {
-	for current := path; current != filepath.Dir(current); current = filepath.Dir(current) {
-		info, err := os.Lstat(current)
-		if err == nil && info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("secrets path component %q must not be a reparse point", current)
-		}
-	}
+func ensureDirectory(path string) error {
 	info, err := os.Lstat(path)
 	if os.IsNotExist(err) {
 		if err := os.MkdirAll(path, 0o700); err != nil {
@@ -64,38 +58,11 @@ func ensureDirectory(path, _ string) error {
 		if !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
 			return fmt.Errorf("secret %q must be a regular file and not a reparse point", entry.Name())
 		}
-		links, err := windowsLinkCount(entryPath)
-		if err != nil {
-			return err
-		}
-		if links != 1 {
-			return fmt.Errorf("secret %q must not be a hard link", entry.Name())
-		}
-		owned, err := ownedByTrustedPrincipal(entryPath)
-		if err != nil {
-			return err
-		}
-		if !owned {
-			return fmt.Errorf("secret %q is not owned by the current Windows user", entry.Name())
-		}
 		if err := restrictAccess(entryPath, false); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func windowsLinkCount(path string) (uint32, error) {
-	handle, err := windows.CreateFile(windows.StringToUTF16Ptr(path), windows.FILE_READ_ATTRIBUTES, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
-	if err != nil {
-		return 0, fmt.Errorf("failed to inspect Windows secret links: %w", err)
-	}
-	defer windows.CloseHandle(handle)
-	var information windows.ByHandleFileInformation
-	if err := windows.GetFileInformationByHandle(handle, &information); err != nil {
-		return 0, fmt.Errorf("failed to inspect Windows secret links: %w", err)
-	}
-	return information.NumberOfLinks, nil
 }
 
 func ownedByTrustedPrincipal(path string) (bool, error) {
