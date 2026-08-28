@@ -137,6 +137,8 @@ abstract class IncidentUpdateRepositoryIT {
 
   protected abstract IncidentUpdateRepository createRepository();
 
+  protected abstract void refresh(String index) throws IOException;
+
   protected abstract <T> Collection<T> search(
       final String index, final String field, final List<String> terms, final Class<T> documentType)
       throws IOException;
@@ -790,6 +792,9 @@ abstract class IncidentUpdateRepositoryIT {
 
       // then
       assertThat(result).succeedsWithin(REQUEST_TIMEOUT);
+
+      refresh(listViewTemplate.getFullQualifiedName());
+
       final var processInstances =
           search(
               listViewTemplate.getFullQualifiedName(),
@@ -839,6 +844,9 @@ abstract class IncidentUpdateRepositoryIT {
 
       // then
       assertThat(result).succeedsWithin(REQUEST_TIMEOUT);
+
+      refresh(flowNodeInstanceTemplate.getFullQualifiedName());
+
       final var flowNodes =
           search(
               flowNodeInstanceTemplate.getFullQualifiedName(),
