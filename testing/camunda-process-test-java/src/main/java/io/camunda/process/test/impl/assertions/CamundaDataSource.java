@@ -52,27 +52,14 @@ import java.util.function.Consumer;
 
 public class CamundaDataSource {
 
-  private static final int DEFAULT_PAGE_LIMIT = 100;
-
   private final Consumer<AnyPage> pageRequest;
   private final CamundaClient client;
   private final OffsetDateTime testCaseStartTime;
 
   public CamundaDataSource(final CamundaClient client) {
-    this(client, null, DEFAULT_PAGE_LIMIT);
-  }
-
-  /**
-   * Creates a data source that filters all query results to only include data created at or after
-   * the given {@code testCaseStartTime}. When {@code testCaseStartTime} is {@code null}, no time
-   * filter is applied.
-   *
-   * @param client the Camunda client to use for queries
-   * @param testCaseStartTime the start time of the current test case, as reported by the runtime
-   *     clock; may be {@code null} to disable filtering
-   */
-  public CamundaDataSource(final CamundaClient client, final Instant testCaseStartTime) {
-    this(client, testCaseStartTime, DEFAULT_PAGE_LIMIT);
+    this.client = client;
+    testCaseStartTime = null;
+    pageRequest = page -> {};
   }
 
   /**

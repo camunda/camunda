@@ -16,6 +16,8 @@
 package io.camunda.process.test.impl.assertions;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,6 +32,7 @@ import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.CorrelatedMessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
@@ -64,6 +67,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class CamundaDataSourceTest {
 
   private static final Instant START_TIME = Instant.parse("2024-01-01T10:00:00Z");
+  private static final int QUERY_PAGE_LIMIT = 456;
 
   @Mock private CamundaClient client;
 
@@ -84,10 +88,10 @@ public class CamundaDataSourceTest {
     @BeforeEach
     @SuppressWarnings("unchecked")
     void setUp() {
-      when(client.newProcessInstanceSearchRequest()).thenReturn(searchRequest);
-      when(searchRequest.send()).thenReturn(future);
-      when(future.join()).thenReturn(searchResponse);
-      when(searchResponse.items()).thenReturn(Collections.emptyList());
+      lenient().when(client.newProcessInstanceSearchRequest()).thenReturn(searchRequest);
+      lenient().when(searchRequest.send()).thenReturn(future);
+      lenient().when(future.join()).thenReturn(searchResponse);
+      lenient().when(searchResponse.items()).thenReturn(Collections.emptyList());
     }
 
     @Test
@@ -107,7 +111,8 @@ public class CamundaDataSourceTest {
     @Test
     void shouldApplyStartTimeFilterToProcessInstances() {
       // given
-      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
 
       // when
       dataSource.findProcessInstances();
@@ -118,10 +123,64 @@ public class CamundaDataSourceTest {
       verify(processInstanceFilter).startDate(any(Consumer.class));
     }
 
+    @Nested
+    class PageLimitTests {
+
+      @Mock(answer = Answers.RETURNS_SELF)
+      private ProcessInstanceSearchRequest searchRequest;
+
+      @Mock private CamundaFuture<SearchResponse<ProcessInstance>> future;
+      @Mock private SearchResponse<ProcessInstance> searchResponse;
+
+      @Mock(answer = Answers.RETURNS_SELF)
+      private AnyPage page;
+
+      @Captor private ArgumentCaptor<Consumer<AnyPage>> pageCaptor;
+
+      @BeforeEach
+      @SuppressWarnings("unchecked")
+      void setUp() {
+        when(client.newProcessInstanceSearchRequest()).thenReturn(searchRequest);
+        when(searchRequest.send()).thenReturn(future);
+        when(future.join()).thenReturn(searchResponse);
+        when(searchResponse.items()).thenReturn(Collections.emptyList());
+      }
+
+      @Test
+      void shouldNotConfigurePageLimitForSingleArgumentConstructor() {
+        // given
+        final CamundaDataSource dataSource = new CamundaDataSource(client);
+
+        // when
+        dataSource.findProcessInstances();
+
+        // then
+        verify(searchRequest).page(pageCaptor.capture());
+        pageCaptor.getValue().accept(page);
+        verify(page, never()).limit(anyInt());
+      }
+
+      @Test
+      void shouldConfigurePageLimitForThreeArgumentConstructor() {
+        // given
+        final CamundaDataSource dataSource =
+            new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
+
+        // when
+        dataSource.findProcessInstances();
+
+        // then
+        verify(searchRequest).page(pageCaptor.capture());
+        pageCaptor.getValue().accept(page);
+        verify(page).limit(QUERY_PAGE_LIMIT);
+      }
+    }
+
     @Test
     void shouldApplyStartTimeFilterBeforeUserFilter() {
       // given
-      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
 
       // when - user provides a custom filter AND start time is set
       dataSource.findProcessInstances(f -> f.processDefinitionId("myProcess"));
@@ -176,7 +235,8 @@ public class CamundaDataSourceTest {
     @Test
     void shouldApplyStartTimeFilterToElementInstances() {
       // given
-      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
 
       // when
       dataSource.findElementInstances(f -> {});
@@ -228,7 +288,8 @@ public class CamundaDataSourceTest {
     @Test
     void shouldApplyStartTimeFilterToIncidents() {
       // given
-      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
 
       // when
       dataSource.findIncidents(f -> {});
@@ -280,7 +341,8 @@ public class CamundaDataSourceTest {
     @Test
     void shouldApplyStartTimeFilterToUserTasks() {
       // given
-      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
 
       // when
       dataSource.findUserTasks(f -> {});
@@ -332,7 +394,8 @@ public class CamundaDataSourceTest {
     @Test
     void shouldApplyStartTimeFilterToJobs() {
       // given
-      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
 
       // when
       dataSource.findJobs(f -> {});
@@ -384,7 +447,8 @@ public class CamundaDataSourceTest {
     @Test
     void shouldApplyStartTimeFilterToDecisionInstances() {
       // given
-      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
 
       // when
       dataSource.findDecisionInstances(f -> {});
@@ -436,7 +500,8 @@ public class CamundaDataSourceTest {
     @Test
     void shouldApplyStartTimeFilterToMessageSubscriptions() {
       // given
-      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
 
       // when
       dataSource.findMessageSubscriptions(f -> {});
@@ -488,7 +553,8 @@ public class CamundaDataSourceTest {
     @Test
     void shouldApplyStartTimeFilterToCorrelatedMessages() {
       // given
-      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
 
       // when
       dataSource.findCorrelatedMessages(f -> {});
