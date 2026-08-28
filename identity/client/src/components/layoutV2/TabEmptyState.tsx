@@ -7,9 +7,8 @@
  */
 
 import { FC } from "react";
-// TODO: Replace with design system empty state
-import { C3EmptyState } from "@camunda/camunda-composite-components";
-import { Add } from "@carbon/react/icons";
+import { Button, EmptyState } from "@camunda/design-system";
+import { Plus } from "lucide-react";
 import { useDocsUrl } from "../documentation/DocsUrlContext";
 import { documentationHref } from "src/components/documentationV2";
 import useTranslate from "src/utility/localization";
@@ -40,7 +39,7 @@ const TabEmptyState: FC<TabEmptyStateProps> = ({
   ).toLowerCase();
 
   return (
-    <C3EmptyState
+    <EmptyState
       heading={t("emptyStateTitleAssign", {
         childResourceType: childResourceTypeText,
         parentResourceType: parentResourceTypeText,
@@ -52,19 +51,27 @@ const TabEmptyState: FC<TabEmptyStateProps> = ({
               childResourceType: childResourceTypeText,
             })
       }
-      button={{
-        label: t("emptyStateButtonAssign", {
-          childResourceType: childResourceTypeText,
-        }),
-        onClick: handleClick,
-        icon: Add,
-      }}
-      link={{
-        href: documentationHref(docsUrl, docsLinkPath),
-        label: t("emptyStateLearnText", {
-          resourceType: childResourceTypeText,
-        }),
-      }}
+      action={
+        <Button onClick={handleClick}>
+          <Plus data-icon="inline-start" aria-hidden="true" />
+          {t("emptyStateButtonAssign", {
+            childResourceType: childResourceTypeText,
+          })}
+        </Button>
+      }
+      secondaryAction={
+        <Button variant="link" size="sm" asChild>
+          <a
+            href={documentationHref(docsUrl, docsLinkPath)}
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            {t("emptyStateLearnText", {
+              resourceType: childResourceTypeText,
+            })}
+          </a>
+        </Button>
+      }
     />
   );
 };
