@@ -18,7 +18,8 @@ import {
 	type RegisteredRouter,
 } from '@tanstack/react-router';
 
-type ValidRoutes = RegisteredRouter['routeTree']['types']['fileRouteTypes']['to'];
+type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
+type ValidRoutes = FileRouteTypes['to'] | FileRouteTypes['id'];
 
 async function renderWithRouter(
 	Component: React.ComponentType,

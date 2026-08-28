@@ -29,7 +29,10 @@ describe('<TasksLayoutPage />', () => {
 					onScrollUp={noop}
 				/>
 			),
-			{path: '/shadcn/tasklist'},
+			{
+				path: '/shadcn/_auth/tasklist/_tasks',
+				initialEntry: '/shadcn/_auth/tasklist/_tasks?filter=all-open&sortBy=creation',
+			},
 		);
 
 		await expect.element(screen.getByRole('heading', {name: 'Tasks', exact: true})).toBeInTheDocument();

@@ -76,7 +76,7 @@ test.describe('Tasklist index page', () => {
 	test('should render Tasklist index page with navigation', async ({shadcnTasklistIndexPage}) => {
 		await shadcnTasklistIndexPage.goto();
 
-		await expect(shadcnTasklistIndexPage.tasksPanelHeading('All open tasks')).toBeVisible();
+		await expect(shadcnTasklistIndexPage.filterSelect).toHaveText('All open tasks');
 		await expect(shadcnTasklistIndexPage.header.branding).toBeVisible();
 		await expect(shadcnTasklistIndexPage.header.tasksNavItem).toBeVisible();
 		await expect(shadcnTasklistIndexPage.header.processesNavItem).toBeVisible();
