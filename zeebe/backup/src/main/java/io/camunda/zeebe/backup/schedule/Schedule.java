@@ -18,6 +18,7 @@ import java.time.ZoneId;
 import java.time.chrono.ChronoZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /** Represents a schedule which can be either a CRON expression or an ISO8601 duration interval. */
 public sealed interface Schedule {
@@ -39,7 +40,7 @@ public sealed interface Schedule {
    * @return the typed {@link Schedule}
    * @throws IllegalArgumentException if the expression is invalid
    */
-  static Schedule parseSchedule(final String expression) throws IllegalArgumentException {
+  static Schedule parseSchedule(final @Nullable String expression) throws IllegalArgumentException {
     if (expression == null || expression.isBlank()) {
       return none();
     }
