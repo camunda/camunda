@@ -218,6 +218,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .withJobKey(jobKey)
             .getFirst();
     assertThat(discardCommand.getRecordType()).isEqualTo(RecordType.COMMAND);
+    assertThat(discardCommand.getKey()).isEqualTo(-1L);
     assertThat(discardCommand.getValue().getJobLease()).isEmpty();
 
     // and the pending item is discarded
