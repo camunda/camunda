@@ -205,13 +205,13 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   @Override
   public CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate bulk) {
     final var docUpdatesStream = bulk.stream();
-    return bulkUpdate(docUpdatesStream);
+    return bulkUpdate(docUpdatesStream, Refresh.WaitFor);
   }
 
   @Override
   public CompletionStage<List<String>> bulkUpdate(final NonIncidentBulkUpdate bulk) {
     final var docUpdatesStream = bulk.stream();
-    return bulkUpdate(docUpdatesStream);
+    return bulkUpdate(docUpdatesStream, Refresh.False);
   }
 
   @Override
@@ -250,7 +250,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   }
 
   private CompletableFuture<List<String>> bulkUpdate(
-      final Stream<DocumentUpdate> docUpdatesStream) {
+      final Stream<DocumentUpdate> docUpdatesStream, final Refresh refresh) {
     final var updates = docUpdatesStream.map(this::createUpdateOperation).toList();
     if (updates.isEmpty()) {
       return CompletableFuture.completedFuture(List.of());
@@ -260,7 +260,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
         new BulkRequest.Builder()
             .operations(updates)
             .source(s -> s.fetch(false))
-            .refresh(Refresh.WaitFor)
+            .refresh(refresh)
             .build();
 
     return client
