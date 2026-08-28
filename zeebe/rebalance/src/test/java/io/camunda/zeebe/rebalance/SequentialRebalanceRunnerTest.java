@@ -177,6 +177,48 @@ final class SequentialRebalanceRunnerTest {
   }
 
   @Test
+  void shouldNotPlanThePartitionsOfADisabledPhysicalTenant() {
+    // given
+    leaders.computeIfAbsent("tenant-a", ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var configuration =
+        configurationOf(
+                Map.of(
+                    "tenant-a",
+                        Map.of(MEMBER_1, Map.of(1, active(1)), MEMBER_2, Map.of(1, active(2))),
+                    "tenant-b",
+                        Map.of(MEMBER_1, Map.of(1, active(2)), MEMBER_2, Map.of(1, active(1)))))
+            .updatePartitionGroupConfig("tenant-b", PartitionGroupConfiguration::disable);
+
+    // when
+    final var rebalance = planDryRun(configuration);
+
+    // then
+    assertThat(rebalance.partitions())
+        .containsExactly(PartitionRebalance.pending("tenant-a", 1, MEMBER_1, MEMBER_2));
+  }
+
+  @Test
+  void shouldNotLookUpTheTopologyOfADisabledPhysicalTenant() {
+    // given
+    unavailableGroups.add("tenant-b");
+    leaders.computeIfAbsent("tenant-a", ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var configuration =
+        configurationOf(
+                Map.of(
+                    "tenant-a", Map.of(MEMBER_1, Map.of(1, active(1))),
+                    "tenant-b", Map.of(MEMBER_1, Map.of(1, active(1)))))
+            .updatePartitionGroupConfig("tenant-b", PartitionGroupConfiguration::disable);
+
+    // when
+    final var rebalance = planDryRun(configuration);
+
+    // then
+    assertThat(rebalance.partitions())
+        .map(PartitionRebalance::physicalTenantId)
+        .containsExactly("tenant-a");
+  }
+
+  @Test
   void shouldPlanATransferWithNoOutcomeYet() {
     // given / when
     final var rebalance = planDryRun(groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2)));
