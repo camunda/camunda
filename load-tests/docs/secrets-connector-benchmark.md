@@ -38,9 +38,22 @@ HTTP call, the connector runtime resolves every one of them via `CentralStoreSec
 (legacy `FALLBACK` mode, configured on the `connectors` component by
 [`camunda-platform-values-secrets-connector.yaml`](../setup/main/values/camunda-platform-values-secrets-connector.yaml)),
 which calls the same gateway `/v2/secrets/resolve` endpoint the old driver benchmarked directly —
-but through the client that actually calls it in production. `secret-filter.mode=STRICT` (required
-whenever `legacy.mode=FALLBACK`) derives its allow-list from the task's own input mappings, so no
-separate allow-list config is needed.
+but through the client that actually calls it in production.
+
+`secret-filter.mode` is `DISABLED`, not `STRICT`/`LAX`: both of those derive their per-element
+allow-list by statically regex-scanning the BPMN XML's `zeebe:input source` text for literal
+`{{secrets.<name>}}` occurrences (`ProcessDefinitionSecretKeyCache`/`SecretUtil` in connectors).
+This scenario's placeholder is built at runtime by a FEEL expression
+(`"{{secrets." + keyPrefix + string(...) + "}}"`), so no literal name ever appears in the BPMN XML
+— the scan finds none, both modes cache that empty allow-list, and every reference is filtered out
+from then on (`LazyLoadingSecretFilter` only falls back to allow-all on an exception during the
+scan, not on a legitimately-empty result). This was confirmed empirically: with `STRICT`, a full
+run produced zero `/v2/secrets/resolve` calls and zero `camunda_secret_cache_result_total`
+increments on any orchestration pod, even though jobs kept completing — the target
+(`connectors:8080/actuator/health`) never validates headers, so a filtered-out, unresolved
+placeholder still "succeeds". `DISABLED` is the only mode that skips the filter
+(`SecretFilter.allowAll()`), so it is the only one compatible with a dynamically-parameterized
+secret name.
 
 `batchSize`, `uniquePerBatch`, `poolSize` and `keyPrefix` are process variables read from the
 Starter's `payloadPath` (see [Test scenarios](#test-scenarios) below), so tuning them requires no
