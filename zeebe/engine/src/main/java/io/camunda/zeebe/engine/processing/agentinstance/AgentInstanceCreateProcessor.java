@@ -123,11 +123,6 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
-    // Reject CREATE when an agent instance already exists for this element instance. The existence
-    // check runs before the active-state and element-type guards so that a late retry against an
-    // element instance that has since left ACTIVE (e.g. parked in COMPLETING behind an incident)
-    // gets ALREADY_EXISTS rather than INVALID_STATE. Both the stream rejection and the HTTP
-    // response are consistent: no success event is emitted.
     final var existingAgentInstanceKey = elementInstance.getAgentInstanceKey();
     if (existingAgentInstanceKey != -1L) {
       writeRejection(
