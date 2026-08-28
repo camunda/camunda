@@ -24,6 +24,7 @@ The following are runtime or packaging output. Do not edit them as source and do
 - Built `camunda8-run-*/` archives
 - `jre/` — jlink-created Java runtime image
 - `camunda-data/` — runtime data directory
+- `secrets/` — local file secret store
 - `log/` — log output (`camunda.log`, `connectors.log`)
 - Built binaries: `c8run`, `c8run.exe`, `packager`
 - PID files and lock files

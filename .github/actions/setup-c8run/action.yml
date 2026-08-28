@@ -190,22 +190,38 @@ runs:
         JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
         JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
-    - name: ls
-      run: ls
+    - name: Extract packaged C8Run for E2E
+      run: |
+        mkdir e2e-distribution
+        case "${{ inputs.os }}" in
+          ubuntu-latest) tar -xzf camunda8-run-*.tar.gz -C e2e-distribution ;;
+          macos*) unzip -q camunda8-run-*.zip -d e2e-distribution ;;
+        esac
+        echo "C8RUN_E2E_DIR=$(printf '%s' "$PWD"/e2e-distribution/c8run-*)" >> "$GITHUB_ENV"
       shell: bash
       working-directory: ./c8run
 
+    - name: Configure packaged C8Run E2E secret
+      run: printf '%s' 'c8run-centralized-secret-test-value' | ./c8run secrets set C8RUN_E2E_SECRET --stdin
+      shell: bash
+      working-directory: ${{ env.C8RUN_E2E_DIR }}
+
+    - name: ls
+      run: ls
+      shell: bash
+      working-directory: ${{ env.C8RUN_E2E_DIR }}
+
     - if: ${{ inputs.os == 'ubuntu-latest' }}
       name: Linux - Run c8run
-      run: ./c8run start --config e2e_tests/prefix-config.yaml
+      run: ./c8run start
       shell: bash
-      working-directory: ./c8run
+      working-directory: ${{ env.C8RUN_E2E_DIR }}
 
     - if: ${{ startsWith(inputs.os, 'macos') }}
       name: Mac - Run c8run
       shell: bash
-      run: ./c8run start --config e2e_tests/prefix-config.yaml
-      working-directory: ./c8run
+      run: ./c8run start
+      working-directory: ${{ env.C8RUN_E2E_DIR }}
 
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
