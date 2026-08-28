@@ -102,19 +102,11 @@ public final class CompleteJobTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldRejectIfVariablesAreInvalid(final boolean useRest, final TestInfo testInfo) {
-    // given
-    final String jobType = "job-" + testInfo.getDisplayName();
-    final var jobKey = resourcesHelper.createSingleJob(jobType);
-
-    // when
-    if (useRest) {
-      assertThatThrownBy(() -> getCommand(client, useRest, jobKey).variables("[]").send().join())
-          .hasMessageContaining("Failed to deserialize json '[]' to 'Map<String, Object>'");
-    } else {
-      assertThatThrownBy(() -> getCommand(client, useRest, jobKey).variables("[]").send().join())
-          .hasMessageContaining("Expected variables to be valid msgpack, but it could not be read");
-    }
+  public void shouldRejectIfVariablesAreInvalid(final boolean useRest) {
+    // when / then
+    assertThatThrownBy(() -> getCommand(client, useRest, 1L).variables("[]"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("variables must be a JSON object, but was: []");
   }
 
   @ParameterizedTest
