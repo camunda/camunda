@@ -83,6 +83,8 @@ spec:
               value: "3"
             - name: CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE
               value: "1000"
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE
+              value: "false"
           resources:
             limits:
               cpu: 2000m
