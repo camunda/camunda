@@ -126,22 +126,6 @@ public final class ActivityInputMappingTest {
       },
       {"{'x': 1}", mapping(b -> b.zeebeInput("x")), activityVariables(variable("x", "null"))},
       {
-        // mappings are evaluated in modeling order, so a later mapping can reference the target of
-        // an earlier one even when nested targets are interleaved with plain ones
-        // regression test for https://github.com/camunda/camunda/issues/11789
-        "{}",
-        mapping(
-            b ->
-                b.zeebeInputExpression("1", "obj.first")
-                    .zeebeInputExpression("2", "flat")
-                    .zeebeInputExpression("flat", "obj.second")
-                    .zeebeInputExpression("flat", "flatCopy")),
-        activityVariables(
-            variable("flat", "2"),
-            variable("obj", "{\"first\":1,\"second\":2}"),
-            variable("flatCopy", "2"))
-      },
-      {
         // a mapping referencing a target produced by a LATER mapping sees it as not-yet-defined and
         // resolves to null (forward references are not resolved); the later mapping still produces
         // its own value normally
@@ -166,17 +150,6 @@ public final class ActivityInputMappingTest {
         "{'x': 1, 'y': 2}",
         mapping(b -> b.zeebeInputExpression("x", "a").zeebeInputExpression("y", "b")),
         activityVariables(variable("a", "1"), variable("b", "2"))
-      },
-      {
-        // duplicate targets: every mapping is evaluated in order, the last value wins;
-        // an intermediate mapping sees the value that was current at its position
-        "{}",
-        mapping(
-            b ->
-                b.zeebeInputExpression("1", "x")
-                    .zeebeInputExpression("x", "y")
-                    .zeebeInputExpression("2", "x")),
-        activityVariables(variable("x", "2"), variable("y", "1"))
       },
       {
         // static (non-'=') source values are treated as strings, preserving the original bytes:

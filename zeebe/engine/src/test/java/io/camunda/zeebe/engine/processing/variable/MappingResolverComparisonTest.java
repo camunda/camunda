@@ -76,6 +76,8 @@ class MappingResolverComparisonTest {
 
   private static final OrderedMappingResolver ORDERED = new OrderedMappingResolver();
   private static final CombinedMappingResolver LEGACY = new CombinedMappingResolver();
+  private static final MappingContext TEST_CONTEXT =
+      new MappingContext("test-element", 0L, 0L, 0L, "default");
 
   @Nested
   @DisplayName("Rule 1: an input mapping creates a local variable")
@@ -261,6 +263,23 @@ class MappingResolverComparisonTest {
       // then
       Helpers.assertSame(results, "{'a':2,'b':2}");
     }
+
+    @Test
+    @DisplayName(
+        "5.6 nested target from an earlier mapping used as source in a later mapping"
+            + " -- both resolvers agree via FEEL context-literal sibling scoping")
+    void shouldSeeANestedTargetFromAnEarlierMappingInALaterSource() {
+      // given: mapping 1 produces a.b=1; mapping 2 reads a.b as its source
+      final var mappings = List.of(Helpers.mapping("=1", "a.b"), Helpers.mapping("=a.b", "c"));
+
+      // when
+      final var results = Helpers.resolve(mappings, Map.of());
+
+      // then: ordered sees a.b=1 in the per-mapping accumulator when mapping 2 runs;
+      // combined's single FEEL context is {a:{b:1},c:a.b} -- FEEL resolves the bare 'a'
+      // in 'a.b' against the context literal's own 'a' entry ({b:1}), so both land on c=1
+      Helpers.assertSame(results, "{'a':{'b':1},'c':1}");
+    }
   }
 
   @Nested
@@ -412,6 +431,26 @@ class MappingResolverComparisonTest {
       Helpers.assertDiffers(
           results, "{'x':{'a':3},'y':{'a':3,'b':2}}", "{'x':{'a':3},'y':{'a':3}}");
     }
+
+    @Test
+    @DisplayName(
+        "7.6 partial shadowing when the variable lives in the element's own (nearest) scope"
+            + " -- simulates multi-instance inputElement, diverges from 8.9.0")
+    void shouldLayerOverAVariableInTheElementsOwnScope() {
+      // given: 'item' is in the nearest scope, as a multi-instance inputElement variable would be;
+      // mapping 1 partially shadows item by overriding item.a; mapping 2 reads the whole item back
+      final var mappings = List.of(Helpers.mapping("=3", "item.a"), Helpers.mapping("=item", "z"));
+      final Map<String, Object> elementScope = Map.of("item", Map.of("a", 1, "b", 2));
+
+      // when
+      final var results = Helpers.resolveWithScopeChain(mappings, elementScope, Map.of());
+
+      // then: ordered's fallback readback merges the nearest scope's untouched 'b' into z;
+      // combined's FEEL context is {item:{a:3},z:item} -- 'item' in 'z:item' resolves against
+      // the context literal's own 'item' entry ({a:3}), so 'b' from the element scope is lost
+      Helpers.assertDiffers(
+          results, "{'item':{'a':3},'z':{'a':3,'b':2}}", "{'item':{'a':3},'z':{'a':3}}");
+    }
   }
 
   @Nested
@@ -534,6 +573,23 @@ class MappingResolverComparisonTest {
     }
 
     @Test
+    @DisplayName(
+        "non-numeric static source (no leading '=') is preserved as its string value"
+            + " in both resolvers")
+    void shouldPreserveNonNumericStaticSourceAsStringValue() {
+      // given: source "hello" has no leading '=' so the transformer treats it as a static literal
+      // and wraps it in FEEL double-quotes ("\"hello\""); it must never be mistaken for a
+      // variable reference or FEEL expression
+      final var mappings = List.of(Helpers.mapping("hello", "greeting"));
+
+      // when
+      final var results = Helpers.resolve(mappings, Map.of());
+
+      // then: both resolvers evaluate the static FEEL string literal and write the plain string
+      Helpers.assertSame(results, "{'greeting':'hello'}");
+    }
+
+    @Test
     @DisplayName("mapping with no source at all resolves to null")
     void shouldResolveAMappingWithoutASourceToNull() {
       // given
@@ -603,7 +659,7 @@ class MappingResolverComparisonTest {
     }
 
     private static ResolverResults resolveAt(
-        final List<ZeebeMapping> mappings, final ScopedExpressionProcessor processor) {
+        final List<ZeebeMapping> mappings, final MappingExpressionProcessor processor) {
       final var inputMappings =
           new VariableMappingTransformer().transformInputMappings(mappings, EXPRESSION_LANGUAGE);
       return new ResolverResults(
@@ -612,13 +668,13 @@ class MappingResolverComparisonTest {
     }
 
     /**
-     * Builds a {@link ScopedExpressionProcessor} backed by an in-memory scope chain. {@code scopes}
-     * is ordered from innermost (nearest ancestor) to outermost: {@link
+     * Builds a {@link MappingExpressionProcessor} backed by an in-memory scope chain. {@code
+     * scopes} is ordered from innermost (nearest ancestor) to outermost: {@link
      * ScopedEvaluationContext#getVariable} walks them in that order and returns the first match, or
      * {@code null} (absent) if the name appears in none.
      */
     @SafeVarargs
-    private static ScopedExpressionProcessor buildProcessor(final Map<String, Object>... scopes) {
+    private static MappingExpressionProcessor buildProcessor(final Map<String, Object>... scopes) {
       final List<Map<String, DirectBuffer>> encoded =
           Arrays.stream(scopes)
               .map(
@@ -641,13 +697,13 @@ class MappingResolverComparisonTest {
             }
             return Either.left(null);
           };
-      return new ScopedExpressionProcessor(
+      // scopeKey=-1 → ExpressionProcessor uses the context directly (no processScoped call),
+      // which is correct: the in-memory context owns its own lookup and ignores the key
+      final var testContext = new MappingContext("test-element", -1L, -1L, -1L, "");
+      return new MappingExpressionProcessor(
           new ExpressionProcessor(EXPRESSION_LANGUAGE, context, DEFAULT_TIMEOUT)
               .withSecretReferenceContext(),
-          // scopeKey=-1 → ExpressionProcessor uses the context directly (no processScoped call),
-          // which is correct: the in-memory context owns its own lookup and ignores the key
-          -1L,
-          "");
+          testContext);
     }
 
     /** Asserts both resolvers gave the exact same result document. */
