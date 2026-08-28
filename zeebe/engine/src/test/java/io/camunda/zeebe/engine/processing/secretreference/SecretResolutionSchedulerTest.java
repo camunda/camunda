@@ -716,8 +716,8 @@ final class SecretResolutionSchedulerTest {
   }
 
   @Test
-  void shouldNotRescheduleImmediatelyWhenPendingRefsAreWithinBatchLimit() throws Exception {
-    // given — batch limit of 2, exactly 2 refs pending (nothing left over)
+  void shouldRescheduleAtWakeDelayWhenPendingRefsAreWithinBatchLimit() throws Exception {
+    // given - batch limit of 2, exactly 2 refs pending (nothing left over, so uncapped)
     final var config = new EngineConfiguration().setSecretResolutionBatchLimit(2);
     final var localScheduler =
         new SecretResolutionScheduler(
@@ -737,11 +737,71 @@ final class SecretResolutionSchedulerTest {
     // when
     localScheduler.resolveSecrets(resultBuilder);
 
-    // then — the normal scheduling interval is used, since nothing was capped
+    // then - the cycle resolved something, so it stays on the fast cadence rather than falling
+    // back to the full interval, even though it was not capped
     final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
     verify(scheduleService).runDelayedAsync(delayCaptor.capture(), any(), any());
     assertThat(delayCaptor.getValue())
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_WAKE_DELAY);
+  }
+
+  @Test
+  void shouldFallBackToFullIntervalWhenACycleFindsNothingPendingAndWasNotWoken() throws Exception {
+    // given - no pending refs at all, and wake() was never called
+    doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
+
+    // when
+    scheduler.resolveSecrets(resultBuilder);
+
+    // then - a second call: onRecovered's initial schedule (in setUp), then this cycle's reschedule
+    final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
+    verify(scheduleService, times(2)).runDelayedAsync(delayCaptor.capture(), any(), any());
+    assertThat(delayCaptor.getAllValues().get(1))
         .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_INTERVAL);
+  }
+
+  @Test
+  void shouldStayOnWakeDelayWhenACycleFindsNothingPendingButWasWoken() throws Exception {
+    // given - no pending refs, but an activation requested a resolution since the last cycle ran
+    doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
+    scheduler.wake();
+
+    // when
+    scheduler.resolveSecrets(resultBuilder);
+
+    // then - stays on the fast cadence rather than concluding the scheduler is idle
+    final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
+    verify(scheduleService, times(2)).runDelayedAsync(delayCaptor.capture(), any(), any());
+    assertThat(delayCaptor.getAllValues().get(1))
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_WAKE_DELAY);
+  }
+
+  @Test
+  void shouldConsumeTheWakeFlagSoOnlyTheNextCycleIsAffected() throws Exception {
+    // given - woken once, then a cycle runs and finds nothing (consuming the flag)
+    doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
+    scheduler.wake();
+    scheduler.resolveSecrets(resultBuilder);
+
+    // when - a second cycle runs without a further wake and still finds nothing
+    scheduler.resolveSecrets(resultBuilder);
+
+    // then - the flag was consumed by the first cycle, so this one falls back to the full interval
+    final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
+    verify(scheduleService, times(3)).runDelayedAsync(delayCaptor.capture(), any(), any());
+    assertThat(delayCaptor.getAllValues().get(2))
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_INTERVAL);
+  }
+
+  @Test
+  void shouldNotScheduleOrCancelAnythingWhenWoken() {
+    // given - setUp already scheduled once via onRecovered
+
+    // when
+    scheduler.wake();
+
+    // then - wake() only sets a flag; it does not itself touch the scheduling chain
+    verify(scheduleService, times(1)).runDelayedAsync(any(), any(), any());
   }
 
   @Test
@@ -923,7 +983,7 @@ final class SecretResolutionSchedulerTest {
 
   @Test
   void shouldNotScheduleSecondChainWhenResumedWhileTaskStillPending() throws Exception {
-    // given — setUp already scheduled once via onRecovered
+    // given - setUp already scheduled once via onRecovered
 
     // when
     scheduler.onPaused();
