@@ -25,7 +25,6 @@ import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.response.ActivatedJobImpl;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,7 +40,7 @@ import org.mockito.Mockito;
 final class JobWorkerMetricsTest {
 
   private static final int AUTO_COMPLETE_ALL_JOBS = 0;
-  private static final Executor REFUSING_EXECUTOR =
+  private static final JobExecutor REFUSING_EXECUTOR =
       command -> {
         throw new RejectedExecutionException("The executor has no capacity");
       };
@@ -64,7 +63,7 @@ final class JobWorkerMetricsTest {
       final JobPoller poller,
       final JobStreamer streamer,
       final JobWorkerMetrics metrics) {
-    return createWorker(autoCompleteCount, poller, streamer, metrics, executor);
+    return createWorker(autoCompleteCount, poller, streamer, metrics, executor::execute);
   }
 
   private JobWorkerImpl createWorker(
@@ -72,7 +71,7 @@ final class JobWorkerMetricsTest {
       final JobPoller poller,
       final JobStreamer streamer,
       final JobWorkerMetrics metrics,
-      final Executor jobExecutor) {
+      final JobExecutor jobExecutor) {
     return new JobWorkerImpl(
         32,
         executor,
