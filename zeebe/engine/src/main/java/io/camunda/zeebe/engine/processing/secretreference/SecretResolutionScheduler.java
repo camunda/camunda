@@ -44,7 +44,11 @@ import org.slf4j.LoggerFactory;
  * activation that requested the resolution. Any refs beyond the cap stay pending and are retried in
  * the next cycle — which is scheduled immediately ({@link Duration#ZERO}) instead of waiting the
  * normal {@code schedulingInterval} (unless a store is currently in retry cooldown, in which case
- * the cooldown-aware delay is honored instead).
+ * the cooldown-aware delay is honored instead). Likewise, a cycle that resolves anything, or that
+ * finds nothing but a reference was requested via {@link #wake()} since it last ran, reschedules
+ * its next run at the shorter {@code wakeDelay} rather than {@code schedulingInterval}: under a
+ * sustained stream of requests this keeps every cycle after the first close to {@code wakeDelay}
+ * apart on its own, without ever needing to bring a scheduled cycle forward by cancelling it.
  *
  * <p>Resolution goes through {@link
  * io.camunda.secretstore.LocallyCachedSecretStore#resolveFromStore} rather than the cache-first
@@ -84,6 +88,7 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
   private final int retryMaxAttempts;
   private final int retryBackoffFactor;
   private final int batchLimit;
+  private final Duration wakeDelay;
 
   private final Map<String, StoreRetryState> storeRetryStates = new HashMap<>();
 
@@ -103,6 +108,23 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
    */
   private final AtomicBoolean taskScheduled = new AtomicBoolean();
 
+  /**
+   * Set by {@link #wake()}, consulted and cleared at the start of each cycle. Marks that some
+   * activation requested a resolution since the last cycle ran, even if that activation's own
+   * {@code RESOLUTION_REQUESTED} record is not yet what makes a cycle's collection non-empty (the
+   * two are written from different actors and can interleave either way). A cycle that finds this
+   * set stays on the fast, {@code wakeDelay} cadence for its next run instead of falling back to
+   * {@code schedulingInterval}, so a queue that is momentarily empty between two waves of requests
+   * is not mistaken for the scheduler being genuinely idle.
+   *
+   * <p>Deliberately does not itself bring a pending execution forward: this scheduler's chain
+   * already reschedules itself at {@code wakeDelay} whenever a cycle resolves anything, so under
+   * the sustained request rate this scheduler exists for, that chain stays on the fast cadence on
+   * its own once started, without this scheduler ever needing to cancel a scheduled task to get
+   * there.
+   */
+  private final AtomicBoolean wakePending = new AtomicBoolean();
+
   private ReadonlyStreamProcessorContext processingContext;
   private InstantSource clock;
 
@@ -120,6 +142,7 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
     retryMaxAttempts = config.getSecretResolutionRetryMaxAttempts();
     retryBackoffFactor = config.getSecretResolutionRetryBackoffFactor();
     batchLimit = config.getSecretResolutionBatchLimit();
+    wakeDelay = config.getSecretResolutionWakeDelay();
   }
 
   @Override
@@ -154,8 +177,24 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
     shouldReschedule = false;
   }
 
+  /**
+   * Marks that a secret reference was just requested, so the next cycle to run stays on the fast
+   * {@code wakeDelay} cadence instead of falling back to the full {@code schedulingInterval}.
+   * Called from the stream processor once per activation that requested any resolution.
+   *
+   * <p>Does not schedule or cancel anything itself. This scheduler already reschedules itself at
+   * {@code wakeDelay} whenever a cycle resolves at least one reference, so under the sustained
+   * request rate this exists for, that alone keeps the chain on the fast cadence; this flag only
+   * covers the gap where a cycle's collection happens to find nothing pending because it raced a
+   * request that is about to be written, not because the scheduler is genuinely idle.
+   */
+  public void wake() {
+    wakePending.set(true);
+  }
+
   TaskResult resolveSecrets(final TaskResultBuilder resultBuilder) {
     taskScheduled.set(false);
+    final boolean woken = wakePending.getAndSet(false);
     final long now = clock.millis();
     boolean taskResultBatchFull = false;
     boolean capped = false;
@@ -200,8 +239,20 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
         }
       }
     } finally {
-      final boolean immediateReschedule = taskResultBatchFull || (capped && progressMade.get());
-      scheduleNext(immediateReschedule ? Duration.ZERO : computeNextDelay(now));
+      final Duration delay;
+      if (taskResultBatchFull || (capped && progressMade.get())) {
+        // more pending refs than this cycle's batch cap allowed it to take; keep draining
+        delay = Duration.ZERO;
+      } else if (progressMade.get() || woken) {
+        // either this cycle resolved something, or one was requested since the last cycle ran and
+        // may not have been visible to this cycle's collection yet either way, staying on the fast
+        // cadence is what lets a continuous stream of requests be resolved close to as they arrive,
+        // without ever cancelling and replacing a scheduled cycle to get there
+        delay = wakeDelay;
+      } else {
+        delay = computeNextDelay(now);
+      }
+      scheduleNext(delay);
     }
     return resultBuilder.build();
   }
