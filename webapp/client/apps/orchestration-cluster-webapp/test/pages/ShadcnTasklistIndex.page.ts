@@ -46,10 +46,6 @@ class ShadcnTasklistIndexPage extends BasePage {
 		return this.page.getByRole('menuitemradio', {name});
 	}
 
-	get autoSelectToggle() {
-		return this.page.getByRole('switch', {name: 'Auto-select first available task'});
-	}
-
 	taskItem(name: string) {
 		return this.page.getByRole('link', {name: new RegExp(`task.*:.*${name}`, 'i')});
 	}

@@ -31,6 +31,7 @@ import {
 type Props = {
 	filter: string;
 	sortBy: TasklistIndexSearch['sortBy'];
+	disabled?: boolean;
 };
 
 const BUILT_IN_FILTERS: {id: BuiltInFilter; labelKey: string}[] = [
@@ -63,7 +64,7 @@ const SORTING_OPTION_LABEL_KEYS = {
 	priority: 'tasklist.taskFiltersSortPriority',
 } as const;
 
-const Filters: React.FC<Props> = ({filter, sortBy}) => {
+const Filters: React.FC<Props> = ({filter, sortBy, disabled = false}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 
@@ -93,6 +94,7 @@ const Filters: React.FC<Props> = ({filter, sortBy}) => {
 			<Select
 				value={isBuiltInFilter(filter) ? filter : ''}
 				onValueChange={(value) => onFilterChange(value as BuiltInFilter)}
+				disabled={disabled}
 			>
 				<SelectTrigger aria-label={t('tasklist.taskFiltersHeaderAria')}>
 					<SelectValue placeholder={t('tasklist.taskFilterPanelCustom')} />
@@ -110,6 +112,7 @@ const Filters: React.FC<Props> = ({filter, sortBy}) => {
 					<Button
 						variant="ghost"
 						size="icon"
+						disabled={disabled}
 						aria-label={t('tasklist.taskFiltersSortButton')}
 						title={t('tasklist.taskFiltersSortButton')}
 					>

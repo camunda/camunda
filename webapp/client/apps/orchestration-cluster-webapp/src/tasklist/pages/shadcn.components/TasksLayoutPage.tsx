@@ -19,6 +19,7 @@ type Props = {
 	currentUser: CurrentUser;
 	filter: string;
 	sortBy: TasklistIndexSearch['sortBy'];
+	isPending?: boolean;
 	hasNextPage: boolean;
 	hasPreviousPage: boolean;
 	onScrollDown: () => Promise<void>;
@@ -32,6 +33,7 @@ const TasksLayoutPage: React.FC<Props> = ({
 	currentUser,
 	filter,
 	sortBy,
+	isPending = false,
 	hasNextPage,
 	hasPreviousPage,
 	onScrollDown,
@@ -49,7 +51,7 @@ const TasksLayoutPage: React.FC<Props> = ({
 			>
 				<header className="flex items-center border-b border-border px-2">
 					<h1 className="sr-only">{t('tasklist.headerNavItemTasks')}</h1>
-					<Filters filter={filter} sortBy={sortBy} />
+					<Filters filter={filter} sortBy={sortBy} disabled={isPending} />
 				</header>
 				<AvailableTasks
 					pages={pages}

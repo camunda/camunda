@@ -585,7 +585,7 @@ test('should start a process without a form using the selected tenant and open i
 	);
 	await expect(shadcnTasklistProcessesPage.waitingForTasksStatus).toBeVisible();
 	await expect(shadcnTasklistProcessesPage.startProcessButton).toHaveCount(0);
-	await expect(page).toHaveURL(`/shadcn/tasklist/${userTaskKey}?filter=all-open&sortBy=creation`);
+	await expect(page).toHaveURL(`/shadcn/tasklist/${userTaskKey}`);
 	await expect(shadcnTaskDetailPage.aside).toBeVisible();
 });
 
@@ -655,7 +655,7 @@ test('should notify about multiple new tasks and open a selected task', async ({
 	);
 	await shadcnTasklistProcessesPage.header.notifications.getActionButton(approveNotificationTitle, 'Open task').click();
 
-	await expect(page).toHaveURL(`/shadcn/tasklist/${approveTask.userTaskKey}?filter=all-open&sortBy=creation`);
+	await expect(page).toHaveURL(`/shadcn/tasklist/${approveTask.userTaskKey}`);
 	await expect(shadcnTaskDetailPage.aside).toBeVisible();
 });
 
