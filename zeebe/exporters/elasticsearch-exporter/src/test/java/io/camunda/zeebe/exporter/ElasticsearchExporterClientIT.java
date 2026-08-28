@@ -51,7 +51,8 @@ final class ElasticsearchExporterClientIT {
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
   private final TemplateReader templateReader = new TemplateReader(config);
-  private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
+  private final RecordIndexRouter indexRouter =
+      new RecordIndexRouter(config.index, index -> config.index.getNumberOfShards());
   private final BulkIndexRequest bulkRequest = new BulkIndexRequest();
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 

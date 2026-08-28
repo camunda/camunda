@@ -33,7 +33,9 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 final class RecordIndexRouterTest {
   private final ProtocolFactory recordFactory = new ProtocolFactory();
   private final IndexConfiguration config = new IndexConfiguration();
-  private final RecordIndexRouter router = new RecordIndexRouter(config);
+  private static final String INDEX = "zeebe-record_job_8.11.0_2026-08-28";
+  private final RecordIndexRouter router =
+      new RecordIndexRouter(config, index -> config.getNumberOfShards());
 
   @Test
   void shouldReturnIndexForRecord() {
@@ -168,7 +170,7 @@ final class RecordIndexRouterTest {
             b -> b.withPartitionId(3).withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when
-    final var routing = router.routingFor(record);
+    final var routing = router.routingFor(record, INDEX);
 
     // then - partition 3 occupies the third shard, rather than whichever shard the bare partition
     // id happens to hash to
@@ -223,8 +225,8 @@ final class RecordIndexRouterTest {
             b -> b.withPartitionId(2).withPosition(9999).withBrokerVersion(version));
 
     // when
-    final var firstRouting = router.routingFor(first);
-    final var secondRouting = router.routingFor(second);
+    final var firstRouting = router.routingFor(first, INDEX);
+    final var secondRouting = router.routingFor(second, INDEX);
 
     // then - a reader paging through a partition by position would otherwise depend on the refresh
     // timing of several shards to see the records in order
@@ -253,7 +255,7 @@ final class RecordIndexRouterTest {
             b -> b.withPartitionId(3).withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when
-    final var routing = router.routingFor(record);
+    final var routing = router.routingFor(record, INDEX);
 
     // then
     assertThat(routing).isEqualTo("3");
@@ -268,7 +270,7 @@ final class RecordIndexRouterTest {
             b -> b.withPartitionId(3).withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when
-    final var routing = router.routingFor(record);
+    final var routing = router.routingFor(record, INDEX);
 
     // then
     assertThat(routing).isEqualTo("3");
@@ -282,7 +284,7 @@ final class RecordIndexRouterTest {
         recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("8.11.0-alpha1"));
 
     // when
-    final var routing = router.routingFor(record);
+    final var routing = router.routingFor(record, INDEX);
 
     // then
     assertThat(routing).isEqualTo("3#1");
@@ -296,7 +298,7 @@ final class RecordIndexRouterTest {
         recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("8.11.0"));
 
     // when
-    final var routing = router.routingFor(record);
+    final var routing = router.routingFor(record, INDEX);
 
     // then
     assertThat(routing).isEqualTo("3#1");
@@ -311,7 +313,7 @@ final class RecordIndexRouterTest {
         recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("8.12.0"));
 
     // when
-    final var routing = router.routingFor(record);
+    final var routing = router.routingFor(record, INDEX);
 
     // then
     assertThat(routing).isEqualTo("3#1");
@@ -326,7 +328,7 @@ final class RecordIndexRouterTest {
         recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("8.10.9"));
 
     // when
-    final var routing = router.routingFor(record);
+    final var routing = router.routingFor(record, INDEX);
 
     // then
     assertThat(routing).isEqualTo("3");
@@ -340,7 +342,7 @@ final class RecordIndexRouterTest {
         recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("8.7.40"));
 
     // when
-    final var routing = router.routingFor(record);
+    final var routing = router.routingFor(record, INDEX);
 
     // then
     assertThat(routing).isEqualTo("3");
@@ -354,9 +356,43 @@ final class RecordIndexRouterTest {
         recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("not-a-version"));
 
     // when
-    final var routing = router.routingFor(record);
+    final var routing = router.routingFor(record, INDEX);
 
     // then - without a version to compare, the legacy routing is the safe choice
+    assertThat(routing).isEqualTo("3");
+  }
+
+  @Test
+  void shouldTakeTheNumberOfShardsFromTheIndexAndNotTheConfiguration() {
+    // given - an index created when three shards were configured, and a configuration since
+    // changed to five
+    config.setNumberOfShards(5);
+    final var router = new RecordIndexRouter(config, index -> 3);
+    final var record =
+        recordFactory.generateRecord(
+            b -> b.withPartitionId(3).withBrokerVersion(VersionUtil.getVersionLowerCase()));
+
+    // when
+    final var routing = router.routingFor(record, INDEX);
+
+    // then - the value a broker wrote before the configuration changed, so that re-exporting a
+    // record overwrites its document instead of adding a copy on another shard
+    assertThat(routing).isEqualTo("3#1");
+  }
+
+  @Test
+  void shouldRouteByPartitionIdWhenTheIndexShardCountIsUnknown() {
+    // given
+    config.setNumberOfShards(3);
+    final var router = new RecordIndexRouter(config, index -> null);
+    final var record =
+        recordFactory.generateRecord(
+            b -> b.withPartitionId(3).withBrokerVersion(VersionUtil.getVersionLowerCase()));
+
+    // when
+    final var routing = router.routingFor(record, INDEX);
+
+    // then
     assertThat(routing).isEqualTo("3");
   }
 
@@ -365,6 +401,7 @@ final class RecordIndexRouterTest {
         recordFactory.generateRecord(
             b ->
                 b.withPartitionId(partitionId)
-                    .withBrokerVersion(VersionUtil.getVersionLowerCase())));
+                    .withBrokerVersion(VersionUtil.getVersionLowerCase())),
+        INDEX);
   }
 }

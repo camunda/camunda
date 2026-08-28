@@ -37,15 +37,28 @@ public final class RecordIndexRouter {
 
   private final DateTimeFormatter formatter;
   private final IndexConfiguration config;
-  private final Map<Integer, String> balancedRoutingByPartitionId = new ConcurrentHashMap<>();
+  private final ShardCountResolver shardCounts;
+  private final Map<BalancedRoutingKey, String> balancedRouting = new ConcurrentHashMap<>();
 
   RecordIndexRouter(final IndexConfiguration config) {
-    this(config, DEFAULT_FORMATTER);
+    this(config, index -> null);
+  }
+
+  RecordIndexRouter(final IndexConfiguration config, final ShardCountResolver shardCounts) {
+    this(config, DEFAULT_FORMATTER, shardCounts);
   }
 
   RecordIndexRouter(final IndexConfiguration config, final DateTimeFormatter formatter) {
+    this(config, formatter, index -> null);
+  }
+
+  RecordIndexRouter(
+      final IndexConfiguration config,
+      final DateTimeFormatter formatter,
+      final ShardCountResolver shardCounts) {
     this.config = config;
     this.formatter = formatter;
+    this.shardCounts = shardCounts;
   }
 
   /**
@@ -112,9 +125,11 @@ public final class RecordIndexRouter {
    * different shard than the copy already there, duplicating the document instead of overwriting
    * it.
    */
-  String routingFor(final Record<?> record) {
+  String routingFor(final Record<?> record, final String index) {
     final int partitionId = record.getPartitionId();
-    return isRoutedBalanced(record) ? balancedRoutingFor(partitionId) : String.valueOf(partitionId);
+    return isRoutedBalanced(record)
+        ? balancedRoutingFor(partitionId, index)
+        : String.valueOf(partitionId);
   }
 
   /**
@@ -128,25 +143,29 @@ public final class RecordIndexRouter {
    * landing right, and its result only depends on the partition id and the number of shards, so
    * every broker computes the same value for a record.
    *
+   * <p>The number of shards comes from the index the document is headed for, not from the
+   * configuration, because an index keeps the number it was created with. Reading it from the
+   * configuration would change every routing value the moment an operator changes the setting, and
+   * re-exporting a record into an index created under the old value would then place a second copy
+   * on another shard rather than overwrite the first.
+   *
    * <p>Should the number of shards be unknown or 1, there is nothing to balance and the partition
-   * id serves as the routing value. Note the number of shards is the configured one: an index
-   * created with a different number keeps a partition's records together, but spreads partitions
-   * over its shards as unevenly as the hash happens to fall.
+   * id serves as the routing value.
    */
-  private String balancedRoutingFor(final int partitionId) {
-    final Integer numberOfShards = config.getNumberOfShards();
+  private String balancedRoutingFor(final int partitionId, final String index) {
+    final Integer numberOfShards = shardCounts.numberOfShardsOf(index);
     if (numberOfShards == null || numberOfShards <= 1) {
       return String.valueOf(partitionId);
     }
 
-    return balancedRoutingByPartitionId.computeIfAbsent(
-        partitionId,
-        id -> {
+    return balancedRouting.computeIfAbsent(
+        new BalancedRoutingKey(numberOfShards, partitionId),
+        key -> {
           // Partition ids start at 1, shards at 0.
-          final int targetShard = Math.floorMod(id - 1, numberOfShards);
+          final int targetShard = Math.floorMod(key.partitionId() - 1, key.numberOfShards());
           for (int salt = 0; ; salt++) {
-            final String routing = id + ROUTING_SALT_DELIMITER + salt;
-            if (HashUtil.getShardForRouting(routing, numberOfShards) == targetShard) {
+            final String routing = key.partitionId() + ROUTING_SALT_DELIMITER + salt;
+            if (HashUtil.getShardForRouting(routing, key.numberOfShards()) == targetShard) {
               return routing;
             }
           }
@@ -177,4 +196,17 @@ public final class RecordIndexRouter {
   private String valueTypeToString(final ValueType valueType) {
     return valueType.name().toLowerCase().replace("_", "-");
   }
+
+  /** Supplies how many primary shards an index has, so a routing value can be aimed at one. */
+  @FunctionalInterface
+  interface ShardCountResolver {
+
+    /**
+     * @param index the name of the index a document is headed for, which need not exist yet
+     * @return the number of primary shards, or {@code null} when it cannot be determined
+     */
+    Integer numberOfShardsOf(String index);
+  }
+
+  private record BalancedRoutingKey(int numberOfShards, int partitionId) {}
 }

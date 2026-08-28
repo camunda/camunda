@@ -68,13 +68,7 @@ public class OpensearchClient implements AutoCloseable {
 
   OpensearchClient(
       final OpensearchExporterConfiguration configuration, final MeterRegistry meterRegistry) {
-    this(
-        configuration,
-        new BulkIndexRequest(),
-        OpensearchConnector.of(configuration).createClient(),
-        new RecordIndexRouter(configuration.index),
-        new TemplateReader(configuration.index),
-        new OpensearchMetrics(meterRegistry));
+    this(configuration, meterRegistry, OpensearchConnector.of(configuration).createClient());
   }
 
   OpensearchClient(
@@ -85,7 +79,8 @@ public class OpensearchClient implements AutoCloseable {
         configuration,
         new BulkIndexRequest(),
         openSearchClient,
-        new RecordIndexRouter(configuration.index),
+        new RecordIndexRouter(
+            configuration.index, new IndexShardCounts(openSearchClient, configuration.index)),
         new TemplateReader(configuration.index),
         new OpensearchMetrics(meterRegistry));
   }
@@ -119,11 +114,10 @@ public class OpensearchClient implements AutoCloseable {
    *     the batch because only one copy of the record is allowed in the batch
    */
   public boolean index(final Record<?> record, final RecordSequence recordSequence) {
+    final String index = indexRouter.indexFor(record);
     final BulkIndexAction action =
         new BulkIndexAction(
-            indexRouter.indexFor(record),
-            indexRouter.idFor(record),
-            indexRouter.routingFor(record));
+            index, indexRouter.idFor(record), indexRouter.routingFor(record, index));
     return bulkIndexRequest.index(action, record, recordSequence);
   }
 
