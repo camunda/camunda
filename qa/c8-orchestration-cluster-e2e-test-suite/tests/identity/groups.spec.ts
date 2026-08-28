@@ -183,7 +183,10 @@ test.describe('Groups functionalities', () => {
       await identityHeader.navigateToAuthorizations();
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'Group',
-        ownerId: TEST_GROUP.name,
+        // The owner search (#51442) filters groups by `groupId` and lists the
+        // groupId as the option title; passing `TEST_GROUP.name` returns no
+        // matches.
+        ownerId: TEST_GROUP.groupId,
         resourceType: 'AUDIT_LOG',
         resourceId: '*',
         accessPermissions: ['Read'],
