@@ -115,6 +115,7 @@ message PartitionRebalance {
     NO_LEADER = 16;
     NO_RESPONSE = 17;
     CANCELLED = 18;
+    PHYSICAL_TENANT_DISABLED = 19;
   }
 
   // The partition group the partition belongs to; partition ids are unique only within a group.

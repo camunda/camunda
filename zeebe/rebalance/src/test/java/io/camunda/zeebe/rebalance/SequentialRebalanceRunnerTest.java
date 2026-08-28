@@ -645,6 +645,98 @@ final class SequentialRebalanceRunnerTest {
   }
 
   @Test
+  void shouldStopWaitingForALeaderOnceThePhysicalTenantIsDisabled() {
+    // given
+    final var configuration = groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2));
+    final var rebalance =
+        new RebalanceRun(7, RebalanceOverrides.none(), false, configuration, Instant.EPOCH);
+    final var completion = run(rebalance);
+
+    // when
+    rebalance.observeConfiguration(
+        configuration.updatePartitionGroupConfig(GROUP, PartitionGroupConfiguration::disable));
+    executor.runAll();
+
+    // then
+    assertThat(rebalance.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.COMPLETED);
+    assertThat(rebalance.partition(0).outcome())
+        .isEqualTo(PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED);
+    assertThat(transfers.initiated).isEmpty();
+    assertThat(completion.isDone()).isTrue();
+  }
+
+  @Test
+  void shouldLeaveAlonePartitionsOfAPhysicalTenantDisabledBeforeTheRebalanceReachesThem() {
+    // given
+    leaders.computeIfAbsent("tenant-a", ignored -> new HashMap<>()).put(1, MEMBER_1);
+    leaders.computeIfAbsent("tenant-b", ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var configuration =
+        configurationOf(
+            Map.of(
+                "tenant-a", Map.of(MEMBER_1, Map.of(1, active(1)), MEMBER_2, Map.of(1, active(2))),
+                "tenant-b",
+                    Map.of(MEMBER_1, Map.of(1, active(1)), MEMBER_2, Map.of(1, active(2)))));
+    final var rebalance =
+        new RebalanceRun(7, RebalanceOverrides.none(), false, configuration, Instant.EPOCH);
+    run(rebalance);
+
+    // when
+    rebalance.observeConfiguration(
+        configuration.updatePartitionGroupConfig("tenant-b", PartitionGroupConfiguration::disable));
+    transfers.accept();
+    transfers.report(LeadershipTransferResult.TRANSFERRED);
+
+    // then
+    assertThat(rebalance.partition(1).outcome())
+        .isEqualTo(PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED);
+    assertThat(transfers.initiated)
+        .map(initiated -> initiated.physicalTenantId())
+        .containsExactly("tenant-a");
+  }
+
+  @Test
+  void shouldStopWatchingATransferOnceThePhysicalTenantIsDisabled() {
+    // given
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var configuration = groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2));
+    final var rebalance =
+        new RebalanceRun(7, RebalanceOverrides.none(), false, configuration, Instant.EPOCH);
+    final var completion = run(rebalance);
+    transfers.accept();
+
+    // when
+    rebalance.observeConfiguration(
+        configuration.updatePartitionGroupConfig(GROUP, PartitionGroupConfiguration::disable));
+    executor.runAll();
+
+    // then
+    assertThat(rebalance.partition(0).outcome())
+        .isEqualTo(PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED);
+    assertThat(completion.isDone()).isTrue();
+  }
+
+  @Test
+  void shouldRebalanceAPhysicalTenantThatIsEnabledAgainWhileTheRebalanceRuns() {
+    // given
+    final var configuration = groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2));
+    final var rebalance =
+        new RebalanceRun(7, RebalanceOverrides.none(), false, configuration, Instant.EPOCH);
+    run(rebalance);
+    rebalance.observeConfiguration(
+        configuration.updatePartitionGroupConfig(GROUP, PartitionGroupConfiguration::disable));
+
+    // when
+    rebalance.observeConfiguration(configuration);
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    executor.runAll();
+
+    // then
+    assertThat(rebalance.partition(0).progress())
+        .isEqualTo(PartitionRebalanceProgress.TRANSFERRING);
+    assertThat(transfers.lastInitiated().leader()).isEqualTo(MEMBER_1);
+  }
+
+  @Test
   void shouldResolveImmediatelyWithNoLeaderWhenLeaderWaitTimeoutIsZero() {
     // given
     final var configuration = groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2));

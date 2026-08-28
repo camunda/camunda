@@ -11,7 +11,9 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.jspecify.annotations.Nullable;
 
@@ -28,6 +30,8 @@ public final class RebalanceRun {
   private final CurrentClusterConfiguration configuration;
   private final Instant startedAt;
   private final List<PartitionRebalance> partitions = new ArrayList<>();
+
+  private final Set<String> disabledPhysicalTenants = new HashSet<>();
 
   private long partitionStartedAtNanos = System.nanoTime();
   private boolean cancelRequested;
@@ -106,6 +110,25 @@ public final class RebalanceRun {
   public void plan(final List<PartitionRebalance> planned) {
     partitions.clear();
     partitions.addAll(planned);
+  }
+
+  /**
+   * Notes which of the planned physical tenants {@code current} no longer runs, so that the runner
+   * can complete their partitions rather than wait out {@code leaderWaitTimeout} for a leader that
+   * will never appear.
+   */
+  public void observeConfiguration(final CurrentClusterConfiguration current) {
+    final var active = current.activePartitionGroups().keySet();
+    disabledPhysicalTenants.clear();
+    partitions.stream()
+        .map(PartitionRebalance::physicalTenantId)
+        .filter(physicalTenantId -> !active.contains(physicalTenantId))
+        .forEach(disabledPhysicalTenants::add);
+  }
+
+  /** Whether this physical tenant has stopped running since the rebalance was planned. */
+  public boolean isPhysicalTenantDisabled(final String physicalTenantId) {
+    return disabledPhysicalTenants.contains(physicalTenantId);
   }
 
   public PartitionRebalance partition(final int index) {
