@@ -15,7 +15,6 @@ import io.camunda.zeebe.util.SemanticVersion;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,22 +27,13 @@ public final class RecordIndexRouter {
       DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
 
   /**
-   * For each release line, the first version whose records are routed by a balanced routing value;
-   * records of older versions keep the legacy partition id routing, see {@link
-   * #routingFor(Record)}. Ordered by ascending version.
-   *
-   * <p>There is one entry per line because the change is backported, and every branch that carries
-   * it must carry the same table: a broker re-exports records written by other versions, and the
-   * two have to agree on how such a record was routed. Adding a line that does not ship the change,
-   * or omitting one that does, therefore reintroduces the duplicate documents described in {@link
-   * #routingFor(Record)}.
+   * The first version whose records are routed by a balanced routing value; records of older
+   * versions keep the legacy partition id routing, see {@link #routingFor(Record)}. Were this
+   * change ever backported, every branch carrying it would have to agree on the versions the scheme
+   * changes in, since a broker re-exports records written by other versions.
    */
-  private static final List<SemanticVersion> BALANCED_ROUTING_SINCE =
-      List.of(
-          new SemanticVersion(8, 8, 37, null, null),
-          new SemanticVersion(8, 9, 18, null, null),
-          new SemanticVersion(8, 10, 0, null, null),
-          new SemanticVersion(8, 11, 0, null, null));
+  private static final SemanticVersion BALANCED_ROUTING_SINCE =
+      new SemanticVersion(8, 11, 0, null, null);
 
   private final DateTimeFormatter formatter;
   private final IndexConfiguration config;
@@ -166,29 +156,19 @@ public final class RecordIndexRouter {
   private boolean isRoutedBalanced(final Record<?> record) {
     final var version = SemanticVersion.parse(record.getBrokerVersion());
     if (version.isEmpty()) {
-      // Without a version to compare, assume the legacy routing: routing a record by id into an
-      // index that may already hold it under the legacy scheme would duplicate the document.
+      // Without a version to compare, assume the legacy routing: routing a record into an index
+      // that may already hold it under the legacy scheme would duplicate the document.
       return false;
     }
 
-    final var recordVersion = withoutPreRelease(version.get());
-    return BALANCED_ROUTING_SINCE.stream()
-        .filter(since -> isSameLine(since, recordVersion))
-        .findFirst()
-        .map(since -> recordVersion.compareTo(since) >= 0)
-        // A line that has no entry predates the change, unless the record comes from a line newer
-        // than any known one. That happens while a cluster is being upgraded, when a broker of the
-        // older version re-exports records another broker has already written.
-        .orElseGet(() -> recordVersion.compareTo(BALANCED_ROUTING_SINCE.getLast()) > 0);
-  }
-
-  private static boolean isSameLine(final SemanticVersion left, final SemanticVersion right) {
-    return left.major() == right.major() && left.minor() == right.minor();
+    return withoutPreRelease(version.get()).compareTo(BALANCED_ROUTING_SINCE) >= 0;
   }
 
   /**
    * Pre-releases have a lower precedence than the version they lead up to, which would leave alpha
-   * and snapshot builds of a version in {@link #ROUTE_BY_ID_SINCE} on the legacy routing.
+   * and snapshot builds of {@link #BALANCED_ROUTING_SINCE} on the legacy routing, and with it the
+   * new scheme untested until release. Their records carry the pre-release in the index name, so
+   * such an index holds one scheme either way.
    */
   private static SemanticVersion withoutPreRelease(final SemanticVersion version) {
     return new SemanticVersion(version.major(), version.minor(), version.patch(), null, null);

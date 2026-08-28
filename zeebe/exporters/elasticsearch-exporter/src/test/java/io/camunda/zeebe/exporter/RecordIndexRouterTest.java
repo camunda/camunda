@@ -275,7 +275,7 @@ final class RecordIndexRouterTest {
   }
 
   @Test
-  void shouldUseBalancedRoutingForPreReleaseOfVersionIntroducingIt() {
+  void shouldUseBalancedRoutingForAPreReleaseOfTheVersionIntroducingIt() {
     // given
     config.setNumberOfShards(3);
     final var record =
@@ -289,11 +289,11 @@ final class RecordIndexRouterTest {
   }
 
   @Test
-  void shouldUseBalancedRoutingForFirstVersionOfBackportedLine() {
+  void shouldUseBalancedRoutingForTheVersionIntroducingIt() {
     // given
     config.setNumberOfShards(3);
     final var record =
-        recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("8.9.18"));
+        recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("8.11.0"));
 
     // when
     final var routing = router.routingFor(record);
@@ -303,7 +303,7 @@ final class RecordIndexRouterTest {
   }
 
   @Test
-  void shouldUseBalancedRoutingForLineNewerThanAnyKnownOne() {
+  void shouldUseBalancedRoutingForANewerVersion() {
     // given - a record written by a newer broker, as happens when a broker re-exports records
     // another broker has already written during an upgrade
     config.setNumberOfShards(3);
@@ -318,12 +318,12 @@ final class RecordIndexRouterTest {
   }
 
   @Test
-  void shouldRouteByPartitionIdForLastVersionOfLineBeforeBalancedRouting() {
-    // given - a record written before balanced routing reached its line, which is indexed into
-    // that version's index and must keep that index's routing scheme
+  void shouldRouteByPartitionIdForTheVersionBeforeItWasIntroduced() {
+    // given - a record written before balanced routing existed, which is indexed into that
+    // version's index and must keep that index's routing scheme
     config.setNumberOfShards(3);
     final var record =
-        recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("8.9.17"));
+        recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("8.10.9"));
 
     // when
     final var routing = router.routingFor(record);
@@ -333,7 +333,7 @@ final class RecordIndexRouterTest {
   }
 
   @Test
-  void shouldRouteByPartitionIdForLineThatNeverGotBalancedRouting() {
+  void shouldRouteByPartitionIdForAnOlderVersion() {
     // given
     config.setNumberOfShards(3);
     final var record =
