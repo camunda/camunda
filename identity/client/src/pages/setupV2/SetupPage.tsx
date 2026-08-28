@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Heading, Separator } from "@camunda/design-system";
 import { UserCog } from "lucide-react";
@@ -53,7 +53,7 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
   });
   const [submitError, setSubmitError] = useState("");
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (username && password && confirmPassword) {
       try {
         await apiCall({ name, email, username, password });
@@ -66,7 +66,7 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
         setSubmitError(detail || t("setupCreateAdminUserGenericError"));
       }
     }
-  };
+  }, [apiCall, t, confirmPassword, email, name, onSuccess, password, username]);
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -199,9 +199,10 @@ export const SetupPage: React.FC = () => {
   const { t } = useTranslate();
   const navigate = useNavigate();
 
-  const onSuccess = () => {
+  const onSuccess = useCallback(() => {
     void navigate(`/login`);
-  };
+  }, [navigate]);
+
   return (
     <Page className="min-h-screen">
       <div className="m-auto flex w-100 flex-col gap-6">
