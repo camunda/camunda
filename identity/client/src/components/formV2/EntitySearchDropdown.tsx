@@ -12,6 +12,7 @@ import { Badge } from "@camunda/design-system";
 import { XIcon } from "lucide-react";
 import DropdownSearch from "src/components/formV2/DropdownSearch";
 import { TranslatedErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
+import useTranslate from "src/utility/localization";
 
 type RemovableEntityBadgeProps = {
   label: string;
@@ -23,19 +24,23 @@ type RemovableEntityBadgeProps = {
 export const RemovableEntityBadge = ({
   label,
   onRemove,
-}: RemovableEntityBadgeProps) => (
-  <Badge variant="neutral" className="gap-0.5 pr-1.5">
-    <span>{label}</span>
-    <button
-      type="button"
-      aria-label={`Remove ${label}`}
-      onClick={onRemove}
-      className="ml-0.5 p-0 shrink-0 rounded-sm opacity-60 hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-    >
-      <XIcon className="size-3" aria-hidden="true" />
-    </button>
-  </Badge>
-);
+}: RemovableEntityBadgeProps) => {
+  const { t } = useTranslate();
+
+  return (
+    <Badge variant="neutral" className="gap-0.5 pr-1.5">
+      <span>{label}</span>
+      <button
+        type="button"
+        aria-label={t("removeItem", { label })}
+        onClick={onRemove}
+        className="ml-0.5 p-0 shrink-0 rounded-sm opacity-60 hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        <XIcon className="size-3" aria-hidden="true" />
+      </button>
+    </Badge>
+  );
+};
 
 export type EntitySearchQuery<Entity> = {
   queryKey: readonly unknown[];
