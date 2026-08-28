@@ -21,6 +21,7 @@ import {
 } from "@camunda/design-system";
 import { XIcon } from "lucide-react";
 import useDebounce from "react-debounced";
+import useTranslate from "src/utility/localization";
 
 type DropdownSearchProps<Item extends Record<string, unknown>> = {
   items: Item[];
@@ -52,6 +53,7 @@ const DropdownSearch = <Item extends Record<string, unknown>>({
   autoFocus = false,
   invalid = false,
 }: DropdownSearchProps<Item>) => {
+  const { t } = useTranslate();
   const debounce = useDebounce();
   const [search, setSearch] = useState("");
   const [highlightedKey, setHighlightedKey] = useState<string>();
@@ -125,7 +127,7 @@ const DropdownSearch = <Item extends Record<string, unknown>>({
                 variant="ghost"
                 size="icon-sm"
                 className="absolute inset-y-0 right-1 my-auto"
-                aria-label="Clear search"
+                aria-label={t("clearSearch")}
                 onClick={handleClear}
               >
                 <XIcon aria-hidden="true" />
