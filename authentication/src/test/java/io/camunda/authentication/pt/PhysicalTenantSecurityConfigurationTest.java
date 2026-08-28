@@ -38,13 +38,11 @@ class PhysicalTenantSecurityConfigurationTest {
   }
 
   @Test
-  void shouldReturnOnlyDefaultAliasDescriptorWhenNoPhysicalTenantsConfigured() {
+  void shouldReturnNoDescriptorsWhenNoPhysicalTenantsConfigured() {
     runner.run(
         context -> {
           final var provider = context.getBean(CamundaSecurityScopeProvider.class);
-          assertThat(provider.get())
-              .extracting(ScopedSecurityDescriptor::basePath)
-              .containsExactly("/physical-tenants/default");
+          assertThat(provider.get()).isEmpty();
         });
   }
 
@@ -61,8 +59,7 @@ class PhysicalTenantSecurityConfigurationTest {
               final var provider = context.getBean(CamundaSecurityScopeProvider.class);
               // The explicit tenant plus the default alias (the root declares a usable oidc slot).
               assertThat(provider.get())
-                  .extracting(
-                      io.camunda.security.api.model.config.ScopedSecurityDescriptor::basePath)
+                  .extracting(ScopedSecurityDescriptor::basePath)
                   .containsExactlyInAnyOrder(
                       "/physical-tenants/tenanta", "/physical-tenants/default");
             });

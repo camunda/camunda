@@ -12,7 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.handler.AuthFailureHandlerConfiguration;
 import io.camunda.security.spring.oidc.JWSKeySelectorFactory;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
@@ -22,12 +24,16 @@ import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import io.camunda.security.spring.scope.ScopedApiSecurityChainBuilder;
 import io.camunda.security.spring.scope.ScopedApiSecurityChainBuilderConfiguration;
 import io.camunda.security.spring.security.BaseSecurityConfiguration;
+import io.camunda.security.spring.security.DefaultWebSessionFilterConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
@@ -40,20 +46,37 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.session.web.http.SessionRepositoryFilter;
 
 /**
- * Integration test for the implicit {@code default} physical-tenant alias on a cluster with
- * <b>no</b> {@code camunda.physical-tenants.*} entries configured.
+ * Integration test for the reachability of the implicit {@code default} physical-tenant alias, in
+ * both cluster shapes: served by the cluster API chain's prefixed path sets when no {@code
+ * camunda.physical-tenants.*} entries exist, and by its own scoped chain when they do.
+ *
+ * <p>Asserts a real bearer token is <em>accepted</em>, not merely that some chain claims the path —
+ * {@link PhysicalTenantAliasCoverageIT} covers claiming, and a chain can claim a path and then
+ * answer 401.
  *
  * <p>Distinct from {@link PhysicalTenantApiChainIsolationIT}, which covers isolation
  * <em>between</em> explicitly configured tenants and therefore runs with an empty root OIDC config.
- * Here the root config is the only config there is, and the subject under test is whether {@code
+ * Here the root config always carries the provider, and the subject under test is whether {@code
  * /physical-tenants/default} is reachable at all.
  */
 class PhysicalTenantDefaultAliasChainIT {
 
   /** basePath + the host's apiPaths() = /physical-tenants/default/v2/** */
   private static final String DEFAULT_ALIAS_PATH = "/physical-tenants/default/v2/resource";
+
+  // At least one key under camunda.physical-tenants.<id>.* so the tenant is discovered, which is
+  // what makes the provider emit descriptors — the default alias among them.
+  private static final String PHYSICAL_TENANT =
+      "camunda.physical-tenants.tenanta.security.authentication.method=oidc";
+
+  static Stream<Arguments> bothClusterShapes() {
+    return Stream.of(
+        Arguments.of("no physical tenants", new String[] {}),
+        Arguments.of("one physical tenant", new String[] {PHYSICAL_TENANT}));
+  }
 
   private static JwksTestServer rootServer;
 
@@ -69,13 +92,18 @@ class PhysicalTenantDefaultAliasChainIT {
     }
   }
 
-  @Test
-  void defaultAliasShouldAcceptRootIssuerTokenWhenNoPhysicalTenantsConfigured() {
-    buildRunner()
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("bothClusterShapes")
+  void shouldAcceptRootIssuerTokenOnDefaultAlias(
+      final String shape, final String[] shapeProperties) {
+    // Whichever mechanism serves the alias, a root-issuer bearer token must authenticate. That is
+    // the behaviour this alias exists for: the mechanism differs per shape, the outcome must not.
+    final var properties = propertiesFor(shapeProperties);
+    buildRunner(properties)
         .run(
             ctx -> {
-              // given — a cluster with a root OIDC provider and no physical tenants
-              final var proxy = new FilterChainProxy(buildChains(ctx, rootOnlyEnv()));
+              // given — a cluster with a root OIDC provider
+              final var proxy = new FilterChainProxy(buildChains(ctx, envWith(properties)));
               final var request = new MockHttpServletRequest("GET", DEFAULT_ALIAS_PATH);
               request.addHeader(
                   "Authorization",
@@ -102,15 +130,17 @@ class PhysicalTenantDefaultAliasChainIT {
             });
   }
 
-  @Test
-  void unknownPhysicalTenantShouldReturn404WhenNoPhysicalTenantsConfigured() {
-    // The default alias is the only scoped chain on this cluster; an unrelated tenant id must still
-    // fall through to the catch-all rather than matching it.
-    buildRunner()
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("bothClusterShapes")
+  void shouldReturn404ForUnknownPhysicalTenant(final String shape, final String[] shapeProperties) {
+    // The prefixed cluster paths carry the literal "default", never a wildcard — so an unrelated
+    // tenant id still falls through to the catch-all in both shapes.
+    final var properties = propertiesFor(shapeProperties);
+    buildRunner(properties)
         .run(
             ctx -> {
               // given
-              final var proxy = new FilterChainProxy(buildChains(ctx, rootOnlyEnv()));
+              final var proxy = new FilterChainProxy(buildChains(ctx, envWith(properties)));
               final var request =
                   new MockHttpServletRequest("GET", "/physical-tenants/nonexistent/v2/resource");
               final var response = new MockHttpServletResponse();
@@ -130,11 +160,12 @@ class PhysicalTenantDefaultAliasChainIT {
   // =========================================================================
 
   /**
-   * The method is set here <em>and</em> on the {@link MockEnvironment} in {@link #rootOnlyEnv()} on
-   * purpose: this one configures CSL's properties bean in the context, that one is what the scope
-   * provider reads. They are two separate consumers, not a duplicated setting.
+   * The same property array feeds this context and the {@link MockEnvironment} in {@link #envWith}.
+   * They are two separate consumers — CSL's properties bean and the {@link SecurityPathPort} read
+   * the context, the scope provider reads the environment — and for the PT-configured shape both
+   * must agree, or the port would prefix paths a scoped chain already owns.
    */
-  private WebApplicationContextRunner buildRunner() {
+  private WebApplicationContextRunner buildRunner(final String... properties) {
     return new WebApplicationContextRunner()
         .withUserConfiguration(ObjectMapperConfig.class, OcPathsConfig.class)
         .withConfiguration(
@@ -142,8 +173,24 @@ class PhysicalTenantDefaultAliasChainIT {
                 CamundaSecurityConfiguration.class,
                 BaseSecurityConfiguration.class,
                 ScopedApiSecurityChainBuilderConfiguration.class,
+                DefaultWebSessionFilterConfiguration.class,
                 AuthFailureHandlerConfiguration.class))
-        .withPropertyValues("camunda.security.authentication.method=oidc");
+        .withPropertyValues(properties);
+  }
+
+  /** Root OIDC config plus the shape's extra keys. */
+  private String[] propertiesFor(final String... shapeProperties) {
+    return Stream.concat(
+            Stream.of(
+                "camunda.security.authentication.method=oidc",
+                "camunda.security.authentication.oidc.client-id=root-client",
+                "camunda.security.authentication.oidc.issuer-uri=" + rootServer.issuerUri(),
+                "camunda.security.authentication.oidc.jwk-set-uri="
+                    + rootServer.issuerUri()
+                    + "/jwks",
+                "camunda.security.authentication.oidc.redirect-uri={baseUrl}/sso-callback"),
+            Stream.of(shapeProperties))
+        .toArray(String[]::new);
   }
 
   /**
@@ -179,7 +226,23 @@ class PhysicalTenantDefaultAliasChainIT {
         throw new IllegalStateException("Failed to build chain for " + descriptor.basePath(), ex);
       }
     }
-    // A request matching no scoped chain lands here: `/**` denyAll, answered as 404.
+    // The cluster API chain, assembled exactly as OidcApiSecurityConfiguration does — its matchers
+    // come from the real SecurityPathPort, so with no physical tenant configured they carry the
+    // /physical-tenants/default-prefixed variants. This is what serves the alias in that shape.
+    final var pathPort = ctx.getBean(SecurityPathPort.class);
+    final var clusterAuth = ctx.getBean(CamundaSecurityLibraryProperties.class).getAuthentication();
+    try {
+      chains.add(
+          chainBuilder.buildOidcApiChain(
+              ctx.getBean(HttpSecurity.class),
+              pathPort.apiPaths(),
+              pathPort.unprotectedApiPaths(),
+              scopedJwtDecoderFactory.buildIssuerAwareDecoder(clusterAuth),
+              ctx.getBean(SessionRepositoryFilter.class)));
+    } catch (final Exception ex) {
+      throw new IllegalStateException("Failed to build the cluster API chain", ex);
+    }
+    // A request matching neither lands here: `/**` denyAll, answered as 404.
     chains.add(
         ctx.getBean("protectedUnhandledPathsSecurityFilterChain", SecurityFilterChain.class));
     return chains;
@@ -189,15 +252,15 @@ class PhysicalTenantDefaultAliasChainIT {
   // Environment builders
   // =========================================================================
 
-  /** Root/cluster OIDC provider only — deliberately no {@code camunda.physical-tenants.*} keys. */
-  private MockEnvironment rootOnlyEnv() {
+  /**
+   * The same {@code key=value} properties the context gets, as the scope provider's environment.
+   */
+  private MockEnvironment envWith(final String... properties) {
     final var env = new MockEnvironment();
-    env.setProperty("camunda.security.authentication.method", "oidc");
-    env.setProperty("camunda.security.authentication.oidc.client-id", "root-client");
-    env.setProperty("camunda.security.authentication.oidc.issuer-uri", rootServer.issuerUri());
-    env.setProperty(
-        "camunda.security.authentication.oidc.jwk-set-uri", rootServer.issuerUri() + "/jwks");
-    env.setProperty("camunda.security.authentication.oidc.redirect-uri", "{baseUrl}/sso-callback");
+    for (final String property : properties) {
+      final int separator = property.indexOf('=');
+      env.setProperty(property.substring(0, separator), property.substring(separator + 1));
+    }
     return env;
   }
 

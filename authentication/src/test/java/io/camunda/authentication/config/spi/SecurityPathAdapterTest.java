@@ -14,23 +14,47 @@ import org.springframework.mock.env.MockEnvironment;
 
 class SecurityPathAdapterTest {
 
-  // No webapp-enabled property set, so the adapter resolves CSL's default (enabled) and the
-  // webappPaths() assertion below pins the enabled set.
-  private final SecurityPathAdapter port =
+  private static final String DEFAULT_TENANT_PREFIX = "/physical-tenants/default";
+
+  // Neither sets webapp-enabled, so both get CSL's default (enabled). The only difference is
+  // whether a physical tenant is configured — the gate on the prefixed paths.
+  private final SecurityPathAdapter defaultTenantPort =
       SecurityPathAdapter.fromEnvironment(new MockEnvironment());
 
+  private final SecurityPathAdapter clusterOnlyPort =
+      SecurityPathAdapter.fromEnvironment(
+          new MockEnvironment()
+              .withProperty(
+                  "camunda.physical-tenants.tenanta.security.authentication.method", "oidc"));
+
   @Test
-  void shouldExposeApiPaths() {
-    // Tenant-prefixed paths are intentionally absent — per-tenant scoped chains own them; listing
-    // them here would let the cluster chain shadow a scoped chain and break audience isolation.
-    assertThat(port.apiPaths())
+  void shouldExposeApiPathsWithoutDefaultTenantPrefixWhenTenantConfigured() {
+    // A scoped chain owns /physical-tenants/<id>/**, deriving its matchers as basePath + these.
+    assertThat(clusterOnlyPort.apiPaths())
         .containsExactlyInAnyOrder(
             "/api/**", "/v1/**", "/v2/**", "/mcp/**", "/.well-known/oauth-protected-resource/**");
   }
 
   @Test
-  void shouldExposeUnprotectedApiPaths() {
-    assertThat(port.unprotectedApiPaths())
+  void shouldAddDefaultTenantPrefixToApiPathsWhenNoTenantConfigured() {
+    // No scoped chain exists to serve /physical-tenants/default, so the cluster chain carries it.
+    assertThat(defaultTenantPort.apiPaths())
+        .containsExactlyInAnyOrder(
+            "/api/**",
+            "/v1/**",
+            "/v2/**",
+            "/mcp/**",
+            "/.well-known/oauth-protected-resource/**",
+            DEFAULT_TENANT_PREFIX + "/api/**",
+            DEFAULT_TENANT_PREFIX + "/v1/**",
+            DEFAULT_TENANT_PREFIX + "/v2/**",
+            DEFAULT_TENANT_PREFIX + "/mcp/**",
+            DEFAULT_TENANT_PREFIX + "/.well-known/oauth-protected-resource/**");
+  }
+
+  @Test
+  void shouldExposeUnprotectedApiPathsWithoutDefaultTenantPrefixWhenTenantConfigured() {
+    assertThat(clusterOnlyPort.unprotectedApiPaths())
         .containsExactlyInAnyOrder(
             "/v2/license",
             "/v2/setup/user",
@@ -40,12 +64,30 @@ class SecurityPathAdapterTest {
   }
 
   @Test
+  void shouldAddDefaultTenantPrefixToUnprotectedApiPathsWhenNoTenantConfigured() {
+    // Parity for the prefixed unprotected surface: /physical-tenants/default/v2/status must be
+    // reachable unauthenticated exactly as /v2/status is, which PhysicalTenantStatusScopeFilter
+    // deliberately admits for the default tenant.
+    assertThat(defaultTenantPort.unprotectedApiPaths())
+        .containsExactlyInAnyOrder(
+            "/v2/license",
+            "/v2/setup/user",
+            "/v2/status",
+            "/v1/external/process/**",
+            "/.well-known/oauth-protected-resource/**",
+            DEFAULT_TENANT_PREFIX + "/v2/license",
+            DEFAULT_TENANT_PREFIX + "/v2/setup/user",
+            DEFAULT_TENANT_PREFIX + "/v2/status",
+            DEFAULT_TENANT_PREFIX + "/v1/external/process/**",
+            DEFAULT_TENANT_PREFIX + "/.well-known/oauth-protected-resource/**");
+  }
+
+  @Test
   void shouldExposeUnprotectedPaths() {
     // /cluster/v2/status is here rather than in unprotectedApiPaths() on purpose: it must be served
     // by a chain with no authentication filter, so a credential the cluster-admin chain would
-    // reject
-    // is ignored instead of turning a health check into a 401.
-    assertThat(port.unprotectedPaths())
+    // reject is ignored instead of turning a health check into a 401.
+    assertThat(defaultTenantPort.unprotectedPaths())
         .containsExactlyInAnyOrder(
             "/error",
             "/actuator/**",
@@ -57,8 +99,8 @@ class SecurityPathAdapterTest {
   }
 
   @Test
-  void shouldExposeWebappPaths() {
-    assertThat(port.webappPaths())
+  void shouldExposeWebappPathsWithoutDefaultTenantPrefixWhenTenantConfigured() {
+    assertThat(clusterOnlyPort.webappPaths())
         .containsExactlyInAnyOrder(
             "/login/**",
             "/logout",
@@ -88,13 +130,41 @@ class SecurityPathAdapterTest {
   }
 
   @Test
-  void shouldExposeWebComponentNames() {
-    assertThat(port.webComponentNames()).containsExactlyInAnyOrder("admin", "operate", "tasklist");
+  void shouldAddDefaultTenantPrefixToEveryWebappPathWhenNoTenantConfigured() {
+    final var base = clusterOnlyPort.webappPaths();
+
+    assertThat(defaultTenantPort.webappPaths())
+        .hasSize(base.size() * 2)
+        .containsAll(base)
+        .contains(
+            DEFAULT_TENANT_PREFIX + "/login/**",
+            DEFAULT_TENANT_PREFIX + "/operate/**",
+            DEFAULT_TENANT_PREFIX + "/v3/api-docs/**");
   }
 
   @Test
-  void shouldExposeUnauthenticatedWebappPaths() {
-    assertThat(port.unauthenticatedWebappPaths())
+  void shouldPrefixWebappRootToATrailingSlashPattern() {
+    // "/" prefixes to /physical-tenants/default/ — matching that root only WITH a trailing
+    // slash, never without. Mirrors what CSL's scoped webapp chain already produces, so this pins
+    // existing behaviour rather than new. The matching consequence is characterised at chain level.
+    assertThat(defaultTenantPort.webappPaths()).contains(DEFAULT_TENANT_PREFIX + "/");
+  }
+
+  @Test
+  void shouldPrefixRegexWebappPattern() {
+    // Regex patterns survive prefixing; only "/" is special.
+    assertThat(defaultTenantPort.webappPaths()).contains(DEFAULT_TENANT_PREFIX + "/{regex:[\\d]+}");
+  }
+
+  @Test
+  void shouldExposeWebComponentNames() {
+    assertThat(defaultTenantPort.webComponentNames())
+        .containsExactlyInAnyOrder("admin", "operate", "tasklist");
+  }
+
+  @Test
+  void shouldExposeUnauthenticatedWebappPathsWithoutDefaultTenantPrefixWhenTenantConfigured() {
+    assertThat(clusterOnlyPort.unauthenticatedWebappPaths())
         .containsExactlyInAnyOrder(
             "/post-logout",
             "/default-ui.css",
@@ -113,15 +183,27 @@ class SecurityPathAdapterTest {
   }
 
   @Test
+  void shouldAddDefaultTenantPrefixToEveryUnauthenticatedWebappPathWhenNoTenantConfigured() {
+    final var base = clusterOnlyPort.unauthenticatedWebappPaths();
+
+    assertThat(defaultTenantPort.unauthenticatedWebappPaths())
+        .hasSize(base.size() * 2)
+        .containsAll(base)
+        .contains(DEFAULT_TENANT_PREFIX + "/assets/**", DEFAULT_TENANT_PREFIX + "/post-logout");
+  }
+
+  @Test
   void shouldExposeAdminFilterBypassPaths() {
-    assertThat(port.adminFilterBypassPaths())
+    assertThat(defaultTenantPort.adminFilterBypassPaths())
         .containsExactlyInAnyOrder(
             "/login", "/logout", "/sso-callback", "/post-logout", "/admin/setup", "/admin/assets");
   }
 
   @Test
-  void shouldReportNoWebappPathsWhenWebappDisabled() {
+  void shouldReportNoWebappPathsWhenWebappDisabledEvenWithoutPhysicalTenants() {
     // given
+    // No physical tenant configured, so the prefixed variants would otherwise apply — the
+    // webapp gate must win over them.
     final var environment =
         new MockEnvironment()
             .withProperty("camunda.security.authentication.webapp-enabled", "false");

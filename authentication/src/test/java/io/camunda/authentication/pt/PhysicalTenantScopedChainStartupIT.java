@@ -32,9 +32,14 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Startup behaviour of the scoped chains on a cluster with no {@code camunda.physical-tenants.*}
- * entries, through the real {@code ScopedSecurityChainRegistrar} — which builds a webapp chain as
- * well as an API chain for every descriptor.
+ * Startup behaviour of the scoped chains on a cluster that <em>has</em> a physical tenant
+ * configured, through the real {@code ScopedSecurityChainRegistrar} — which builds a webapp chain
+ * as well as an API chain for every descriptor.
+ *
+ * <p>The configured tenant is load-bearing: with none, no scoped chain is built at all and every
+ * assertion here would pass or fail for the wrong reason. That zero-tenant shape — where the
+ * cluster chain's prefixed path sets serve the alias instead — is covered by {@link
+ * PhysicalTenantAliasCoverageIT}.
  *
  * <p>{@link PhysicalTenantDefaultAliasChainIT} builds API chains by hand to check request outcomes,
  * so it never sees the webapp chain. This one does.
@@ -43,6 +48,11 @@ class PhysicalTenantScopedChainStartupIT {
 
   private static final String SCOPED_LOGIN = "/physical-tenants/default/login";
   private static final String SCOPED_API = "/physical-tenants/default/v2/resource";
+
+  // At least one key under camunda.physical-tenants.<id>.* so the tenant is discovered, which is
+  // what makes the provider emit descriptors — the default alias among them.
+  private static final String PHYSICAL_TENANT =
+      "camunda.physical-tenants.tenanta.security.authentication.method=oidc";
 
   private static final String[] OIDC_PROVIDER = {
     "camunda.security.authentication.method=oidc",
@@ -74,6 +84,11 @@ class PhysicalTenantScopedChainStartupIT {
         .run(
             ctx -> {
               assertThat(ctx).hasNotFailed();
+              // Without this precondition the assertion below is satisfied by two different causes:
+              // the gate emptying webappPaths(), or no scoped chain having been built at all.
+              assertThat(ctx.getBeanNamesForType(SecurityFilterChain.class))
+                  .as("the gate is only observable if scoped chains were actually built")
+                  .anyMatch(name -> name.startsWith("scoped"));
               assertThat(matchesAnyChain(ctx, SCOPED_LOGIN))
                   .as("no scoped chain may serve the scoped login path when the webapp is disabled")
                   .isFalse();
@@ -127,6 +142,7 @@ class PhysicalTenantScopedChainStartupIT {
             () ->
                 new InMemoryUserDetailsManager(
                     User.withUsername("test").password("{noop}test").authorities("USER").build()))
+        .withPropertyValues(PHYSICAL_TENANT)
         .withPropertyValues(properties);
   }
 

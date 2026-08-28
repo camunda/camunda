@@ -26,15 +26,18 @@ import org.springframework.mock.env.MockEnvironment;
  *
  * <p>All tests bind config from a {@link MockEnvironment} — no Spring context is loaded.
  *
- * <p>Semantics under test: every discovered tenant id yields a descriptor; per-PT provider
- * selection ({@code assigned}) has been dropped.
+ * <p>Semantics under test: every discovered tenant id yields a descriptor, plus the {@code default}
+ * alias once any tenant is configured; per-PT provider selection ({@code assigned}) has been
+ * dropped.
  */
 class PhysicalTenantScopeProviderTest {
 
   @Test
-  void shouldEmitOnlyDefaultAliasWhenNoPhysicalTenantsConfigured() {
-    // Without a descriptor the route is registered but matches no scoped chain, so the catch-all
-    // answers 404.
+  void shouldEmitNoDescriptorsWhenNoPhysicalTenantsConfigured() {
+    // The gate short-circuits before any per-tenant config is built, so nothing is emitted even
+    // though the cluster declares an auth method. The alias stays reachable because
+    // SecurityPathAdapter gives the cluster chain /physical-tenants/default-prefixed paths for
+    // exactly this case.
     // given - no camunda.physical-tenants.* properties
     final var env = env(Map.of("camunda.security.authentication.method", "oidc"));
 
@@ -42,9 +45,7 @@ class PhysicalTenantScopeProviderTest {
     final var provider = new PhysicalTenantScopeProvider(env);
 
     // then
-    assertThat(provider.get())
-        .extracting(ScopedSecurityDescriptor::basePath)
-        .containsExactly("/physical-tenants/default");
+    assertThat(provider.get()).isEmpty();
   }
 
   @Test
@@ -187,32 +188,6 @@ class PhysicalTenantScopeProviderTest {
   }
 
   @Test
-  void shouldEmitDefaultAliasCarryingRootConfigWhenNoPhysicalTenantsConfigured() {
-    // Zero-tenant counterpart to shouldEmitDefaultAliasDescriptorFromRootConfigWhenPtModeActive:
-    // the alias must carry the root/cluster providers, not an empty config. Field-wise equality
-    // with the cluster bind is pinned in PhysicalTenantAuthConfigurationsTest.
-    // given
-    final var env =
-        env(
-            Map.of(
-                "camunda.security.authentication.method", "oidc",
-                "camunda.security.authentication.oidc.client-id", "root-client",
-                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root",
-                "camunda.security.authentication.oidc.audiences[0]", "root-aud"));
-
-    // when
-    final var descriptors = new PhysicalTenantScopeProvider(env).get();
-
-    // then
-    assertThat(descriptors).hasSize(1);
-    final var defaultAlias = descriptors.getFirst();
-    assertThat(defaultAlias.basePath()).isEqualTo("/physical-tenants/default");
-    assertThat(defaultAlias.authentication().getOidc()).isNotNull();
-    assertThat(defaultAlias.authentication().getOidc().getClientId()).isEqualTo("root-client");
-    assertThat(defaultAlias.authentication().getOidc().getAudiences()).containsExactly("root-aud");
-  }
-
-  @Test
   void shouldFailStartupWhenPhysicalTenantConfigCannotBeBuilt() {
     // given — an invalid enum value for `method` under a PT overlay causes Binder to throw
     final var env =
@@ -250,14 +225,8 @@ class PhysicalTenantScopeProviderTest {
         .hasMessageContaining("default");
   }
 
-  static Stream<Arguments> clusterShapes() {
+  static Stream<Arguments> ptConfiguredShapes() {
     return Stream.of(
-        Arguments.of(
-            "no physical tenants",
-            Map.of(
-                "camunda.security.authentication.method", "oidc",
-                "camunda.security.authentication.oidc.client-id", "root-client",
-                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root")),
         Arguments.of(
             "one explicit tenant",
             Map.of(
@@ -278,20 +247,18 @@ class PhysicalTenantScopeProviderTest {
                     "http://idp/tenanta",
                 "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.tenanta.client-id",
                     "pt-tenanta-client",
-                "camunda.physical-tenants.default.security.authentication.method", "oidc")),
-        Arguments.of(
-            "basic auth, no tenants", Map.of("camunda.security.authentication.method", "basic")));
+                "camunda.physical-tenants.default.security.authentication.method", "oidc")));
   }
 
   /**
-   * Every tenant the config layer knows about gets a descriptor, and nothing else does. The config
-   * layer always knows about {@code default}; this provider once did not.
+   * Once any physical tenant is configured, every tenant the config layer knows about gets a
+   * descriptor and nothing else does — including {@code default}, which this provider once omitted.
    *
-   * <p>Not circular: both start from {@code discoverExplicitTenantIds}, but only the config layer
-   * added {@code default} unconditionally.
+   * <p>The two sides compute the same set here, so this is a drift guard rather than an independent
+   * derivation: it fails if either layer changes which tenants it knows about without the other.
    */
   @ParameterizedTest(name = "[{index}] {0}")
-  @MethodSource("clusterShapes")
+  @MethodSource("ptConfiguredShapes")
   void shouldEmitOneDescriptorPerKnownPhysicalTenant(
       final String shape, final Map<String, String> properties) {
     // given
