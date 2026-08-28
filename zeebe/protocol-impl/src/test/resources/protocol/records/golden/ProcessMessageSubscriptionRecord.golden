@@ -48,6 +48,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
   private static final StringValue SUBSCRIPTION_KEY_KEY = new StringValue("subscriptionKey");
+  private static final StringValue CLOSED_FOR_SUSPEND_KEY = new StringValue("closedForSuspend");
 
   private final IntegerProperty subscriptionPartitionIdProp =
       new IntegerProperty(SUBSCRIPTION_PARTITION_ID_KEY);
@@ -72,9 +73,11 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private final EnumProperty<BpmnElementType> elementTypeProp =
       new EnumProperty<>(ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
   private final LongProperty subscriptionKeyProp = new LongProperty(SUBSCRIPTION_KEY_KEY, -1L);
+  private final BooleanProperty closedForSuspendProp =
+      new BooleanProperty(CLOSED_FOR_SUSPEND_KEY, false);
 
   public ProcessMessageSubscriptionRecord() {
-    super(17);
+    super(18);
     declareProperty(subscriptionPartitionIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -91,7 +94,8 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(storageOrdinalKeyProp)
         .declareProperty(businessIdProp)
         .declareProperty(elementTypeProp)
-        .declareProperty(subscriptionKeyProp);
+        .declareProperty(subscriptionKeyProp)
+        .declareProperty(closedForSuspendProp);
   }
 
   public void wrap(final ProcessMessageSubscriptionRecord record) {
@@ -112,6 +116,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     setBusinessId(record.getBusinessIdBuffer());
     setElementType(record.getElementType());
     setSubscriptionKey(record.getSubscriptionKey());
+    setClosedForSuspend(record.isClosedForSuspend());
   }
 
   @JsonIgnore
@@ -316,6 +321,16 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   public ProcessMessageSubscriptionRecord setSubscriptionKey(final long subscriptionKey) {
     subscriptionKeyProp.setValue(subscriptionKey);
+    return this;
+  }
+
+  @Override
+  public boolean isClosedForSuspend() {
+    return closedForSuspendProp.getValue();
+  }
+
+  public ProcessMessageSubscriptionRecord setClosedForSuspend(final boolean closedForSuspend) {
+    closedForSuspendProp.setValue(closedForSuspend);
     return this;
   }
 }

@@ -57,17 +57,17 @@ public final class ProcessInstanceSuspensionMessageSubscriptionBehavior {
    * Walks the element-instance tree BFS and initiates a durable, retryable close of every {@code
    * OPENED} process message subscription.
    *
-   * <p>For each subscription this emits a {@code DELETING} event (putting the PI-side row into
-   * {@code CLOSING} state), enqueues the subscription in the pending-retry transient index, and
-   * sends the {@code MESSAGE_SUBSCRIPTION.DELETE} command to the message partition as a
-   * side-effect. On failover, {@link
+   * <p>For each subscription this emits a {@code DELETING} event with {@code closedForSuspend} set,
+   * putting the PI-side row into {@code CLOSING} state, enqueues the subscription in the
+   * pending-retry transient index, and sends the {@code MESSAGE_SUBSCRIPTION.DELETE} command to the
+   * message partition as a side-effect. On failover, {@link
    * io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState#onRecovered} re-adds
    * all {@code CLOSING} rows to the transient index so the {@link
    * PendingProcessMessageSubscriptionCheckScheduler} picks them up and resends the close command.
    *
-   * <p>When the delete ack arrives, {@link ProcessMessageSubscriptionDeleteProcessor} detects that
-   * the instance is still suspended and emits {@code CREATED} (transitioning the row back to {@code
-   * OPENED}) instead of {@code DELETED}, preserving it as a resume manifest.
+   * <p>When the delete ack arrives, {@link ProcessMessageSubscriptionDeleteProcessor} reads that
+   * flag off the row and emits {@code CREATED} (transitioning it back to {@code OPENED}) instead of
+   * {@code DELETED}, preserving it as a resume manifest.
    *
    * <p>Subscriptions in {@code OPENING} or {@code CLOSING} state are skipped: {@code OPENING} ones
    * are mid-handshake (the message-side row may not exist yet; the CREATE ack handler will close it
@@ -104,7 +104,9 @@ public final class ProcessInstanceSuspensionMessageSubscriptionBehavior {
               final String tenantId = record.getTenantId();
 
               stateWriter.appendFollowUpEvent(
-                  subscription.getKey(), ProcessMessageSubscriptionIntent.DELETING, record);
+                  subscription.getKey(),
+                  ProcessMessageSubscriptionIntent.DELETING,
+                  record.setClosedForSuspend(true));
 
               final var pending = new PendingSubscription(elemKey, messageName, tenantId);
               sideEffectWriter.appendSideEffect(

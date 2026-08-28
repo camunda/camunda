@@ -64,6 +64,10 @@
             "subscriptionKey": {
               "type": "long",
               "index": false
+            },
+            "closedForSuspend": {
+              "type": "boolean",
+              "index": false
             }
           }
         }

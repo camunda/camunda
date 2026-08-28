@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
@@ -46,7 +45,6 @@ public final class ProcessMessageSubscriptionDeleteProcessor
   private final TypedCommandWriter commandWriter;
   private final ProcessMessageSubscriptionState subscriptionState;
   private final SuspensionState suspensionState;
-  private final ElementInstanceState elementInstanceState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final KeyGenerator keyGenerator;
 
@@ -58,13 +56,11 @@ public final class ProcessMessageSubscriptionDeleteProcessor
   public ProcessMessageSubscriptionDeleteProcessor(
       final ProcessMessageSubscriptionState subscriptionState,
       final SuspensionState suspensionState,
-      final ElementInstanceState elementInstanceState,
       final Writers writers,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final KeyGenerator keyGenerator) {
     this.subscriptionState = subscriptionState;
     this.suspensionState = suspensionState;
-    this.elementInstanceState = elementInstanceState;
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -98,7 +94,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
     }
 
     final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
-    if (isSuspendDrivenClose(processInstanceKey, elementInstanceKey)) {
+    if (subscription.getRecord().isClosedForSuspend()) {
       // Restore the PI-side row to OPENED as the durable resume manifest and buffer a REOPEN so the
       // drain re-subscribes it one row per batch on resume. Snapshot before CREATED, whose applier
       // re-reads the shared record.
@@ -128,21 +124,6 @@ public final class ProcessMessageSubscriptionDeleteProcessor
           transientProcessMessageSubscriptionState.remove(
               new PendingSubscription(elementInstanceKey, messageName, tenantId));
         });
-  }
-
-  /**
-   * DELETING (→ CLOSING) is emitted by normal unsubscribe, migration, cancellation, and the suspend
-   * path. Only the suspend path runs while the instance is suspended <em>and</em> its element is
-   * still active — the others run unsuspended or while the element is already ending — so those two
-   * conditions identify a suspend-driven close, whose ack must restore the manifest, not delete it.
-   */
-  private boolean isSuspendDrivenClose(
-      final long processInstanceKey, final long elementInstanceKey) {
-    if (!suspensionState.isSuspended(processInstanceKey)) {
-      return false;
-    }
-    final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
-    return elementInstance != null && elementInstance.isActive();
   }
 
   /**

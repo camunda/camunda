@@ -284,7 +284,6 @@ public final class BpmnProcessors {
             new ProcessMessageSubscriptionDeleteProcessor(
                 subscriptionState,
                 processingState.getSuspensionState(),
-                processingState.getElementInstanceState(),
                 writers,
                 transientProcessMessageSubscriptionState,
                 processingState.getKeyGenerator()))
