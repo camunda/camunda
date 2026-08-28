@@ -152,6 +152,16 @@ func TestGetFilesToArchiveIncludesBundledJRE(t *testing.T) {
 	t.Fatalf("expected files to archive to include %s, got %v", expectedJREPath, files)
 }
 
+func TestGetFilesToArchiveExcludesLocalSecrets(t *testing.T) {
+	files := getFilesToArchive("linux", "connector-runtime-bundle-test-with-dependencies.jar", "8.10.0-alpha1")
+
+	for _, file := range files {
+		if file == filepath.Join("c8run", "secrets") || strings.HasPrefix(file, filepath.Join("c8run", "secrets")+string(os.PathSeparator)) {
+			t.Fatalf("expected local secrets to be excluded from archive, got %v", files)
+		}
+	}
+}
+
 func TestMergeModulesAddsRuntimeJREModules(t *testing.T) {
 	// when
 	modules := mergeModules([]string{"java.base"}, conservativeJREModules, runtimeProviderJREModules)
