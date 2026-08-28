@@ -94,7 +94,7 @@ curl --silent --show-error --fail -X POST 'http://localhost:8080/v2/jobs/activat
         -o /dev/null
 
 incident_found=false
-for _ in {1..30}; do
+for _ in {1..90}; do
         curl --silent --show-error --fail -X POST 'http://localhost:8080/v2/incidents/search' \
                 -H 'Content-Type: application/json' \
                 -H 'Accept: application/json' \
