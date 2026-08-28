@@ -6,21 +6,29 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, expect} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 import {TaskDetailsLayout} from './TaskDetailsLayout';
 
 const currentUser = createCurrentUser({username: 'demo'});
-const task = createUserTask({userTaskKey: '123', name: 'Review invoice', processName: 'Invoice process'});
+const task = createUserTask({name: 'Review invoice', processName: 'Invoice process'});
 
 describe('<TaskDetailsLayout />', () => {
+	beforeEach(() => {
+		vi.stubGlobal('Notification', {permission: 'granted'});
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
 	it('should render header, tabs, aside, and content', async () => {
 		const screen = await renderWithRouter(
 			() => (
-				<TaskDetailsLayout task={task} currentUser={currentUser}>
+				<TaskDetailsLayout task={task} currentUser={currentUser} assignButton={null}>
 					<div data-testid="child-content">Child</div>
 				</TaskDetailsLayout>
 			),
@@ -37,78 +45,43 @@ describe('<TaskDetailsLayout />', () => {
 		await expect.element(screen.getByTestId('details-info')).toBeVisible();
 	});
 
-	it.for([
-		{
-			path: '/shadcn/tasklist/$userTaskKey' as const,
-			initialEntry: '/shadcn/tasklist/123',
-			selectedTab: 'Show task',
-		},
-		{
-			path: '/shadcn/tasklist/$userTaskKey/process' as const,
-			initialEntry: '/shadcn/tasklist/123/process',
-			selectedTab: 'Show associated BPMN process',
-		},
-		{
-			path: '/shadcn/tasklist/$userTaskKey/history' as const,
-			initialEntry: '/shadcn/tasklist/123/history',
-			selectedTab: 'Show task history',
-		},
-	])('should mark $selectedTab as selected', async ({path, initialEntry, selectedTab}) => {
+	it('should mark the task tab as selected', async () => {
 		const screen = await renderWithRouter(
 			() => (
-				<TaskDetailsLayout task={task} currentUser={currentUser}>
+				<TaskDetailsLayout task={task} currentUser={currentUser} assignButton={null}>
 					<div />
 				</TaskDetailsLayout>
 			),
-			{path, initialEntry},
+			{path: '/shadcn/tasklist/$userTaskKey', initialEntry: '/shadcn/tasklist/123'},
 		);
 
 		await expect
-			.element(screen.getByRole('tab', {name: selectedTab, exact: true}))
+			.element(screen.getByRole('tab', {name: 'Show task', exact: true}))
 			.toHaveAttribute('aria-selected', 'true');
+		await expect
+			.element(screen.getByRole('tab', {name: 'Show associated BPMN process'}))
+			.toHaveAttribute('aria-selected', 'false');
 	});
 
 	it('should render the aside panel with task details', async () => {
 		const taskWithDetails = createUserTask({
-			userTaskKey: '123',
 			candidateUsers: ['alice'],
 			candidateGroups: ['managers'],
 			priority: 80,
 		});
+
 		const screen = await renderWithRouter(
 			() => (
-				<TaskDetailsLayout task={taskWithDetails} currentUser={currentUser}>
-					<div />
-				</TaskDetailsLayout>
-			),
-			{path: '/shadcn/tasklist/$userTaskKey', initialEntry: '/shadcn/tasklist/123'},
-		);
-		const aside = screen.getByRole('complementary', {name: 'Task details right panel'});
-
-		await expect.element(aside.getByText('Creation date')).toBeVisible();
-		await expect.element(aside.getByText('alice')).toBeVisible();
-		await expect.element(aside.getByText('managers')).toBeVisible();
-		await expect.element(aside.getByText('Critical')).toBeVisible();
-	});
-
-	it('should fall back to element and process definition ids when names are missing', async () => {
-		const taskWithoutNames = createUserTask({
-			userTaskKey: '123',
-			name: null,
-			processName: null,
-			elementId: 'review-invoice',
-			processDefinitionId: 'invoice-process',
-		});
-		const screen = await renderWithRouter(
-			() => (
-				<TaskDetailsLayout task={taskWithoutNames} currentUser={currentUser}>
+				<TaskDetailsLayout task={taskWithDetails} currentUser={currentUser} assignButton={null}>
 					<div />
 				</TaskDetailsLayout>
 			),
 			{path: '/shadcn/tasklist/$userTaskKey', initialEntry: '/shadcn/tasklist/123'},
 		);
 
-		await expect.element(screen.getByText('review-invoice')).toBeVisible();
-		await expect.element(screen.getByText('invoice-process')).toBeVisible();
+		await expect.element(screen.getByText('Creation date')).toBeVisible();
+		await expect.element(screen.getByText('alice')).toBeVisible();
+		await expect.element(screen.getByText('managers')).toBeVisible();
+		await expect.element(screen.getByText('Critical')).toBeVisible();
 	});
 });

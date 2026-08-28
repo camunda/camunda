@@ -41,7 +41,7 @@ const TabListNav: React.FC<Props> = ({label, items, userTaskKey, children}) => {
 	);
 
 	return (
-		<Tabs className="min-h-0 w-full flex-1" value={selectedItem?.key} onValueChange={handleValueChange}>
+		<Tabs className="flex min-h-0 w-full flex-1 flex-col" value={selectedItem?.key} onValueChange={handleValueChange}>
 			<nav className="w-full self-start pl-4" aria-label={label}>
 				<TabsList aria-label={label}>
 					{items.map(({key, title, label: itemLabel}) => (
@@ -52,7 +52,7 @@ const TabListNav: React.FC<Props> = ({label, items, userTaskKey, children}) => {
 				</TabsList>
 			</nav>
 			{items.map(({key}) => (
-				<TabsContent key={key} value={key} forceMount className="min-h-0 w-full data-[state=inactive]:hidden">
+				<TabsContent key={key} value={key} forceMount className="min-h-0 w-full flex-1 data-[state=inactive]:hidden">
 					{key === selectedItem?.key ? children : null}
 				</TabsContent>
 			))}

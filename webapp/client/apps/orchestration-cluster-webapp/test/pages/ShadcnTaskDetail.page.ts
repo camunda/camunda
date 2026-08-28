@@ -18,8 +18,8 @@ class ShadcnTaskDetailPage extends BasePage {
 		this.header = new ShadcnHeader(page);
 	}
 
-	async goto(userTaskKey: string) {
-		return this.page.goto(`/shadcn/tasklist/${userTaskKey}`);
+	async goto(userTaskKey: string, search?: string) {
+		return this.page.goto(`/shadcn/tasklist/${userTaskKey}${search ?? ''}`);
 	}
 
 	async gotoProcess(userTaskKey: string) {
@@ -64,6 +64,44 @@ class ShadcnTaskDetailPage extends BasePage {
 
 	get aside() {
 		return this.page.getByRole('complementary', {name: 'Task details right panel'});
+	}
+
+	get assignButton() {
+		return this.detailsHeader.getByRole('button', {name: 'Assign to me'});
+	}
+
+	get unassignButton() {
+		return this.detailsHeader.getByRole('button', {name: 'Unassign'});
+	}
+
+	get completeTaskButton() {
+		return this.page.getByRole('button', {name: 'Complete task'});
+	}
+
+	get assignee() {
+		return this.detailsHeader.getByTestId('assignee');
+	}
+
+	get assigningStatus() {
+		return this.page.getByText('Assigning...');
+	}
+
+	get unassigningStatus() {
+		return this.page.getByText('Unassigning...');
+	}
+
+	get completingTaskStatus() {
+		return this.page.getByText('Completing task...');
+	}
+
+	get completionFailed() {
+		return this.page.getByText('Completion failed');
+	}
+
+	async seedHideNotificationBanner() {
+		await this.page.addInitScript(
+			`localStorage.setItem('tasklist.areNativeNotificationsEnabled', JSON.stringify(false))`,
+		);
 	}
 
 	selectedTask(name: string) {

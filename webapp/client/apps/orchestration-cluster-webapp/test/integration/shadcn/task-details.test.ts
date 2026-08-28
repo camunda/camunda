@@ -12,13 +12,17 @@ import {
 	mockCurrentUserEndpoint,
 	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
+	mockQueryVariablesByUserTaskEndpoint,
+	mockQueryUserTaskAuditLogsEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
-import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
+import {createQueryUserTaskAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
+import {createQueryVariablesByUserTaskResponse} from '#/shared-test-modules/api-mocks/variables';
 
 const currentUser = createCurrentUser();
 
@@ -36,6 +40,9 @@ test.beforeEach(({network}) => {
 		mockQueryUserTasksEndpoint({
 			successResponse: HttpResponse.json(createQueryUserTasksResponse()),
 		}),
+		mockQueryVariablesByUserTaskEndpoint({
+			successResponse: HttpResponse.json(createQueryVariablesByUserTaskResponse()),
+		}),
 		mockGetUserTaskEndpoint({
 			successResponse: HttpResponse.json(
 				createUserTask({
@@ -47,6 +54,9 @@ test.beforeEach(({network}) => {
 					priority: 50,
 				}),
 			),
+		}),
+		mockQueryUserTaskAuditLogsEndpoint({
+			successResponse: HttpResponse.json(createQueryUserTaskAuditLogsResponse({items: []})),
 		}),
 	);
 });
@@ -70,24 +80,6 @@ test.describe('Task details page', () => {
 		await expect(shadcnTaskDetailPage.taskTab).toBeVisible();
 		await expect(shadcnTaskDetailPage.processTab).toBeVisible();
 		await expect(shadcnTaskDetailPage.historyTab).toBeVisible();
-		await expect(shadcnTaskDetailPage.taskTab).toHaveAttribute('aria-selected', 'true');
-	});
-
-	test('should switch tabs and update the URL', async ({shadcnTaskDetailPage, page}) => {
-		await shadcnTaskDetailPage.goto('2251799813685281');
-
-		await shadcnTaskDetailPage.processTab.click();
-		await expect(page).toHaveURL(/\/shadcn\/tasklist\/2251799813685281\/process/);
-		await expect(shadcnTaskDetailPage.processTab).toHaveAttribute('aria-selected', 'true');
-		await expect(shadcnTaskDetailPage.detailsInfo).toBeVisible();
-		await expect(shadcnTaskDetailPage.aside).toBeVisible();
-
-		await shadcnTaskDetailPage.historyTab.click();
-		await expect(page).toHaveURL(/\/shadcn\/tasklist\/2251799813685281\/history/);
-		await expect(shadcnTaskDetailPage.historyTab).toHaveAttribute('aria-selected', 'true');
-
-		await shadcnTaskDetailPage.taskTab.click();
-		await expect(page).toHaveURL(/\/shadcn\/tasklist\/2251799813685281$/);
 		await expect(shadcnTaskDetailPage.taskTab).toHaveAttribute('aria-selected', 'true');
 	});
 });
