@@ -171,8 +171,8 @@ echo "Creating new load test in: $TARGET_DIRECTORY"
 mkdir -p "$TARGET_DIRECTORY"
 
 # Scaffold the always-copied files into the namespace folder root: the
-# Makefile, the resources/ manifests, four storage-agnostic values files
-# (defaults + override + load-test + stable), and the matching
+# Makefile, the resources/ manifests, the storage-agnostic values files
+# (defaults + overrides + load-test scenarios + stable), and the matching
 # camunda-platform-values-${secondary_storage}.yaml. Flat layout so the
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
 cp -v  "$VERSION_DIR/Makefile"                                                  "$TARGET_DIRECTORY/"
@@ -181,8 +181,18 @@ cp -v  "$VERSION_DIR/values/camunda-platform-override-values.yaml"              
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-defaults.yaml"                 "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/values-stable.yaml"                                 "$TARGET_DIRECTORY/"
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-realistic-benchmark.yaml"      "$TARGET_DIRECTORY/"
+cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-secret-benchmark.yaml"         "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-defaults.yaml"              "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-${secondary_storage}.yaml"   "$TARGET_DIRECTORY/"
+
+# The secret benchmark's platform values only exist on versions that support it; the
+# scenario itself then fails on the missing -f file rather than rendering half of it.
+for secret_values in camunda-platform-values-secrets.yaml \
+                     camunda-platform-override-values-secrets.yaml; do
+  if [ -f "$VERSION_DIR/values/$secret_values" ]; then
+    cp -v "$VERSION_DIR/values/$secret_values" "$TARGET_DIRECTORY/"
+  fi
+done
 
 # Don't configure Elasticsearch unless specifically enabled (secondary storage,
 # or via Optimize)
