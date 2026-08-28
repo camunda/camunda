@@ -281,6 +281,7 @@ public class CamundaDataSource {
     return client
         .newDecisionInstanceSearchRequest()
         .filter(withDecisionInstanceStartTimeFilter(filter))
+        .page(pageRequest)
         .send()
         .join()
         .items();
