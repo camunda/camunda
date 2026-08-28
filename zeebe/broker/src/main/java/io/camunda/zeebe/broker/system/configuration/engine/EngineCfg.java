@@ -24,7 +24,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
   private EngineConfiguration.InputMappingMode inputMappingMode =
-      EngineConfiguration.InputMappingMode.ORDERED;
+      EngineConfiguration.InputMappingMode.COMBINED;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
   private ExpressionCfg expression = new ExpressionCfg();
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
