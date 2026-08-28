@@ -12,13 +12,10 @@ import type {CurrentUser, QueryUserTasksResponseBody} from '@camunda/camunda-api
 import {AvailableTasks} from '#/tasklist/modules/available-tasks/shadcn.components/AvailableTasks';
 import {Filters} from '#/tasklist/modules/available-tasks/shadcn.components/Filters';
 import {AutoSelectNextTaskToggle} from '#/tasklist/modules/available-tasks/shadcn.components/AutoSelectNextTaskToggle';
-import type {TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';
 
 type Props = {
 	pages: QueryUserTasksResponseBody[];
 	currentUser: CurrentUser;
-	filter: string;
-	sortBy: TasklistIndexSearch['sortBy'];
 	isPending?: boolean;
 	hasNextPage: boolean;
 	hasPreviousPage: boolean;
@@ -31,8 +28,6 @@ type Props = {
 const TasksLayoutPage: React.FC<Props> = ({
 	pages,
 	currentUser,
-	filter,
-	sortBy,
 	isPending = false,
 	hasNextPage,
 	hasPreviousPage,
@@ -51,7 +46,7 @@ const TasksLayoutPage: React.FC<Props> = ({
 			>
 				<header className="flex items-center border-b border-border px-2">
 					<h1 className="sr-only">{t('tasklist.headerNavItemTasks')}</h1>
-					<Filters filter={filter} sortBy={sortBy} disabled={isPending} />
+					<Filters disabled={isPending} />
 				</header>
 				<AvailableTasks
 					pages={pages}
