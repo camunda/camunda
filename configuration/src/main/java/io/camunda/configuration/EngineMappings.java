@@ -13,7 +13,7 @@ package io.camunda.configuration;
  */
 public class EngineMappings {
 
-  private InputMode inputMode = InputMode.ORDERED;
+  private InputMode inputMode = InputMode.COMBINED;
 
   public enum InputMode {
     ORDERED,
@@ -23,13 +23,13 @@ public class EngineMappings {
   /**
    * Controls the input-mapping resolver used during process instance execution. When set to {@code
    * COMBINED}, the engine uses {@code CombinedMappingResolver} which merges all input mappings into
-   * a single combined result. When set to {@code ORDERED} (default), the engine uses {@code
+   * a single combined result. When set to {@code ORDERED}, the engine uses {@code
    * OrderedMappingResolver} which applies mappings in modeling order.
    *
    * <p>This configuration can be accessed via the environment variable: <br>
    * {@code camunda.processing.engine.mappings.input-mode}.
    *
-   * <p>Defaults to {@code ORDERED}.
+   * <p>Defaults to {@code COMBINED}.
    */
   public InputMode getInputMode() {
     return inputMode;
