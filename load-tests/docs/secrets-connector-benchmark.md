@@ -151,6 +151,18 @@ connector-invocation and resource-usage panels are new, while the secret-cache a
 resolution panels are reused unchanged, since those measure the gateway-side store/cache
 regardless of which client (HTTP driver or, here, the outbound connector) triggered the lookup.
 
+### Log volume
+
+`camunda-platform-values-secrets-connector.yaml` drops the connectors component's
+`SpringConnectorJobHandler` logger to `WARN` (it logs "Received job"/"Completing job" at INFO for
+every job by default). No other scenario drives `connectors` under sustained load, so nothing else
+hits this: at `starter.rate=100/s` those two per-job INFO lines alone are enough to trip GKE's
+"excessive logging" alert (>256 kB/s) within minutes. All the throughput/latency/error signal this
+logger would have shown is already on `camunda_connector_outbound_invocations_total` and
+`_execution_time_seconds`, so silencing it costs no benchmark data. If you add other scenario
+values that drive `connectors` at similarly high rates, check its logs for the same pattern before
+running at scale.
+
 ## Running
 
 Via the [Camunda load test workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml):
