@@ -117,24 +117,17 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
     } else if (suspensionState.getSuspensionState(record.getProcessInstanceKey())
         == SuspensionState.State.SUSPENDED) {
-      // Race window: SUSPEND was processed (message-side subscriptions are being deleted) but
-      // this CORRELATE was already in flight from the message partition. Reject it so the
-      // message-side lock is released and the message can correlate to another active instance,
-      // or return 404 if no other subscriber exists. On resume, reopened subscriptions pick up
-      // any still-valid buffered messages through the normal CREATE→correlateNextMessage path.
-      //
-      // Gated on the exact SUSPENDED state, not isSuspended(): during RESUMING, an early
-      // reopened subscription may correlate a still-buffered message while later REOPEN commands
-      // are still draining, and that correlation must be allowed to proceed normally.
+      // Race window: SUSPEND already deleted the message-side subscription, but this CORRELATE
+      // was already in flight. Reject to release the message-side lock — another active
+      // subscriber can then correlate, or the message returns 404. Gated on exact SUSPENDED, not
+      // isSuspended(); see suspensionBehavior() below for why RESUMING must fall through instead.
       rejectCommand(command, RejectionType.INVALID_STATE, SUSPENDED_PI_MESSAGE);
       return;
 
     } else if (isStaleGeneration(record, subscription)) {
-      // The command carries the message-side subscription key it was created for. If it no longer
-      // matches the key currently stored on the PI side, this correlate belongs to a superseded
-      // generation — e.g. a K1 correlate delayed across a suspend/resume cycle that re-subscribed
-      // with a new key K2. Applying it would trigger the element against a subscription that no
-      // longer exists on the message side, so reject it rather than mutate state for K2.
+      // E.g. a K1 correlate delayed across a suspend/resume cycle that re-subscribed with a new
+      // key K2 — applying it would trigger the element against a subscription that no longer
+      // exists on the message side.
       final var reason =
           String.format(
               STALE_KEY_MESSAGE,

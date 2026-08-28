@@ -70,10 +70,9 @@ public final class MessageSubscriptionRejectProcessor
             subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
     final long requestedKey = subscriptionRecord.getSubscriptionKey();
     if (stored != null && requestedKey != -1L && stored.getKey() != requestedKey) {
-      // Stale reject: the stored row is a newer generation, so REJECTED (removing by
-      // element/message
-      // name) would delete the live replacement; reject instead. A buffered message is picked up by
-      // the replacement's own correlateNextMessage.
+      // Stale reject: the stored row is a newer generation. REJECTED removes by element/message
+      // name, which would delete the live replacement, so reject instead; its own
+      // correlateNextMessage picks up any buffered message.
       final var reason =
           String.format(
               STALE_REJECT_MESSAGE,
