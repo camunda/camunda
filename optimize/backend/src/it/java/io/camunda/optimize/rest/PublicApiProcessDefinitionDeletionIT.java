@@ -74,6 +74,35 @@ public class PublicApiProcessDefinitionDeletionIT extends AbstractCCSMIT {
   }
 
   @Test
+  public void shouldReturn202AndQueueJobForAlreadySoftDeletedDefinition() {
+    // given
+    final String processDefinitionKey = "100000000000007";
+    seedProcessDefinition(processDefinitionKey);
+    embeddedOptimizeExtension
+        .getBean(ProcessDefinitionWriter.class)
+        .markDefinitionAsDeleted(processDefinitionKey);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDeleteProcessDefinitionDataRequest(processDefinitionKey)
+            .withBearerToken(TEST_ACCESS_TOKEN)
+            .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.ACCEPTED.value());
+    final JobRegistryEntryDto entry =
+        embeddedOptimizeExtension
+            .getBean(JobRegistryReader.class)
+            .findLastByJobTypeAndEntityId(
+                JobType.DELETE, EntityType.PROCESS_DEFINITION, processDefinitionKey)
+            .orElseThrow();
+    assertThat(entry.getStatus()).isEqualTo(JobStatus.QUEUED);
+  }
+
+  @Test
   public void shouldReturn400WhenKeyIsNotNumeric() {
     // when
     final Response response =

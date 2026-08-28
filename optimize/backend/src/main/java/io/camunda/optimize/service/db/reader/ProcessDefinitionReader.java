@@ -32,6 +32,10 @@ public interface ProcessDefinitionReader {
   Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(
       final String definitionId, final boolean includeXml);
 
+  /**
+   * Checks if a process definition with the given definitionId exists in the database regardless of
+   * whether it is soft-deleted or not.
+   */
   boolean processDefinitionExists(final String definitionId);
 
   Set<String> getAllNonOnboardedProcessDefinitionKeys();
