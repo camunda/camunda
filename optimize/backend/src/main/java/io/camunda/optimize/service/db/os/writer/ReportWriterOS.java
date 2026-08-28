@@ -299,8 +299,10 @@ public class ReportWriterOS implements ReportWriter {
         OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
             CLEAR_DEFINITION_XML_IF_STILL_MATCHING_SCRIPT, scriptParams);
 
+    // Abort on version conflicts so a report edited concurrently with this write can be retried by
+    // the caller instead of keeping stale XML.
     osClient.updateByQuery(
-        SINGLE_PROCESS_REPORT_INDEX_NAME, QueryDSL.ids(reportIds), clearDefinitionXmlScript);
+        SINGLE_PROCESS_REPORT_INDEX_NAME, QueryDSL.ids(reportIds), clearDefinitionXmlScript, true);
   }
 
   @Override
