@@ -48,6 +48,17 @@ public interface ReportWriter {
       String.join(
           ".", DATA, SingleReportDataDto.Fields.definitions, ReportDataDefinitionDto.Fields.key);
 
+  // Re-checks the report's current first definition/tenants to make sure the wrong XML is not
+  // cleared if other writes have altered the report since the last read.
+  String CLEAR_DEFINITION_XML_IF_STILL_MATCHING_SCRIPT =
+      "def defs = ctx._source.data.definitions;"
+          + "if (defs != null && defs.size() > 0 && defs[0].key == params.key) {"
+          + "  def tenantIds = defs[0].tenantIds;"
+          + "  if (tenantIds == null || tenantIds.contains(params.tenantId)) {"
+          + "    ctx._source.data.configuration.xml = null;"
+          + "  }"
+          + "}";
+
   IdResponseDto createNewCombinedReport(
       final String userId,
       final CombinedReportDataDto reportData,
@@ -86,7 +97,14 @@ public interface ReportWriter {
   void updateProcessDefinitionXmlForProcessReportsWithKey(
       final String definitionKey, final String definitionXml);
 
-  void clearReportDefinitionXmlForReportIds(final List<String> reportIds);
+  /**
+   * Clears the cached XML for the given report IDs, but only for a report whose first-listed
+   * definition still matches {@code processDefinitionKey}/{@code tenantId} at write time. The
+   * caller selects candidate {@code reportIds} from a point-in-time read, so a concurrent edit to a
+   * report's first definition or tenants between that read and this write must not blank the XML.
+   */
+  void clearReportDefinitionXmlForReportIds(
+      final List<String> reportIds, final String processDefinitionKey, final String tenantId);
 
   void deleteAllManagementReports();
 

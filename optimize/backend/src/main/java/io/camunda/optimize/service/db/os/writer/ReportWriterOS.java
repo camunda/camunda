@@ -41,6 +41,7 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import jakarta.json.JsonValue;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.opensearch.client.json.JsonData;
@@ -65,6 +66,7 @@ import org.springframework.stereotype.Component;
 public class ReportWriterOS implements ReportWriter {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ReportWriterOS.class);
+
   private final ObjectMapper objectMapper;
   private final OptimizeOpenSearchClient osClient;
 
@@ -281,7 +283,8 @@ public class ReportWriterOS implements ReportWriter {
   }
 
   @Override
-  public void clearReportDefinitionXmlForReportIds(final List<String> reportIds) {
+  public void clearReportDefinitionXmlForReportIds(
+      final List<String> reportIds, final String processDefinitionKey, final String tenantId) {
     if (reportIds.isEmpty()) {
       return;
     }
@@ -289,8 +292,12 @@ public class ReportWriterOS implements ReportWriter {
         String.format("%d report(s) with cleared definition XML", reportIds.size());
     LOG.debug("Clearing definition XML for {} in OpenSearch", updateItem);
 
+    final Map<String, JsonData> scriptParams = new HashMap<>();
+    scriptParams.put("key", JsonData.of(processDefinitionKey));
+    scriptParams.put("tenantId", JsonData.of(tenantId));
     final Script clearDefinitionXmlScript =
-        OpenSearchWriterUtil.createDefaultScript("ctx._source.data.configuration.xml = null;");
+        OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+            CLEAR_DEFINITION_XML_IF_STILL_MATCHING_SCRIPT, scriptParams);
 
     osClient.updateByQuery(
         SINGLE_PROCESS_REPORT_INDEX_NAME, QueryDSL.ids(reportIds), clearDefinitionXmlScript);

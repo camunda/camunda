@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -42,6 +43,7 @@ public class DeletedProcessDefinitionFilter {
   private final int maxSize;
   private final Cache<String, Set<String>> cache;
 
+  @Autowired
   public DeletedProcessDefinitionFilter(
       final JobRegistryReader jobRegistryReader, final ConfigurationService configurationService) {
     this(jobRegistryReader, configurationService, Ticker.systemTicker());
