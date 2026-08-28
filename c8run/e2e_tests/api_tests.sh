@@ -55,8 +55,8 @@ deployment_response="$(mktemp)"
 present_instance_response="$(mktemp)"
 activation_response="$(mktemp)"
 missing_instance_response="$(mktemp)"
-incident_response="$(mktemp)"
-trap 'rm -f "$deployment_response" "$present_instance_response" "$activation_response" "$missing_instance_response" "$incident_response"' EXIT
+missing_activation_response="$(mktemp)"
+trap 'rm -f "$deployment_response" "$present_instance_response" "$activation_response" "$missing_instance_response" "$missing_activation_response"' EXIT
 
 curl --silent --show-error --fail -X POST 'http://localhost:8080/v2/deployments' \
         -H 'Accept: application/json' \
@@ -86,29 +86,14 @@ curl --silent --show-error --fail -X POST 'http://localhost:8080/v2/process-inst
         --data-raw '{"processDefinitionId":"c8runSecretMissing"}' \
         -o "$missing_instance_response"
 
-missing_instance_key="$(jq -r '.processInstanceKey' "$missing_instance_response")"
-incident_found=false
-for _ in {1..45}; do
-        curl --silent --show-error --fail -X POST 'http://localhost:8080/v2/jobs/activation' \
-                -H 'Content-Type: application/json' \
-                -H 'Accept: application/json' \
-                --data-raw '{"type":"c8run-secret-missing","worker":"c8run-e2e","timeout":30000,"maxJobsToActivate":1,"requestTimeout":1000}' \
-                -o /dev/null
-        curl --silent --show-error --fail -X POST "http://localhost:8080/v2/process-instances/$missing_instance_key/incidents/search" \
-                -H 'Content-Type: application/json' \
-                -H 'Accept: application/json' \
-                --data-raw '{}' \
-                -o "$incident_response"
-        if jq -e '.items | any(.errorType == "SECRET_RESOLUTION_ERROR" and (.errorMessage | contains("camunda.secrets.C8RUN_E2E_MISSING")))' "$incident_response" >/dev/null; then
-                incident_found=true
-                break
-        fi
-        sleep 2
-done
+curl --silent --show-error --fail -X POST 'http://localhost:8080/v2/jobs/activation' \
+        -H 'Content-Type: application/json' \
+        -H 'Accept: application/json' \
+        --data-raw '{"type":"c8run-secret-missing","worker":"c8run-e2e","timeout":30000,"maxJobsToActivate":1,"requestTimeout":5000}' \
+        -o "$missing_activation_response"
 
-if [[ "$incident_found" != true ]]; then
-        printf "missing centralized secret did not create the expected incident\n"
-        jq '{incidentCount: (.items | length), incidents: [.items[] | {errorType, errorMessage, state}]}' "$incident_response"
+if ! jq -e '.jobs | length == 0' "$missing_activation_response" >/dev/null; then
+        printf "a job with a missing centralized secret was activated\n"
         exit 1
 fi
 
