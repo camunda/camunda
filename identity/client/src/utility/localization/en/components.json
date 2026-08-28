@@ -33,6 +33,8 @@
   "enterUsername": "Enter your username",
   "hidePassword": "Hide password",
   "showPassword": "Show password",
+  "usernameRequired": "Username is required",
+  "passwordRequired": "Password is required",
   "login": "Login",
   "admin": "Admin",
   "identity": "Identity",
