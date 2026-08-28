@@ -22,6 +22,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Arrays;
@@ -662,7 +663,7 @@ class MappingResolverComparisonTest {
     }
 
     private static ResolverResults resolveAt(
-        final List<ZeebeMapping> mappings, final ScopedExpressionProcessor processor) {
+        final List<ZeebeMapping> mappings, final MappingExpressionProcessor processor) {
       final var inputMappings =
           new VariableMappingTransformer().transformInputMappings(mappings, EXPRESSION_LANGUAGE);
       return new ResolverResults(
@@ -677,7 +678,7 @@ class MappingResolverComparisonTest {
      * {@code null} (absent) if the name appears in none.
      */
     @SafeVarargs
-    private static ScopedExpressionProcessor buildProcessor(final Map<String, Object>... scopes) {
+    private static MappingExpressionProcessor buildProcessor(final Map<String, Object>... scopes) {
       final List<Map<String, DirectBuffer>> encoded =
           Arrays.stream(scopes)
               .map(
@@ -702,11 +703,10 @@ class MappingResolverComparisonTest {
           };
       // scopeKey=-1 → ExpressionProcessor uses the context directly (no processScoped call),
       // which is correct: the in-memory context owns its own lookup and ignores the key
-      return new ScopedExpressionProcessor(
+      return new MappingExpressionProcessor(
           new ExpressionProcessor(EXPRESSION_LANGUAGE, context, DEFAULT_TIMEOUT)
               .withSecretReferenceContext(),
-          -1L,
-          "");
+          new MappingContext(BufferUtil.wrapString("test-element"), -1L, -1L, -1L, ""));
     }
 
     /** Asserts both resolvers gave the exact same result document. */
