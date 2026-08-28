@@ -239,15 +239,14 @@ export class IdentityAuthorizationsPage {
     await this.createAuthorizationOwnerTypeOption(
       authorization.ownerType,
     ).click();
-    // The owner field rendered depends on the owner type: a `User` owner now
-    // renders a searchable input ("Search by owner ID"), while every other
-    // type renders the "Select an owner" combobox. Wait for whichever field
-    // this owner type actually shows.
-    const ownerField =
-      authorization.ownerType === 'User'
-        ? this.createAuthorizationOwnerSearchInput
-        : this.createAuthorizationOwnerComboBox;
-    await ownerField.waitFor({state: 'visible', timeout: 10000});
+    // Selecting an owner type re-renders the owner field. User, Group and Role
+    // owners all now render the searchable "Search by owner ID" entity input
+    // (#51442) instead of the former "Select an owner" combobox; wait for it
+    // before selecting an owner.
+    await this.createAuthorizationOwnerSearchInput.waitFor({
+      state: 'visible',
+      timeout: 10000,
+    });
   }
 
   async selectAuthorizationOwner(authorization: {ownerId: string}) {

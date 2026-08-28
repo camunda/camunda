@@ -84,9 +84,9 @@ test.describe.serial('component authorizations CRUD', () => {
     await identityAuthorizationsPage.selectAuthorizationOwnerType({
       ownerType: NEW_COMPONENT_AUTHORIZATION.ownerType,
     });
-    await identityAuthorizationsPage.selectAuthorizationOwner({
-      ownerId: NEW_COMPONENT_AUTHORIZATION.ownerId,
-    });
+    // No owner is selected here: the owner field is now a search that only
+    // lists existing owners, and this role is intentionally never created.
+    // Resource ID validation is field-level and independent of the owner.
     await identityAuthorizationsPage.fillResourceId('invalid!!%');
     await expect(
       identityAuthorizationsPage.createAuthorizationModal,

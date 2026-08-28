@@ -319,7 +319,10 @@ test.describe('Identity User Flows', () => {
       await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'Group',
-        ownerId: TEST_GROUP.name,
+        // The owner search (#51442) filters groups by `groupId` and lists the
+        // groupId as the option title; passing `TEST_GROUP.name` returns no
+        // matches.
+        ownerId: TEST_GROUP.groupId,
         resourceType: 'Component',
         resourceId: '*',
         accessPermissions: ['Access'],
@@ -385,7 +388,10 @@ test.describe('Identity User Flows', () => {
       await identityHeader.navigateToAuthorizations();
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'Group',
-        ownerId: TEST_GROUP.name,
+        // The owner search (#51442) filters groups by `groupId` and lists the
+        // groupId as the option title; passing `TEST_GROUP.name` returns no
+        // matches.
+        ownerId: TEST_GROUP.groupId,
         resourceType: 'Authorization',
         resourceId: '*',
         accessPermissions: ['Read'],

@@ -120,7 +120,7 @@ export class IdentityTenantsPage {
       name: 'assign user',
     });
     this.assignUserSearchbox = this.assignUserModal.getByRole('searchbox', {
-      name: 'Search by full name',
+      name: 'Search by username',
     });
     this.assignUserNameOption = (name) =>
       this.assignUserModal.locator('.cds--list-box__menu-item', {
@@ -173,7 +173,10 @@ export class IdentityTenantsPage {
   async assignUserToTenant(user: {id: string; name: string}) {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
-    await this.fillAssignUserName(user.name);
+    // The assign-user search (#51442) filters users by `username` and lists the
+    // username as the option title; search and select by `id` (the username),
+    // not the display name.
+    await this.fillAssignUserName(user.id);
     await this.assignUserNameOption(user.id).click();
     await this.confirmAssignmentButton.click();
     await expect(this.assignUserModal).toBeHidden();
