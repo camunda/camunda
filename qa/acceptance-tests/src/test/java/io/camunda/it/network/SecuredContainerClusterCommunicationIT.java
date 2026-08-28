@@ -78,7 +78,7 @@ final class SecuredContainerClusterCommunicationIT {
     // when - the nodes can only form a cluster if the command and internal APIs speak TLS
     try (final var client = newSecureClient()) {
       Awaitility.await("until the topology is complete")
-          .atMost(Duration.ofMinutes(2))
+          .atMost(NODE_STARTUP_TIMEOUT)
           .untilAsserted(
               () ->
                   TopologyAssert.assertThat(
