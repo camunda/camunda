@@ -176,7 +176,11 @@ export class IdentityTenantsPage {
     // The assign-user search filters users by `username` and renders the
     // username as the option title, so `user.id` drives both steps.
     await this.fillAssignUserSearch(user.id);
-    await this.assignUserOption(user.id).click();
+    // The assign-user search is debounced + server-driven, so the option can
+    // outlast the 10s default actionTimeout on a loaded cluster.
+    const userOption = this.assignUserOption(user.id);
+    await expect(userOption).toBeVisible({timeout: 60000});
+    await userOption.click();
     await this.confirmAssignmentButton.click();
     await expect(this.assignUserModal).toBeHidden();
   }
