@@ -108,6 +108,7 @@ done
 
 if [[ "$incident_found" != true ]]; then
         printf "missing centralized secret did not create the expected incident\n"
+        jq '{incidentCount: (.items | length), incidents: [.items[] | {errorType, errorMessage, state}]}' "$incident_response"
         exit 1
 fi
 
