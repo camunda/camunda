@@ -780,7 +780,11 @@
           <ignoredUsedUndeclaredDependencies>
             <dep>org.apache.tomcat.embed:tomcat-embed-core</dep>
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
+            <dep>org.apache.logging.log4j:log4j-api</dep>
           </ignoredUsedUndeclaredDependencies>
+          <ignoredNonTestScopedDependencies combine.children="append">
+            <dep>org.apache.logging.log4j:log4j-api</dep>
+          </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
     </plugins>

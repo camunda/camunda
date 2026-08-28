@@ -2222,6 +2222,7 @@ public final class TestHelper {
   public static void waitForUser(final CamundaClient client, final String username) {
     Awaitility.await("user '%s' visible in secondary storage".formatted(username))
         .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
         .untilAsserted(
             () -> {
               final var result =
