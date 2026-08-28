@@ -87,24 +87,23 @@ curl --silent --show-error --fail -X POST 'http://localhost:8080/v2/process-inst
         -o "$missing_instance_response"
 
 missing_instance_key="$(jq -r '.processInstanceKey' "$missing_instance_response")"
-curl --silent --show-error --fail -X POST 'http://localhost:8080/v2/jobs/activation' \
-        -H 'Content-Type: application/json' \
-        -H 'Accept: application/json' \
-        --data-raw '{"type":"c8run-secret-missing","worker":"c8run-e2e","timeout":30000,"maxJobsToActivate":1,"requestTimeout":1000}' \
-        -o /dev/null
-
 incident_found=false
-for _ in {1..90}; do
-        curl --silent --show-error --fail -X POST 'http://localhost:8080/v2/incidents/search' \
+for _ in {1..45}; do
+        curl --silent --show-error --fail -X POST 'http://localhost:8080/v2/jobs/activation' \
                 -H 'Content-Type: application/json' \
                 -H 'Accept: application/json' \
-                --data-raw "{\"filter\":{\"processInstanceKey\":\"$missing_instance_key\"}}" \
+                --data-raw '{"type":"c8run-secret-missing","worker":"c8run-e2e","timeout":30000,"maxJobsToActivate":1,"requestTimeout":1000}' \
+                -o /dev/null
+        curl --silent --show-error --fail -X POST "http://localhost:8080/v2/process-instances/$missing_instance_key/incidents/search" \
+                -H 'Content-Type: application/json' \
+                -H 'Accept: application/json' \
+                --data-raw '{}' \
                 -o "$incident_response"
         if jq -e '.items | any(.errorType == "SECRET_RESOLUTION_ERROR" and (.errorMessage | contains("camunda.secrets.C8RUN_E2E_MISSING")))' "$incident_response" >/dev/null; then
                 incident_found=true
                 break
         fi
-        sleep 1
+        sleep 2
 done
 
 if [[ "$incident_found" != true ]]; then
