@@ -135,11 +135,12 @@ public final class DbProcessMessageSubscriptionState
   @Override
   public void updateToClosingState(final ProcessMessageSubscriptionRecord record) {
     final long subscriptionKey = record.getSubscriptionKey();
+    final boolean closedForSuspend = record.isClosedForSuspend();
     update(
         record,
         s -> {
           s.setRecord(record).setClosing();
-          s.getRecord().setSubscriptionKey(subscriptionKey);
+          s.getRecord().setSubscriptionKey(subscriptionKey).setClosedForSuspend(closedForSuspend);
         });
   }
 

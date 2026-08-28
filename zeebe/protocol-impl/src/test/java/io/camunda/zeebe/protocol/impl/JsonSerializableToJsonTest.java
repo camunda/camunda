@@ -1589,7 +1589,8 @@ final class JsonSerializableToJsonTest {
                   .setBusinessId("biz-42")
                   .setStorageOrdinalKey(storageOrdinalKey)
                   .setElementType(BpmnElementType.RECEIVE_TASK)
-                  .setSubscriptionKey(subscriptionKey);
+                  .setSubscriptionKey(subscriptionKey)
+                  .setClosedForSuspend(true);
             },
         """
                 {
@@ -1610,7 +1611,8 @@ final class JsonSerializableToJsonTest {
                   "businessId": "biz-42",
                   "storageOrdinalKey": 8,
                   "elementType": "RECEIVE_TASK",
-                  "subscriptionKey": 42
+                  "subscriptionKey": 42,
+                  "closedForSuspend": true
                 }
                 """
       },
@@ -1648,7 +1650,8 @@ final class JsonSerializableToJsonTest {
                   "businessId": "",
                   "storageOrdinalKey": 0,
                   "elementType": "UNSPECIFIED",
-                  "subscriptionKey": -1
+                  "subscriptionKey": -1,
+                  "closedForSuspend": false
                 }
                 """
       },

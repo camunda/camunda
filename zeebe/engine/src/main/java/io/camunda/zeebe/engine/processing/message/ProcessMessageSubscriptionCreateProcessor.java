@@ -146,7 +146,9 @@ public final class ProcessMessageSubscriptionCreateProcessor
     final long subKey = eventRecord.getSubscriptionKey();
 
     stateWriter.appendFollowUpEvent(
-        subscriptionKey, ProcessMessageSubscriptionIntent.DELETING, eventRecord);
+        subscriptionKey,
+        ProcessMessageSubscriptionIntent.DELETING,
+        eventRecord.setClosedForSuspend(true));
 
     final var pending = new PendingSubscription(elementInstanceKey, messageName, tenantId);
     sideEffectWriter.appendSideEffect(

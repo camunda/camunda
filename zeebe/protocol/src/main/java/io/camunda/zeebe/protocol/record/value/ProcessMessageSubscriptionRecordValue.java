@@ -121,4 +121,12 @@ public interface ProcessMessageSubscriptionRecordValue
    * @since 8.10
    */
   long getSubscriptionKey();
+
+  /**
+   * @return {@code true} if this subscription was closed by the suspend flow, meaning the delete
+   *     acknowledgement must restore this row as a resume manifest instead of deleting it; {@code
+   *     false} for a normal close (unsubscribe, cancellation, migration) or a legacy record
+   * @since 8.11
+   */
+  boolean isClosedForSuspend();
 }

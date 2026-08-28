@@ -676,7 +676,9 @@ public final class CatchEventBehavior {
     final long subscriptionKey = subscription.getRecord().getSubscriptionKey();
 
     stateWriter.appendFollowUpEvent(
-        subscription.getKey(), ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
+        subscription.getKey(),
+        ProcessMessageSubscriptionIntent.DELETING,
+        subscription.getRecord().setClosedForSuspend(false));
 
     sendCloseMessageSubscriptionCommand(
         subscriptionPartitionId,
