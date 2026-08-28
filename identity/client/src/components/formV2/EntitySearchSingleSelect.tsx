@@ -7,9 +7,11 @@
  */
 
 import { useEffect, useState } from "react";
-import { FormLabel, Tag } from "@carbon/react";
+import { Label } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
-import EntitySearchDropdown, {
+import {
+  EntitySearchDropdown,
+  RemovableEntityBadge,
   type EntitySearchQuery,
 } from "src/components/formV2/EntitySearchDropdown";
 
@@ -77,12 +79,13 @@ const EntitySearchSingleSelect = <Entity extends Record<string, unknown>>({
 
   return (
     <div>
-      <FormLabel>{label}</FormLabel>
+      <Label>{label}</Label>
       {selectedEntity ? (
-        <div style={{ marginTop: "0.5rem" }}>
-          <Tag filter onClose={handleClear} type="blue" size="md">
-            {itemToString(selectedEntity)}
-          </Tag>
+        <div className="mt-2">
+          <RemovableEntityBadge
+            label={itemToString(selectedEntity)}
+            onRemove={handleClear}
+          />
         </div>
       ) : (
         <EntitySearchDropdown
@@ -97,13 +100,7 @@ const EntitySearchSingleSelect = <Entity extends Record<string, unknown>>({
         />
       )}
       {isEmpty && (
-        <p
-          style={{
-            color: "var(--cds-text-error, #da1e28)",
-            fontSize: "0.75rem",
-            marginTop: "0.25rem",
-          }}
-        >
+        <p className="mt-1 text-xs text-danger-action-default">
           {requiredText}
         </p>
       )}

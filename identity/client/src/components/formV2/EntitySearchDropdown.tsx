@@ -8,8 +8,34 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@camunda/design-system";
+import { XIcon } from "lucide-react";
 import DropdownSearch from "src/components/formV2/DropdownSearch";
 import { TranslatedErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
+
+type RemovableEntityBadgeProps = {
+  label: string;
+  onRemove: () => void;
+};
+
+// Mirrors the DS's own MultiSelect chip styling (`Badge` + inline remove
+// button), which isn't exposed (as of v0.49.0) and MultiSelect cannot be used with lazy server-side search.
+export const RemovableEntityBadge = ({
+  label,
+  onRemove,
+}: RemovableEntityBadgeProps) => (
+  <Badge variant="neutral" className="gap-0.5 pr-1.5">
+    <span>{label}</span>
+    <button
+      type="button"
+      aria-label={`Remove ${label}`}
+      onClick={onRemove}
+      className="ml-0.5 p-0 shrink-0 rounded-sm opacity-60 hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+    >
+      <XIcon className="size-3" aria-hidden="true" />
+    </button>
+  </Badge>
+);
 
 export type EntitySearchQuery<Entity> = {
   queryKey: readonly unknown[];
@@ -38,7 +64,7 @@ type EntitySearchDropdownProps<Entity extends Record<string, unknown>> = {
  * Generic search dropdown for any entity: fetches items via the given
  * search query as the user types, and renders them through DropdownSearch.
  */
-const EntitySearchDropdown = <Entity extends Record<string, unknown>>({
+export const EntitySearchDropdown = <Entity extends Record<string, unknown>>({
   search: buildSearchQuery,
   itemTitle,
   itemSubTitle,
@@ -89,5 +115,3 @@ const EntitySearchDropdown = <Entity extends Record<string, unknown>>({
     </>
   );
 };
-
-export default EntitySearchDropdown;
