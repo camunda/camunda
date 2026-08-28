@@ -12,8 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.HashMap;
@@ -110,6 +112,22 @@ final class PartitionBalanceMetricsTest {
         .isNull();
     assertThat(registry.find("zeebe.cluster.partition.balanced").tag("partition", "1").gauge())
         .isNotNull();
+  }
+
+  @Test
+  void shouldStopReportingOnThePartitionsOfADisabledPhysicalTenant() {
+    // given
+    leaders.put(1, MEMBER_2);
+    final var configuration =
+        CurrentClusterConfiguration.fromLegacy(configurationWithPriorities(Map.of(MEMBER_1, 1)));
+    metrics.onClusterConfigurationUpdated(configuration);
+
+    // when
+    metrics.onClusterConfigurationUpdated(
+        configuration.updatePartitionGroupConfig(GROUP, PartitionGroupConfiguration::disable));
+
+    // then
+    assertThat(registry.find("zeebe.cluster.partition.balanced").gauges()).isEmpty();
   }
 
   private double balanced(final int partitionId) {

@@ -11,10 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.ConfigurationChangeInProgressException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.NotCoordinatorException;
@@ -292,6 +294,39 @@ final class RebalanceCoordinatorTest {
         .isEqualTo(
             new RebalanceStatus.Completed(
                 100, RebalanceOutcome.FAILED, List.of(PLAN), FIXED_INSTANT, FIXED_INSTANT));
+  }
+
+  @Test
+  void shouldTellTheRunningRebalanceThatAPhysicalTenantStoppedRunning() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // when
+    configurationWithADisabledDefaultPhysicalTenant(coordinator);
+
+    // then
+    assertThat(
+            runner.rebalance.isPhysicalTenantDisabled(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .isTrue();
+  }
+
+  @Test
+  void shouldReportARebalanceThatLeftADisabledPhysicalTenantAloneAsCompleted() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+    runner.rebalance.updatePartition(
+        0, partition -> partition.completed(PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED));
+
+    // when
+    runner.finish();
+
+    // then
+    assertThat(coordinator.getRebalanceStatus().join().lastCompleted().outcome())
+        .isEqualTo(RebalanceOutcome.COMPLETED);
   }
 
   @Test
@@ -594,6 +629,18 @@ final class RebalanceCoordinatorTest {
             ClusterConfiguration.init()
                 .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))
                 .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of()))));
+  }
+
+  private void configurationWithADisabledDefaultPhysicalTenant(
+      final RebalanceCoordinator coordinator) {
+    coordinator.onClusterConfigurationUpdated(
+        CurrentClusterConfiguration.fromLegacy(
+                ClusterConfiguration.init()
+                    .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))
+                    .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of())))
+            .updatePartitionGroupConfig(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                PartitionGroupConfiguration::disable));
   }
 
   private void configurationWithAPendingChange(final RebalanceCoordinator coordinator) {

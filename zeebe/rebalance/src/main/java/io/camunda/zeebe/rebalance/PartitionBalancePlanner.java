@@ -24,7 +24,7 @@ public final class PartitionBalancePlanner {
   }
 
   public List<PartitionRebalance> plan(final CurrentClusterConfiguration configuration) {
-    return configuration.partitionGroups().entrySet().stream()
+    return configuration.activePartitionGroups().entrySet().stream()
         .sorted(Map.Entry.comparingByKey())
         .flatMap(entry -> planGroup(entry.getKey(), entry.getValue()))
         .toList();
