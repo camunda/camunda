@@ -24,7 +24,6 @@ import io.camunda.zeebe.client.impl.Loggers;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 /**
@@ -45,9 +45,12 @@ import org.slf4j.Logger;
  * <p>If a poll successfully provides jobs, the worker submits each job to the job handler. Every
  * time a job is completed, the worker checks if it still has enough jobs to work on. If not, it
  * will poll for new jobs. To determine what is considered enough jobs it compares its number of
- * {@code remainingJobs} with the {@code activationThreshold}. If the executor refuses a job, the
- * worker frees up that job's capacity immediately, so that a refused job never takes up capacity
- * for good. Each job's capacity is freed up exactly once, whether the job ran or was refused.
+ * {@code remainingJobs} with the {@code activationThreshold}. A poll only asks for as many jobs as
+ * the executor can take at that moment, which is not the same as the number of jobs the worker has
+ * left to run: jobs the broker pushes to the worker take capacity too, and those it does not count.
+ * If the executor refuses a job, the worker frees up that job's capacity immediately, so that a
+ * refused job never takes up capacity for good. Each job's capacity is freed up exactly once,
+ * whether the job ran or was refused.
  *
  * <p>If a poll fails with an error response, a retry is scheduled with a delay using the {@code
  * retryDelaySupplier} to ask for a new {@code pollInterval}. By default, this retry delay supplier
@@ -80,7 +83,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private final AtomicInteger refusedJobsInPoll = new AtomicInteger(0);
 
   // job execution facilities
-  private final Executor executor;
+  private final JobExecutor executor;
   private final JobClient jobClient;
   private final JobRunnableFactory jobHandlerFactory;
   private final long initialPollInterval;
@@ -106,7 +109,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       final JobStreamer jobStreamer,
       final BackoffSupplier backoffSupplier,
       final JobWorkerMetrics metrics,
-      final Executor jobExecutor) {
+      final JobExecutor jobExecutor) {
     this.maxJobsActive = maxJobsActive;
     activationThreshold = Math.round(maxJobsActive * 0.3f);
     remainingJobs = new AtomicInteger(0);
@@ -205,7 +208,19 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       schedulePoll();
       return;
     }
-    final int maxJobsToActivate = maxJobsActive - actualRemainingJobs;
+    final int freeCapacity = executor.freeCapacity();
+    if (freeCapacity <= 0) {
+      // Everything this worker can run at a time is taken, in most cases by jobs the broker pushed
+      // to it, which the count above does not see. Jobs activated now would be handed straight back
+      // to the broker, so no request goes out at all and the next attempt waits for the poll
+      // interval.
+      LOG.trace(
+          "Expected to activate jobs, but the job handler executor is full. Reschedule poll.");
+      releaseJobPoller(jobPoller);
+      schedulePoll();
+      return;
+    }
+    final int maxJobsToActivate = Math.min(maxJobsActive - actualRemainingJobs, freeCapacity);
     refusedJobsInPoll.set(0);
     jobPoller.poll(
         maxJobsToActivate,
@@ -297,7 +312,11 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     // The flag makes sure the slot taken above is given back only once, as giving it back twice
     // would let the worker ask the broker for more jobs than it is allowed to run at a time.
     final AtomicBoolean capacityHeld = new AtomicBoolean(true);
-    if (!handleActivatedJob(job, () -> handleJobFinished(capacityHeld), this::returnJobToBroker)) {
+    if (!handleActivatedJob(
+        job,
+        executor::executeWithoutWaiting,
+        () -> handleJobFinished(capacityHeld),
+        this::returnJobToBroker)) {
       if (releaseCapacity(capacityHeld)) {
         // Only a job whose slot was still held never ran, and only those say anything about
         // whether the executor is taking work. Counting them lets the poll that activated them
@@ -308,12 +327,18 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void handleStreamedJob(final ActivatedJob job) {
-    handleActivatedJob(job, this::handleStreamJobFinished, this::leaveStreamedJobToBroker);
+    handleActivatedJob(
+        job, executor::execute, this::handleStreamJobFinished, this::leaveStreamedJobToBroker);
   }
 
   /**
    * Hands the job over to the executor that runs the job handler.
    *
+   * @param dispatch how the job is handed over to the executor. A job the worker asked for is
+   *     refused right away when there is no capacity for it, because waiting would block the thread
+   *     that carries the activation response, and with it every other request the client sends over
+   *     the same connection. A job the broker pushed waits for capacity instead, since a blocked
+   *     push is what tells the broker to offer the job to somebody else.
    * @param onRefused what to do with a job the executor would not take, which differs between a job
    *     the worker asked for and one the broker pushed to it. It is also what tells the user about
    *     the refusal, since the two paths leave the job in very different places.
@@ -324,6 +349,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
    */
   private boolean handleActivatedJob(
       final ActivatedJob job,
+      final Consumer<Runnable> dispatch,
       final Runnable finalizer,
       final BiConsumer<ActivatedJob, RejectedExecutionException> onRefused) {
     metrics.jobActivated(1);
@@ -333,7 +359,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     final AtomicBoolean handlerStarted = new AtomicBoolean(false);
     try {
       final Runnable jobRunnable = jobHandlerFactory.create(job, finalizer);
-      executor.execute(
+      dispatch.accept(
           () -> {
             handlerStarted.set(true);
             jobRunnable.run();

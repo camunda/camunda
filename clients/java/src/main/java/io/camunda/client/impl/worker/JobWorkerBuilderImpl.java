@@ -34,7 +34,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
 public final class JobWorkerBuilderImpl
@@ -185,7 +184,7 @@ public final class JobWorkerBuilderImpl
             getTenantIds(),
             maxJobsActive);
 
-    final Executor jobExecutor;
+    final JobExecutor jobExecutor;
     if (enableStreaming) {
       if (streamTimeout != null) {
         ensurePositive("streamTimeout", streamTimeout);
@@ -205,7 +204,9 @@ public final class JobWorkerBuilderImpl
       jobExecutor = new BlockingExecutor(executorService, maxJobsActive, timeout);
     } else {
       jobStreamer = JobStreamer.noop();
-      jobExecutor = executorService;
+      // without job push nothing else takes the executor's capacity, so the worker's own count of
+      // the jobs it activated is all it needs to keep within maxJobsActive
+      jobExecutor = executorService::execute;
     }
 
     final JobWorkerImpl jobWorker =

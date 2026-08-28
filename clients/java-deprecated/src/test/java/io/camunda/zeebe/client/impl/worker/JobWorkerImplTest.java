@@ -64,7 +64,6 @@ import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -92,6 +91,9 @@ final class JobWorkerImplTest {
   private static final long SLOW_POLL_DELAY_IN_MS = 1_000L;
   private static final Duration SLOW_POLL_THRESHOLD = Duration.ofMillis(SLOW_POLL_DELAY_IN_MS / 2);
   private static final Duration POLL_INTERVAL = Duration.ofMillis(50);
+  private static final Duration JOB_TIMEOUT = Duration.ofSeconds(30);
+  // keeps the keys of pushed jobs apart from those of the polled ones
+  private static final long STREAMED_JOB_KEY_OFFSET = 100L;
 
   @Rule public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
@@ -377,6 +379,124 @@ final class JobWorkerImplTest {
   }
 
   @Test
+  void shouldAskOnlyForTheCapacityThatPushedJobsLeave() {
+    // given a worker whose capacity is partly taken by jobs the broker pushed to it
+    final int maxJobsActive = 4;
+    final int pushedJobs = 3;
+    final AlwaysRunningDeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobStreamer streamer = new RecordingJobStreamer();
+    final List<Runnable> runningJobs = new CopyOnWriteArrayList<>();
+    final BlockingExecutor jobExecutor =
+        new BlockingExecutor(runningJobs::add, maxJobsActive, JOB_TIMEOUT);
+
+    try (final JobWorkerImpl ignored =
+        new JobWorkerImpl(
+            maxJobsActive,
+            scheduler,
+            POLL_INTERVAL,
+            Mockito.mock(JobClient.class),
+            (job, doneCallback) -> doneCallback,
+            poller,
+            streamer,
+            delay -> delay,
+            JobWorkerMetrics.noop(),
+            jobExecutor)) {
+      for (int i = 0; i < pushedJobs; i++) {
+        streamer.pushJob(TestData.job(STREAMED_JOB_KEY_OFFSET + i));
+      }
+
+      // when the worker polls
+      tickToNextPoll(scheduler);
+
+      // then it asks only for the jobs it can still run. Its own count of activated jobs says
+      // every slot is free, since the jobs holding them were pushed and never counted.
+      assertThat(poller.getRequestedJobCounts()).containsExactly(maxJobsActive - pushedJobs);
+    }
+  }
+
+  @Test
+  void shouldNotAskForJobsWhileItCannotRunAnyMore() {
+    // given a worker whose capacity is taken in full by jobs the broker pushed to it
+    final int maxJobsActive = 2;
+    final AlwaysRunningDeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobStreamer streamer = new RecordingJobStreamer();
+    final List<Runnable> runningJobs = new CopyOnWriteArrayList<>();
+    final BlockingExecutor jobExecutor =
+        new BlockingExecutor(runningJobs::add, maxJobsActive, JOB_TIMEOUT);
+
+    try (final JobWorkerImpl ignored =
+        new JobWorkerImpl(
+            maxJobsActive,
+            scheduler,
+            POLL_INTERVAL,
+            Mockito.mock(JobClient.class),
+            (job, doneCallback) -> doneCallback,
+            poller,
+            streamer,
+            delay -> delay,
+            JobWorkerMetrics.noop(),
+            jobExecutor)) {
+      for (int i = 0; i < maxJobsActive; i++) {
+        streamer.pushJob(TestData.job(STREAMED_JOB_KEY_OFFSET + i));
+      }
+
+      // when several poll intervals pass
+      for (int round = 0; round < 3; round++) {
+        tickToNextPoll(scheduler);
+      }
+
+      // then no request goes out, since every job it activated would go straight back
+      assertThat(poller.getPollCount()).isZero();
+    }
+  }
+
+  @Test
+  void shouldHandBackAPolledJobWithoutWaitingForCapacity() {
+    // given a worker that waits up to a job timeout for capacity, with most of its capacity taken
+    // by jobs the broker pushed to it
+    final int maxJobsActive = 4;
+    final int pushedJobs = 3;
+    final AlwaysRunningDeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobStreamer streamer = new RecordingJobStreamer();
+    final RecordingFailJobClient jobClient = new RecordingFailJobClient();
+    final List<Runnable> runningJobs = new CopyOnWriteArrayList<>();
+    final BlockingExecutor jobExecutor =
+        new BlockingExecutor(runningJobs::add, maxJobsActive, JOB_TIMEOUT);
+
+    try (final JobWorkerImpl ignored =
+        new JobWorkerImpl(
+            maxJobsActive,
+            scheduler,
+            POLL_INTERVAL,
+            jobClient.client(),
+            (job, doneCallback) -> doneCallback,
+            poller,
+            streamer,
+            delay -> delay,
+            JobWorkerMetrics.noop(),
+            jobExecutor)) {
+      for (int i = 0; i < pushedJobs; i++) {
+        streamer.pushJob(TestData.job(STREAMED_JOB_KEY_OFFSET + i));
+      }
+      tickToNextPoll(scheduler);
+
+      // when a poll brings back more jobs than the worker has capacity for, which happens when the
+      // broker pushes a job while the response is on its way
+      final CompletableFuture<Void> handOver =
+          CompletableFuture.runAsync(() -> poller.handOverJobs(TestData.jobs(maxJobsActive)));
+
+      // then the jobs it cannot run are handed back right away. Waiting for capacity would hold on
+      // to the thread that carries the activation response for a job timeout per job, and that
+      // thread carries the rest of the client's requests as well.
+      assertThat(handOver).succeedsWithin(JOB_TIMEOUT.dividedBy(3));
+      assertThat(jobClient.getFailedJobKeys()).containsExactlyInAnyOrder(1L, 2L, 3L);
+    }
+  }
+
+  @Test
   void shouldFailRejectedJobsBackToTheBroker() {
     // given a worker whose handler executor refuses every job
     final int maxJobsActive = 4;
@@ -598,7 +718,7 @@ final class JobWorkerImplTest {
    * saturated thread pool does. It holds on to the commands it took until the test runs them, so
    * that a test can decide when the handler capacity becomes free again.
    */
-  private static final class CapacityBoundExecutor implements Executor {
+  private static final class CapacityBoundExecutor implements JobExecutor {
     private final int capacity;
     private final List<Runnable> takenCommands = new CopyOnWriteArrayList<>();
     private final AtomicInteger refusedCommands = new AtomicInteger();
@@ -716,7 +836,8 @@ final class JobWorkerImplTest {
    * java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy} behaves this way when it is shut down
    * while the caller is running the command.
    */
-  private static final class RunsThenRefusesExecutor extends AbstractExecutorService {
+  private static final class RunsThenRefusesExecutor extends AbstractExecutorService
+      implements JobExecutor {
     @Override
     public void shutdown() {}
 
