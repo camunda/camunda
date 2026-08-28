@@ -215,10 +215,8 @@ public class JobThrowErrorProcessor
         // The error was caught, so the job is deleted without completing — discard all its pending
         // history items. The lease is left empty on purpose: the whole job is gone, so every
         // activation's items must be discarded regardless of the lease they were created with.
-        commandWriter.appendFollowUpCommand(
-            jobKey,
-            AgentHistoryIntent.DISCARD,
-            new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+        commandWriter.appendNewCommand(
+            AgentHistoryIntent.DISCARD, new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
       }
     }
   }
