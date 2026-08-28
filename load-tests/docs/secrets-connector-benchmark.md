@@ -2,7 +2,8 @@
 
 Benchmarks secret resolution (`POST /v2/secrets/resolve`) through the code path a customer
 actually exercises — an outbound connector job resolving a legacy secret before its HTTP call —
-instead of a standalone driver hammering the gateway API directly.
+instead of a standalone driver hammering the gateway API directly. `POST /v2/secrets/list` is also
+covered, via the Starter's existing read-benchmark mechanism rather than a connector (see below).
 
 ## Background
 
@@ -21,6 +22,9 @@ addresses:
   The customer-relevant path is secret resolution for **connectors** (the actual caller of
   `/v2/secrets/resolve` in production), so measuring it there — not via an API-shaped proxy for it
   — gives baseline numbers that are directly meaningful to the Connectors team and to customers.
+  `/v2/secrets/list` has no equivalent customer-relevant caller in this codebase (no connector code
+  path calls it), so it stays a direct API call, same as before — just from the Starter's existing
+  read-benchmark mechanism instead of a bespoke driver.
 
 ## How it works
 
@@ -102,6 +106,24 @@ chart when the variable is unset. The
 exposes this as the **`platform-chart-from-main` checkbox**, which sets the ref to `main` — enable
 it for any run that needs an unreleased chart feature.
 
+### `/v2/secrets/list` coverage
+
+The connector runtime has no code path that ever calls `/v2/secrets/list` — it resolves secrets
+in-process via `CentralStoreSecretProvider`/`SecretProviderAggregator.getSecret()`, one reference
+at a time, never the gateway's list endpoint — so there is no connector job to attach it to.
+Rather than adding a bespoke worker/job type/BPMN branch for one extra call, this scenario reuses
+the Starter's existing read-benchmark mechanism (`DataReadMeter`, driven by
+[`DataReadMeterQueryProvider`](../load-tester/src/main/java/io/camunda/zeebe/read/DataReadMeterQueryProvider.java)):
+a `secrets_list` query calls `CamundaClient#newListSecretsCommand()` once a second from inside the
+already-deployed Starter pod, on a fixed schedule independent of `starter.rate`, so it neither
+delays nor is delayed by the `resolveSecret` measurement.
+[`load-tester-values-secrets-connector.yaml`](../setup/scenarios/load-tester-values-secrets-connector.yaml)
+turns this on with `global.performReadBenchmarks: true` and disables the read-benchmark's other,
+process-instance-related default queries (irrelevant here and would add unrelated read load) via
+`ZEEBE_DISABLED_QUERIES`. The Starter's `orchestration` client needs `SECRET`/`READ` for this,
+granted alongside the connector's existing `SECRET`/`READ`+`REVEAL` grant in
+[`camunda-platform-values-secrets-connector.yaml`](../setup/main/values/camunda-platform-values-secrets-connector.yaml).
+
 ## Test scenarios
 
 The default payload
@@ -150,17 +172,14 @@ ratio panels across steps.
 ### Coverage vs. issue #56590
 
 This scenario, plus the presets above, benchmarks `POST /v2/secrets/resolve` across cache-first,
-store-miss, batch-dedup, and concurrency-ramp scenarios — through the real connector code path.
-It does **not** exercise `POST /v2/secrets/list`: the connector resolves secrets in-process via
-`CentralStoreSecretProvider`/`SecretProviderAggregator.getSecret()`, never calling the gateway's
-list REST endpoint. If `/v2/secrets/list` coverage is needed, it requires either reviving the
-driver-based approach from [PR #60742](https://github.com/camunda/camunda/pull/60742) for that one
-call, or a dedicated connector/task that calls it directly.
+store-miss, batch-dedup, and concurrency-ramp scenarios — through the real connector code path —
+and `POST /v2/secrets/list` via the Starter's read-benchmark mechanism described above.
 
 ## Metrics
 
-No custom driver metrics are introduced. Observe the connector's own Micrometer metrics (already
-scraped by the existing Prometheus/Grafana pipeline):
+Aside from the `secrets_list` read-benchmark timer described below, no custom driver metrics are
+introduced. Observe the connector's own Micrometer metrics (already scraped by the existing
+Prometheus/Grafana pipeline):
 
 - `camunda_connector_outbound_execution_time_seconds_*` — end-to-end job execution time
   (includes secret resolution + the HTTP call), labeled by connector type.
@@ -172,6 +191,9 @@ scraped by the existing Prometheus/Grafana pipeline):
 - The engine-side `camunda_secret_cache_*` and `camunda_secret_resolution_duration_seconds_*`
   metrics, which measure the gateway-side resolve cost independent of which client called it, and
   remain valid baselines from the earlier driver-based benchmark.
+- `starter_read_benchmark_seconds_*{query="secrets_list"}` (the Starter's
+  `StarterLatencyMetricsDoc.READ_BENCHMARK` timer, already emitted for every `DataReadMeter` query)
+  — latency of the `/v2/secrets/list` calls driven by this scenario.
 
 A ready-made dashboard,
 [`monitor/grafana/dashboards/secrets-connector-benchmark.json`](../../monitor/grafana/dashboards/secrets-connector-benchmark.json),
