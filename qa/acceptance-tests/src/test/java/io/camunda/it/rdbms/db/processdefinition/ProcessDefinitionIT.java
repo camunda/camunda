@@ -620,4 +620,28 @@ public class ProcessDefinitionIT {
                         .page(p -> p.from(0).size(10))));
     assertThat(resultAfterDeletion.total()).isZero();
   }
+
+  @TestTemplate
+  public void shouldMarkDeletedWhenDrainedAndDeletedInSameFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given a process definition deleted with zero active instances emits DRAINING and
+    // FULLY_DELETED back-to-back, so markDraining and markDeleted are queued into the same flush
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessDefinitionDbReader processDefinitionReader =
+        rdbmsService.getProcessDefinitionReader();
+
+    final var processDefinition = createAndSaveRandomProcessDefinition(rdbmsWriters, b -> b);
+    final var key = processDefinition.processDefinitionKey();
+
+    // when both state transitions are flushed together
+    rdbmsWriters.getProcessDefinitionWriter().markDraining(key);
+    rdbmsWriters.getProcessDefinitionWriter().markDeleted(key);
+    rdbmsWriters.flush();
+
+    // then the terminal state wins and the row is DELETED, not stuck at DRAINING
+    final var deleted = processDefinitionReader.findOne(key).orElse(null);
+    assertThat(deleted).isNotNull();
+    assertThat(deleted.state()).isEqualTo(ProcessDefinitionEntity.ProcessDefinitionState.DELETED);
+  }
 }
