@@ -32,6 +32,12 @@ import org.slf4j.LoggerFactory;
  * (e.g. by a process level execution listener) has no flow node to attach to, so its message is
  * stored on the process instance document itself, which is what searching process instances by
  * error message falls back to.
+ *
+ * <p>A single message field is enough, and cannot lose one incident to another, because a process
+ * element instance holds at most one incident at a time: the engine keys non-job process incidents
+ * by element instance key and rejects a duplicate, execution listeners run strictly one after
+ * another, and an open incident blocks the element instance either way. Records therefore always
+ * reach this handler as created/resolved pairs.
  */
 public class ListViewProcessInstanceFromIncidentHandler
     implements ExportHandler<ProcessInstanceForListViewEntity, IncidentRecordValue> {
