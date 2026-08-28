@@ -8,7 +8,7 @@
 
 import {useCallback, useMemo} from 'react';
 import {useSuspenseInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
-import {createFileRoute, notFound, retainSearchParams, stripSearchParams} from '@tanstack/react-router';
+import {createFileRoute, notFound, retainSearchParams, stripSearchParams, useRouterState} from '@tanstack/react-router';
 import {queries} from '#/shared/http/queries';
 import {getTasksRequestBody} from '#/tasklist/modules/available-tasks/getTasksRequestBody';
 import {TasksLayoutPage} from '#/tasklist/pages/shadcn.components/TasksLayoutPage';
@@ -39,6 +39,7 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks')({
 	},
 	component: function TasksLayoutRoute() {
 		const search = Route.useSearch();
+		const isPending = useRouterState({select: ({status}) => status === 'pending'});
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
 		const requestBody = useMemo(
 			() => getTasksRequestBody(search, {currentUsername: currentUser.username}),
@@ -69,6 +70,7 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks')({
 				currentUser={currentUser}
 				filter={search.filter}
 				sortBy={search.sortBy}
+				isPending={isPending}
 				hasNextPage={hasNextPage}
 				hasPreviousPage={hasPreviousPage}
 				onScrollDown={onScrollDown}

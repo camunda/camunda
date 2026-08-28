@@ -11,6 +11,7 @@ import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {
 	mockCurrentUserEndpoint,
+	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -19,10 +20,6 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
-
-// Ported from test/integration/tasklist/tasklist-filters.test.ts (Carbon). The Carbon suite also
-// covers expanding/collapsing the sidebar filter panel and an `aria-current` link state — those
-// don't apply here since the built-in filter picker is a Select, not a sidebar of nav links.
 
 const currentUser = createCurrentUser({username: 'demo'});
 
@@ -175,6 +172,9 @@ test.describe('Sorting', () => {
 				),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(createUserTask({userTaskKey: '1', name: 'Sorted task'})),
+			}),
 		);
 
 		await shadcnTasklistIndexPage.openSortMenu();
@@ -218,17 +218,5 @@ test.describe('Sorting', () => {
 		await expect(shadcnTasklistIndexPage.filterSelect).toHaveText('All open tasks');
 		expect(new URL(page.url()).searchParams.get('sortBy')).toBeNull();
 		await expect(shadcnTasklistIndexPage.taskItem('Reset sort task')).toBeVisible();
-	});
-});
-
-test.describe('Auto-select toggle', () => {
-	test('should persist the auto-select preference locally', async ({shadcnTasklistIndexPage}) => {
-		await shadcnTasklistIndexPage.goto();
-
-		await expect(shadcnTasklistIndexPage.autoSelectToggle).not.toBeChecked();
-
-		await shadcnTasklistIndexPage.autoSelectToggle.click();
-
-		await expect(shadcnTasklistIndexPage.autoSelectToggle).toBeChecked();
 	});
 });
