@@ -83,7 +83,11 @@ public class CamundaDataSourceTest {
     @Mock(answer = Answers.RETURNS_SELF)
     private ProcessInstanceFilter processInstanceFilter;
 
+    @Mock(answer = Answers.RETURNS_SELF)
+    private AnyPage page;
+
     @Captor private ArgumentCaptor<Consumer<ProcessInstanceFilter>> filterCaptor;
+    @Captor private ArgumentCaptor<Consumer<AnyPage>> pageCaptor;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -123,57 +127,33 @@ public class CamundaDataSourceTest {
       verify(processInstanceFilter).startDate(any(Consumer.class));
     }
 
-    @Nested
-    class PageLimitTests {
+    @Test
+    void shouldNotConfigurePageLimitForSingleArgumentConstructor() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client);
 
-      @Mock(answer = Answers.RETURNS_SELF)
-      private ProcessInstanceSearchRequest searchRequest;
+      // when
+      dataSource.findProcessInstances();
 
-      @Mock private CamundaFuture<SearchResponse<ProcessInstance>> future;
-      @Mock private SearchResponse<ProcessInstance> searchResponse;
+      // then
+      verify(searchRequest).page(pageCaptor.capture());
+      pageCaptor.getValue().accept(page);
+      verify(page, never()).limit(anyInt());
+    }
 
-      @Mock(answer = Answers.RETURNS_SELF)
-      private AnyPage page;
+    @Test
+    void shouldApplyConfiguredPageLimitToProcessInstances() {
+      // given
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
 
-      @Captor private ArgumentCaptor<Consumer<AnyPage>> pageCaptor;
+      // when
+      dataSource.findProcessInstances();
 
-      @BeforeEach
-      @SuppressWarnings("unchecked")
-      void setUp() {
-        when(client.newProcessInstanceSearchRequest()).thenReturn(searchRequest);
-        when(searchRequest.send()).thenReturn(future);
-        when(future.join()).thenReturn(searchResponse);
-        when(searchResponse.items()).thenReturn(Collections.emptyList());
-      }
-
-      @Test
-      void shouldNotConfigurePageLimitForSingleArgumentConstructor() {
-        // given
-        final CamundaDataSource dataSource = new CamundaDataSource(client);
-
-        // when
-        dataSource.findProcessInstances();
-
-        // then
-        verify(searchRequest).page(pageCaptor.capture());
-        pageCaptor.getValue().accept(page);
-        verify(page, never()).limit(anyInt());
-      }
-
-      @Test
-      void shouldConfigurePageLimitForThreeArgumentConstructor() {
-        // given
-        final CamundaDataSource dataSource =
-            new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
-
-        // when
-        dataSource.findProcessInstances();
-
-        // then
-        verify(searchRequest).page(pageCaptor.capture());
-        pageCaptor.getValue().accept(page);
-        verify(page).limit(QUERY_PAGE_LIMIT);
-      }
+      // then
+      verify(searchRequest).page(pageCaptor.capture());
+      pageCaptor.getValue().accept(page);
+      verify(page).limit(QUERY_PAGE_LIMIT);
     }
 
     @Test
@@ -207,7 +187,11 @@ public class CamundaDataSourceTest {
     @Mock(answer = Answers.RETURNS_SELF)
     private ElementInstanceFilter elementInstanceFilter;
 
+    @Mock(answer = Answers.RETURNS_SELF)
+    private AnyPage page;
+
     @Captor private ArgumentCaptor<Consumer<ElementInstanceFilter>> filterCaptor;
+    @Captor private ArgumentCaptor<Consumer<AnyPage>> pageCaptor;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -246,6 +230,21 @@ public class CamundaDataSourceTest {
       filterCaptor.getValue().accept(elementInstanceFilter);
       verify(elementInstanceFilter).startDate(any(Consumer.class));
     }
+
+    @Test
+    void shouldApplyConfiguredPageLimitToElementInstances() {
+      // given
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
+
+      // when
+      dataSource.findElementInstances(f -> {});
+
+      // then
+      verify(searchRequest).page(pageCaptor.capture());
+      pageCaptor.getValue().accept(page);
+      verify(page).limit(QUERY_PAGE_LIMIT);
+    }
   }
 
   @Nested
@@ -260,7 +259,11 @@ public class CamundaDataSourceTest {
     @Mock(answer = Answers.RETURNS_SELF)
     private IncidentFilter incidentFilter;
 
+    @Mock(answer = Answers.RETURNS_SELF)
+    private AnyPage page;
+
     @Captor private ArgumentCaptor<Consumer<IncidentFilter>> filterCaptor;
+    @Captor private ArgumentCaptor<Consumer<AnyPage>> pageCaptor;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -299,6 +302,21 @@ public class CamundaDataSourceTest {
       filterCaptor.getValue().accept(incidentFilter);
       verify(incidentFilter).creationTime(any(Consumer.class));
     }
+
+    @Test
+    void shouldApplyConfiguredPageLimitToIncidents() {
+      // given
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
+
+      // when
+      dataSource.findIncidents(f -> {});
+
+      // then
+      verify(searchRequest).page(pageCaptor.capture());
+      pageCaptor.getValue().accept(page);
+      verify(page).limit(QUERY_PAGE_LIMIT);
+    }
   }
 
   @Nested
@@ -313,7 +331,11 @@ public class CamundaDataSourceTest {
     @Mock(answer = Answers.RETURNS_SELF)
     private UserTaskFilter userTaskFilter;
 
+    @Mock(answer = Answers.RETURNS_SELF)
+    private AnyPage page;
+
     @Captor private ArgumentCaptor<Consumer<UserTaskFilter>> filterCaptor;
+    @Captor private ArgumentCaptor<Consumer<AnyPage>> pageCaptor;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -352,6 +374,21 @@ public class CamundaDataSourceTest {
       filterCaptor.getValue().accept(userTaskFilter);
       verify(userTaskFilter).creationDate(any(Consumer.class));
     }
+
+    @Test
+    void shouldApplyConfiguredPageLimitToUserTasks() {
+      // given
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
+
+      // when
+      dataSource.findUserTasks(f -> {});
+
+      // then
+      verify(searchRequest).page(pageCaptor.capture());
+      pageCaptor.getValue().accept(page);
+      verify(page).limit(QUERY_PAGE_LIMIT);
+    }
   }
 
   @Nested
@@ -366,7 +403,11 @@ public class CamundaDataSourceTest {
     @Mock(answer = Answers.RETURNS_SELF)
     private JobFilter jobFilter;
 
+    @Mock(answer = Answers.RETURNS_SELF)
+    private AnyPage page;
+
     @Captor private ArgumentCaptor<Consumer<JobFilter>> filterCaptor;
+    @Captor private ArgumentCaptor<Consumer<AnyPage>> pageCaptor;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -405,6 +446,21 @@ public class CamundaDataSourceTest {
       filterCaptor.getValue().accept(jobFilter);
       verify(jobFilter).creationTime(any(Consumer.class));
     }
+
+    @Test
+    void shouldApplyConfiguredPageLimitToJobs() {
+      // given
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
+
+      // when
+      dataSource.findJobs(f -> {});
+
+      // then
+      verify(searchRequest).page(pageCaptor.capture());
+      pageCaptor.getValue().accept(page);
+      verify(page).limit(QUERY_PAGE_LIMIT);
+    }
   }
 
   @Nested
@@ -419,7 +475,11 @@ public class CamundaDataSourceTest {
     @Mock(answer = Answers.RETURNS_SELF)
     private DecisionInstanceFilter decisionInstanceFilter;
 
+    @Mock(answer = Answers.RETURNS_SELF)
+    private AnyPage page;
+
     @Captor private ArgumentCaptor<Consumer<DecisionInstanceFilter>> filterCaptor;
+    @Captor private ArgumentCaptor<Consumer<AnyPage>> pageCaptor;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -458,6 +518,21 @@ public class CamundaDataSourceTest {
       filterCaptor.getValue().accept(decisionInstanceFilter);
       verify(decisionInstanceFilter).evaluationDate(any(Consumer.class));
     }
+
+    @Test
+    void shouldApplyConfiguredPageLimitToDecisionInstances() {
+      // given
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
+
+      // when
+      dataSource.findDecisionInstances(f -> {});
+
+      // then
+      verify(searchRequest).page(pageCaptor.capture());
+      pageCaptor.getValue().accept(page);
+      verify(page).limit(QUERY_PAGE_LIMIT);
+    }
   }
 
   @Nested
@@ -472,7 +547,11 @@ public class CamundaDataSourceTest {
     @Mock(answer = Answers.RETURNS_SELF)
     private MessageSubscriptionFilter messageSubscriptionFilter;
 
+    @Mock(answer = Answers.RETURNS_SELF)
+    private AnyPage page;
+
     @Captor private ArgumentCaptor<Consumer<MessageSubscriptionFilter>> filterCaptor;
+    @Captor private ArgumentCaptor<Consumer<AnyPage>> pageCaptor;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -511,6 +590,21 @@ public class CamundaDataSourceTest {
       filterCaptor.getValue().accept(messageSubscriptionFilter);
       verify(messageSubscriptionFilter).lastUpdatedDate(any(Consumer.class));
     }
+
+    @Test
+    void shouldApplyConfiguredPageLimitToMessageSubscriptions() {
+      // given
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
+
+      // when
+      dataSource.findMessageSubscriptions(f -> {});
+
+      // then
+      verify(searchRequest).page(pageCaptor.capture());
+      pageCaptor.getValue().accept(page);
+      verify(page).limit(QUERY_PAGE_LIMIT);
+    }
   }
 
   @Nested
@@ -525,7 +619,11 @@ public class CamundaDataSourceTest {
     @Mock(answer = Answers.RETURNS_SELF)
     private CorrelatedMessageSubscriptionFilter correlatedMessageFilter;
 
+    @Mock(answer = Answers.RETURNS_SELF)
+    private AnyPage page;
+
     @Captor private ArgumentCaptor<Consumer<CorrelatedMessageSubscriptionFilter>> filterCaptor;
+    @Captor private ArgumentCaptor<Consumer<AnyPage>> pageCaptor;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -563,6 +661,21 @@ public class CamundaDataSourceTest {
       verify(searchRequest).filter(filterCaptor.capture());
       filterCaptor.getValue().accept(correlatedMessageFilter);
       verify(correlatedMessageFilter).correlationTime(any(Consumer.class));
+    }
+
+    @Test
+    void shouldApplyConfiguredPageLimitToCorrelatedMessages() {
+      // given
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
+
+      // when
+      dataSource.findCorrelatedMessages(f -> {});
+
+      // then
+      verify(searchRequest).page(pageCaptor.capture());
+      pageCaptor.getValue().accept(page);
+      verify(page).limit(QUERY_PAGE_LIMIT);
     }
   }
 }
