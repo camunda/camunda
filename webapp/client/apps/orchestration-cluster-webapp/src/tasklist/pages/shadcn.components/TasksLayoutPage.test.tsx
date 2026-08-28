@@ -23,15 +23,16 @@ describe('<TasksLayoutPage />', () => {
 				<TasksLayoutPage
 					pages={[createQueryUserTasksResponse()]}
 					currentUser={currentUser}
-					filter="all-open"
-					sortBy="creation"
 					hasNextPage={false}
 					hasPreviousPage={false}
 					onScrollDown={noop}
 					onScrollUp={noop}
 				/>
 			),
-			{path: '/shadcn/tasklist'},
+			{
+				path: '/shadcn/_auth/tasklist/_tasks',
+				initialEntry: '/shadcn/_auth/tasklist/_tasks?filter=all-open&sortBy=creation',
+			},
 		);
 
 		await expect.element(screen.getByRole('heading', {name: 'Tasks', exact: true})).toBeInTheDocument();

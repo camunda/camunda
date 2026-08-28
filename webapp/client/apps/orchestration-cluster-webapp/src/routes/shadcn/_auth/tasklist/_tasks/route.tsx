@@ -68,8 +68,6 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks')({
 			<TasksLayoutPage
 				pages={data.pages}
 				currentUser={currentUser}
-				filter={search.filter}
-				sortBy={search.sortBy}
 				isPending={isPending}
 				hasNextPage={hasNextPage}
 				hasPreviousPage={hasPreviousPage}

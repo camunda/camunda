@@ -19,18 +19,18 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@camunda/design-system';
-import {useNavigate} from '@tanstack/react-router';
+import {useNavigate, useSearch} from '@tanstack/react-router';
 import {ArrowDownWideNarrow} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
 import {
 	isBuiltInFilter,
+	tasklistIndexSearchSchema,
 	type BuiltInFilter,
 	type TasklistIndexSearch,
 } from '#/tasklist/modules/available-tasks/searchSchema';
+import {useCallback} from 'react';
 
 type Props = {
-	filter: string;
-	sortBy: TasklistIndexSearch['sortBy'];
 	disabled?: boolean;
 };
 
@@ -64,26 +64,36 @@ const SORTING_OPTION_LABEL_KEYS = {
 	priority: 'tasklist.taskFiltersSortPriority',
 } as const;
 
-const Filters: React.FC<Props> = ({filter, sortBy, disabled = false}) => {
+const Filters: React.FC<Props> = ({disabled = false}) => {
 	const {t} = useTranslation();
+	const {sortBy, filter} = useSearch({from: '/shadcn/_auth/tasklist/_tasks'});
 	const navigate = useNavigate();
 
 	const completionEligible = filter === 'completed' || filter === 'custom';
 	const sortOptionsOrder = completionEligible ? COMPLETION_SORTING_OPTIONS_ORDER : SORTING_OPTIONS_ORDER;
 
-	const onFilterChange = (newFilter: BuiltInFilter) => {
-		navigate({
-			to: '.',
-			search: {
-				filter: newFilter,
-				sortBy: newFilter === 'completed' ? 'completion' : 'creation',
-			},
-		});
-	};
+	const onFilterChange = useCallback(
+		(newFilter: string) => {
+			navigate({
+				to: '.',
+				search: {
+					filter: newFilter,
+					sortBy: newFilter === 'completed' ? 'completion' : 'creation',
+				},
+			});
+		},
+		[navigate],
+	);
 
-	const onSort = (id: TasklistIndexSearch['sortBy']) => {
-		navigate({to: '.', search: (prev) => ({...prev, sortBy: id})});
-	};
+	const onSort = useCallback(
+		(id: string) => {
+			const result = tasklistIndexSearchSchema.shape.sortBy.safeParse(id);
+			if (result.success) {
+				navigate({to: '.', search: (prev) => ({...prev, sortBy: result.data})});
+			}
+		},
+		[navigate],
+	);
 
 	return (
 		<section
@@ -91,11 +101,7 @@ const Filters: React.FC<Props> = ({filter, sortBy, disabled = false}) => {
 			aria-label={t('tasklist.taskFiltersHeaderAria')}
 		>
 			{/* custom filters aren't selectable here yet (camunda/camunda#60225); the placeholder covers that case */}
-			<Select
-				value={isBuiltInFilter(filter) ? filter : ''}
-				onValueChange={(value) => onFilterChange(value as BuiltInFilter)}
-				disabled={disabled}
-			>
+			<Select value={isBuiltInFilter(filter) ? filter : ''} onValueChange={onFilterChange} disabled={disabled}>
 				<SelectTrigger aria-label={t('tasklist.taskFiltersHeaderAria')}>
 					<SelectValue placeholder={t('tasklist.taskFilterPanelCustom')} />
 				</SelectTrigger>
@@ -120,10 +126,7 @@ const Filters: React.FC<Props> = ({filter, sortBy, disabled = false}) => {
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
-					<DropdownMenuRadioGroup
-						value={sortBy}
-						onValueChange={(value) => onSort(value as TasklistIndexSearch['sortBy'])}
-					>
+					<DropdownMenuRadioGroup value={sortBy} onValueChange={onSort}>
 						{sortOptionsOrder.map((id) => (
 							<DropdownMenuRadioItem key={id} value={id}>
 								{t(SORTING_OPTION_LABEL_KEYS[id])}
