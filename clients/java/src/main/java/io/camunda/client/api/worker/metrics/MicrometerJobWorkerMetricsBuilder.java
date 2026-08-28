@@ -82,6 +82,14 @@ public interface MicrometerJobWorkerMetricsBuilder {
       }
     },
 
+    /** Counter name backing the {@link JobWorkerMetrics#jobRefused(int)} count. */
+    JOB_REFUSED {
+      @Override
+      public String asString() {
+        return "camunda.client.worker.job.refused";
+      }
+    },
+
     /**
      * Counter name backing {@link JobWorkerMetrics#streamInactivityRecreated()}. Incremented every
      * time the streaming worker recreates its stream because the configured inactivity timeout
