@@ -53,6 +53,8 @@ export type TextFieldProps = {
   readOnly?: boolean;
   onChange?: (newValue: string) => void;
   validate?: (newValue: string) => boolean;
+  name?: string;
+  autoComplete?: string;
 } & (TextInputProps | TextAreaProps | PasswordInputProps);
 
 const TextField: FC<TextFieldProps> = ({
@@ -71,6 +73,8 @@ const TextField: FC<TextFieldProps> = ({
   maxCount = 255,
   enableCounter = false,
   counterMode = "character",
+  name,
+  autoComplete,
 }) => {
   const { t } = useTranslate();
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -122,6 +126,8 @@ const TextField: FC<TextFieldProps> = ({
           placeholder,
           readOnly,
           autoFocus,
+          name,
+          autoComplete,
           onChange: handleChange,
           onBlur: handleBlur,
         };
@@ -138,7 +144,7 @@ const TextField: FC<TextFieldProps> = ({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                className="absolute top-1/2 right-1 -translate-y-1/2"
+                className="absolute inset-y-0 right-1 my-auto"
                 aria-label={
                   passwordVisible ? t("hidePassword") : t("showPassword")
                 }
