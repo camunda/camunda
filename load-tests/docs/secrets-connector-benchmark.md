@@ -163,6 +163,16 @@ logger would have shown is already on `camunda_connector_outbound_invocations_to
 values that drive `connectors` at similarly high rates, check its logs for the same pattern before
 running at scale.
 
+This has to be set via `SPRING_APPLICATION_JSON`, not a `LOGGING_LEVEL_*` env var: Spring Boot's
+environment-variable relaxed binding lowercases the whole property name before matching it against
+the `logging.level` map, so `LOGGING_LEVEL_..._SPRINGCONNECTORJOBHANDLER` resolves to the map key
+`...springconnectorjobhandler` (all lowercase). SLF4J/Logback logger names are case-sensitive and
+equal the FQCN (with its capitalised class-name segment), so the lowercase key never matches the
+real logger and the level silently has no effect — this was confirmed against a live run, whose
+`connectors` pod logs kept emitting the per-job INFO lines despite the env var being present in the
+pod spec. `SPRING_APPLICATION_JSON` is parsed as JSON, which preserves case, so it is the reliable
+way to set per-class log levels here.
+
 ## Running
 
 Via the [Camunda load test workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml):
