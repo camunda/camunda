@@ -147,6 +147,8 @@ final class ClusterRebalanceMapper {
       case NO_LEADER -> ClusterRebalanceOperationPartition.ResultEnum.NO_LEADER;
       case NO_RESPONSE -> ClusterRebalanceOperationPartition.ResultEnum.NO_RESPONSE;
       case CANCELLED -> ClusterRebalanceOperationPartition.ResultEnum.CANCELLED;
+      case PHYSICAL_TENANT_DISABLED ->
+          ClusterRebalanceOperationPartition.ResultEnum.PHYSICAL_TENANT_DISABLED;
     };
   }
 
