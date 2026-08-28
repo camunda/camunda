@@ -81,6 +81,14 @@ public interface MicrometerJobWorkerMetricsBuilder {
       }
     },
 
+    /** Counter name backing the {@link JobWorkerMetrics#jobRefused(int)} count. */
+    JOB_REFUSED {
+      @Override
+      public String asString() {
+        return "camunda.client.worker.job.refused";
+      }
+    },
+
     /**
      * Counter backing the {@link JobWorkerMetrics#jobActivated(int)} count.
      *

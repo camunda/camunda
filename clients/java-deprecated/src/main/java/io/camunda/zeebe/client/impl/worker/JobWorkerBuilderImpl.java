@@ -213,6 +213,7 @@ public final class JobWorkerBuilderImpl
             maxJobsActive,
             executorService,
             pollInterval,
+            jobClient,
             jobRunnableFactory,
             jobPoller,
             jobStreamer,
