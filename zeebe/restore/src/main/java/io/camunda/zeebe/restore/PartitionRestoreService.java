@@ -36,6 +36,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,7 +138,7 @@ public class PartitionRestoreService {
    * index of the source journal.
    */
   private void copyBetweenCheckpoints(
-      final Backup previousBackup,
+      final @Nullable Backup previousBackup,
       final Backup sourceBackup,
       final Path sourceDirectory,
       final Journal targetJournal) {
