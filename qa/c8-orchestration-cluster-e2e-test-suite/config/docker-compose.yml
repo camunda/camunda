@@ -97,7 +97,7 @@ services:
 
   camunda:
     container_name: camunda
-    image: ${CAMUNDA_DOCKER_IMAGE:-camunda/camunda:SNAPSHOT}
+    image: ${CAMUNDA_DOCKER_IMAGE:-camunda/camunda:8.10-SNAPSHOT}
     environment:
       - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g'
       - ZEEBE_BROKER_NETWORK_HOST=camunda
@@ -153,7 +153,7 @@ services:
   # is provisioned; startup and readiness do not depend on the realm existing.
   optimize:
     container_name: optimize
-    image: ${OPTIMIZE_DOCKER_IMAGE:-camunda/optimize:SNAPSHOT}
+    image: ${OPTIMIZE_DOCKER_IMAGE:-camunda/optimize:8.10-SNAPSHOT}
     depends_on:
       - elasticsearch
     ports:
