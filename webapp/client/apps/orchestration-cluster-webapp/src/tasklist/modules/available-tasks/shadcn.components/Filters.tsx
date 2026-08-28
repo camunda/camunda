@@ -73,7 +73,10 @@ const Filters: React.FC<Props> = ({filter, sortBy}) => {
 	const onFilterChange = (newFilter: BuiltInFilter) => {
 		navigate({
 			to: '.',
-			search: newFilter === 'completed' ? {filter: newFilter, sortBy: 'completion'} : {filter: newFilter},
+			search: {
+				filter: newFilter,
+				sortBy: newFilter === 'completed' ? 'completion' : 'creation',
+			},
 		});
 	};
 

@@ -32,6 +32,11 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks')({
 	notFoundComponent: () => {
 		throw notFound({routeId: '/shadcn/_auth/tasklist'});
 	},
+	beforeLoad: async ({context: {queryClient}, search}) => {
+		const currentUser = await queryClient.query(queries.getCurrentUser());
+		const queryOptions = queries.queryUserTasks(getTasksRequestBody(search, {currentUsername: currentUser.username}));
+		await queryClient.infiniteQuery(queryOptions);
+	},
 	component: function TasksLayoutRoute() {
 		const search = Route.useSearch();
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
