@@ -135,12 +135,20 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
                         DefinitionType.PROCESS, bpmnProcessId, Collections.singleton(tenantId)))
             .isEmpty();
 
+    // Invalidate before clearing XML: otherwise a report evaluation that already read the
+    // stale cached "latest" definition could write its BPMN XML back into a report right
+    // after we clear it.
+    withRetry(
+        "invalidate cached process definition " + bpmnProcessId,
+        () ->
+            definitionService.invalidateProcessDefinitionIfLatest(
+                bpmnProcessId, tenantId, version));
+
     if (isLastRemainingVersion) {
       withRetry(
           "clear cached XML for reports referencing " + bpmnProcessId,
           () -> reportService.clearCachedReportXml(bpmnProcessId, tenantId));
     }
-    definitionService.invalidateProcessDefinitionIfLatest(bpmnProcessId, tenantId, version);
 
     // Hard-delete last
     withRetry(
