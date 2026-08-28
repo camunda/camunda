@@ -169,10 +169,8 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       // discarded regardless of the lease they were created with. Today the cancelled job is a
       // user-task job (never agentic), so this is a no-op; kept to future-proof job-worker user
       // tasks that carry an associated agent instance.
-      commandWriter.appendFollowUpCommand(
-          jobKey,
-          AgentHistoryIntent.DISCARD,
-          new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+      commandWriter.appendNewCommand(
+          AgentHistoryIntent.DISCARD, new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
     }
   }
 
