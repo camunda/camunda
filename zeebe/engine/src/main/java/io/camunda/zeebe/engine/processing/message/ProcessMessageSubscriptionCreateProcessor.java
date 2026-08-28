@@ -137,9 +137,9 @@ public final class ProcessMessageSubscriptionCreateProcessor
       final long elementInstanceKey,
       final String messageName,
       final String tenantId) {
-    // Capture scalars before emitting DELETING: the DELETING applier calls updateToClosingState,
-    // which re-reads the shared subscription object from DB and can reset the shared mutable
-    // record.
+    // eventRecord is this processor's reused field; the side effects below run after this
+    // record's processing, by which point eventRecord may hold the next call's data. Capture
+    // scalars now.
     final int partitionId = eventRecord.getSubscriptionPartitionId();
     final long piKey = eventRecord.getProcessInstanceKey();
     final long pdKey = eventRecord.getProcessDefinitionKey();

@@ -47,14 +47,11 @@ public class MessageSubscriptionWriter extends ProcessInstanceDependant implemen
   }
 
   /**
-   * Idempotent upsert for the CREATED intent. A process message subscription can receive CREATED
-   * more than once — the suspend/resume flow reuses the same key and re-emits CREATED when the
-   * resume manifest is restored and when the subscription is reopened. A plain {@link #create}
-   * would violate the primary key on the second CREATED. This variant inserts the row when absent
-   * and, when a row with the same key already exists, refreshes all columns to the incoming CREATED
-   * projection. The refresh is required, not cosmetic: a reusable non-interrupting subscription may
-   * already be stored as CORRELATED, and the suspend-close ack re-emits CREATED to restore it to
-   * OPENED — a no-op-on-conflict would leave the stale CORRELATED state behind.
+   * Idempotent upsert for the CREATED intent: the suspend/resume flow re-emits CREATED for the same
+   * key (manifest restore, reopen), and a plain {@link #create} would violate the primary key on
+   * the second call. Refreshes all columns on conflict rather than a no-op — a reusable
+   * non-interrupting subscription can already be CORRELATED when the suspend-close ack re-emits
+   * CREATED to restore OPENED, and a no-op would leave that stale.
    */
   public void createIfNotExists(final MessageSubscriptionDbModel messageSubscription) {
     final var truncated =

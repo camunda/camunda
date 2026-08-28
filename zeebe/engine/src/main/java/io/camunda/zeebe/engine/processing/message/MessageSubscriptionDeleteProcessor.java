@@ -66,9 +66,8 @@ public final class MessageSubscriptionDeleteProcessor
       final long requestedKey = subscriptionRecord.getSubscriptionKey();
       final long storedKey = messageSubscription.getKey();
       if (requestedKey != -1L && storedKey != requestedKey) {
-        // The delete quotes a specific subscription key, but the stored subscription has a
-        // different key, meaning a resume already replaced it with a new subscription. Silently
-        // ack so the PI side stops retrying; do NOT delete the live subscription.
+        // A resume already replaced this subscription with a new one; ack so the PI side stops
+        // retrying, and do NOT delete the live replacement.
         rejectStaleCommand(record, requestedKey, storedKey);
         sendAcknowledgeCommand();
         return;

@@ -111,10 +111,9 @@ public final class MessageSuspensionCrossPartitionTest {
   @Test
   public void shouldReturnNotFoundForCrossPartitionDirectCorrelateWhileSuspended() {
     // given - an instance on one partition with its message subscription on another, then
-    // suspended.
-    // Regression for #60648: a direct/synchronous correlate to a suspended instance whose
-    // subscription lives on a remote partition must get a prompt terminal rejection instead of
-    // hanging until the gateway deadline.
+    // suspended. Regression for #60648: a direct/synchronous correlate to a suspended instance
+    // whose subscription lives on a remote partition must get a prompt terminal rejection instead
+    // of hanging until the gateway deadline.
     final String processId = Strings.newRandomValidBpmnId();
     final String messageName = Strings.newRandomValidBpmnId();
     final String correlationKey = correlationKeyForPartitionOtherThan(PROCESS_INSTANCE_PARTITION);
@@ -139,8 +138,7 @@ public final class MessageSuspensionCrossPartitionTest {
         .await();
 
     // when - a direct correlate routes to the subscription partition (by correlation key), where
-    // the
-    // subscription no longer exists
+    // the subscription no longer exists
     final Record<MessageCorrelationRecordValue> rejection =
         engine
             .messageCorrelation()
