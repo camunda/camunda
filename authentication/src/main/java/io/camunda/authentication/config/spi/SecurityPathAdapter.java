@@ -7,11 +7,17 @@
  */
 package io.camunda.authentication.config.spi;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
+
+import io.camunda.authentication.pt.PhysicalTenantScopeProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.core.env.Environment;
 
 /**
@@ -21,8 +27,14 @@ import org.springframework.core.env.Environment;
  *
  * <p>Construct only via {@link #fromEnvironment(Environment)}, so {@link #webappPaths()} always
  * reports the gate as configuration resolves it rather than as a caller asserts it.
+ *
+ * <p>With no physical tenant configured, the API and webapp sets also carry {@code
+ * /physical-tenants/default}-prefixed variants so the cluster chain serves the alias.
  */
 public final class SecurityPathAdapter implements SecurityPathPort {
+
+  private static final String DEFAULT_ALIAS_PREFIX =
+      PHYSICAL_TENANTS_PATH_SEGMENT + DEFAULT_PHYSICAL_TENANT_ID;
 
   private static final Set<String> WEBAPP_PATHS =
       Set.of(
@@ -87,9 +99,11 @@ public final class SecurityPathAdapter implements SecurityPathPort {
           "/admin/assets");
 
   private final boolean webappEnabled;
+  private final boolean serveDefaultAlias;
 
-  private SecurityPathAdapter(final boolean webappEnabled) {
+  private SecurityPathAdapter(final boolean webappEnabled, final boolean serveDefaultAlias) {
     this.webappEnabled = webappEnabled;
+    this.serveDefaultAlias = serveDefaultAlias;
   }
 
   /**
@@ -107,17 +121,29 @@ public final class SecurityPathAdapter implements SecurityPathPort {
         environment.getProperty(
             CamundaSecurityFilterChainConstants.WEBAPP_ENABLED_PROPERTY,
             Boolean.class,
-            AuthenticationConfiguration.DEFAULT_WEBAPP_ENABLED));
+            AuthenticationConfiguration.DEFAULT_WEBAPP_ENABLED),
+        !PhysicalTenantScopeProvider.hasConfiguredPhysicalTenants(environment));
+  }
+
+  /**
+   * Adds {@code /physical-tenants/default}-prefixed copies when no physical tenant is configured.
+   */
+  private Set<String> withDefaultAlias(final Set<String> paths) {
+    if (!serveDefaultAlias) {
+      return paths;
+    }
+    return Stream.concat(paths.stream(), paths.stream().map(p -> DEFAULT_ALIAS_PREFIX + p))
+        .collect(Collectors.toUnmodifiableSet());
   }
 
   @Override
   public Set<String> apiPaths() {
-    return SecurityPaths.API_PATHS;
+    return withDefaultAlias(SecurityPaths.API_PATHS);
   }
 
   @Override
   public Set<String> unprotectedApiPaths() {
-    return SecurityPaths.UNPROTECTED_API_PATHS;
+    return withDefaultAlias(SecurityPaths.UNPROTECTED_API_PATHS);
   }
 
   @Override
@@ -132,7 +158,7 @@ public final class SecurityPathAdapter implements SecurityPathPort {
    */
   @Override
   public Set<String> webappPaths() {
-    return webappEnabled ? WEBAPP_PATHS : Set.of();
+    return webappEnabled ? withDefaultAlias(WEBAPP_PATHS) : Set.of();
   }
 
   @Override
@@ -142,7 +168,7 @@ public final class SecurityPathAdapter implements SecurityPathPort {
 
   @Override
   public Set<String> unauthenticatedWebappPaths() {
-    return UNAUTHENTICATED_WEBAPP_PATHS;
+    return withDefaultAlias(UNAUTHENTICATED_WEBAPP_PATHS);
   }
 
   @Override

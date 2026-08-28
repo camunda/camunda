@@ -24,7 +24,7 @@ import org.springframework.core.env.Environment;
 /**
  * {@link CamundaSecurityScopeProvider} that emits one {@link ScopedSecurityDescriptor} per
  * explicitly configured physical tenant, plus an alias descriptor for the implicit {@code default}
- * tenant, which is always emitted.
+ * tenant — or nothing at all when no physical tenant is configured.
  *
  * <p>Each descriptor carries:
  *
@@ -38,10 +38,15 @@ import org.springframework.core.env.Environment;
  *       one.
  * </ul>
  *
- * <p><b>Default alias:</b> a descriptor for the implicit {@code default} tenant is always emitted
- * at {@code /physical-tenants/default}, built from {@code forPhysicalTenant("default")}, so the
- * root tenant is addressable both unprefixed ({@code /v2/...}) and through the alias, and the
- * descriptor list is never empty.
+ * <p><b>Default alias:</b> when at least one physical tenant is configured, a descriptor for the
+ * implicit {@code default} tenant is emitted at {@code /physical-tenants/default}, built from
+ * {@code forPhysicalTenant("default")}, so the root tenant is addressable both unprefixed ({@code
+ * /v2/...}) and through the alias.
+ *
+ * <p>With none configured this provider emits nothing and the cluster chain serves the alias paths
+ * from its own {@code /physical-tenants/default}-prefixed path sets. CSL builds two chains per
+ * descriptor, each resolving its own {@code ClientRegistration} through a blocking discovery call,
+ * so emitting no descriptor saves two such calls per provider at startup.
  */
 public final class PhysicalTenantScopeProvider implements CamundaSecurityScopeProvider {
 
@@ -62,13 +67,12 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
 
   /**
    * Whether any physical tenant is configured (any key under {@code
-   * camunda.physical-tenants.<id>.*} with a valid id). When {@code true}, the cluster {@code /v2}
-   * chain must be unified with the default tenant's resolved config (see {@code
-   * PhysicalTenantSecurityConfiguration}), which is the only thing this gates.
+   * camunda.physical-tenants.<id>.*} with a valid id).
    *
-   * <p>It does <em>not</em> gate the {@code /physical-tenants/default} alias, which is always
-   * emitted. With no {@code camunda.physical-tenants.*} keys the overlay bind is a no-op, so the
-   * alias and the cluster chain resolve to equivalent config without the unification step.
+   * <p>Two things depend on this and must agree: whether the cluster {@code /v2} chain uses the
+   * default tenant's config (see {@code PhysicalTenantSecurityConfiguration}), and whether scoped
+   * descriptors are emitted. Always call this instead of checking the config yourself — if the two
+   * ever disagreed, a scoped chain would prefix a path that already has the prefix.
    */
   public static boolean hasConfiguredPhysicalTenants(final Environment environment) {
     return !discoverExplicitTenantIds(environment).isEmpty();
@@ -84,13 +88,19 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
   }
 
   /**
-   * Every explicitly configured tenant, plus {@code default} — added unconditionally, so never
-   * empty. The add is idempotent when {@code default} is also configured explicitly, and always
+   * Every explicitly configured tenant, plus the {@code default} alias — or an empty set when no
+   * tenant is configured, which is a supported outcome: CSL registers no scoped chains and the
+   * cluster chain serves the alias paths itself.
+   *
+   * <p>The alias add is idempotent when {@code default} is also configured explicitly, and always
    * buildable, because a cluster serving the unprefixed {@code /v2} surface necessarily configures
    * its root provider.
    */
   private Set<String> descriptorTenantIds() {
     final Set<String> tenantIds = discoverExplicitTenantIds(environment);
+    if (tenantIds.isEmpty()) {
+      return tenantIds;
+    }
     tenantIds.add(DEFAULT_PHYSICAL_TENANT_ID);
     return tenantIds;
   }
