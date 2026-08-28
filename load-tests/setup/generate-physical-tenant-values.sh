@@ -63,15 +63,16 @@ fi
 # storage layer by prefix. Empty for "none" — there's no storage layer to isolate, only
 # broker/engine/REST-routing-level isolation (authorizations below still apply).
 case "$secondary_storage" in
-  elasticsearch) storage_prefix_key="elasticsearch.index-prefix" ;;
-  opensearch) storage_prefix_key="opensearch.index-prefix" ;;
-  none) storage_prefix_key="" ;;
+  elasticsearch) storage_prefix_key="elasticsearch.index-prefix"; history_database_key="elasticsearch" ;;
+  opensearch) storage_prefix_key="opensearch.index-prefix"; history_database_key="opensearch" ;;
+  none) storage_prefix_key=""; history_database_key="" ;;
   *)
     if [[ "$is_rdbms" == "true" ]]; then
       storage_prefix_key="rdbms.prefix"
     else
       storage_prefix_key=""
     fi
+    history_database_key=""
     ;;
 esac
 
@@ -96,6 +97,13 @@ for ((i = 1; i <= physical_tenant_count; i++)); do
       tenant_prefix="pt${i}-"
     fi
     lines+=("camunda.physical-tenants.${tenant}.data.secondary-storage.${storage_prefix_key}: ${tenant_prefix}")
+  fi
+
+  if [[ -n "$history_database_key" ]]; then
+    lines+=(
+      "camunda.physical-tenants.${tenant}.data.secondary-storage.${history_database_key}.history.policy-name: ${tenant}-camunda-retention-policy"
+      "camunda.physical-tenants.${tenant}.data.secondary-storage.${history_database_key}.history.usage-metrics-policy-name: ${tenant}-camunda-usage-metrics-retention-policy"
+    )
   fi
 
   lines+=(
