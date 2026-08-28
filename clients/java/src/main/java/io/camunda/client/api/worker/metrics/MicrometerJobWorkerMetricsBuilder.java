@@ -107,6 +107,14 @@ public interface MicrometerJobWorkerMetricsBuilder {
       public String asString() {
         return "zeebe.client.worker.job.handled";
       }
+    },
+
+    /** Counter name backing the {@link JobWorkerMetrics#jobRefused(int)} count. */
+    JOB_REFUSED {
+      @Override
+      public String asString() {
+        return "camunda.client.worker.job.refused";
+      }
     }
   }
 }
