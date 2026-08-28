@@ -132,21 +132,6 @@ func TestEnsureRejectsSymbolicLink(t *testing.T) {
 	assert.ErrorContains(t, err, "not a symbolic link")
 }
 
-func TestEnsureRejectsSymbolicLinkAncestor(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Creating symlinks requires additional privileges on Windows")
-	}
-	baseDir := t.TempDir()
-	target := t.TempDir()
-	linkedParent := filepath.Join(baseDir, "linked-parent")
-	require.NoError(t, os.Symlink(target, linkedParent))
-	t.Setenv(DirectoryEnv, filepath.Join(linkedParent, "nested", "secrets"))
-
-	err := New(baseDir).Ensure()
-
-	assert.ErrorContains(t, err, "symbolic link")
-}
-
 func TestEnsureRejectsSecretSymlink(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Creating symlinks requires additional privileges on Windows")
@@ -161,19 +146,6 @@ func TestEnsureRejectsSecretSymlink(t *testing.T) {
 	err := New(baseDir).Ensure()
 
 	assert.ErrorContains(t, err, "regular file")
-}
-
-func TestEnsureRejectsUnsafeParentDirectoryOnUnix(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Unix permission bits are not enforced on Windows")
-	}
-	baseDir := filepath.Join(t.TempDir(), "shared")
-	require.NoError(t, os.Mkdir(baseDir, 0o777))
-	require.NoError(t, os.Chmod(baseDir, 0o777))
-
-	err := New(baseDir).Ensure()
-
-	assert.ErrorContains(t, err, "must not be writable by group or other users")
 }
 
 func TestListReturnsSortedNamesWithoutReadingValues(t *testing.T) {

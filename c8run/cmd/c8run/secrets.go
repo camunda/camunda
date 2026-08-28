@@ -40,7 +40,7 @@ func (c *secretsCommand) warnPathChanged(baseDir string) {
 	if err != nil || len(entries) == 0 {
 		return
 	}
-	_, _ = fmt.Fprintf(c.errorOutput, "Warning: the platform-default directory also contains entries:\n  %s\nThis command uses:\n  %s\nRun 'c8run secrets doctor' and remove unused secrets deliberately.\n", defaultDirectory, current)
+	_, _ = fmt.Fprintf(c.errorOutput, "Warning: the platform-default directory also contains entries:\n  %s\nThis command uses:\n  %s\nReview both directories and remove unused secrets deliberately.\n", defaultDirectory, current)
 }
 
 func newSecretsCommand() *secretsCommand {
@@ -55,7 +55,7 @@ func newSecretsCommand() *secretsCommand {
 
 func (c *secretsCommand) run(baseDir string, args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: c8run secrets <set|list|path|delete|import|doctor>")
+		return errors.New("usage: c8run secrets <set|list|path|delete|import>")
 	}
 	if args[0] == "help" || args[0] == "-h" || args[0] == "--help" {
 		_, _ = fmt.Fprint(c.output, secretsHelp)
@@ -92,11 +92,6 @@ func (c *secretsCommand) run(baseDir string, args []string) error {
 		return c.delete(store, args[1:])
 	case "import":
 		return c.importDotenv(store, args[1:])
-	case "doctor":
-		if len(args) != 1 {
-			return errors.New("usage: c8run secrets doctor")
-		}
-		return c.doctor(baseDir)
 	default:
 		return fmt.Errorf("unsupported secrets operation: %s", args[0])
 	}
@@ -369,28 +364,6 @@ func (c *secretsCommand) importDotenv(store *localsecrets.Store, args []string) 
 	return nil
 }
 
-func (c *secretsCommand) doctor(baseDir string) error {
-	diagnosis := localsecrets.Diagnose(baseDir)
-	_, _ = fmt.Fprintf(c.output, "c8run-managed local secrets directory: %s\n", diagnosis.Directory)
-	if !diagnosis.Exists && len(diagnosis.Problems) == 0 {
-		_, _ = fmt.Fprintln(c.output, "Status: not created yet")
-	} else {
-		_, _ = fmt.Fprintf(c.output, "Secrets: %d\n", diagnosis.SecretCount)
-	}
-	_, _ = fmt.Fprintln(c.output, "Scope: shared by this OS user across c8run versions and projects")
-	for _, warning := range diagnosis.Warnings {
-		_, _ = fmt.Fprintln(c.errorOutput, "Warning:", warning)
-	}
-	for _, problem := range diagnosis.Problems {
-		_, _ = fmt.Fprintln(c.errorOutput, "Problem:", problem)
-	}
-	if len(diagnosis.Problems) > 0 {
-		return errors.New("local secrets check failed")
-	}
-	_, _ = fmt.Fprintln(c.output, "Status: OK")
-	return nil
-}
-
 func feelReference(name string) string {
 	if strings.Contains(name, "-") {
 		return "=camunda.secrets.`" + name + "`"
@@ -404,7 +377,6 @@ const secretsHelp = `Usage:
   c8run secrets path
   c8run secrets delete (<name>|--all) [--yes]
   c8run secrets import [dotenv-file]
-  c8run secrets doctor
 
 Secret names may contain letters, numbers, underscores, and dashes.
 Use backticks around names containing dashes in FEEL expressions.
@@ -422,5 +394,4 @@ var secretsCommandHelp = map[string]string{
 	"path":   "Usage: c8run secrets path\nShows the c8run-managed local directory without creating it.\n",
 	"delete": "Usage: c8run secrets delete (<name>|--all) [--yes]\nInteractive use asks for confirmation. Non-interactive use requires --yes.\n",
 	"import": "Usage: c8run secrets import [dotenv-file]\nImports dotenv entries from a file, or from stdin when no file is provided. Import is additive.\n",
-	"doctor": "Usage: c8run secrets doctor\nChecks the local store without reading values or changing files.\n",
 }

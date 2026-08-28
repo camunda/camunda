@@ -28,7 +28,7 @@ c8run configures a local file secret store in your platform's user data director
 ./c8run secrets set OPENAI_API_KEY
 ```
 
-Reference it in Process Models with `=camunda.secrets.OPENAI_API_KEY`. To set several values, pass multiple names and enter each value at its prompt. Use `C8RUN_SECRETS_DIR` in your environment or c8run `.env` file to store secrets in another directory, and `C8RUN_SECRETS_CACHE_TTL` to change the default 20-minute resolution cache. Run `./c8run secrets path` to show the c8run-managed local directory and `./c8run secrets doctor` to check it. The default directory is shared across projects and c8run versions for the current OS user. This store is for local development only.
+Reference it in Process Models with `=camunda.secrets.OPENAI_API_KEY`. To set several values, pass multiple names and enter each value at its prompt. Use `C8RUN_SECRETS_DIR` in your environment or c8run `.env` file to store secrets in another directory, and `C8RUN_SECRETS_CACHE_TTL` to change the default 20-minute resolution cache. Run `./c8run secrets path` to show the c8run-managed local directory. The default directory is shared across projects and c8run versions for the current OS user. This store is for local development only.
 
 Use a dedicated dotenv file such as `.env.secrets` for imports. `c8run secrets` refuses to import the c8run `.env` because that file can contain runtime, download, and packaging credentials.
 

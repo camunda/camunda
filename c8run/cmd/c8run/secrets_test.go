@@ -366,16 +366,3 @@ func TestSecretsHelpDocumentsCommandsAndDashedNames(t *testing.T) {
 	assert.Contains(t, output.String(), "backticks")
 	assert.Contains(t, output.String(), "shared across c8run versions and projects")
 }
-
-func TestSecretsDoctorDoesNotCreateMissingDirectory(t *testing.T) {
-	baseDir := t.TempDir()
-	t.Setenv("C8RUN_SECRETS_DIR", "missing-secrets")
-	command, output, _ := testSecretsCommand("", false)
-
-	err := command.run(baseDir, []string{"doctor"})
-
-	require.NoError(t, err)
-	assert.Contains(t, output.String(), "Status: not created yet")
-	_, statErr := os.Stat(filepath.Join(baseDir, "missing-secrets"))
-	assert.ErrorIs(t, statErr, os.ErrNotExist)
-}

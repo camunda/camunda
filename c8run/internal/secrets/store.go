@@ -36,13 +36,12 @@ const (
 
 type Store struct {
 	directory  string
-	baseDir    string
 	resolveErr error
 }
 
 func New(baseDir string) *Store {
 	directory, err := ResolveDirectory(baseDir)
-	return &Store{directory: directory, baseDir: baseDir, resolveErr: err}
+	return &Store{directory: directory, resolveErr: err}
 }
 
 func ResolveDirectory(baseDir string) (string, error) {
@@ -82,7 +81,7 @@ func (s *Store) Ensure() error {
 	if s.resolveErr != nil {
 		return s.resolveErr
 	}
-	return ensureDirectory(s.directory, s.baseDir)
+	return ensureDirectory(s.directory)
 }
 
 func (s *Store) Directory() (string, error) {
@@ -167,16 +166,10 @@ func (s *Store) SetMany(values map[string][]byte) error {
 			return err
 		}
 	}
-	type previousValue struct {
-		existed bool
-		value   []byte
-	}
-	previous := make(map[string]previousValue, len(names))
 	for _, name := range names {
 		path := filepath.Join(s.directory, name)
 		info, err := os.Lstat(path)
 		if errors.Is(err, os.ErrNotExist) {
-			previous[name] = previousValue{}
 			continue
 		}
 		if err != nil {
@@ -185,36 +178,11 @@ func (s *Store) SetMany(values map[string][]byte) error {
 		if !info.Mode().IsRegular() {
 			return fmt.Errorf("secret %q is not a regular file", name)
 		}
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("failed to prepare secret %q for update", name)
-		}
-		previous[name] = previousValue{existed: true, value: content}
 	}
-	var committed []string
 	for _, name := range names {
 		if err := atomicWrite(filepath.Join(s.directory, name), values[name]); err != nil {
-			committed = append(committed, name)
-			var rollbackErr error
-			for index := len(committed) - 1; index >= 0; index-- {
-				committedName := committed[index]
-				old := previous[committedName]
-				if old.existed {
-					if restoreErr := atomicWrite(filepath.Join(s.directory, committedName), old.value); restoreErr != nil {
-						rollbackErr = errors.Join(rollbackErr, restoreErr)
-					}
-				} else {
-					if removeErr := os.Remove(filepath.Join(s.directory, committedName)); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
-						rollbackErr = errors.Join(rollbackErr, removeErr)
-					}
-				}
-			}
-			if rollbackErr != nil {
-				return fmt.Errorf("failed to save secret %q and restore the previous values: %w", name, errors.Join(err, rollbackErr))
-			}
 			return fmt.Errorf("failed to save secret %q: %w", name, err)
 		}
-		committed = append(committed, name)
 	}
 	return nil
 }
@@ -294,30 +262,10 @@ func (s *Store) DeleteAll() ([]string, error) {
 		}
 	}
 	sort.Strings(names)
-	previous := make(map[string][]byte, len(names))
-	for _, name := range names {
-		content, err := os.ReadFile(filepath.Join(s.directory, name))
-		if err != nil {
-			return nil, fmt.Errorf("failed to prepare secret %q for deletion", name)
-		}
-		previous[name] = content
-	}
-	var deleted []string
 	for _, name := range names {
 		if err := s.deleteUnlocked(name); err != nil {
-			var rollbackErr error
-			for index := len(deleted) - 1; index >= 0; index-- {
-				deletedName := deleted[index]
-				if restoreErr := atomicWrite(filepath.Join(s.directory, deletedName), previous[deletedName]); restoreErr != nil {
-					rollbackErr = errors.Join(rollbackErr, restoreErr)
-				}
-			}
-			if rollbackErr != nil {
-				return nil, fmt.Errorf("failed to delete secret %q and restore previously deleted values: %w", name, errors.Join(err, rollbackErr))
-			}
 			return nil, err
 		}
-		deleted = append(deleted, name)
 	}
 	return names, nil
 }
