@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.report;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -70,7 +71,8 @@ class ReportServiceTest {
     reportService.clearCachedReportXml(BPMN_PROCESS_ID, null);
 
     // then
-    verify(reportWriter).clearReportDefinitionXmlForReportIds(List.of("report-1"));
+    verify(reportWriter)
+        .clearReportDefinitionXmlForReportIds(List.of("report-1"), BPMN_PROCESS_ID, null);
   }
 
   @Test
@@ -89,7 +91,8 @@ class ReportServiceTest {
     reportService.clearCachedReportXml(BPMN_PROCESS_ID, null);
 
     // then
-    verify(reportWriter).clearReportDefinitionXmlForReportIds(List.of("report-3"));
+    verify(reportWriter)
+        .clearReportDefinitionXmlForReportIds(List.of("report-3"), BPMN_PROCESS_ID, null);
   }
 
   @Test
@@ -108,7 +111,7 @@ class ReportServiceTest {
     reportService.clearCachedReportXml(BPMN_PROCESS_ID, null);
 
     // then
-    verify(reportWriter, never()).clearReportDefinitionXmlForReportIds(anyList());
+    verify(reportWriter, never()).clearReportDefinitionXmlForReportIds(anyList(), any(), any());
   }
 
   @Test
@@ -124,7 +127,7 @@ class ReportServiceTest {
     reportService.clearCachedReportXml(BPMN_PROCESS_ID, null);
 
     // then
-    verify(reportWriter, never()).clearReportDefinitionXmlForReportIds(anyList());
+    verify(reportWriter, never()).clearReportDefinitionXmlForReportIds(anyList(), any(), any());
   }
 
   @Test
@@ -140,7 +143,7 @@ class ReportServiceTest {
     reportService.clearCachedReportXml(BPMN_PROCESS_ID, "tenant-a");
 
     // then
-    verify(reportWriter, never()).clearReportDefinitionXmlForReportIds(anyList());
+    verify(reportWriter, never()).clearReportDefinitionXmlForReportIds(anyList(), any(), any());
   }
 
   @Test
@@ -156,7 +159,8 @@ class ReportServiceTest {
     reportService.clearCachedReportXml(BPMN_PROCESS_ID, "tenant-a");
 
     // then
-    verify(reportWriter).clearReportDefinitionXmlForReportIds(List.of("report-5"));
+    verify(reportWriter)
+        .clearReportDefinitionXmlForReportIds(List.of("report-5"), BPMN_PROCESS_ID, "tenant-a");
   }
 
   @Test
@@ -172,7 +176,8 @@ class ReportServiceTest {
     reportService.clearCachedReportXml(BPMN_PROCESS_ID, "tenant-a");
 
     // then
-    verify(reportWriter).clearReportDefinitionXmlForReportIds(List.of("report-6"));
+    verify(reportWriter)
+        .clearReportDefinitionXmlForReportIds(List.of("report-6"), BPMN_PROCESS_ID, "tenant-a");
   }
 
   @Test
@@ -185,7 +190,7 @@ class ReportServiceTest {
     reportService.clearCachedReportXml(BPMN_PROCESS_ID, null);
 
     // then
-    verify(reportWriter, never()).clearReportDefinitionXmlForReportIds(anyList());
+    verify(reportWriter, never()).clearReportDefinitionXmlForReportIds(anyList(), any(), any());
   }
 
   private SingleProcessReportDefinitionRequestDto singleProcessReport(

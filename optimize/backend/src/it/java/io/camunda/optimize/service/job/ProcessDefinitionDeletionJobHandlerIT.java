@@ -412,6 +412,29 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
   }
 
   @Test
+  void shouldNotClearXmlWhenReportsFirstDefinitionNoLongerMatchesAtWriteTime() {
+    // given
+    final String bpmnProcessId = "definition-deletion-race-test-" + UUID.randomUUID();
+    final String reportId = createSingleProcessReportWithCachedXml(bpmnProcessId);
+    refreshAllIndices();
+
+    // when -- simulates a concurrent edit landing between candidate selection and the write
+    final ProcessReportDataDto changedData = new ProcessReportDataDto();
+    changedData.setProcessDefinitionKey("a-different-process");
+    changedData.getConfiguration().setXml("<definitions>cached</definitions>");
+    reportWriter.createOrUpdateSingleProcessReport(
+        reportId, "demo", changedData, "Test Report", null, null);
+    refreshAllIndices();
+
+    reportWriter.clearReportDefinitionXmlForReportIds(
+        List.of(reportId), bpmnProcessId, ZEEBE_DEFAULT_TENANT_ID);
+    refreshAllIndices();
+
+    // then -- the write re-checks the report's current state and declines
+    assertThat(getCachedXml(reportId)).isEqualTo("<definitions>cached</definitions>");
+  }
+
+  @Test
   void shouldLeaveDefinitionResumableAfterATerminalFailureAndCompleteCleanupOnRetry() {
     // given -- the deletion job will fail terminally right after the definition instances are
     // deleted, before the remaining-versions check, XML clear, cache eviction, and hard-delete run

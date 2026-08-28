@@ -56,6 +56,7 @@ import jakarta.json.JsonValue;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -68,6 +69,7 @@ import org.springframework.stereotype.Component;
 public class ReportWriterES implements ReportWriter {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ReportWriterES.class);
+
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
   private final TaskRepositoryES taskRepositoryES;
@@ -304,7 +306,8 @@ public class ReportWriterES implements ReportWriter {
   }
 
   @Override
-  public void clearReportDefinitionXmlForReportIds(final List<String> reportIds) {
+  public void clearReportDefinitionXmlForReportIds(
+      final List<String> reportIds, final String processDefinitionKey, final String tenantId) {
     if (reportIds.isEmpty()) {
       return;
     }
@@ -312,13 +315,17 @@ public class ReportWriterES implements ReportWriter {
         String.format("%d report(s) with cleared definition XML", reportIds.size());
     LOG.debug("Clearing definition XML for {} in Elasticsearch", updateItem);
 
+    final Map<String, JsonData> scriptParams = new HashMap<>();
+    scriptParams.put("key", JsonData.of(processDefinitionKey));
+    scriptParams.put("tenantId", JsonData.of(tenantId));
     final Script clearDefinitionXmlScript =
         Script.of(
             s ->
                 s.lang(ScriptLanguage.Painless)
                     // this script is deliberately not updating the modified date as this is
                     // not a user operation
-                    .source("ctx._source.data.configuration.xml = null;"));
+                    .source(ReportWriter.CLEAR_DEFINITION_XML_IF_STILL_MATCHING_SCRIPT)
+                    .params(scriptParams));
 
     taskRepositoryES.tryUpdateByQueryRequest(
         updateItem,

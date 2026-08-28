@@ -464,7 +464,8 @@ public class ReportService implements CollectionReferencingService {
             .map(ReportDefinitionDto::getId)
             .toList();
     if (!reportIdsToClear.isEmpty()) {
-      reportWriter.clearReportDefinitionXmlForReportIds(reportIdsToClear);
+      reportWriter.clearReportDefinitionXmlForReportIds(
+          reportIdsToClear, processDefinitionKey, tenantId);
     }
   }
 
