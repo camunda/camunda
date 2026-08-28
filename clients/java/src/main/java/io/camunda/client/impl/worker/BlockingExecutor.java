@@ -26,6 +26,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * An executor that only takes a command when it has capacity to run it, waiting up to a fixed time
  * for capacity to become available.
  *
+ * <p>Waiting blocks the calling thread, so it is only for a caller that has nothing better to do
+ * with that thread. A caller that carries a response of the client on it uses {@link
+ * #executeWithoutWaiting(Runnable)} instead.
+ *
  * <p>A command is either handed to the wrapped executor or refused with a {@link
  * RejectedExecutionException}; it is never dropped without notice.
  *
@@ -34,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * What callers can rely on is the capacity: every command takes one slot and gives it back exactly
  * once, whether it ran or was refused.
  */
-final class BlockingExecutor implements Executor {
+final class BlockingExecutor implements JobExecutor {
   private static final TimeUnit TIMEOUT_UNIT = TimeUnit.MILLISECONDS;
 
   private final Executor wrappedExecutor;
@@ -51,7 +55,23 @@ final class BlockingExecutor implements Executor {
   @Override
   public void execute(final Runnable command) throws RejectedExecutionException {
     acquireCapacity();
+    dispatch(command);
+  }
 
+  @Override
+  public void executeWithoutWaiting(final Runnable command) throws RejectedExecutionException {
+    if (!semaphore.tryAcquire()) {
+      throw new RejectedExecutionException("Not able to acquire a lease without waiting for one");
+    }
+    dispatch(command);
+  }
+
+  @Override
+  public int freeCapacity() {
+    return semaphore.availablePermits();
+  }
+
+  private void dispatch(final Runnable command) {
     // The wrapped executor may run the command on the calling thread. A command that fails then
     // looks exactly like a command the executor refused, so both paths below can be taken for the
     // same command. The flag makes sure its capacity is given back only once, as giving it back
