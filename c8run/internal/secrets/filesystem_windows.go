@@ -38,7 +38,7 @@ func ensureDirectory(path, _ string) error {
 	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 		return fmt.Errorf("local secrets path %q must be a directory and not a symbolic link", path)
 	}
-	owned, err := ownedByCurrentUser(path)
+	owned, err := ownedByTrustedPrincipal(path)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func ensureDirectory(path, _ string) error {
 		if links != 1 {
 			return fmt.Errorf("secret %q must not be a hard link", entry.Name())
 		}
-		owned, err := ownedByCurrentUser(entryPath)
+		owned, err := ownedByTrustedPrincipal(entryPath)
 		if err != nil {
 			return err
 		}
@@ -98,7 +98,7 @@ func windowsLinkCount(path string) (uint32, error) {
 	return information.NumberOfLinks, nil
 }
 
-func ownedByCurrentUser(path string) (bool, error) {
+func ownedByTrustedPrincipal(path string) (bool, error) {
 	descriptor, err := windows.GetNamedSecurityInfo(path, windows.SE_FILE_OBJECT, windows.OWNER_SECURITY_INFORMATION)
 	if err != nil {
 		return false, fmt.Errorf("failed to inspect Windows owner: %w", err)
@@ -111,7 +111,15 @@ func ownedByCurrentUser(path string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return owner != nil && owner.Equals(user.User.Sid), nil
+	administrators, err := windows.CreateWellKnownSid(windows.WinBuiltinAdministratorsSid)
+	if err != nil {
+		return false, err
+	}
+	system, err := windows.CreateWellKnownSid(windows.WinLocalSystemSid)
+	if err != nil {
+		return false, err
+	}
+	return owner != nil && (owner.Equals(user.User.Sid) || owner.Equals(administrators) || owner.Equals(system)), nil
 }
 
 func atomicWrite(destination string, value []byte) (err error) {

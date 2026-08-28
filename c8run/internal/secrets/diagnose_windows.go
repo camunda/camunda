@@ -37,14 +37,9 @@ func diagnoseParentDirectory(path string) []string {
 }
 
 func diagnoseWindowsOwner(path string) []string {
-	descriptor, err := windows.GetNamedSecurityInfo(path, windows.SE_FILE_OBJECT, windows.OWNER_SECURITY_INFORMATION)
-	if err != nil {
-		return []string{fmt.Sprintf("cannot inspect Windows owner on %s", path)}
-	}
-	owner, _, err := descriptor.Owner()
-	user, userErr := windows.GetCurrentProcessToken().GetTokenUser()
-	if err != nil || userErr != nil || owner == nil || !owner.Equals(user.User.Sid) {
-		return []string{fmt.Sprintf("Windows parent is not owned by the current user: %s", path)}
+	trusted, err := ownedByTrustedPrincipal(path)
+	if err != nil || !trusted {
+		return []string{fmt.Sprintf("Windows parent is not owned by the current user, Administrators, or SYSTEM: %s", path)}
 	}
 	return nil
 }
@@ -66,9 +61,9 @@ func diagnosePermissions(path string, _ os.FileInfo) []string {
 	if err != nil {
 		return []string{fmt.Sprintf("cannot identify the current Windows user for %s", path)}
 	}
-	owner, _, err := descriptor.Owner()
-	if err != nil || owner == nil || !owner.Equals(user.User.Sid) {
-		return []string{fmt.Sprintf("Windows path is not owned by the current user: %s", path)}
+	trusted, ownerErr := ownedByTrustedPrincipal(path)
+	if ownerErr != nil || !trusted {
+		return []string{fmt.Sprintf("Windows path is not owned by the current user, Administrators, or SYSTEM: %s", path)}
 	}
 	system, err := windows.CreateWellKnownSid(windows.WinLocalSystemSid)
 	if err != nil {
