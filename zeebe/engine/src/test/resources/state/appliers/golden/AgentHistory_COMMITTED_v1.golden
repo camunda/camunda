@@ -24,9 +24,6 @@ public final class AgentHistoryCommittedApplier
 
   @Override
   public void applyState(final long key, final AgentHistoryRecord value) {
-    // Recorded before the delete below removes the pending entry this id would otherwise still
-    // be found through: a later job resending this id has only this map left to check against
-    // once the committing job's own pending item is gone.
     agentHistoryState.putCommittedHistoryItemKey(
         value.getAgentInstanceKey(), value.getHistoryItemId(), key);
     agentHistoryState.delete(key, value);

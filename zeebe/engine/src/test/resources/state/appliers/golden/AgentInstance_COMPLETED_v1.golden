@@ -29,9 +29,7 @@ public final class AgentInstanceCompletedApplier
   @Override
   public void applyState(final long key, final AgentInstanceRecord value) {
     agentInstanceState.delete(key, value);
-    // The committed-ids map is retained for exactly the agent instance's lifetime; this is the
-    // one point where that lifetime ends, and the only path that removes an agent instance at
-    // all, so this is the single place cleanup needs to happen.
+    // Only removal path for an agent instance; any new one needs this same cleanup call.
     agentHistoryState.deleteCommittedHistoryItemKeys(key);
   }
 }
