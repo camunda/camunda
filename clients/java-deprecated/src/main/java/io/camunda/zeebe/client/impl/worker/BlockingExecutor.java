@@ -20,7 +20,20 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * An executor that only takes a command when it has capacity to run it, waiting up to a fixed time
+ * for capacity to become available.
+ *
+ * <p>A command is either handed to the wrapped executor or refused with a {@link
+ * RejectedExecutionException}; it is never dropped without notice.
+ *
+ * <p>A refusal does not always mean the command did not run. The wrapped executor may run the
+ * command on the calling thread and let it fail there, which reaches the caller as a refusal too.
+ * What callers can rely on is the capacity: every command takes one slot and gives it back exactly
+ * once, whether it ran or was refused.
+ */
 final class BlockingExecutor implements Executor {
   private static final TimeUnit TIMEOUT_UNIT = TimeUnit.MILLISECONDS;
 
@@ -37,23 +50,46 @@ final class BlockingExecutor implements Executor {
 
   @Override
   public void execute(final Runnable command) throws RejectedExecutionException {
-    try {
-      if (!semaphore.tryAcquire(timeoutMillis, TIMEOUT_UNIT)) {
-        throw new RejectedExecutionException(
-            String.format(
-                "Not able to acquire lease in %d%s", timeoutMillis, TIMEOUT_UNIT.toString()));
-      }
+    acquireCapacity();
 
+    // The wrapped executor may run the command on the calling thread. A command that fails then
+    // looks exactly like a command the executor refused, so both paths below can be taken for the
+    // same command. The flag makes sure its capacity is given back only once, as giving it back
+    // twice would let the executor run more commands at a time than it is allowed to.
+    final AtomicBoolean capacityHeld = new AtomicBoolean(true);
+    try {
       wrappedExecutor.execute(
           () -> {
             try {
               command.run();
             } finally {
-              semaphore.release();
+              releaseCapacity(capacityHeld);
             }
           });
+    } catch (final RuntimeException | Error e) {
+      // nothing else will give the capacity back, unless the command ran on the calling thread and
+      // its finalizer already did, which is what the flag above is there to catch
+      releaseCapacity(capacityHeld);
+      throw e;
+    }
+  }
+
+  private void releaseCapacity(final AtomicBoolean capacityHeld) {
+    if (capacityHeld.compareAndSet(true, false)) {
+      semaphore.release();
+    }
+  }
+
+  private void acquireCapacity() {
+    try {
+      if (!semaphore.tryAcquire(timeoutMillis, TIMEOUT_UNIT)) {
+        throw new RejectedExecutionException(
+            String.format("Not able to acquire lease in %d%s", timeoutMillis, TIMEOUT_UNIT));
+      }
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
+      throw new RejectedExecutionException(
+          "Interrupted while waiting to acquire a lease to run the command", e);
     }
   }
 }
