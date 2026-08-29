@@ -9,6 +9,8 @@ package main
 
 import (
 	"bytes"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -86,6 +88,14 @@ func TestSecretsSetRejectsOversizedStdin(t *testing.T) {
 	err := command.run(t.TempDir(), []string{"set", "API_KEY", "--stdin"})
 
 	assert.ErrorContains(t, err, "must not exceed")
+}
+
+func TestSecretsSetRejectsInvalidUTF8FromStdin(t *testing.T) {
+	command, _, _ := testSecretsCommand(string([]byte{0xff}), false)
+
+	err := command.run(t.TempDir(), []string{"set", "API_KEY", "--stdin"})
+
+	assert.ErrorContains(t, err, "valid UTF-8")
 }
 
 func TestSecretsListPrintsNamesOnly(t *testing.T) {
@@ -236,6 +246,43 @@ func TestSecretsImportDoesNotPrintValues(t *testing.T) {
 	assert.Equal(t, "API_KEY\nOTHER\nImported 2 secret(s).\n", output.String())
 	assert.NotContains(t, output.String(), sentinel)
 	assert.NotContains(t, errorOutput.String(), sentinel)
+}
+
+func TestSecretsImportReadsInputBeforeWriting(t *testing.T) {
+	baseDir := t.TempDir()
+	reader := &importOrderReader{
+		content:    []byte("API_KEY=value\n"),
+		secretPath: filepath.Join(baseDir, "secrets", "API_KEY"),
+	}
+	command, _, _ := testSecretsCommand("", false)
+	command.input = reader
+
+	err := command.run(baseDir, []string{"import"})
+
+	require.NoError(t, err)
+	assert.True(t, reader.reachedEOF)
+	content, err := os.ReadFile(filepath.Join(baseDir, "secrets", "API_KEY"))
+	require.NoError(t, err)
+	assert.Equal(t, "value", string(content))
+}
+
+type importOrderReader struct {
+	content    []byte
+	secretPath string
+	reachedEOF bool
+}
+
+func (r *importOrderReader) Read(destination []byte) (int, error) {
+	if len(r.content) == 0 {
+		r.reachedEOF = true
+		return 0, io.EOF
+	}
+	if _, err := os.Stat(r.secretPath); !errors.Is(err, os.ErrNotExist) {
+		return 0, errors.New("secret was written before import reached EOF")
+	}
+	count := copy(destination, r.content)
+	r.content = r.content[count:]
+	return count, nil
 }
 
 func TestSecretsImportRefusesC8RunMetadataEnv(t *testing.T) {

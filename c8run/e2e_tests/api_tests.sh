@@ -56,7 +56,8 @@ present_instance_response="$(mktemp)"
 activation_response="$(mktemp)"
 missing_instance_response="$(mktemp)"
 missing_activation_response="$(mktemp)"
-trap 'rm -f "$deployment_response" "$present_instance_response" "$activation_response" "$missing_instance_response" "$missing_activation_response"' EXIT
+missing_incident_response="$(mktemp)"
+trap 'rm -f "$deployment_response" "$present_instance_response" "$activation_response" "$missing_instance_response" "$missing_activation_response" "$missing_incident_response"' EXIT
 
 curl --silent --show-error --fail -X POST 'http://localhost:8080/v2/deployments' \
         -H 'Accept: application/json' \
@@ -94,6 +95,24 @@ curl --silent --show-error --fail -X POST 'http://localhost:8080/v2/jobs/activat
 
 if ! jq -e '.jobs | length == 0' "$missing_activation_response" >/dev/null; then
         printf "a job with a missing centralized secret was activated\n"
+        exit 1
+fi
+
+missing_instance_key="$(jq -r '.processInstanceKey' "$missing_instance_response")"
+for _ in {1..30}; do
+        curl --silent --show-error --fail -X POST "http://localhost:8080/v2/process-instances/${missing_instance_key}/incidents/search" \
+                -H 'Content-Type: application/json' \
+                -H 'Accept: application/json' \
+                --data-raw '{}' \
+                -o "$missing_incident_response"
+        if jq -e '.items | any(.errorType == "SECRET_RESOLUTION_ERROR" and .state == "ACTIVE")' "$missing_incident_response" >/dev/null; then
+                break
+        fi
+        sleep 1
+done
+
+if ! jq -e '.items | any(.errorType == "SECRET_RESOLUTION_ERROR" and .state == "ACTIVE")' "$missing_incident_response" >/dev/null; then
+        printf "missing centralized secret did not create a secret resolution incident\n"
         exit 1
 fi
 

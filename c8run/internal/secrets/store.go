@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gofrs/flock"
 	"github.com/joho/godotenv"
@@ -143,6 +144,9 @@ func (s *Store) SetMany(values map[string][]byte) error {
 		}
 		if len(value) > MaxSecretSize {
 			return fmt.Errorf("secret %q must not exceed %d bytes", name, MaxSecretSize)
+		}
+		if !utf8.Valid(value) {
+			return fmt.Errorf("secret %q must contain valid UTF-8", name)
 		}
 		folded := strings.ToLower(name)
 		if other, exists := seen[folded]; exists {
@@ -271,37 +275,38 @@ func (s *Store) DeleteAll() ([]string, error) {
 }
 
 func (s *Store) Import(reader io.Reader) ([]string, error) {
-	values, err := parseDotenv(io.LimitReader(reader, MaxImportSize+1))
+	batch, names, err := ParseImport(reader)
 	if err != nil {
 		return nil, err
+	}
+	if err := s.SetMany(batch); err != nil {
+		return nil, err
+	}
+	return names, nil
+}
+
+func ParseImport(reader io.Reader) (map[string][]byte, []string, error) {
+	values, err := parseDotenv(io.LimitReader(reader, MaxImportSize+1))
+	if err != nil {
+		return nil, nil, err
 	}
 
 	names := make([]string, 0, len(values))
 	for name := range values {
 		if err := ValidateName(name); err != nil {
-			return nil, fmt.Errorf("invalid secret name %q: %w", name, err)
+			return nil, nil, fmt.Errorf("invalid secret name %q: %w", name, err)
 		}
 		names = append(names, name)
 	}
 	if len(names) > MaxImportCount {
-		return nil, fmt.Errorf("dotenv input must not contain more than %d secrets", MaxImportCount)
+		return nil, nil, fmt.Errorf("dotenv input must not contain more than %d secrets", MaxImportCount)
 	}
 	sort.Strings(names)
-	if err := s.Ensure(); err != nil {
-		return nil, err
-	}
-	existing, err := s.List()
-	if err != nil {
-		return nil, err
-	}
-	known := make(map[string]string, len(existing)+len(names))
-	for _, name := range existing {
-		known[strings.ToLower(name)] = name
-	}
+	known := make(map[string]string, len(names))
 	for _, name := range names {
 		folded := strings.ToLower(name)
 		if other, exists := known[folded]; exists && other != name {
-			return nil, fmt.Errorf("secret names %q and %q differ only by case", other, name)
+			return nil, nil, fmt.Errorf("secret names %q and %q differ only by case", other, name)
 		}
 		known[folded] = name
 	}
@@ -310,10 +315,7 @@ func (s *Store) Import(reader io.Reader) ([]string, error) {
 	for name, value := range values {
 		batch[name] = []byte(value)
 	}
-	if err := s.SetMany(batch); err != nil {
-		return nil, err
-	}
-	return names, nil
+	return batch, names, nil
 }
 
 func (s *Store) rejectCaseCollision(name string) error {

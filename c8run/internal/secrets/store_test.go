@@ -132,6 +132,38 @@ func TestEnsureRejectsSymbolicLink(t *testing.T) {
 	assert.ErrorContains(t, err, "not a symbolic link")
 }
 
+func TestEnsureRejectsWritableAncestorOnUnix(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix permission bits are not enforced on Windows")
+	}
+	baseDir := t.TempDir()
+	writableParent := filepath.Join(baseDir, "writable")
+	require.NoError(t, os.Mkdir(writableParent, 0o777))
+	require.NoError(t, os.Chmod(writableParent, 0o777))
+	t.Setenv(DirectoryEnv, filepath.Join(writableParent, "secrets"))
+
+	err := New(baseDir).Ensure()
+
+	assert.ErrorContains(t, err, "must not be writable by other users")
+}
+
+func TestEnsureRejectsWritableSymbolicLinkTargetOnUnix(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Creating symlinks requires additional privileges on Windows")
+	}
+	baseDir := t.TempDir()
+	writableParent := filepath.Join(baseDir, "writable")
+	require.NoError(t, os.Mkdir(writableParent, 0o777))
+	require.NoError(t, os.Chmod(writableParent, 0o777))
+	linkedParent := filepath.Join(baseDir, "linked")
+	require.NoError(t, os.Symlink(writableParent, linkedParent))
+	t.Setenv(DirectoryEnv, filepath.Join(linkedParent, "secrets"))
+
+	err := New(baseDir).Ensure()
+
+	assert.ErrorContains(t, err, "must not be writable by other users")
+}
+
 func TestEnsureRejectsSecretSymlink(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Creating symlinks requires additional privileges on Windows")
@@ -306,6 +338,19 @@ func TestSetRejectsOversizedValue(t *testing.T) {
 	err := New(t.TempDir()).Set("API_KEY", make([]byte, MaxSecretSize+1))
 
 	assert.ErrorContains(t, err, "must not exceed")
+}
+
+func TestSetManyRejectsInvalidUTF8BeforeWriting(t *testing.T) {
+	store := New(t.TempDir())
+
+	err := store.SetMany(map[string][]byte{
+		"VALID":   []byte("value"),
+		"INVALID": {0xff},
+	})
+
+	assert.ErrorContains(t, err, "valid UTF-8")
+	_, statErr := os.Stat(store.directory)
+	assert.ErrorIs(t, statErr, os.ErrNotExist)
 }
 
 func TestImportValidatesAllNamesBeforeWriting(t *testing.T) {
