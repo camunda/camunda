@@ -29,7 +29,7 @@ defaults:
 env:
   TEST_OWNER: '@camunda/engineering-operations'
   # renovate: datasource=node-version depName=node
-  NODE_VERSION: '24.19.0'
+  NODE_VERSION: '24.20.0'
   DOCS_DIR: monorepo-docs-site
 
 jobs:
