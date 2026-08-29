@@ -342,12 +342,11 @@ func (c *secretsCommand) importDotenv(store *localsecrets.Store, args []string) 
 	for _, name := range before {
 		existing[name] = struct{}{}
 	}
-	var names []string
-	err = withoutInterrupts(func() error {
-		var importErr error
-		names, importErr = store.Import(reader)
-		return importErr
-	})
+	values, names, err := localsecrets.ParseImport(reader)
+	if err != nil {
+		return err
+	}
+	err = withoutInterrupts(func() error { return store.SetMany(values) })
 	if err != nil {
 		return err
 	}
