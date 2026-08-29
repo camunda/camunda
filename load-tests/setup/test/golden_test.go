@@ -103,6 +103,9 @@ var defaultScenarios = []scenario{
 	// Makefile target, verifying opt-in chart features without duplicating the
 	// full storage matrix.
 	{Name: "chaos-killer", Storage: "elasticsearch", Optimize: false, SetupTarget: "template-load-test-setup-chaos"},
+	// The CNPG Pooler (PgBouncer) only applies to postgresql, unlike chaos-killer
+	// above, so this scaffolds with postgresql storage rather than an arbitrary one.
+	{Name: "rdbms-pooler", Storage: "postgresql", Optimize: false, SetupTarget: "template-load-test-setup-pooler"},
 	// physical_tenant_count=1 deploys a pt1 tenant alongside the default one, sharing the
 	// default tenant's secondary storage (table prefix for rdbms, index prefix for ES/OS,
 	// REST-routing/authorization only for none). One scenario per storage type; N>1 is
