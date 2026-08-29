@@ -461,3 +461,40 @@ postgresql:
       operator: Equal
       value: n2-standard-4
       effect: NoSchedule
+
+  # -- Configure a CNPG `Pooler` (PgBouncer, transaction-pooling mode) in front of
+  # this PostgreSQL cluster. Opt-in and disabled by default: existing rdbms load
+  # tests keep connecting straight to the `-rw` Service unless this is turned on.
+  #
+  # Why: each broker pod opens one HikariCP pool per physical tenant, so client
+  # connections to Postgres scale as (broker pods x physical tenants) and quickly
+  # exceed Postgres's default `max_connections` (a 10 brokers x 10 tenants load
+  # test produces a structural floor of ~200 mostly-idle connections). A GKE
+  # benchmark trial confirmed that routing broker traffic through PgBouncer in
+  # transaction-pooling mode collapses steady-state Postgres connections by an
+  # order of magnitude, with zero client queueing and zero HikariCP timeouts,
+  # while Postgres stays at its default `max_connections=100`.
+  #
+  # When enabling this, also point
+  # `orchestration.data.secondaryStorage.rdbms.url` (in the platform values) at
+  # this Pooler's Service (`<clusterName>-pooler`) instead of the Cluster's `-rw`
+  # Service, with `?prepareThreshold=0` appended: pgjdbc defaults to server-side
+  # prepared statements after 5 uses of the same statement, which do not survive
+  # PgBouncer's transaction-mode connection swapping. The `postgres_pooler=true`
+  # Makefile variable (see `../../common.mk`) does both for you.
+  #
+  # Reference: https://cloudnative-pg.io/docs/1.30/connection_pooling
+  pooler:
+    # -- Set to true to deploy the CNPG Pooler alongside the PostgreSQL cluster above.
+    enabled: false
+
+    # -- Number of PgBouncer pod replicas.
+    instances: 1
+
+    pgbouncer:
+      # -- PgBouncer parameters passed through to the CNPG Pooler resource.
+      # `max_client_conn` is raised well above PgBouncer's default (100): every
+      # broker pod x physical tenant combination opens its own client connection,
+      # and the default is not enough headroom for this scenario's connection count.
+      parameters:
+        max_client_conn: "1000"
