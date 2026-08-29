@@ -172,3 +172,25 @@ described above.
 > test namespace and doesn't deploy or require resources outside of that
 > namespace (except for the CNPG Operator, indirectly).
 
+### Connection pooling (PgBouncer)
+
+Each broker pod opens one HikariCP pool per physical tenant, so client connections to
+Postgres scale as (broker pods x physical tenants) — a 10-broker, 10-tenant load test
+produces a structural floor of ~200 mostly-idle connections, which exceeds Postgres's
+default `max_connections=100` under load.
+
+Setting `postgresql.pooler.enabled=true` deploys a CNPG [`Pooler`
+resource](https://cloudnative-pg.io/docs/1.30/connection_pooling) (PgBouncer, transaction
+pooling mode) in front of the Cluster above. A GKE benchmark trial confirmed this collapses
+steady-state Postgres connections by roughly an order of magnitude, with zero client
+queueing and zero HikariCP timeouts, without raising `max_connections` — including through a
+full simultaneous restart of all broker pods.
+
+This is opt-in and off by default. Enabling it also requires switching
+`orchestration.data.secondaryStorage.rdbms.url` (in the platform values) to the Pooler's
+Service and appending `?prepareThreshold=0` — see `postgres_pooler=true` in
+[`../../common.mk`](../../common.mk), which does both. Setting `postgresql.pooler.enabled`
+directly (e.g. via `additional_load_test_setup_configuration`) without the matching JDBC URL
+change leaves Camunda connected straight to the Cluster's `-rw` Service — the Pooler
+deploys but nothing routes through it.
+
