@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "ef9285267a5556b6f16bd8bb74e263dffb8defc6",
-    "generatedAt": "2026-08-26T08:16:52.348Z",
+    "commit": "6c1eb719480ca740cab1fb61075dfd6c7a7a1ad9",
+    "generatedAt": "2026-08-29T12:11:02.532Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "f3cfd5034cd86db5e5236734a4167b2a960704c67ff105a948e7eb54e785c4a2"
+    "specSha256": "781b2f529db99a6f527dcc507d193bd7c830376600e2fb1983136ece5fcdb6b2"
   },
   "responses": [
     {
@@ -10726,7 +10726,8 @@
                           "LEADER_CHANGED",
                           "NO_LEADER",
                           "NO_RESPONSE",
-                          "CANCELLED"
+                          "CANCELLED",
+                          "PHYSICAL_TENANT_DISABLED"
                         ],
                         "nullable": true
                       }
@@ -10856,7 +10857,8 @@
                           "LEADER_CHANGED",
                           "NO_LEADER",
                           "NO_RESPONSE",
-                          "CANCELLED"
+                          "CANCELLED",
+                          "PHYSICAL_TENANT_DISABLED"
                         ],
                         "nullable": true
                       }
@@ -10957,7 +10959,8 @@
                           "LEADER_CHANGED",
                           "NO_LEADER",
                           "NO_RESPONSE",
-                          "CANCELLED"
+                          "CANCELLED",
+                          "PHYSICAL_TENANT_DISABLED"
                         ],
                         "nullable": true
                       }
@@ -11087,7 +11090,8 @@
                           "LEADER_CHANGED",
                           "NO_LEADER",
                           "NO_RESPONSE",
-                          "CANCELLED"
+                          "CANCELLED",
+                          "PHYSICAL_TENANT_DISABLED"
                         ],
                         "nullable": true
                       }
