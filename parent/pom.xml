@@ -121,7 +121,7 @@
     <version.kotlin-stdlib>2.1.21</version.kotlin-stdlib>
     <version.immutables>2.10.1</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.193</version.classgraph>
+    <version.classgraph>4.8.194</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
