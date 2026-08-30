@@ -25,7 +25,7 @@
 		"@camunda/camunda-composite-components": "0.25.4",
 		"@camunda/design-system": "0.49.0",
 		"@camunda/session-heartbeat": "0.0.1",
-		"@carbon/grid": "11.60.0",
+		"@carbon/grid": "11.61.0",
 		"@carbon/layout": "11.57.0",
 		"@carbon/react": "1.112.0",
 		"@carbon/styles": "1.112.0",
