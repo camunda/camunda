@@ -53,7 +53,7 @@ case "$target_version" in
     ;;
   stable-88)
     # renovate: version=camunda-platform-8.8
-    camunda_platform_helm_chart_version="13.12.7"
+    camunda_platform_helm_chart_version="13.12.8"
     allowed_storage=(elasticsearch opensearch none)
     elasticsearch_version="8.18.0"
     ;;
