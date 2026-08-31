@@ -863,7 +863,7 @@ jobs:
                 return 0
               fi
 
-              if echo "$out" | grep -Eq 'HTTP 502|HTTP 503|HTTP 504|TLS handshake timeout|timeout|temporarily unavailable|connection reset by peer|EOF'; then
+              if echo "$out" | grep -Eq 'HTTP 500|HTTP 502|HTTP 503|HTTP 504|TLS handshake timeout|timeout|temporarily unavailable|connection reset by peer|EOF|stream error|GOAWAY|broken pipe|no such host|connection refused'; then
                 if (( attempt >= max_attempts )); then
                   echo "gh api failed after ${attempt}/${max_attempts} attempts for $endpoint" >&2
                   echo "$out" >&2
@@ -877,9 +877,11 @@ jobs:
                 continue
               fi
 
+              # Exit code 2 marks a permanent error (bad token, renamed workflow
+              # file) so the caller fails fast instead of polling to the timeout.
               echo "Non-retryable gh/api error for $endpoint:" >&2
               echo "$out" >&2
-              return 1
+              return 2
             done
           }
 
@@ -887,15 +889,28 @@ jobs:
 
           for _ in {1..80}; do
             if [[ -z "$RUN_ID" ]]; then
+              # A retry-exhausted poll must not end the wait: this loop is the
+              # timeout mechanism, so fall through to the next tick. Only a
+              # permanent error (exit 2) aborts.
+              RUNS_JSON="" RC=0
+              RUNS_JSON="$(gh_api_with_retry "/repos/$TARGET_REPO/actions/workflows/$WORKFLOW_FILE/runs?event=repository_dispatch&per_page=50")" || RC=$?
+              if (( RC == 2 )); then
+                echo "downstream_conclusion=dispatch-error" >> "$GITHUB_OUTPUT"
+                exit 1
+              elif (( RC != 0 )); then
+                echo "Could not list downstream runs on this poll; retrying on the next tick." >&2
+                sleep 30
+                continue
+              fi
+
               RUN_ID=$(
-                gh_api_with_retry "/repos/$TARGET_REPO/actions/workflows/$WORKFLOW_FILE/runs?event=repository_dispatch&per_page=50" \
-                | jq -r --arg c "$CORRELATION_ID" '
+                jq -r --arg c "$CORRELATION_ID" '
                     .workflow_runs
                     | map(select(.display_title != null and (.display_title | contains($c))))
                     | sort_by(.created_at)
                     | last
                     | .id // empty
-                  '
+                  ' <<<"$RUNS_JSON"
               )
 
               if [[ -z "$RUN_ID" ]]; then
@@ -908,7 +923,17 @@ jobs:
               echo "downstream_run_url=https://github.com/$TARGET_REPO/actions/runs/$RUN_ID" >> "$GITHUB_OUTPUT"
             fi
 
-            RUN_JSON="$(gh_api_with_retry "/repos/$TARGET_REPO/actions/runs/$RUN_ID")"
+            RUN_JSON="" RC=0
+            RUN_JSON="$(gh_api_with_retry "/repos/$TARGET_REPO/actions/runs/$RUN_ID")" || RC=$?
+            if (( RC == 2 )); then
+              echo "downstream_conclusion=dispatch-error" >> "$GITHUB_OUTPUT"
+              exit 1
+            elif (( RC != 0 )); then
+              echo "Could not read downstream run $RUN_ID on this poll; retrying on the next tick." >&2
+              sleep 30
+              continue
+            fi
+
             STATUS="$(jq -r .status <<<"$RUN_JSON")"
             CONCLUSION="$(jq -r .conclusion <<<"$RUN_JSON")"
             echo "Workflow run $RUN_ID status: $STATUS ($CONCLUSION)"
