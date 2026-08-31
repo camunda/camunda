@@ -1338,6 +1338,11 @@ camunda: # Type: io.camunda.configuration.Camunda
         # declaration order) or COMBINED (default, legacy combined-FEEL-context behavior restoring
         # the pre-baddd911435 single-expression evaluation).
         input-mode: COMBINED # Type: InputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTMODE
+        # When set, also evaluates input mappings with this second resolver and logs a warning
+        # if the results differ from the primary resolver. Intended for migration diagnostics
+        # only: each activation evaluates mappings with both resolvers and compares the
+        # result documents, which adds overhead for large mapping sets.
+        input-comparison-mode: ~ # Type: InputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTCOMPARISONMODE
 
     flow-control: # Type: io.camunda.configuration.FlowControl
       request: # Type: io.camunda.configuration.Limit

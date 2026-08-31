@@ -16,10 +16,11 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping;
+import io.camunda.zeebe.engine.processing.variable.MappingContext;
+import io.camunda.zeebe.engine.processing.variable.MappingExpressionProcessor;
 import io.camunda.zeebe.engine.processing.variable.MappingResolver;
 import io.camunda.zeebe.engine.processing.variable.MsgPackPath;
 import io.camunda.zeebe.engine.processing.variable.OutputMappingResultBuilder;
-import io.camunda.zeebe.engine.processing.variable.ScopedExpressionProcessor;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -87,8 +88,6 @@ public final class BpmnVariableMappingBehavior {
    */
   public Either<Failure, Void> applyInputMappings(
       final BpmnElementContext context, final ExecutableFlowNode element) {
-    final long scopeKey = context.getElementInstanceKey();
-    final String tenantId = context.getTenantId();
     final Optional<InputMappings> inputMappings = element.getInputMappings();
 
     if (inputMappings.isEmpty()) {
@@ -97,10 +96,17 @@ public final class BpmnVariableMappingBehavior {
 
     // secret references (camunda.secrets.<name>) are resolved to their placeholder string only
     // for input mappings, so a modeled reference survives evaluation instead of nulling
+    final var mappingContext =
+        new MappingContext(
+            element.getId(),
+            context.getElementInstanceKey(),
+            context.getProcessInstanceKey(),
+            context.getProcessDefinitionKey(),
+            context.getTenantId());
     final var result =
         inputMappingResolver.resolveInputMappings(
             inputMappings.get(),
-            new ScopedExpressionProcessor(inputMappingExpressionProcessor, scopeKey, tenantId));
+            new MappingExpressionProcessor(inputMappingExpressionProcessor, mappingContext));
     if (result.isLeft()) {
       return Either.left(result.getLeft());
     }

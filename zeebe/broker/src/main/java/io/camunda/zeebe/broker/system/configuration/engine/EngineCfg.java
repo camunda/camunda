@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
+import org.jspecify.annotations.Nullable;
 
 public final class EngineCfg implements ConfigurationEntry {
 
@@ -25,6 +27,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
   private EngineConfiguration.InputMappingMode inputMappingMode =
       EngineConfiguration.InputMappingMode.COMBINED;
+  private @Nullable InputMappingMode inputComparisonMode = null;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
   private ExpressionCfg expression = new ExpressionCfg();
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
@@ -129,6 +132,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.inputMappingMode = inputMappingMode;
   }
 
+  public @Nullable InputMappingMode getInputComparisonMode() {
+    return inputComparisonMode;
+  }
+
+  public void setInputComparisonMode(final @Nullable InputMappingMode inputComparisonMode) {
+    this.inputComparisonMode = inputComparisonMode;
+  }
+
   public GlobalListenersCfg getGlobalListeners() {
     return globalListeners;
   }
@@ -212,6 +223,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + storageOrdinals
         + ", inputMappingMode="
         + inputMappingMode
+        + ", inputComparisonMode="
+        + inputComparisonMode
         + '}';
   }
 
@@ -274,6 +287,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled())
         .setArchiverlessEnabled(storageOrdinals.isEnableArchiverless())
         .setFixedStorageOrdinalKey(storageOrdinals.getFixedStorageOrdinalKey())
-        .setInputMappingMode(inputMappingMode);
+        .setInputMappingMode(inputMappingMode)
+        .setInputComparisonMode(inputComparisonMode);
   }
 }

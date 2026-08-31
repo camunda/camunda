@@ -26,7 +26,7 @@ public final class OrderedMappingResolver implements MappingResolver {
 
   @Override
   public Either<Failure, DirectBuffer> resolveInputMappings(
-      final InputMappings inputMappings, final ScopedExpressionProcessor processor) {
+      final InputMappings inputMappings, final MappingExpressionProcessor processor) {
     final var resultBuilder =
         new InputMappingResultBuilder(
             name -> {

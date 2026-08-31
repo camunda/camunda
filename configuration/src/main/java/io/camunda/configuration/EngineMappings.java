@@ -7,6 +7,8 @@
  */
 package io.camunda.configuration;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Defines configuration for the engine's mapping resolution strategy. The prefix for this class is
  * camunda.processing.engine.mappings.
@@ -14,6 +16,16 @@ package io.camunda.configuration;
 public class EngineMappings {
 
   private InputMode inputMode = InputMode.COMBINED;
+
+  /**
+   * When set, evaluates input mappings with both the primary resolver ({@code inputMode}) and this
+   * comparison resolver, then logs a warning if their results differ. Intended for diagnostic use
+   * only: each activation evaluates mappings with both resolvers and compares the result documents,
+   * which adds overhead for large mapping sets.
+   *
+   * <p>Has no effect when null (default) or when set to the same value as {@code inputMode}.
+   */
+  @Nullable private InputMode inputComparisonMode = null;
 
   public enum InputMode {
     ORDERED,
@@ -39,8 +51,20 @@ public class EngineMappings {
     this.inputMode = inputMode;
   }
 
+  public @Nullable InputMode getInputComparisonMode() {
+    return inputComparisonMode;
+  }
+
+  public void setInputComparisonMode(final @Nullable InputMode inputComparisonMode) {
+    this.inputComparisonMode = inputComparisonMode;
+  }
+
   @Override
   public String toString() {
-    return "EngineMappings{inputMode=" + inputMode + '}';
+    return "EngineMappings{inputMode="
+        + inputMode
+        + ", inputComparisonMode="
+        + inputComparisonMode
+        + '}';
   }
 }
