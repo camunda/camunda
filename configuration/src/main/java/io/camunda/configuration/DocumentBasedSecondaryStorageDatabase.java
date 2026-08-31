@@ -348,11 +348,24 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   /**
+   * Resolved with {@link BackwardsCompatibilityMode#SUPPORTED} rather than the {@code
+   * SUPPORTED_ONLY_IF_VALUES_MATCH} its neighbours use. The neighbours all have a non-null default,
+   * so a legacy value has something to be compared against; this property is unset by default.
+   * Under {@code SUPPORTED_ONLY_IF_VALUES_MATCH} every deployment that configures only the legacy
+   * property would compare it against the unset unified value and fail to start.
+   *
    * @throws IllegalArgumentException if configured with a non-positive value
    */
   public Integer getMaxConnections() {
-    validatePositive(".max-connections", maxConnections);
-    return maxConnections;
+    final Integer resolved =
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            prefix() + ".max-connections",
+            maxConnections,
+            Integer.class,
+            BackwardsCompatibilityMode.SUPPORTED,
+            legacyMaxConnectionsProperties());
+    validatePositive(".max-connections", resolved);
+    return resolved;
   }
 
   public void setMaxConnections(final Integer maxConnections) {
@@ -360,11 +373,20 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   /**
+   * See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}.
+   *
    * @throws IllegalArgumentException if configured with a non-positive value
    */
   public Integer getMaxConnectionsPerRoute() {
-    validatePositive(".max-connections-per-route", maxConnectionsPerRoute);
-    return maxConnectionsPerRoute;
+    final Integer resolved =
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            prefix() + ".max-connections-per-route",
+            maxConnectionsPerRoute,
+            Integer.class,
+            BackwardsCompatibilityMode.SUPPORTED,
+            legacyMaxConnectionsPerRouteProperties());
+    validatePositive(".max-connections-per-route", resolved);
+    return resolved;
   }
 
   public void setMaxConnectionsPerRoute(final Integer maxConnectionsPerRoute) {
@@ -570,6 +592,22 @@ public abstract class DocumentBasedSecondaryStorageDatabase
         "camunda.operate." + dbName + ".connectionTimeout",
         "camunda.tasklist." + dbName + ".connectionTimeout",
         "zeebe.broker.exporters.camundaexporter.args.connect.connectionTimeout");
+  }
+
+  /**
+   * Only 'camunda.database', where the properties around it also list 'camunda.operate.*',
+   * 'camunda.tasklist.*' and the exporter args. The connection pool was never exposed on the
+   * operate and tasklist prefixes. The exporter args are deliberately left out too: those resolve
+   * under SUPPORTED, so listing them would let a limit meant for the exporter's client silently
+   * size the webapps' client as well.
+   */
+  private Set<String> legacyMaxConnectionsProperties() {
+    return Set.of("camunda.database.maxConnections");
+  }
+
+  /** See {@link #legacyMaxConnectionsProperties()} for why only 'camunda.database' is listed. */
+  private Set<String> legacyMaxConnectionsPerRouteProperties() {
+    return Set.of("camunda.database.maxConnectionsPerRoute");
   }
 
   private Set<String> legacyNumberOfReplicasProperties() {

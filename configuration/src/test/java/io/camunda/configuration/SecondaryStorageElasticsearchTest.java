@@ -760,10 +760,13 @@ public class SecondaryStorageElasticsearchTest {
       })
   class WithOnlyLegacyExporterConnectionPoolSet {
     final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
 
     WithOnlyLegacyExporterConnectionPoolSet(
-        @Autowired final BrokerBasedProperties brokerBasedProperties) {
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
       this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
     }
 
     @Test
@@ -783,6 +786,63 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_MAX_CONNECTIONS);
       assertThat(exporterConfiguration.getConnect().getMaxConnectionsPerRoute())
           .isEqualTo(EXPECTED_MAX_CONNECTIONS_PER_ROUTE);
+    }
+
+    @Test
+    void shouldLeaveTheSearchEngineConnectPropertiesUnsized() {
+      // then an exporter-scoped limit must not size the webapps' client
+      assertThat(searchEngineConnectProperties)
+          .returns(null, SearchEngineConnectProperties::getMaxConnections)
+          .returns(null, SearchEngineConnectProperties::getMaxConnectionsPerRoute);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
+        "camunda.database.max-connections=" + EXPECTED_MAX_CONNECTIONS,
+        "camunda.database.max-connections-per-route=" + EXPECTED_MAX_CONNECTIONS_PER_ROUTE,
+      })
+  class WithConnectionPoolOnLegacyDatabase {
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    WithConnectionPoolOnLegacyDatabase(
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    @Test
+    void shouldFallBackToTheLegacyPropertyForTheCamundaExporter() {
+      // given
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getConnect())
+          .returns(EXPECTED_MAX_CONNECTIONS, ConnectConfiguration::getMaxConnections)
+          .returns(
+              EXPECTED_MAX_CONNECTIONS_PER_ROUTE, ConnectConfiguration::getMaxConnectionsPerRoute);
+    }
+
+    @Test
+    void shouldFallBackToTheLegacyPropertyForTheSearchEngineConnectProperties() {
+      // then
+      assertThat(searchEngineConnectProperties)
+          .returns(EXPECTED_MAX_CONNECTIONS, SearchEngineConnectProperties::getMaxConnections)
+          .returns(
+              EXPECTED_MAX_CONNECTIONS_PER_ROUTE,
+              SearchEngineConnectProperties::getMaxConnectionsPerRoute);
     }
   }
 
