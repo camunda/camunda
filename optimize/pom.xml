@@ -57,7 +57,7 @@
     <!-- 6.2.20+ (fixing CVE-2026-47884) ships only on the Spring Enterprise line, as OSS 6.2 is
          capped at 6.2.19. This overrides Spring Boot's managed version for the Optimize build. -->
     <spring.version>6.2.19-spring-framework-6.2.21</spring.version>
-    <spring.security.version>6.5.11</spring.security.version>
+    <spring.security.version>6.5.11-spring-security-6.5.13</spring.security.version>
     <version.tomcat>10.1.56</version.tomcat>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
