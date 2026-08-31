@@ -9,12 +9,12 @@ Zeebe clusters may result in corrupted backups.
 
 [^bucket]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html
 
-## Compatability
+## Compatibility
 
 Advanced bucket features such as locking, versioning and encryption are not utilized.
-We do not test compatability with these features and recommend to not enable them if possible.
+We do not test compatibility with these features and recommend to not enable them if possible.
 
-We test compatability to [AWS S3] and [MinIO] only, but any S3 compatible object storage should be
+We test compatibility to [AWS S3] and [MinIO] only, but any S3 compatible object storage should be
 usable.
 
 [AWS S3]: https://docs.aws.amazon.com/s3/index.html
