@@ -69,6 +69,17 @@ public class ProcessInstanceForListViewEntity
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String businessId;
 
+  /**
+   * Message of an incident raised at the process level, i.e. one that is not attached to any flow
+   * node. Incidents attached to a flow node carry their message on the corresponding {@link
+   * FlowNodeInstanceForListViewEntity} instead.
+   *
+   * <p>Attention! This field will be filled in only for data imported after v. 8.9.18.
+   */
+  @SinceVersion(value = "8.9.18", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String errorMessage;
+
   @JsonIgnore private Object[] sortValues;
 
   @Override
@@ -295,17 +306,6 @@ public class ProcessInstanceForListViewEntity
     this.businessId = businessId;
     return this;
   }
-
-  /**
-   * Message of an incident raised at the process level, i.e. one that is not attached to any flow
-   * node. Incidents attached to a flow node carry their message on the corresponding {@link
-   * FlowNodeInstanceForListViewEntity} instead.
-   *
-   * <p>Attention! This field will be filled in only for data imported after v. 8.9.18.
-   */
-  @SinceVersion(value = "8.9.18", requireDefault = false)
-  @JsonInclude(JsonInclude.Include.NON_NULL)
-  private String errorMessage;
 
   public String getErrorMessage() {
     return errorMessage;
