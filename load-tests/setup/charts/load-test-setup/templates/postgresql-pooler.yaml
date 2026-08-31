@@ -1,0 +1,28 @@
+{{- if and .Values.postgresql.enabled .Values.postgresql.pooler.enabled -}}
+---
+# Configure a CNPG Pooler (PgBouncer, transaction-pooling mode) in front of the
+# PostgreSQL cluster above, so many mostly-idle client connections (one HikariCP
+# pool per broker pod x physical tenant) multiplex onto a handful of real
+# PostgreSQL server connections instead of exhausting `max_connections`. See
+# `postgresql.pooler` in values.yaml for background.
+#
+# The CNPG Operator names the generated Kubernetes Service after this
+# resource's `metadata.name`; the JDBC URL in the platform values must be kept
+# in sync with it (same convention as `postgresql.clusterName` and the `-rw`
+# Service today).
+#
+# Reference: https://cloudnative-pg.io/docs/1.30/connection_pooling
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: {{ .Values.postgresql.clusterName }}-pooler
+spec:
+  cluster:
+    name: {{ .Values.postgresql.clusterName }}
+  instances: {{ .Values.postgresql.pooler.instances }}
+  type: rw
+  pgbouncer:
+    poolMode: transaction
+    parameters:
+      {{- toYaml .Values.postgresql.pooler.pgbouncer.parameters | nindent 6 }}
+{{- end -}}
