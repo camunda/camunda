@@ -99,6 +99,28 @@ class TestCapMrkdwn:
         assert "more line" in result
         assert result.startswith("header\n")
 
+    def test_caps_even_when_the_header_alone_exceeds_the_limit(self, monkeypatch):
+        # given: a header so long that even dropping every line (or having none to begin with)
+        # can't bring the result under the limit on its own — e.g. a metrics-table header row
+        # widened by many/wide variant labels. Regression test for the case Copilot flagged on
+        # PR #61506: the old implementation returned `header` (or `header + note`) unmodified
+        # here, silently breaking the "never exceeds `limit`" guarantee.
+        module = _load(monkeypatch, [_variant("grpc", "gRPC")])
+        huge_header = "H" * 500
+
+        assert len(module._cap_mrkdwn(huge_header, [], limit=200)) <= 200
+        assert len(module._cap_mrkdwn(huge_header, ["a", "b", "c"], limit=200)) <= 200
+
+    def test_caps_when_header_plus_note_exceeds_the_limit_with_lines_present(self, monkeypatch):
+        # given: the header alone fits, but once every line is dropped, header + the trailing
+        # "...and N more" note still doesn't.
+        module = _load(monkeypatch, [_variant("grpc", "gRPC")])
+        header = "H" * 190  # fits comfortably under 200 by itself
+        lines = ["x" * 50 for _ in range(10)]  # each far too big to ever be kept
+
+        result = module._cap_mrkdwn(header, lines, limit=200, noun="line")
+        assert len(result) <= 200
+
 
 class TestFlamegraphBlockCap:
     def test_few_links_pass_through_unchanged(self, monkeypatch):

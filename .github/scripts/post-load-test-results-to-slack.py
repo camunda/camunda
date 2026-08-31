@@ -65,10 +65,26 @@ with open(queries_yaml) as f:
 SLACK_TEXT_LIMIT = 3000
 
 
+def _truncate(text, limit):
+    """Hard-cap `text` at `limit` chars, replacing the cut-off tail with a single ellipsis
+    character so the result is never longer than `limit` — the last-resort backstop for
+    `_cap_mrkdwn` below, used only when even the fixed parts it must keep (the header, and any
+    trailing note) already exceed `limit` on their own, with no lines left to drop.
+    """
+    if len(text) <= limit:
+        return text
+    if limit <= 0:
+        return ''
+    return text[:limit - 1] + '…' if limit > 1 else '…'
+
+
 def _cap_mrkdwn(header, lines, limit=SLACK_TEXT_LIMIT, noun='item'):
     """Join `header` and `lines` with newlines, dropping trailing lines — and appending an
-    "...and N more" note, itself counted against `limit` — so the result never exceeds Slack's
-    mrkdwn text limit. No-op (returns everything joined) if it already fits.
+    "...and N more" note, itself counted against `limit` — so the result never exceeds `limit`.
+    Falls back to truncating `header` itself (mid-word, via `_truncate`) in the degenerate case
+    where `header` alone, or `header` plus the "...and N more" note once every line has been
+    dropped, is still longer than `limit` on its own. No-op (returns everything joined) if it
+    already fits.
     """
     text = '\n'.join([header, *lines])
     if len(text) <= limit:
@@ -78,9 +94,9 @@ def _cap_mrkdwn(header, lines, limit=SLACK_TEXT_LIMIT, noun='item'):
         dropped = len(lines) - i
         note = f'…and {dropped} more {noun}{"s" if dropped != 1 else ""} — see the workflow run for full details.'
         if len('\n'.join([header, *kept, line, note])) > limit:
-            return '\n'.join([header, *kept, note])
+            return _truncate('\n'.join([header, *kept, note]), limit)
         kept.append(line)
-    return '\n'.join([header, *kept])
+    return _truncate('\n'.join([header, *kept]), limit)
 
 
 def fmt(v, q):
