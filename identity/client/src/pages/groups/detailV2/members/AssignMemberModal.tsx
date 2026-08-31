@@ -15,8 +15,6 @@ import FormModal from "src/components/modalV2/FormModal";
 import TextField from "src/components/formV2/TextField";
 import { useNotifications } from "src/components/notifications";
 import { DocumentationLink } from "src/components/documentationV2";
-// TODO: Remove this import during migration. Reference roles/detailsV2/members for a solution.
-import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import type { Group, User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const AssignMemberModal: FC<
@@ -75,18 +73,16 @@ const AssignMemberModal: FC<
         placeholder={t("typeUsername")}
         onChange={setUsername}
         helperText={
-          <Caption>
-            <Translate i18nKey="usernameDescription">
-              Check the documentation for{" "}
-              <DocumentationLink
-                path="/components/admin/group/#assign-users-to-a-group"
-                withIcon
-              >
-                how to reference users
-              </DocumentationLink>{" "}
-              .
-            </Translate>
-          </Caption>
+          <Translate i18nKey="usernameDescription">
+            Check the documentation for{" "}
+            <DocumentationLink
+              path="/components/admin/group/#assign-users-to-a-group"
+              withIcon
+            >
+              how to reference users
+            </DocumentationLink>{" "}
+            .
+          </Translate>
         }
         value={username}
         autoFocus

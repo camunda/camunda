@@ -7,15 +7,14 @@
  */
 
 import { FC } from "react";
-// TODO: Replace with `ErrorInlineNotification`.
-import { C3EmptyState } from "@camunda/camunda-composite-components";
-import { TrashCan } from "@carbon/react/icons";
+import { Trash2 } from "lucide-react";
 import useTranslate from "src/utility/localization";
 import { useQuery } from "@tanstack/react-query";
 import { usePagination } from "src/utility/api";
 import { groupQueries } from "src/utility/api/groups/queries";
 import EntityList from "src/components/entityListV2";
 import { useEntityModal } from "src/components/modalV2";
+import { ErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
 import DeleteModal from "src/pages/groups/detailV2/clients/DeleteModal";
 import AssignClientsModal from "src/pages/groups/detailV2/clients/AssignClientsModal";
 import TabEmptyState from "src/components/layoutV2/TabEmptyState";
@@ -58,12 +57,12 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
 
   if (!loading && !success)
     return (
-      <C3EmptyState
-        heading={t("somethingsWrong")}
-        description={t("unableToLoadResource", {
+      <ErrorInlineNotification
+        title={t("somethingsWrong")}
+        subtitle={t("unableToLoadResource", {
           resourceType: t("client").toLowerCase(),
         })}
-        button={{
+        actionButton={{
           label: t("retry"),
           onClick: () => {
             void reload();
@@ -97,7 +96,7 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
         menuItems={[
           {
             label: t("remove"),
-            icon: TrashCan,
+            icon: Trash2,
             isDangerous: true,
             onClick: unassignClient,
           },
