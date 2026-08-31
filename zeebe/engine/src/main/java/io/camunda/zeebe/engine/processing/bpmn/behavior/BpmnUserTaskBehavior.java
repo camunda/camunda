@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.usertask.UserTaskActions;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
@@ -58,10 +59,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class BpmnUserTaskBehavior {
-
-  private static final String DEFAULT_ACTION_CREATE = "create";
-  private static final String DEFAULT_ACTION_ASSIGN = "assign";
-  private static final String DEFAULT_ACTION_CANCEL = "cancel";
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BpmnUserTaskBehavior.class.getPackageName());
@@ -204,7 +201,7 @@ public final class BpmnUserTaskBehavior {
             .setTags(getTagsFromProcessInstance(context))
             .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
             .setBusinessId(getBusinessIdFromProcessInstance(context))
-            .setAction(DEFAULT_ACTION_CREATE);
+            .setAction(UserTaskActions.CREATE);
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;
@@ -461,7 +458,7 @@ public final class BpmnUserTaskBehavior {
 
     rejectOngoingRequestsForUserTaskBeforeCancellation(userTask);
 
-    userTask.setAction(DEFAULT_ACTION_CANCEL);
+    userTask.setAction(UserTaskActions.CANCEL);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
     return Optional.of(userTask);
   }
@@ -530,7 +527,7 @@ public final class BpmnUserTaskBehavior {
       userTaskRecord.setAssignee(assignee);
       userTaskRecord.setAssigneeChanged();
     }
-    userTaskRecord.setAction(DEFAULT_ACTION_ASSIGN);
+    userTaskRecord.setAction(UserTaskActions.ASSIGN);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
   }
 

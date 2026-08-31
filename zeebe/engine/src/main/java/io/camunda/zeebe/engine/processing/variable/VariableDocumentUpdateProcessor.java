@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.usertask.UserTaskActions;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -58,8 +59,6 @@ public final class VariableDocumentUpdateProcessor
 
   private static final String INVALID_USER_TASK_STATE_MESSAGE =
       "Expected to trigger update transition for user task with key '%d', but it is in state '%s'";
-
-  private static final String DEFAULT_ACTION_UPDATE = "update";
 
   private final ElementInstanceState elementInstanceState;
   private final MutableUserTaskState userTaskState;
@@ -170,7 +169,7 @@ public final class VariableDocumentUpdateProcessor
       if (hasVariables(value)) {
         userTaskRecord.setVariables(value.getVariablesBuffer()).setVariablesChanged();
       }
-      userTaskRecord.setAction(DEFAULT_ACTION_UPDATE);
+      userTaskRecord.setAction(UserTaskActions.UPDATE);
       writers.state().appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, userTaskRecord);
 
       final var userTaskElement =

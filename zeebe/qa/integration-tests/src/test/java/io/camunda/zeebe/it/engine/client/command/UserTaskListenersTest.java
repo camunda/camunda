@@ -227,27 +227,10 @@ public class UserTaskListenersTest {
     ZeebeAssertHelper.assertUserTaskCanceled(
         userTaskKey,
         userTask -> {
-          // assert that cancellation preserved the task's definition-time attributes
-          assertThat(userTask.getUserTaskKey()).isEqualTo(createdUserTask.getUserTaskKey());
-          assertThat(userTask.getBpmnProcessId()).isEqualTo(createdUserTask.getBpmnProcessId());
-          assertThat(userTask.getProcessDefinitionKey())
-              .isEqualTo(createdUserTask.getProcessDefinitionKey());
-          assertThat(userTask.getProcessDefinitionVersion())
-              .isEqualTo(createdUserTask.getProcessDefinitionVersion());
-          assertThat(userTask.getProcessInstanceKey())
-              .isEqualTo(createdUserTask.getProcessInstanceKey());
-          assertThat(userTask.getElementId()).isEqualTo(createdUserTask.getElementId());
-          assertThat(userTask.getElementInstanceKey())
-              .isEqualTo(createdUserTask.getElementInstanceKey());
-          assertThat(userTask.getPriority()).isEqualTo(createdUserTask.getPriority());
-          assertThat(userTask.getFormKey()).isEqualTo(createdUserTask.getFormKey());
-          assertThat(userTask.getDueDate()).isEqualTo(createdUserTask.getDueDate());
-          assertThat(userTask.getFollowUpDate()).isEqualTo(createdUserTask.getFollowUpDate());
-          assertThat(userTask.getCandidateGroupsList())
-              .isEqualTo(createdUserTask.getCandidateGroupsList());
-          assertThat(userTask.getCandidateUsersList())
-              .isEqualTo(createdUserTask.getCandidateUsersList());
-          assertThat(userTask.getAction()).isEqualTo("cancel");
+          assertThat(userTask)
+              .describedAs(
+                  "Canceled user task should match the originally created one, except the action")
+              .isEqualTo(((UserTaskRecord) createdUserTask).copy().setAction("cancel"));
 
           assertThat(userTask.getAssignee())
               .describedAs(
@@ -1006,27 +989,10 @@ public class UserTaskListenersTest {
     ZeebeAssertHelper.assertUserTaskCanceled(
         userTaskKey,
         userTask -> {
-          // assert that cancellation preserved the task's definition-time attributes
-          assertThat(userTask.getUserTaskKey()).isEqualTo(createdUserTask.getUserTaskKey());
-          assertThat(userTask.getBpmnProcessId()).isEqualTo(createdUserTask.getBpmnProcessId());
-          assertThat(userTask.getProcessDefinitionKey())
-              .isEqualTo(createdUserTask.getProcessDefinitionKey());
-          assertThat(userTask.getProcessDefinitionVersion())
-              .isEqualTo(createdUserTask.getProcessDefinitionVersion());
-          assertThat(userTask.getProcessInstanceKey())
-              .isEqualTo(createdUserTask.getProcessInstanceKey());
-          assertThat(userTask.getElementId()).isEqualTo(createdUserTask.getElementId());
-          assertThat(userTask.getElementInstanceKey())
-              .isEqualTo(createdUserTask.getElementInstanceKey());
-          assertThat(userTask.getPriority()).isEqualTo(createdUserTask.getPriority());
-          assertThat(userTask.getFormKey()).isEqualTo(createdUserTask.getFormKey());
-          assertThat(userTask.getDueDate()).isEqualTo(createdUserTask.getDueDate());
-          assertThat(userTask.getFollowUpDate()).isEqualTo(createdUserTask.getFollowUpDate());
-          assertThat(userTask.getCandidateGroupsList())
-              .isEqualTo(createdUserTask.getCandidateGroupsList());
-          assertThat(userTask.getCandidateUsersList())
-              .isEqualTo(createdUserTask.getCandidateUsersList());
-          assertThat(userTask.getAction()).isEqualTo("cancel");
+          assertThat(userTask)
+              .describedAs(
+                  "Canceled user task should match the originally created one, except the action")
+              .isEqualTo(((UserTaskRecord) createdUserTask).copy().setAction("cancel"));
         });
   }
 
@@ -1084,27 +1050,10 @@ public class UserTaskListenersTest {
     ZeebeAssertHelper.assertUserTaskCanceled(
         userTaskKey,
         userTask -> {
-          // assert that cancellation preserved the task's definition-time attributes
-          assertThat(userTask.getUserTaskKey()).isEqualTo(createdUserTask.getUserTaskKey());
-          assertThat(userTask.getBpmnProcessId()).isEqualTo(createdUserTask.getBpmnProcessId());
-          assertThat(userTask.getProcessDefinitionKey())
-              .isEqualTo(createdUserTask.getProcessDefinitionKey());
-          assertThat(userTask.getProcessDefinitionVersion())
-              .isEqualTo(createdUserTask.getProcessDefinitionVersion());
-          assertThat(userTask.getProcessInstanceKey())
-              .isEqualTo(createdUserTask.getProcessInstanceKey());
-          assertThat(userTask.getElementId()).isEqualTo(createdUserTask.getElementId());
-          assertThat(userTask.getElementInstanceKey())
-              .isEqualTo(createdUserTask.getElementInstanceKey());
-          assertThat(userTask.getPriority()).isEqualTo(createdUserTask.getPriority());
-          assertThat(userTask.getFormKey()).isEqualTo(createdUserTask.getFormKey());
-          assertThat(userTask.getDueDate()).isEqualTo(createdUserTask.getDueDate());
-          assertThat(userTask.getFollowUpDate()).isEqualTo(createdUserTask.getFollowUpDate());
-          assertThat(userTask.getCandidateGroupsList())
-              .isEqualTo(createdUserTask.getCandidateGroupsList());
-          assertThat(userTask.getCandidateUsersList())
-              .isEqualTo(createdUserTask.getCandidateUsersList());
-          assertThat(userTask.getAction()).isEqualTo("cancel");
+          assertThat(userTask)
+              .describedAs(
+                  "Canceled user task should match the originally created one, except the action")
+              .isEqualTo(((UserTaskRecord) createdUserTask).copy().setAction("cancel"));
         });
   }
 
