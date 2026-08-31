@@ -187,7 +187,10 @@ public abstract class ReportEvaluationHandler {
                                   scopedDef.getKey(),
                                   reportEvaluationInfo.getUserId())
                               .stream()
-                              .map(def -> toReportDataDefinitionDto(def, scopedDef.getVersions())))
+                              .map(
+                                  def ->
+                                      toReportDataDefinitionDto(
+                                          def, scopedDef.getVersions(), scopedDef.getTenantIds())))
                   .toList();
           processReportData.setDefinitions(validatedDefs);
           // Heatmap tiles render on top of the BPMN diagram, so the frontend needs the definition
@@ -253,14 +256,29 @@ public abstract class ReportEvaluationHandler {
   private ReportDataDefinitionDto toReportDataDefinitionDto(
       final io.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto def,
       final List<String> versions) {
+    return toReportDataDefinitionDto(def, versions, null);
+  }
+
+  private ReportDataDefinitionDto toReportDataDefinitionDto(
+      final io.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto def,
+      final List<String> versions,
+      final List<String> requestedTenantIds) {
     final List<String> resolvedVersions =
         versions == null || versions.isEmpty() ? List.of(ALL_VERSIONS) : versions;
+    final List<String> availableTenantIds =
+        def.getTenants().stream().map(TenantDto::getId).toList();
+    // An unscoped definition deserializes tenantIds to DEFAULT_TENANT_IDS ([null]); treat that (and
+    // any all-null list) as "no scope" so unscoped/agentic reports keep all available tenants.
+    final List<String> scopedTenantIds =
+        requestedTenantIds == null
+            ? List.of()
+            : requestedTenantIds.stream().filter(Objects::nonNull).toList();
+    final List<String> resolvedTenantIds =
+        scopedTenantIds.isEmpty()
+            ? availableTenantIds
+            : availableTenantIds.stream().filter(scopedTenantIds::contains).toList();
     return new ReportDataDefinitionDto(
-        def.getKey(),
-        def.getName(),
-        resolvedVersions,
-        def.getTenants().stream().map(TenantDto::getId).toList(),
-        def.getName());
+        def.getKey(), def.getName(), resolvedVersions, resolvedTenantIds, def.getName());
   }
 
   private CombinedReportEvaluationResult evaluateCombinedReport(
