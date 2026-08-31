@@ -7,13 +7,12 @@
  */
 
 import { FC } from "react";
-import { TrashCan } from "@carbon/react/icons";
-// TODO: Replace with `ErrorInlineNotification`.
-import { C3EmptyState } from "@camunda/camunda-composite-components";
+import { Trash2 } from "lucide-react";
 import useTranslate from "src/utility/localization";
 import { searchMembersByGroup } from "src/utility/api/membership";
 import EntityList from "src/components/entityListV2";
 import { useEntityModal } from "src/components/modalV2";
+import { ErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
 import AssignMembersModal from "src/pages/groups/detailV2/members/AssignMembersModal";
 import AssignMemberModal from "src/pages/groups/detailV2/members/AssignMemberModal";
 import DeleteModal from "src/pages/groups/detailV2/members/DeleteModal";
@@ -55,12 +54,17 @@ const Members: FC<MembersProps> = ({ groupId, isOIDC }) => {
   );
   if (!loading && !success)
     return (
-      <C3EmptyState
-        heading={t("somethingsWrong")}
-        description={t("unableToLoadResource", {
+      <ErrorInlineNotification
+        title={t("somethingsWrong")}
+        subtitle={t("unableToLoadResource", {
           resourceType: t("user").toLowerCase(),
         })}
-        button={{ label: t("retry"), onClick: reload }}
+        actionButton={{
+          label: t("retry"),
+          onClick: () => {
+            void reload();
+          },
+        }}
       />
     );
 
@@ -103,7 +107,7 @@ const Members: FC<MembersProps> = ({ groupId, isOIDC }) => {
         menuItems={[
           {
             label: t("remove"),
-            icon: TrashCan,
+            icon: Trash2,
             isDangerous: true,
             onClick: unassignMember,
           },
