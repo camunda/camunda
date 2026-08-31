@@ -30,7 +30,7 @@ import {http, HttpResponse} from 'msw';
 import {
   endpoints,
   type QueryProcessDefinitionsRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
