@@ -708,9 +708,11 @@ public class AgentHistoryCommitLifecycleIT {
             .join()
             .getAgentInstanceKey();
 
-    // This also emits AGENT_HISTORY:DISCARD for the CONFIGURATION item just created above (no
-    // committed snapshot exists yet, so model/provider/systemPrompt roll back to defaults). Tests
-    // using this helper only assert on the non-CONFIGURATION history items they create afterward.
+    // This also emits AGENT_HISTORY:DISCARD for the CONFIGURATION item just created above. That
+    // item's model/provider/systemPrompt were already applied to the AgentInstance optimistically
+    // on CREATE and are NOT rolled back by the discard (see #61391). Tests using this helper only
+    // assert on the non-CONFIGURATION history items they create afterward, so this doesn't matter
+    // here.
     camundaClient.newFailCommand(activatedJob).retries(1).execute();
 
     waitForAgentInstanceToBeIndexed(camundaClient, agentInstanceKey);
