@@ -8,24 +8,18 @@
 
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
 import { useQuery } from "@tanstack/react-query";
+import { Pencil, Trash2 } from "lucide-react";
+import { Button, PageHeader } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import { tenantQueries } from "src/utility/api/tenants/queries";
 import NotFound from "src/pages/not-foundV2";
 import { Breadcrumbs, StackPage } from "src/components/layoutV2/Page";
-// TODO: Replace with PageHeader during migration. See roles/detailV2/index.tsx for example.
-import PageHeadline from "src/components/layoutV2/PageHeadline";
-// TODO: Replace with V2 tabs. See roles/detailV2/index.tsx for example.
-import Tabs from "src/components/tabs";
 import { DetailPageHeaderFallback } from "src/components/fallbacksV2";
-// TODO: Replace with Tailwind classes.
-import Flex from "src/components/layout/Flex";
+import { Tabs, TabsContent, TabsHeaderList } from "src/components/tabsV2";
 import { useEntityModal } from "src/components/modalV2";
 import EditModal from "src/pages/tenants/modalsV2/EditModal";
 import DeleteModal from "src/pages/tenants/modalsV2/DeleteModal";
-// TODO: Replace with Tailwind classes or better: remove directly.
-import { Description } from "src/pages/tenants/detailV2/components";
 import Members from "src/pages/tenants/detailV2/members";
 import Groups from "src/pages/tenants/detailV2/groups";
 import Roles from "src/pages/tenants/detailV2/roles";
@@ -57,46 +51,10 @@ const Details: FC<DetailsProps> = ({ isOIDC, isCamundaGroupsEnabled }) => {
   return (
     <StackPage>
       <>
-        <Stack gap="3">
-          <Breadcrumbs items={[{ href: "/tenants", title: t("tenants") }]} />
-          {loading && !tenant ? (
-            <DetailPageHeaderFallback hasOverflowMenu={false} />
-          ) : (
-            <Flex>
-              {tenant && (
-                <Stack gap="3">
-                  <Stack orientation="horizontal" gap="1">
-                    <PageHeadline>{tenant.name}</PageHeadline>
-                    {!isDefaultTenant(tenant.tenantId) && (
-                      <OverflowMenu ariaLabel={t("openTenantContextMenu")}>
-                        <OverflowMenuItem
-                          itemText={t("edit")}
-                          onClick={() => editTenant(tenant)}
-                        />
-                        <OverflowMenuItem
-                          itemText={t("delete")}
-                          onClick={() => {
-                            deleteTenant(tenant);
-                          }}
-                        />
-                      </OverflowMenu>
-                    )}
-                  </Stack>
-                  <p>
-                    {t("tenantId")}: {tenant.tenantId}
-                  </p>
-                  {tenant?.description && (
-                    <Description>
-                      {t("description")}: {tenant.description}
-                    </Description>
-                  )}
-                </Stack>
-              )}
-            </Flex>
-          )}
-        </Stack>
-        {tenant && (
-          <Section>
+        {loading && !tenant ? (
+          <DetailPageHeaderFallback hasOverflowMenu={false} />
+        ) : (
+          tenant && (
             <Tabs
               tabs={[
                 {
@@ -138,8 +96,47 @@ const Details: FC<DetailsProps> = ({ isOIDC, isCamundaGroupsEnabled }) => {
               ]}
               selectedTabKey={tab}
               path={`../${id}`}
-            />
-          </Section>
+            >
+              <PageHeader
+                title={tenant.name}
+                description={tenant.description ?? undefined}
+                breadcrumb={
+                  <Breadcrumbs
+                    items={[
+                      { href: "..", title: t("tenants") },
+                      { title: tenant.tenantId },
+                    ]}
+                  />
+                }
+                actions={
+                  !isDefaultTenant(tenant.tenantId) && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => editTenant(tenant)}
+                      >
+                        <Pencil aria-hidden="true" />
+                        {t("editTenant")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteTenant(tenant)}
+                      >
+                        <Trash2 aria-hidden="true" />
+                        {t("delete")}
+                      </Button>
+                    </>
+                  )
+                }
+                tabs={<TabsHeaderList />}
+              />
+              <TabsContent />
+            </Tabs>
+          )
         )}
       </>
       {editTenantModal}
