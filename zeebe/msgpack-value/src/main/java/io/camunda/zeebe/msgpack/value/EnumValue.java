@@ -17,7 +17,7 @@ public final class EnumValue<E extends Enum<E>> extends BaseValue {
   private final StringValue decodedValue = new StringValue();
   private @Nullable E value;
   private final Class<E> klass;
-  private final E defaultValue;
+  private final @Nullable E defaultValue;
 
   public EnumValue(final Class<E> e, final @Nullable E defaultValue) {
     klass = e;
