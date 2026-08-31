@@ -420,15 +420,30 @@ jobs:
           DATABASE_NAME: ${{ matrix.database.database-name }}
         run: |
           pip install trcli==1.14.1
+          log=$(mktemp)
+          set +e
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
             --batch-size 500 \
+            --timeout 180 \
             parse_junit --suite-id 17050 \
             --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME - $DATABASE_NAME (Mode ${{ inputs.camunda_mode }}) - API tests - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
-            -f "$JUNIT_RESULTS_FILE"
+            -f "$JUNIT_RESULTS_FILE" 2>&1 | tee "$log"
+          status=${PIPESTATUS[0]}
+          set -e
+          # trcli's --close-run is not idempotent: past its client timeout it retries
+          # silently and TestRail rejects the retry because the first close landed.
+          # Requiring the Done line means a mid-upload rejection still fails the step.
+          if [ "$status" -ne 0 ] &&
+            grep -qE 'Adding results: [0-9]+/[0-9]+, Done\.' "$log" &&
+            grep -qF 'The test run is already completed' "$log"; then
+            echo "::warning::TestRail close raced its own retry; all results were uploaded"
+            exit 0
+          fi
+          exit "$status"
 
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
