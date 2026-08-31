@@ -340,7 +340,7 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus</artifactId>
-      <version>${micrometer.version}</version>
+      <version>1.13.4</version>
     </dependency>
 
     <!--Lucene dependencies-->

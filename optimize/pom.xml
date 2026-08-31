@@ -63,11 +63,6 @@
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
     <netty.version>4.1.137.Final</netty.version>
     <log4j2.version>2.25.4</log4j2.version>
-    <!-- Override Spring Boot's micrometer version to address CVE-2026-59295.
-         The 1.15.x fix (1.15.13) is Spring Enterprise-only, so we move to the 1.16.x OSS line. -->
-    <micrometer.version>1.16.7</micrometer.version>
-    <!-- Must match what micrometer-registry-prometheus 1.16.x requires -->
-    <prometheus-metrics.version>1.4.3</prometheus-metrics.version>
     <lombok.version>1.18.34</lombok.version>
     <logback.version>1.5.37</logback.version>
     <slf4j.version>2.0.16</slf4j.version>
@@ -155,21 +150,6 @@
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
         <version>${netty.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <!-- Must be declared before spring-boot-dependencies so this version wins -->
-      <dependency>
-        <groupId>io.prometheus</groupId>
-        <artifactId>prometheus-metrics-bom</artifactId>
-        <version>${prometheus-metrics.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.micrometer</groupId>
-        <artifactId>micrometer-bom</artifactId>
-        <version>${micrometer.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
