@@ -309,6 +309,7 @@ jobs:
         working-directory: .\c8run
 
       - name: make a package
+        timeout-minutes: 5
         run: .\packager.exe package
         working-directory: .\c8run
         env:
@@ -320,12 +321,16 @@ jobs:
         working-directory: .\c8run
 
       - name: Run c8run
+        timeout-minutes: 3
         run: bash -c './c8run.exe start --config e2e_tests/prefix-config.yaml'
         working-directory: ./c8run
         shell: bash
 
       - name: Install jq
-        run: choco install jq
+        uses: dcarbone/install-jq-action@4fcb5062d7ce9bc4382d1a352d19ba3ba2c317c1 # v4.0.1
+        with:
+          version: 1.8.2
+          force: 'true'
 
       - name: Run test
         shell: bash
