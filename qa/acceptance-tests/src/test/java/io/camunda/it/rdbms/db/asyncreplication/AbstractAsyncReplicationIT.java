@@ -26,7 +26,7 @@ import java.time.Duration;
 import java.util.Objects;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
@@ -39,10 +39,10 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
   protected static final Duration DEFAULT_MAX_LAG = Duration.ofSeconds(3);
 
   /** The replication cluster; created by {@link #createCluster()} in {@link #beforeAll()}. */
-  protected @AutoClose R cluster;
+  protected R cluster;
 
-  protected @AutoClose TestCamundaApplication testInstance;
-  protected @AutoClose CamundaClient camundaClient;
+  protected TestCamundaApplication testInstance;
+  protected CamundaClient camundaClient;
   protected MeterRegistry meterRegistry;
 
   /**
@@ -155,6 +155,14 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
     waitForProcessesToBeDeployed(camundaClient, 1);
 
     exporterAcknowledgedAll();
+  }
+
+  @AfterAll
+  void afterAll() {
+    // preserve order, first shutdown Camunda, then the database
+    camundaClient.close();
+    testInstance.close();
+    cluster.close();
   }
 
   protected void startProcessInstances(final int count) {
