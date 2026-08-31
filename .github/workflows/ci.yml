@@ -2481,7 +2481,9 @@ jobs:
     name: Deploy snapshot artifacts
     needs: [ check-results, build-platform-frontend, utils-get-concurrency-group-for-maven-snapshot ]
     runs-on: gcp-perf-core-8-default
-    timeout-minutes: 25
+    # 30 min (the policy ceiling) covers the one-time checkout/setup/build overhead plus up to 2
+    # attempts of the deploy step below; the retry only re-runs that step, not this whole job.
+    timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
@@ -2520,7 +2522,17 @@ jobs:
       # matching the central-sonatype-publish release path. Without it, snapshots ship the raw reactor
       # POM whose parent chain (zeebe-parent) imports NES-only Spring BOMs that external consumers such
       # as zeebe-process-test cannot resolve from Maven Central.
-      - run: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild -Dflatten.updatePomFile=true compile generate-sources source:jar javadoc:jar deploy
+      # Artifactory intermittently returns a transient 500 on artifact/metadata upload (INC-6737,
+      # INC-7541); a bare re-run of this exact command succeeded both times with no other change, so
+      # retrying automates that recovery. Deploying the same SNAPSHOT version twice is safe/idempotent.
+      - name: Compile and deploy snapshot artifacts
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 2
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 13
+          command: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild -Dflatten.updatePomFile=true compile generate-sources source:jar javadoc:jar deploy
       - name: Observe build status
         if: always()
         continue-on-error: true
