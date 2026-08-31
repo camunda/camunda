@@ -129,7 +129,7 @@ public final class BrokerClientImpl implements BrokerClient {
               if (error != null) {
                 throwableConsumer.accept(error);
               } else if (response.isResponse()) {
-                responseConsumer.accept(response.getKey(), response.getResponse());
+                responseConsumer.accept(response.getKey(), response.getResponseOrThrow());
               } else {
                 throwableConsumer.accept(response.toException());
               }

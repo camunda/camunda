@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
-import static java.util.Objects.requireNonNull;
-
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.AdditionalErrorCodes;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
@@ -111,9 +109,7 @@ final class BrokerRequestManager extends Actor {
       final TransportRequestSender sender,
       final Duration requestTimeout) {
     if (!request.hasPartitionGroup()) {
-      throw new IllegalStateException(
-          "Cannot send request '%s': no partition group (physical tenant) was set. Requests are not implicitly routed to the default tenant; call setPartitionGroup explicitly, even when targeting the default tenant."
-              .formatted(request.getType()));
+      throw missingPartitionGroupException(request);
     }
     final CompletableFuture<BrokerResponse<T>> responseFuture = new CompletableFuture<>();
     request.serializeValue();
@@ -127,9 +123,15 @@ final class BrokerRequestManager extends Actor {
       final TransportRequestSender sender,
       final Duration requestTimeout) {
 
+    final var partitionGroup = request.getPartitionGroup();
+    if (partitionGroup == null) {
+      returnFuture.completeExceptionally(missingPartitionGroupException(request));
+      return;
+    }
+
     final BrokerAddressProvider nodeIdProvider;
     try {
-      nodeIdProvider = determineBrokerNodeIdProvider(request);
+      nodeIdProvider = determineBrokerNodeIdProvider(request, partitionGroup);
     } catch (final PartitionNotFoundException e) {
       returnFuture.completeExceptionally(e);
       metrics.registerFailedRequest(
@@ -153,12 +155,11 @@ final class BrokerRequestManager extends Actor {
 
     actor.runOnCompletion(
         responseFuture,
-        (clientResponse, error) -> {
+        (final DirectBuffer clientResponse, final @Nullable Throwable error) -> {
           RequestResult result = null;
           try {
             if (error == null) {
-              final BrokerResponse<T> response =
-                  request.getResponse(requireNonNull(clientResponse));
+              final BrokerResponse<T> response = request.getResponse(clientResponse);
 
               result = handleResponse(response, returnFuture);
               if (result.wasProcessed()) {
@@ -215,7 +216,8 @@ final class BrokerRequestManager extends Actor {
         return RequestResult.processed();
       } else if (response.isError()) {
         responseFuture.complete(response);
-        return RequestResult.failed(response.getError().getCode());
+        final var error = response.getError();
+        return RequestResult.failed(error == null ? ErrorCode.NULL_VAL : error.getCode());
       } else {
         responseFuture.completeExceptionally(response.toException());
       }
@@ -226,8 +228,8 @@ final class BrokerRequestManager extends Actor {
     return RequestResult.failed(ErrorCode.NULL_VAL);
   }
 
-  private BrokerAddressProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
-    final var partitionGroup = request.getPartitionGroup();
+  private BrokerAddressProvider determineBrokerNodeIdProvider(
+      final BrokerRequest<?> request, final String partitionGroup) {
     if (request.getBrokerId().isPresent()) {
       return BrokerAddressProvider.fixed(
           topologyManager, partitionGroup, clusterState -> request.getBrokerId().orElseThrow());
@@ -264,6 +266,13 @@ final class BrokerRequestManager extends Actor {
       // random broker of the request's partition group
       return BrokerAddressProvider.randomBroker(topologyManager, partitionGroup);
     }
+  }
+
+  private static IllegalStateException missingPartitionGroupException(
+      final BrokerRequest<?> request) {
+    return new IllegalStateException(
+        "Cannot send request '%s': no partition group (physical tenant) was set. Requests are not implicitly routed to the default tenant; call setPartitionGroup explicitly, even when targeting the default tenant."
+            .formatted(request.getType()));
   }
 
   private void throwIfPartitionInactive(final String partitionGroup, final int partitionId) {
