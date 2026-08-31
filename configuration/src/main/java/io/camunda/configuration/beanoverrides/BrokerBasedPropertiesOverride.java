@@ -484,8 +484,20 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(args, "connect.indexPrefix", database.getIndexPrefix());
 
+    // Guarded, unlike the fields above: those all carry a non-null default, so writing them
+    // unconditionally is harmless, while these two are unset unless someone configures them.
+    setArgIfNotNull(args, "connect.maxConnections", database.getMaxConnections());
+    setArgIfNotNull(args, "connect.maxConnectionsPerRoute", database.getMaxConnectionsPerRoute());
+
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
+  }
+
+  private void setArgIfNotNull(
+      final Map<String, Object> args, final String breadcrumb, final Object value) {
+    if (value != null) {
+      setArg(args, breadcrumb, value);
+    }
   }
 
   @SuppressWarnings("unchecked")

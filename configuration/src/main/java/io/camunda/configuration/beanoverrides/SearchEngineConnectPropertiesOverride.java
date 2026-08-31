@@ -63,6 +63,11 @@ public class SearchEngineConnectPropertiesOverride {
     populateFromSecurity(override);
     override.setIndexPrefix(database.getIndexPrefix());
 
+    // Resolves to the 'camunda.database' value already copied above when only that one is set, so
+    // writing it back unconditionally cannot drop it.
+    override.setMaxConnections(database.getMaxConnections());
+    override.setMaxConnectionsPerRoute(database.getMaxConnectionsPerRoute());
+
     override.setUsername(database.getUsername());
     override.setPassword(database.getPassword());
 
