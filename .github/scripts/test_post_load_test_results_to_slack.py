@@ -1,14 +1,9 @@
 """Unit tests for post-load-test-results-to-slack.py
 
 Regression coverage for the "400 invalid_blocks" failure: Slack caps a section block's
-mrkdwn text.text at 3000 characters. The flamegraph-links block used to itemize one bullet
-line per flamegraph artifact, which grew with (variants x pods x profiler events) -- 27
-lines (one third daily variant added on top of the existing two) pushed it past that cap.
-The fix has two parts: the calling workflow now renders the flamegraph block as a single
-link to the run's artifacts page instead of one line per artifact (structurally incapable
-of hitting the cap), and this script's text_blocks() defensively splits any block that
-still manages to exceed the cap (dash_links, the results table) into multiple blocks on
-line boundaries.
+mrkdwn text.text at 3000 characters. The workflow now sends one workflow output/artifacts
+link instead of one flamegraph link per artifact, and this script defensively splits any
+block that still exceeds the cap.
 
 Run with:
     pytest .github/scripts/test_post_load_test_results_to_slack.py
@@ -94,10 +89,8 @@ def _variant(key, label, namespace_suffix, soak_end_epoch=1756612345, results=No
 
 
 def _flamegraph_link():
-    # Matches what the `List flamegraph artifacts` workflow step actually emits: one link to
-    # the run's artifacts page, not one line per flamegraph artifact (see module docstring).
     run_url = "https://github.com/camunda/camunda/actions/runs/33350392886"
-    return f"<{run_url}|View in this run's artifacts>"
+    return f"<{run_url}|Workflow output and artifacts>"
 
 
 def _assert_all_blocks_valid(blocks, max_blocks=50):
@@ -138,11 +131,6 @@ class TestBlockLimits:
         _assert_all_blocks_valid(payload["blocks"])
 
     def test_flamegraph_link_renders_as_a_single_short_block_regardless_of_variant_count(self):
-        # given: the real shape FLAMEGRAPH_LINKS now takes -- a single link to the run's
-        # artifacts page, built once by the workflow regardless of how many variants, pods,
-        # or profiler events actually ran (see module docstring for what itemizing every
-        # artifact used to cost). Three variants here to also confirm the link's size is
-        # independent of variant count, not just small by coincidence.
         variants = [
             _variant("grpc", "gRPC", "grpc"),
             _variant("rest", "REST", "rest"),
@@ -158,6 +146,11 @@ class TestBlockLimits:
         ]
         assert len(flamegraph_blocks) == 1, "a single link must never need splitting"
         assert flamegraph_link in flamegraph_blocks[0]["text"]["text"]
+
+    def test_oversized_single_line_still_stays_within_block_limit(self):
+        payload = _run([_variant("grpc", "gRPC", "grpc")], flamegraph_links="x" * 5000)
+
+        _assert_all_blocks_valid(payload["blocks"])
 
     def test_no_flamegraph_links_omits_the_flamegraphs_block(self):
         payload = _run([_variant("grpc", "gRPC", "grpc")], flamegraph_links="")

@@ -24,14 +24,10 @@ Required environment variables:
 Optional:
   QUERIES_YAML        Path to queries.yaml. Default:
                       load-tests/docs/scripts/queries.yaml
-  FLAMEGRAPH_LINKS    Pre-rendered Slack mrkdwn: a single link to this run's artifacts page
-                      (e.g. "<url|View in this run's artifacts>"), built by the `List
-                      flamegraph artifacts` step in the calling job via actions/github-script
-                      + listWorkflowRunArtifacts. Empty or unset omits the flamegraphs line.
-                      Deliberately one link rather than one per flamegraph artifact -- with 3
-                      profiler events x 3 pods x N variants, itemizing every artifact made
-                      this block's length scale with variant count (see SLACK_TEXT_LIMIT
-                      below for what that caused).
+  FLAMEGRAPH_LINKS    Pre-rendered Slack mrkdwn link to the workflow output and artifacts.
+                      Empty or unset omits the flamegraphs line. Deliberately one link rather
+                      than one per flamegraph artifact, so this block stays small as variants,
+                      pods, and profiler events grow.
 """
 import json
 import os
@@ -107,24 +103,23 @@ dash_links = ' · '.join(
     for v in variants
 )
 
-# Slack caps a section block's mrkdwn text.text at 3000 characters. dash_links and the table
-# both grow with the number of daily variants, so they're kept defensively splittable here too
-# -- but the original "400 invalid_blocks" failure this guards against actually came from the
-# flamegraph-links block: it used to itemize one bullet line per flamegraph artifact, which
-# (with 3 profiler events x 3 pods per variant) scaled directly with variant count -- 18
-# lines/2937 chars with two variants, 27 lines/4395 chars once a third variant tripled the
-# profiled-pod count. That block is now a single link (see FLAMEGRAPH_LINKS above), which is
-# structurally incapable of hitting this cap regardless of variant count. Split any text that
-# would exceed the cap into multiple blocks on line boundaries, so a link/row is never cut
-# mid-line.
+# Slack caps a section block's mrkdwn text.text at 3000 characters. Keep every block below
+# that limit so larger tables, or future variant additions, cannot make Slack reject the
+# whole payload with "400 invalid_blocks".
 SLACK_TEXT_LIMIT = 3000
 
 
-def _chunk_lines(text, limit):
+def _chunk_text(text, limit):
     lines = text.split('\n')
     chunks = []
     current = ''
     for line in lines:
+        while len(line) > limit:
+            if current:
+                chunks.append(current)
+                current = ''
+            chunks.append(line[:limit])
+            line = line[limit:]
         candidate = line if not current else f'{current}\n{line}'
         if len(candidate) > limit and current:
             chunks.append(current)
@@ -144,7 +139,7 @@ def text_blocks(text, wrap=lambda chunk: chunk):
     overhead = len(wrap(''))
     return [
         {'type': 'section', 'text': {'type': 'mrkdwn', 'text': wrap(chunk)}}
-        for chunk in _chunk_lines(text, SLACK_TEXT_LIMIT - overhead)
+        for chunk in _chunk_text(text, SLACK_TEXT_LIMIT - overhead)
     ]
 
 

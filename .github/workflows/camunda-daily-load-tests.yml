@@ -2,7 +2,7 @@
 #              and REST (both against Elasticsearch), and no-secondary-storage (exporters
 #              disabled). After a 15-minute warmup, profiles the next 30 minutes of each variant
 #              via async-profiler. After a 3-hour soak: snapshots metrics as a GitHub artifact,
-#              posts a side-by-side summary table (with flamegraph links) to Slack, then
+#              posts a side-by-side summary table to Slack with a workflow output link, then
 #              immediately deletes the namespaces to reduce cost.
 #              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
 #              Each variant's full lifecycle (setup, warmup, profile, soak, collect-metrics,
@@ -200,35 +200,11 @@ jobs:
     if: always() && needs.aggregate-metrics.result == 'success' && needs.aggregate-metrics.outputs.variants-json != '[]'
     timeout-minutes: 5
     permissions:
-      actions: read
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: List flamegraph artifacts
-        id: flamegraph-artifacts
-        # Best-effort enhancement: a failure here shouldn't block the Slack results
-        # notification, it just means the Slack message omits the flamegraph link.
-        #
-        # One link to the run's own artifacts page, not one line per flamegraph artifact:
-        # with 3 profiler events x 3 pods x N variants, itemizing every artifact made this
-        # block's length scale with variant count (27 lines / 4395 chars once a third daily
-        # variant was added, over Slack's 3000-char section-text cap -- see #61442). A single
-        # link is both simpler to read in Slack and structurally incapable of hitting that
-        # cap no matter how many variants or pods this ever grows to.
-        continue-on-error: true
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            const { data } = await github.rest.actions.listWorkflowRunArtifacts({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.runId,
-            });
-            const hasFlamegraphs = data.artifacts.some(a => a.name.startsWith('flamegraph-'));
-            const runURL = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            core.setOutput('links', hasFlamegraphs ? `<${runURL}|View in this run's artifacts>` : '');
       - name: Import Slack webhook from Vault
         id: slack-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -249,7 +225,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
-          FLAMEGRAPH_LINKS: ${{ steps.flamegraph-artifacts.outputs.links }}
+          FLAMEGRAPH_LINKS: '<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|Workflow output and artifacts>'
         run: python3 .github/scripts/post-load-test-results-to-slack.py
       - name: Observe build status
         if: always()
