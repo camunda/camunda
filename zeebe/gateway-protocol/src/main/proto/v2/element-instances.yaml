@@ -37,6 +37,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /element-instances/wait-states/search:
     post:
@@ -75,6 +76,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /element-instances/{elementInstanceKey}:
     get:
@@ -120,6 +122,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /element-instances/{elementInstanceKey}/variables:
     put:
@@ -169,6 +172,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-added-in-version: "8.6"
       x-added-in-version-override: "8.6"
+      x-scope: physical-tenant
 
   /element-instances/{elementInstanceKey}/incidents/search:
     post:
@@ -225,6 +229,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
     post:
@@ -276,6 +281,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
 ## Schema definitions
 

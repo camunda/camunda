@@ -37,6 +37,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /exporting/pause:
     post:
@@ -78,6 +79,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /exporting/resume:
     post:
@@ -105,6 +107,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
 components:
   schemas:
