@@ -906,9 +906,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   /**
-   * Peeks the version of the first not-yet-exported record, using its own throwaway reader
-   * instead of the {@link #logStreamReader} field the main export loop owns, since that one's
-   * cursor is actively advancing and isn't available at all in passive mode.
+   * Peeks the version of the first not-yet-exported record, using its own throwaway reader instead
+   * of the {@link #logStreamReader} field the main export loop owns, since that one's cursor is
+   * actively advancing and isn't available at all in passive mode.
    *
    * @return {@code null} if every record up to the log head has already been exported
    */
