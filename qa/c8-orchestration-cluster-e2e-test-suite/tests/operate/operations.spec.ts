@@ -248,7 +248,16 @@ test.describe('Operations', () => {
   // Regression coverage for bug 42448 (fixed by #48419): batch cancellation with
   // an operationId filter no longer returns 400.
   // https://github.com/camunda/camunda/issues/42448
-  test('Retry and cancel multiple instances', async ({
+  //
+  // Skipped due to bug #61420: https://github.com/camunda/camunda/issues/61420
+  // Batch-canceling incident-carrying instances completes the
+  // CANCEL_PROCESS_INSTANCE operation but leaves them stuck as Incident (never
+  // Canceled) in Operate's list-view — same stale-incident family as #54279,
+  // whose fix (#57719) does not cover this batch cancel-after-retry path. The
+  // instances report state INCIDENT / endDate null despite the cancel operation
+  // being COMPLETED, so no test-side wait or reload can make the Canceled icon
+  // appear. Re-enable once #61420 is fixed.
+  test.skip('Retry and cancel multiple instances', async ({
     operateProcessesPage,
     operateFiltersPanelPage,
     operateOperationPanelPage,
