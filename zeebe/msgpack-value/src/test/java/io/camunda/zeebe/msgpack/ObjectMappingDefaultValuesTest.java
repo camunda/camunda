@@ -153,4 +153,32 @@ public final class ObjectMappingDefaultValuesTest {
     assertThatBuffer(pojo.getBinary()).hasBytes(wrapString("defaultBinary"));
     assertThat(pojo.getNestedObject().getLong()).isEqualTo(-1L);
   }
+
+  @Test
+  public void shouldUseDefaultValueWhenEnumValueIsUnknown() {
+    // given
+    final var msgPackBuffer =
+        encodeMsgPack(
+            (w) -> {
+              w.writeMapHeader(1);
+              w.writeString(wrapString("enumProp"));
+              w.writeString(wrapString("UNKNOWN"));
+            });
+    final var packedDefault = encodeMsgPack((w) -> w.writeMapHeader(0));
+    final var pojo =
+        new AllTypesDefaultValuesPOJO(
+            POJOEnum.BAR,
+            654L,
+            123,
+            "defaultString",
+            packedDefault,
+            wrapString("defaultBinary"),
+            new POJONested());
+
+    // when
+    pojo.wrap(msgPackBuffer);
+
+    // then
+    assertThat(pojo.getEnum()).isEqualTo(POJOEnum.BAR);
+  }
 }
