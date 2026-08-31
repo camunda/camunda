@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import '@camunda/design-system/styles.css';
 import './c4-ui.scss';
 import {ComponentProps, useEffect, useLayoutEffect, useMemo, useState} from 'react';
 import {useHistory, useLocation} from 'react-router-dom';
