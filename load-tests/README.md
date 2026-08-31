@@ -76,8 +76,9 @@ graph TD
     VARIANT -- "always profiles first<br/>30min of each variant" --> PROFILE
     VARIANT -- "3hr soak, then<br/>snapshot metrics" --> METRICS
     VARIANT -- "delete namespace<br/>after metrics" --> DELETE
-    WEEKLY -- "3 parallel calls:<br/>realistic, opensearch-realistic,<br/>rdbms-realistic" --> CORE
-    WEEKLY -- "ECS" --> ECS
+    WEEKLY -- "main: 3 parallel calls,<br/>realistic, opensearch-realistic,<br/>rdbms-realistic" --> CORE
+    WEEKLY -- "main: ECS" --> ECS
+    WEEKLY -- "stable: 1 job per branch<br/>(cross-branch ref)" --> CORE
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
