@@ -80,7 +80,7 @@ public class PublicApiProcessDefinitionDeletionIT extends AbstractCCSMIT {
     seedProcessDefinition(processDefinitionKey);
     embeddedOptimizeExtension
         .getBean(ProcessDefinitionWriter.class)
-        .markDefinitionAsDeleted(processDefinitionKey);
+        .softDeleteDefinition(processDefinitionKey);
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
@@ -130,15 +130,12 @@ public class PublicApiProcessDefinitionDeletionIT extends AbstractCCSMIT {
     assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
   }
 
-  @ParameterizedTest
-  @EnumSource(
-      value = JobStatus.class,
-      names = {"QUEUED", "COMPLETED"})
-  public void shouldReturn409WhenBlockingEntryAlreadyExists(final JobStatus blockingStatus) {
+  @Test
+  public void shouldReturn409WhenBlockingQueuedEntryExists() {
     // given
     final String processDefinitionKey = "100000000000003";
     seedProcessDefinition(processDefinitionKey);
-    seedJobRegistryEntry(processDefinitionKey, blockingStatus);
+    seedJobRegistryEntry(processDefinitionKey, JobStatus.QUEUED);
 
     // when
     final Response response =
@@ -177,12 +174,16 @@ public class PublicApiProcessDefinitionDeletionIT extends AbstractCCSMIT {
     assertThat(secondResponse.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
   }
 
-  @Test
-  public void shouldReturn202AndQueueNewJobWhenExistingEntryHasFailedStatus() {
+  @ParameterizedTest
+  @EnumSource(
+      value = JobStatus.class,
+      names = {"COMPLETED", "FAILED"})
+  public void shouldReturn202AndQueueNewJobWhenExistingEntryHasCompletedOrFailedStatus(
+      final JobStatus nonBlockingStatus) {
     // given
     final String processDefinitionKey = "100000000000004";
     seedProcessDefinition(processDefinitionKey);
-    seedJobRegistryEntry(processDefinitionKey, JobStatus.FAILED);
+    seedJobRegistryEntry(processDefinitionKey, nonBlockingStatus);
 
     // when
     final Response response =

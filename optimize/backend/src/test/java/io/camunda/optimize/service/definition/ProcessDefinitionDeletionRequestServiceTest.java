@@ -104,17 +104,14 @@ public class ProcessDefinitionDeletionRequestServiceTest {
     verify(jobRegistryWriter, never()).createJobEntry(any(), any(), any());
   }
 
-  @ParameterizedTest
-  @EnumSource(
-      value = JobStatus.class,
-      names = {"QUEUED", "COMPLETED"})
-  public void shouldRejectWhenBlockingEntryAlreadyExists(final JobStatus blockingStatus) {
+  @Test
+  public void shouldRejectWhenBlockingQueuedEntryExists() {
     // given
     when(processDefinitionReader.processDefinitionExists(PROCESS_DEFINITION_ID)).thenReturn(true);
     final JobRegistryEntryDto existingEntry =
         new JobRegistryEntryDto(
             JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID);
-    existingEntry.setStatus(blockingStatus);
+    existingEntry.setStatus(JobStatus.QUEUED);
     when(jobRegistryReader.findLastByJobTypeAndEntityId(
             JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID))
         .thenReturn(Optional.of(existingEntry));
@@ -128,17 +125,21 @@ public class ProcessDefinitionDeletionRequestServiceTest {
     verify(jobRegistryWriter, never()).createJobEntry(any(), any(), any());
   }
 
-  @Test
-  public void shouldQueueNewJobWhenExistingEntryHasFailedStatus() {
+  @ParameterizedTest
+  @EnumSource(
+      value = JobStatus.class,
+      names = {"COMPLETED", "FAILED"})
+  public void shouldQueueNewJobWhenExistingEntryHasCompletedOrFailedStatus(
+      final JobStatus nonBlockingStatus) {
     // given
     when(processDefinitionReader.processDefinitionExists(PROCESS_DEFINITION_ID)).thenReturn(true);
-    final JobRegistryEntryDto failedEntry =
+    final JobRegistryEntryDto existingEntry =
         new JobRegistryEntryDto(
             JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID);
-    failedEntry.setStatus(JobStatus.FAILED);
+    existingEntry.setStatus(nonBlockingStatus);
     when(jobRegistryReader.findLastByJobTypeAndEntityId(
             JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID))
-        .thenReturn(Optional.of(failedEntry));
+        .thenReturn(Optional.of(existingEntry));
 
     // when
     underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_ID);

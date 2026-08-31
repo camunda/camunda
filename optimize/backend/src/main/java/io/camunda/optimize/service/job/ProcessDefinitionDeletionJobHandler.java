@@ -116,10 +116,10 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
     final String tenantId = definition.get().getTenantId();
     final String version = definition.get().getVersion();
 
-    // Soft-delete first so a terminal failure anywhere below leaves the deletion retriable
+    // Soft-delete first
     withRetry(
-        "mark process definition as deleted " + definitionId,
-        () -> processDefinitionWriter.markDefinitionAsDeleted(definitionId));
+        "soft-delete process definition " + definitionId,
+        () -> processDefinitionWriter.softDeleteDefinition(definitionId));
     withRetry(
         "delete process instances for definition " + definitionId,
         () -> processInstanceWriter.deleteInstancesByDefinitionId(bpmnProcessId, definitionId));
@@ -149,11 +149,6 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
           "clear cached XML for reports referencing " + bpmnProcessId,
           () -> reportService.clearCachedReportXml(bpmnProcessId, tenantId));
     }
-
-    // Hard-delete last
-    withRetry(
-        "delete process definition " + definitionId,
-        () -> processDefinitionWriter.deleteDefinition(definitionId));
   }
 
   private void withRetry(final String description, final Runnable runnable) {
