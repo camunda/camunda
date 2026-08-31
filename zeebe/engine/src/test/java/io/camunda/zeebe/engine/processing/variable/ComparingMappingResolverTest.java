@@ -55,6 +55,7 @@ final class ComparingMappingResolverTest {
   void tearDown() {
     recorder.stop();
     log4jLogger.removeAppender(recorder);
+    log4jLogger.setLevel(null); // restore inherited level so other tests in the fork are unaffected
   }
 
   private static DirectBuffer bufferOf(final String s) {
