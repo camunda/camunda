@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-adr docs-version-current docs-doc-page docs-doc-id-storage/remove-numeric-key-from-identity-entity-filters" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.2">
+<title data-rh="true">Remove internal numeric key fields from Identity entity filter builders | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-58288/adr/storage/remove-numeric-key-from-identity-entity-filters/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Remove internal numeric key fields from Identity entity filter builders | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Identity team"><meta data-rh="true" property="og:description" content="DRI: Identity team"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-58288/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-58288/adr/storage/remove-numeric-key-from-identity-entity-filters/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-58288/adr/storage/remove-numeric-key-from-identity-entity-filters/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-58288/adr/storage/remove-numeric-key-from-identity-entity-filters/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-58288/assets/css/styles.44533d03.css">
+<script src="/camunda/pr-preview/pr-58288/assets/js/runtime~main.d203d30c.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-58288/assets/js/main.bafdac96.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda/pr-preview/pr-58288/img/black-C.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda/pr-preview/pr-58288/"><div class="navbar__logo"><img src="/camunda/pr-preview/pr-58288/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda/pr-preview/pr-58288/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Platform</b></a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><main class="docMainContainer_TBSr docMainContainerEnhanced_lQrH"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Remove internal numeric key fields from Identity entity filter builders</h1></header>
+<p><strong>DRI</strong>: Identity team</p>
+<p><strong>Status</strong>: Accepted (8.10)</p>
+<p><strong>Purpose</strong>: Record the decision to drop internal numeric <code>key</code> filter fields from
+the Identity entity filter builders (<code>UserFilter</code>, <code>GroupFilter</code>, <code>TenantFilter</code>,
+<code>MappingRuleFilter</code>) in the search domain, and to fix the boundary of that cleanup
+so future filters follow the same rule.</p>
+<p><strong>Audience</strong>: Engineers and AI coding agents working on the search domain
+(<code>search/</code>, <code>db/</code>) and the Identity entity REST/query APIs.</p>
+<p>Relates to: camunda/camunda#41657 (parent), camunda/camunda#51088,
+camunda/camunda#51089, camunda/camunda#51090. Follow-up: camunda/camunda#51091.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">Context<a href="#context" class="hash-link" aria-label="Direct link to Context" title="Direct link to Context" translate="no">​</a></h2>
+<p>Identity entities (User, Group, Tenant, MappingRule) each carry two identifiers:</p>
+<ol>
+<li class="">An internal numeric <code>key</code> — a database-sequence value that is an implementation
+detail of how the entity is stored.</li>
+<li class="">A user-provided string ID — <code>username</code>, <code>groupId</code>, <code>tenantId</code>, <code>mappingRuleId</code>
+— which is the canonical external identifier.</li>
+</ol>
+<p>The search-domain filter builders for these entities previously exposed a method to filter by
+the internal numeric key (e.g. <code>UserFilter.Builder.key(Long)</code> mapping to the
+<code>key</code> term of the user index). These key filters were:</p>
+<ul>
+<li class=""><strong>Never reachable from the REST API</strong> — no v2 search endpoint accepts a numeric
+key as a filter parameter for these entities.</li>
+<li class=""><strong>Never populated from external requests</strong> — no production service code set the
+field; the only consumers were internal/test code (e.g.
+<code>UserDbReader.findOne(long)</code>).</li>
+<li class=""><strong>Contradictory to the design intent</strong> that string IDs are the canonical external
+identifiers for Identity entities.</li>
+</ul>
+<p><code>RoleFilter</code> set the precedent: its <code>roleKey</code> had already been removed, leaving
+<code>roleId</code> (string) as the only filter identifier. The remaining four entities were
+inconsistent with it.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
+<p><strong>D1. Remove the numeric key filter field from <code>UserFilter</code>, <code>GroupFilter</code>,
+<code>TenantFilter</code>, and <code>MappingRuleFilter</code>.</strong></p>
+<p>This includes the record field, the builder method, the <code>toBuilder()</code> copy, the
+query transformer mapping (<code>... -&gt; term(KEY, ...)</code>), and the RDBMS reader/mapper
+plumbing that consumed it. <code>UserDbReader.findOne(long)</code> is deleted as the sole
+internal caller with zero non-test production callers.</p>
+<p>Identity entities are filtered exclusively by their business string IDs.</p>
+<p>Implemented and merged:</p>
+<ul>
+<li class=""><code>UserFilter</code> / <code>GroupFilter</code> — camunda/camunda#51088 (PR camunda/camunda#54110).</li>
+<li class=""><code>TenantFilter</code> / <code>MappingRuleFilter</code> — camunda/camunda#51089.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="explicitly-out-of-scope">Explicitly out of scope<a href="#explicitly-out-of-scope" class="hash-link" aria-label="Direct link to Explicitly out of scope" title="Direct link to Explicitly out of scope" translate="no">​</a></h2>
+<ul>
+<li class=""><strong><code>AuthorizationFilter.authorizationKey</code></strong> stays. Authorizations have no string-ID
+equivalent; the numeric key <em>is</em> the externally-exposed primary identifier
+(<code>/authorizations/{authorizationKey}</code>). It is a legitimate REST-facing key, not an
+internal one.</li>
+<li class=""><strong>Sort fields</strong> (<code>UserSort.key()</code>, <code>GroupSort.groupKey()</code>, <code>TenantSort.tenantKey()</code>,
+<code>MappingRuleSort.mappingRuleKey()</code>) are a separate concern and are not touched here.
+The entity indexes retain their <code>key</code> field and key-based <em>sorting</em> continues to
+work. Most sort keys are already hidden from the OpenAPI spec, but the Tenant search
+endpoint still exposes <code>key</code> as a sort option — reconciling that asymmetry is tracked
+separately in camunda/camunda#51091 and requires a breaking-change decision.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences">Consequences<a href="#consequences" class="hash-link" aria-label="Direct link to Consequences" title="Direct link to Consequences" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="positive">Positive<a href="#positive" class="hash-link" aria-label="Direct link to Positive" title="Direct link to Positive" translate="no">​</a></h3>
+<ul>
+<li class="">The filter builder API accurately reflects what can be filtered on externally.</li>
+<li class="">Reduces the internal API surface and removes a misleading, unreachable parameter.</li>
+<li class="">Aligns all Identity entity filters with the <code>RoleFilter</code> precedent, giving future
+filters a single clear rule: filter by business string ID, not internal key.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="negative">Negative<a href="#negative" class="hash-link" aria-label="Direct link to Negative" title="Direct link to Negative" translate="no">​</a></h3>
+<ul>
+<li class="">Internal and test code that used key-based filters had to be updated. This is
+accepted, one-time churn with no external impact.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alternatives-considered">Alternatives considered<a href="#alternatives-considered" class="hash-link" aria-label="Direct link to Alternatives considered" title="Direct link to Alternatives considered" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>Keep the key filters &quot;just in case&quot;.</strong> Rejected: they were dead, unreachable
+surface that diverged from the string-ID design and confused readers of the API.</li>
+<li class=""><strong>Also remove the key sort fields in the same change.</strong> Rejected: the Tenant sort
+<code>key</code> is live in the OpenAPI spec, so removing it is a breaking change that needs
+its own discussion (camunda/camunda#51091) rather than being bundled here.</li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/adr/storage/001-remove-numeric-key-from-identity-entity-filters.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a></li><li><a href="#explicitly-out-of-scope" class="table-of-contents__link toc-highlight">Explicitly out of scope</a></li><li><a href="#consequences" class="table-of-contents__link toc-highlight">Consequences</a><ul><li><a href="#positive" class="table-of-contents__link toc-highlight">Positive</a></li><li><a href="#negative" class="table-of-contents__link toc-highlight">Negative</a></li></ul></li><li><a href="#alternatives-considered" class="table-of-contents__link toc-highlight">Alternatives considered</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+</body>
+</html>

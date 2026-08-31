@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Architecture Decision Records | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-58288/adr/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Architecture Decision Records | Camunda Platform"><meta data-rh="true" name="description" content="This directory contains ADRs for decisions that affect multiple modules across the monorepo."><meta data-rh="true" property="og:description" content="This directory contains ADRs for decisions that affect multiple modules across the monorepo."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-58288/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-58288/adr/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-58288/adr/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-58288/adr/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-58288/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-58288/assets/js/runtime~main.e6ab3ebf.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-58288/assets/js/main.bf499eb3.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-58288/assets/js/runtime~main.d203d30c.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-58288/assets/js/main.bafdac96.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -38,11 +38,28 @@ the pre-configured cluster-admin (camunda/camunda#54898).</li>
 authoritative inventory of management endpoints in 8.10: per-tenant and
 cluster-wide surfaces, actuator query-parameter selection, cluster-wide
 backup contract, backwards compatibility.</li>
+<li class=""><code>management/004-cluster-wide-history-backup.md</code> -
+Response contract of the cluster-wide history backup endpoints: per-tenant
+outcomes with no cluster-level aggregate, absence treated as success rather
+than failure, an all-or-nothing fan-out, and why the <code>backupHistory</code>
+actuator&#x27;s backwards-compatible shape is not inherited
+(camunda/camunda#57738).</li>
+<li class=""><code>management/005-per-physical-tenant-schema-initialization.md</code> — per-tenant
+secondary-storage schema initialization: concurrent per-tenant init with
+background retry, a startup gate released once every tenant has settled and
+one is serviceable (held on gateway nodes for Elasticsearch/OpenSearch, on
+every node for RDBMS), and a context abort only when every tenant fails
+terminally (camunda/camunda#57025, camunda/camunda#54299).</li>
 <li class=""><code>clients/0001-unify-spring-starter-on-multi-client-config-path.md</code> — collapse
 the <code>camunda-spring-boot-starter</code> onto a single (multi-client) auto-config
 path, remapping <code>camunda.client.*</code> to <code>camunda.clients.default.*</code>, with a
 <code>defaultCamundaClient</code> <code>@Primary</code> bean plus a <code>camundaClient</code> alias for
 backward compatibility (camunda/camunda#57344).</li>
+<li class=""><code>storage/001-remove-numeric-key-from-identity-entity-filters.md</code> — drop the
+internal numeric <code>key</code> filter fields from <code>UserFilter</code>, <code>GroupFilter</code>,
+<code>TenantFilter</code>, and <code>MappingRuleFilter</code>; Identity entities are filtered by their
+business string IDs only, with <code>AuthorizationFilter.authorizationKey</code> and sort
+fields explicitly out of scope (camunda/camunda#41657).</li>
 <li class=""><code>security/002-tenant-access-provider-ownership-and-seam.md</code> — CSL <code>core</code> owns
 the concrete tenant-access provider and the <code>TenantOwnedEntity</code> contract; a
 uniform <code>TenantAccessProvider</code> seam across the read (search) and write

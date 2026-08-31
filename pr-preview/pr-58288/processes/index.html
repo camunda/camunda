@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Processes | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-58288/processes/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Processes | Camunda Platform"><meta data-rh="true" name="description" content="This page collects processes we follow in the camunda/camunda monorepo."><meta data-rh="true" property="og:description" content="This page collects processes we follow in the camunda/camunda monorepo."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-58288/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-58288/processes/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-58288/processes/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-58288/processes/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Processes","item":"https://camunda.github.io/camunda/pr-preview/pr-58288/processes"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-58288/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-58288/assets/js/runtime~main.e6ab3ebf.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-58288/assets/js/main.bf499eb3.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-58288/assets/js/runtime~main.d203d30c.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-58288/assets/js/main.bafdac96.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -24,6 +24,7 @@
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="approach">Approach<a href="#approach" class="hash-link" aria-label="Direct link to Approach" title="Direct link to Approach" translate="no">​</a></h3>
 <p>We want a fast feedback loop for any failed check on base branches that leads to short-term fixes and mid-term improvement work to prevent recurrence and increase reliability.</p>
+<p>By default we assume L1 severity for each CI incident created this way, until a preliminary investigation revealed that release-readiness and SNAPSHOT artifact generation are not impacted (can be downgraded to L2 then) - a reliability improvement is still needed.</p>
 <p>High-level steps:</p>
 <ul>
 <li class="">Detect GHA job failures across <code>on: push</code> and <code>on: schedule</code> workflows on <code>main</code> and <code>stable/*</code>.</li>
@@ -138,10 +139,13 @@
 <li class="">e.g. <a href="https://app.fossa.com/projects/custom%2B50756%2Fcamunda%2Fcamunda%40single-app/refs/branch/main/a23e32efeadc45545ae17ce70ed3908e3b9c5f7a/issues/licensing/10591187?revisionScanId=91861742" target="_blank" rel="noopener noreferrer" class="">issue</a> &amp; <a href="https://jira.camunda.com/browse/OSS-24" target="_blank" rel="noopener noreferrer" class="">Jira ticket</a></li>
 </ul>
 </li>
-<li class="">Delegate to the responsible team medics when Engineering actions are needed: use either of the 4 medics:<!-- -->
+<li class="">Delegate to the responsible team medics when Engineering actions are needed: use either of the below medics:<!-- -->
 <ul>
-<li class=""><strong>@core-features-medic</strong> (Operate, Optimize, Tasklist)</li>
-<li class=""><strong>@zeebe-medic</strong> (Zeebe Engine)</li>
+<li class=""><strong>@pod-operate-medic</strong> (Operate Frontend)</li>
+<li class=""><strong>@pod-employee-engagement-tasklist-medic</strong> (Tasklist Frontend)</li>
+<li class=""><strong>@bi-pod-medic</strong> (Optimize Frontend)</li>
+<li class=""><strong>@core-features-medic</strong> (Operate, Tasklist, Optimize Backend)</li>
+<li class=""><strong>@distributed-systems-medic</strong> (Zeebe Engine)</li>
 <li class=""><strong>@data-layer-medic</strong> (Elasticsearch, Opensearch, RDBMS layer)</li>
 <li class=""><strong>@identity-medic</strong> (Identity) to delegate.</li>
 <li class=""><em>If you&#x27;re not sure about which medic to choose, pick the one that makes most sense to you. They will reroute you to the right one.</em></li>
@@ -159,20 +163,16 @@
 <li class="">Debug problems on GitHub Actions level yourself, involve the stakeholder teams (via their medic) or subject-matter experts for advice on technical details in certain sub-areas:<!-- -->
 <ul>
 <li class="">CI Knowledge Base: <a href="https://camunda.github.io/camunda/ci" target="_blank" rel="noopener noreferrer" class="">https://camunda.github.io/camunda/ci</a></li>
-<li class="">Core Features: <strong>@core-features-medic</strong> on Slack (e.g. issues with Operate, Optimize, Tasklist)</li>
-<li class="">Core Foundations:<!-- -->
-<ul>
+<li class="">Core Features: <strong>@core-features-medic</strong> on Slack (e.g. issues with backend/Java code of Operate, Optimize, Tasklist)</li>
 <li class="">Data Layer: <strong>@data-layer-medic</strong> on Slack (e.g. issues with OpenSearch/Elasticsearch tests)</li>
+<li class="">Distributed Systems: <strong>@distributed-systems-medic</strong> on Slack</li>
+<li class="">Distribution: <strong>@distro-medic</strong> on Slack (e.g. Helm chart integration tests, C8run)</li>
 <li class="">Identity: <strong>@identity-medic</strong> on Slack (e.g. issues with Identity and Identity Management)</li>
-<li class="">Zeebe: <strong>@zeebe-medic</strong> on Slack</li>
-</ul>
-</li>
-<li class="">Self-Managed:<!-- -->
-<ul>
-<li class="">Distro <strong>@distro-medic</strong> on Slack (e.g. Helm chart integration tests)</li>
-</ul>
-</li>
-<li class="">Infra: <strong>@infra-medic</strong> on Slack (e.g. self-hosted runner problems, Vault issues)</li>
+<li class="">Infra: <strong>@infra-medic</strong> on Slack (e.g. self-hosted runner problems, Vault issues, Harbor issues)</li>
+<li class="">Operate frontend: <strong>@pod-operate-medic</strong> on Slack</li>
+<li class="">Optimize frontend: <strong>@bi-pod-medic</strong> on Slack</li>
+<li class="">Reliability testing: <strong>@reliability-testing-medic</strong> on Slack (e.g. load test CI or benchmark infra issues)</li>
+<li class="">Tasklist frontend: <strong>@pod-employee-engagement-tasklist-medic</strong> on Slack</li>
 </ul>
 </li>
 <li class="">Try to identify a (limited) workaround to unblock users.</li>

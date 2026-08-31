@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Getting started | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-58288/frontend/getting-started/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Getting started | Camunda Platform"><meta data-rh="true" name="description" content="This guide gets you to a running webapp/client on http3000,"><meta data-rh="true" property="og:description" content="This guide gets you to a running webapp/client on http3000,"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-58288/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-58288/frontend/getting-started/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-58288/frontend/getting-started/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-58288/frontend/getting-started/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Frontend","item":"https://camunda.github.io/camunda/pr-preview/pr-58288/frontend/"},{"@type":"ListItem","position":2,"name":"Getting started","item":"https://camunda.github.io/camunda/pr-preview/pr-58288/frontend/getting-started"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-58288/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-58288/assets/js/runtime~main.e6ab3ebf.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-58288/assets/js/main.bf499eb3.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-58288/assets/js/runtime~main.d203d30c.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-58288/assets/js/main.bafdac96.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -39,8 +39,9 @@ Windows users install via WSL or <code>choco install make</code>.</li>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="run-the-frontend">Run the frontend<a href="#run-the-frontend" class="hash-link" aria-label="Direct link to Run the frontend" title="Direct link to Run the frontend" translate="no">​</a></h2>
 <p>From <code>webapp/client</code>:</p>
 <div class="language-sh codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-sh codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">npm run dev:oc</span><br></div></code></pre></div></div>
-<p>The dev server opens <code>http://localhost:3000</code>. Vite proxies <code>/v2</code>, <code>/login</code>, and
-<code>/logout</code> to <code>:8080</code>, so the frontend talks to the backend you started above.</p>
+<p>The dev server opens <code>http://localhost:3000</code>. Vite proxies <code>/v2</code>, <code>/login</code>,
+<code>/logout</code>, and <code>/session/heartbeat</code> to <code>:8080</code>, so the frontend talks to the
+backend you started above.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="verify">Verify<a href="#verify" class="hash-link" aria-label="Direct link to Verify" title="Direct link to Verify" translate="no">​</a></h2>
 <ul>
 <li class="">The dev page renders in the browser.</li>

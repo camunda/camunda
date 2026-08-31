@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Architecture Documentation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-58288/identity/architecture/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-identity-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-identity-current"><meta data-rh="true" property="og:title" content="Architecture Documentation | Camunda Platform"><meta data-rh="true" name="description" content="1. Introduction and goals"><meta data-rh="true" property="og:description" content="1. Introduction and goals"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-58288/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-58288/identity/architecture/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-58288/identity/architecture/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-58288/identity/architecture/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Architecture Documentation","item":"https://camunda.github.io/camunda/pr-preview/pr-58288/identity/architecture"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-58288/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-58288/assets/js/runtime~main.e6ab3ebf.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-58288/assets/js/main.bf499eb3.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-58288/assets/js/runtime~main.d203d30c.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-58288/assets/js/main.bafdac96.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -86,8 +86,8 @@ Authentication logic builds on Spring Security, configured via CAMUNDA_SECURITY_
 Support for Basic and OIDC, with OIDC as the recommended method for production; optional no‑auth for simple setups.</p>
 </li>
 <li class="">
-<p>Shared RBAC framework
-Authorization checks use the shared framework and behaviors owned by the Identity team but extensible by feature teams.</p>
+<p>External security library dependency
+Authorization and authentication checks are implemented on top of the <a href="https://github.com/camunda/camunda-security-library" target="_blank" rel="noopener noreferrer" class="">Camunda Security Library</a> (CSL), an external repository versioned independently and pinned via the <code>version.camunda-security-library</code> property in <code>parent/pom.xml</code>. The Identity team owns the local port implementations (state adapters, search-client scope repository, Spring wiring) that plug into CSL; the core authorization/authentication logic itself is out-of-repo.</p>
 </li>
 <li class="">
 <p>No Management Identity dependency for runtime
@@ -151,8 +151,8 @@ No separate identity database; Identity entities reuse Zeebe primary and seconda
 :   Fine‑grained authorizations per resource type and action (for example, PROCESS_DEFINITION<!-- -->:READ<!-- -->, USER_TASK<!-- -->:ASSIGN<!-- -->) across UIs and APIs.</p>
 <p>Cluster‑local tenant model
 :   Tenants are managed directly in Identity per cluster. Management Identity tenants remain only for Optimize in Self‑Managed.</p>
-<p>Extensible RBAC library
-:   Shared helpers and engine behaviors so feature teams can introduce new resource and permission types without re‑implementing authorization logic.</p>
+<p>Adopt the Camunda Security Library
+:   Delegate the authorization and authentication decisions themselves to CSL, along with the boundary types they are expressed in (<code>SecurityContext</code>, <code>CamundaAuthentication</code>, <code>RequiredAuthorization</code>, <code>TenantAccess</code>), so feature teams introduce new resource and permission types by implementing CSL&#x27;s ports rather than re‑implementing authorization logic locally.</p>
 <p>Reuse of Zeebe storage
 :   Identity entities are stored using Zeebe’s existing primary (RocksDB) and secondary (ES/OS/RDBMS) storage instead of a separate identity database.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-building-block-view">5. Building block view<a href="#5-building-block-view" class="hash-link" aria-label="Direct link to 5. Building block view" title="Direct link to 5. Building block view" translate="no">​</a></h2>
@@ -164,109 +164,156 @@ No separate identity database; Identity entities reuse Zeebe primary and seconda
 <li class="">Camunda Services: Enhances the commands and queries with the given authentication and the necessary authorizations.</li>
 <li class="">Camunda Search Client: Used for querying the secondary database against ES, OS, or RDBMS, depending on the configuration.</li>
 <li class="">Authentication: Contains authentication-related converters, helpers, utils, and services among others for spring security.</li>
-<li class="">Security: Performs authorization checks for queries against the secondary database via the shared RBAC framework and provides shared security helpers used by authentication components.</li>
+<li class="">Security: Builds the CSL security context for a request and provides shared security helpers used by authentication components; authorization decisions themselves are delegated to CSL.</li>
 <li class="">Zeebe: Is responsible for processing commands and storing state.</li>
 <li class="">Engine: Processes commands and applies state changes. Uses (engine) identity to check permissions for user- or client-initiated operations.</li>
-<li class="">Engine Identity: Shared RBAC engine used for authorization checks in the engine, there is no own module for it, it lives directly in the engine in &quot;identity&quot;.</li>
+<li class="">Engine Identity: Engine-side adapters that bridge Zeebe&#x27;s RocksDB state to CSL&#x27;s authorization/tenant ports; the actual authorization/tenant logic lives in CSL, there is no own module for it, the adapters live directly in the engine in &quot;identity&quot;.</li>
 <li class="">Primary Database: RocksDB used for Zeebe Engine state and OC Identity IAM records.</li>
 <li class="">Secondary Database: Elasticsearch, OpenSearch, or RDBMS used for search queries. Contains Runtime, History, and Identity data.</li>
+<li class="">Camunda Security Library (CSL): Library that performs the authorization and authentication decisions and assembles the Spring Security filter chain, and that supplies the boundary types OC passes across it (<code>SecurityContext</code>, <code>CamundaAuthentication</code>, <code>RequiredAuthorization</code>, <code>TenantAccess</code>). Developed in a separate repository (<a href="https://github.com/camunda/camunda-security-library" target="_blank" rel="noopener noreferrer" class="">camunda/camunda-security-library</a>) but compiled into the Orchestration Cluster artifact, not a remote service. Consumed as <code>camunda-security-library-api</code>, <code>-core</code>, <code>-spring-boot-starter</code>, and <code>-validation</code>, version pinned by the <code>version.camunda-security-library</code> property in <code>parent/pom.xml</code>.</li>
 </ul>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="csl-extension-points-and-ocs-adapters">CSL extension points and OC&#x27;s adapters<a href="#csl-extension-points-and-ocs-adapters" class="hash-link" aria-label="Direct link to CSL extension points and OC&#x27;s adapters" title="Direct link to CSL extension points and OC&#x27;s adapters" translate="no">​</a></h4>
+<p>CSL follows a ports-and-adapters design: it owns the authorization and authentication logic and
+declares extension points for everything it needs from the host. The two tables below are the
+contract surface between the two repositories — CSL&#x27;s internal behaviour is documented in the
+<a href="https://github.com/camunda/camunda-security-library/blob/main/docs/architecture/05-building-block-view.md" target="_blank" rel="noopener noreferrer" class="">CSL architecture documentation</a>,
+sections 5.4 (hexagonal architecture) and 5.5 (engine authorization integration), and is not
+repeated here.</p>
+<p>Two kinds of type cross the boundary, and they point in opposite directions:</p>
+<ul>
+<li class=""><strong>Callback extension points</strong> — interfaces CSL declares and <em>calls into</em>. OC implements them, so
+CSL can reach host data (RocksDB, the search index, the session store) and host decisions without
+depending on OC. Not all are named <code>*Port</code>.</li>
+<li class=""><strong>Data contracts</strong> — shapes OC&#x27;s <em>own</em> domain types implement so CSL can <em>read</em> them. No adapter
+is involved; the coupling is that OC&#x27;s entities carry the members CSL expects.</li>
+</ul>
+<p>Both couple at compile time, which is why both are named here (see the naming convention below), but
+only the first is a ports-and-adapters seam.</p>
+<p><strong>Naming convention used in this document and the linked authorization docs.</strong> A CSL class name may
+appear here only if it falls into one of two categories, both defined by whether a rename on CSL&#x27;s
+side would break our build:</p>
+<ol>
+<li class=""><strong>Types OC implements or extends</strong> — everything in the two tables below. This half is mechanical:
+the tables <em>are</em> the list, and the sweep described under <a href="#10-risks-and-technical-debt" class="">10. Risks</a>
+regenerates it.</li>
+<li class=""><strong>Types OC builds the value of and passes across the boundary</strong> — <code>RequiredAuthorization</code>,
+<code>SecurityContext</code>, <code>TenantAccess</code>, <code>AuthorizationCondition</code>, <code>ResourceAccessChecks</code>. OC code
+populates these field by field on the way in or reads them on the way out.</li>
+</ol>
+<p>Everything else on CSL&#x27;s side is referred to by role (&quot;Basic Auth Converter (CSL)&quot;), never by class
+name, so a refactor behind the boundary does not oblige a change here.</p>
+<p>Note that &quot;does the name appear in an OC <code>.java</code> file&quot; is <em>not</em> the test, and would give the wrong
+answer. The test for category 2 is narrower than &quot;OC holds a reference to it&quot;: does OC&#x27;s own code
+populate the value&#x27;s fields, or does OC only receive an already-built instance and pass it on
+unread? Only the former qualifies.</p>
+<p><code>AuthorizationChecker</code> is the case to check a proposed name against: it is referenced by 14
+non-test OC files, yet it is used nowhere in these docs to describe the engine or REST check paths —
+those say &quot;the CSL check&quot; instead. OC obtains one from <code>AuthorizationCheckerFactory.forPhysicalTenant</code>
+and hands it straight to <code>DefaultResourceAccessProvider</code> without ever reading it, so it is an opaque
+handle rather than a value OC builds; category 2 turns on constructing the value, not on holding the
+reference. Package location does not decide it either — <code>AuthorizationChecker</code> sits in <code>core.authz</code>,
+the same package as <code>ResourceAccessProvider</code> and <code>TenantAccess</code>, which are both named here.</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="callback-extension-points">Callback extension points<a href="#callback-extension-points" class="hash-link" aria-label="Direct link to Callback extension points" title="Direct link to Callback extension points" translate="no">​</a></h5>
+<table><thead><tr><th>CSL package</th><th>Type</th><th>OC implementation</th></tr></thead><tbody><tr><td><code>core.port.in</code></td><td><code>AuthorizationCheckPort</code></td><td>Primarily consumed. <code>TenantAwareAuthorizationCheckPort</code> (<code>dist</code>) routes each request to the per-physical-tenant port CSL assembles</td></tr><tr><td><code>core.port.in</code></td><td><code>CamundaUserPort</code></td><td><code>BasicCamundaUserService</code> (<code>authentication</code>)</td></tr><tr><td><code>core.port.out</code></td><td><code>AuthorizationScopeRepositoryPort</code></td><td><code>SearchAuthorizationScopeRepository</code> (<code>security-services</code>, secondary storage) · <code>AuthorizationScopeStateAdapter</code> (<code>zeebe/engine</code>, RocksDB)</td></tr><tr><td><code>core.port.out</code></td><td><code>MembershipPort</code></td><td><code>DefaultMembershipService</code> / <code>NoDBMembershipService</code> (<code>authentication</code>) · <code>MembershipStateAdapter</code> (<code>zeebe/engine</code>)</td></tr><tr><td><code>core.port.out</code></td><td><code>BasicAuthUserDetailsPort</code></td><td><code>BasicAuthUserDetailsAdapter</code> (<code>authentication</code>)</td></tr><tr><td><code>core.port.out</code></td><td><code>SessionStorePort</code></td><td><code>SessionStoreAdapter</code> (<code>authentication</code>)</td></tr><tr><td><code>core.port.out</code></td><td><code>ScopedSessionStorePortProvider</code></td><td><code>PhysicalTenantScopedSessionStorePortProvider</code> (<code>authentication</code>) — hands out one <code>SessionStorePort</code> per physical tenant</td></tr><tr><td><code>core.port.out</code></td><td><code>SecurityPathPort</code></td><td><code>SecurityPathAdapter</code> (<code>authentication</code>)</td></tr><tr><td><code>core.port.out</code></td><td><code>AdminUserPresencePort</code></td><td><code>AdminUserPresenceAdapter</code> (<code>authentication</code>) — answers whether an admin user is provisioned, which gates CSL&#x27;s setup-redirect filter</td></tr><tr><td><code>core.port.out</code></td><td><code>AuthorizedComponentsPort</code></td><td><code>AuthorizedComponentsAdapter</code> (<code>authentication</code>) — resolves which webapp components the principal may open, for <code>/v2/authentication/me</code></td></tr><tr><td><code>core.authz</code></td><td><code>ResourceAccessProvider</code></td><td><code>DefaultResourceAccessProvider</code> (<code>search-client-query-transformer</code>)</td></tr><tr><td><code>core.authz</code></td><td><code>ResourceAccessController</code></td><td><code>AbstractResourceAccessController</code> (<code>search-client</code>) and its subclasses <code>DocumentBasedResourceAccessController</code> / <code>RdbmsResourceAccessController</code> · <code>AnonymousResourceAccessController</code> · <code>ResourceAccessDelegatingController</code></td></tr><tr><td><code>api.context</code></td><td><code>CamundaAuthenticationConverter</code></td><td><code>ClusterAdminAuthenticationConverter</code> (<code>authentication</code>) — membership-free principal for cluster admins, registered ahead of CSL&#x27;s DB-backed converter</td></tr><tr><td><code>api.context</code></td><td><code>CamundaSecurityScopeProvider</code></td><td><code>PhysicalTenantScopeProvider</code> (<code>authentication</code>) — one security descriptor per configured physical tenant, from which CSL builds the per-tenant filter chains</td></tr><tr><td><code>api.context</code></td><td><code>MembershipResolutionContextPropagator</code></td><td><code>PhysicalTenantMembershipContextPropagator</code> (<code>authentication</code>) — rebinds the physical tenant around lazy membership lookups that resolve outside request scope</td></tr><tr><td><code>spring.converter</code></td><td><code>OidcUserAuthenticationConverter</code></td><td><code>ProviderAwareOidcUserAuthenticationConverter</code> (<code>authentication</code>) extends it to pick the right converter per configured IdP (see <a href="#521-authentication---level-2" class="">5.2.1</a>)</td></tr><tr><td><code>spring.oidc</code></td><td><code>OidcTokenEndpointCustomizer</code></td><td><code>OidcTokenEndpointCustomizer</code> (<code>authentication</code>) — builds the <code>private_key_jwt</code> client assertion converter (see <a href="#632-oidc-with-private_key_jwt-client-authentication" class="">6.3.2</a>)</td></tr><tr><td><code>spring.security</code></td><td><code>OidcResourceServerCustomizer</code></td><td><code>ProtectedResourceMetadataCustomizer</code> (<code>authentication</code>)</td></tr><tr><td><code>spring.session</code></td><td><code>WebSessionAttributeConverter</code></td><td><code>MigratingWebSessionAttributeConverter</code> (<code>dist</code>)</td></tr><tr><td><code>spring.spi</code></td><td><code>WebAppProviderPort</code></td><td><code>WebAppProviderAdapter</code> (<code>authentication</code>) — derives the web app id from the request path prefix</td></tr></tbody></table>
+<p>The pattern to note: the authorization <em>read</em> ports each have two implementations, one per storage
+layer — search-index-backed for the REST layer, RocksDB-backed for the engine.</p>
+<p>Optimize is out of scope for this table. It wires CSL separately and supplies its own adapters, some
+of them stubs; one CSL extension point (<code>spring.spi.OidcAuthenticationEntryPoint</code>) is implemented
+only there and so appears in neither table.</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="data-contracts">Data contracts<a href="#data-contracts" class="hash-link" aria-label="Direct link to Data contracts" title="Direct link to Data contracts" translate="no">​</a></h5>
+<p>These are not adapters. CSL declares the shape, and OC&#x27;s own domain types carry it so CSL can read
+them directly.</p>
+<table><thead><tr><th>CSL package</th><th>Type</th><th>OC types implementing it</th></tr></thead><tbody><tr><td><code>core.authz</code></td><td><code>TenantOwnedEntity</code></td><td>21 <code>search-domain</code> entities (<code>ProcessDefinitionEntity</code>, <code>UserTaskEntity</code>, <code>IncidentEntity</code>, <code>VariableEntity</code>, …) — the marker by which CSL recognises a tenant-owned record</td></tr><tr><td><code>core.auth</code></td><td><code>MappingRuleMatcher</code> (and its nested <code>MappingRule</code>)</td><td><code>MappingRuleEntity</code> (<code>search-domain</code>) · <code>PersistedMappingRule</code> (<code>zeebe/engine</code>) · <code>ClusterAdminJwtAuthenticationConverter</code> (<code>authentication</code>)</td></tr><tr><td><code>api.model.config.initialization</code></td><td><code>ConfiguredAuthorization</code>, <code>ConfiguredGroup</code>, <code>ConfiguredRole</code>, <code>ConfiguredTenant</code></td><td>the four configurers in <code>zeebe/engine/.../processing/identity/initialize/</code></td></tr><tr><td><code>spring</code></td><td><code>CamundaSecurityLibraryProperties</code></td><td><code>Security</code> (<code>configuration</code>)</td></tr></tbody></table>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="52-building-blocks">5.2 Building Blocks<a href="#52-building-blocks" class="hash-link" aria-label="Direct link to 5.2 Building Blocks" title="Direct link to 5.2 Building Blocks" translate="no">​</a></h3>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="521-authentication---level-2">5.2.1 Authentication - Level 2<a href="#521-authentication---level-2" class="hash-link" aria-label="Direct link to 5.2.1 Authentication - Level 2" title="Direct link to 5.2.1 Authentication - Level 2" translate="no">​</a></h4>
 <p>The Authentication building block provides configuration classes, converters, and helpers that extend Spring Security.
-Spring Security itself manages the filter chains, token exchange, and IdP communication.
+CSL&#x27;s Spring Boot auto-configuration assembles the Spring Security filter chain stack by default (Spring Security itself still performs the actual token exchange and IdP communication); local <code>BasicAuthBeansConfiguration</code> and <code>OidcOverrideBeansConfiguration</code> supply OC-specific override beans that CSL backs off from via <code>@ConditionalOnMissingBean</code>.
 Authentication classes enrich the resulting principal with Camunda-specific claims (groups, roles, tenants) and persist sessions.</p>
-<p>To keep it simple, we describe the Basic Auth and OIDC flows separately, but they share several components such as <code>DefaultCamundaAuthenticationProvider</code> and <code>WebSessionRepository</code>.</p>
+<p>To keep it simple, we describe the Basic Auth and OIDC flows separately, but they share several components, notably the Authentication Provider and the Session Repository, both supplied by CSL.</p>
 <h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="basic-auth-flow">Basic Auth flow<a href="#basic-auth-flow" class="hash-link" aria-label="Direct link to Basic Auth flow" title="Direct link to Basic Auth flow" translate="no">​</a></h5>
 <!-- -->
 <p>Key responsibilities:</p>
 <ul>
-<li class="">Spring Security Configuration (<code>WebSecurityConfig.BasicConfiguration</code>): Spring <code>@Configuration</code> subclass of <code>WebSecurityConfig</code>, activated by <code>camunda.security.authentication.method=basic</code>. It is responsible for configuring the Spring Security filter chains for Basic auth and registering the <code>UsernamePasswordAuthenticationTokenConverter</code> bean. The <code>@ConditionalOnProtectedApi</code> annotation on individual filter chain beans controls whether API endpoints require authentication (based on the <code>camunda.security.api.unprotected</code> property).</li>
-<li class="">Basic Auth Converter (<code>UsernamePasswordAuthenticationTokenConverter</code>): converts Basic auth credentials (username/password or clientId/secret) into a <code>CamundaAuthentication</code> by loading the user entity and its roles and tenants via Camunda Services.</li>
-<li class="">Authentication Provider (<code>DefaultCamundaAuthenticationProvider</code>): bridges Spring Security to the Camunda authentication context via <code>CamundaAuthentication</code>. It reads the current Spring <code>Authentication</code> from <code>SecurityContextHolder</code>, checks the <code>CamundaAuthenticationHolder</code> cache for an existing <code>CamundaAuthentication</code>, and only on a cache miss delegates conversion to the <code>UsernamePasswordAuthenticationTokenConverter</code>.</li>
-<li class="">Session Repository (<code>WebSessionRepository</code>): implements Spring&#x27;s <code>SessionRepository&lt;WebSession&gt;</code> interface and manages server‑side sessions backed by secondary storage via <code>PersistentWebSessionClient</code>.</li>
+<li class="">Spring Security Configuration (<code>BasicAuthBeansConfiguration</code>): local <code>@Configuration</code> class, imported by <code>WebSecurityConfig</code>, activated by <code>camunda.security.authentication.method=basic</code>. CSL&#x27;s auto-configuration assembles the Basic auth filter chain by default; this class and <code>WebSecurityConfig</code> itself supply OC&#x27;s override beans on top of it, including the <code>usernamePasswordAuthenticationConverter</code> and <code>basicAuthUserDetailsPort</code> beans.</li>
+<li class="">User Details Adapter (<code>BasicAuthUserDetailsAdapter</code>): local implementation of CSL&#x27;s <code>BasicAuthUserDetailsPort</code> (registered in <code>WebSecurityConfig</code>), looking up the user&#x27;s credentials, roles, and tenants via Camunda Services.</li>
+<li class="">Basic Auth Converter (CSL): converts Basic auth credentials (username/password or clientId/secret) into a <code>CamundaAuthentication</code>, using OC&#x27;s <code>BasicAuthUserDetailsAdapter</code> for credential verification and OC&#x27;s <code>MembershipPort</code> implementation for role/tenant membership.</li>
+<li class="">Authentication Provider (CSL): bridges Spring Security to the Camunda authentication context via <code>CamundaAuthentication</code>.</li>
+<li class="">Session Repository (CSL): implements Spring Session&#x27;s <code>SessionRepository</code> interface and manages server‑side sessions backed by secondary storage via the local <code>PersistentWebSessionClient</code> (<code>search/search-client</code>). Wired locally by <code>WebSessionRepositoryConfiguration</code> (<code>dist</code>) — so the repository is CSL&#x27;s, but the storage behind it is OC&#x27;s.</li>
 </ul>
 <p>External responsibilities:</p>
 <ul>
 <li class="">Spring Security (<code>UsernamePasswordAuthenticationFilter</code>): performs the actual credential extraction and delegates to the configured converter.</li>
 <li class="">Camunda Services: provide access to user, role, group, tenant, and mapping rule data via the Camunda Search Client (secondary database). Used services include <code>UserServices</code>, <code>RoleServices</code>, <code>GroupServices</code>, <code>TenantServices</code>, and <code>MappingRuleServices</code>.</li>
-<li class="">Camunda Search Client: used to query the secondary database for user, role, tenant and mapping rule data during authentication, or in case of the WebSessionRepository to store the session.</li>
+<li class="">Camunda Search Client: used to query the secondary database for user, role, tenant and mapping rule data during authentication, or in case of the Session Repository to store the session.</li>
 </ul>
 <h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="oidc-flow">OIDC flow<a href="#oidc-flow" class="hash-link" aria-label="Direct link to OIDC flow" title="Direct link to OIDC flow" translate="no">​</a></h5>
 <!-- -->
 <p>Key responsibilities:</p>
 <ul>
-<li class="">Spring Security Configuration (<code>WebSecurityConfig.OidcConfiguration</code>): Activated by <code>camunda.security.authentication.method=oidc</code>. It is responsible for configuring all OIDC-related Spring Security filter chains and registering the following beans:<!-- -->
+<li class="">Spring Security Configuration (<code>OidcOverrideBeansConfiguration</code>): local <code>@Configuration</code> class, imported by <code>WebSecurityConfig</code>, activated by <code>camunda.security.authentication.method=oidc</code>. CSL&#x27;s auto-configuration assembles the OIDC filter chain stack by default; this class overrides the beans OC needs bespoke behavior for (multi-IdP support, issuer-aware JWT decoding, <code>private_key_jwt</code>, observability instrumentation), and CSL backs off from them via <code>@ConditionalOnMissingBean</code>:<!-- -->
 <ul>
-<li class="">Client Registration Repository (<code>InMemoryClientRegistrationRepository</code>): holds the OAuth2 client registrations (one per configured OIDC provider), built from <code>OidcAuthenticationConfigurationRepository</code>.</li>
-<li class="">OIDC Provider Repository (<code>OidcAuthenticationConfigurationRepository</code>): reads the OIDC provider configuration (issuer URIs, client credentials, additional JWKS URIs) from <code>SecurityConfiguration</code>.</li>
-<li class="">OAuth2AuthorizedClientRepository (<code>HttpSessionOAuth2AuthorizedClientRepository</code>): stores authorized client state in the HTTP session.</li>
-<li class="">OIDC Token Converter (<code>OidcTokenAuthenticationConverter</code>): converts Bearer JWTs (M2M) into a <code>CamundaAuthentication</code> (OIDC M2M only).</li>
+<li class="">Client Registration Repository (<code>InMemoryClientRegistrationRepository</code> -- a Spring Security class, registered by CSL by default): holds the OAuth2 client registrations (one per configured OIDC provider).</li>
+<li class="">OIDC Provider Repository (CSL): reads the OIDC provider configuration (issuer URIs, client credentials, additional JWKS URIs) from <code>SecurityConfiguration</code>.</li>
+<li class="">OAuth2AuthorizedClientRepository (<code>HttpSessionOAuth2AuthorizedClientRepository</code> -- a Spring Security class, registered by CSL by default): stores authorized client state in the HTTP session.</li>
+<li class="">OIDC Token Converter (CSL): converts Bearer JWTs (M2M) into a <code>CamundaAuthentication</code> (OIDC M2M only).</li>
+<li class="">OIDC User Converter (CSL): post-processes the OIDC user for the browser login flow. OC overrides it with <code>ProviderAwareOidcUserAuthenticationConverter</code> (<code>authentication/</code>) to pick the right converter per configured IdP — the OIDC counterpart to <code>BasicAuthUserDetailsAdapter</code> on the Basic auth path. Unlike the other beans in this list it extends a CSL class rather than replacing it, so it is listed among the <a href="#callback-extension-points" class="">callback extension points</a>.</li>
 </ul>
 </li>
-<li class="">Claims Converter (<code>TokenClaimsConverter</code>): core converter that extracts username or clientId from token claims and loads group, role, and tenant memberships via <code>MembershipService</code>.</li>
-<li class="">Mapping Rules Processor (<code>MappingRuleMatcher</code>): evaluates JSONPath mapping rules against IdP claims to assign roles, groups, tenants, and authorizations.</li>
-<li class="">Authentication Provider (<code>DefaultCamundaAuthenticationProvider</code>): bridges Spring Security to the Camunda authentication context via <code>CamundaAuthentication</code>.</li>
-<li class="">Session Repository (<code>WebSessionRepository</code>): implements Spring&#x27;s <code>SessionRepository&lt;WebSession&gt;</code> interface and manages server‑side sessions backed by secondary storage via <code>PersistentWebSessionClient</code>.</li>
+<li class="">Claims Converter (CSL): converts token claims into a <code>CamundaAuthentication</code>; group, role, and tenant memberships come from OC&#x27;s <code>MembershipPort</code> implementation.</li>
+<li class="">Mapping Rules Processor (CSL): applies mapping rules to IdP claims, yielding roles, groups, tenants, and authorizations. The rules themselves are OC data, loaded via <code>MappingRuleServices</code>.</li>
+<li class="">Authentication Provider (CSL): bridges Spring Security to the Camunda authentication context via <code>CamundaAuthentication</code>.</li>
+<li class="">Session Repository (CSL): implements Spring Session&#x27;s <code>SessionRepository</code> interface and manages server‑side sessions backed by secondary storage via the local <code>PersistentWebSessionClient</code> (<code>search/search-client</code>). Wired locally by <code>WebSessionRepositoryConfiguration</code> (<code>dist</code>) — so the repository is CSL&#x27;s, but the storage behind it is OC&#x27;s.</li>
 </ul>
-<p>Extern responsibilities:</p>
+<p>External responsibilities:</p>
 <ul>
-<li class="">Spring Security (<code>OAuth2LoginAuthenticationFilter</code>, <code>BearerTokenAuthenticationFilter</code>): manages the OIDC authorization code flow and Bearer token validation. Important components there (not shown in the diagram):<!-- -->
-<ul>
-<li class="">Jwt Decoder (<code>SupplierJwtDecoder</code>): decodes and validates Bearer JWT tokens; uses a single-provider decoder or an issuer-aware multi-provider decoder depending on the number of registered providers.</li>
-<li class="">Authorized Client Manager (<code>DefaultOAuth2AuthorizedClientManager</code>): manages OAuth2 authorized client state; supports the authorization code, refresh token, and client credentials flows (including <code>private_key_jwt</code> client authentication; see section 6.3.2 for customer-side client usage and section 6.3.3 for OC server-side OAuth client usage).</li>
-<li class="">OIDC User Service (<code>OidcUserService</code>): loads OIDC user details from the IdP&#x27;s userinfo endpoint during browser login.</li>
-</ul>
-</li>
+<li class="">Spring Security (<code>OAuth2LoginAuthenticationFilter</code>, <code>BearerTokenAuthenticationFilter</code>): manages the OIDC authorization code flow and Bearer token validation, using stock Spring Security components not shown in the diagram — <code>SupplierJwtDecoder</code> (Bearer JWT decoding, single- or issuer-aware multi-provider), <code>DefaultOAuth2AuthorizedClientManager</code> (authorized client state for the authorization code, refresh token, and client credentials flows, including <code>private_key_jwt</code> — see <a href="#632-oidc-with-private_key_jwt-client-authentication" class="">6.3.2</a>), and <code>OidcUserService</code> (userinfo lookup during browser login).</li>
 <li class="">OIDC IdP: issues ID tokens, access tokens, and JWKS for signature verification.</li>
 <li class="">Camunda Services: provide access to role, group, tenant, and mapping rule data via the Camunda Search Client (secondary database). Used services include <code>RoleServices</code>, <code>GroupServices</code>, <code>TenantServices</code>, and <code>MappingRuleServices</code> (via <code>DefaultMembershipService</code>).</li>
-<li class="">Camunda Search Client: used to query the secondary database for user, role, tenant and mapping rule data during authentication, or in case of the WebSessionRepository to store the session.</li>
+<li class="">Camunda Search Client: used to query the secondary database for user, role, tenant and mapping rule data during authentication, or in case of the Session Repository to store the session.</li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="522-security---level-2">5.2.2 Security - Level 2<a href="#522-security---level-2" class="hash-link" aria-label="Direct link to 5.2.2 Security - Level 2" title="Direct link to 5.2.2 Security - Level 2" translate="no">​</a></h4>
 <p>The Security building block provides authorization checks for REST queries executed via the Camunda Search Client.
-It implements the shared RBAC framework for data access control, ensuring that search results are filtered according to the caller&#x27;s permissions.</p>
+It builds the CSL security context for a query and adapts CSL&#x27;s authorization decision into a search-engine filter, ensuring that search results are filtered according to the caller&#x27;s permissions. The permission evaluation itself is owned by CSL, not by this module.</p>
 <!-- -->
 <p>Key responsibilities:</p>
 <ul>
-<li class="">Security Context Provider (<code>SecurityContextProvider</code>): builds a <code>SecurityContext</code> combining the <code>CamundaAuthentication</code> with authorization requirements before a query is executed.</li>
-<li class="">Authorization Checker (<code>DefaultResourceAccessProvider</code>): the concrete implementation of the <code>ResourceAccessProvider</code> interface; entry point for checking whether the caller is allowed to perform a given action on a resource type. It uses <code>AuthorizationChecker</code> and the <code>ResourcePropertyMatcherRegistry</code> to resolve access.</li>
-<li class="">Permission Evaluator (<code>AuthorizationChecker</code>): resolves the effective permissions of a principal by combining direct authorizations and role‑based authorizations. It reads authorization and role data exclusively via the Camunda Search Client — it does not access the secondary database directly.</li>
-<li class="">Resource Filter Builder: translates the effective permissions into a search‑engine filter that restricts query results to authorized resources only.</li>
+<li class="">Security Context Provider (<code>SecurityContextProvider</code>): builds CSL&#x27;s <code>SecurityContext</code> combining CSL&#x27;s <code>CamundaAuthentication</code> with a <code>RequiredAuthorization</code>/<code>AuthorizationCondition</code> before a query is executed.</li>
+<li class="">Resource Access Provider (<code>DefaultResourceAccessProvider</code>): OC&#x27;s implementation of CSL&#x27;s <code>ResourceAccessProvider</code>; entry point for checking whether the caller may perform a given action on a resource type. It hands the decision to CSL&#x27;s authorization check and uses the local <code>ResourcePropertyMatcherRegistry</code> to resolve resource-property constraints.</li>
+<li class="">Authorization Check (CSL): evaluates the caller&#x27;s permissions. It reads authorization and role data exclusively through OC&#x27;s <code>AuthorizationScopeRepositoryPort</code> implementation, which queries the Camunda Search Client — CSL never touches the secondary database directly.</li>
+<li class="">Resource Filter Builder: translates the resulting permissions into a search‑engine filter that restricts query results to authorized resources only.</li>
+<li class="">Physical-tenant scoping: CSL assembles one <code>AuthorizationCheckPort</code> per physical-tenant scope, wired locally by <code>WebAppAuthorizationCheckPortConfiguration</code> (<code>dist</code>); the local <code>TenantAwareAuthorizationCheckPort</code> selects the port matching the current request&#x27;s scope. The <code>ResourceAccessProvider</code> side fans out the same way but through a type of OC&#x27;s own: <code>ResourceAccessControllerConfiguration</code> (<code>dist</code>) builds one <code>DefaultResourceAccessProvider</code> per tenant, each over its own <code>SearchAuthorizationScopeRepository</code>, and the local <code>PhysicalTenantResourceAccessProvider</code> record selects between them — it is a registry keyed by physical tenant, not itself an implementation of CSL&#x27;s <code>ResourceAccessProvider</code>. Services that hold the check directly rather than going through the data plane (<code>DocumentServices</code>, <code>SecretServices</code>) get a per-physical-tenant instance from OC&#x27;s <code>AuthorizationCheckerFactory</code> (<code>security-services</code>), collected by <code>AuthorizationCheckerProvider</code> (<code>dist</code>). The engine path has no such fan-out (see <a href="#523-engine-identity---level-2" class="">5.2.3</a>).</li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="523-engine-identity---level-2">5.2.3 Engine Identity - Level 2<a href="#523-engine-identity---level-2" class="hash-link" aria-label="Direct link to 5.2.3 Engine Identity - Level 2" title="Direct link to 5.2.3 Engine Identity - Level 2" translate="no">​</a></h4>
-<p>Engine Identity is the RBAC authorization engine embedded directly inside the Zeebe Engine.
+<p>Engine Identity is the set of engine-side adapters that bridge Zeebe&#x27;s RocksDB state to CSL&#x27;s authorization and tenant ports.
 It intercepts engine commands (such as creating process instances or completing user tasks) and enforces authorization before the command is applied.
-It does not communicate with the external IdP directly.</p>
+The authorization/tenant decision logic itself lives in CSL; this building block does not communicate with the external IdP directly.</p>
 <!-- -->
 <p>Key responsibilities:</p>
 <ul>
-<li class="">RBAC Authorization Engine (<code>AuthorizationCheckBehavior</code>): main entry point; receives the command authentication context (derived from upstream <code>CamundaAuthentication</code>) and the requested resource + action, and decides whether to allow or deny the command. It does not read directly from RocksDB but instead delegates to the engine&#x27;s State classes (<code>ProcessingState</code>, <code>AuthorizationState</code>, <code>MembershipState</code>, <code>MappingRuleState</code>), which abstract the underlying RocksDB storage.</li>
-<li class="">Claims Extractor (<code>ClaimsExtractor</code>): extracts username, clientId, and groups from claims attached to the command authentication context in the authorization request.</li>
-<li class="">Tenant Resolver (<code>TenantResolver</code>): resolves the set of tenants the principal is authorized for, using membership state and mapping rules read from primary storage via the State classes.</li>
-<li class="">Permission Check (<code>AuthorizationRequest</code>): record holding the resource type, required permission, tenant ID, and property constraints for a single authorization check.</li>
-<li class="">State classes (<code>ProcessingState</code>, <code>AuthorizationState</code>, <code>MembershipState</code>, <code>MappingRuleState</code>): abstract the RocksDB state access; <code>AuthorizationCheckBehavior</code> reads all identity state (authorizations, roles, memberships, mapping rules) through these classes.</li>
+<li class="">Authorization Check (<code>CslAuthorizationCheck</code>): main entry point; receives the command authentication context (derived from upstream <code>CamundaAuthentication</code>) and a CSL <code>RequiredAuthorization</code> describing the requested resource and action, and decides whether to allow or deny the command by delegating to CSL&#x27;s <code>AuthorizationCheckPort</code>. It does not read directly from RocksDB.</li>
+<li class="">Tenant Check (<code>CslTenantCheck</code>): resolves the set of tenants the principal is authorized for as a CSL <code>TenantAccess</code>, using membership state and mapping rules read from primary storage via the adapters below. Replaces the previous local, identity-sense <code>TenantResolver</code> (unrelated to the physical-tenancy <code>PhysicalTenantResolver</code>, which still exists).</li>
+<li class="">Membership State Adapter (<code>MembershipStateAdapter</code>): implements CSL&#x27;s membership-lookup port, resolving username, clientId, and group/role/tenant memberships for the command&#x27;s principal from the engine&#x27;s State classes. Replaces the previous local <code>ClaimsExtractor</code>.</li>
+<li class="">Authorization Scope State Adapter (<code>AuthorizationScopeStateAdapter</code>): implements CSL&#x27;s <code>AuthorizationScopeRepositoryPort</code>, resolving the authorization scopes (permissions) granted to a principal from the engine&#x27;s State classes.</li>
+<li class="">Rejection Mapper (<code>AuthorizationRejectionMapper</code>): maps CSL&#x27;s authorization/tenant rejections back to Zeebe&#x27;s <code>Rejection</code> types.</li>
+<li class="">State classes (<code>ProcessingState</code>, <code>AuthorizationState</code>, <code>MembershipState</code>, <code>MappingRuleState</code>): abstract the RocksDB state access; the adapters above read all identity state (authorizations, roles, memberships, mapping rules) through these classes.</li>
+<li class=""><code>PermissionsBehavior</code> (top-level <code>processing/identity/</code>, not shown above): a separate, OC-owned behavior for command <em>processing</em> (e.g. applying permission-changing events), distinct from the authorization <em>check</em> gate described above.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="6-runtime-view">6. Runtime view<a href="#6-runtime-view" class="hash-link" aria-label="Direct link to 6. Runtime view" title="Direct link to 6. Runtime view" translate="no">​</a></h2>
+<p>The sequence diagrams below are wide. On the Camunda Platform docs site (Docusaurus) they are easier to read <a href="https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md" target="_blank" rel="noopener noreferrer" class="">on GitHub</a>, which supports zooming.</p>
+<p>Component responsibilities are described once in <a href="#52-building-blocks" class="">5.2 Building Blocks</a>. The flows below only list participants that section does not already cover.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="61-user-login">6.1 User login<a href="#61-user-login" class="hash-link" aria-label="Direct link to 6.1 User login" title="Direct link to 6.1 User login" translate="no">​</a></h3>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="611-basic-auth">6.1.1 Basic Auth<a href="#611-basic-auth" class="hash-link" aria-label="Direct link to 6.1.1 Basic Auth" title="Direct link to 6.1.1 Basic Auth" translate="no">​</a></h4>
 <p>Scenario: human user logs into Operate or Tasklist using username and password (Form Login).</p>
 <ol>
 <li class="">Browser navigates to a cluster UI (for example Operate).</li>
 <li class="">Spring Security redirects the browser to the built-in login form.</li>
-<li class="">User submits credentials; Spring Security delegates to Token Converter (<code>UsernamePasswordAuthenticationTokenConverter</code>).</li>
-<li class="">The converter loads the user entity, roles, and tenants via Camunda Services (which queries the Secondary Database through the Camunda Search Client) — no external IdP is involved.</li>
-<li class=""><code>DefaultCamundaAuthenticationProvider</code> creates a <code>CamundaAuthentication</code> object</li>
-<li class=""><code>WebSessionRepository</code> stores the session in secondary storage</li>
+<li class="">User submits credentials; Spring Security delegates to the Basic Auth Converter (CSL).</li>
+<li class="">The converter verifies the credentials via <code>BasicAuthUserDetailsAdapter</code> and resolves roles and tenants via CSL&#x27;s <code>MembershipPort</code>, both backed by Camunda Services (which queries the Secondary Database through the Camunda Search Client) — no external IdP is involved.</li>
+<li class="">CSL&#x27;s Authentication Provider creates a <code>CamundaAuthentication</code> object</li>
+<li class="">The Session Repository stores the session in secondary storage</li>
 <li class="">Subsequent requests are authenticated via the session.</li>
 </ol>
 <!-- -->
-<p>Participants:</p>
-<ul>
-<li class="">Spring Security: Manages the authentication process and redirects to the login form. (<code>UsernamePasswordAuthenticationFilter</code>)</li>
-<li class="">Auth Converter: Converts credentials and resolves claims to build a <code>CamundaAuthentication</code>. (<code>UsernamePasswordAuthenticationTokenConverter</code>)</li>
-<li class="">Authentication Provider: Bridges Spring Security to the Camunda authentication context. (<code>DefaultCamundaAuthenticationProvider</code>)</li>
-<li class="">Camunda Services: Service that provides access to Camunda Search Client (secondary database). (via UserServices, RoleServices, GroupServices, TenantServices )</li>
-</ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="612-oidc">6.1.2 OIDC<a href="#612-oidc" class="hash-link" aria-label="Direct link to 6.1.2 OIDC" title="Direct link to 6.1.2 OIDC" translate="no">​</a></h4>
 <p>Scenario: human user logs into Operate or Tasklist via OIDC.</p>
 <ol>
@@ -276,37 +323,20 @@ It does not communicate with the external IdP directly.</p>
 <li class="">Identity validates the token, extracts username and group or attribute claims, and applies mapping rules.</li>
 <li class="">Subsequent UI or API calls include the session and are authorized. Logout behavior, including RP‑initiated logout back to the IdP, is described in <a class="" href="/camunda/pr-preview/pr-58288/identity/references/rp-initiated-logout/">RP‑initiated logout</a>.</li>
 </ol>
-<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: <a href="https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
-<p>Participants:</p>
-<ul>
-<li class="">Spring Security: Manages the OIDC authorization code flow and redirects to the IdP. (<code>OAuth2LoginAuthenticationFilter</code>)</li>
-<li class="">User &amp; Claims Converter: Post-processes OIDC tokens, extracts claims, and resolves membership data via Camunda Services. (<code>OidcUserAuthenticationConverter</code> -&gt; <code>TokenClaimsConverter</code>)</li>
-<li class="">Mapping Rules Processor: Evaluates JSONPath mapping rules against IdP claims to assign roles, groups, tenants, and authorizations. (<code>MappingRuleMatcher</code>)</li>
-<li class="">Authentication Provider: Bridges Spring Security to the Camunda authentication context. (<code>DefaultCamundaAuthenticationProvider</code>)</li>
-<li class="">Session Repository: Creates and invalidates server-side sessions backed by secondary storage. (<code>WebSessionRepository</code>)</li>
-<li class="">Camunda Services: Provides access to role, group, tenant, and mapping rule data via the Camunda Search Client. (<code>RoleServices</code>, <code>GroupServices</code>, <code>TenantServices</code>, <code>MappingRuleServices</code>)</li>
-</ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="62-user-logout">6.2 User logout<a href="#62-user-logout" class="hash-link" aria-label="Direct link to 6.2 User logout" title="Direct link to 6.2 User logout" translate="no">​</a></h3>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="621-basic-auth">6.2.1 Basic Auth<a href="#621-basic-auth" class="hash-link" aria-label="Direct link to 6.2.1 Basic Auth" title="Direct link to 6.2.1 Basic Auth" translate="no">​</a></h4>
-<p>Scenario: human user logs out of a cluster UI when authenticated with Basic Auth.
-Since no external IdP session was established, logout only invalidates the local server‑side session.
-No RP‑initiated logout or IdP interaction is performed.</p>
-<ol>
-<li class="">User clicks Logout in the UI.</li>
-<li class="">The UI sends a logout request to Spring Security (<code>LogoutFilter</code>).</li>
-<li class="">Spring Security invokes <code>WebSessionRepository</code> to invalidate the current session.</li>
-<li class="">Spring Security redirects the browser back to the login form.</li>
-</ol>
-<!-- -->
+<p>Since no external IdP session was established, logout only invalidates the local server-side session:
+Spring Security&#x27;s <code>LogoutFilter</code> invokes the Session Repository to drop the session, then redirects
+the browser back to the login form. No RP-initiated logout or IdP interaction is involved.</p>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="622-oidc">6.2.2 OIDC<a href="#622-oidc" class="hash-link" aria-label="Direct link to 6.2.2 OIDC" title="Direct link to 6.2.2 OIDC" translate="no">​</a></h4>
 <p>Scenario: human user logs out of a cluster UI when authenticated via OIDC.
 Logout involves both local session invalidation and RP‑initiated logout to propagate the logout back to the external IdP.</p>
 <ol>
 <li class="">User clicks Logout in the UI.</li>
 <li class="">The UI sends a logout request to Spring Security (<code>LogoutFilter</code>).</li>
-<li class="">Spring Security invokes <code>WebSessionRepository</code> to invalidate the local session.</li>
-<li class=""><code>CamundaOidcLogoutSuccessHandler</code> redirects the browser to the IdP&#x27;s end-session endpoint (RP-initiated logout), including a <code>logout_hint</code>.</li>
+<li class="">Spring Security invokes the Session Repository to invalidate the local session.</li>
+<li class="">CSL&#x27;s logout success handler redirects the browser to the IdP&#x27;s end-session endpoint (RP-initiated logout), including a <code>logout_hint</code>.</li>
 <li class="">The IdP invalidates the SSO session and redirects the browser to the configured post-logout URL.</li>
 <li class="">The <code>PostLogoutController</code> validates and resolves the post-logout redirect URI, then redirects the browser to the application login page.</li>
 </ol>
@@ -314,9 +344,9 @@ Logout involves both local session invalidation and RP‑initiated logout to pro
 <p>Participants:</p>
 <ul>
 <li class="">Spring Security: Intercepts the logout request and triggers session invalidation. (<code>LogoutFilter</code>)</li>
-<li class="">Session Repository: Invalidates the local server-side session. (<code>WebSessionRepository</code>)</li>
-<li class="">Logout Handler: Triggers RP-initiated logout and redirects to the IdP end-session endpoint. (<code>CamundaOidcLogoutSuccessHandler</code>)</li>
-<li class="">Post-Logout Controller: Validates and resolves the post-logout redirect URI. (<code>PostLogoutController</code>)</li>
+<li class="">Session Repository: Invalidates the local server-side session. (CSL)</li>
+<li class="">Logout Handler: Triggers RP-initiated logout and redirects to the IdP end-session endpoint. (CSL)</li>
+<li class="">Post-Logout Controller: Validates and resolves the post-logout redirect URI. (<code>PostLogoutController</code>, local — <code>authentication/</code>)</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="63-machinetomachine-access">6.3. Machine‑to‑machine access<a href="#63-machinetomachine-access" class="hash-link" aria-label="Direct link to 6.3. Machine‑to‑machine access" title="Direct link to 6.3. Machine‑to‑machine access" translate="no">​</a></h3>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="631-bearer-token--oidc">6.3.1 Bearer Token / OIDC<a href="#631-bearer-token--oidc" class="hash-link" aria-label="Direct link to 6.3.1 Bearer Token / OIDC" title="Direct link to 6.3.1 Bearer Token / OIDC" translate="no">​</a></h4>
@@ -325,101 +355,59 @@ Logout involves both local session invalidation and RP‑initiated logout to pro
 <li class="">Service acquires a JWT from the external IdP via the client credentials grant.</li>
 <li class="">It sends the token as a <code>Bearer</code> header on each REST request.</li>
 <li class="">Spring Security (<code>BearerTokenAuthenticationFilter</code>) validates the token signature via the IdP&#x27;s JWKS endpoint — no local credential storage needed.</li>
-<li class=""><code>OidcTokenAuthenticationConverter</code> and <code>TokenClaimsConverter</code> extract the client identity and apply mapping rules to resolve roles and tenants via Camunda Services.</li>
+<li class="">CSL&#x27;s OIDC Token Converter and Claims Converter extract the client identity and apply mapping rules to resolve roles and tenants via Camunda Services.</li>
 </ol>
-<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: <a href="https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
-<p>Participants:</p>
-<ul>
-<li class="">Spring Security: Validates the Bearer JWT token signature via the IdP&#x27;s JWKS endpoint. (<code>BearerTokenAuthenticationFilter</code>)</li>
-<li class="">Auth Converters: Converts JWT to a <code>CamundaAuthentication</code> and extracts client claims. (<code>OidcTokenAuthenticationConverter</code>, <code>TokenClaimsConverter</code>)</li>
-<li class="">Mapping Rules Processor: Evaluates JSONPath mapping rules against IdP claims. (<code>MappingRuleMatcher</code>)</li>
-<li class="">Camunda Services: Provides access to mapping rule data. (<code>RoleServices</code>, <code>GroupServices</code>, <code>TenantServices</code>, <code>MappingRuleServices</code>)</li>
-</ul>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="632-oidc-with-private_key_jwt-client-authentication-customer-side-camunda-client">6.3.2 OIDC with private_key_jwt client authentication (customer-side Camunda client)<a href="#632-oidc-with-private_key_jwt-client-authentication-customer-side-camunda-client" class="hash-link" aria-label="Direct link to 6.3.2 OIDC with private_key_jwt client authentication (customer-side Camunda client)" title="Direct link to 6.3.2 OIDC with private_key_jwt client authentication (customer-side Camunda client)" translate="no">​</a></h4>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="632-oidc-with-private_key_jwt-client-authentication">6.3.2 OIDC with private_key_jwt client authentication<a href="#632-oidc-with-private_key_jwt-client-authentication" class="hash-link" aria-label="Direct link to 6.3.2 OIDC with private_key_jwt client authentication" title="Direct link to 6.3.2 OIDC with private_key_jwt client authentication" translate="no">​</a></h4>
 <blockquote>
 <p><strong>Available since</strong>: Camunda 8.8 clients (issue <a href="https://github.com/camunda/camunda/issues/36971" target="_blank" rel="noopener noreferrer" class="">#36971</a>).</p>
 </blockquote>
-<p>Scenario: a customer-side Camunda client (for example a Java worker) requests an access token from the IdP using OAuth2 client credentials and authenticates with <code>private_key_jwt</code> (<code>client_assertion</code>) instead of <code>client_secret</code>. The resulting access token is then used as a Bearer token when calling OC APIs.</p>
-<p><strong>OC Configuration</strong>: OC must run in OIDC mode (<code>camunda.security.authentication.method=oidc</code>) so that incoming Bearer tokens are validated via OIDC/JWKS as described in <a href="#631-bearer-token--oidc" class="">6.3.1</a>. No additional OC setting is required specifically for the customer client&#x27;s <code>private_key_jwt</code> choice.</p>
-<p>Important distinction: the JWT sent to the IdP token endpoint here is the OAuth <strong>client assertion</strong> (<code>client_assertion</code>), signed by the client&#x27;s private key. The private key itself is never transmitted. This client assertion is separate from the access token that is later sent to OC as <code>Authorization: Bearer ...</code>.</p>
-<p>Flow:</p>
-<ol>
-<li class="">A worker/service in the customer system uses the Camunda client OAuth credentials provider to request a token from the IdP token endpoint.</li>
-<li class="">The client builds a signed JWT client assertion and includes it in the token request as <code>client_assertion=&lt;signed JWT&gt;</code> + <code>client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer</code> (plus <code>client_id</code> and <code>grant_type=client_credentials</code>).</li>
-<li class="">The IdP validates the assertion signature using the registered public key / certificate for that OAuth client.</li>
-<li class="">The IdP returns an access token to the client.</li>
-<li class="">The worker sends API requests to OC with <code>Authorization: Bearer &lt;access_token&gt;</code>.</li>
-<li class="">OC (<code>Gateway Rest</code> + Spring Security) validates the Bearer token and continues with the normal OIDC conversion and mapping flow from <a href="#631-bearer-token--oidc" class="">6.3.1</a>.</li>
-</ol>
+<p><code>private_key_jwt</code> replaces the shared <code>client_secret</code> with a JWT <strong>client assertion</strong> signed by the
+client&#x27;s private key. The private key is never transmitted.</p>
+<p>Two separate OAuth clients can use it independently, and conflating them is the usual source of
+confusion:</p>
+<table><thead><tr><th>Which client</th><th>Configured by</th></tr></thead><tbody><tr><td>Customer-side Camunda client (e.g. a worker)</td><td>The client itself, via its <code>OAuthCredentialsProvider</code>. OC needs no setting for this beyond running in OIDC mode</td></tr><tr><td>OC as an OAuth client towards the IdP</td><td><code>camunda.security.authentication.oidc.clientAuthenticationMethod=private_key_jwt</code> plus <code>oidc.assertion.keystore.*</code> (path, password, keyAlias, keyPassword) and the optional <code>assertion.kidSource</code> / <code>kidDigestAlgorithm</code> / <code>kidEncoding</code> / <code>kidCase</code></td></tr></tbody></table>
+<p>In many enterprise environments both are set to <code>private_key_jwt</code>, but they are technically separate
+OAuth clients and can be configured differently.</p>
+<p><strong>Important distinction:</strong> the JWT sent to the IdP token endpoint is the client assertion
+(<code>client_assertion</code>). It is <em>not</em> the access token that is later sent to OC as
+<code>Authorization: Bearer ...</code>.</p>
+<p>The customer-side flow — the one that gets configured most often:</p>
 <!-- -->
-<p>Participants:</p>
+<p>From the Bearer token onwards this is the normal OIDC path from <a href="#631-bearer-token--oidc" class="">6.3.1</a>.</p>
+<p>On the OC side, when OC itself authenticates to the IdP token endpoint (authorization code exchange,
+refresh, or an OC-initiated client credentials flow), three parties are involved and it is worth
+keeping them apart:</p>
 <ul>
-<li class=""><code>Worker / Service</code>: initiates API calls and gets access tokens via the client credentials provider in the customer system.</li>
-<li class=""><code>Camunda Client</code> (<code>OAuthCredentialsProvider</code>): requests tokens from the IdP and, for <code>private_key_jwt</code>, sends <code>client_assertion</code> and <code>client_assertion_type</code> instead of <code>client_secret</code>.</li>
-<li class="">OIDC IdP: validates the client assertion signature against the registered public key/certificate and issues access tokens.</li>
-<li class=""><code>Gateway Rest</code>: receives the API request with Bearer token and delegates authentication/authorization to Spring Security.</li>
-<li class="">Spring Security: validates incoming Bearer tokens and continues with standard OIDC-to-<code>CamundaAuthentication</code> conversion and mapping.</li>
+<li class=""><strong>CSL</strong> loads OC&#x27;s private key and certificate from the configured keystore and builds the JSON Web
+Key, including <code>kid</code> and <code>x5t#S256</code>.</li>
+<li class=""><strong>OC</strong> wires that key into the token endpoint. <code>OidcTokenEndpointCustomizer</code> (<code>authentication/</code>)
+implements CSL&#x27;s SPI of the same name — it is one of the <a href="#callback-extension-points" class="">callback extension
+points</a> — constructs the converter below, and caches the resolved JWK
+per client registration.</li>
+<li class=""><strong>Spring Security&#x27;s</strong> <code>NimbusJwtClientAuthenticationParametersConverter</code> signs the assertion and
+attaches it to the token request.</li>
 </ul>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="633-oidc-with-private_key_jwt-client-authentication-oc-server-side-oauth-client">6.3.3 OIDC with private_key_jwt client authentication (OC server-side OAuth client)<a href="#633-oidc-with-private_key_jwt-client-authentication-oc-server-side-oauth-client" class="hash-link" aria-label="Direct link to 6.3.3 OIDC with private_key_jwt client authentication (OC server-side OAuth client)" title="Direct link to 6.3.3 OIDC with private_key_jwt client authentication (OC server-side OAuth client)" translate="no">​</a></h4>
-<p>Scenario: OC itself acts as an OAuth client in OIDC mode for token-endpoint interactions (for example, authorization code exchange, refresh token flow, or OC-initiated client credentials flow). For this OC-side client authentication to the IdP, OC can use either <code>client_secret_basic</code> or <code>private_key_jwt</code>.</p>
-<p>This is independent of the customer-side Camunda client setting in <a href="#632-oidc-with-private_key_jwt-client-authentication-customer-side-camunda-client" class="">6.3.2</a>. In many enterprise environments both are configured to <code>private_key_jwt</code>, but technically they are separate OAuth clients and can be configured differently.</p>
-<p>Configured via (OC-side):</p>
-<ul>
-<li class=""><code>camunda.security.authentication.oidc.clientAuthenticationMethod=private_key_jwt</code></li>
-<li class=""><code>camunda.security.authentication.oidc.assertion.keystore.*</code> (path, password, keyAlias, keyPassword)</li>
-<li class="">Optional <code>assertion.kidSource</code>, <code>assertion.kidDigestAlgorithm</code>, <code>assertion.kidEncoding</code>, <code>assertion.kidCase</code></li>
-</ul>
-<p>Flow:</p>
-<ol>
-<li class="">OC (Spring Security OAuth client stack) needs to call the IdP token endpoint.</li>
-<li class=""><code>AssertionJwkProvider</code> loads the OC private key and certificate and builds a JSON Web Key (JWK) (including <code>kid</code> and <code>x5t#S256</code>).</li>
-<li class=""><code>NimbusJwtClientAuthenticationParametersConverter</code> creates a signed <code>client_assertion</code> JWT.</li>
-<li class="">OC sends token request with <code>client_assertion</code> and <code>client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer</code>.</li>
-<li class="">IdP validates the assertion and returns tokens.</li>
-</ol>
-<!-- -->
-<p>Participants:</p>
-<ul>
-<li class="">Spring Security: orchestrates OC-side OAuth client calls to the IdP token endpoint.</li>
-<li class=""><code>AssertionJwkProvider</code>: loads key material and builds a JSON Web Key (JWK) for signing assertions.</li>
-<li class=""><code>NimbusJwtClientAuthenticationParametersConverter</code>: builds and injects the signed <code>client_assertion</code>.</li>
-<li class="">OIDC IdP: validates OC&#x27;s client assertion and issues tokens.</li>
-</ul>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="634-basic-auth">6.3.4 Basic Auth<a href="#634-basic-auth" class="hash-link" aria-label="Direct link to 6.3.4 Basic Auth" title="Direct link to 6.3.4 Basic Auth" translate="no">​</a></h4>
-<p>Scenario: worker or backend service calls REST APIs using a username and password via HTTP Basic authentication.
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="633-basic-auth">6.3.3 Basic Auth<a href="#633-basic-auth" class="hash-link" aria-label="Direct link to 6.3.3 Basic Auth" title="Direct link to 6.3.3 Basic Auth" translate="no">​</a></h4>
+<p>Scenario: worker or backend service calls REST APIs using a clientId and secret via HTTP Basic authentication.
 No external IdP is involved; credentials are verified directly against Identity entities stored in the Secondary Database.</p>
-<ol>
-<li class="">Service sends a <code>Basic &lt;base64(username:password)&gt;</code> header on each REST request.</li>
-<li class="">Spring Security (<code>UsernamePasswordAuthenticationFilter</code>) delegates to <code>UsernamePasswordAuthenticationTokenConverter</code>.</li>
-<li class="">The converter loads the client entity and its roles and tenants from the Secondary Database via Camunda Services.</li>
-<li class=""><code>TokenClaimsConverter</code> and <code>DefaultCamundaAuthenticationProvider</code> build a <code>CamundaAuthentication</code> and the request is authorized.</li>
-</ol>
-<!-- -->
-<p>Participants:</p>
-<ul>
-<li class="">Spring Security: Extracts Basic auth credentials from the request. (<code>UsernamePasswordAuthenticationFilter</code>)</li>
-<li class="">Auth Converters: Converts clientId/secret credentials and builds claims for <code>CamundaAuthentication</code>. (<code>UsernamePasswordAuthenticationTokenConverter</code>, <code>TokenClaimsConverter</code>)</li>
-<li class="">Authentication Provider: Bridges Spring Security to the Camunda authentication context. (<code>DefaultCamundaAuthenticationProvider</code>)</li>
-<li class="">Camunda Services: Loads the client entity, roles, and tenants. (<code>UserServices</code>, <code>RoleServices</code>, <code>GroupServices</code>, <code>TenantServices</code>)</li>
-</ul>
+<p>The mechanism is the same as the Basic Auth browser login in <a href="#611-basic-auth" class="">6.1.1</a>, minus the login
+form and the session: the service sends a <code>Basic</code> header on every request, and CSL&#x27;s Basic Auth
+Converter verifies the credentials through OC&#x27;s <code>BasicAuthUserDetailsAdapter</code> and resolves roles and
+tenants through OC&#x27;s <code>MembershipPort</code> implementation, both backed by Camunda Services. Because each
+request carries its own credentials, no server-side session is created.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="64-sending-a-command-via-rest">6.4 Sending a command via REST<a href="#64-sending-a-command-via-rest" class="hash-link" aria-label="Direct link to 6.4 Sending a command via REST" title="Direct link to 6.4 Sending a command via REST" translate="no">​</a></h3>
 <p>Scenario: a client starts a process instance via the REST API; the Zeebe Engine enforces RBAC via Engine Identity before applying the command.</p>
 <ol>
 <li class="">Client sends a <code>POST /v2/process-instances</code> request with a valid credential (session cookie, Basic auth header, or JWT bearer token).</li>
 <li class="">Spring Security authenticates the request and resolves a <code>CamundaAuthentication</code> principal.</li>
 <li class="">The REST API delegates to Camunda Services, which issues a <code>CreateProcessInstance</code> command to the Zeebe Engine together with the resolved authentication context (claims and principal data from <code>CamundaAuthentication</code>).</li>
-<li class="">Before applying the command, the Engine calls <code>AuthorizationCheckBehavior</code> with an <code>AuthorizationRequest</code> for the <code>PROCESS_DEFINITION:CREATE_PROCESS_INSTANCE</code> permission. Engine Identity performs this check against local engine state and does not call the external IdP.</li>
-<li class=""><code>AuthorizationCheckBehavior</code> reads the principal&#x27;s authorizations and role memberships from the Primary Database (RocksDB) via the State classes (<code>ProcessingState</code>, <code>AuthorizationState</code>, <code>MembershipState</code>, <code>MappingRuleState</code>).</li>
+<li class="">Before applying the command, the Engine calls <code>CslAuthorizationCheck</code> with a CSL <code>RequiredAuthorization</code> for the <code>PROCESS_DEFINITION:CREATE_PROCESS_INSTANCE</code> permission. Engine Identity performs this check against local engine state and does not call the external IdP.</li>
+<li class=""><code>CslAuthorizationCheck</code> delegates to CSL&#x27;s <code>AuthorizationCheckPort</code>. The data CSL needs is supplied by the engine&#x27;s two port implementations, <code>AuthorizationScopeStateAdapter</code> and <code>MembershipStateAdapter</code>, which read from RocksDB via the engine&#x27;s State classes.</li>
 <li class="">If the check passes, the Engine writes the new process instance state to the Primary Database and returns the result.</li>
 <li class="">Camunda Services returns a <code>CreateProcessInstanceResponse</code> and the REST API responds with <code>200 OK</code> containing the process instance key.</li>
 </ol>
-<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: <a href="https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
-<p>Participants:</p>
-<ul>
-<li class="">Engine Authorization: Enforces RBAC and accesses authorization state before commands are applied. (<code>AuthorizationCheckBehavior</code>, <code>ProcessingState</code>, <code>AuthorizationState</code>, <code>MembershipState</code>, <code>MappingRuleState</code>)</li>
-</ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="65-reading-resources-via-rest">6.5 Reading resources via REST<a href="#65-reading-resources-via-rest" class="hash-link" aria-label="Direct link to 6.5 Reading resources via REST" title="Direct link to 6.5 Reading resources via REST" translate="no">​</a></h3>
 <p>Scenario: a client queries process instances via the REST API; the Camunda Search Client uses Security (<code>DefaultResourceAccessProvider</code>) to filter results to authorized resources only.</p>
 <ol>
@@ -427,55 +415,33 @@ No external IdP is involved; credentials are verified directly against Identity 
 <li class="">Spring Security authenticates the request and resolves a <code>CamundaAuthentication</code> principal.</li>
 <li class="">The REST API delegates to Camunda Services, which builds a <code>SecurityContext</code> (via <code>SecurityContextProvider</code>) combining the principal with the required authorization context.</li>
 <li class="">Camunda Services invokes the Camunda Search Client with the <code>SecurityContext</code>.</li>
-<li class="">Before executing the search query, the Camunda Search Client calls <code>DefaultResourceAccessProvider</code> to determine the caller&#x27;s effective permissions.</li>
-<li class=""><code>DefaultResourceAccessProvider</code> reads the principal&#x27;s authorizations and roles from the Secondary Database via the Camunda Search Client itself (no direct DB access).</li>
+<li class="">Before executing the search query, the Camunda Search Client calls <code>DefaultResourceAccessProvider</code> (implementing CSL&#x27;s <code>ResourceAccessProvider</code> port) to determine the caller&#x27;s effective permissions.</li>
+<li class=""><code>DefaultResourceAccessProvider</code> hands the decision to CSL&#x27;s authorization check, which reads what it needs through the <code>AuthorizationScopeRepositoryPort</code> implementation backed by the Camunda Search Client — CSL never queries the database directly.</li>
 <li class="">The resolved permissions are translated into a resource filter (e.g. restricting results to specific process definition keys or tenants) and applied to the search query.</li>
 <li class="">The Camunda Search Client executes the filtered query against the Secondary Database and returns the results.</li>
-<li class="">Camunda Services returns a <code>SearchProcessInstancesResponse</code> and the REST API responds with <code>200 OK</code> containing the filtered process instances.</li>
+<li class="">Camunda Services returns a <code>SearchQueryResult&lt;ProcessInstanceEntity&gt;</code> and the REST API responds with <code>200 OK</code> containing the filtered process instances.</li>
 </ol>
-<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: <a href="https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
-<p>Participants:</p>
-<ul>
-<li class="">Security Context Provider: Combines the <code>CamundaAuthentication</code> with authorization requirements before a query is executed. (<code>SecurityContextProvider</code>)</li>
-<li class="">Resource Access Provider: Determines the caller&#x27;s effective permissions and constructs a resource filter for the search query. (<code>DefaultResourceAccessProvider</code>)</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="66-creating-a-new-user">6.6 Creating a new user<a href="#66-creating-a-new-user" class="hash-link" aria-label="Direct link to 6.6 Creating a new user" title="Direct link to 6.6 Creating a new user" translate="no">​</a></h3>
-<p>Scenario: an administrator creates a new user via the REST API; the command is applied by the Engine, written to the Primary Database via State classes, and then asynchronously propagated to the Secondary Database by the Exporter.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="66-creating-an-identity-entity">6.6 Creating an identity entity<a href="#66-creating-an-identity-entity" class="hash-link" aria-label="Direct link to 6.6 Creating an identity entity" title="Direct link to 6.6 Creating an identity entity" translate="no">​</a></h3>
+<p>Scenario: an administrator creates a new identity entity via the REST API. The Engine authorizes and
+applies the command, writes it to the Primary Database, and the Exporter propagates it asynchronously
+to the Secondary Database so it becomes searchable.</p>
+<p>Creating a user and creating an authorization follow the same path, differing only in the command,
+the required permission, and the state class that persists the record:</p>
+<table><thead><tr><th>Entity</th><th>Request</th><th>Command</th><th>Required permission</th><th>Persisted by</th></tr></thead><tbody><tr><td>User</td><td><code>POST /v2/users</code></td><td><code>CreateUser</code></td><td><code>USER:CREATE</code></td><td><code>MutableMembershipState</code></td></tr><tr><td>Authorization</td><td><code>POST /v2/authorizations</code></td><td><code>CreateAuthorization</code></td><td><code>AUTHORIZATION:CREATE</code></td><td><code>MutableAuthorizationState</code></td></tr></tbody></table>
 <ol>
-<li class="">Client sends a <code>POST /v2/users</code> request with a valid credential and the new user&#x27;s details (username, password, name, email).</li>
+<li class="">Client sends the request with a valid credential and the entity&#x27;s details.</li>
 <li class="">Spring Security authenticates the request and resolves a <code>CamundaAuthentication</code> principal.</li>
-<li class="">The REST API delegates to <code>UserServices</code> (part of Camunda Services), which issues a <code>CreateUser</code> command to the Zeebe Engine.</li>
-<li class="">Before applying the command, the Engine enforces RBAC via <code>AuthorizationCheckBehavior</code>, verifying the principal holds the <code>USER:CREATE</code> permission by reading from <code>AuthorizationState</code> / <code>MembershipState</code> via the Primary Database.</li>
-<li class="">The Engine applies the command: <code>MutableMembershipState</code> (and related State classes) persist the new user record to the Primary Database (RocksDB).</li>
-<li class="">The Engine returns a command acknowledgement and <code>UserServices</code> returns the created user to the REST API, which responds with <code>201 Created</code> and the new user key.</li>
-<li class="">Asynchronously, the Camunda or Rdbms Exporter picks up the <code>UserCreated</code> event and writes the user record to the Secondary Database (ES/OS/RDBMS), making it available for searches.</li>
+<li class="">The REST API delegates to Camunda Services (<code>UserServices</code> / <code>AuthorizationServices</code>), which issues the command to the Zeebe Engine.</li>
+<li class="">Before applying the command, the Engine checks the required permission via <code>CslAuthorizationCheck</code>, which reads authorization and membership state from the Primary Database.</li>
+<li class="">Once the check passes, the Engine applies the command and the corresponding mutable state class persists the record to RocksDB. Note that the authorization check is a gate only — it neither applies commands nor writes state (see <a href="#523-engine-identity---level-2" class="">5.2.3</a>).</li>
+<li class="">The Engine acknowledges the command and the REST API responds with <code>201 Created</code> and the new entity key.</li>
+<li class="">Asynchronously, the Camunda or RDBMS Exporter picks up the resulting event and writes the record to the Secondary Database.</li>
 </ol>
-<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: <a href="https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
 <!-- -->
 <p>Participants:</p>
 <ul>
-<li class="">Engine Authorization: Enforces RBAC and accesses authorization/membership state before commands are applied. (<code>AuthorizationCheckBehavior</code>, <code>AuthorizationState</code>, <code>MembershipState</code>, <code>MappingRuleState</code>)</li>
-<li class="">Camunda Services: Issues the <code>CreateUser</code> command and returns the result. (<code>UserServices</code>)</li>
-<li class="">Exporter: Asynchronously propagates applied events to the secondary database. (<code>CamundaExporter</code> / <code>RdbmsExporter</code>)</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="67-creating-a-new-authorization">6.7 Creating a new authorization<a href="#67-creating-a-new-authorization" class="hash-link" aria-label="Direct link to 6.7 Creating a new authorization" title="Direct link to 6.7 Creating a new authorization" translate="no">​</a></h3>
-<p>Scenario: an administrator creates a new authorization (permission grant) via the REST API; the Engine applies and persists it to the Primary Database, and the Exporter propagates it asynchronously to the Secondary Database.</p>
-<ol>
-<li class="">Client sends a <code>POST /v2/authorizations</code> request with a valid credential and the authorization details (owner, resource type, resource id, permissions).</li>
-<li class="">Spring Security authenticates the request and resolves a <code>CamundaAuthentication</code> principal.</li>
-<li class="">The REST API delegates to <code>AuthorizationServices</code> (part of Camunda Services), which issues a <code>CreateAuthorization</code> command to the Zeebe Engine.</li>
-<li class="">Before applying the command, the Engine enforces RBAC via <code>AuthorizationCheckBehavior</code>, verifying the principal holds the <code>AUTHORIZATION:CREATE</code> permission by reading from <code>AuthorizationState</code> / <code>MembershipState</code> via the Primary Database.</li>
-<li class="">The Engine applies the command: <code>MutableAuthorizationState</code> persists the new authorization record to the Primary Database (RocksDB).</li>
-<li class="">The Engine returns a command acknowledgement and <code>AuthorizationServices</code> returns the created authorization to the REST API, which responds with <code>201 Created</code> and the new authorization key.</li>
-<li class="">Asynchronously, the Camunda or RDBMS Exporter picks up the <code>AuthorizationCreated</code> event and writes the authorization record to the Secondary Database (ES/OS/RDBMS), making it queryable via the Search API.</li>
-</ol>
-<p>Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: <a href="https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md" target="_blank" rel="noopener noreferrer" class="">Identiy Architecture Docs - Github Viewer</a>.</p>
-<!-- -->
-<p>Participants:</p>
-<ul>
-<li class="">Engine Authorization: Enforces RBAC and accesses authorization/membership state before commands are applied. (<code>AuthorizationCheckBehavior</code>, <code>AuthorizationState</code>, <code>MembershipState</code>, <code>MappingRuleState</code>)</li>
-<li class="">Camunda Services: Issues the <code>CreateAuthorization</code> command and returns the result. (<code>AuthorizationServices</code>)</li>
+<li class="">Engine Authorization: Gates the command on the required permission before it is applied. (<code>CslAuthorizationCheck</code>, CSL <code>AuthorizationCheckPort</code>, <code>AuthorizationState</code>, <code>MembershipState</code>)</li>
 <li class="">Exporter: Asynchronously propagates applied events to the secondary database. (<code>CamundaExporter</code> / <code>RdbmsExporter</code>)</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="7-deployment-view">7. Deployment view<a href="#7-deployment-view" class="hash-link" aria-label="Direct link to 7. Deployment view" title="Direct link to 7. Deployment view" translate="no">​</a></h2>
@@ -528,12 +494,27 @@ Identity components within the Orchestration Cluster process the resulting token
 <li class=""><a class="" href="/camunda/pr-preview/pr-58288/identity/adr/support-forward-slashes-in-entity-ids/">ADR-0005: Support Forward Slashes in Entity IDs via URL Encoding</a></li>
 <li class=""><a class="" href="/camunda/pr-preview/pr-58288/identity/adr/userinfo-claim-augmentation-for-bearer-tokens/">ADR-0006: UserInfo Claim Augmentation for Bearer Tokens</a></li>
 </ul>
+<p>Cross-cutting decisions on the CSL migration (affecting Identity along with other modules) are
+documented at the repo-root level rather than here:</p>
+<ul>
+<li class=""><a href="https://github.com/camunda/camunda/blob/main/docs/adr/security/001-endpoint-required-permission-mapping.md" target="_blank" rel="noopener noreferrer" class="">ADR: Endpoint Required-Permission Mapping</a></li>
+<li class=""><a href="https://github.com/camunda/camunda/blob/main/docs/adr/security/002-tenant-access-provider-ownership-and-seam.md" target="_blank" rel="noopener noreferrer" class="">ADR: Tenant Access Provider Ownership and Seam</a></li>
+<li class=""><a href="https://github.com/camunda/camunda/blob/main/docs/adr/orchestration-cluster/0005-physical-tenant-routing-of-authorization-reads.md" target="_blank" rel="noopener noreferrer" class="">ADR: Physical-Tenant Routing of Authorization Reads</a> -- the background for the per-physical-tenant <code>AuthorizationCheckPort</code> scoping described in <a href="#522-security---level-2" class="">5.2.2</a>.</li>
+</ul>
+<p>No dedicated ADR records the decision to adopt CSL itself; that predates these two and is not
+tracked in <code>identity/docs/adr/</code> or <code>docs/adr/</code>.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="10-risks-and-technical-debt">10. Risks and technical debt<a href="#10-risks-and-technical-debt" class="hash-link" aria-label="Direct link to 10. Risks and technical debt" title="Direct link to 10. Risks and technical debt" translate="no">​</a></h2>
 <p>Migration complexity and failure modes
 :   Migration from Management Identity introduces complexity and potential misconfiguration (for example mismatched IdP setups, conflicting mapping rules). Mitigation: dedicated Identity Migration App, idempotent runs, detailed logs; still requires careful testing in customer environments.</p>
 <p>Dual identity model during transition
 :   Management Identity remains for Web Modeler, Console, and Optimize (Self‑Managed) while Orchestration Cluster Identity serves runtime. Risk of confusion about the source of truth and duplicated configuration until long‑term consolidation is complete.</p>
+<p>Cross-repo coupling to the Camunda Security Library
+:   The authorization and authentication decisions themselves, the boundary types they are expressed in (<code>CamundaAuthentication</code>, <code>SecurityContext</code>, <code>RequiredAuthorization</code>, <code>TenantAccess</code>), and the Spring Security filter chain assembly now live in the separately-versioned <a href="https://github.com/camunda/camunda-security-library" target="_blank" rel="noopener noreferrer" class="">camunda-security-library</a> repo rather than in this codebase. Changes to authorization/authentication behavior can originate from a CSL release bump (<code>version.camunda-security-library</code> in <code>parent/pom.xml</code>) rather than from a change in this repo. The two risks that follow from that are different, and only one of them is now controlled:</p>
+<ul>
+<li class=""><em>The inventory</em> in <a href="#csl-extension-points-and-ocs-adapters" class="">5.1</a> is verifiable. Every entry is a type OC implements or extends, so it can be regenerated from the tree: sweep the non-test sources that import <code>io.camunda.security.*</code> and resolve each type declaration&#x27;s <code>implements</code>/<code>extends</code> clause against that file&#x27;s imports, then diff against the tables. Run it after a version bump. Discount four things or it will report false positives — generic type <em>parameters</em> (<code>implements PhysicalTenantScoped&lt;ResourceAccessProvider&gt;</code> is not a row for <code>ResourceAccessProvider</code>), generic <em>arguments</em> on an unrelated supertype (<code>ScopeCacheLoader extends CacheLoader&lt;…, Set&lt;AuthorizationScope&gt;&gt;</code> is not a row for <code>AuthorizationScope</code>), Optimize&#x27;s separate CSL wiring, and fully-qualified <code>implements</code> clauses with no matching import, which any import-driven sweep misses.</li>
+<li class=""><em>Behavior</em> is not verifiable this way. A CSL release can change how a decision is reached without changing a single signature OC declares, and nothing in this repo will show it. The prose describing CSL&#x27;s role — as opposed to the names in the tables — can therefore go stale silently, which is why this document deliberately describes CSL&#x27;s internals by role and links <a href="https://github.com/camunda/camunda-security-library/blob/main/docs/architecture/05-building-block-view.md" target="_blank" rel="noopener noreferrer" class="">CSL&#x27;s own docs</a> instead of restating them.</li>
+</ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="11-glossary">11. Glossary<a href="#11-glossary" class="hash-link" aria-label="Direct link to 11. Glossary" title="Direct link to 11. Glossary" translate="no">​</a></h2>
-<table><thead><tr><th>Term</th><th>Definition</th></tr></thead><tbody><tr><td>Orchestration Cluster</td><td>Unified Camunda 8 runtime: Zeebe, Operate, Tasklist, Identity, REST/gRPC APIs.</td></tr><tr><td>Orchestration Cluster Identity</td><td>Cluster‑embedded identity service for authentication, authorization and identity entities.</td></tr><tr><td>Orchestration Cluster Admin</td><td>UI surface for cluster Identity (new name in 8.9); hosts identity features.</td></tr><tr><td>Management Identity</td><td>Standalone identity app (Self‑Managed) for Web Modeler, Console and Optimize.</td></tr><tr><td>Tenant</td><td>Logical partition of data and access within a cluster (runtime multi‑tenancy).</td></tr><tr><td>Authorization</td><td>Permission linking a principal to a resource type and action (for example READ, UPDATE, DELETE).</td></tr><tr><td>Mapping rule</td><td>Rule mapping IdP claims (groups, attributes) to identity entities such as groups, roles, tenants, authorizations.</td></tr><tr><td>User</td><td>Human user performing modeling, operations or task work.</td></tr><tr><td>Service accounts / workers</td><td>Non‑interactive clients calling REST/gRPC APIs using client credentials.</td></tr><tr><td>OIDC IdP</td><td>External identity provider; source of identity, attributes and group claims.</td></tr><tr><td>Cluster components</td><td>Runtime components enforcing Identity decisions for user and client operations.</td></tr></tbody></table></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/identity/docs/architecture.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--next" href="/camunda/pr-preview/pr-58288/identity/management-identity/"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Management Identity Architecture Documentation</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#1-introduction-and-goals" class="table-of-contents__link toc-highlight">1. Introduction and goals</a><ul><li><a href="#11-overview" class="table-of-contents__link toc-highlight">1.1 Overview</a></li><li><a href="#12-requirements-overview-functional" class="table-of-contents__link toc-highlight">1.2 Requirements overview (functional)</a></li><li><a href="#13-quality-goals-top-level" class="table-of-contents__link toc-highlight">1.3 Quality goals (top level)</a></li><li><a href="#14-stakeholders" class="table-of-contents__link toc-highlight">1.4 Stakeholders</a></li></ul></li><li><a href="#2-constraints" class="table-of-contents__link toc-highlight">2. Constraints</a></li><li><a href="#3-system-context-and-scope" class="table-of-contents__link toc-highlight">3. System context and scope</a><ul><li><a href="#31-business-context" class="table-of-contents__link toc-highlight">3.1 Business context</a></li><li><a href="#32-technical-context" class="table-of-contents__link toc-highlight">3.2 Technical context</a></li></ul></li><li><a href="#4-solution-strategy" class="table-of-contents__link toc-highlight">4. Solution strategy</a></li><li><a href="#5-building-block-view" class="table-of-contents__link toc-highlight">5. Building block view</a><ul><li><a href="#51-whitebox-overall-system" class="table-of-contents__link toc-highlight">5.1 Whitebox overall system</a></li><li><a href="#52-building-blocks" class="table-of-contents__link toc-highlight">5.2 Building Blocks</a><ul><li><a href="#521-authentication---level-2" class="table-of-contents__link toc-highlight">5.2.1 Authentication - Level 2</a></li><li><a href="#522-security---level-2" class="table-of-contents__link toc-highlight">5.2.2 Security - Level 2</a></li><li><a href="#523-engine-identity---level-2" class="table-of-contents__link toc-highlight">5.2.3 Engine Identity - Level 2</a></li></ul></li></ul></li><li><a href="#6-runtime-view" class="table-of-contents__link toc-highlight">6. Runtime view</a><ul><li><a href="#61-user-login" class="table-of-contents__link toc-highlight">6.1 User login</a><ul><li><a href="#611-basic-auth" class="table-of-contents__link toc-highlight">6.1.1 Basic Auth</a></li><li><a href="#612-oidc" class="table-of-contents__link toc-highlight">6.1.2 OIDC</a></li></ul></li><li><a href="#62-user-logout" class="table-of-contents__link toc-highlight">6.2 User logout</a><ul><li><a href="#621-basic-auth" class="table-of-contents__link toc-highlight">6.2.1 Basic Auth</a></li><li><a href="#622-oidc" class="table-of-contents__link toc-highlight">6.2.2 OIDC</a></li></ul></li><li><a href="#63-machinetomachine-access" class="table-of-contents__link toc-highlight">6.3. Machine‑to‑machine access</a><ul><li><a href="#631-bearer-token--oidc" class="table-of-contents__link toc-highlight">6.3.1 Bearer Token / OIDC</a></li><li><a href="#632-oidc-with-private_key_jwt-client-authentication-customer-side-camunda-client" class="table-of-contents__link toc-highlight">6.3.2 OIDC with private_key_jwt client authentication (customer-side Camunda client)</a></li><li><a href="#633-oidc-with-private_key_jwt-client-authentication-oc-server-side-oauth-client" class="table-of-contents__link toc-highlight">6.3.3 OIDC with private_key_jwt client authentication (OC server-side OAuth client)</a></li><li><a href="#634-basic-auth" class="table-of-contents__link toc-highlight">6.3.4 Basic Auth</a></li></ul></li><li><a href="#64-sending-a-command-via-rest" class="table-of-contents__link toc-highlight">6.4 Sending a command via REST</a></li><li><a href="#65-reading-resources-via-rest" class="table-of-contents__link toc-highlight">6.5 Reading resources via REST</a></li><li><a href="#66-creating-a-new-user" class="table-of-contents__link toc-highlight">6.6 Creating a new user</a></li><li><a href="#67-creating-a-new-authorization" class="table-of-contents__link toc-highlight">6.7 Creating a new authorization</a></li></ul></li><li><a href="#7-deployment-view" class="table-of-contents__link toc-highlight">7. Deployment view</a><ul><li><a href="#71-basic-auth" class="table-of-contents__link toc-highlight">7.1 Basic Auth</a></li><li><a href="#72-oidc" class="table-of-contents__link toc-highlight">7.2 OIDC</a></li></ul></li><li><a href="#8-crosscutting-concepts" class="table-of-contents__link toc-highlight">8. Crosscutting concepts</a></li><li><a href="#9-architectural-decisions" class="table-of-contents__link toc-highlight">9. Architectural decisions</a></li><li><a href="#10-risks-and-technical-debt" class="table-of-contents__link toc-highlight">10. Risks and technical debt</a></li><li><a href="#11-glossary" class="table-of-contents__link toc-highlight">11. Glossary</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+<table><thead><tr><th>Term</th><th>Definition</th></tr></thead><tbody><tr><td>Orchestration Cluster</td><td>Unified Camunda 8 runtime: Zeebe, Operate, Tasklist, Identity, REST/gRPC APIs.</td></tr><tr><td>Orchestration Cluster Identity</td><td>Cluster‑embedded identity service for authentication, authorization and identity entities.</td></tr><tr><td>Orchestration Cluster Admin</td><td>UI surface for cluster Identity (new name in 8.9); hosts identity features.</td></tr><tr><td>Management Identity</td><td>Standalone identity app (Self‑Managed) for Web Modeler, Console and Optimize.</td></tr><tr><td>Tenant</td><td>Logical partition of data and access within a cluster (runtime multi‑tenancy).</td></tr><tr><td>Authorization</td><td>Permission linking a principal to a resource type and action (for example READ, UPDATE, DELETE).</td></tr><tr><td>Mapping rule</td><td>Rule mapping IdP claims (groups, attributes) to identity entities such as groups, roles, tenants, authorizations.</td></tr><tr><td>User</td><td>Human user performing modeling, operations or task work.</td></tr><tr><td>Service accounts / workers</td><td>Non‑interactive clients calling REST/gRPC APIs using client credentials.</td></tr><tr><td>CSL (Camunda Security Library)</td><td>External library (<a href="https://github.com/camunda/camunda-security-library" target="_blank" rel="noopener noreferrer" class="">camunda/camunda-security-library</a>) providing the shared authorization/authentication primitives and Spring Security filter chain assembly consumed by Identity.</td></tr><tr><td>OIDC IdP</td><td>External identity provider; source of identity, attributes and group claims.</td></tr><tr><td>Cluster components</td><td>Runtime components enforcing Identity decisions for user and client operations.</td></tr></tbody></table></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/identity/docs/architecture.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--next" href="/camunda/pr-preview/pr-58288/identity/management-identity/"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Management Identity Architecture Documentation</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#1-introduction-and-goals" class="table-of-contents__link toc-highlight">1. Introduction and goals</a><ul><li><a href="#11-overview" class="table-of-contents__link toc-highlight">1.1 Overview</a></li><li><a href="#12-requirements-overview-functional" class="table-of-contents__link toc-highlight">1.2 Requirements overview (functional)</a></li><li><a href="#13-quality-goals-top-level" class="table-of-contents__link toc-highlight">1.3 Quality goals (top level)</a></li><li><a href="#14-stakeholders" class="table-of-contents__link toc-highlight">1.4 Stakeholders</a></li></ul></li><li><a href="#2-constraints" class="table-of-contents__link toc-highlight">2. Constraints</a></li><li><a href="#3-system-context-and-scope" class="table-of-contents__link toc-highlight">3. System context and scope</a><ul><li><a href="#31-business-context" class="table-of-contents__link toc-highlight">3.1 Business context</a></li><li><a href="#32-technical-context" class="table-of-contents__link toc-highlight">3.2 Technical context</a></li></ul></li><li><a href="#4-solution-strategy" class="table-of-contents__link toc-highlight">4. Solution strategy</a></li><li><a href="#5-building-block-view" class="table-of-contents__link toc-highlight">5. Building block view</a><ul><li><a href="#51-whitebox-overall-system" class="table-of-contents__link toc-highlight">5.1 Whitebox overall system</a><ul><li><a href="#csl-extension-points-and-ocs-adapters" class="table-of-contents__link toc-highlight">CSL extension points and OC&#39;s adapters</a></li></ul></li><li><a href="#52-building-blocks" class="table-of-contents__link toc-highlight">5.2 Building Blocks</a><ul><li><a href="#521-authentication---level-2" class="table-of-contents__link toc-highlight">5.2.1 Authentication - Level 2</a></li><li><a href="#522-security---level-2" class="table-of-contents__link toc-highlight">5.2.2 Security - Level 2</a></li><li><a href="#523-engine-identity---level-2" class="table-of-contents__link toc-highlight">5.2.3 Engine Identity - Level 2</a></li></ul></li></ul></li><li><a href="#6-runtime-view" class="table-of-contents__link toc-highlight">6. Runtime view</a><ul><li><a href="#61-user-login" class="table-of-contents__link toc-highlight">6.1 User login</a><ul><li><a href="#611-basic-auth" class="table-of-contents__link toc-highlight">6.1.1 Basic Auth</a></li><li><a href="#612-oidc" class="table-of-contents__link toc-highlight">6.1.2 OIDC</a></li></ul></li><li><a href="#62-user-logout" class="table-of-contents__link toc-highlight">6.2 User logout</a><ul><li><a href="#621-basic-auth" class="table-of-contents__link toc-highlight">6.2.1 Basic Auth</a></li><li><a href="#622-oidc" class="table-of-contents__link toc-highlight">6.2.2 OIDC</a></li></ul></li><li><a href="#63-machinetomachine-access" class="table-of-contents__link toc-highlight">6.3. Machine‑to‑machine access</a><ul><li><a href="#631-bearer-token--oidc" class="table-of-contents__link toc-highlight">6.3.1 Bearer Token / OIDC</a></li><li><a href="#632-oidc-with-private_key_jwt-client-authentication" class="table-of-contents__link toc-highlight">6.3.2 OIDC with private_key_jwt client authentication</a></li><li><a href="#633-basic-auth" class="table-of-contents__link toc-highlight">6.3.3 Basic Auth</a></li></ul></li><li><a href="#64-sending-a-command-via-rest" class="table-of-contents__link toc-highlight">6.4 Sending a command via REST</a></li><li><a href="#65-reading-resources-via-rest" class="table-of-contents__link toc-highlight">6.5 Reading resources via REST</a></li><li><a href="#66-creating-an-identity-entity" class="table-of-contents__link toc-highlight">6.6 Creating an identity entity</a></li></ul></li><li><a href="#7-deployment-view" class="table-of-contents__link toc-highlight">7. Deployment view</a><ul><li><a href="#71-basic-auth" class="table-of-contents__link toc-highlight">7.1 Basic Auth</a></li><li><a href="#72-oidc" class="table-of-contents__link toc-highlight">7.2 OIDC</a></li></ul></li><li><a href="#8-crosscutting-concepts" class="table-of-contents__link toc-highlight">8. Crosscutting concepts</a></li><li><a href="#9-architectural-decisions" class="table-of-contents__link toc-highlight">9. Architectural decisions</a></li><li><a href="#10-risks-and-technical-debt" class="table-of-contents__link toc-highlight">10. Risks and technical debt</a></li><li><a href="#11-glossary" class="table-of-contents__link toc-highlight">11. Glossary</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
 </body>
 </html>

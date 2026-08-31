@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Data loading | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-58288/frontend/data-loading/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Data loading | Camunda Platform"><meta data-rh="true" name="description" content="Data fetching in @camunda/orchestration-cluster-webapp uses"><meta data-rh="true" property="og:description" content="Data fetching in @camunda/orchestration-cluster-webapp uses"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-58288/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-58288/frontend/data-loading/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-58288/frontend/data-loading/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-58288/frontend/data-loading/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Frontend","item":"https://camunda.github.io/camunda/pr-preview/pr-58288/frontend/"},{"@type":"ListItem","position":2,"name":"Data loading","item":"https://camunda.github.io/camunda/pr-preview/pr-58288/frontend/data-loading"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-58288/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-58288/assets/js/runtime~main.e6ab3ebf.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-58288/assets/js/main.bf499eb3.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-58288/assets/js/runtime~main.d203d30c.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-58288/assets/js/main.bafdac96.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -58,8 +58,9 @@ failure, so Query rejects, the loader rejects, and the router renders
 <p>Set <code>defaultErrorComponent</code> on <code>createRouter</code> for a global fallback.
 Reach for a component-level <code>&lt;ErrorBoundary&gt;</code> only when the rest of
 the page should keep rendering. 401s are handled centrally by the
-<code>request()</code> wrapper (cache clear + login redirect), so <code>errorComponent</code>
-covers everything else.</p>
+<code>request()</code> wrapper (cache clear + login redirect). Query functions normalize
+403 responses to <code>ForbiddenError</code>, so route error boundaries can render a
+forbidden state consistently. <code>errorComponent</code> covers everything else.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="references">References<a href="#references" class="hash-link" aria-label="Direct link to References" title="Direct link to References" translate="no">​</a></h2>
 <ul>
 <li class=""><a href="https://tanstack.com/router/latest/docs/guide/data-loading" target="_blank" rel="noopener noreferrer" class="">TanStack Router — Data Loading</a></li>
