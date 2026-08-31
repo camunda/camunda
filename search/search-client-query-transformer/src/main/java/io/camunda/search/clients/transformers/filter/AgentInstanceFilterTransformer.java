@@ -25,9 +25,9 @@ import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTempla
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.LAST_UPDATED_DATE;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION_TAG;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.STATUS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.VERSION_TAG;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.AgentInstanceFilter;
@@ -54,7 +54,9 @@ public class AgentInstanceFilterTransformer extends IndexFilterTransformer<Agent
     queries.addAll(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()));
     queries.addAll(
         intOperations(PROCESS_DEFINITION_VERSION, filter.processDefinitionVersionOperations()));
-    queries.addAll(stringOperations(VERSION_TAG, filter.versionTagOperations()));
+    queries.addAll(
+        stringOperations(
+            PROCESS_DEFINITION_VERSION_TAG, filter.processDefinitionVersionTagOperations()));
     queries.addAll(stringOperations(ELEMENT_ID, filter.elementIdOperations()));
     queries.addAll(stringOperations(STATUS, filter.statusOperations()));
     queries.addAll(stringOperations(TENANT_ID, filter.tenantIdOperations()));
