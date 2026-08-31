@@ -81,7 +81,7 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
           validateGroupId(value);
           setGroupId(value);
         }}
-        errors={!isGroupIdValid ? [t("pleaseEnterValidGroupId")] : []}
+        errors={!isGroupIdValid ? t("pleaseEnterValidGroupId") : undefined}
         readOnly
       />
       <TextField
