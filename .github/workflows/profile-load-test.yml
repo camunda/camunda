@@ -144,6 +144,7 @@ jobs:
       # Give enough time for a preempted pod to come back, if any.
       PROFILE_RETRY_WAIT_SECONDS: 120
       PROFILE_RETRY_TIMEOUT_MINUTES: 15
+      OUTPUT_DIR: profiling/${{ matrix.pod }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -174,6 +175,7 @@ jobs:
       - name: Compute run date
         id: run-date
         run: echo "date=$(date +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
       # Profiling is best-effort: continue-on-error keeps a permanently-failing event from
       # failing this job, so a single flaky/preempted pod doesn't spuriously fail the whole
       # load test run -- the remaining "Profile ..." steps below still run regardless, and
@@ -205,27 +207,22 @@ jobs:
           retry_wait_seconds: ${{ env.PROFILE_RETRY_WAIT_SECONDS }}
           timeout_minutes: ${{ env.PROFILE_RETRY_TIMEOUT_MINUTES }}
           command: ./load-tests/docs/scripts/executeProfiling.sh "${POD}" alloc "${PROFILER_OPTIONS}" "${TEST_TYPE}"
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        id: upload-artifact
         with:
-          name: flamegraph-${{ inputs.test-type }}-cpu-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
-          path: ${{ matrix.pod }}-flamegraph*-cpu-*.html
+          name: flamegraph-${{ inputs.test-type }}-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
+          # The name of the directory in which the profiling output has been written.
+          # This is set in executeProfiling.sh.
+          path: ${{ env.OUTPUT_DIR }}
           if-no-files-found: warn
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: flamegraph-${{ inputs.test-type }}-wall-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
-          path: ${{ matrix.pod }}-flamegraph*-wall-*.html
-          if-no-files-found: warn
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: flamegraph-${{ inputs.test-type }}-alloc-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
-          path: ${{ matrix.pod }}-flamegraph*-alloc-*.html
-          if-no-files-found: warn
+
       - name: Summarize profiling
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            ## Profiling \`${NAME}\` on ${POD}
-            Async profiling (cpu, wall, alloc) has been executed sequentially on ${NAME}-${POD}. Please download the artifacts.
+            ## Profiling \`${NAME}\` on \`${POD}\`
+            Async profiling (\`cpu\`, \`wall\`, \`alloc\`) has been executed sequentially on \`${NAME}\`/\`${POD}\`. Please download [the artifacts](${{ steps.upload-artifact.outputs.artifact-url }}).
           EOF
       - name: Observe build status
         if: always()
