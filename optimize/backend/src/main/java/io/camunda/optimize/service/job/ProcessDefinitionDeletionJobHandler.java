@@ -156,11 +156,11 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
         () -> processDefinitionWriter.deleteDefinition(definitionId));
   }
 
-  private void withRetry(final String description, final Runnable deletion) {
+  private void withRetry(final String description, final Runnable runnable) {
     withRetry(
         description,
         () -> {
-          deletion.run();
+          runnable.run();
           return null;
         });
   }
