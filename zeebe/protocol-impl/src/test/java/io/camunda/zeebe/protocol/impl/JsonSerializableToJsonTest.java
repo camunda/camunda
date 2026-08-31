@@ -5245,7 +5245,7 @@ final class JsonSerializableToJsonTest {
                       .setProcessDefinitionKey(2251799813685100L)
                       .setProcessDefinitionVersion(3)
                       .setAgentDefinitionKey(2251799813685077L)
-                      .setVersionTag("v1.2")
+                      .setProcessDefinitionVersionTag("v1.2")
                       .setTenantId("<default>")
                       .setStatus(AgentInstanceStatus.TOOL_CALLING)
                       .setTools(
@@ -5289,7 +5289,7 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": 2251799813685100,
           "processDefinitionVersion": 3,
           "agentDefinitionKey": 2251799813685077,
-          "versionTag": "v1.2",
+          "processDefinitionVersionTag": "v1.2",
           "tenantId": "<default>",
           "status": "TOOL_CALLING",
           "definition": {
@@ -5333,7 +5333,7 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": -1,
           "processDefinitionVersion": -1,
           "agentDefinitionKey": -1,
-          "versionTag": "",
+          "processDefinitionVersionTag": "",
           "tenantId": "<default>",
           "status": "UNSPECIFIED",
           "definition": { "model": "", "provider": "", "systemPrompt": [] },
@@ -5393,7 +5393,7 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": -1,
           "processDefinitionVersion": -1,
           "agentDefinitionKey": -1,
-          "versionTag": "",
+          "processDefinitionVersionTag": "",
           "tenantId": "<default>",
           "status": "UNSPECIFIED",
           "definition": { "model": "", "provider": "", "systemPrompt": [] },
