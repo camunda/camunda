@@ -13,8 +13,6 @@ import { membershipMutations } from "src/utility/api/membership/mutations";
 import useTranslate from "src/utility/localization";
 import FormModal from "src/components/modalV2/FormModal";
 import TextField from "src/components/formV2/TextField";
-// TODO: Remove during design system migration. Obsolete. See /pages/roles/members for reference.
-import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import { DocumentationLink } from "src/components/documentationV2";
 import type { Tenant, User } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -60,18 +58,16 @@ const AssignMemberModal: FC<
         label={t("username")}
         placeholder={t("typeUsername")}
         helperText={
-          <Caption>
-            <Translate i18nKey="usernameDescription">
-              Check the documentation for{" "}
-              <DocumentationLink
-                path="/components/admin/tenant/#assign-users-to-a-tenant"
-                withIcon
-              >
-                how to reference users
-              </DocumentationLink>{" "}
-              .
-            </Translate>
-          </Caption>
+          <Translate i18nKey="usernameDescription">
+            Check the documentation for{" "}
+            <DocumentationLink
+              path="/components/admin/tenant/#assign-users-to-a-tenant"
+              withIcon
+            >
+              how to reference users
+            </DocumentationLink>{" "}
+            .
+          </Translate>
         }
         onChange={setUsername}
         value={username}

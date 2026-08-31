@@ -7,13 +7,12 @@
  */
 
 import { FC } from "react";
-// TODO: Replace with ErrorInlineNotification during design system migration
-import { C3EmptyState } from "@camunda/camunda-composite-components";
+import { Trash2 } from "lucide-react";
 import useTranslate from "src/utility/localization";
 import { getMembersByTenantId } from "src/utility/api/membership";
 import EntityList from "src/components/entityListV2";
 import { useEntityModal } from "src/components/modalV2";
-import { TrashCan } from "@carbon/react/icons";
+import { ErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
 import DeleteModal from "src/pages/tenants/detailV2/members/DeleteModal";
 import AssignMembersModal from "src/pages/tenants/detailV2/members/AssignMembersModal";
 import AssignMemberModal from "src/pages/tenants/detailV2/members/AssignMemberModal";
@@ -56,12 +55,12 @@ const Members: FC<MembersProps> = ({ tenantId, isOIDC }) => {
 
   if (!loading && !success)
     return (
-      <C3EmptyState
-        heading={t("somethingsWrong")}
-        description={t("unableToLoadResource", {
+      <ErrorInlineNotification
+        title={t("somethingsWrong")}
+        subtitle={t("unableToLoadResource", {
           resourceType: t("user").toLowerCase(),
         })}
-        button={{ label: t("retry"), onClick: reload }}
+        actionButton={{ label: t("retry"), onClick: reload }}
       />
     );
 
@@ -105,7 +104,7 @@ const Members: FC<MembersProps> = ({ tenantId, isOIDC }) => {
         menuItems={[
           {
             label: t("remove"),
-            icon: TrashCan,
+            icon: Trash2,
             isDangerous: true,
             onClick: unassignMember,
           },
