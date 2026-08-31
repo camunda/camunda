@@ -127,7 +127,7 @@ func (c *secretsCommand) set(store *localsecrets.Store, args []string) error {
 		if err != nil {
 			return errors.New("failed to read secret value")
 		}
-		if err := withoutInterrupts(func() error { return store.Set(names[0], value) }); err != nil {
+		if err := store.SetManyGuarded(map[string][]byte{names[0]: value}, withoutInterrupts); err != nil {
 			return err
 		}
 		c.printSecretSaved(names[0])
@@ -159,7 +159,7 @@ func (c *secretsCommand) set(store *localsecrets.Store, args []string) error {
 		}
 		values[name] = value
 	}
-	if err := withoutInterrupts(func() error { return store.SetMany(values) }); err != nil {
+	if err := store.SetManyGuarded(values, withoutInterrupts); err != nil {
 		return err
 	}
 	for _, name := range names {
@@ -346,7 +346,7 @@ func (c *secretsCommand) importDotenv(store *localsecrets.Store, args []string) 
 	if err != nil {
 		return err
 	}
-	err = withoutInterrupts(func() error { return store.SetMany(values) })
+	err = store.SetManyGuarded(values, withoutInterrupts)
 	if err != nil {
 		return err
 	}
