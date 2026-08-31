@@ -200,7 +200,8 @@ public final class AgentInstanceCreateProcessor
             .setProcessDefinitionKey(elementInstanceValue.getProcessDefinitionKey())
             .setProcessDefinitionVersion(elementInstanceValue.getVersion())
             .setAgentDefinitionKey(agentDefinitionKey)
-            .setVersionTag(deployedProcess == null ? "" : deployedProcess.getVersionTag())
+            .setProcessDefinitionVersionTag(
+                deployedProcess == null ? "" : deployedProcess.getVersionTag())
             .setTenantId(elementInstanceValue.getTenantId())
             .setStatus(AgentInstanceStatus.INITIALIZING);
 
