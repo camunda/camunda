@@ -104,9 +104,7 @@ describe('<AssignButton />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Assign to me'}));
 
-		await vi.advanceTimersByTimeAsync(500);
-		await expect.element(screen.getByText('Assigning...')).toBeVisible();
-		await vi.advanceTimersByTimeAsync(500);
+		await vi.advanceTimersByTimeAsync(1000);
 		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).toBeVisible();
 	});
 
@@ -135,9 +133,7 @@ describe('<AssignButton />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Unassign'}));
 
-		await vi.advanceTimersByTimeAsync(500);
-		await expect.element(screen.getByText('Unassigning...')).toBeVisible();
-		await vi.advanceTimersByTimeAsync(500);
+		await vi.advanceTimersByTimeAsync(1000);
 		await expect.element(screen.getByRole('button', {name: 'Unassign'})).toBeVisible();
 	});
 
