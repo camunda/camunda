@@ -587,6 +587,9 @@ businessValue:
   # numbers simply stop advancing until it is re-enabled. Requires an Optimize restart to take
   # effect, as configuration is read once at startup. Scoped to the sweep only — it does not affect
   # the overview or target endpoints, nor the dashboard tiles, which are evaluated per request.
+  # Saving a target still refreshes that definition's existing overview rows while this is off: it
+  # evaluates no reports, so it adds none of the load this switch sheds, and targets staying
+  # coherent while the measured values freeze is the behaviour the switch is meant to preserve.
   overviewComputeEnabled: ${CAMUNDA_OPTIMIZE_BUSINESS_VALUE_OVERVIEW_COMPUTE_ENABLED:true}
 
 export:

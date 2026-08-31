@@ -16,6 +16,8 @@ import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.MetricRange;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetUpsertRequestDto;
+import io.camunda.optimize.dto.optimize.query.businessvalue.CycleTimeTargetDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import io.camunda.optimize.service.dashboard.BusinessValueDashboardService;
 import io.camunda.optimize.service.db.repository.BusinessValueOverviewRepository;
@@ -50,12 +52,14 @@ class BusinessValueOverviewComputeIT extends AbstractBrokerlessZeebeCCSMIT {
   private BusinessValueTargetWriter targetWriter;
   private BusinessValueOverviewComputeService computeService;
   private BusinessValueOverviewRepository overviewRepository;
+  private BusinessValueTargetService targetService;
 
   @BeforeEach
   void setUp() {
     targetWriter = embeddedOptimizeExtension.getBean(BusinessValueTargetWriter.class);
     computeService = embeddedOptimizeExtension.getBean(BusinessValueOverviewComputeService.class);
     overviewRepository = embeddedOptimizeExtension.getBean(BusinessValueOverviewRepository.class);
+    targetService = embeddedOptimizeExtension.getBean(BusinessValueTargetService.class);
     // AbstractBrokerlessZeebeCCSMIT.cleanupOptimizeData() wipes Optimize data between tests, so
     // the ApplicationReadyEvent-driven seed is only visible to the first test. Reseed here so the
     // compute service can look up the two per-process seeded reports on every run.
@@ -260,6 +264,44 @@ class BusinessValueOverviewComputeIT extends AbstractBrokerlessZeebeCCSMIT {
     assertThat(overviewRepository.getByKey(DEFAULT_TENANT, neverRun, MetricRange.SEVEN_DAYS))
         .isPresent()
         .hasValueSatisfying(r -> assertThat(r.getCycleTime().getValue()).isNull());
+  }
+
+  /**
+   * The bug this whole path exists for: a target saved between sweeps used to sit in the target
+   * index while the overview row kept the target it was last computed with, so L0 showed the old
+   * verdict for a full refresh interval. Deliberately runs no sweep between the save and the read —
+   * a test that swept in between would pass on the broken behaviour too.
+   */
+  @Test
+  void shouldReflectATargetOnTheOverviewRowsWithoutWaitingForASweep() {
+    // given a definition measured by a sweep, with no target yet
+    persistProcessDefinitions(List.of(bvdDefinition(PROCESS_KEY, DEFAULT_TENANT)));
+    computeService.computeOverviewRows(List.of(MetricRange.values()));
+    assertThat(overviewRepository.getByKey(DEFAULT_TENANT, PROCESS_KEY, MetricRange.SEVEN_DAYS))
+        .isPresent()
+        .hasValueSatisfying(r -> assertThat(r.isHasAnyTarget()).isFalse());
+
+    // when a target is saved through the service, and no sweep runs afterwards
+    targetService.upsertTarget(
+        "sherrin@camunda.com",
+        DEFAULT_TENANT,
+        PROCESS_KEY,
+        new BusinessValueTargetUpsertRequestDto(
+            new CycleTimeTargetDto(8L, TargetValueUnit.HOURS, null), AUTOMATION_TARGET_PCT));
+
+    // then every range preset already carries the target and its verdict
+    for (final MetricRange range : MetricRange.values()) {
+      assertThat(overviewRepository.getByKey(DEFAULT_TENANT, PROCESS_KEY, range))
+          .as("row for range %s", range)
+          .isPresent()
+          .hasValueSatisfying(
+              r -> {
+                assertThat(r.getCycleTime().getTarget()).isEqualTo(CYCLE_TARGET_MILLIS);
+                assertThat(r.getAutomationRate().getTarget()).isEqualTo(AUTOMATION_TARGET_PCT);
+                assertThat(r.isHasAnyTarget()).isTrue();
+                assertThat(r.getTargetsSet()).isEqualTo(2);
+              });
+    }
   }
 
   private static ProcessDefinitionOptimizeDto bvdDefinition(

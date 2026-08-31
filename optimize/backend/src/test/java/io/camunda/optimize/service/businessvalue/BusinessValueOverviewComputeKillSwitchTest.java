@@ -9,6 +9,7 @@ package io.camunda.optimize.service.businessvalue;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -16,11 +17,14 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.RoleType;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.MetricRange;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import io.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import io.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionKeyGroupByDto;
@@ -32,6 +36,7 @@ import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.report.PlainReportEvaluationHandler;
 import io.camunda.optimize.service.db.report.ReportEvaluationInfo;
 import io.camunda.optimize.service.db.report.result.MapCommandResult;
+import io.camunda.optimize.service.db.repository.BusinessValueOverviewRepository;
 import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
 import io.camunda.optimize.service.db.repository.MappingMetadataRepository;
 import io.camunda.optimize.service.db.repository.SearchLimitsRepository;
@@ -39,9 +44,11 @@ import io.camunda.optimize.service.db.writer.BusinessValueOverviewWriter;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.configuration.BusinessValueConfiguration;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -57,6 +64,7 @@ class BusinessValueOverviewComputeKillSwitchTest {
   private BusinessValueOverviewWriter overviewWriter;
   private PlainReportEvaluationHandler reportEvaluationHandler;
   private BusinessValueTargetRepository targetRepository;
+  private BusinessValueOverviewRepository overviewRepository;
   private DefinitionService definitionService;
   private MappingMetadataRepository mappingMetadataRepository;
   private SearchLimitsRepository searchLimitsRepository;
@@ -66,6 +74,7 @@ class BusinessValueOverviewComputeKillSwitchTest {
   @BeforeEach
   void setUp() {
     targetRepository = mock(BusinessValueTargetRepository.class);
+    overviewRepository = mock(BusinessValueOverviewRepository.class);
     overviewWriter = mock(BusinessValueOverviewWriter.class);
     definitionService = mock(DefinitionService.class);
     final ReportService reportService = mock(ReportService.class);
@@ -99,6 +108,7 @@ class BusinessValueOverviewComputeKillSwitchTest {
     computeService =
         new BusinessValueOverviewComputeService(
             targetRepository,
+            overviewRepository,
             overviewWriter,
             definitionService,
             reportService,
@@ -150,6 +160,50 @@ class BusinessValueOverviewComputeKillSwitchTest {
         targetRepository,
         mappingMetadataRepository,
         searchLimitsRepository);
+  }
+
+  /**
+   * The switch sheds the sweep's Elasticsearch load, and a target refresh evaluates no reports — it
+   * re-derives the verdict from values already on the row. Gating it too would mean a target saved
+   * during an incident silently fails to show up, which is a correctness regression bought for no
+   * load saving at all.
+   */
+  @Test
+  void shouldStillRefreshTargetsOnRowsWhenComputeIsDisabled() {
+    // given the sweep is switched off, and a definition with a computed row
+    businessValueConfiguration.setOverviewComputeEnabled(false);
+    final BusinessValueTargetDto target =
+        new BusinessValueTargetDto(
+            "invoice-process",
+            TENANT,
+            1_000L,
+            TargetValueUnit.MILLIS,
+            90,
+            OffsetDateTime.now(),
+            "u");
+    when(overviewRepository.getByKey(eq(TENANT), eq("invoice-process"), any()))
+        .thenAnswer(invocation -> Optional.of(rowFor(invocation.getArgument(2))));
+
+    // when a target is saved
+    computeService.refreshTargetOnRows(target);
+
+    // then the rows are still brought up to date, without evaluating a report
+    verify(overviewWriter).bulkUpsertFromTargetWrite(any());
+    verifyNoInteractions(reportEvaluationHandler);
+  }
+
+  private static BusinessValueOverviewDto rowFor(final MetricRange range) {
+    return new BusinessValueOverviewDto(
+        TENANT,
+        "invoice-process",
+        "Invoice",
+        range,
+        OffsetDateTime.now(),
+        new BusinessValueOverviewDto.CycleTimeBlock(5_000L, null, null),
+        new BusinessValueOverviewDto.AutomationRateBlock(50d, null, null),
+        false,
+        0,
+        0);
   }
 
   @Test
