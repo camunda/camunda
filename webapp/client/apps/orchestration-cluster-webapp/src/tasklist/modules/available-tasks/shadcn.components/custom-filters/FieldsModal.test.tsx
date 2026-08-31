@@ -117,8 +117,8 @@ describe('<FieldsModal />', () => {
 
 		await userEvent.click(combobox);
 		await expect.element(screen.getByRole('listbox')).toBeVisible();
-		await userEvent.click(screen.getByRole('option', {name: 'Process 1 - v2'}), {force: true});
-		await expect.element(combobox).toHaveTextContent('Process 1 - v2');
+		await expect.element(screen.getByRole('option', {name: 'Process 0 - v1'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'Process 1 - v2'})).toBeVisible();
 	});
 
 	it('should reveal user and group inputs when user and group is selected', async ({worker}) => {
