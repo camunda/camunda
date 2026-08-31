@@ -31,7 +31,7 @@ import {useMemo} from 'react';
 type Props = {
   processInstance: Pick<
     ProcessInstance,
-    'processInstanceKey' | 'state' | 'hasIncident' | 'parentProcessInstanceKey'
+    'processInstanceKey' | 'state' | 'hasIncident'
   >;
   activeOperations: BatchOperationType[];
 };
@@ -40,8 +40,7 @@ const InstanceOperations: React.FC<Props> = ({
   processInstance,
   activeOperations,
 }) => {
-  const {processInstanceKey, state, hasIncident, parentProcessInstanceKey} =
-    processInstance;
+  const {processInstanceKey, state, hasIncident} = processInstance;
   const handleOperationSuccess = useHandleOperationSuccess();
 
   const {
@@ -126,7 +125,6 @@ const InstanceOperations: React.FC<Props> = ({
 
   const isActive = state === 'ACTIVE';
   const isSuspended = state === 'SUSPENDED';
-  const isRoot = parentProcessInstanceKey === null;
   const isLoading =
     activeOperations.length > 0 ||
     isCancelProcessInstancePending ||
@@ -148,7 +146,7 @@ const InstanceOperations: React.FC<Props> = ({
         : null;
 
     let stateChangeOperation: OperationConfig | null = null;
-    if (isRoot && isActive) {
+    if (isActive) {
       stateChangeOperation = {
         type: 'SUSPEND_PROCESS_INSTANCE',
         onExecute: () => suspendProcessInstance(),
@@ -158,7 +156,7 @@ const InstanceOperations: React.FC<Props> = ({
       };
     }
 
-    if (isRoot && isSuspended) {
+    if (isSuspended) {
       stateChangeOperation = {
         type: 'RESUME_PROCESS_INSTANCE',
         onExecute: () => resumeProcessInstance(),
@@ -200,7 +198,6 @@ const InstanceOperations: React.FC<Props> = ({
     isDeletePending,
     isResolveIncidentsPending,
     isResumeProcessInstancePending,
-    isRoot,
     isSuspendProcessInstancePending,
     isSuspended,
     resolveProcessInstanceIncidents,
