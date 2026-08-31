@@ -394,7 +394,7 @@ jobs:
     needs: [ detect-changes ]
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-8-default
+    runs-on: ubicloud-standard-8 # gcp-perf-core-8-default
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -424,7 +424,7 @@ jobs:
     if: false
     name: "Dependency Cycle Check"
     needs: [ detect-changes ]
-    runs-on: gcp-core-16-default
+    runs-on: ubicloud-standard-16
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
     strategy:
@@ -695,7 +695,7 @@ jobs:
               "maven-modules": "'qa/acceptance-tests'",
               "maven-build-threads": 2,
               "maven-test-fork-count": 3,
-              "runs-on": "gcp-perf-core-8-default",
+              "runs-on": "ubicloud-standard-8",
               "docker-repository": "localhost:5000/camunda/camunda",
               "docker-file": "camunda.Dockerfile",
               "owner": "@camunda/qa-engineering",
@@ -708,7 +708,7 @@ jobs:
               "maven-modules": "'qa/testcontainer'",
               "maven-build-threads": 1,
               "maven-test-fork-count": 1,
-              "runs-on": "gcp-perf-core-8-default",
+              "runs-on": "ubicloud-standard-8",
               "docker-repository": "localhost:5000/camunda/camunda",
               "docker-file": "camunda.Dockerfile",
               "owner": "@camunda/zeebe-distributed-platform",
@@ -721,7 +721,7 @@ jobs:
               "maven-modules": "${ZEEBE_IT_DISTRIBUTED_MODULES}",
               "maven-build-threads": 2,
               "maven-test-fork-count": 7,
-              "runs-on": "gcp-perf-core-16-longrunning",
+              "runs-on": "ubicloud-standard-16",
               "docker-repository": "localhost:5000/camunda/camunda",
               "docker-file": "camunda.Dockerfile",
               "owner": "@camunda/zeebe-distributed-platform",
@@ -734,7 +734,7 @@ jobs:
               "maven-modules": "${ZEEBE_IT_ENGINE_MODULES}",
               "maven-build-threads": 2,
               "maven-test-fork-count": 7,
-              "runs-on": "gcp-perf-core-16-longrunning",
+              "runs-on": "ubicloud-standard-16",
               "docker-repository": "localhost:5000/camunda/camunda",
               "docker-file": "camunda.Dockerfile",
               "owner": "@camunda/core-features",
@@ -747,7 +747,7 @@ jobs:
               "maven-modules": "${ZEEBE_IT_EXPORTER_MODULES}",
               "maven-build-threads": 2,
               "maven-test-fork-count": 7,
-              "runs-on": "gcp-perf-core-16-longrunning",
+              "runs-on": "ubicloud-standard-16",
               "owner": "@camunda/data-layer",
               "module": "Zeebe",
               "stressRun": 1
@@ -758,7 +758,7 @@ jobs:
               "maven-modules": "schema-manager",
               "maven-build-threads": 1,
               "maven-test-fork-count": 3,
-              "runs-on": "gcp-perf-core-8-default",
+              "runs-on": "ubicloud-standard-8",
               "docker-repository": "localhost:5000/camunda/camunda",
               "docker-file": "camunda.Dockerfile",
               "owner": "@camunda/data-layer",
@@ -771,7 +771,7 @@ jobs:
               "maven-modules": "zeebe/qa/integration-tests",
               "maven-build-threads": 1,
               "maven-test-fork-count": 10,
-              "runs-on": "gcp-perf-core-16-default",
+              "runs-on": "ubicloud-standard-16",
               "owner": "@camunda/core-features",
               "module": "Zeebe",
               "test-filter": "io.camunda.zeebe.it.engine.**,!**/*${DOLLAR}*.java",
@@ -784,7 +784,7 @@ jobs:
               "maven-modules": "zeebe/qa/integration-tests",
               "maven-build-threads": 1,
               "maven-test-fork-count": 10,
-              "runs-on": "gcp-perf-core-16-default",
+              "runs-on": "ubicloud-standard-16",
               "docker-repository": "localhost:5000/camunda/camunda",
               "docker-file": "camunda.Dockerfile",
               "owner": "@camunda/zeebe-distributed-platform",
@@ -799,7 +799,7 @@ jobs:
               "maven-modules": "zeebe/qa/integration-tests",
               "maven-build-threads": 1,
               "maven-test-fork-count": 1,
-              "runs-on": "gcp-perf-core-8-default",
+              "runs-on": "ubicloud-standard-8",
               "owner": "@camunda/zeebe-distributed-platform",
               "module": "Zeebe",
               "test-filter": "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest",
@@ -811,7 +811,7 @@ jobs:
               "maven-modules": "zeebe/qa/integration-tests",
               "maven-build-threads": 1,
               "maven-test-fork-count": 10,
-              "runs-on": "gcp-perf-core-16-default",
+              "runs-on": "ubicloud-standard-16",
               "docker-repository": "localhost:5000/camunda/camunda",
               "docker-file": "camunda.Dockerfile",
               "owner": "@camunda/engineering-operations",
@@ -825,7 +825,7 @@ jobs:
               "maven-modules": "testing/camunda-process-test-java,testing/camunda-process-test-spring,testing/camunda-process-test-example",
               "maven-build-threads": 1,
               "maven-test-fork-count": 3,
-              "runs-on": "gcp-perf-core-8-default",
+              "runs-on": "ubicloud-standard-8",
               "docker-repository": "localhost:5000/camunda/camunda",
               "docker-file": "camunda.Dockerfile",
               "owner": "@camunda/c8-testing",
@@ -838,7 +838,7 @@ jobs:
               "maven-modules": "clients/camunda-spring-boot-starter,clients/camunda-spring-boot-3-starter,clients/camunda-spring-boot-starter-virtual-threads,clients/java",
               "maven-build-threads": 1,
               "maven-test-fork-count": 1,
-              "runs-on": "gcp-perf-core-8-default",
+              "runs-on": "ubicloud-standard-8",
               "owner": "@camunda/core-features",
               "module": "Clients",
               "stressRun": 1
@@ -849,7 +849,7 @@ jobs:
               "maven-modules": "zeebe/qa/update-tests",
               "maven-build-threads": 1,
               "maven-test-fork-count": 10,
-              "runs-on": "gcp-perf-core-16-default",
+              "runs-on": "ubicloud-standard-16",
               "docker-repository": "localhost:5000/camunda/camunda",
               "docker-file": "camunda.Dockerfile",
               "owner": "@camunda/core-features",
@@ -889,7 +889,7 @@ jobs:
     needs: [ detect-changes, setup-tests ]
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-16-default
+    runs-on: ubicloud-standard-16
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
@@ -958,7 +958,7 @@ jobs:
     needs: [ detect-changes, setup-tests ]
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-16-default
+    runs-on: ubicloud-standard-16
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     env:
@@ -1136,7 +1136,7 @@ jobs:
       maven-profiles: "history"
       test-type: "history-tests"
       test-type-label: "History"
-      runs-on: "gcp-perf-core-8-default"
+      runs-on: "ubicloud-standard-8"
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
@@ -1300,7 +1300,7 @@ jobs:
     needs: [ detect-changes, build-distball ]
     name: "General / Integration / RDBMS ITs"
     timeout-minutes: 30
-    runs-on: gcp-perf-core-8-default
+    runs-on: ubicloud-standard-8
     strategy:
       # In case of stress testing, we want the status from all jobs.
       fail-fast: false
@@ -1691,7 +1691,7 @@ jobs:
     needs: [ detect-changes ]
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-16-default
+    runs-on: ubicloud-standard-16
     env:
       TEST_PRODUCT: Camunda
       TEST_TYPE: Unit
@@ -2839,7 +2839,7 @@ jobs:
   deploy-snapshots:
     name: Deploy snapshot artifacts
     needs: [ check-results, build-platform-frontend, utils-get-concurrency-group-for-maven-snapshot ]
-    runs-on: gcp-perf-core-8-default
+    runs-on: ubicloud-standard-8
     timeout-minutes: 25
     permissions: { }  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
