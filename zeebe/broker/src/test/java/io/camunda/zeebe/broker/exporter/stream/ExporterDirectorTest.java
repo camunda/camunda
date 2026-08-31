@@ -1138,6 +1138,63 @@ public final class ExporterDirectorTest {
   }
 
   @Test
+  public void shouldReportExportingMigrationInProgressWithDetailWhenSoftPausedAndBehind() {
+    // given - soft-paused exporting keeps running but never persists its position, freezing a
+    // genuine previous-version backlog behind it -- the operator needs to know pausing, not an
+    // ongoing migration, is what's actually blocking progress
+    startExporterDirector(exporterDescriptors);
+    final var previousVersion = VersionUtil.getPreviousSemanticVersion().orElseThrow();
+    rule.writeEventWithBrokerVersion(
+        DeploymentIntent.CREATED,
+        new DeploymentRecord(),
+        new VersionInfo(previousVersion.major(), previousVersion.minor(), previousVersion.patch()));
+    rule.getDirector().softPauseExporting().join();
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATION_IN_PROGRESS);
+    assertThat(status.detail()).contains("SOFT_PAUSED").contains("resume it");
+  }
+
+  @Test
+  public void shouldReportExportingMigrationInProgressWithDetailWhenHardPausedAndBehind() {
+    // given - hard-paused exporting stops the export loop outright, freezing the same kind of
+    // backlog behind it as soft-pausing does, for the same reason: the operator needs to know why
+    startExporterDirector(exporterDescriptors);
+    final var previousVersion = VersionUtil.getPreviousSemanticVersion().orElseThrow();
+    rule.writeEventWithBrokerVersion(
+        DeploymentIntent.CREATED,
+        new DeploymentRecord(),
+        new VersionInfo(previousVersion.major(), previousVersion.minor(), previousVersion.patch()));
+    rule.getDirector().pauseExporting().join();
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATION_IN_PROGRESS);
+    assertThat(status.detail()).contains("PAUSED").contains("resume it");
+  }
+
+  @Test
+  public void shouldReportMigratedWhenPausedButNothingIsBehind() {
+    // given - pausing alone doesn't create a previous-version backlog; the peek that decides
+    // MIGRATED still reflects the log's true content, so a pause with nothing actually behind must
+    // not be reported as blocking readiness
+    startExporterDirector(exporterDescriptors);
+    writeEvent();
+    rule.getDirector().softPauseExporting().join();
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+  }
+
+  @Test
   public void shouldReportExportingMigrationStatusInPassiveModeUsingItsOwnFreshReader() {
     // given - passive mode never opens the shared, ACTIVE-only logStreamReader field; this must
     // still answer correctly using its own throwaway reader over the same log

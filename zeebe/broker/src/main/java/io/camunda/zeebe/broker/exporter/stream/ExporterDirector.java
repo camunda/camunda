@@ -875,8 +875,29 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         nextUnexportedRecordVersion = null;
       }
     }
-    return ExportingMigrationStatusCalculator.compute(
-        partitionId.number(), true, nextUnexportedRecordVersion);
+    final var status =
+        ExportingMigrationStatusCalculator.compute(
+            partitionId.number(), true, nextUnexportedRecordVersion);
+    return explainIfPaused(status);
+  }
+
+  /**
+   * Names a pause as the reason exporting hasn't caught up yet, since the operator's fix for that
+   * ({@code resume exporting}) is different from the fix for a genuine backlog. Left as-is for
+   * MIGRATED/UNKNOWN -- the peek that produced {@code status} already reflects the log's true
+   * content regardless of pause, so a pause never turns an otherwise-safe MIGRATED into something
+   * unsafe, and only naming it when the result is MIGRATION_IN_PROGRESS avoids reporting "not
+   * ready" for a pause that isn't actually blocking anything (e.g. nothing written since is on an
+   * old version).
+   */
+  private PartitionMigrationStatus explainIfPaused(final PartitionMigrationStatus status) {
+    if (status.code() != MigrationStatusCode.MIGRATION_IN_PROGRESS
+        || (exporterPhase != ExporterPhase.PAUSED && exporterPhase != ExporterPhase.SOFT_PAUSED)) {
+      return status;
+    }
+    return new PartitionMigrationStatus(
+        MigrationStatusCode.MIGRATION_IN_PROGRESS,
+        status.detail() + "; exporting is " + exporterPhase + ", resume it to continue");
   }
 
   /**
