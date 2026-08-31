@@ -29,12 +29,17 @@
 #   Set to `false` for versions without product-side physical-tenant config
 #   support, so physical_tenant_count > 0 fails fast instead of silently
 #   rendering an incomplete overlay.
+#
+# - prefer_rest
+#   Whether the load testers prefer REST over gRPC (matches the load-tester
+#   application default). Set to `false` on versions that should keep gRPC (8.7).
 
 rdbms_storages ?= postgresql mysql mariadb mssql oracle
 optimize_self_sufficient_storages ?= elasticsearch opensearch
 scenario_max_override_key ?= orchestration.extraConfiguration[1].content=
 install_storage_target ?= install-storage
 physical_tenants_supported ?= true
+prefer_rest ?= true
 
 template_output_dir ?= .
 # Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
@@ -98,6 +103,12 @@ additional_load_test_setup_configuration ?=
 # Makefile-side load-test-setup flags. Separate from `additional_load_test_setup_configuration`,
 # which CI sets on the make command line and would suppress `+=` here.
 _load_test_setup_flags =
+
+# load-tester-values-defaults.yaml defaults preferRest to true. Only emit an explicit
+# override when a version opts out of the REST default (e.g. 8.7, which keeps gRPC).
+ifneq ($(prefer_rest),true)
+_load_test_setup_flags += --set global.preferRest.enabled=$(prefer_rest)
+endif
 
 # The Docker image tag for the load test metrics exporter
 metrics_exporter_image_tag = latest
