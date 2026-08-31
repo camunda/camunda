@@ -43,6 +43,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
+import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
@@ -1106,14 +1107,11 @@ public final class ExporterDirectorTest {
   @Test
   public void
       shouldReportExportingMigrationInProgressWhenNextUnexportedRecordIsOnAPreviousVersion() {
-    // given - a record stamped with the last supported backwards-compatible version is written
-    // and never acknowledged
+    // given - a record stamped with a version one minor behind the one actually running is
+    // written and never acknowledged
     startExporterDirector(exporterDescriptors);
-    final var previousVersion = VersionUtil.getPreviousSemanticVersion().orElseThrow();
     rule.writeEventWithBrokerVersion(
-        DeploymentIntent.CREATED,
-        new DeploymentRecord(),
-        new VersionInfo(previousVersion.major(), previousVersion.minor(), previousVersion.patch()));
+        DeploymentIntent.CREATED, new DeploymentRecord(), oneMinorBehindTheCurrentVersion());
 
     // when
     final var status = rule.getDirector().getExportingMigrationStatus().join();
@@ -1143,11 +1141,8 @@ public final class ExporterDirectorTest {
     // genuine previous-version backlog behind it -- the operator needs to know pausing, not an
     // ongoing migration, is what's actually blocking progress
     startExporterDirector(exporterDescriptors);
-    final var previousVersion = VersionUtil.getPreviousSemanticVersion().orElseThrow();
     rule.writeEventWithBrokerVersion(
-        DeploymentIntent.CREATED,
-        new DeploymentRecord(),
-        new VersionInfo(previousVersion.major(), previousVersion.minor(), previousVersion.patch()));
+        DeploymentIntent.CREATED, new DeploymentRecord(), oneMinorBehindTheCurrentVersion());
     rule.getDirector().softPauseExporting().join();
 
     // when
@@ -1163,11 +1158,8 @@ public final class ExporterDirectorTest {
     // given - hard-paused exporting stops the export loop outright, freezing the same kind of
     // backlog behind it as soft-pausing does, for the same reason: the operator needs to know why
     startExporterDirector(exporterDescriptors);
-    final var previousVersion = VersionUtil.getPreviousSemanticVersion().orElseThrow();
     rule.writeEventWithBrokerVersion(
-        DeploymentIntent.CREATED,
-        new DeploymentRecord(),
-        new VersionInfo(previousVersion.major(), previousVersion.minor(), previousVersion.patch()));
+        DeploymentIntent.CREATED, new DeploymentRecord(), oneMinorBehindTheCurrentVersion());
     rule.getDirector().pauseExporting().join();
 
     // when
@@ -1212,6 +1204,17 @@ public final class ExporterDirectorTest {
   private long writeEvent() {
     final DeploymentRecord event = new DeploymentRecord();
     return rule.writeEvent(DeploymentIntent.CREATED, event);
+  }
+
+  /**
+   * A version exactly one minor behind whatever is actually running -- {@link
+   * VersionUtil#getPreviousSemanticVersion()} is a separately-configured backwards-compatibility
+   * baseline that only coincidentally stays one minor behind {@link VersionUtil#getVersion()}, so
+   * relying on it here would make this test depend on the two staying in lockstep.
+   */
+  private static VersionInfo oneMinorBehindTheCurrentVersion() {
+    final var current = SemanticVersion.parse(VersionUtil.getVersion()).orElseThrow();
+    return new VersionInfo(current.major(), current.minor() - 1, 0);
   }
 
   private Consumer<Context> withFilter(
