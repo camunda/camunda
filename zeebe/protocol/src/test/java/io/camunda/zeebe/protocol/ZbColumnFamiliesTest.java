@@ -27,7 +27,7 @@ class ZbColumnFamiliesTest {
   /**
    * Column family IDs are RocksDB key prefixes. They must stay unique, and a given CF name must
    * keep the same ID across versions so upgrades do not point at a different prefix. Gaps are
-   * allowed (e.g. when back-porting a CF that was assigned a higher ID on a newer branch).
+   * allowed (e.g. when backporting a CF that was assigned a higher ID on a newer branch).
    */
   @Test
   void shouldNotReuseEnumValues() {
@@ -36,8 +36,9 @@ class ZbColumnFamiliesTest {
   }
 
   @Test
-  void shouldHaveNonNegativeEnumValues() {
+  void shouldHaveSortedNonNegativeEnumValues() {
     assertThat(Arrays.stream(ZbColumnFamilies.values()).map(ZbColumnFamilies::getValue))
+        .isSorted()
         .allMatch(value -> value >= 0);
   }
 
