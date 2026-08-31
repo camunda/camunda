@@ -17,6 +17,7 @@ import java.util.function.ObjIntConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 
 public class ColumnFamilyContext {
 
@@ -64,7 +65,7 @@ public class ColumnFamilyContext {
     return valueBuffer.byteArray();
   }
 
-  public void wrapKeyView(final byte[] key) {
+  public void wrapKeyView(final byte @Nullable [] key) {
     if (key != null) {
       // wrap without the column family key
       keyViewBuffer.wrap(key, Long.BYTES, key.length - Long.BYTES);
@@ -73,7 +74,7 @@ public class ColumnFamilyContext {
     }
   }
 
-  public DirectBuffer getKeyView() {
+  public @Nullable DirectBuffer getKeyView() {
     return isKeyViewEmpty() ? null : keyViewBuffer;
   }
 
@@ -81,7 +82,7 @@ public class ColumnFamilyContext {
     return keyViewBuffer.capacity() == ZERO_SIZE_ARRAY.length;
   }
 
-  public void wrapValueView(final byte[] value) {
+  public void wrapValueView(final byte @Nullable [] value) {
     if (value != null) {
       valueViewBuffer.wrap(value);
     } else {
@@ -89,7 +90,7 @@ public class ColumnFamilyContext {
     }
   }
 
-  public DirectBuffer getValueView() {
+  public @Nullable DirectBuffer getValueView() {
     return isValueViewEmpty() ? null : valueViewBuffer;
   }
 
