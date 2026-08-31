@@ -330,7 +330,6 @@ jobs:
         uses: dcarbone/install-jq-action@4fcb5062d7ce9bc4382d1a352d19ba3ba2c317c1 # v4.0.1
         with:
           version: 1.8.2
-          force: 'true'
 
       - name: Run test
         shell: bash
