@@ -88,10 +88,13 @@ public final class SecretResolutionLifecycleTest {
         engine.jobs().withType(JOB_TYPE).withRequestStreamId(1).withRequestId(1L).activate();
     assertThat(parked.getValue().getJobs()).isEmpty();
 
-    // then - the request addresses the default store, which is the one configured
+    // then - the request addresses the default store, which is the one configured. The first
+    // RESOLUTION_REQUESTED for this reference is the creation-time warmup, which carries no job
+    // key (see SecretResolutionWarmupTest) - this is the poll-driven one, which parks this job
     final Record<SecretReferenceRecordValue> requested =
         RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
             .withSecretReference("token")
+            .filter(record -> record.getValue().getJobKeys().contains(jobKey))
             .getFirst();
     assertThat(requested.getValue().getStoreId()).isEqualTo(SecretStoreRegistry.DEFAULT_STORE_ID);
     assertThat(requested.getValue().getJobKeys()).containsExactly(jobKey);

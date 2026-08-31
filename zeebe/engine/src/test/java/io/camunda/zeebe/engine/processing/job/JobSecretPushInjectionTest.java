@@ -442,13 +442,18 @@ public final class JobSecretPushInjectionTest {
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final long jobKey = jobKeyOf(processInstanceKey);
 
-    // then - the job stays activatable for a long poll, which owns the check on that path
+    // then - the job stays activatable for a long poll, which owns the check on that path; the
+    // resolution is nonetheless requested right away as a warmup, without parking the job or
+    // naming its key (see SecretResolutionWarmupTest)
     Awaitility.await("until the workers are notified")
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> assertThat(JOB_STREAMER.notificationsForJob(JOB_TYPE)).isPositive());
     assertThat(jobState(jobKey)).isEqualTo(State.ACTIVATABLE);
-    assertThat(RecordingExporter.getRecords())
-        .noneMatch(record -> record.getValueType() == ValueType.SECRET_REFERENCE);
+    final Record<SecretReferenceRecordValue> requested =
+        RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
+            .withSecretReference(SECRET_NAME)
+            .getFirst();
+    assertThat(requested.getValue().getJobKeys()).isEmpty();
   }
 
   @Test
