@@ -32,8 +32,14 @@ export const userName = (entity) => entity.find('td:nth-child(2) .cds--stack-ver
 export const carbonRoleOption = (text) =>
   Selector('.Modal.is-visible .cds--radio-button-wrapper').withText(text);
 export const userList = Selector('.UserList');
-export const logoutButton = Selector('header button').withText('Logout');
-export const usernameDropdown = Selector('header button').withAttribute('aria-label', 'Open User');
+// Both navigations: under IS_NAV_V2_ENABLED the design system portals its user menu to
+// <body>, so the log-out entry is no longer inside <header>, and its label loses the space.
+export const logoutButton = Selector(
+  'header button, [data-slot="user-menu-content"] [role="menuitem"]'
+).withText(/log\s?out/i);
+export const usernameDropdown = Selector(
+  'header button[aria-label="Open User"], [data-slot="user-menu-trigger"]'
+);
 export const sourceModalSearchField = Selector('.SourcesModal .cds--search-input');
 export const selectAllCheckbox = Selector('.Table thead .cds--table-column-checkbox label');
 export const itemCheckbox = (idx) =>
