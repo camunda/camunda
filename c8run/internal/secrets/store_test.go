@@ -13,7 +13,9 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/gofrs/flock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -351,6 +353,36 @@ func TestSetManyRejectsInvalidUTF8BeforeWriting(t *testing.T) {
 	assert.ErrorContains(t, err, "valid UTF-8")
 	_, statErr := os.Stat(store.directory)
 	assert.ErrorIs(t, statErr, os.ErrNotExist)
+}
+
+func TestSetManyGuardStartsAfterLockAcquisition(t *testing.T) {
+	store := New(t.TempDir())
+	require.NoError(t, store.Ensure())
+	lock := flock.New(filepath.Join(store.directory, ".c8run-secrets.lock"))
+	require.NoError(t, lock.Lock())
+	t.Cleanup(func() { _ = lock.Unlock() })
+
+	guardStarted := make(chan struct{})
+	done := make(chan error, 1)
+	go func() {
+		done <- store.SetManyGuarded(map[string][]byte{"API_KEY": []byte("value")}, func(operation func() error) error {
+			close(guardStarted)
+			return operation()
+		})
+	}()
+
+	select {
+	case <-guardStarted:
+		t.Fatal("guard started before the store lock was acquired")
+	case <-time.After(100 * time.Millisecond):
+	}
+	require.NoError(t, lock.Unlock())
+	select {
+	case <-guardStarted:
+	case <-time.After(5 * time.Second):
+		t.Fatal("guard did not start after the store lock was released")
+	}
+	require.NoError(t, <-done)
 }
 
 func TestImportValidatesAllNamesBeforeWriting(t *testing.T) {

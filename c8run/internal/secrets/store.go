@@ -136,6 +136,10 @@ func (s *Store) Set(name string, value []byte) error {
 }
 
 func (s *Store) SetMany(values map[string][]byte) error {
+	return s.SetManyGuarded(values, func(operation func() error) error { return operation() })
+}
+
+func (s *Store) SetManyGuarded(values map[string][]byte, guard func(func() error) error) error {
 	names := make([]string, 0, len(values))
 	seen := make(map[string]string, len(values))
 	for name, value := range values {
@@ -165,6 +169,10 @@ func (s *Store) SetMany(values map[string][]byte) error {
 		return fmt.Errorf("failed to lock local secrets directory: %w", err)
 	}
 	defer func() { _ = lock.Unlock() }()
+	return guard(func() error { return s.setManyUnlocked(names, values) })
+}
+
+func (s *Store) setManyUnlocked(names []string, values map[string][]byte) error {
 	for _, name := range names {
 		if err := s.rejectCaseCollision(name); err != nil {
 			return err
