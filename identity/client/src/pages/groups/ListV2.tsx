@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { Edit, TrashCan } from "@carbon/react/icons";
+import { Pencil, Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
@@ -86,10 +86,10 @@ const List: FC = () => {
         onAddEntity={addGroup}
         loading={loading}
         menuItems={[
-          { label: t("edit"), icon: Edit, onClick: updateGroup },
+          { label: t("edit"), icon: Pencil, onClick: updateGroup },
           {
             label: t("delete"),
-            icon: TrashCan,
+            icon: Trash2,
             isDangerous: true,
             onClick: deleteGroup,
           },
