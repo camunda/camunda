@@ -14,6 +14,7 @@ import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
 import jnr.ffi.annotations.In;
 import jnr.ffi.annotations.Out;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,8 +92,8 @@ final class RocksDbOptionsFormatter {
    * class would throw {@link NoClassDefFoundError}.
    */
   private static final class Holder {
-    private static final LibC LIB_C;
-    private static final Runtime RUNTIME;
+    private static final @Nullable LibC LIB_C;
+    private static final @Nullable Runtime RUNTIME;
 
     static {
       LibC libC = null;

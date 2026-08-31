@@ -29,10 +29,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksIterator;
 
@@ -142,12 +142,12 @@ class TransactionalColumnFamily<
   }
 
   @Override
-  public ValueType get(final KeyType key) {
+  public @Nullable ValueType get(final KeyType key) {
     try (final var timer = metrics.measureGetLatency()) {
       ensureInOpenTransaction(
           transaction -> {
             columnFamilyContext.writeKey(key);
-            final byte[] value =
+            final var value =
                 transaction.get(
                     transactionDb.getDefaultNativeHandle(),
                     transactionDb.getReadOptionsNativeHandle(),
@@ -165,13 +165,13 @@ class TransactionalColumnFamily<
   }
 
   @Override
-  public ValueType get(final KeyType key, final Supplier<ValueType> valueSupplier) {
+  public @Nullable ValueType get(final KeyType key, final Supplier<ValueType> valueSupplier) {
     final var result = new MutableReference<ValueType>();
     try (final var timer = metrics.measureGetLatency()) {
       ensureInOpenTransaction(
           transaction -> {
             columnFamilyContext.writeKey(key);
-            final byte[] valueBytes =
+            final var valueBytes =
                 transaction.get(
                     transactionDb.getDefaultNativeHandle(),
                     transactionDb.getReadOptionsNativeHandle(),
@@ -345,7 +345,7 @@ class TransactionalColumnFamily<
       ensureInOpenTransaction(
           transaction -> {
             columnFamilyContext.writeKey(key);
-            final byte[] value =
+            final var value =
                 transaction.get(
                     transactionDb.getDefaultNativeHandle(),
                     transactionDb.getReadOptionsNativeHandle(),
@@ -689,7 +689,7 @@ class TransactionalColumnFamily<
       final KeyType keyInstance, final KeyVisitor<KeyType> visitor, final byte[] keyBytes) {
     columnFamilyContext.wrapKeyView(keyBytes);
 
-    final DirectBuffer keyViewBuffer = columnFamilyContext.getKeyView();
+    final var keyViewBuffer = requireNonNull(columnFamilyContext.getKeyView());
     keyInstance.wrap(keyViewBuffer, 0, keyViewBuffer.capacity());
 
     return visitor.visit(keyInstance);
@@ -705,9 +705,9 @@ class TransactionalColumnFamily<
     columnFamilyContext.wrapKeyView(keyBytes);
     columnFamilyContext.wrapValueView(iterator.value());
 
-    final DirectBuffer keyViewBuffer = columnFamilyContext.getKeyView();
+    final var keyViewBuffer = requireNonNull(columnFamilyContext.getKeyView());
     keyInstance.wrap(keyViewBuffer, 0, keyViewBuffer.capacity());
-    final DirectBuffer valueViewBuffer = columnFamilyContext.getValueView();
+    final var valueViewBuffer = requireNonNull(columnFamilyContext.getValueView());
     valueInstance.wrap(valueViewBuffer, 0, valueViewBuffer.capacity());
 
     return iteratorConsumer.visit(keyInstance, valueInstance);

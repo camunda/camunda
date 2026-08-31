@@ -32,24 +32,28 @@ public final class RocksDbInternal {
   static final EnumSet<Code> RECOVERABLE_ERROR_CODES =
       EnumSet.of(Ok, Aborted, Expired, IOError, Busy, TimedOut, TryAgain, MergeInProgress);
 
+  @SuppressWarnings("NullAway.Init")
   static Field nativeHandle;
 
   /**
    * WriteBatchWithIndex.put(long handle, byte[] key, int keyLength, byte[] value, int valueLength,
    * long cfHandle) — package-private final method, no offset params.
    */
+  @SuppressWarnings("NullAway.Init")
   static MethodHandle putWithHandle;
 
   /**
    * WriteBatchWithIndex.getFromBatchAndDB(long handle, long dbHandle, long readOptionsHandle,
    * byte[] key, int keyLength, long cfHandle) — private static native, no offset param.
    */
+  @SuppressWarnings("NullAway.Init")
   static MethodHandle getWithHandle;
 
   /**
    * WriteBatchWithIndex.delete(long handle, byte[] key, int keyLength, long cfHandle) —
    * package-private final method, no offset param.
    */
+  @SuppressWarnings("NullAway.Init")
   static MethodHandle removeWithHandle;
 
   static {
