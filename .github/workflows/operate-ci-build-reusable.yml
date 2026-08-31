@@ -61,10 +61,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [ utils-get-snapshot-docker-tag ]
+    # checkout needs contents:read; the artifact upload uses the Actions runtime
+    # token, not GITHUB_TOKEN, so it needs no extra permission.
+    permissions:
+      contents: read
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -116,13 +120,124 @@ jobs:
           directory: ./operate/client
 
       #########################################################################
-      # Build: maven artifacts and Docker images
+      # Build: maven artifacts (the Docker image is built in `build-docker`)
       - name: Build Maven
         run: |
           ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       #########################################################################
-      # Build Docker image
+      # Upload the built distribution so the dedicated `build-docker` job can
+      # build and push the image on its own 30-minute budget.
+      #
+      # The Docker build+push was moved out of this job because the Harbor layer
+      # push (registry.camunda.cloud) intermittently stalls ~18-20min (INC-7411,
+      # INC-7561). Sharing this job's budget with the ~10min Maven build left the
+      # push only ~20min of the 30min ceiling, so a stalled push hit the job
+      # timeout and was cancelled. Giving the push its own job restores a nearly
+      # full 30min budget. The image build+push mechanics are unchanged -- the
+      # steps simply moved to `build-docker` below.
+      - name: Upload distball for the docker build job
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: operate-distball
+          path: dist/target/camunda-zeebe-*.tar.gz
+          retention-days: 1
+          if-no-files-found: error
+
+      #########################################################################
+      # Collect information about build status for central statistics with CI Analytics
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  build-docker:
+    # Builds and pushes the Operate image on its own 30-minute budget so a slow
+    # Harbor layer push has the full runway instead of the ~20min left after the
+    # Maven build in `build` (see the upload step there for the why). The two
+    # docker steps below are identical to the ones previously in `build`; only
+    # their location changed -- build/push mechanics and the wretry wrapping in
+    # build-platform-docker are untouched.
+    if: >
+      always() &&
+      needs.build.result == 'success' &&
+      contains(
+        fromJson('["success", "skipped"]'),
+        needs.utils-get-snapshot-docker-tag.result
+      )
+    name: Build Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [ build, utils-get-snapshot-docker-tag ]
+    # checkout needs contents:read; the artifact download and the registry
+    # pushes (Harbor/DockerHub/Minimus via Vault secrets) use neither the
+    # GITHUB_TOKEN nor the Actions API, so no extra permission is required.
+    permissions:
+      contents: read
+    steps:
+      # Setup: checkout branch (needed for operate.Dockerfile and the build context)
+      - name: Checkout '${{ inputs.branch }}' branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/heads/${{ inputs.branch }}
+          fetch-depth: 0 # fetches all history for all branches and tags
+          persist-credentials: false
+
+      #########################################################################
+      # Setup: define env variables (same as the build job)
+      - name: Set GitHub environment variables
+        run: |
+          GIT_COMMIT_HASH=$(git rev-parse ${{ inputs.branch }})
+          BRANCH_SLUG=$(echo "${{ inputs.branch }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+          echo "IMAGE_TAG=$(if [ "${{ inputs.branch }}" = "main" ]; then echo $GIT_COMMIT_HASH; else echo "branch-$BRANCH_SLUG"; fi)" >> $GITHUB_ENV
+          echo "CI_IMAGE_TAG=ci-$GIT_COMMIT_HASH" >> $GITHUB_ENV
+          echo "PR_IMAGE_TAG=pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
+
+      #########################################################################
+      # Setup: import secrets from vault
+      - name: Import Secrets
+        id: secrets # important to refer to it in later steps
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
+
+      #########################################################################
+      # Setup and configure Docker + registry logins (harbor/dockerhub/minimus).
+      # Reused as-is; the Java/Maven setup it also performs is unused here but cheap.
+      - uses: ./.github/actions/setup-build
+        name: Build setup
+        with:
+          dockerhub: ${{ env.SHOULD_PUSH_DOCKER_SNAPSHOT == 'true' }}
+          minimus: true
+          harbor: true
+          java-distribution: adopt
+          maven-cache-key-modifier: operate
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      #########################################################################
+      # Download the distribution built by the `build` job into the path the
+      # Dockerfile expects (ARG DISTBALL=dist/target/camunda-zeebe-*.tar.gz).
+      - name: Download distball
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: operate-distball
+          path: dist/target
+
+      #########################################################################
+      # Build Docker image (moved verbatim from the build job)
       - name: Build Docker image
         uses: ./.github/actions/build-platform-docker
         with:
@@ -136,7 +251,7 @@ jobs:
           dockerfile: operate.Dockerfile
 
       #########################################################################
-      # Build SNAPSHOT Docker image
+      # Build SNAPSHOT Docker image (moved verbatim from the build job)
       - name: Build SNAPSHOT Docker image
         if: >
           env.SHOULD_PUSH_DOCKER_SNAPSHOT == 'true' &&
