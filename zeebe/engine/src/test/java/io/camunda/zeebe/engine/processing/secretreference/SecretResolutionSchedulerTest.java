@@ -399,13 +399,14 @@ final class SecretResolutionSchedulerTest {
     when(clock.millis()).thenReturn(Long.MAX_VALUE);
     scheduler.resolveSecrets(resultBuilder);
 
-    // then — store not retried; full scheduling interval restored
+    // then, store not retried: the idle backoff ladder restarts at wakeDelay
     verify(secretStore, times(1)).resolve(any());
     final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
-    // three calls: onRecovered, first execute (failure → early), second execute (no pending → full)
+    // three calls: onRecovered, first execute (failure → retry delay), second execute (no pending →
+    // idle ladder's first step)
     verify(scheduleService, times(3)).runDelayedAsync(delayCaptor.capture(), any(), any());
     assertThat(delayCaptor.getAllValues().get(2))
-        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_INTERVAL);
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_WAKE_DELAY);
   }
 
   @Test
@@ -544,14 +545,15 @@ final class SecretResolutionSchedulerTest {
     // when
     scheduler.resolveSecrets(resultBuilder);
 
-    // then — the failure did not enter retry/backoff state
+    // then, the failure did not enter retry/backoff state, so the idle backoff ladder governs the
+    // reschedule instead of the retry deadline
     verify(resultBuilder, never()).appendCommandRecord(any(), any());
     verify(secretCache, never()).put(any(), any());
     final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
     // two calls total: one from onRecovered in setUp, one from execute
     verify(scheduleService, times(2)).runDelayedAsync(delayCaptor.capture(), any(), any());
     assertThat(delayCaptor.getAllValues().get(1))
-        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_INTERVAL);
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_WAKE_DELAY);
   }
 
   @Test
@@ -746,18 +748,98 @@ final class SecretResolutionSchedulerTest {
   }
 
   @Test
-  void shouldFallBackToFullIntervalWhenACycleFindsNothingPendingAndWasNotWoken() throws Exception {
+  void shouldStartIdleBackoffAtWakeDelayWhenACycleFindsNothingPendingAndWasNotWoken()
+      throws Exception {
     // given - no pending refs at all, and wake() was never called
     doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
 
     // when
     scheduler.resolveSecrets(resultBuilder);
 
-    // then - a second call: onRecovered's initial schedule (in setUp), then this cycle's reschedule
+    // then - a second call: onRecovered's initial schedule (in setUp), then this cycle's
+    // reschedule.
+    // The idle backoff ladder starts at wakeDelay rather than jumping straight to the full interval
     final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
     verify(scheduleService, times(2)).runDelayedAsync(delayCaptor.capture(), any(), any());
     assertThat(delayCaptor.getAllValues().get(1))
-        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_INTERVAL);
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_WAKE_DELAY);
+  }
+
+  @Test
+  void shouldGrowIdleBackoffGeometricallyAndCapAtSchedulingInterval() throws Exception {
+    // given - no pending refs at all, and wake() is never called
+    doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
+
+    // when - enough consecutive empty cycles run for the ladder to reach and then stay at the cap.
+    // wakeDelay (50ms) doubling: 50, 100, 200, 400, 800, 1600, 3200, then capped at
+    // schedulingInterval
+    // (5000ms) since 3200 * 2 = 6400 would overshoot it
+    for (int i = 0; i < 9; i++) {
+      scheduler.resolveSecrets(resultBuilder);
+    }
+
+    // then - onRecovered's initial schedule, then one per cycle above
+    final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
+    verify(scheduleService, times(10)).runDelayedAsync(delayCaptor.capture(), any(), any());
+    assertThat(delayCaptor.getAllValues().subList(1, 10))
+        .extracting(Duration::toMillis)
+        .containsExactly(50L, 100L, 200L, 400L, 800L, 1600L, 3200L, 5000L, 5000L);
+  }
+
+  @Test
+  void shouldResetIdleBackoffLadderWhenACycleMakesProgress() throws Exception {
+    // given - two consecutive unwoken, empty cycles grow the idle backoff ladder past its first
+    // step
+    doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
+    scheduler.resolveSecrets(resultBuilder);
+    scheduler.resolveSecrets(resultBuilder);
+
+    // when - a cycle resolves something
+    stubPending(STORE_ID, "db-password");
+    when(secretStore.resolve(Set.of("db-password")))
+        .thenReturn(Map.of("db-password", new SecretResolutionResult.Resolved("s3cr3t")));
+    scheduler.resolveSecrets(resultBuilder);
+
+    // and - a further unwoken, empty cycle runs
+    doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
+    scheduler.resolveSecrets(resultBuilder);
+
+    // then - onRecovered's initial schedule, then one per cycle above. The cycle that resolved
+    // something uses wakeDelay regardless (asserted elsewhere); what this proves is that the final
+    // cycle restarts the ladder at wakeDelay too, rather than resuming from the doubled value the
+    // first two cycles had already reached
+    final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
+    verify(scheduleService, times(5)).runDelayedAsync(delayCaptor.capture(), any(), any());
+    assertThat(delayCaptor.getAllValues().get(4))
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_WAKE_DELAY);
+  }
+
+  @Test
+  void shouldStillGrowIdleBackoffWhenWakeDelayIsZero() throws Exception {
+    // given - wakeDelay of zero is allowed (a cycle that resolves something or is woken reschedules
+    // at zero itself); the idle ladder must still climb rather than getting stuck doubling zero
+    final var config = new EngineConfiguration().setSecretResolutionWakeDelay(Duration.ZERO);
+    final var localScheduler =
+        new SecretResolutionScheduler(
+            () -> scheduledTaskState,
+            new SecretStoreRegistry(Map.of(STORE_ID, secretStore), Map.of(STORE_ID, secretCache)),
+            config,
+            metrics);
+    localScheduler.onRecovered(context);
+    reset(scheduleService);
+    doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
+
+    // when - three consecutive empty, unwoken cycles run
+    localScheduler.resolveSecrets(resultBuilder);
+    localScheduler.resolveSecrets(resultBuilder);
+    localScheduler.resolveSecrets(resultBuilder);
+
+    // then - the ladder starts at a 1ms floor rather than zero, and still doubles from there
+    final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
+    verify(scheduleService, times(3)).runDelayedAsync(delayCaptor.capture(), any(), any());
+    assertThat(delayCaptor.getAllValues())
+        .extracting(Duration::toMillis)
+        .containsExactly(1L, 2L, 4L);
   }
 
   @Test
@@ -786,11 +868,43 @@ final class SecretResolutionSchedulerTest {
     // when - a second cycle runs without a further wake and still finds nothing
     scheduler.resolveSecrets(resultBuilder);
 
-    // then - the flag was consumed by the first cycle, so this one falls back to the full interval
+    // then - the flag was consumed by the first cycle, so this one is on the idle backoff ladder
+    // rather than treated as woken - its first step happens to equal wakeDelay too (asserted
+    // distinctly from the wake behavior in shouldResetIdleBackoffLadderWhenWoken below)
     final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
     verify(scheduleService, times(3)).runDelayedAsync(delayCaptor.capture(), any(), any());
     assertThat(delayCaptor.getAllValues().get(2))
-        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_INTERVAL);
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_WAKE_DELAY);
+  }
+
+  @Test
+  void shouldResetIdleBackoffLadderWhenWoken() throws Exception {
+    // given - two consecutive unwoken, empty cycles grow the idle backoff ladder past its first
+    // step
+    doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
+    scheduler.resolveSecrets(resultBuilder);
+    scheduler.resolveSecrets(resultBuilder);
+
+    // when - a wake arrives and the cycle it triggers still finds nothing pending
+    scheduler.wake();
+    scheduler.resolveSecrets(resultBuilder);
+
+    // and - a further unwoken, empty cycle runs
+    scheduler.resolveSecrets(resultBuilder);
+
+    // then - onRecovered's initial schedule, then one per cycle above. The woken cycle uses
+    // wakeDelay regardless of the ladder (asserted elsewhere); what this proves is that the final,
+    // unwoken cycle restarts the ladder at wakeDelay too, instead of resuming from the doubled
+    // value
+    // the first two cycles had already reached - the wake cleared the streak, not just the flag
+    final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
+    verify(scheduleService, times(5)).runDelayedAsync(delayCaptor.capture(), any(), any());
+    final var delays = delayCaptor.getAllValues();
+    assertThat(delays.get(1)).isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_WAKE_DELAY);
+    assertThat(delays.get(2).toMillis())
+        .isEqualTo(2 * EngineConfiguration.DEFAULT_SECRET_RESOLUTION_WAKE_DELAY.toMillis());
+    assertThat(delays.get(3)).isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_WAKE_DELAY);
+    assertThat(delays.get(4)).isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_WAKE_DELAY);
   }
 
   @Test
