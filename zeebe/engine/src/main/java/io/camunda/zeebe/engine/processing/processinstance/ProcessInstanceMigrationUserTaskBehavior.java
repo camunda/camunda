@@ -247,7 +247,8 @@ public class ProcessInstanceMigrationUserTaskBehavior {
               .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
               .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
               .setElementId(targetElementId)
-              .setVariables(NIL_VALUE));
+              .setVariables(NIL_VALUE)
+              .setAction(""));
     }
   }
 
