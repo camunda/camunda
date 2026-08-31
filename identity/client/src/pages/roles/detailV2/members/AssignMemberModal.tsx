@@ -13,8 +13,6 @@ import { membershipMutations } from "src/utility/api/membership/mutations";
 import useTranslate from "src/utility/localization";
 import FormModal from "src/components/modalV2/FormModal";
 import TextField from "src/components/formV2/TextField";
-// TODO: Remove. Don't import from different page!
-import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import { DocumentationLink } from "src/components/documentationV2";
 import type { Role, User } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -68,18 +66,16 @@ const AssignMemberModal: FC<
         placeholder={t("typeUsername")}
         onChange={setUsername}
         helperText={
-          <Caption>
-            <Translate i18nKey="usernameDescription">
-              Check the documentation for{" "}
-              <DocumentationLink
-                path="/components/admin/role/#assign-users-to-a-role"
-                withIcon
-              >
-                how to reference users
-              </DocumentationLink>{" "}
-              .
-            </Translate>
-          </Caption>
+          <Translate i18nKey="usernameDescription">
+            Check the documentation for{" "}
+            <DocumentationLink
+              path="/components/admin/role/#assign-users-to-a-role"
+              withIcon
+            >
+              how to reference users
+            </DocumentationLink>{" "}
+            .
+          </Translate>
         }
         value={username}
         autoFocus

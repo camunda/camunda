@@ -7,16 +7,12 @@
  */
 
 import { useCallback } from "react";
-import { Tag } from "@carbon/react";
-import styled from "styled-components";
 import useTranslate from "src/utility/localization";
-import EntitySearchDropdown, {
+import {
+  EntitySearchDropdown,
+  RemovableEntityBadge,
   type EntitySearchQuery,
 } from "src/components/formV2/EntitySearchDropdown";
-
-const SelectedEntities = styled.div`
-  margin-top: 0;
-`;
 
 type AbstractEntitySearchMultiSelectProps<
   Entity extends Record<string, unknown>,
@@ -80,21 +76,20 @@ const EntitySearchMultiSelect = <Entity extends Record<string, unknown>>({
   };
 
   return (
-    <>
+    <div className="flex flex-col gap-2">
       {value.length > 0 && (
-        <SelectedEntities>
-          {value.map((entity) => (
-            <Tag
-              key={getId(entity)}
-              onClose={handleUnselect(entity)}
-              size="md"
-              type="blue"
-              filter
-            >
-              {getId(entity)}
-            </Tag>
-          ))}
-        </SelectedEntities>
+        <div className="flex flex-wrap gap-1.5">
+          {value.map((entity) => {
+            const label = getId(entity);
+            return (
+              <RemovableEntityBadge
+                key={label}
+                label={label}
+                onRemove={handleUnselect(entity)}
+              />
+            );
+          })}
+        </div>
       )}
       <EntitySearchDropdown
         search={search}
@@ -107,7 +102,7 @@ const EntitySearchMultiSelect = <Entity extends Record<string, unknown>>({
         errorTitle={errorTitle}
         retryLabel={t("retry")}
       />
-    </>
+    </div>
   );
 };
 
