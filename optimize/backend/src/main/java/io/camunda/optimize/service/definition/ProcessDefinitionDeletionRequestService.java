@@ -78,7 +78,7 @@ public class ProcessDefinitionDeletionRequestService {
         jobRegistryReader.findLastByJobTypeAndEntityId(
             JobType.DELETE, EntityType.PROCESS_DEFINITION, processDefinitionId);
     final boolean deleteJobAlreadyExists =
-        existingEntry.filter(entry -> entry.getStatus() != JobStatus.FAILED).isPresent();
+        existingEntry.filter(entry -> entry.getStatus() == JobStatus.QUEUED).isPresent();
     if (deleteJobAlreadyExists) {
       throw new OptimizeConflictException(
           String.format(

@@ -19,6 +19,7 @@ import static org.mockito.Mockito.mock;
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
 import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.DefinitionType;
+import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
@@ -103,7 +104,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     refreshAllIndices();
 
     // then
-    assertThat(getProcessDefinition(definitionIdV1)).isEmpty();
+    assertThat(isDeleted(definitionIdV1)).isTrue();
     assertThat(getProcessDefinition(definitionIdV2)).isPresent();
 
     final List<ProcessInstanceDto> remainingInstances =
@@ -132,8 +133,33 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     refreshAllIndices();
 
     // then
-    assertThat(getProcessDefinition(definitionId)).isEmpty();
+    assertThat(isDeleted(definitionId)).isTrue();
     assertThat(processOverviewReader.getProcessOverviewByKey(bpmnProcessId)).isPresent();
+  }
+
+  @Test
+  void shouldClearTheDefinitionsDataWhenSoftDeleted() {
+    // given
+    final String bpmnProcessId = "definition-deletion-own-xml-test-" + UUID.randomUUID();
+    final String definitionId = bpmnProcessId + ":1:" + UUID.randomUUID();
+    final ProcessDefinitionOptimizeDto definition = definitionFor(bpmnProcessId, definitionId, "1");
+    definition.setFlowNodeData(
+        List.of(new FlowNodeDataDto("task-1", "Review by Jane Doe", "userTask")));
+    definition.setUserTaskNames(Map.of("task-1", "Review by Jane Doe"));
+    persistProcessDefinitions(List.of(definition));
+    refreshAllIndices();
+
+    // when
+    handler.handle(job(definitionId));
+    refreshAllIndices();
+
+    // then
+    final ProcessDefinitionOptimizeDto softDeleted =
+        processDefinitionReader.getProcessDefinition(definitionId, true).orElseThrow();
+    assertThat(softDeleted.isDeleted()).isTrue();
+    assertThat(softDeleted.getBpmn20Xml()).isNull();
+    assertThat(softDeleted.getFlowNodeData()).isEmpty();
+    assertThat(softDeleted.getUserTaskNames()).isEmpty();
   }
 
   @Test
@@ -150,7 +176,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     refreshAllIndices();
 
     // then
-    assertThat(getProcessDefinition(definitionId)).isEmpty();
+    assertThat(isDeleted(definitionId)).isTrue();
     assertThat(getCachedXml(reportId)).isNull();
   }
 
@@ -197,7 +223,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     refreshAllIndices();
 
     // then
-    assertThat(getProcessDefinition(definitionIdTenantA)).isEmpty();
+    assertThat(isDeleted(definitionIdTenantA)).isTrue();
     assertThat(getProcessDefinition(definitionIdTenantB)).isPresent();
     assertThat(getCachedXml(reportId)).isNull();
   }
@@ -222,7 +248,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     refreshAllIndices();
 
     // then
-    assertThat(getProcessDefinition(definitionIdTenantA)).isEmpty();
+    assertThat(isDeleted(definitionIdTenantA)).isTrue();
     assertThat(getProcessDefinition(definitionIdTenantB)).isPresent();
     assertThat(getCachedXml(reportId)).isNull();
   }
@@ -249,7 +275,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     refreshAllIndices();
 
     // then
-    assertThat(getProcessDefinition(definitionIdTenantA)).isEmpty();
+    assertThat(isDeleted(definitionIdTenantA)).isTrue();
     assertThat(getProcessDefinition(definitionIdTenantB)).isPresent();
     assertThat(getCachedXml(reportIdTenantA)).isNull();
     assertThat(getCachedXml(reportIdTenantB)).isEqualTo("<definitions>cached</definitions>");
@@ -278,7 +304,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     refreshAllIndices();
 
     // then
-    assertThat(getProcessDefinition(definitionId)).isEmpty();
+    assertThat(isDeleted(definitionId)).isTrue();
     assertThat(getCachedXml(reportId)).isNull();
   }
 
@@ -304,7 +330,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     refreshAllIndices();
 
     // then
-    assertThat(getProcessDefinition(definitionId)).isEmpty();
+    assertThat(isDeleted(definitionId)).isTrue();
     assertThat(getCachedXml(reportId)).isEqualTo("<definitions>cached</definitions>");
   }
 
@@ -392,23 +418,39 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     // when / then
     assertThatCode(() -> handler.handle(job(definitionId))).doesNotThrowAnyException();
     refreshAllIndices();
-    assertThat(getProcessDefinition(definitionId)).isEmpty();
+    assertThat(isDeleted(definitionId)).isTrue();
   }
 
   @Test
-  void shouldBeIdempotentWhenReInvokedAgainstAlreadyDeletedData() {
+  void shouldClearLeftoverXmlOnASecondDeleteRequestForTheSameDefinition() {
     // given
-    final String bpmnProcessId = "definition-deletion-idempotency-test-" + UUID.randomUUID();
+    final String bpmnProcessId = "definition-deletion-second-request-test-" + UUID.randomUUID();
     final String definitionId = bpmnProcessId + ":1:" + UUID.randomUUID();
     persistProcessInstances(List.of(instanceFor(bpmnProcessId, definitionId, "1")));
+    final String reportId = createSingleProcessReportWithCachedXml(bpmnProcessId);
     refreshAllIndices();
 
     handler.handle(job(definitionId));
     refreshAllIndices();
-    assertThat(getProcessDefinition(definitionId)).isEmpty();
+    assertThat(isDeleted(definitionId)).isTrue();
+    assertThat(getCachedXml(reportId)).isNull();
 
-    // when / then -- re-invoking against already-deleted data is a no-op, not an exception
-    assertThatCode(() -> handler.handle(job(definitionId))).doesNotThrowAnyException();
+    // simulate the leftover: a concurrent report evaluation re-writes the XML after the clear
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setProcessDefinitionKey(bpmnProcessId);
+    reportData.setTenantIds(new ArrayList<>(List.of(ZEEBE_DEFAULT_TENANT_ID)));
+    reportData.getConfiguration().setXml("<definitions>cached</definitions>");
+    reportWriter.createOrUpdateSingleProcessReport(
+        reportId, "demo", reportData, "Test Report", null, null);
+    refreshAllIndices();
+    assertThat(getCachedXml(reportId)).isEqualTo("<definitions>cached</definitions>");
+
+    // when -- the user re-requests deletion for the same (already soft-deleted) definition
+    handler.handle(job(definitionId));
+    refreshAllIndices();
+
+    // then -- the leftover XML is cleared again
+    assertThat(getCachedXml(reportId)).isNull();
   }
 
   @Test
@@ -437,7 +479,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
   @Test
   void shouldLeaveDefinitionResumableAfterATerminalFailureAndCompleteCleanupOnRetry() {
     // given -- the deletion job will fail terminally right after the definition instances are
-    // deleted, before the remaining-versions check, XML clear, cache eviction, and hard-delete run
+    // deleted, before the remaining-versions check, XML clear, and cache eviction run
     final String bpmnProcessId = "definition-deletion-resume-test-" + UUID.randomUUID();
     final String definitionId = bpmnProcessId + ":1:" + UUID.randomUUID();
     persistProcessInstances(List.of(instanceFor(bpmnProcessId, definitionId, "1")));
@@ -480,8 +522,8 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     resumableHandler.handle(job(definitionId));
     refreshAllIndices();
 
-    // then -- the remainder of the cleanup tail, including the final hard-delete, now completes
-    assertThat(getProcessDefinition(definitionId)).isEmpty();
+    // then -- the remainder of the cleanup tail now completes
+    assertThat(isDeleted(definitionId)).isTrue();
     assertThat(getCachedXml(reportId)).isNull();
   }
 
@@ -502,7 +544,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     refreshAllIndices();
 
     // then
-    assertThat(getProcessDefinition(definitionId)).isEmpty();
+    assertThat(isDeleted(definitionId)).isTrue();
     final JobRegistryReader jobRegistryReader =
         embeddedOptimizeExtension.getBean(JobRegistryReader.class);
     final var found =
@@ -515,6 +557,12 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
 
   private Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
     return processDefinitionReader.getProcessDefinition(definitionId, false);
+  }
+
+  private boolean isDeleted(final String definitionId) {
+    return getProcessDefinition(definitionId)
+        .map(ProcessDefinitionOptimizeDto::isDeleted)
+        .orElse(false);
   }
 
   private String createSingleProcessReportWithCachedXml(final String bpmnProcessId) {
