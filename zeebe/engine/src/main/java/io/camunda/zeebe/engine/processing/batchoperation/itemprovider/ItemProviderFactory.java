@@ -17,6 +17,7 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
+import java.util.List;
 
 public class ItemProviderFactory {
 
@@ -133,26 +134,30 @@ public class ItemProviderFactory {
 
   private ProcessInstanceItemProvider forSuspendProcessInstance(
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    // Unlike cancel, not restricted to root instances. The parent-key filter is still overridden
+    // (cleared) rather than omitted, so a caller-supplied filter can't empty the batch.
     return new ProcessInstanceItemProvider(
         searchClientsProxy,
         metrics,
         filter.toBuilder()
             .partitionId(partitionId)
             .replaceStates(ProcessInstanceState.ACTIVE.name())
-            .replaceParentProcessInstanceKeyOperations(Operation.exists(false))
+            .replaceParentProcessInstanceKeyOperations(List.of())
             .build(),
         authentication);
   }
 
   private ProcessInstanceItemProvider forResumeProcessInstance(
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    // Unlike cancel, not restricted to root instances. The parent-key filter is still overridden
+    // (cleared) rather than omitted, so a caller-supplied filter can't empty the batch.
     return new ProcessInstanceItemProvider(
         searchClientsProxy,
         metrics,
         filter.toBuilder()
             .partitionId(partitionId)
             .replaceStates(ProcessInstanceState.SUSPENDED.name())
-            .replaceParentProcessInstanceKeyOperations(Operation.exists(false))
+            .replaceParentProcessInstanceKeyOperations(List.of())
             .build(),
         authentication);
   }
