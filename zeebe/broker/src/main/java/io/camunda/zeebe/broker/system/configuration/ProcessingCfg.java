@@ -14,8 +14,10 @@ public final class ProcessingCfg implements ConfigurationEntry {
 
   private static final int DEFAULT_PROCESSING_BATCH_LIMIT = 100;
   private static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 1000;
+  private static final int DEFAULT_MAX_PENDING_SIDE_EFFECTS = 1000;
   private Integer maxCommandsInBatch = DEFAULT_PROCESSING_BATCH_LIMIT;
   private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
+  private int maxPendingSideEffects = DEFAULT_MAX_PENDING_SIDE_EFFECTS;
   private Duration scheduledTaskCheckInterval = Duration.ofSeconds(1);
   private Set<Long> skipPositions;
 
@@ -28,6 +30,10 @@ public final class ProcessingCfg implements ConfigurationEntry {
     if (maxRecoverableRetries < 1) {
       throw new IllegalArgumentException(
           "maxRecoverableRetries must be >= 1 but was %s".formatted(maxRecoverableRetries));
+    }
+    if (maxPendingSideEffects < 1) {
+      throw new IllegalArgumentException(
+          "maxPendingSideEffects must be >= 1 but was %s".formatted(maxPendingSideEffects));
     }
     if (!scheduledTaskCheckInterval.isPositive()) {
       throw new IllegalArgumentException(
@@ -42,6 +48,20 @@ public final class ProcessingCfg implements ConfigurationEntry {
 
   public void setMaxCommandsInBatch(final int maxCommandsInBatch) {
     this.maxCommandsInBatch = maxCommandsInBatch;
+  }
+
+  /**
+   * How many processing results may wait for their records to be committed before processing stops
+   * reading new records. Bounds the memory held by queued responses and post-commit tasks when
+   * commits are slow. Raise it only to trade memory for throughput on a partition whose commit
+   * latency is high.
+   */
+  public int getMaxPendingSideEffects() {
+    return maxPendingSideEffects;
+  }
+
+  public void setMaxPendingSideEffects(final int maxPendingSideEffects) {
+    this.maxPendingSideEffects = maxPendingSideEffects;
   }
 
   public int getMaxRecoverableRetries() {
@@ -67,6 +87,8 @@ public final class ProcessingCfg implements ConfigurationEntry {
         + maxCommandsInBatch
         + ", maxRecoverableRetries="
         + maxRecoverableRetries
+        + ", maxPendingSideEffects="
+        + maxPendingSideEffects
         + ", scheduledTaskCheckInterval="
         + scheduledTaskCheckInterval
         + '}';
