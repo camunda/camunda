@@ -29,14 +29,24 @@ public class ProcessHandler implements MainIndexExporterHandler<ProcessEntity, P
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
   private final ExtensionPropertyConfiguration extensionPropertiesConfiguration;
+  private final boolean exportDocument;
 
   public ProcessHandler(
       final String indexName,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
       final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
+    this(indexName, processCache, extensionPropertiesConfiguration, true);
+  }
+
+  public ProcessHandler(
+      final String indexName,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration,
+      final boolean exportDocument) {
     this.indexName = indexName;
     this.processCache = processCache;
     this.extensionPropertiesConfiguration = extensionPropertiesConfiguration;
+    this.exportDocument = exportDocument;
   }
 
   @Override
@@ -114,6 +124,11 @@ public class ProcessHandler implements MainIndexExporterHandler<ProcessEntity, P
   @Override
   public void flush(
       final TargetIndex index, final ProcessEntity entity, final BatchRequest batchRequest) {
+    // CREATED is distributed to every partition. Only the deployment partition may index the
+    // shared process document; other partitions still run updateEntity to warm the process cache.
+    if (!exportDocument) {
+      return;
+    }
     batchRequest.add(index, entity);
   }
 

@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -104,6 +105,22 @@ public class ProcessHandlerTest {
 
     // then
     verify(mockRequest, times(1)).add(index, inputEntity);
+  }
+
+  @Test
+  void shouldNotIndexDocumentWhenExportDocumentIsDisabled() {
+    // given
+    final var handler =
+        new ProcessHandler(indexName, processCache, new ExtensionPropertyConfiguration(), false);
+    final ProcessEntity inputEntity = new ProcessEntity().setId("111");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when
+    handler.flush(index, inputEntity, mockRequest);
+
+    // then
+    verify(mockRequest, never()).add(index, inputEntity);
   }
 
   @Test
