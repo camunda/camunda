@@ -1060,7 +1060,7 @@ class SearchQueryResponseMapperTest {
             321L, // processDefinitionKey
             "processId", // processDefinitionId
             1, // processDefinitionVersion
-            "v1", // versionTag
+            "v1", // processDefinitionVersionTag
             "tenant", // tenantId
             OffsetDateTime.now(), // creationDate
             OffsetDateTime.now(), // lastUpdatedDate
