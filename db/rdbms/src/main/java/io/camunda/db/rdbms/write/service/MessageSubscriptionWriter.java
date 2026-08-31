@@ -46,6 +46,27 @@ public class MessageSubscriptionWriter extends ProcessInstanceDependant implemen
             truncated));
   }
 
+  /**
+   * Idempotent upsert for the CREATED intent: the suspend/resume flow re-emits CREATED for the same
+   * key (manifest restore, reopen), and a plain {@link #create} would violate the primary key on
+   * the second call. Refreshes all columns on conflict rather than a no-op — a reusable
+   * non-interrupting subscription can already be CORRELATED when the suspend-close ack re-emits
+   * CREATED to restore OPENED, and a no-op would leave that stale.
+   */
+  public void createIfNotExists(final MessageSubscriptionDbModel messageSubscription) {
+    final var truncated =
+        messageSubscription.truncateToolFields(
+            vendorDatabaseProperties.userCharColumnSize(),
+            vendorDatabaseProperties.charColumnMaxBytes());
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.MESSAGE_SUBSCRIPTION,
+            WriteStatementType.INSERT,
+            truncated.messageSubscriptionKey(),
+            "io.camunda.db.rdbms.sql.MessageSubscriptionMapper.createIfNotExists",
+            truncated));
+  }
+
   public void update(final MessageSubscriptionDbModel messageSubscription) {
     final var truncated =
         messageSubscription.truncateToolFields(

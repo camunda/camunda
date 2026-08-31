@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
@@ -49,6 +50,13 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   private static final String ALREADY_CLOSING_MESSAGE =
       "Expected to correlate process message subscription with element key '%d' and message name '%s', "
           + "but it is already closing";
+  private static final String SUSPENDED_PI_MESSAGE =
+      "Expected to correlate process message subscription with element key '%d' and message name '%s', "
+          + "but the process instance is suspended";
+  private static final String STALE_KEY_MESSAGE =
+      "Expected to correlate process message subscription with element key '%d' and message name '%s', "
+          + "but the command's subscription key '%d' does not match the current key '%d' — it "
+          + "belongs to a superseded subscription generation";
 
   private final ProcessMessageSubscriptionState subscriptionState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
@@ -58,6 +66,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final SideEffectWriter sideEffectWriter;
+  private final SuspensionState suspensionState;
 
   private final EventHandle eventHandle;
 
@@ -73,6 +82,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
     this.subscriptionCommandSender = subscriptionCommandSender;
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
+    suspensionState = processingState.getSuspensionState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
@@ -105,6 +115,20 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       rejectCommand(command, RejectionType.INVALID_STATE, ALREADY_CLOSING_MESSAGE);
       return;
 
+    } else if (isStaleGeneration(record, subscription)) {
+      // E.g. a K1 correlate delayed across a suspend/resume cycle that re-subscribed with a new
+      // key K2 — applying it would trigger the element against a subscription that no longer
+      // exists on the message side.
+      final var reason =
+          String.format(
+              STALE_KEY_MESSAGE,
+              elementInstanceKey,
+              messageName,
+              record.getSubscriptionKey(),
+              subscription.getRecord().getSubscriptionKey());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      return;
+
     } else if (hasAlreadyBeenCorrelated(record, subscription)) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_STATE, "Already correlated this message");
@@ -112,6 +136,17 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       // attempt recovering from a previous acknowledgment that didn't make it to the other
       // partition.
       sendAcknowledgeCommand(record);
+      return;
+
+    } else if (suspensionState.getSuspensionState(record.getProcessInstanceKey())
+        == SuspensionState.State.SUSPENDED) {
+      // Race window: SUSPEND already deleted the message-side subscription, but this CORRELATE
+      // was already in flight. Reject to release the message-side lock — another active
+      // subscriber can then correlate, or the message returns 404. Gated on exact SUSPENDED, not
+      // isSuspended(); see suspensionBehavior() below for why RESUMING must fall through instead.
+      // Checked last so a stale or duplicate correlate goes through those paths instead, without
+      // releasing a live replacement's correlation lock.
+      rejectCommand(command, RejectionType.INVALID_STATE, SUSPENDED_PI_MESSAGE);
       return;
     }
 
@@ -156,6 +191,19 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         catchEvent, elementInstanceKey, elementInstance.getValue(), record.getVariablesBuffer());
 
     sendAcknowledgeCommand(record);
+  }
+
+  /**
+   * A correlate is stale when it quotes a message-side subscription key that no longer matches the
+   * key stored on the PI side. Both keys must be set (non-default): unkeyed/legacy subscriptions
+   * default to -1 and are never treated as stale, preserving backwards compatibility.
+   */
+  private boolean isStaleGeneration(
+      final ProcessMessageSubscriptionRecord command,
+      final ProcessMessageSubscription subscription) {
+    final long commandKey = command.getSubscriptionKey();
+    final long storedKey = subscription.getRecord().getSubscriptionKey();
+    return commandKey != -1L && storedKey != -1L && commandKey != storedKey;
   }
 
   private boolean hasAlreadyBeenCorrelated(
@@ -220,12 +268,18 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         subscription.getMessageKey(),
         subscription.getMessageNameBuffer(),
         subscription.getCorrelationKeyBuffer(),
-        subscription.getTenantId());
+        subscription.getTenantId(),
+        subscription.getSubscriptionKey());
   }
 
   @Override
   public SuspensionBehavior suspensionBehavior(
       final TypedRecord<ProcessMessageSubscriptionRecord> record) {
-    return SuspensionBehavior.BUFFER;
+    // Process unconditionally — buffering would keep the message-partition lock held
+    // indefinitely while the instance is suspended or resuming. The exact-SUSPENDED check
+    // inside processRecord rejects a CORRELATE that arrives during the narrow suspend/close
+    // race window. During RESUMING it must fall through instead: an early reopened subscription
+    // can correlate a still-buffered message while later REOPEN commands are still draining.
+    return SuspensionBehavior.PROCESS;
   }
 }

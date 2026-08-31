@@ -13,15 +13,23 @@ import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.Suspen
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.BufferedCommand;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.ArrayDeque;
+import java.util.function.Consumer;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -42,15 +50,26 @@ import org.jspecify.annotations.NullMarked;
 public final class BufferedCommandDrainProcessor
     implements TypedRecordProcessor<BufferedCommandRecord>, SuspensionAware<BufferedCommandRecord> {
 
+  private static final String WAITING_CLOSE_ACKS_MESSAGE =
+      "Expected to finish draining process instance '%d', but some message subscriptions are still "
+          + "closing — will retry once their delete acknowledgements arrive and buffer their reopen "
+          + "commands.";
+
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
+  private final TypedRejectionWriter rejectionWriter;
   private final SuspensionState suspensionState;
+  private final ElementInstanceState elementInstanceState;
+  private final ProcessMessageSubscriptionState processMessageSubscriptionState;
 
   public BufferedCommandDrainProcessor(
       final ProcessingState processingState, final Writers writers) {
     stateWriter = writers.state();
     commandWriter = writers.command();
+    rejectionWriter = writers.rejection();
     suspensionState = processingState.getSuspensionState();
+    elementInstanceState = processingState.getElementInstanceState();
+    processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
   }
 
   @Override
@@ -60,7 +79,7 @@ public final class BufferedCommandDrainProcessor
 
     final var buffered = suspensionState.getOldestBufferedCommand(processInstanceKey).orElse(null);
     if (buffered == null) {
-      appendResumeJobs(drainValue);
+      advanceOrWait(command, drainValue);
       return;
     }
 
@@ -70,9 +89,69 @@ public final class BufferedCommandDrainProcessor
     // DRAINED already applied (event appliers run synchronously), so this reflects the buffer as
     // it stands now, without an extra empty DRAIN cycle to find out
     if (suspensionState.getOldestBufferedCommand(processInstanceKey).isEmpty()) {
-      appendResumeJobs(drainValue);
+      advanceOrWait(command, drainValue);
     } else {
       appendNextDrainCommand(drainValue);
+    }
+  }
+
+  /**
+   * Buffer drained. If a suspend-driven close is still CLOSING, its ack will restore the manifest
+   * and buffer a {@code REOPEN}, so advancing to {@code RESUME_JOBS} now would finish the resume
+   * before that row is re-subscribed; reject and wait (the delete-ack re-triggers a {@code DRAIN}).
+   * {@code DRAIN} does not ban on error, so the rejection is a safe terminal record. Otherwise hand
+   * off to {@code RESUME_JOBS}.
+   *
+   * <p>This resume-side wait exists only because suspend completes ({@code SUSPENDED}) while its
+   * closes are still in flight, so resume can start with subscriptions still CLOSING. Once #61057
+   * introduces a {@code SUSPENDING} state that finishes all closes before writing {@code
+   * SUSPENDED}, {@code SUSPENDED} guarantees "all closed" and this gate (and {@link
+   * #hasClosingSubscriptions}) can be removed.
+   */
+  private void advanceOrWait(
+      final TypedRecord<BufferedCommandRecord> command, final BufferedCommandRecord drainValue) {
+    if (hasClosingSubscriptions(drainValue.getProcessInstanceKey())) {
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.INVALID_STATE,
+          WAITING_CLOSE_ACKS_MESSAGE.formatted(drainValue.getProcessInstanceKey()));
+      return;
+    }
+    appendResumeJobs(drainValue);
+  }
+
+  /** Read-only BFS over the element-instance tree: reports whether any subscription is CLOSING. */
+  private boolean hasClosingSubscriptions(final long processInstanceKey) {
+    final boolean[] hasClosing = {false};
+    visitTreeSubscriptions(
+        processInstanceKey,
+        subscription -> {
+          if (subscription.isClosing()) {
+            hasClosing[0] = true;
+          }
+        });
+    return hasClosing[0];
+  }
+
+  private void visitTreeSubscriptions(
+      final long processInstanceKey, final Consumer<ProcessMessageSubscription> visitor) {
+    final var root = elementInstanceState.getInstance(processInstanceKey);
+    if (root == null) {
+      return;
+    }
+    final var queue = new ArrayDeque<ElementInstance>();
+    queue.add(root);
+    while (!queue.isEmpty()) {
+      final var elementInstance = queue.poll();
+      processMessageSubscriptionState.visitElementSubscriptions(
+          elementInstance.getKey(),
+          subscription -> {
+            visitor.accept(subscription);
+            return true;
+          });
+      elementInstanceState.getChildren(elementInstance.getKey()).stream()
+          .filter(child -> child.getValue().getProcessInstanceKey() == processInstanceKey)
+          .forEach(queue::add);
     }
   }
 
