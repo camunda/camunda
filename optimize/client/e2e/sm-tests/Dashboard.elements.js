@@ -32,7 +32,7 @@ export const textReport = Selector('.TextTile .editor');
 export const textReportField = (element) => textReport.find(element);
 export const exampleHeading = Selector('h1');
 export const fullscreenButton = Selector('.fullscreen-button');
-export const header = Selector('.cds--header');
+export const header = Selector('.cds--header, [data-slot="app-header"]');
 export const themeButton = Selector('.theme-toggle');
 export const fullscreenContent = Selector('.fullscreen');
 export const shareFilterCheckbox = Selector('.ShareEntity .shareFilterCheckbox');
@@ -52,6 +52,8 @@ export const externalUrlTile = Selector('.ExternalUrlTile');
 export const customValueAddButton = Selector('.customValueAddButton');
 export const alertsDropdown = Selector('.AlertsDropdown button');
 export const alertDeleteButton = Selector('.AlertModal .deleteAlertButton');
-export const dashboardsLink = Selector('.NavItem a').withText('Dashboards');
+export const dashboardsLink = Selector('.NavItem a, [data-slot="app-sidebar-item"]').withText(
+  'Dashboards'
+);
 export const createCopyButton = Selector('.create-copy');
 export const gridItem = Selector('.react-grid-item');

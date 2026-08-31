@@ -29,7 +29,6 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableDelayedRetryStrategy;
-import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.stream.api.EmptyProcessingResult;
@@ -49,7 +48,6 @@ import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.stream.impl.records.UnwrittenRecord;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.time.Duration;
@@ -99,7 +97,7 @@ import org.slf4j.Logger;
  *
  * </pre>
  */
-public final class ProcessingStateMachine {
+public final class ProcessingStateMachine implements CloseableSilently {
 
   /**
    * Warn message when the batch processing exceeded the maximum message size. If this message is
@@ -113,8 +111,6 @@ public final class ProcessingStateMachine {
       "Expected to write one or more follow-up records for record '{} {}' without errors, but exception was thrown.";
   private static final String ERROR_MESSAGE_ROLLBACK_ABORTED =
       "Expected to roll back the current transaction for record '{} {}' successfully, but exception was thrown.";
-  private static final String ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED =
-      "Expected to execute side effects for record '{} {}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING =
       "Expected to process record '{} {}' successfully on stream processor, but caught recoverable exception. Retry processing.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_UNRECOVERABLE =
@@ -146,7 +142,6 @@ public final class ProcessingStateMachine {
   private final LogStreamReader logStreamReader;
   private final TransactionContext transactionContext;
   private final RetryStrategy writeRetryStrategy;
-  private final RetryStrategy sideEffectsRetryStrategy;
   private final RetryStrategy updateStateRetryStrategy;
   private final BooleanSupplier shouldProcessNext;
   private final BooleanSupplier abortCondition;
@@ -175,6 +170,7 @@ public final class ProcessingStateMachine {
   private final int maxCommandsInBatch;
   private int processedCommandsCount;
   private final ProcessingMetrics processingMetrics;
+  private final SideEffectRunner sideEffectRunner;
   private final ScheduledCommandCache scheduledCommandCache;
   private volatile ErrorHandlingPhase errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
   private final ControllableStreamClock clock;
@@ -190,7 +186,7 @@ public final class ProcessingStateMachine {
     this.scheduledCommandCache = scheduledCommandCache;
     actor = context.getActor();
     recordValues = context.getRecordValues();
-    logStreamReader = context.getLogStreamReader();
+    logStreamReader = context.getProcessingLogStreamReader();
     logStreamWriter = context.getLogStreamWriter();
     transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();
@@ -207,7 +203,6 @@ public final class ProcessingStateMachine {
                 WRITE_RETRY_BACKOFF_MAX_DELAY,
                 WRITE_RETRY_BACKOFF_MIN_DELAY,
                 WRITE_RETRY_BACKOFF_FACTOR));
-    sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
     updateStateRetryStrategy =
         new RecoverableRetryStrategy(actor, context.getMaxRecoverableRetries());
     this.shouldProcessNext = shouldProcessNext;
@@ -217,6 +212,10 @@ public final class ProcessingStateMachine {
 
     streamProcessorListener = context.getStreamProcessorListener();
     processingMetrics = new ProcessingMetrics(context.getMeterRegistry());
+    sideEffectRunner =
+        new SideEffectRunner(
+            context.getPartitionId(), actor, processingMetrics, context.getCommandResponseWriter());
+    context.getLogStream().registerCommittedPositionListener(sideEffectRunner);
     final EventFilter commandFilter =
         event -> {
           recordTypeDecoder.wrap(event.getMetadata(), event.getMetadataOffset());
@@ -740,68 +739,30 @@ public final class ProcessingStateMachine {
           } else {
             scheduledCommandCache.remove(
                 metadata.getIntent(), requireNonNull(currentRecord).getKey());
-            executeSideEffects();
+            registerSideEffects();
+            markProcessingCompleted();
+            actor.submit(this::tryToReadNextRecord);
           }
         });
   }
 
-  private void executeSideEffects() {
-    final ActorFuture<Boolean> retryFuture =
-        sideEffectsRetryStrategy.runWithRetry(
-            () -> {
-              // TODO refactor this into two parallel tasks, which are then combined, and on the
-              // completion of which the process continues
-              for (final var processingResponse : requireNonNull(pendingResponses)) {
-                final var responseWriter = context.getCommandResponseWriter();
-
-                final var responseValue = processingResponse.responseValue();
-                final var recordMetadata = responseValue.recordMetadata();
-                responseWriter
-                    .intent(recordMetadata.getIntent())
-                    .key(responseValue.key())
-                    .recordType(recordMetadata.getRecordType())
-                    .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
-                    .rejectionType(recordMetadata.getRejectionType())
-                    .partitionId(context.getPartitionId())
-                    .valueType(recordMetadata.getValueType())
-                    .valueWriter(responseValue.recordValue())
-                    .tryWriteResponse(
-                        processingResponse.requestStreamId(), processingResponse.requestId());
-              }
-              return executePostCommitTasks();
-            },
-            abortCondition);
-
-    actor.runOnCompletion(
-        retryFuture,
-        (bool, throwable) -> {
-          if (throwable != null) {
-            LOG.error(
-                ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED, currentRecord, metadata, throwable);
-          }
-
-          notifyProcessedListener(typedCommand);
-
-          // observe the processing duration
-          requireNonNull(processingTimer).close();
-
-          // continue with next record
-          markProcessingCompleted();
-          actor.submit(this::tryToReadNextRecord);
-        });
+  private void registerSideEffects() {
+    final var processedPosition = requireNonNull(currentRecord).getPosition();
+    final var sideEffectPosition =
+        requireNonNull(pendingWrites).isEmpty() ? processedPosition : writtenPosition;
+    sideEffectRunner.addSideEffects(
+        sideEffectPosition,
+        requireNonNull(pendingResponses),
+        requireNonNull(currentProcessingResult).getPostCommitTasks(),
+        () -> notifyProcessedListener(processedPosition));
+    requireNonNull(processingTimer).close();
   }
 
-  private boolean executePostCommitTasks() {
-    try (final var timer = processingMetrics.startBatchProcessingPostCommitTasksTimer()) {
-      return requireNonNull(currentProcessingResult).executePostCommitTasks();
-    }
-  }
-
-  private void notifyProcessedListener(final TypedRecord processedRecord) {
+  private void notifyProcessedListener(final long processedPosition) {
     try {
-      streamProcessorListener.onProcessed(processedRecord);
+      streamProcessorListener.onProcessed(processedPosition);
     } catch (final Exception e) {
-      LOG.error(NOTIFY_PROCESSED_LISTENER_ERROR_MESSAGE, processedRecord, e);
+      LOG.error(NOTIFY_PROCESSED_LISTENER_ERROR_MESSAGE, processedPosition, e);
     }
   }
 
@@ -840,7 +801,13 @@ public final class ProcessingStateMachine {
       lastWrittenPosition = lastProcessingPositions.getLastWrittenPosition();
     }
 
+    sideEffectRunner.onCommittedPosition(lastProcessingPositions.getLastWrittenPosition());
     actor.submit(this::tryToReadNextRecord);
+  }
+
+  @Override
+  public void close() {
+    context.getLogStream().removeCommittedPositionListener(sideEffectRunner);
   }
 
   private void updateErrorHandlingPhase(final ErrorHandlingPhase errorHandlingPhase) {

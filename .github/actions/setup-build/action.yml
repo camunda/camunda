@@ -151,28 +151,33 @@ runs:
         secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | dockerhub-token;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
-        secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
-  # Kept separate from "Import Secrets" so that jobs which do not ask for Harbor
-  # never depend on this path resolving.
-  - name: Import Harbor Secrets
-    if: >-
-      steps.is-fork.outputs.is-fork != 'true' &&
-      inputs.harbor == 'true'
-    id: harbor-secrets
-    uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
-    with:
-      url: ${{ inputs.vault-address }}
-      method: approle
-      roleId: ${{ inputs.vault-role-id }}
-      secretId: ${{ inputs.vault-secret-id }}
-      secrets: |
+        secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token;
         secret/data/products/camunda/ci/harbor username | harbor-username;
         secret/data/products/camunda/ci/harbor password | harbor-password
   - name: Setup Java
-    uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+    # wretry retries setup-java through transient network/setup failures (INC-7417). Same pattern
+    # as build-platform-docker; `_js_action` pin lets the *_context inputs be overridden.
+    # `token` is passed explicitly since github_context is blanked (setup-java defaults it from it).
+    uses: Wandalen/wretry.action@71a909ebf09f3ffdc6f42a17bd54ecb43481da49 # v3.8.0_js_action
     with:
-      distribution: ${{ inputs.java-distribution }}
-      java-version: ${{ inputs.java-version }}
+      action: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      attempt_limit: 3
+      attempt_delay: 10000
+      github_token: ${{ github.token }}
+      github_context: '{}'
+      env_context: '{}'
+      job_context: '{}'
+      matrix_context: '{}'
+      with: |
+        distribution: ${{ inputs.java-distribution }}
+        java-version: ${{ inputs.java-version }}
+        token: ${{ github.token }}
+  # wretry leaks the wrapped action's INPUT_* vars into GITHUB_ENV; blank them (cannot unset).
+  - name: Clear setup-java inputs leaked into the job environment by wretry
+    if: always()
+    shell: bash
+    run: |
+      env | grep -o '^INPUT_[^=]*' | sed 's/$/=/' >> "$GITHUB_ENV" || true
   - name: Register Maven problem matcher
     shell: bash
     run: echo "::add-matcher::.github/maven-matcher.json"
@@ -296,8 +301,8 @@ runs:
       inputs.harbor == 'true'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_USERNAME: ${{ steps.harbor-secrets.outputs.harbor-username }}
-      DOCKER_PASSWORD: ${{ steps.harbor-secrets.outputs.harbor-password }}
+      DOCKER_USERNAME: ${{ steps.secrets.outputs.harbor-username }}
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.harbor-password }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10

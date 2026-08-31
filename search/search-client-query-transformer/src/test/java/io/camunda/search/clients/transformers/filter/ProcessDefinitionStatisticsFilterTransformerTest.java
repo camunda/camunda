@@ -186,6 +186,24 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
   }
 
   @Test
+  public void shouldQueryByBusinessId() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processDefinitionStatisticsFilter(
+            PROCESS_DEFINITION_KEY, f -> f.businessIds("order-1"));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    final var searchBoolQuery = assertIsSearchBoolQueryWithDefaultFilter(queryVariant, 3);
+    final var hasParentQuery =
+        assertIsSearchHasParentQuery(searchBoolQuery.must().get(2).queryOption());
+    assertIsSearchTermQuery(hasParentQuery, "businessId", "order-1");
+  }
+
+  @Test
   public void shouldCreateDefaultFilter() {
     // given
 
@@ -202,6 +220,7 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
     assertThat(processInstanceFilter.stateOperations()).isEmpty();
     assertThat(processInstanceFilter.hasIncident()).isNull();
     assertThat(processInstanceFilter.tenantIdOperations()).isEmpty();
+    assertThat(processInstanceFilter.businessIdOperations()).isEmpty();
   }
 
   private SearchBoolQuery assertIsSearchBoolQuery(

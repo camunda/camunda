@@ -525,6 +525,11 @@ final class SequencerTest {
     }
 
     @Override
+    public LogStorageReader newUncommittedReader() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void append(
         final long lowestPosition,
         final long highestPosition,
@@ -544,6 +549,26 @@ final class SequencerTest {
 
     @Override
     public void removeCommitListener(final CommitListener listener) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void addCommittedPositionListener(final CommittedPositionListener listener) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void removeCommittedPositionListener(final CommittedPositionListener listener) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void addAppendedListener(final AppendedListener listener) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void removeAppendedListener(final AppendedListener listener) {
       throw new UnsupportedOperationException();
     }
   }

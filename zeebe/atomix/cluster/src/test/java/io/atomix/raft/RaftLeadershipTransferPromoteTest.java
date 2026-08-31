@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -111,6 +112,47 @@ public class RaftLeadershipTransferPromoteTest {
     assertThat(reopens.sum())
         .as("the step-down onto the new leader already lifted the freeze")
         .isZero();
+  }
+
+  @Test
+  public void shouldRetryTransferAfterAScheduledTimeoutNowIsLost() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var driver = new CoordinatedTransferDriver(raftRule, leader);
+    final var target = driver.followerOutsideCoordinator();
+    final var targetId = CoordinatedTransferDriver.memberId(target);
+    final var sends = new LongAdder();
+    final var firstToTargetDropped = new AtomicBoolean(true);
+    ((TestRaftServerProtocol) leader.getContext().getProtocol())
+        .interceptDelivery(
+            TimeoutNowRequest.class,
+            (receiver, request) -> {
+              if (!receiver.equals(targetId)) {
+                return CompletableFuture.completedFuture(null);
+              }
+              sends.increment();
+              if (firstToTargetDropped.compareAndSet(true, false)) {
+                return CompletableFuture.failedFuture(new RuntimeException("dropped in test"));
+              }
+              return CompletableFuture.completedFuture(null);
+            });
+
+    // when
+    final var ack = driver.initiate(target);
+
+    // then
+    assertThat(ack.accepted()).isTrue();
+    assertThat(driver.reportedResult())
+        .succeedsWithin(Duration.ofSeconds(15))
+        .extracting(LeadershipTransferResultRequest::result)
+        .isEqualTo(LeadershipTransferResult.TRANSFERRED);
+    assertThat(sends.sum())
+        .as("the dropped attempt plus at least one later attempt were sent to the target")
+        .isGreaterThanOrEqualTo(2);
+    Awaitility.await("the target becomes leader")
+        .atMost(Duration.ofSeconds(15))
+        .until(() -> target.getRole() == RaftServer.Role.LEADER);
   }
 
   /** A barrier that freezes nothing but counts how often the writes were reopened. */

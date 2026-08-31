@@ -31,6 +31,7 @@ import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.client.impl.util.Environment;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
+import io.camunda.process.test.api.DataDeletionMode;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestAutoConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import java.net.URI;
@@ -68,6 +69,70 @@ public class CamundaProcessTestDefaultConfigurationTest {
           CamundaClient.newClientBuilder()
               .restAddress(URI.create("http://custom-factory-host:9999"))
               .grpcAddress(URI.create("http://custom-factory-host:26500"));
+    }
+  }
+
+  @Configuration
+  static class CustomJsonMapperConfig {
+    @Bean
+    JsonMapper jsonMapper() {
+      final ObjectMapper objectMapper =
+          new ObjectMapper()
+              .configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
+              .registerModule(new JavaTimeModule());
+      return new CamundaObjectMapper(objectMapper);
+    }
+  }
+
+  private static class BlueprintTest {
+    private Long id;
+    private LocalDateTime createdDate;
+    private LocalDateTime modifiedDate;
+    private String businessKey;
+
+    BlueprintTest() {}
+
+    BlueprintTest(
+        final Long id,
+        final LocalDateTime createdDate,
+        final LocalDateTime modifiedDate,
+        final String businessKey) {
+      this.id = id;
+      this.createdDate = createdDate;
+      this.modifiedDate = modifiedDate;
+      this.businessKey = businessKey;
+    }
+
+    public Long getId() {
+      return id;
+    }
+
+    public void setId(final Long id) {
+      this.id = id;
+    }
+
+    public LocalDateTime getCreatedDate() {
+      return createdDate;
+    }
+
+    public void setCreatedDate(final LocalDateTime createdDate) {
+      this.createdDate = createdDate;
+    }
+
+    public LocalDateTime getModifiedDate() {
+      return modifiedDate;
+    }
+
+    public void setModifiedDate(final LocalDateTime modifiedDate) {
+      this.modifiedDate = modifiedDate;
+    }
+
+    public String getBusinessKey() {
+      return businessKey;
+    }
+
+    public void setBusinessKey(final String businessKey) {
+      this.businessKey = businessKey;
     }
   }
 
@@ -232,7 +297,7 @@ public class CamundaProcessTestDefaultConfigurationTest {
       properties = {
         "camunda.process-test.connectors-enabled=true",
         "camunda.process-test.clock-reset-enabled=false",
-        "camunda.process-test.data-deletion-enabled=false",
+        "camunda.process-test.data-deletion-mode=none",
         "camunda.process-test.camunda-docker-image-version=8.8.0-new",
         "camunda.process-test.camunda-docker-image-name=camunda/camunda-new",
         "io.camunda.process.test.camunda-docker-image-name=camunda/camunda-legacy",
@@ -245,7 +310,7 @@ public class CamundaProcessTestDefaultConfigurationTest {
     void shouldReadConfigurationWithNewPrefix() {
       assertThat(configuration.isConnectorsEnabled()).isTrue();
       assertThat(configuration.isClockResetEnabled()).isFalse();
-      assertThat(configuration.isDataDeletionEnabled()).isFalse();
+      assertThat(configuration.getDataDeletionMode()).isEqualTo(DataDeletionMode.NONE);
       assertThat(configuration.getCamundaDockerImageVersion()).isEqualTo("8.8.0-new");
       assertThat(configuration.getCamundaDockerImageName()).isEqualTo("camunda/camunda-new");
     }
@@ -266,7 +331,7 @@ public class CamundaProcessTestDefaultConfigurationTest {
     void shouldUseLegacyConfiguration() {
       assertThat(configuration.isConnectorsEnabled()).isTrue();
       assertThat(configuration.isClockResetEnabled()).isTrue();
-      assertThat(configuration.isDataDeletionEnabled()).isTrue();
+      assertThat(configuration.getDataDeletionMode()).isEqualTo(DataDeletionMode.CLUSTER_PURGE);
       assertThat(configuration.getCamundaDockerImageVersion()).isEqualTo("8.8.0-legacy");
       assertThat(configuration.getCamundaDockerImageName()).isEqualTo("camunda/camunda-legacy");
     }
@@ -325,70 +390,6 @@ public class CamundaProcessTestDefaultConfigurationTest {
 
     private CamundaClientConfiguration buildConfiguration() {
       return CamundaProcessTestDefaultConfigurationTest.buildConfiguration(clientBuilderFactory);
-    }
-  }
-
-  @Configuration
-  static class CustomJsonMapperConfig {
-    @Bean
-    JsonMapper jsonMapper() {
-      final ObjectMapper objectMapper =
-          new ObjectMapper()
-              .configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
-              .registerModule(new JavaTimeModule());
-      return new CamundaObjectMapper(objectMapper);
-    }
-  }
-
-  private static class BlueprintTest {
-    private Long id;
-    private LocalDateTime createdDate;
-    private LocalDateTime modifiedDate;
-    private String businessKey;
-
-    BlueprintTest() {}
-
-    BlueprintTest(
-        final Long id,
-        final LocalDateTime createdDate,
-        final LocalDateTime modifiedDate,
-        final String businessKey) {
-      this.id = id;
-      this.createdDate = createdDate;
-      this.modifiedDate = modifiedDate;
-      this.businessKey = businessKey;
-    }
-
-    public Long getId() {
-      return id;
-    }
-
-    public void setId(final Long id) {
-      this.id = id;
-    }
-
-    public LocalDateTime getCreatedDate() {
-      return createdDate;
-    }
-
-    public void setCreatedDate(final LocalDateTime createdDate) {
-      this.createdDate = createdDate;
-    }
-
-    public LocalDateTime getModifiedDate() {
-      return modifiedDate;
-    }
-
-    public void setModifiedDate(final LocalDateTime modifiedDate) {
-      this.modifiedDate = modifiedDate;
-    }
-
-    public String getBusinessKey() {
-      return businessKey;
-    }
-
-    public void setBusinessKey(final String businessKey) {
-      this.businessKey = businessKey;
     }
   }
 }

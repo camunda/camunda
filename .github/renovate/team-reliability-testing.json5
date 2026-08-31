@@ -98,6 +98,13 @@
       matchManagers: ["gomod"],
       postUpdateOptions: ["gomodTidy"],
     },
+
+    {
+      // The content of this folder is not updated anymore for the stable/8.10
+      // branch; changes are done only on the main branch.
+      matchFileNames: ["load-tests/**"],
+      enabled: false,
+    },
   ],
 
   ignorePaths: [

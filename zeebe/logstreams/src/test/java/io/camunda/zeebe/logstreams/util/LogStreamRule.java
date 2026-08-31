@@ -119,6 +119,11 @@ public final class LogStreamRule extends ExternalResource {
     return logStream;
   }
 
+  /** Exposed so that a test can control when appended entries commit. */
+  public ListLogStorage getLogStorage() {
+    return listLogStorage;
+  }
+
   public ControlledClock getClock() {
     return clock;
   }

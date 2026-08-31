@@ -67,6 +67,19 @@ public final class ExpressionProcessor {
   }
 
   /**
+   * Returns this processor's own evaluation context, unscoped -- the same context {@link
+   * #evaluateVariableMappingExpression} and every other evaluation method resolve variables through
+   * internally. Lets a caller read a single named variable directly (via {@link
+   * ScopedEvaluationContext#processScoped} then {@link ScopedEvaluationContext#getVariable}) when
+   * it needs a raw lookup rather than a full expression evaluation.
+   *
+   * @return this processor's evaluation context
+   */
+  public ScopedEvaluationContext getEvaluationContext() {
+    return scopedEvaluationContext;
+  }
+
+  /**
    * Creates a new {@code ExpressionProcessor} with an additional evaluation context placed in front
    * of the current one.
    *

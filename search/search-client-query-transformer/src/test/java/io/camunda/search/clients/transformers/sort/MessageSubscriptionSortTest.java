@@ -42,7 +42,8 @@ public class MessageSubscriptionSortTest extends AbstractSortTransformerTest {
         new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()),
         new TestArguments("toolName", SortOrder.ASC, s -> s.toolName().asc()),
         new TestArguments(
-            "inboundConnectorType", SortOrder.DESC, s -> s.inboundConnectorType().desc()));
+            "inboundConnectorType", SortOrder.DESC, s -> s.inboundConnectorType().desc()),
+        new TestArguments("businessId", SortOrder.ASC, s -> s.businessId().asc()));
   }
 
   @ParameterizedTest

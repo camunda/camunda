@@ -3467,6 +3467,21 @@
               "legendFormat": "Unhealthy",
               "range": false,
               "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "count(\n(\n  min(zeebe_health{camunda_region=~\"$region\", namespace=~\"$namespace\"})\n  by (namespace)\n  == 2\n)\n* on(namespace)\ngroup_left(\n  label_cloud_camunda_io_generation,\n  label_cloud_camunda_io_sales_plan_type\n)\nmax(\n  kube_namespace_labels{\n    label_cloud_camunda_io_generation=~\"$generation\",\n    label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n  }\n) by (\n  namespace\n))",
+              "format": "time_series",
+              "hide": false,
+              "instant": true,
+              "legendFormat": "Recovering",
+              "range": false,
+              "refId": "C"
             }
           ],
           "title": "Engine Health Overview",
@@ -3583,7 +3598,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "avg by (namespace) (\n  zeebe_health{camunda_region=~\"$region\", namespace=~\"$namespace\"}\n)\n* on(namespace)\ngroup_left(\n  label_cloud_camunda_io_generation,\n  label_cloud_camunda_io_sales_plan_type\n)\nmax(\n  kube_namespace_labels{\n    label_cloud_camunda_io_generation=~\"$generation\",\n    label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n  }\n) by (\n  namespace\n)",
+              "expr": "min by (namespace) (\n  zeebe_health{camunda_region=~\"$region\", namespace=~\"$namespace\"}\n)\n* on(namespace)\ngroup_left(\n  label_cloud_camunda_io_generation,\n  label_cloud_camunda_io_sales_plan_type\n)\nmax(\n  kube_namespace_labels{\n    label_cloud_camunda_io_generation=~\"$generation\",\n    label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n  }\n) by (\n  namespace\n)",
               "format": "table",
               "instant": true,
               "legendFormat": "Partition {{partition}}",

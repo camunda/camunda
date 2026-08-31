@@ -13,7 +13,6 @@ import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.impl.BufferedProcessingResultBuilder.ProcessingResponseImpl;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -34,7 +33,7 @@ final class BufferedResult implements ProcessingResult, TaskResult {
       final @Nullable ProcessingResponseImpl processingResponse,
       final List<PostCommitTask> postCommitTasks,
       final boolean processInASeparateBatch) {
-    this.postCommitTasks = new ArrayList<>(postCommitTasks);
+    this.postCommitTasks = List.copyOf(postCommitTasks);
     this.processingResponse = processingResponse;
     this.immutableRecordBatch = immutableRecordBatch;
     this.processInASeparateBatch = processInASeparateBatch;
@@ -51,18 +50,8 @@ final class BufferedResult implements ProcessingResult, TaskResult {
   }
 
   @Override
-  public boolean executePostCommitTasks() {
-    boolean aggregatedResult = true;
-
-    for (final PostCommitTask task : postCommitTasks) {
-      try {
-        aggregatedResult = aggregatedResult && task.flush();
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
-    }
-
-    return aggregatedResult;
+  public List<PostCommitTask> getPostCommitTasks() {
+    return postCommitTasks;
   }
 
   @Override

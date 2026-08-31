@@ -60,7 +60,7 @@
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.1</version.docker-java-api>
     <version.elasticsearch.client>8.19.20</version.elasticsearch.client>
-    <version.elasticsearch-java-client>8.19.20</version.elasticsearch-java-client>
+    <version.elasticsearch-java-client>8.19.21</version.elasticsearch-java-client>
     <!-- renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch -->
     <version.elasticsearch.container>8.19.16</version.elasticsearch.container>
     <version.error-prone>2.50.0</version.error-prone>
@@ -91,7 +91,7 @@
     <version.netty>4.2.17.Final</version.netty>
     <version.objenesis>3.6</version.objenesis>
     <version.opentelemetry>1.65.0</version.opentelemetry>
-    <version.opensearch.client>2.17.0</version.opensearch.client>
+    <version.opensearch.client>2.17.1</version.opensearch.client>
     <version.opensearch-java>3.7.0</version.opensearch-java>
     <!-- renovate: datasource=docker depName=opensearchproject/opensearch -->
     <version.opensearch.container>2.19.6</version.opensearch.container>
@@ -120,7 +120,7 @@
     <version.spring>7.0.9</version.spring>
     <version.spring-security>7.1.1</version.spring-security>
     <version.spring-boot>4.1.1</version.spring-boot>
-    <version.spring-ai>2.0.0-M7</version.spring-ai>
+    <version.spring-ai>2.0.1</version.spring-ai>
     <version.mcp-sdk>2.0.1</version.mcp-sdk>
     <version.jsonschema-generator>5.0.0</version.jsonschema-generator>
     <version.tomcat>11.0.25</version.tomcat>
@@ -138,7 +138,7 @@
     <version.kotlin-stdlib>2.4.10</version.kotlin-stdlib>
     <version.immutables>2.12.2</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.193</version.classgraph>
+    <version.classgraph>4.8.194</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>

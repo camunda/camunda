@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
+import java.util.function.Predicate;
 
 public final class AgentInstanceCreateProcessor
     implements TypedRecordProcessor<AgentInstanceRecord>, SuspensionAware<AgentInstanceRecord> {
@@ -121,11 +123,6 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
-    // Reject CREATE when an agent instance already exists for this element instance. The existence
-    // check runs before the active-state and element-type guards so that a late retry against an
-    // element instance that has since left ACTIVE (e.g. parked in COMPLETING behind an incident)
-    // gets ALREADY_EXISTS rather than INVALID_STATE. Both the stream rejection and the HTTP
-    // response are consistent: no success event is emitted.
     final var existingAgentInstanceKey = elementInstance.getAgentInstanceKey();
     if (existingAgentInstanceKey != -1L) {
       writeRejection(
@@ -231,8 +228,8 @@ public final class AgentInstanceCreateProcessor
 
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.CREATED, event);
 
-    event
-        .getHistory()
+    event.getHistory().stream()
+        .filter(Predicate.not(AgentHistoryRecordValue::isDuplicate))
         .forEach(
             item ->
                 stateWriter.appendFollowUpEvent(

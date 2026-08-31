@@ -57,7 +57,7 @@ final class OutputMappingResultBuilderTest {
 
     // then: the level is null, like FEEL's context merge(5, {...})
     assertEquality(builder.toDocument(), "{'a': null}");
-    assertEquality(builder.getVariable("a"), "null");
+    assertEquality(builder.get("a"), "null");
   }
 
   @Test

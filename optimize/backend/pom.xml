@@ -47,6 +47,20 @@
       <version>${project.version}</version>
     </dependency>
 
+    <!-- Not used by any Java code: this module has no formal dependency on optimize-client's
+         jar, only a raw filesystem reference to its ../client/dist build output (see the
+         resources section below). Under a parallel (-T1C) reactor build, that leaves no
+         guarantee optimize-client's frontend build finishes before this module reads that
+         directory, so an unlucky race can package a jar with no index.html. Declaring this
+         dependency (provided, so it never reaches the runtime classpath/fat jar) gives Maven a
+         real reactor edge forcing optimize-client to build first. -->
+    <dependency>
+      <groupId>io.camunda.optimize</groupId>
+      <artifactId>optimize-client</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
     <!-- Camunda dependencies -->
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
@@ -308,7 +322,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>2.1.12</version>
+      <version>2.1.13</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -876,6 +890,9 @@
             <ignoredUnusedDeclaredDependency>org.junit.platform:junit-platform-suite</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-jackson2</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-actuator</ignoredUnusedDeclaredDependency>
+            <!-- Never referenced by Java code on purpose: exists only to give the reactor a real
+                 build-order edge, see the dependency's own comment above. -->
+            <ignoredUnusedDeclaredDependency>io.camunda.optimize:optimize-client:jar</ignoredUnusedDeclaredDependency>
           </ignoredUnusedDeclaredDependencies>
           <ignoredNonTestScopedDependencies>
             <!-- No production class references it: CSL's WebSessionConfiguration is what needs it

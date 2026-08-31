@@ -158,7 +158,8 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
             new SimpleMeterRegistry(),
             transport,
             (ignored) -> 0L,
-            topologyManager);
+            topologyManager,
+            "Broker-0");
 
     // exit manager: a lightweight fake standing in for a real Raft-based PartitionManagerImpl -
     // it just marks both local partitions LEADER on start, matching what PartitionModeHandlerTest

@@ -127,7 +127,6 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     sideEffectWriter.appendSideEffect(
         () -> {
           membershipStateAdapter.invalidateAll();
-          return true;
         });
   }
 

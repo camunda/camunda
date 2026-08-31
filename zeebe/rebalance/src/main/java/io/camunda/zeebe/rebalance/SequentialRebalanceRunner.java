@@ -53,6 +53,8 @@ import org.slf4j.LoggerFactory;
  *     |                               |
  *     |                               v
  *     |                             COMPLETED(ALREADY_LEADER)  (already led by the desired leader)
+ *     |                             COMPLETED(PHYSICAL_TENANT_DISABLED)  (its physical tenant
+ *     |                                                                   stopped running)
  *     |
  *     | no current leader: wait for one to appear
  *     v
@@ -60,6 +62,8 @@ import org.slf4j.LoggerFactory;
  *     |                               |
  *     |                               v
  *     |                             COMPLETED(NO_LEADER)  (none appeared within leaderWaitTimeout)
+ *     |                             COMPLETED(PHYSICAL_TENANT_DISABLED)  (as above, observed
+ *     |                                                                   while waiting)
  *     |
  *     | one partition in flight at a time, in order
  *     v
@@ -69,6 +73,8 @@ import org.slf4j.LoggerFactory;
  *     |                              COMPLETED(<PartitionRebalanceOutcome>)
  *     |                              COMPLETED(NO_RESPONSE)  (no report, no topology move, watchdog
  *     |                                                       expired)
+ *     |                              COMPLETED(PHYSICAL_TENANT_DISABLED)  (as above, observed
+ *     |                                                                    mid-transfer)
  *     |
  *     | leader reports TRANSFERRED, or the topology confirms the desired leader first
  *     v
@@ -172,13 +178,31 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
 
   private void initiate(
       final RebalanceRun rebalance, final int index, final ActorFuture<Void> completion) {
-    final var partition = rebalance.partition(index);
-    final var leader = partition.currentLeader();
+    if (resolveIfPhysicalTenantDisabled(rebalance, index, completion)) {
+      return;
+    }
+    final var leader = rebalance.partition(index).currentLeader();
     if (leader == null) {
       waitForLeader(rebalance, index, Duration.ZERO, completion);
       return;
     }
     beginTransfer(rebalance, index, leader, completion);
+  }
+
+  private boolean resolveIfPhysicalTenantDisabled(
+      final RebalanceRun rebalance, final int index, final ActorFuture<Void> completion) {
+    final var partition = rebalance.partition(index);
+    if (!rebalance.isPhysicalTenantDisabled(partition.physicalTenantId())) {
+      return false;
+    }
+    LOG.info(
+        "Rebalance {} is leaving partition {} alone: its physical tenant has been disabled since "
+            + "the rebalance was planned",
+        rebalance.id(),
+        partition);
+    resolveWithOutcome(
+        rebalance, index, PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED, completion);
+    return true;
   }
 
   /**
@@ -214,6 +238,9 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
           }
           if (rebalance.isCancelRequested()) {
             transferFrom(rebalance, index, completion);
+            return;
+          }
+          if (resolveIfPhysicalTenantDisabled(rebalance, index, completion)) {
             return;
           }
           final var partition = rebalance.partition(index);
@@ -296,6 +323,9 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         () -> {
           if (isOver(rebalance, completion)
               || rebalance.partition(index).progress() != PartitionRebalanceProgress.TRANSFERRING) {
+            return;
+          }
+          if (resolveIfPhysicalTenantDisabled(rebalance, index, completion)) {
             return;
           }
           final var partition = rebalance.partition(index);

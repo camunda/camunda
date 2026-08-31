@@ -33,7 +33,7 @@ public sealed interface MappingResultBuilder
    * Returns the accumulated value of the given top-level variable, or {@code null} if no mapping
    * has produced it yet — {@code null} tells the caller to fall back to the scope lookup.
    */
-  @Nullable DirectBuffer getVariable(String name);
+  @Nullable DirectBuffer get(String name);
 
   /** Returns all accumulated results as a single MsgPack document (a map). */
   DirectBuffer toDocument();

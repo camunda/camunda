@@ -67,6 +67,7 @@ public class SchemaManagerConcurrencyIT {
   private TestTemplateDescriptor indexTemplate;
   private MetadataIndex metadataIndex;
   private final MethodInterceptor methodInterceptor = new MethodInterceptor(SchemaManager.class);
+  private final List<AutoCloseable> closeables = new ArrayList<>();
 
   @BeforeAll
   public static void beforeAll() {
@@ -76,6 +77,15 @@ public class SchemaManagerConcurrencyIT {
   @AfterEach
   public void reset() {
     methodInterceptor.reset();
+    closeables.forEach(
+        closeable -> {
+          try {
+            closeable.close();
+          } catch (Exception e) {
+            LOGGER.warn("Failed to close resource", e);
+          }
+        });
+    closeables.clear();
   }
 
   @BeforeEach
@@ -468,19 +478,24 @@ public class SchemaManagerConcurrencyIT {
     return null;
   }
 
-  private static SchemaManager createSchemaManager(
+  private SchemaManager createSchemaManager(
       final Collection<IndexDescriptor> indexDescriptors,
       final Collection<IndexTemplateDescriptor> templateDescriptors,
       final SearchEngineConfiguration config,
       final String version) {
-    return new SchemaManager(
-        searchEngineClientFromConfig(config),
-        indexDescriptors,
-        templateDescriptors,
-        config,
-        new IndexSchemaValidator(TestObjectMapper.objectMapper()),
-        version,
-        null);
+    final SearchEngineClient searchEngineClient = searchEngineClientFromConfig(config);
+    closeables.add(searchEngineClient);
+    final SchemaManager schemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            indexDescriptors,
+            templateDescriptors,
+            config,
+            new IndexSchemaValidator(TestObjectMapper.objectMapper()),
+            version,
+            null);
+    closeables.add(schemaManager);
+    return schemaManager;
   }
 
   static class PostMethodPauseAdvice {

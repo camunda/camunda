@@ -211,7 +211,6 @@ final class GraphScopeReconciler {
     }
 
     observer.applied();
-    backoffs.remove(key);
 
     final var config = currentConfiguration.get();
     if (scope.versionOf(config) != startedVersion) {
@@ -242,6 +241,7 @@ final class GraphScopeReconciler {
       executor.schedule(delay, this::reconcile);
       return;
     }
+    backoffs.remove(key);
     LOG.info("{} operation {} applied.", scope.describe(), operation);
   }
 
@@ -249,6 +249,14 @@ final class GraphScopeReconciler {
     return backoffs.computeIfAbsent(
         key, ignored -> new ExponentialBackoffRetryDelay(maxRetryDelay, minRetryDelay));
   }
+
+  /**
+   * Identifies one operation of one plan. The plan id is part of the key because {@code
+   * OperationGraph.Builder} numbers every plan's operations from zero: keyed by {@link OperationId}
+   * alone, an entry left behind by a cancelled plan would be indistinguishable from — and would
+   * block — the same-numbered operation of whatever plan replaces it on this scope.
+   */
+  private record OperationKey(long planId, OperationId operationId) {}
 
   /** What one scope contributes to the shared driving loop above. */
   interface Scope {
@@ -284,12 +292,4 @@ final class GraphScopeReconciler {
      */
     ActorFuture<UnaryOperator<CurrentClusterConfiguration>> apply(OperationId operationId);
   }
-
-  /**
-   * Identifies one operation of one plan. The plan id is part of the key because {@code
-   * OperationGraph.Builder} numbers every plan's operations from zero: keyed by {@link OperationId}
-   * alone, an entry left behind by a cancelled plan would be indistinguishable from — and would
-   * block — the same-numbered operation of whatever plan replaces it on this scope.
-   */
-  private record OperationKey(long planId, OperationId operationId) {}
 }

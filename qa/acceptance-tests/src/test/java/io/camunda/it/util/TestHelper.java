@@ -28,6 +28,7 @@ import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.AgentDefinitionFilter;
 import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
@@ -2129,6 +2130,25 @@ public final class TestHelper {
                       .execute();
               assertThat(result.items()).hasSize(listenerIds.size());
             });
+  }
+
+  /**
+   * Waits for agent definitions matching the given filter to be indexed in secondary storage after
+   * deployment.
+   *
+   * @param camundaClient CamundaClient
+   * @param filter the agent definition filter to match
+   * @param expectedAgentDefinitions the expected number of matching agent definitions
+   */
+  public static void waitForAgentDefinitionsToBeIndexed(
+      final CamundaClient camundaClient,
+      final Consumer<AgentDefinitionFilter> filter,
+      final int expectedAgentDefinitions) {
+    waitForItemsPaginated(
+        "should index agent definitions after deployment",
+        expectedAgentDefinitions,
+        page ->
+            camundaClient.newAgentDefinitionSearchRequest().filter(filter).page(page).execute());
   }
 
   /**

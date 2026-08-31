@@ -141,11 +141,12 @@ public final class SchemaTestUtil {
   }
 
   public static SchemaManager createSchemaManager(
+      final SearchEngineClient searchEngineClient,
       final Collection<IndexDescriptor> indexDescriptors,
       final Collection<IndexTemplateDescriptor> templateDescriptors,
       final SearchEngineConfiguration config) {
     return new SchemaManager(
-        searchEngineClientFromConfig(config),
+        searchEngineClient,
         indexDescriptors,
         templateDescriptors,
         config,

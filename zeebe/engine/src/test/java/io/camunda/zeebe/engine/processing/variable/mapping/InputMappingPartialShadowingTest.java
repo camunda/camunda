@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 import static io.camunda.zeebe.engine.processing.variable.mapping.VariableValue.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -50,7 +51,11 @@ import org.junit.rules.TestName;
  */
 public final class InputMappingPartialShadowingTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withEngineConfig(
+              c -> c.setInputMappingMode(EngineConfiguration.InputMappingMode.ORDERED));
 
   private static final String MAPPED_ELEMENT_ID = "mapped";
 

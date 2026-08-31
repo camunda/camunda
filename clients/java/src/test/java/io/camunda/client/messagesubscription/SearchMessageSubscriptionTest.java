@@ -63,6 +63,7 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
         .filter(
             f ->
                 f.messageSubscriptionKey(123L)
+                    .businessId("business-id")
                     .processDefinitionId("process-definition-id")
                     .processInstanceKey(456L)
                     .elementId("element-id")
@@ -82,6 +83,8 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
     final MessageSubscriptionSearchQuery request =
         gatewayService.getLastRequest(MessageSubscriptionSearchQuery.class);
     assertThat(request.getFilter()).isNotNull();
+    assertThat(request.getFilter().getBusinessId()).isNotNull();
+    assertThat(request.getFilter().getBusinessId().get$Eq()).isEqualTo("business-id");
     assertThat(request.getFilter().getMessageSubscriptionKey()).isNotNull();
     assertThat(request.getFilter().getMessageSubscriptionKey().get$Eq()).isEqualTo("123");
     assertThat(request.getFilter().getProcessDefinitionId()).isNotNull();
@@ -124,6 +127,8 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
             s ->
                 s.messageSubscriptionKey()
                     .asc()
+                    .businessId()
+                    .asc()
                     .processDefinitionId()
                     .desc()
                     .processInstanceKey()
@@ -157,19 +162,20 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
     final List<SearchRequestSort> sorts =
         SearchRequestSortMapper.fromMessageSubscriptionSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
-    assertThat(sorts).hasSize(13);
+    assertThat(sorts).hasSize(14);
     assertSort(sorts.get(0), "messageSubscriptionKey", SortOrderEnum.ASC);
-    assertSort(sorts.get(1), "processDefinitionId", SortOrderEnum.DESC);
-    assertSort(sorts.get(2), "processInstanceKey", SortOrderEnum.DESC);
-    assertSort(sorts.get(3), "elementId", SortOrderEnum.ASC);
-    assertSort(sorts.get(4), "elementInstanceKey", SortOrderEnum.DESC);
-    assertSort(sorts.get(5), "messageSubscriptionState", SortOrderEnum.ASC);
-    assertSort(sorts.get(6), "messageSubscriptionType", SortOrderEnum.DESC);
-    assertSort(sorts.get(7), "lastUpdatedDate", SortOrderEnum.DESC);
-    assertSort(sorts.get(8), "messageName", SortOrderEnum.ASC);
-    assertSort(sorts.get(9), "correlationKey", SortOrderEnum.DESC);
-    assertSort(sorts.get(10), "tenantId", SortOrderEnum.ASC);
-    assertSort(sorts.get(11), "processDefinitionName", SortOrderEnum.DESC);
-    assertSort(sorts.get(12), "processDefinitionVersion", SortOrderEnum.ASC);
+    assertSort(sorts.get(1), "businessId", SortOrderEnum.ASC);
+    assertSort(sorts.get(2), "processDefinitionId", SortOrderEnum.DESC);
+    assertSort(sorts.get(3), "processInstanceKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(4), "elementId", SortOrderEnum.ASC);
+    assertSort(sorts.get(5), "elementInstanceKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(6), "messageSubscriptionState", SortOrderEnum.ASC);
+    assertSort(sorts.get(7), "messageSubscriptionType", SortOrderEnum.DESC);
+    assertSort(sorts.get(8), "lastUpdatedDate", SortOrderEnum.DESC);
+    assertSort(sorts.get(9), "messageName", SortOrderEnum.ASC);
+    assertSort(sorts.get(10), "correlationKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(11), "tenantId", SortOrderEnum.ASC);
+    assertSort(sorts.get(12), "processDefinitionName", SortOrderEnum.DESC);
+    assertSort(sorts.get(13), "processDefinitionVersion", SortOrderEnum.ASC);
   }
 }

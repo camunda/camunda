@@ -61,7 +61,7 @@
     <!-- DATABASE -->
     <!-- Elasticsearch-->
     <version.elasticsearch.client>8.19.20</version.elasticsearch.client>
-    <version.elasticsearch-java-client>8.19.20</version.elasticsearch-java-client>
+    <version.elasticsearch-java-client>8.19.21</version.elasticsearch-java-client>
     <!-- The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>${version.elasticsearch.container}</elasticsearch.test.version>
     <!-- The least supported opensearch version we should test against-->
@@ -368,13 +368,13 @@
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>5.1.1</version>
+          <version>5.1.2</version>
         </plugin>
         <!-- Google code format plugin -->
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>3.10.0</version>
+          <version>3.10.1</version>
           <configuration>
             <java>
               <includes>

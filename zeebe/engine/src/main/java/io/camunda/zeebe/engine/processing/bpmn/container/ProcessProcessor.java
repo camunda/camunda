@@ -22,7 +22,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessResultSenderB
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -31,8 +31,7 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public final class ProcessProcessor
-    implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
+public final class ProcessProcessor implements BpmnElementContainerProcessor<ExecutableProcess> {
 
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
@@ -64,13 +63,13 @@ public final class ProcessProcessor
   }
 
   @Override
-  public Class<ExecutableFlowElementContainer> getType() {
-    return ExecutableFlowElementContainer.class;
+  public Class<ExecutableProcess> getType() {
+    return ExecutableProcess.class;
   }
 
   @Override
   public Either<Failure, ?> finalizeActivation(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+      final ExecutableProcess element, final BpmnElementContext context) {
     final var activatedContext =
         stateTransitionBehavior.transitionToActivated(context, element.getEventType());
     activateStartEvent(element, activatedContext);
@@ -79,17 +78,17 @@ public final class ProcessProcessor
 
   @Override
   public Either<Failure, ?> onComplete(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+      final ExecutableProcess element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     compensationSubscriptionBehaviour.deleteSubscriptionsOfProcessInstance(context);
-    agentInstanceBehavior.completeAgentInstancesOfProcessInstance(context);
+    agentInstanceBehavior.completeAgentInstancesOfProcessInstance(element, context);
     return SUCCESS;
   }
 
   @Override
   public Either<Failure, ?> finalizeCompletion(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+      final ExecutableProcess element, final BpmnElementContext context) {
 
     // we need to send the result before we transition to completed, since the
     // event applier will delete the element instance
@@ -103,7 +102,7 @@ public final class ProcessProcessor
 
   @Override
   public TransitionOutcome onTerminate(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+      final ExecutableProcess element, final BpmnElementContext context) {
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -118,8 +117,8 @@ public final class ProcessProcessor
 
   @Override
   public void finalizeTermination(
-      final ExecutableFlowElementContainer element, final BpmnElementContext terminationContext) {
-    agentInstanceBehavior.completeAgentInstancesOfProcessInstance(terminationContext);
+      final ExecutableProcess element, final BpmnElementContext terminationContext) {
+    agentInstanceBehavior.completeAgentInstancesOfProcessInstance(element, terminationContext);
     transitionTo(
         element,
         terminationContext,
@@ -139,7 +138,7 @@ public final class ProcessProcessor
   }
 
   private void activateStartEvent(
-      final ExecutableFlowElementContainer element, final BpmnElementContext activated) {
+      final ExecutableProcess element, final BpmnElementContext activated) {
     if (element.hasMessageStartEvent()
         || element.hasTimerStartEvent()
         || element.hasSignalStartEvent()
@@ -157,7 +156,7 @@ public final class ProcessProcessor
   }
 
   private void activateNoneStartEvent(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+      final ExecutableProcess element, final BpmnElementContext context) {
     final var noneStartEvent = element.getNoneStartEvent();
     if (noneStartEvent == null) {
       throw new BpmnProcessingException(
@@ -169,7 +168,7 @@ public final class ProcessProcessor
 
   @Override
   public void afterExecutionPathCompleted(
-      final ExecutableFlowElementContainer element,
+      final ExecutableProcess element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext,
       final Boolean satisfiesCompletionCondition) {
@@ -181,7 +180,7 @@ public final class ProcessProcessor
 
   @Override
   public void onChildTerminated(
-      final ExecutableFlowElementContainer element,
+      final ExecutableProcess element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
     final var flowScopeInstance = stateBehavior.getElementInstance(flowScopeContext);
@@ -221,7 +220,7 @@ public final class ProcessProcessor
   }
 
   private Either<Failure, ?> transitionTo(
-      final ExecutableFlowElementContainer element,
+      final ExecutableProcess element,
       final BpmnElementContext context,
       final Function<BpmnElementContext, Either<Failure, BpmnElementContext>> transitionOperation) {
 
@@ -234,7 +233,7 @@ public final class ProcessProcessor
   }
 
   private Consumer<BpmnElementContext> getPostTransitionAction(
-      final ExecutableFlowElementContainer processElement, final BpmnElementContext context) {
+      final ExecutableProcess processElement, final BpmnElementContext context) {
 
     // fetch the data before the element instance is removed while performing the transition
     final var parentProcessInstanceKey = context.getParentProcessInstanceKey();

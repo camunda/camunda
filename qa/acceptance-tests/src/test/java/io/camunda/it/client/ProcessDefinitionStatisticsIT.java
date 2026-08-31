@@ -485,6 +485,69 @@ public class ProcessDefinitionStatisticsIT {
   }
 
   @Test
+  void shouldGetStatisticsAndFilterByBusinessId() {
+    // given
+    final var processDefinitionKey = deployIsolatedCompleteBPMN();
+    final var businessId = "order-" + UUID.randomUUID();
+    createInstance(processDefinitionKey, businessId);
+    createInstance(processDefinitionKey, businessId);
+    createInstance(processDefinitionKey, "order-" + UUID.randomUUID());
+    waitForProcessInstances(
+        camundaClient,
+        f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED),
+        3);
+
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(f -> f.businessId(businessId))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual).hasSize(2);
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 2L));
+  }
+
+  @Test
+  void shouldGetStatisticsAndFilterByBusinessIdOrFilters() {
+    // given
+    final var processDefinitionKey = deployIsolatedCompleteBPMN();
+    final var businessId1 = "order-" + UUID.randomUUID();
+    final var businessId2 = "order-" + UUID.randomUUID();
+    createInstance(processDefinitionKey, businessId1);
+    createInstance(processDefinitionKey, businessId2);
+    createInstance(processDefinitionKey, "order-" + UUID.randomUUID());
+    waitForProcessInstances(
+        camundaClient,
+        f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED),
+        3);
+
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(
+                            f1 -> f1.businessId(businessId1), f2 -> f2.businessId(businessId2))))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual).hasSize(2);
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 2L));
+  }
+
+  @Test
   void shouldGetStatisticsAndFilterByStartDateFilterGtLt() {
     // given
     final var processDefinitionKey = deployCompleteBPMN();
@@ -1155,6 +1218,25 @@ public class ProcessDefinitionStatisticsIT {
         .getProcessDefinitionKey();
   }
 
+  /**
+   * Deploys the same start-to-end model as {@link #deployCompleteBPMN()}, but under a process id
+   * that is unique per call. The returned definition key therefore only ever sees the instances the
+   * calling test creates, which matters for tests that assert exact per-element counts without
+   * narrowing by process instance key.
+   */
+  private static long deployIsolatedCompleteBPMN() {
+    final var processId = "process-" + UUID.randomUUID();
+    final var processModel =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("StartEvent")
+            .endEvent("EndEvent")
+            .done();
+    return deployResource(processModel, processId + ".bpmn")
+        .getProcesses()
+        .getFirst()
+        .getProcessDefinitionKey();
+  }
+
   private static long deployActiveBPMN() {
     final var processModel =
         Bpmn.createExecutableProcess("process")
@@ -1193,6 +1275,16 @@ public class ProcessDefinitionStatisticsIT {
       final long processDefinitionKey, final Map<String, Object> variables) {
     return TestHelper.startScopedProcessInstance(
         camundaClient, processDefinitionKey, testScopeId, variables);
+  }
+
+  private static ProcessInstanceEvent createInstance(
+      final long processDefinitionKey, final String businessId) {
+    return camundaClient
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .businessId(businessId)
+        .variables(Map.of(TestHelper.VAR_TEST_SCOPE_ID, testScopeId))
+        .execute();
   }
 
   private static ProcessInstance getProcessInstance(final long piKey) {

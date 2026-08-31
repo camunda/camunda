@@ -52,7 +52,7 @@ public final class PartitionBalanceMetrics implements ClusterConfigurationUpdate
     }
     configuration = updated;
     final Set<PartitionId> current =
-        updated.partitionGroups().entrySet().stream()
+        updated.activePartitionGroups().entrySet().stream()
             .flatMap(
                 entry ->
                     entry
@@ -87,7 +87,7 @@ public final class PartitionBalanceMetrics implements ClusterConfigurationUpdate
       return false;
     }
     final var group = known.partitionGroups().get(partition.group());
-    if (group == null) {
+    if (group == null || group.isDisabled()) {
       return false;
     }
     final var desiredLeader = group.getDesiredLeader(partition.number());

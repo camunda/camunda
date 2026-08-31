@@ -38,6 +38,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
+import io.camunda.zeebe.engine.processing.variable.MappingResolvers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -182,7 +183,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState,
             variableBehavior,
             eventTriggerBehavior,
-            evaluateDuplicateOutputMappingTargetsInOrder);
+            evaluateDuplicateOutputMappingTargetsInOrder,
+            MappingResolvers.forMode(
+                config.getInputMappingMode(), config.getInputComparisonMode()));
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
@@ -300,7 +303,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             variableBehavior,
             processingState);
 
-    agentInstanceBehavior = new AgentInstanceBehavior(writers);
+    agentInstanceBehavior = new AgentInstanceBehavior(writers, processingState);
 
     processDeletionBehavior =
         new BpmnProcessDeletionBehavior(

@@ -12,7 +12,9 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbPage,
   BreadcrumbSeparator,
+  cn,
   PageHeader as DSPageHeader,
   PageLayout,
   Text,
@@ -55,7 +57,8 @@ export const PageHeader: FC<PageHeaderProps> = ({
 
 type BreadcrumbsProps = {
   items: {
-    href: string;
+    // Omit `href` for the current page — it renders as non-interactive text.
+    href?: string;
     title: ReactNode;
   }[];
 };
@@ -64,12 +67,16 @@ export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items }) => (
   <Breadcrumb>
     <BreadcrumbList>
       {items.map(({ href, title }, index) => (
-        <Fragment key={href}>
+        <Fragment key={href ?? index}>
           {index > 0 && <BreadcrumbSeparator />}
           <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to={href}>{title}</Link>
-            </BreadcrumbLink>
+            {href ? (
+              <BreadcrumbLink asChild>
+                <Link to={href}>{title}</Link>
+              </BreadcrumbLink>
+            ) : (
+              <BreadcrumbPage>{title}</BreadcrumbPage>
+            )}
           </BreadcrumbItem>
         </Fragment>
       ))}
@@ -78,9 +85,10 @@ export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items }) => (
 );
 
 // TODO: Reevaluate `PageLayout` usage here when `globals` are migrated. It might actually belong in the `AppRoot`...
-const Page: FC<{ children?: ReactNode }> = ({ children }) => (
-  <PageLayout className="h-full">{children}</PageLayout>
-);
+const Page: FC<{ children?: ReactNode; className?: string }> = ({
+  children,
+  className,
+}) => <PageLayout className={cn("h-full", className)}>{children}</PageLayout>;
 
 export const StackPage: FC<{ children?: ReactNode }> = ({ children }) => (
   <Page>

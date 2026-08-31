@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -38,6 +40,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 public final class AgentInstanceUpdateProcessor
     implements TypedRecordProcessor<AgentInstanceRecord>, SuspensionAware<AgentInstanceRecord> {
@@ -70,6 +73,11 @@ public final class AgentInstanceUpdateProcessor
       "Expected to update agent instance with key '%d' for element instance with key '%d', but the process instance key '%d' does not match the agent instance's process instance key '%d'.";
   private static final String ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS =
       "Expected to associate element instance with key '%d' with an agent instance, but it is already associated with agent instance with key '%d'.";
+  private static final String ERROR_MSG_SECOND_ACTIVE_WRITER =
+      "Expected to update agent instance with key '%d' for element instance with key '%d', but "
+          + "element instance with key '%d' is still the active writer for this agent instance "
+          + "and has not completed. Only one element instance may write to a given agent instance "
+          + "at a time.";
   private static final long METRIC_NOT_PROVIDED = -1L;
   private static final Set<AgentInstanceStatus> ACTIVE_STATUSES =
       EnumSet.of(
@@ -84,6 +92,7 @@ public final class AgentInstanceUpdateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final AgentInstanceState agentInstanceState;
   private final ElementInstanceState elementInstanceState;
+  private final JobState jobState;
   private final CslAuthorizationCheck cslCheck;
   private final AgentHistoryBatchBehavior historyBatchHelper;
 
@@ -97,6 +106,7 @@ public final class AgentInstanceUpdateProcessor
     rejectionWriter = writers.rejection();
     agentInstanceState = processingState.getAgentInstanceState();
     elementInstanceState = processingState.getElementInstanceState();
+    jobState = processingState.getJobState();
     this.cslCheck = cslCheck;
     historyBatchHelper = new AgentHistoryBatchBehavior(keyGenerator, processingState);
   }
@@ -198,6 +208,13 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
+    final var validWriter = validateSingleActiveWriter(current, newElementInstanceKey);
+    if (validWriter.isLeft()) {
+      final var rejection = validWriter.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var validJob =
         historyBatchHelper.validateJobContext(
             commandValue.getJobKey(),
@@ -241,8 +258,8 @@ public final class AgentInstanceUpdateProcessor
               commandValue.getHistory(),
               false);
 
-      current
-          .getHistory()
+      current.getHistory().stream()
+          .filter(Predicate.not(AgentHistoryRecordValue::isDuplicate))
           .forEach(
               item ->
                   stateWriter.appendFollowUpEvent(
@@ -260,6 +277,33 @@ public final class AgentInstanceUpdateProcessor
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.UPDATED, current);
     responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.UPDATED, current, command);
+  }
+
+  /**
+   * Rejects the update if a different element instance already holds the write claim for this agent
+   * instance and its job is still active.
+   */
+  private Either<Rejection, Void> validateSingleActiveWriter(
+      final AgentInstanceRecord current, final long newElementInstanceKey) {
+    final var activeWriter = current.getElementInstanceKey();
+    if (activeWriter == -1L || activeWriter == newElementInstanceKey) {
+      return Either.right(null);
+    }
+
+    // A writer counts as active only while its job is ACTIVATED, not while its element instance is
+    // active: history resolves in the same step as the job, but the element instance can stay
+    // active longer for unrelated reasons (e.g. Ad-Hoc Sub-Process).
+    final var writer = elementInstanceState.getInstance(activeWriter);
+    final var writerJobKey = writer == null ? -1L : writer.getJobKey();
+    if (writerJobKey == -1L || jobState.getState(writerJobKey) != JobState.State.ACTIVATED) {
+      return Either.right(null);
+    }
+
+    return Either.left(
+        new Rejection(
+            RejectionType.INVALID_STATE,
+            ERROR_MSG_SECOND_ACTIVE_WRITER.formatted(
+                current.getAgentInstanceKey(), newElementInstanceKey, activeWriter)));
   }
 
   private Either<Rejection, List<String>> validateRequestLevelChanges(

@@ -126,6 +126,7 @@ public interface PartitionManager {
         brokerStartupContext.getMeterRegistry(),
         brokerStartupContext.getGatewayBrokerTransport(),
         brokerStartupContext.getExportedPositionSupplier(physicalTenantId),
-        topologyManager);
+        topologyManager,
+        brokerStartupContext.getHealthCheckService().componentName());
   }
 }

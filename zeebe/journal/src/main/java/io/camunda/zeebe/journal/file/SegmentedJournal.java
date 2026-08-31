@@ -109,9 +109,8 @@ public final class SegmentedJournal implements Journal {
         () -> {
           final var stamp = rwlock.writeLock();
           try {
-            writer.deleteAfter(indexExclusive);
-            // Reset segment readers.
-            resetAdvancedReaders(indexExclusive + 1);
+            writer.deleteAfter(indexExclusive, hasConcurrentReaderPast(indexExclusive));
+            readers.forEach(reader -> reader.onTruncatedAfter(indexExclusive));
           } finally {
             rwlock.unlockWrite(stamp);
           }
@@ -188,9 +187,18 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public JournalReader openReader() {
+    return openReader(false);
+  }
+
+  @Override
+  public JournalReader openConcurrentReader() {
+    return openReader(true);
+  }
+
+  private JournalReader openReader(final boolean readsConcurrently) {
     final var stamped = acquireReadlock();
     try {
-      final var reader = new SegmentedJournalReader(this, journalMetrics);
+      final var reader = new SegmentedJournalReader(this, journalMetrics, readsConcurrently);
       readers.add(reader);
       return reader;
     } finally {
@@ -312,16 +320,18 @@ public final class SegmentedJournal implements Journal {
   }
 
   /**
-   * Resets journal readers to the given index, if they are at a larger index.
+   * Whether any reader that reads on another thread has already read a record after the given
+   * index. Such a reader handed that record to a consumer that may still be reading it straight
+   * from the segment, so the records after the given index must stay where they are instead of
+   * being overwritten. Readers that read on the writer's thread need no such care: this truncation
+   * runs on that thread, so their consumer is not reading a record right now.
    *
-   * @param index The index at which to reset readers.
+   * <p>Reading the reader positions here is safe: readers only move while holding the read lock,
+   * which the write lock held during a truncation excludes.
    */
-  private void resetAdvancedReaders(final long index) {
-    for (final SegmentedJournalReader reader : readers) {
-      if (reader.getNextIndex() > index) {
-        reader.unsafeSeek(index);
-      }
-    }
+  private boolean hasConcurrentReaderPast(final long index) {
+    return readers.stream()
+        .anyMatch(reader -> reader.readsConcurrently() && reader.getNextIndex() > index + 1);
   }
 
   JournalIndex getJournalIndex() {

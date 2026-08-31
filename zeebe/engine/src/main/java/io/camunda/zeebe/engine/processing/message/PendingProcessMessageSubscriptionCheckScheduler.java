@@ -123,6 +123,7 @@ public final class PendingProcessMessageSubscriptionCheckScheduler
         subscription.getRecord().getElementInstanceKey(),
         subscription.getRecord().getProcessDefinitionKey(),
         subscription.getRecord().getMessageNameBuffer(),
-        subscription.getRecord().getTenantId());
+        subscription.getRecord().getTenantId(),
+        subscription.getRecord().getSubscriptionKey());
   }
 }

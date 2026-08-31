@@ -40,6 +40,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private @Nullable LogStream logStream;
   private @Nullable PartitionId partitionId;
   private @Nullable LogStreamReader logStreamReader;
+  private @Nullable LogStreamReader processingLogStreamReader;
   private @Nullable RecordValues recordValues;
   private @Nullable TransactionContext transactionContext;
 
@@ -133,6 +134,17 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return this;
   }
 
+  /**
+   * Sets the reader that is used for processing records. In contrast to {@link
+   * #logStreamReader(LogStreamReader)}, this reader may also read records that have not been
+   * committed yet.
+   */
+  public StreamProcessorContext processingLogStreamReader(
+      final LogStreamReader processingLogStreamReader) {
+    this.processingLogStreamReader = processingLogStreamReader;
+    return this;
+  }
+
   public StreamProcessorContext eventCache(final RecordValues recordValues) {
     this.recordValues = recordValues;
     return this;
@@ -179,8 +191,26 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return requireNonNull(actor);
   }
 
+  /**
+   * Returns the reader that replay reads committed records from.
+   *
+   * <p>Only valid while replay is running. In {@link StreamProcessorMode#PROCESSING} the stream
+   * processor closes this reader once replay completes, so that it stops pinning log positions that
+   * nothing needs any more. Consumers that outlive replay must use {@link
+   * #getProcessingLogStreamReader()}.
+   */
   public LogStreamReader getLogStreamReader() {
     return requireNonNull(logStreamReader);
+  }
+
+  /**
+   * Returns the reader used for processing records, which may also read uncommitted records.
+   *
+   * <p>Only set in {@link StreamProcessorMode#PROCESSING}, because replay never reads uncommitted
+   * records.
+   */
+  public LogStreamReader getProcessingLogStreamReader() {
+    return requireNonNull(processingLogStreamReader);
   }
 
   public RecordValues getRecordValues() {

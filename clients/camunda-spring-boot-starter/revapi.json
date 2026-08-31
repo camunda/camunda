@@ -797,6 +797,19 @@
           "old": "class io.camunda.client.spring.properties.CamundaClientPropertiesPostProcessor",
           "new": "class io.camunda.client.spring.properties.CamundaClientPropertiesPostProcessor",
           "justification": "Spring Boot moved EnvironmentPostProcessor from org.springframework.boot.env to org.springframework.boot and deprecated the old location; this class now implements the new interface, which revapi sees as no longer implementing the old one. Same method contract, no behavior change."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "enum io.camunda.client.health.HealthCheck.CheckResult",
+          "justification": "Replaced by returning io.camunda.client.api.response.StatusResponse.Status directly from HealthCheck.health(), which already carries the same UP/DOWN information without introducing a redundant type. Compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.client.health.HealthCheck.CheckResult io.camunda.client.health.HealthCheck::health()",
+          "new": "method io.camunda.client.api.response.StatusResponse.Status io.camunda.client.health.HealthCheck::health()",
+          "justification": "health() now returns StatusResponse.Status directly instead of the removed CheckResult wrapper, and lets status-request failures propagate instead of catching them - the one caller, CamundaClientHealthIndicator (backed by Spring's AbstractHealthIndicator), already maps both the return value and any thrown exception to the correct health status. Compatibility impact accepted for this release."
         }
       ]
     }

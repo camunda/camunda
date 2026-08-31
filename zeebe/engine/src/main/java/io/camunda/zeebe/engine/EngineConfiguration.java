@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine;
 
 import java.time.Duration;
+import org.jspecify.annotations.Nullable;
 
 public final class EngineConfiguration {
 
@@ -109,6 +110,11 @@ public final class EngineConfiguration {
   public static final boolean DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS = false;
   public static final int DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL_KEY = -1;
 
+  public enum InputMappingMode {
+    ORDERED,
+    COMBINED
+  }
+
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
   private int maxWorkerTypeLength = DEFAULT_MAX_WORKER_TYPE_LENGTH;
@@ -161,6 +167,8 @@ public final class EngineConfiguration {
   private boolean includeVariablesInJobCompletedEvent =
       DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT;
   private boolean enableRpaReexportMigration = DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION;
+  private InputMappingMode inputMappingMode = InputMappingMode.COMBINED;
+  private @Nullable InputMappingMode inputComparisonMode = null;
 
   /**
    * Controls uniqueness enforcement of business IDs across active process instances.
@@ -740,6 +748,25 @@ public final class EngineConfiguration {
               .formatted(fixedStorageOrdinalKey));
     }
     this.fixedStorageOrdinalKey = fixedStorageOrdinalKey;
+    return this;
+  }
+
+  public InputMappingMode getInputMappingMode() {
+    return inputMappingMode;
+  }
+
+  public EngineConfiguration setInputMappingMode(final InputMappingMode inputMappingMode) {
+    this.inputMappingMode = inputMappingMode;
+    return this;
+  }
+
+  public @Nullable InputMappingMode getInputComparisonMode() {
+    return inputComparisonMode;
+  }
+
+  public EngineConfiguration setInputComparisonMode(
+      final @Nullable InputMappingMode inputComparisonMode) {
+    this.inputComparisonMode = inputComparisonMode;
     return this;
   }
 }

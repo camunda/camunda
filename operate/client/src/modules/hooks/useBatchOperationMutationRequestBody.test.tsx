@@ -41,12 +41,12 @@ const processOperationHooks = [
   {
     name: 'suspend',
     useRequestBody: useSuspendProcessInstancesBatchOperationMutationRequestBody,
-    eligibleIdsKey: 'visibleActiveRootIds',
+    eligibleIdsKey: 'visibleRunningIds',
   },
   {
     name: 'resume',
     useRequestBody: useResumeProcessInstancesBatchOperationMutationRequestBody,
-    eligibleIdsKey: 'visibleSuspendedRootIds',
+    eligibleIdsKey: 'visibleSuspendedIds',
   },
   {
     name: 'delete',

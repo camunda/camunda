@@ -549,6 +549,129 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .isTrue();
   }
 
+  @Test
+  public void shouldNotAppendCompletionCommandWhenNoAgentInstancesOnNormalCompletion() {
+    // given
+    final String processId = "plain-process-normal-completion";
+    ENGINE
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .deploy();
+
+    // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.agentInstanceRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .describedAs(
+            "No AgentInstance record of any kind should exist for a process instance that "
+                + "never had any associated agent instances")
+        .isFalse();
+  }
+
+  @Test
+  public void shouldNotAppendCompletionCommandWhenNoAgentInstancesOnCancellationWithActiveChild() {
+    // given
+    final String processId = "plain-process-cancel-active-child";
+    final String jobType = "plain-task-cancel-active-child";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(jobType))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(jobType)
+        .await();
+
+    // when — cancellation reaches the process instance only after this active child has fully
+    // terminated
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .await();
+
+    // then
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.agentInstanceRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .describedAs(
+            "No AgentInstance record of any kind should exist for a process instance that "
+                + "never had any associated agent instances")
+        .isFalse();
+  }
+
+  @Test
+  public void
+      shouldNotAppendCompletionCommandWhenNoAgentInstancesOnCancellationWithZeroActiveChildren() {
+    // given — the start listener job is deliberately left incomplete, so the process instance
+    // is stuck activating with no child element instance created yet
+    final String processId = "plain-process-cancel-zero-active-children";
+    final String startListenerType = "plain-start-listener-zero-active-children";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .zeebeStartExecutionListener(startListenerType)
+                .startEvent()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(startListenerType)
+        .await();
+
+    // when — termination reaches the process element directly, without going through a
+    // terminating child element instance
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.processInstanceRecords(
+                            ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .filter(r -> r.getValue().getBpmnElementType() != BpmnElementType.PROCESS)
+                        .exists()))
+        .describedAs(
+            "This test only exercises the intended zero-active-children path if no child "
+                + "element instance was ever created, neither before cancellation nor as part "
+                + "of it")
+        .isFalse();
+
+    // then
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.agentInstanceRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .describedAs(
+            "No AgentInstance record of any kind should exist for a process instance that "
+                + "never had any associated agent instances")
+        .isFalse();
+  }
+
   private static Record<ProcessInstanceRecordValue> awaitElementActivated(
       final long processInstanceKey, final String elementId) {
     return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)

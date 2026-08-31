@@ -112,6 +112,9 @@
       },
       "inboundConnectorType": {
         "type": "keyword"
+      },
+      "businessId": {
+        "type": "keyword"
       }
 		}
 	}

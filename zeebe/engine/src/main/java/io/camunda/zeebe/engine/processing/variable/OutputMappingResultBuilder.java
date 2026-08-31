@@ -75,7 +75,7 @@ public final class OutputMappingResultBuilder implements MappingResultBuilder {
    * lookup instead of seeing the poisoned null).
    */
   @Override
-  public @Nullable DirectBuffer getVariable(final String name) {
+  public @Nullable DirectBuffer get(final String name) {
     final var entry = entries.get(name);
     if (entry == null) {
       return null;

@@ -45,6 +45,9 @@ public class Engine {
   @NestedConfigurationProperty
   private EngineStorageOrdinals storageOrdinals = new EngineStorageOrdinals();
 
+  /** Configuration properties for the engine's mapping resolution strategy. */
+  @NestedConfigurationProperty private EngineMappings mappings = new EngineMappings();
+
   /**
    * Configures the maximum depth of nested call activities allowed before an incident is raised, to
    * guard against unbounded process recursion.
@@ -118,6 +121,14 @@ public class Engine {
 
   public void setSecrets(final EngineSecrets secrets) {
     this.secrets = secrets;
+  }
+
+  public EngineMappings getMappings() {
+    return mappings;
+  }
+
+  public void setMappings(final EngineMappings mappings) {
+    this.mappings = mappings;
   }
 
   public int getMaxProcessDepth() {

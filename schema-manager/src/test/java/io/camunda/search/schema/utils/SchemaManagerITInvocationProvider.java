@@ -100,6 +100,8 @@ public class SchemaManagerITInvocationProvider
     elsClient = esConnector.createClient();
     elsClientAdapter = new SearchClientAdapter(elsClient, esConnector.objectMapper());
 
+    closeables.add(elsClient);
+    closeables.add(osClient._transport());
     closeables.add(elsContainer);
     closeables.add(osContainer);
   }

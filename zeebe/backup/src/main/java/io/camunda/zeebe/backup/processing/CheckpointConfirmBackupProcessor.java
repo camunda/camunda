@@ -62,11 +62,7 @@ public class CheckpointConfirmBackupProcessor {
 
       final var checkpoints = checkpointMetadataState.getAllCheckpoints();
       final var ranges = backupRangeState.getAllRanges();
-      resultBuilder.appendPostCommitTask(
-          () -> {
-            backupManager.syncMetadata(checkpoints, ranges);
-            return true;
-          });
+      resultBuilder.appendPostCommitTask(() -> backupManager.syncMetadata(checkpoints, ranges));
     } else {
       LOG.debug(
           "Ignoring backup for checkpoint {} as it is older than the latest backup {}",

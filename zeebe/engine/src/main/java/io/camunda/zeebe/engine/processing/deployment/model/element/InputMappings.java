@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import io.camunda.zeebe.el.Expression;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,9 +22,15 @@ import org.jspecify.annotations.NullMarked;
  * <p>{@code clusterVariableReferences} mirrors {@code secretReferences} for cluster-variable
  * references ({@code camunda.vars.<scope>.<name>}) detected in the input mappings, keyed by the
  * same RFC-6901 leaf JSON pointer; empty when no input mapping references a cluster variable.
+ *
+ * <p>{@code combinedExpression} is the pre-parsed FEEL context literal built from all mappings at
+ * deploy/load time for {@code CombinedMappingResolver} to evaluate on each activation without
+ * rebuilding it. Deploy-time parsing rejects invalid FEEL by throwing, so by the time this record
+ * exists the field is always a valid expression.
  */
 @NullMarked
 public record InputMappings(
     List<InputMapping> mappings,
+    Expression combinedExpression,
     Map<String, Set<SecretReference>> secretReferences,
     Map<String, Set<ClusterVariableReference>> clusterVariableReferences) {}

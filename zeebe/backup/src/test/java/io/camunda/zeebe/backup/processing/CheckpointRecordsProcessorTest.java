@@ -39,6 +39,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.api.PostCommitTask;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamClock;
@@ -1001,10 +1002,9 @@ final class CheckpointRecordsProcessorTest {
     assertThat(result.postCommitTasks()).hasSize(1);
 
     // when — the post-commit task is executed
-    final var success = result.executePostCommitTasks();
+    result.postCommitTasks().forEach(PostCommitTask::flush);
 
     // then — task succeeds (fire-and-forget) and sync metadata is called
-    assertThat(success).isTrue();
     verify(backupManager).syncMetadata(any(), any());
   }
 
@@ -1103,10 +1103,9 @@ final class CheckpointRecordsProcessorTest {
     assertThat(result.postCommitTasks()).hasSize(1);
 
     // when — the post-commit task is executed
-    final var success = result.executePostCommitTasks();
+    result.postCommitTasks().forEach(PostCommitTask::flush);
 
     // then — task succeeds and sync metadata is called
-    assertThat(success).isTrue();
     verify(backupManager).syncMetadata(any(), any());
   }
 

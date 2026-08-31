@@ -28,6 +28,7 @@ import org.springframework.context.annotation.Bean;
   CamundaProcessTestDefaultConfiguration.class,
   LegacyCamundaProcessTestRuntimeConfiguration.class,
   CamundaProcessTestRuntimeConfiguration.class,
+  CamundaProcessTestCleanupConfiguration.class,
   CamundaAutoConfiguration.class,
 })
 @AutoConfigureBefore(CamundaAutoConfiguration.class)

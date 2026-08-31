@@ -69,10 +69,8 @@ public final class JobCancelProcessor
         // The job is destroyed without completing — discard all its pending history items. The
         // lease is left empty on purpose: the whole job is gone, so every activation's items must
         // be discarded regardless of the lease they were created with.
-        commandWriter.appendFollowUpCommand(
-            jobKey,
-            AgentHistoryIntent.DISCARD,
-            new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+        commandWriter.appendNewCommand(
+            AgentHistoryIntent.DISCARD, new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
       }
     } else {
       rejectionWriter.appendRejection(

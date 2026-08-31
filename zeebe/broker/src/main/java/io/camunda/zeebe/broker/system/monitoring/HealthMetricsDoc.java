@@ -28,7 +28,8 @@ public enum HealthMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Shows current health of the partition (1 = healthy, 0 = unhealthy, -1 = dead)";
+      return "Shows current health of the partition (1 = healthy, 0 = unhealthy, -1 = dead,"
+          + " 2 = recovering)";
     }
 
     @Override

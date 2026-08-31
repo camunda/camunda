@@ -74,6 +74,11 @@ public final class AgentHistoryClient {
     return this;
   }
 
+  public AgentHistoryClient withHistoryItemId(final String historyItemId) {
+    record.setHistoryItemId(historyItemId);
+    return this;
+  }
+
   public AgentHistoryClient withElementInstanceKey(final long elementInstanceKey) {
     record.setElementInstanceKey(elementInstanceKey);
     return this;

@@ -9,21 +9,19 @@ package io.camunda.zeebe.it.cluster.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import feign.Response;
+import feign.Util;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import io.camunda.zeebe.qa.util.restapi.ClusterRebalanceRestClient;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
 final class ClusterRebalanceForwardingIT {
 
-  private static final String REBALANCE_PATH = "cluster/v2/rebalance";
-
   @AutoClose private TestCluster cluster;
-  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @Test
   void shouldForwardARequestFromANonCoordinatorToTheCoordinator() throws Exception {
@@ -41,16 +39,23 @@ final class ClusterRebalanceForwardingIT {
     final var nonCoordinator = cluster.brokers().get(MemberId.from("1"));
 
     // when
-    final var fromNonCoordinator = getRebalance(nonCoordinator.restAddress());
+    final var nonCoordinatorClient = ClusterRebalanceRestClient.of(nonCoordinator.restAddress());
+    final var coordinatorClient = ClusterRebalanceRestClient.of(coordinator.restAddress());
 
     // then
-    assertThat(fromNonCoordinator.statusCode()).isEqualTo(200);
-    final var fromCoordinator = getRebalance(coordinator.restAddress());
-    assertThat(fromNonCoordinator.body()).isEqualTo(fromCoordinator.body());
+    try (final var fromNonCoordinator = nonCoordinatorClient.getRebalance();
+        final var fromCoordinator = coordinatorClient.getRebalance()) {
+      assertThat(fromNonCoordinator.status()).isEqualTo(200);
+      final var nonCoordinatorBody = readBody(fromNonCoordinator);
+      final var coordinatorBody = readBody(fromCoordinator);
+      assertThat(nonCoordinatorBody).isEqualTo(coordinatorBody);
+    }
   }
 
-  private HttpResponse<String> getRebalance(final URI restAddress) throws Exception {
-    final var request = HttpRequest.newBuilder(restAddress.resolve(REBALANCE_PATH)).GET().build();
-    return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+  private static String readBody(final Response response) throws IOException {
+    if (response.body() == null) {
+      return "";
+    }
+    return Util.toString(response.body().asReader(StandardCharsets.UTF_8));
   }
 }

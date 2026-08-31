@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms.handlers;
 
 import static io.camunda.exporter.rdbms.utils.DateUtil.toOffsetDateTime;
+import static io.camunda.exporter.rdbms.utils.ExportUtil.emptyToNull;
 
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
@@ -58,7 +59,10 @@ public class MessageSubscriptionExportHandler
   public void export(final Record<ProcessMessageSubscriptionRecordValue> record) {
     switch (record.getIntent()) {
       case ProcessMessageSubscriptionIntent.CREATED:
-        messageSubscriptionWriter.create(map(record));
+        // Idempotent: the suspend/resume flow reuses the same subscription key and re-emits CREATED
+        // (manifest restore on suspend-close ack, and reopen on resume). A plain insert would hit
+        // the existing primary key on the second CREATED and stall the exporter.
+        messageSubscriptionWriter.createIfNotExists(map(record));
         break;
       case ProcessMessageSubscriptionIntent.CORRELATED,
       ProcessMessageSubscriptionIntent.DELETED,
@@ -93,6 +97,7 @@ public class MessageSubscriptionExportHandler
         .dateTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
         .messageName(value.getMessageName())
         .correlationKey(value.getCorrelationKey())
+        .businessId(emptyToNull(value.getBusinessId()))
         .tenantId(value.getTenantId())
         .partitionId(record.getPartitionId())
         .processDefinitionName(

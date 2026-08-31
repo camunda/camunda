@@ -188,6 +188,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getIncidentErrorHashCode())
           .map(mapToIntegerOperations("incidentErrorHashCode", validationErrors))
           .ifPresent(builder::incidentErrorHashCodeOperations);
+      ofNullable(filter.getBusinessId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::businessIdOperations);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
             toVariableValueFilters(filter.getVariables());
@@ -1218,6 +1221,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getInboundConnectorType())
           .map(mapToStringOperations())
           .ifPresent(builder::inboundConnectorTypeOperations);
+      ofNullable(filter.getBusinessId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::businessIdOperations);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

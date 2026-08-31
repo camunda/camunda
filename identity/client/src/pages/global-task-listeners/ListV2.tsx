@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { Edit, TrashCan } from "@carbon/react/icons";
+import { Pencil, Trash2 } from "lucide-react";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
 import { useQuery } from "@tanstack/react-query";
@@ -46,7 +46,7 @@ const List: FC = () => {
     useEntityModal(DeleteModal, noop);
 
   const shouldShowEmptyState =
-    success && !search && !globalTaskListeners?.items.length;
+    success && !search && globalTaskListeners.items.length === 0;
 
   const pageHeader = (
     <PageHeader
@@ -84,7 +84,7 @@ const List: FC = () => {
     <Page>
       {pageHeader}
       <EntityList
-        data={transformedData ?? []}
+        data={transformedData}
         headers={[
           {
             header: t("globalTaskListenerId"),
@@ -111,13 +111,13 @@ const List: FC = () => {
         menuItems={[
           {
             label: t("editGlobalTaskListener"),
-            icon: Edit,
+            icon: Pencil,
             onClick: (entity) =>
               editGlobalTaskListener(entity.originalListener),
           },
           {
             label: t("delete"),
-            icon: TrashCan,
+            icon: Trash2,
             isDangerous: true,
             onClick: (entity) =>
               deleteGlobalTaskListener(entity.originalListener),

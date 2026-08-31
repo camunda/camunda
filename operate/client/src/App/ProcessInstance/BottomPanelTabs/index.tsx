@@ -21,6 +21,7 @@ import {useWaitStateStatistics} from 'modules/queries/waitStateStatistics/useWai
 import {hasProcessLevelWaitState} from 'modules/utils/waitStates';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {modificationsStore} from 'modules/stores/modifications';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 function useSelectionAwareIncidentsCount(
   processInstanceKey: string,
@@ -57,7 +58,9 @@ function useSelectionAwareIncidentsCount(
 const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
   isHistoryTabVisible,
 }) => {
-  const {hasSelection} = useProcessInstanceElementSelection();
+  const {hasSelection, selectedElementId} =
+    useProcessInstanceElementSelection();
+  const {data: businessObjects} = useBusinessObjects();
   const {data: processInstance, isLoading: isProcessInstanceLoading} =
     useProcessInstance();
   const {data: waitStateStatistics, isLoading: isWaitStateLoading} =
@@ -74,16 +77,47 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
   const navigate = useNavigate();
   const hasIncident = processInstance?.hasIncident === true;
 
-  const prevHasSelectionRef = useRef(hasSelection);
+  const previousHasSelectionRef = useRef(hasSelection);
+  const previousSelectedElementIdRef = useRef(selectedElementId);
   useLayoutEffect(() => {
-    // Switches to the default element tab when users
-    // select an element without a previous selection.
-    const prevHasSelection = prevHasSelectionRef.current;
-    prevHasSelectionRef.current = hasSelection;
+    const previousHasSelection = previousHasSelectionRef.current;
+    const previousSelectedElementId = previousSelectedElementIdRef.current;
+    const hasSelectedElementChanged =
+      selectedElementId !== previousSelectedElementId;
+
+    if (modificationsStore.isModificationModeEnabled) {
+      previousHasSelectionRef.current = hasSelection;
+      if (hasSelectedElementChanged) {
+        previousSelectedElementIdRef.current = selectedElementId;
+      }
+      return;
+    }
+
+    const isFirstSelection = !previousHasSelection && hasSelection;
+
+    if (!isProcessInstanceLoading) {
+      previousHasSelectionRef.current = hasSelection;
+    }
+
     if (
-      !hasSelection ||
-      prevHasSelection ||
-      modificationsStore.isModificationModeEnabled
+      hasSelectedElementChanged &&
+      (!hasSelection ||
+        (!isProcessInstanceLoading && businessObjects !== undefined))
+    ) {
+      previousSelectedElementIdRef.current = selectedElementId;
+    }
+
+    const isSwitchingToCallActivity =
+      hasSelectedElementChanged &&
+      previousSelectedElementId !== null &&
+      selectedElementId !== null &&
+      !isProcessInstanceLoading &&
+      businessObjects !== undefined &&
+      businessObjects?.[selectedElementId]?.$type === 'bpmn:CallActivity';
+
+    if (
+      isProcessInstanceLoading ||
+      (!isFirstSelection && !isSwitchingToCallActivity)
     ) {
       return;
     }
@@ -91,8 +125,23 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
     const pathname = hasIncident
       ? Paths.processInstanceIncidents({processInstanceId})
       : Paths.processInstanceDetails({processInstanceId});
-    navigate({pathname, search: location.search}, {replace: true});
-  }, [hasSelection, hasIncident, processInstanceId, location.search, navigate]);
+    navigate(
+      {
+        pathname,
+        search: location.search,
+      },
+      {replace: true},
+    );
+  }, [
+    hasSelection,
+    selectedElementId,
+    hasIncident,
+    isProcessInstanceLoading,
+    businessObjects,
+    processInstanceId,
+    location.search,
+    navigate,
+  ]);
 
   const incidentsCount = useSelectionAwareIncidentsCount(
     processInstanceId ?? '',

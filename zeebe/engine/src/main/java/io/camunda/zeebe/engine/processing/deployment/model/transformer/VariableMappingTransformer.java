@@ -27,6 +27,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -54,7 +55,9 @@ public final class VariableMappingTransformer {
   /**
    * Transforms the input mappings, keeping each mapping as its own source expression plus target
    * path so they can be evaluated one by one in modeling order at runtime and, in the same pass,
-   * detects the secret references they use (see {@link #detectSecretReferences}).
+   * detects the secret references they use (see {@link #detectSecretReferences}) and precomputes
+   * the combined FEEL context expression the legacy resolver evaluates (see {@link
+   * #asFeelContextExpression}).
    */
   public InputMappings transformInputMappings(
       final Collection<? extends ZeebeMapping> inputMappings,
@@ -62,6 +65,9 @@ public final class VariableMappingTransformer {
 
     final var mappings = toMappings(inputMappings, expressionLanguage);
     final var context = asContext(mappings);
+    final var contextExpression =
+        asFeelContextExpression(context, (contextValue, contextPath) -> contextValue);
+    final var combinedExpression = parseExpression(contextExpression, expressionLanguage);
 
     final var transformedMappings =
         mappings.stream()
@@ -73,8 +79,68 @@ public final class VariableMappingTransformer {
             .toList();
     return new InputMappings(
         transformedMappings,
+        combinedExpression,
         detectSecretReferences(context),
         detectClusterVariableReferences(context));
+  }
+
+  private String asFeelContextExpression(
+      final MappingContext context,
+      final BiFunction<String, List<String>, Object> contextValueVisitor) {
+    return context.visit(feelContextBuilder(contextValueVisitor));
+  }
+
+  private MappingContextVisitor<String> feelContextBuilder(
+      final BiFunction<String, List<String>, Object> contextValueVisitor) {
+    return new MappingContextVisitor<>() {
+      @Override
+      public String onEntry(final String targetKey, final Expression sourceExpression) {
+        final String expression;
+        if (sourceExpression instanceof StaticExpression) {
+          // due to a regression (https://github.com/camunda/camunda/issues/16043) all the double
+          // quotes inside the static expression must be escaped
+          expression =
+              String.format("\"%s\"", sourceExpression.getExpression().replaceAll("\"", "\\\\\""));
+        } else {
+          expression = sourceExpression.getExpression();
+        }
+        return targetKey + ":" + expression;
+      }
+
+      @Override
+      public String onContext(final List<String> entries) {
+        return "{" + String.join(",", entries) + "}";
+      }
+
+      @Override
+      public String onContextEntry(
+          final String targetKey, final String contextValue, final List<String> contextPath) {
+        return targetKey + ":" + contextValueVisitor.apply(contextValue, contextPath);
+      }
+    };
+  }
+
+  private String mergeContextExpression(
+      final String nestedContext, final List<String> contextPath) {
+    // for a nested target mapping 'x -> a.b', append the nested property 'b' to
+    // the existing context variable 'a' (instead of overriding 'a')
+    // example: x = 1 and a = {'c':2} results in a = {'b':1, 'c':2}
+    final var existingContext = String.join(".", contextPath);
+    return String.format(
+        "if (%s != null) then context merge(%s,%s) else %s",
+        existingContext, existingContext, nestedContext, nestedContext);
+  }
+
+  private Expression parseExpression(
+      final String contextExpression, final ExpressionLanguage expressionLanguage) {
+    final var expression =
+        expressionLanguage.parseExpression(EXPRESSION_MARKER + contextExpression);
+    if (!expression.isValid()) {
+      throw new IllegalStateException(
+          String.format(
+              "Failed to build variable mapping expression: %s", expression.getFailureMessage()));
+    }
+    return expression;
   }
 
   private static Expression toInputSourceExpression(

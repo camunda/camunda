@@ -220,18 +220,15 @@ Note: unlike `camunda.process.instance.activated`, this event does not carry
 
 **`camunda.user_task.assigned`**
 
-|             Attribute             |  Type  |             Description             |
-|-----------------------------------|--------|-------------------------------------|
-| `camunda.user_task.key`           | long   | User task key.                      |
-| `camunda.user_task.assignee_hash` | string | SHA-256 hex digest of the assignee. |
-| `camunda.process.instance_key`    | long   | Process instance key.               |
-| `camunda.tenant.id`               | string | Tenant ID.                          |
+|           Attribute            |  Type  |      Description      |
+|--------------------------------|--------|-----------------------|
+| `camunda.user_task.key`        | long   | User task key.        |
+| `camunda.process.instance_key` | long   | Process instance key. |
+| `camunda.tenant.id`            | string | Tenant ID.            |
 
-The raw assignee is never exported; a SHA-256 hash is emitted as a pseudonymous per-assignee
-identifier so distinct assignees can be counted. The hash is unsalted, so it is reversible for a
-known set of assignees and identical across clusters, and it is not joinable with the engine's TU
-usage metric, which hashes assignees differently. Assignments with an empty assignee produce no
-event, matching the engine's assignment guard.
+No assignee-derived data (raw or hashed) is exported; the event only signals that an assignment
+happened, giving a count of assignment events per cluster/process definition. Assignments with an
+empty assignee produce no event, matching the engine's assignment guard.
 
 **`camunda.tenant.created`**
 

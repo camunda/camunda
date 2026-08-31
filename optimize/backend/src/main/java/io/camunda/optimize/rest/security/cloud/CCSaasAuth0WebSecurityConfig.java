@@ -85,7 +85,11 @@ public class CCSaasAuth0WebSecurityConfig {
             .clientSecret(getAuth0Configuration().getClientSecret())
             .jwkSetUri(
                 String.format(
-                    URL_TEMPLATE, getAuth0Configuration().getDomain(), AUTH0_JWKS_ENDPOINT));
+                    URL_TEMPLATE, getAuth0Configuration().getDomain(), AUTH0_JWKS_ENDPOINT))
+            // Auth0 login id_tokens carry the custom domain (the one the authorization endpoint
+            // above also uses) as their `iss` claim; used by CCSaaSSecurityConfigurerAdapter's
+            // idTokenDecoderFactory to validate it.
+            .issuerUri(buildAuth0CustomDomainUrl("/"));
     return new InMemoryClientRegistrationRepository(List.of(builder.build()));
   }
 

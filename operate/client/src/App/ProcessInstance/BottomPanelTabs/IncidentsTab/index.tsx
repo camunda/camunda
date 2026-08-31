@@ -19,7 +19,7 @@ import {useGetIncidentsByProcessInstancePaginated} from 'modules/queries/inciden
 import {useGetIncidentsByElementInstancePaginated} from 'modules/queries/incidents/useGetIncidentsByElementInstancePaginated';
 import {incidentsPanelFiltersStore} from 'modules/stores/incidentsPanelFiltersStore';
 import {getIncidentsSearchFilter} from 'modules/utils/incidents';
-import {isInstanceRunning} from 'modules/utils/instance';
+import {isInstanceRunning, isInstanceSuspended} from 'modules/utils/instance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {IncidentsFilter} from './IncidentsFilter';
 import {IncidentsTable} from './IncidentsTable';
@@ -189,6 +189,9 @@ const IncidentsTab: React.FC = observer(() => {
         onVerticalScrollEndReach={handleScrollEndReach}
         processInstanceKey={processInstanceId}
         incidents={enhancedIncidents}
+        isProcessInstanceSuspended={
+          processInstance !== undefined && isInstanceSuspended(processInstance)
+        }
         decisionInstancesByElementKey={decisionInstancesByElementKey}
         childInstanceWithIncident={childInstanceWithIncident}
       />

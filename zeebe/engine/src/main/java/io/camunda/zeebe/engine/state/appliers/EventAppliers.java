@@ -223,7 +223,8 @@ public final class EventAppliers implements EventApplier {
             state.getAgentInstanceState(), state.getElementInstanceState()));
     register(
         AgentInstanceIntent.COMPLETED,
-        new AgentInstanceCompletedApplier(state.getAgentInstanceState()));
+        new AgentInstanceCompletedApplier(
+            state.getAgentInstanceState(), state.getAgentHistoryState()));
     register(
         AgentInstanceIntent.MIGRATED,
         new AgentInstanceMigratedApplier(state.getAgentInstanceState()));
@@ -731,6 +732,10 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessMessageSubscriptionIntent.CREATING,
         new ProcessMessageSubscriptionCreatingApplier(subscriptionState));
+    register(
+        ProcessMessageSubscriptionIntent.CREATING,
+        2,
+        new ProcessMessageSubscriptionCreatingV2Applier(subscriptionState));
     register(
         ProcessMessageSubscriptionIntent.CREATED,
         new ProcessMessageSubscriptionCreatedApplier(subscriptionState));

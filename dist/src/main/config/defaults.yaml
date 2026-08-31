@@ -1333,6 +1333,17 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Override default storage ordinal key with fixed value, mainly used during initial testing
         fixed-storage-ordinal-key: -1 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_FIXEDSTORAGEORDINALKEY
 
+      mappings: # Type: io.camunda.configuration.EngineMappings
+        # Controls which input-mapping evaluation strategy to use: ORDERED (per-mapping
+        # declaration order) or COMBINED (default, legacy combined-FEEL-context behavior restoring
+        # the pre-baddd911435 single-expression evaluation).
+        input-mode: COMBINED # Type: InputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTMODE
+        # When set, also evaluates input mappings with this second resolver and logs a warning
+        # if the results differ from the primary resolver. Intended for migration diagnostics
+        # only: each activation evaluates mappings with both resolvers and compares the
+        # result documents, which adds overhead for large mapping sets.
+        input-comparison-mode: ~ # Type: InputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTCOMPARISONMODE
+
     flow-control: # Type: io.camunda.configuration.FlowControl
       request: # Type: io.camunda.configuration.Limit
         aimd: # Type: io.camunda.configuration.Aimd

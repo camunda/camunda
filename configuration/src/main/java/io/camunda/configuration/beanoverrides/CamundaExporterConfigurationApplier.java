@@ -70,6 +70,17 @@ public final class CamundaExporterConfigurationApplier {
         source.getConnectionTimeout() != null
             ? Math.toIntExact(source.getConnectionTimeout().toMillis())
             : null);
+    // Unlike the fields above, these two do not list the exporter args among their legacy
+    // properties: 'zeebe.broker.exporters.camundaexporter.args.connect.maxConnections[PerRoute]'
+    // binds onto this same target, so copy only when set — an unset unified value must not wipe it.
+    final var maxConnections = source.getMaxConnections();
+    if (maxConnections != null) {
+      target.setMaxConnections(maxConnections);
+    }
+    final var maxConnectionsPerRoute = source.getMaxConnectionsPerRoute();
+    if (maxConnectionsPerRoute != null) {
+      target.setMaxConnectionsPerRoute(maxConnectionsPerRoute);
+    }
     target.setUsername(source.getUsername());
     target.setPassword(source.getPassword());
     target.setIndexPrefix(source.getIndexPrefix());

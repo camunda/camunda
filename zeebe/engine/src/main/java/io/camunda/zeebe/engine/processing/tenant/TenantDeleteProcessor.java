@@ -166,7 +166,6 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
         () -> {
           authorizationScopeStateAdapter.invalidateAll();
           membershipStateAdapter.invalidateAll();
-          return true;
         });
   }
 
