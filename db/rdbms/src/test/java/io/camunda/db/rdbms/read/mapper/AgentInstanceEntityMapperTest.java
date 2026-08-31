@@ -38,7 +38,7 @@ class AgentInstanceEntityMapperTest {
               key.processDefinitionId("myProcess");
               key.processDefinitionKey(400L);
               key.processDefinitionVersion(2);
-              key.versionTag("v1");
+              key.processDefinitionVersionTag("v1");
               key.tenantId("<default>");
               key.partitionId(1);
               key.status(AgentInstanceStatus.THINKING);
@@ -70,7 +70,7 @@ class AgentInstanceEntityMapperTest {
     assertThat(entity.processDefinitionId()).isEqualTo("myProcess");
     assertThat(entity.processDefinitionKey()).isEqualTo(400L);
     assertThat(entity.processDefinitionVersion()).isEqualTo(2);
-    assertThat(entity.versionTag()).isEqualTo("v1");
+    assertThat(entity.processDefinitionVersionTag()).isEqualTo("v1");
     assertThat(entity.tenantId()).isEqualTo("<default>");
     assertThat(entity.status()).isEqualTo(AgentInstanceStatus.THINKING);
     assertThat(entity.definition().model()).isEqualTo("gpt-4");

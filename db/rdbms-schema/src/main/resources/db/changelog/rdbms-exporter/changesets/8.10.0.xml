@@ -149,7 +149,7 @@
       <column name="PROCESS_DEFINITION_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
       <column name="PROCESS_DEFINITION_VERSION" type="SMALLINT"/>
-      <column name="VERSION_TAG" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_DEFINITION_VERSION_TAG" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="PARTITION_ID" type="INTEGER"/>
       <column name="STATUS" type="VARCHAR(20)"/>
