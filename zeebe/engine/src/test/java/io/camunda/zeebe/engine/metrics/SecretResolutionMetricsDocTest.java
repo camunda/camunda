@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetricsDoc.SecretResolutionCallResult;
+import io.camunda.zeebe.engine.metrics.SecretResolutionMetricsDoc.SecretResolutionCycleDelayReason;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetricsDoc.SecretResolutionKeyNames;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetricsDoc.SecretResolutionOutcome;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
@@ -43,7 +44,12 @@ final class SecretResolutionMetricsDocTest {
                   .doesNotContain("-")
                   .doesNotContain("_");
               assertThat(meter.getDescription()).isNotBlank();
-              assertThat(meter.getKeyNames()).contains(SecretResolutionKeyNames.STORE);
+              // CYCLE_DELAY is the one exception: it measures the scheduler's own per-cycle
+              // decision, not an operation against a particular store, so it has no store
+              // dimension to tag (see shouldDocumentTheCycleDelayAsATimerTaggedByResultOnly)
+              if (meter != SecretResolutionMetricsDoc.CYCLE_DELAY) {
+                assertThat(meter.getKeyNames()).contains(SecretResolutionKeyNames.STORE);
+              }
               // the partition transition registry stamps these on every meter it forwards
               assertThat(meter.getAdditionalKeyNames()).contains(PartitionKeyNames.values());
             });
@@ -189,6 +195,29 @@ final class SecretResolutionMetricsDocTest {
     // when/then — the unit is the whole point of the separate meter, and reading it as a reference
     // count would make it look like a backlog rather than a bug rate
     assertThat(description).contains("cycles rather than references");
+  }
+
+  @Test
+  void shouldDocumentTheCycleDelayAsATimerTaggedByResultOnly() {
+    // given
+    final var meter = SecretResolutionMetricsDoc.CYCLE_DELAY;
+
+    // when/then: no `store` tag, since the delay is the scheduler's own per-cycle decision,
+    // covering every store a cycle looked at (or none), not an operation against one particular
+    // store
+    assertThat(meter.getName()).isEqualTo("camunda.secret.resolution.cycle.delay");
+    assertThat(meter.getType()).isEqualTo(Type.TIMER);
+    assertThat(meter.getBaseUnit()).isEqualTo("seconds");
+    assertThat(meter.getKeyNames()).containsExactly(SecretResolutionKeyNames.RESULT);
+    assertThat(meter.getTimerSLOs()).isNotEmpty();
+  }
+
+  @Test
+  void shouldDocumentEveryCycleDelayReason() {
+    // given/when/then: one value per branch SecretResolutionScheduler's delay choice can take
+    assertThat(SecretResolutionCycleDelayReason.values())
+        .extracting(Enum::name)
+        .containsExactlyInAnyOrder("DRAINING", "WAKE", "IDLE_BACKOFF", "RETRY_COOLDOWN");
   }
 
   @Test
