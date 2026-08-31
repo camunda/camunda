@@ -105,44 +105,59 @@ dash_links = ' · '.join(
     for v in variants
 )
 
-blocks = [
-    {
-        'type': 'section',
-        'text': {
-            'type': 'mrkdwn',
-            'text': f':bar_chart: *Daily Load Test Results — {date}*\nDuration: 3 h · <{run_url}|Workflow run>',
-        },
-    },
-]
+# Slack caps a section block's mrkdwn text.text at 3000 characters. The header is always
+# short, but dash_links, the table, and (especially) the flamegraph-links list all grow with
+# the number of daily variants -- the flamegraph list also grows with pods-per-variant and
+# profiler events, so it's the one most likely to blow the cap (18 lines/2937 chars with two
+# variants; 27 lines/4395 chars once a third variant tripled the profiled-pod count, which is
+# exactly what produced the "400 invalid_blocks" failure this guards against). Split any text
+# that would exceed the cap into multiple blocks on line boundaries, so a link/row is never
+# cut mid-line.
+SLACK_TEXT_LIMIT = 3000
 
-# Slack rejects a section block with empty text — dash_links is empty only when variants is
-# empty, which the calling workflow already gates on, but keep this defensive at the script
+
+def _chunk_lines(text, limit):
+    lines = text.split('\n')
+    chunks = []
+    current = ''
+    for line in lines:
+        candidate = line if not current else f'{current}\n{line}'
+        if len(candidate) > limit and current:
+            chunks.append(current)
+            current = line
+        else:
+            current = candidate
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def text_blocks(text, wrap=lambda chunk: chunk):
+    """Split `text` into one or more section blocks, each within SLACK_TEXT_LIMIT after
+    `wrap` is applied. Pass `wrap` to fence a table: wrapping happens per chunk, so a split
+    table still renders as valid, self-contained code blocks instead of one chunk opening a
+    fence whose closing ``` landed in a different block."""
+    overhead = len(wrap(''))
+    return [
+        {'type': 'section', 'text': {'type': 'mrkdwn', 'text': wrap(chunk)}}
+        for chunk in _chunk_lines(text, SLACK_TEXT_LIMIT - overhead)
+    ]
+
+
+blocks = text_blocks(
+    f':bar_chart: *Daily Load Test Results — {date}*\nDuration: 3 h · <{run_url}|Workflow run>'
+)
+
+# Slack also rejects a section block with empty text — dash_links is empty only when variants
+# is empty, which the calling workflow already gates on, but keep this defensive at the script
 # level too (e.g. against direct/manual invocation with an empty VARIANTS_JSON).
 if dash_links:
-    blocks.append({
-        'type': 'section',
-        'text': {
-            'type': 'mrkdwn',
-            'text': dash_links,
-        },
-    })
+    blocks.extend(text_blocks(dash_links))
 
-blocks.append({
-    'type': 'section',
-    'text': {
-        'type': 'mrkdwn',
-        'text': '```\n' + table + '\n```',
-    },
-})
+blocks.extend(text_blocks(table, wrap=lambda chunk: f'```\n{chunk}\n```'))
 
 if flamegraph_links:
-    blocks.append({
-        'type': 'section',
-        'text': {
-            'type': 'mrkdwn',
-            'text': f':fire: *Flamegraphs:*\n{flamegraph_links}',
-        },
-    })
+    blocks.extend(text_blocks(f':fire: *Flamegraphs:*\n{flamegraph_links}'))
 
 payload = {'blocks': blocks}
 
