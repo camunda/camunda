@@ -381,8 +381,6 @@ class ResponseMapperTest {
               "TASK_LISTENER job with invalid or empty header values",
               JobKind.TASK_LISTENER,
               Map.of(
-                  // action is required by the OpenAPI contract; headers must carry it for
-                  // TASK_LISTENER jobs
                   Protocol.USER_TASK_ACTION_HEADER_NAME, "complete",
                   Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "",
                   Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "invalid_string",
@@ -433,7 +431,12 @@ class ResponseMapperTest {
               props ->
                   assertThat(props)
                       .as("User task properties should be null for EXECUTION_LISTENER jobs")
-                      .isNull()));
+                      .isNull()),
+          new ActivatedJobWithUserTaskPropsCase(
+              "TASK_LISTENER job without action header (pre-fix broker-internal path)",
+              JobKind.TASK_LISTENER,
+              Map.of(Protocol.USER_TASK_KEY_HEADER_NAME, "2251799813685268"),
+              props -> assertThat(props.getAction()).isEqualTo("")));
     }
 
     @ParameterizedTest
