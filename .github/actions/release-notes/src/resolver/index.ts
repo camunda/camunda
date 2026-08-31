@@ -11,6 +11,14 @@ const MAX_REFS = 20;
  *  open dozens of sockets at once. */
 const CONCURRENCY = 5;
 
+/** Lower sorts first. Closing/backport refs decide the gate's verdict, so they
+ *  must survive the MAX_REFS cap ahead of merely-informational refs. */
+function priorityOf(ref: ParsedRef): number {
+  if (ref.kind === 'closing') return 0;
+  if (ref.kind === 'backport') return 1;
+  return 2;
+}
+
 /**
  * GitHub-API resolver: the only part of the pipeline that touches the network.
  * Classifies each ref as issue vs PR vs missing and flags cross-repo refs.
@@ -39,10 +47,16 @@ export class GithubResolver implements Resolver {
    * Resolve every ref, deduped (repeats of the same "#N" cost one API call),
    * capped at MAX_REFS (a legitimate PR never needs more), and bounded to
    * CONCURRENCY in flight — defense against a body engineered to fan out
-   * unbounded concurrent requests using the privileged gate token.
+   * unbounded concurrent requests through the gate's token.
    */
   async resolve(refs: readonly ParsedRef[]): Promise<ResolvedRef[]> {
-    const capped = refs.slice(0, MAX_REFS);
+    // Closing/backport refs decide the gate's verdict; bare/"relates to" refs
+    // are informational. A stable sort keeps refs of equal priority in their
+    // original order, so when the cap below has to drop something, it drops
+    // the least consequential refs first instead of whichever came last in
+    // the body.
+    const prioritized = [...refs].sort((first, second) => priorityOf(first) - priorityOf(second));
+    const capped = prioritized.slice(0, MAX_REFS);
     const cache = new Map<string, Promise<Pick<ResolvedRef, 'target' | 'crossRepo'>>>();
     const classifyCached = (ref: ParsedRef): Promise<Pick<ResolvedRef, 'target' | 'crossRepo'>> => {
       const key = `${ref.repo ?? ''}#${ref.number}`;
@@ -63,7 +77,9 @@ export class GithubResolver implements Resolver {
         results.push({ ...ref, target, crossRepo });
       });
     }
-    return results;
+    // Restore body order for the policy's messages — the priority sort above
+    // only controls what survives the cap, not how resolved refs get reported.
+    return results.sort((first, second) => first.index - second.index);
   }
 
   /**

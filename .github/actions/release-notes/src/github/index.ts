@@ -10,8 +10,11 @@ export const GITHUB_API = 'https://api.github.com';
 const USER_AGENT = 'camunda-release-notes-gate';
 const GITHUB_API_VERSION = '2022-11-28';
 
-/** Auth + content-negotiation headers for the reused MONOREPO_RELEASE_APP token.
- *  Pass `json: true` for write requests that send a JSON body. */
+/** Auth + content-negotiation headers for the plain `GITHUB_TOKEN` every
+ *  caller passes in. This action resolves from the PR head on `pull_request`
+ *  (see the gate workflow's security-model header), so it must never be
+ *  given a privileged token such as MONOREPO_RELEASE_APP. Pass `json: true`
+ *  for write requests that send a JSON body. */
 export function githubHeaders(token: string, opts: { json?: boolean } = {}): Record<string, string> {
   const headers: Record<string, string> = {
     authorization: `Bearer ${token}`,

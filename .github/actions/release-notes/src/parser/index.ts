@@ -47,9 +47,18 @@ export function stripHtmlComments(text: string): string {
   return text.replace(/<!--[\s\S]*?-->/g, '');
 }
 
+/**
+ * Strip fenced and inline Markdown code before any parsing. A reviewer citing
+ * an example — `` `closes #1234` `` in prose, or a fenced snippet quoting the
+ * template — must not be mistaken for the author's own ref or opt-out tick.
+ */
+export function stripCode(text: string): string {
+  return text.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
+}
+
 /** Extract every reference from the given text (already scoped by the caller). */
 export function parseRefs(text: string): ParsedRef[] {
-  text = stripHtmlComments(text);
+  text = stripCode(stripHtmlComments(text));
   const refs: ParsedRef[] = [];
   const seen = new Set<number>(); // dedupe by match offset
 
@@ -83,14 +92,14 @@ export function extractSection(body: string, heading = SECTION_HEADING): string 
   const start = lines.findIndex((line) => headingRe.test(line.trim()));
   if (start < 0) return null;
   const rest = lines.slice(start + 1);
-  const end = rest.findIndex((line) => /^#{1,6}\s+\S/.test(line));
+  const end = rest.findIndex((line) => /^#{1,6}\s+\S/.test(line.trim()));
   return (end < 0 ? rest : rest.slice(0, end)).join('\n');
 }
 
 /** True when the opt-out checkbox is present and ticked. */
 export function isOptOutTicked(body: string): boolean {
   const re = new RegExp(String.raw`^\s*[-*]\s*\[x\]\s*.*${escapeRe(OPT_OUT_PHRASE)}`, 'im');
-  return re.test(stripHtmlComments(body));
+  return re.test(stripCode(stripHtmlComments(body)));
 }
 
 function escapeRe(literal: string): string {
