@@ -122,7 +122,15 @@ public class CamundaCCSMTenantAuthorizationService implements DataSourceTenantAu
 
   private void repopulateCacheWithCurrentUserTenantAuthorization() {
     getCurrentUserId()
-        .ifPresent(id -> userTenantAuthorizations.put(id, fetchCurrentUserAuthorizedTenants()));
+        .ifPresent(
+            id -> {
+              final List<TenantDto> tenants = fetchCurrentUserAuthorizedTenants();
+              // Never cache an empty result. Caching it would hide the user's tenants for the whole
+              // expireAfterWrite TTL.
+              if (!tenants.isEmpty()) {
+                userTenantAuthorizations.put(id, tenants);
+              }
+            });
   }
 
   private List<TenantDto> fetchCurrentUserAuthorizedTenants() {

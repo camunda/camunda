@@ -50,6 +50,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -345,8 +347,21 @@ public class CCSMTokenService {
       return Optional.empty();
     }
     // Under CSL the token lives in the OIDC session's authorized client; fall back to the auth
-    // cookie for the legacy CCSM setup.
-    return cslSessionAccessToken(request).or(() -> AuthCookieService.getAuthCookieToken(request));
+    // cookie for the legacy CCSM setup, then to the validated bearer token for stateless API
+    // callers (e.g. the Web Modeler cluster proxy) that carry neither a session nor an auth cookie.
+    return cslSessionAccessToken(request)
+        .or(() -> AuthCookieService.getAuthCookieToken(request))
+        .or(this::cslBearerAccessToken);
+  }
+
+  private Optional<String> cslBearerAccessToken() {
+    if (SecurityContextHolder.getContext().getAuthentication()
+        instanceof final JwtAuthenticationToken jwtToken) {
+      return Optional.ofNullable(jwtToken.getToken())
+          .map(Jwt::getTokenValue)
+          .filter(StringUtils::isNotBlank);
+    }
+    return Optional.empty();
   }
 
   private Optional<HttpServletRequest> currentRequest() {

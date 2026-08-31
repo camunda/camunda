@@ -48,6 +48,8 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -348,6 +350,32 @@ public class CCSMTokenServiceTest {
     assertThat(result).contains("cookie-token");
   }
 
+  @Test
+  void shouldFallBackToValidatedBearerTokenWhenNoSessionOrCookie() {
+    // given — stateless API caller (e.g. the Web Modeler cluster proxy): no OIDC session and no
+    // auth cookie, only a validated bearer token in the security context
+    setCurrentRequestWithoutAuthCookie();
+    SecurityContextHolder.getContext().setAuthentication(jwtAuthentication("bearer-token"));
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserAuthToken();
+
+    // then
+    assertThat(result).contains("bearer-token");
+  }
+
+  @Test
+  void shouldReturnEmptyWhenNoSessionCookieOrBearerToken() {
+    // given — an authenticated request that carries none of the supported token sources
+    setCurrentRequestWithoutAuthCookie();
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserAuthToken();
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
   // --- getCurrentUserIdFromAuthToken: principal source (CSL claim vs legacy sub) ---
 
   @Test
@@ -393,6 +421,17 @@ public class CCSMTokenServiceTest {
     when(request.getAttributeNames()).thenReturn(Collections.emptyEnumeration());
     when(request.getCookies()).thenReturn(new Cookie[] {cookie});
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+  }
+
+  private void setCurrentRequestWithoutAuthCookie() {
+    when(request.getAttributeNames()).thenReturn(Collections.emptyEnumeration());
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+  }
+
+  private JwtAuthenticationToken jwtAuthentication(final String tokenValue) {
+    final Jwt jwt =
+        Jwt.withTokenValue(tokenValue).header("alg", "none").claim("sub", "user").build();
+    return new JwtAuthenticationToken(jwt);
   }
 
   private OAuth2AuthenticationToken oauthToken() {

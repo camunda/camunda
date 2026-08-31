@@ -126,6 +126,31 @@ public class CCSMTenantAuthorizationServiceTest {
   }
 
   @Test
+  public void emptyTenantAuthorizationsAreNotCachedAndAreRetried() {
+    // given — Identity resolves no tenants on the first attempt (e.g. a transient hiccup), then the
+    // real tenants once it recovers
+    final List<TenantDto> authorizedTenants =
+        List.of(new TenantDto("tenant1Id", "tenant1", ZEEBE_DATA_SOURCE));
+    when(ccsmTokenService.getAuthorizedTenantsFromToken(TEST_TOKEN))
+        .thenReturn(List.of())
+        .thenReturn(authorizedTenants);
+
+    // when — the first resolution yields nothing
+    final List<TenantDto> firstResult = underTest.getCurrentUserAuthorizedTenants();
+
+    // then — the empty result is not cached
+    assertThat(firstResult).isEmpty();
+
+    // when — a subsequent call is made before the cache TTL would have expired
+    final List<TenantDto> secondResult = underTest.getCurrentUserAuthorizedTenants();
+
+    // then — Identity is queried again (the empty result was never cached) and the resolved tenants
+    // are returned instead of a stale empty list
+    Mockito.verify(ccsmTokenService, times(2)).getAuthorizedTenantsFromToken(TEST_TOKEN);
+    assertThat(secondResult).containsExactlyInAnyOrderElementsOf(authorizedTenants);
+  }
+
+  @Test
   public void noTenantAuthorizationsReturnedIfNoUserTokenPresent() {
     // given
     when(ccsmTokenService.getCurrentUserIdFromAuthToken()).thenReturn(Optional.empty());
