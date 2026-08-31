@@ -855,30 +855,44 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   /**
    * Gathers the two already-durable facts {@link ExportingMigrationStatusCalculator} needs, reading
    * the lowest exported position and peeking the next unexported record's version within a single,
-   * uninterrupted actor job so a compaction pass can't invalidate the position in between.
+   * uninterrupted actor job so a compaction pass can't invalidate the position in between. Reports
+   * a failure to read either fact as {@link MigrationStatusCode#UNKNOWN} rather than letting the
+   * exception reach {@link #handleFailure(Throwable)} -- this is a best-effort diagnostic read for
+   * an actuator endpoint, and must not be able to take down the exporter actor itself.
    */
   private PartitionMigrationStatus computeExportingMigrationStatus() {
-    final var hasExporters = state.hasExporters();
-    if (!hasExporters) {
-      return ExportingMigrationStatusCalculator.compute(partitionId.number(), false, null);
-    }
-
-    final long lowestExportedPosition = state.getLowestPosition();
-    final String nextUnexportedRecordVersion;
-    try (final LogStreamReader reader = logStream.newLogStreamReader()) {
-      reader.seekToNextEvent(lowestExportedPosition);
-      if (reader.hasNext()) {
-        final var metadata = new RecordMetadata();
-        reader.peekNext().readMetadata(metadata);
-        nextUnexportedRecordVersion = metadata.getBrokerVersion().toString();
-      } else {
-        nextUnexportedRecordVersion = null;
+    try {
+      final var hasExporters = state.hasExporters();
+      if (!hasExporters) {
+        return ExportingMigrationStatusCalculator.compute(partitionId.number(), false, null);
       }
+
+      final long lowestExportedPosition = state.getLowestPosition();
+      final String nextUnexportedRecordVersion;
+      try (final LogStreamReader reader = logStream.newLogStreamReader()) {
+        reader.seekToNextEvent(lowestExportedPosition);
+        if (reader.hasNext()) {
+          final var metadata = new RecordMetadata();
+          reader.peekNext().readMetadata(metadata);
+          nextUnexportedRecordVersion = metadata.getBrokerVersion().toString();
+        } else {
+          nextUnexportedRecordVersion = null;
+        }
+      }
+      final var status =
+          ExportingMigrationStatusCalculator.compute(
+              partitionId.number(), true, nextUnexportedRecordVersion);
+      return explainIfPaused(status);
+    } catch (final Exception e) {
+      LOG.warn(
+          "Failed to determine partition {}'s exporting migration status", partitionId.number(), e);
+      return new PartitionMigrationStatus(
+          MigrationStatusCode.UNKNOWN,
+          "partition "
+              + partitionId.number()
+              + ": failed to read exporting migration status: "
+              + e.getMessage());
     }
-    final var status =
-        ExportingMigrationStatusCalculator.compute(
-            partitionId.number(), true, nextUnexportedRecordVersion);
-    return explainIfPaused(status);
   }
 
   /**
