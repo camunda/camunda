@@ -60,7 +60,7 @@ test.describe.serial('mapping rules CRUD', () => {
     );
     await expect(
       identityMappingRulesPage.createMappingRuleIdField,
-    ).toHaveAttribute('data-invalid', 'true');
+    ).toHaveAttribute('aria-invalid', 'true');
   });
 
   test('creates a mapping rule', async ({page, identityMappingRulesPage}) => {
