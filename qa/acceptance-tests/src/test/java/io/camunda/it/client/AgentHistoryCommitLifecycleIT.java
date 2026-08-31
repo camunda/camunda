@@ -24,6 +24,7 @@ import io.camunda.client.api.command.AgentTool;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryCommitStatus;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
+import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.response.AgentInstance;
 import io.camunda.client.api.search.response.AgentInstanceHistory;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.assertj.core.groups.Tuple;
 import org.awaitility.Awaitility;
@@ -289,6 +291,206 @@ public class AgentHistoryCommitLifecycleIT {
                         assertThat(item.getMetrics().getOutputTokens()).isEqualTo(50L);
                         assertThat(item.getMetrics().getDurationMs()).isEqualTo(500L);
                       });
+            });
+  }
+
+  @Test
+  void shouldDedupeResendOfSameHistoryItemIdAcrossJobActivations() {
+    // --- setup: a sequential multi-instance AI-agent service task, so a SECOND, independent job
+    // activation (job B, on a brand-new element instance) exists for the SAME agent instance once
+    // the first job (job A) completes ---
+    final var processModel =
+        Bpmn.createExecutableProcess(PROCESS_ID + "CrossJobDedupe")
+            .startEvent()
+            .serviceTask(
+                SERVICE_TASK_ID,
+                t ->
+                    t.zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+                        .zeebeAiAgentTaskDefinition()
+                        .multiInstance(
+                            m ->
+                                m.sequential()
+                                    .zeebeInputCollectionExpression("items")
+                                    .zeebeInputElement("item")))
+            .endEvent()
+            .done();
+    final var process =
+        deployProcessAndWaitForIt(
+            camundaClient, processModel, "agent-history-cross-job-dedupe.bpmn");
+    final long processInstanceKey =
+        camundaClient
+            .newCreateInstanceCommand()
+            .processDefinitionKey(process.getProcessDefinitionKey())
+            .variables(Map.of("items", List.of("a", "b")))
+            .execute()
+            .getProcessInstanceKey();
+
+    waitForElementInstances(
+        camundaClient,
+        f ->
+            f.elementId(SERVICE_TASK_ID)
+                .type(ElementInstanceType.SERVICE_TASK)
+                .processInstanceKey(processInstanceKey),
+        1);
+    final long elementInstanceKey1 =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.elementId(SERVICE_TASK_ID)
+                        .type(ElementInstanceType.SERVICE_TASK)
+                        .processInstanceKey(processInstanceKey))
+            .execute()
+            .items()
+            .getFirst()
+            .getElementInstanceKey();
+    final long agentInstanceKey = createAgentInstance(elementInstanceKey1);
+    final var jobA = activateAgenticJob(processInstanceKey, true);
+
+    final String historyItemId = UUID.randomUUID().toString();
+
+    // when — job A submits the item and completes, committing it
+    final var firstResponse =
+        camundaClient
+            .newUpdateAgentInstanceCommand(agentInstanceKey)
+            .elementInstanceKey(elementInstanceKey1)
+            .jobKey(jobA.getKey())
+            .jobLease(jobA.getLeaseToken())
+            .history(
+                List.of(
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(historyItemId)
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.ASSISTANT)
+                        .content(
+                            List.of(
+                                AgentInstanceHistoryContent.text("I can help with many tasks.")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T10:00:00Z"))
+                        .metrics(
+                            new AgentInstanceHistoryMetrics()
+                                .inputTokens(100L)
+                                .outputTokens(50L)
+                                .durationMs(500L))))
+            .send()
+            .join();
+    final long originalHistoryItemKey =
+        firstResponse.getCreatedHistory().getFirst().getHistoryItemKey();
+
+    camundaClient.newCompleteCommand(jobA).execute();
+
+    // given — the multi-instance body advances: a second, independent job activation exists for
+    // the SAME agent instance, on a brand-new element instance
+    waitForElementInstances(
+        camundaClient,
+        f ->
+            f.elementId(SERVICE_TASK_ID)
+                .type(ElementInstanceType.SERVICE_TASK)
+                .processInstanceKey(processInstanceKey),
+        2);
+    final long elementInstanceKey2 =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.elementId(SERVICE_TASK_ID)
+                        .type(ElementInstanceType.SERVICE_TASK)
+                        .processInstanceKey(processInstanceKey))
+            .sort(s -> s.elementInstanceKey().asc())
+            .execute()
+            .items()
+            .get(1)
+            .getElementInstanceKey();
+    final var jobB = activateAgenticJob(processInstanceKey, true);
+    assertThat(jobB.getElementInstanceKey())
+        .as("job B must be the job activated for the second element instance")
+        .isEqualTo(elementInstanceKey2);
+
+    // when — job B (a brand-new job, on a brand-new element instance) resends the SAME
+    // historyItemId, with different content/metrics on purpose — dedup keys on historyItemId
+    // alone, and must span job A even though job A already completed and committed.
+    final var secondResponse =
+        camundaClient
+            .newUpdateAgentInstanceCommand(agentInstanceKey)
+            .elementInstanceKey(elementInstanceKey2)
+            .jobKey(jobB.getKey())
+            .jobLease(jobB.getLeaseToken())
+            .history(
+                List.of(
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(historyItemId)
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.ASSISTANT)
+                        .content(
+                            List.of(AgentInstanceHistoryContent.text("A different resent answer.")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T10:00:00Z"))
+                        .metrics(
+                            new AgentInstanceHistoryMetrics()
+                                .inputTokens(999L)
+                                .outputTokens(999L)
+                                .durationMs(999L))))
+            .send()
+            .join();
+
+    assertThat(secondResponse.getCreatedHistory())
+        .as("the resent item must be flagged as a duplicate of job A's item, across jobs")
+        .singleElement()
+        .satisfies(
+            item -> {
+              assertThat(item.isDuplicate()).isTrue();
+              assertThat(item.getHistoryItemKey()).isEqualTo(originalHistoryItemKey);
+            });
+
+    camundaClient.newCompleteCommand(jobB).execute();
+
+    // then
+    Awaitility.await("resent history item deduped across job activations, not double-applied")
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var response =
+                  camundaClient
+                      .newAgentInstanceHistorySearchRequest(agentInstanceKey)
+                      .filter(f -> f.role(AgentInstanceHistoryRole.ASSISTANT))
+                      .execute();
+              assertThat(response.items())
+                  .as("exactly one history item persists for the id resent across jobs")
+                  .singleElement()
+                  .satisfies(
+                      item -> {
+                        assertThat(item.getContent())
+                            .as(
+                                "persisted content must match job A's submission, not job B's"
+                                    + " resend")
+                            .extracting(c -> ((TextContent) c).getText())
+                            .containsExactly("I can help with many tasks.");
+                        assertThat(item.getMetrics())
+                            .as(
+                                "persisted metrics must match job A's submission, not job B's"
+                                    + " resend")
+                            .isNotNull();
+                        assertThat(item.getMetrics().getInputTokens()).isEqualTo(100L);
+                        assertThat(item.getMetrics().getOutputTokens()).isEqualTo(50L);
+                        assertThat(item.getMetrics().getDurationMs()).isEqualTo(500L);
+                      });
+
+              final var aggregatedMetrics =
+                  camundaClient
+                      .newAgentInstanceSearchRequest()
+                      .filter(f -> f.agentInstanceKey(agentInstanceKey))
+                      .execute()
+                      .items()
+                      .getFirst()
+                      .getMetrics();
+              assertThat(aggregatedMetrics.getInputTokens())
+                  .as("aggregated tokens must count job A's item once, not job B's resend too")
+                  .isEqualTo(100L);
+              assertThat(aggregatedMetrics.getOutputTokens())
+                  .as("aggregated tokens must count job A's item once, not job B's resend too")
+                  .isEqualTo(50L);
+              assertThat(aggregatedMetrics.getModelCalls())
+                  .as("deduped resend must not be counted as an extra model call")
+                  .isEqualTo(1);
             });
   }
 
