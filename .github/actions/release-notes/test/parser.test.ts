@@ -66,6 +66,20 @@ test('a commented-out opt-out checkbox does not count as ticked', () => {
   assert.equal(isOptOutTicked('<!-- - [x] This PR does not need a linked issue -->'), false);
 });
 
+test('inline and fenced code are stripped so quoted examples are not parsed as refs', () => {
+  assert.equal(parseRefs('e.g. `closes #1234` is how you link an issue').length, 0);
+  const fenced = ['```', 'closes #1234', '```'].join('\n');
+  assert.equal(parseRefs(fenced).length, 0);
+  // A real ref outside the code still counts.
+  assert.equal(parseRefs('`closes #1` — actually closes #2')[0]?.number, 2);
+});
+
+test('a code-quoted opt-out checkbox does not count as ticked', () => {
+  assert.equal(isOptOutTicked('`- [x] This PR does not need a linked issue`'), false);
+  const fenced = ['```', '- [x] This PR does not need a linked issue', '```'].join('\n');
+  assert.equal(isOptOutTicked(fenced), false);
+});
+
 test('isOptOutTicked only fires on a ticked checkbox with the phrase', () => {
   assert.equal(isOptOutTicked('- [x] This PR does not need a linked issue'), true);
   assert.equal(isOptOutTicked('- [ ] This PR does not need a linked issue'), false);

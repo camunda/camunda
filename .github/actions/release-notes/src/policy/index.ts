@@ -1,4 +1,11 @@
+import { SECTION_HEADING } from '../parser';
 import type { PolicyDecision, ResolvedRef } from '../types';
+
+/** Distinct issue numbers, in first-seen order — the same issue can appear
+ *  twice in a body (`closes #12` and its full URL) and must be reported once. */
+function uniqueNumbers(refs: readonly ResolvedRef[]): number[] {
+  return [...new Set(refs.map((ref) => ref.number))];
+}
 
 /**
  * Pure PR-gate decision. Given the resolved refs found inside the section and
@@ -18,12 +25,12 @@ export function decide(refs: readonly ResolvedRef[], optOut: boolean): PolicyDec
 
   const prRefs = sameRepo.filter((ref) => ref.target === 'pullRequest');
   if (prRefs.length > 0) {
-    const list = prRefs.map((ref) => `#${ref.number}`).join(', ');
+    const list = uniqueNumbers(prRefs).map((number) => `#${number}`).join(', ');
     return {
       outcome: 'fail',
       code: 'pr-ref-in-section',
       reasons: [
-        `The "Related issues" section links a pull request (${list}), not an issue.`,
+        `The "${SECTION_HEADING}" section links a pull request (${list}), not an issue.`,
         'Link the tracked issue this PR resolves (e.g. `closes #1234`), or tick the opt-out checkbox.',
       ],
     };
@@ -36,18 +43,18 @@ export function decide(refs: readonly ResolvedRef[], optOut: boolean): PolicyDec
   const liveIssues = sameRepo.filter((ref) => ref.target === 'issue');
   if (liveIssues.length > 0) {
     const closing = liveIssues.some((ref) => ref.kind === 'closing');
-    const list = liveIssues.map((ref) => `#${ref.number}`).join(', ');
+    const list = uniqueNumbers(liveIssues).map((number) => `#${number}`).join(', ');
     return {
       outcome: 'pass',
       code: closing ? 'section-closing' : 'section-contributor',
-      reasons: [`Linked to issue ${list} in the "Related issues" section.`],
+      reasons: [`Linked to issue ${list} in the "${SECTION_HEADING}" section.`],
     };
   }
 
-  const dead = sameRepo.filter((ref) => ref.target === 'missing').map((ref) => `#${ref.number}`);
+  const dead = uniqueNumbers(sameRepo.filter((ref) => ref.target === 'missing')).map((number) => `#${number}`);
   const crossRepo = refs.filter((ref) => ref.crossRepo).map((ref) => ref.raw);
   const reasons = [
-    'No linked issue found in the "Related issues" section, and the opt-out checkbox is not ticked.',
+    `No linked issue found in the "${SECTION_HEADING}" section, and the opt-out checkbox is not ticked.`,
     'Add a closing keyword with the tracked issue (e.g. `closes #1234`), or tick the opt-out checkbox.',
   ];
   if (dead.length) reasons.push(`These refs do not resolve to an existing issue: ${dead.join(', ')}.`);

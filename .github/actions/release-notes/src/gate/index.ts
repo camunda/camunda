@@ -29,7 +29,11 @@ export interface GateInput {
 /** Evaluate the PR-issue link for one PR body: section refs + opt-out. */
 async function evaluateLink(resolver: GateResolver, body: string): Promise<PolicyDecision> {
   const section = extractSection(body);
-  const optOut = isOptOutTicked(body);
+  // Scoped to the same section as refs: the opt-out checkbox lives in the PR
+  // template's "Related issues" block, not just anywhere in the body — a
+  // missing/renamed heading must not let a stray ticked box elsewhere pass
+  // a PR whose actual section was never filled in.
+  const optOut = section ? isOptOutTicked(section) : false;
   const refs = section ? parseRefs(section) : [];
   const resolved = await resolver.resolve(refs);
   return decide(resolved, optOut);
@@ -38,14 +42,11 @@ async function evaluateLink(resolver: GateResolver, body: string): Promise<Polic
 /**
  * Explain why a `Backport of #N` marker could not be followed to an original
  * PR, so the author sees the actual problem rather than a generic "no linked
- * issue". Only reached in the rare failure path, so the extra classify call
- * (issue vs missing) never touches the hot bot-backport path.
+ * issue". Takes the caller's classification of the ref rather than resolving
+ * it again — the caller already has it, to decide whether fetching the body
+ * is worth doing at all.
  */
-async function unresolvableBackportReason(
-  resolver: GateResolver,
-  backport: ParsedRef,
-): Promise<string> {
-  const [resolved] = await resolver.resolve([backport]);
+function unresolvableBackportReason(backport: ParsedRef, resolved: ResolvedRef | undefined): string {
   if (resolved?.crossRepo) {
     return `Backport of ${backport.repo}#${backport.number} points to another repository — attribution can only be inherited from a pull request in this repo.`;
   }
@@ -69,12 +70,15 @@ export async function evaluateGate(resolver: GateResolver, input: GateInput): Pr
   if (link.outcome === 'fail' && link.code === 'unlinked-undeclared') {
     const backport = parseRefs(input.body).find((ref) => ref.kind === 'backport');
     if (backport) {
-      // fetchPullBody returns null for a 404 target OR a cross-repo marker — the
-      // resolver can only validate its own repo. Either way we cannot inherit
-      // attribution, so surface the dangling marker rather than absorbing it
-      // into the generic "no linked issue" message.
-      const originalBody = await resolver.fetchPullBody(backport.number, backport.repo);
       deliveryPath = 'backportHop';
+      // Only a same-repo pull request needs its body fetched — a cross-repo,
+      // missing, or issue-not-PR target already has everything the failure
+      // message needs from the classification alone.
+      const [resolved] = await resolver.resolve([backport]);
+      const originalBody =
+        resolved?.target === 'pullRequest' && !resolved.crossRepo
+          ? await resolver.fetchPullBody(backport.number, backport.repo)
+          : null;
       if (originalBody === null) {
         // The marker is the PR's stated attribution path, so speak to the marker
         // only — the generic "add a closing keyword / tick opt-out" section advice
@@ -82,7 +86,7 @@ export async function evaluateGate(resolver: GateResolver, input: GateInput): Pr
         link = {
           outcome: 'fail',
           code: 'unlinked-undeclared',
-          reasons: [await unresolvableBackportReason(resolver, backport)],
+          reasons: [unresolvableBackportReason(backport, resolved)],
         };
       } else {
         const original = await evaluateLink(resolver, originalBody);
@@ -95,9 +99,15 @@ export async function evaluateGate(resolver: GateResolver, input: GateInput): Pr
               }
             : {
                 outcome: 'fail',
-                code: 'unlinked-undeclared',
+                // A pr-ref-in-section failure and an unlinked-undeclared one
+                // point the author at different fixes, so the hop reports the
+                // original PR's actual code rather than one fixed code for
+                // every failure reason.
+                code: original.code,
                 reasons: [
-                  `Backport of #${backport.number}, but that PR does not link a tracked issue either.`,
+                  original.code === 'pr-ref-in-section'
+                    ? `Backport of #${backport.number}, but that PR's section links a pull request, not an issue.`
+                    : `Backport of #${backport.number}, but that PR does not link a tracked issue either.`,
                   ...original.reasons,
                 ],
               };

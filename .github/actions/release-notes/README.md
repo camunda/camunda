@@ -97,10 +97,14 @@ links a pull request is a hard error and is *not* rescued by an unrelated
 message names why: it points at an **issue** (not a PR), it **doesn't resolve**
 to anything in this repo, or it's **cross-repo** (`owner/other#N`, which this
 action can't validate) — rather than folding into the generic "no linked issue"
-message.
+message. If the original PR *can* be followed but its own section links a pull
+request, the hop reports that as `pr-ref-in-section` too, not the generic
+`unlinked-undeclared` — the two point the author at different fixes.
 
-HTML comments are stripped before parsing, so the PR template's own instructional
-`<!-- … closes #1234 … -->` boilerplate is never mistaken for a real ref.
+HTML comments and Markdown code (fenced and inline) are stripped before
+parsing, so the PR template's own instructional `<!-- … closes #1234 … -->`
+boilerplate, and an author quoting `` `closes #1234` `` as an example, are
+never mistaken for a real ref or a ticked opt-out.
 
 ### Title lint
 
@@ -108,8 +112,10 @@ The title check reimplements the **active** `commitlint.config.cjs` rules
 (`type-empty`, `type-case`, `type-enum`, `scope-empty`, `header-max-length`) as
 a pure regex, so the action keeps **zero runtime dependencies** rather than
 vendoring `@commitlint` into the committed bundle. `TITLE_TYPES` and `HEADER_MAX`
-in `src/title` are the source of truth, and the action CI greps
-`commitlint.config.cjs` to fail if they ever drift.
+in `src/title` are the source of truth for `type-enum`/`header-max-length`;
+`type-case` (lower-case) and `scope-empty` (always) are baked into the regex
+and its surrounding checks instead. The action CI's drift-guard step compares
+all four against `commitlint.config.cjs` and fails if any of them drift.
 
 ### Sticky comment
 
