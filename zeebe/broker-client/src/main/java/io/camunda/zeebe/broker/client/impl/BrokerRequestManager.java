@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.AdditionalErrorCodes;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
@@ -33,11 +35,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 final class BrokerRequestManager extends Actor {
 
   private static final TransportRequestSender SENDER_WITH_RETRY =
-      (c, s, r, t) -> c.sendRequestWithRetry(s, BrokerRequestManager::responseValidation, r, t);
+      // annotations required: `@Nullable` is not inferred implicitly from lambda
+      (ClientTransport transport,
+          Supplier<@Nullable String> nodeAddressSupplier,
+          ClientRequest request,
+          Duration timeout) ->
+          transport.sendRequestWithRetry(
+              nodeAddressSupplier, BrokerRequestManager::responseValidation, request, timeout);
   private static final TransportRequestSender SENDER_WITHOUT_RETRY = ClientTransport::sendRequest;
   private final ClientTransport clientTransport;
   private final RequestDispatchStrategy dispatchStrategy;
@@ -148,7 +157,8 @@ final class BrokerRequestManager extends Actor {
           RequestResult result = null;
           try {
             if (error == null) {
-              final BrokerResponse<T> response = request.getResponse(clientResponse);
+              final BrokerResponse<T> response =
+                  request.getResponse(requireNonNull(clientResponse));
 
               result = handleResponse(response, returnFuture);
               if (result.wasProcessed()) {
@@ -169,7 +179,9 @@ final class BrokerRequestManager extends Actor {
   }
 
   private <T> void registerFailure(
-      final BrokerRequest<T> request, final RequestResult result, final Throwable error) {
+      final BrokerRequest<T> request,
+      final @Nullable RequestResult result,
+      final @Nullable Throwable error) {
     if (result != null && result.getErrorCode() == ErrorCode.RESOURCE_EXHAUSTED) {
       return;
     }
@@ -288,9 +300,9 @@ final class BrokerRequestManager extends Actor {
 
   private static class RequestResult {
     private final boolean processed;
-    private final ErrorCode errorCode;
+    private final @Nullable ErrorCode errorCode;
 
-    RequestResult(final boolean processed, final ErrorCode errorCode) {
+    RequestResult(final boolean processed, final @Nullable ErrorCode errorCode) {
       this.processed = processed;
       this.errorCode = errorCode;
     }
@@ -299,7 +311,7 @@ final class BrokerRequestManager extends Actor {
       return processed;
     }
 
-    public ErrorCode getErrorCode() {
+    public @Nullable ErrorCode getErrorCode() {
       return errorCode;
     }
 
@@ -316,7 +328,7 @@ final class BrokerRequestManager extends Actor {
 
     ActorFuture<DirectBuffer> send(
         ClientTransport transport,
-        Supplier<String> nodeAddressSupplier,
+        Supplier<@Nullable String> nodeAddressSupplier,
         ClientRequest clientRequest,
         Duration timeout);
   }

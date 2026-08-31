@@ -14,7 +14,6 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -22,7 +21,6 @@ import org.jspecify.annotations.Nullable;
  * route to a node that has no elected leader but is in recovery mode — every other mode requires an
  * elected leader or picks a random broker.
  */
-@NullMarked
 final class BrokerAddressProvider implements Supplier<@Nullable String> {
 
   private final BrokerTopologyManager topologyManager;

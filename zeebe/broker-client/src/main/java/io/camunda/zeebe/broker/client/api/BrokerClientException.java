@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.client.api;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Represents exceptional errors that occur in the gateway-broker client on the broker side, e.g.
  * error responses, command rejections, etc.
@@ -20,7 +22,7 @@ public class BrokerClientException extends RuntimeException {
     super(message);
   }
 
-  public BrokerClientException(final String message, final Throwable cause) {
+  public BrokerClientException(final String message, final @Nullable Throwable cause) {
     super(message, cause);
   }
 
