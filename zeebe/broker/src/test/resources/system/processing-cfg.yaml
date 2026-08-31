@@ -3,4 +3,5 @@ zeebe:
     processing:
       maxCommandsInBatch: 125
       maxRecoverableRetries: 200
+      maxPendingSideEffects: 250
       skipPositions: 1, 2, 3

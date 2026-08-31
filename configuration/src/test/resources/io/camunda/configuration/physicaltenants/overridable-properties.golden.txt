@@ -349,6 +349,7 @@ processing.flow-control.write.throttle.enabled
 processing.flow-control.write.throttle.minimum-limit
 processing.flow-control.write.throttle.resolution
 processing.max-commands-in-batch
+processing.max-pending-side-effects
 processing.max-recoverable-retries
 processing.scheduled-tasks-check-interval
 processing.skip-positions
