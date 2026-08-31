@@ -8,17 +8,22 @@
 package io.camunda.optimize.service.job;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
+import io.camunda.optimize.service.DefinitionService;
+import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
+import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -46,24 +51,43 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessInstanceWriter processInstanceWriter;
   private final ProcessDefinitionWriter processDefinitionWriter;
+  private final DefinitionReader definitionReader;
+  private final ReportService reportService;
+  private final DefinitionService definitionService;
   private final Sleeper sleeper;
 
   @Autowired
   public ProcessDefinitionDeletionJobHandler(
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceWriter processInstanceWriter,
-      final ProcessDefinitionWriter processDefinitionWriter) {
-    this(processDefinitionReader, processInstanceWriter, processDefinitionWriter, Thread::sleep);
+      final ProcessDefinitionWriter processDefinitionWriter,
+      final DefinitionReader definitionReader,
+      final ReportService reportService,
+      final DefinitionService definitionService) {
+    this(
+        processDefinitionReader,
+        processInstanceWriter,
+        processDefinitionWriter,
+        definitionReader,
+        reportService,
+        definitionService,
+        Thread::sleep);
   }
 
   ProcessDefinitionDeletionJobHandler(
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceWriter processInstanceWriter,
       final ProcessDefinitionWriter processDefinitionWriter,
+      final DefinitionReader definitionReader,
+      final ReportService reportService,
+      final DefinitionService definitionService,
       final Sleeper sleeper) {
     this.processDefinitionReader = processDefinitionReader;
     this.processInstanceWriter = processInstanceWriter;
     this.processDefinitionWriter = processDefinitionWriter;
+    this.definitionReader = definitionReader;
+    this.reportService = reportService;
+    this.definitionService = definitionService;
     this.sleeper = sleeper;
   }
 
@@ -89,19 +113,54 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
       return;
     }
     final String bpmnProcessId = definition.get().getKey();
-    deleteWithRetry(
+    final String tenantId = definition.get().getTenantId();
+    final String version = definition.get().getVersion();
+
+    // Soft-delete first so a terminal failure anywhere below leaves the deletion retriable
+    withRetry(
+        "mark process definition as deleted " + definitionId,
+        () -> processDefinitionWriter.markDefinitionAsDeleted(definitionId));
+    withRetry(
         "delete process instances for definition " + definitionId,
         () -> processInstanceWriter.deleteInstancesByDefinitionId(bpmnProcessId, definitionId));
-    deleteWithRetry(
+
+    // Scoped to this definition's own tenant: a bpmnProcessId can exist independently per
+    // tenant, so a version still live under a different tenant must not block clearing the
+    // cached XML for reports whose data is, for this tenant, now entirely gone.
+    final boolean isLastRemainingVersion =
+        withRetry(
+                "check remaining versions of process definition " + bpmnProcessId,
+                () ->
+                    definitionReader.getDefinitionVersions(
+                        DefinitionType.PROCESS, bpmnProcessId, Collections.singleton(tenantId)))
+            .isEmpty();
+
+    // Invalidate before clearing XML: otherwise a report evaluation that already read the
+    // stale cached "latest" definition could write its BPMN XML back into a report right
+    // after we clear it.
+    withRetry(
+        "invalidate cached process definition " + bpmnProcessId,
+        () ->
+            definitionService.invalidateProcessDefinitionIfLatest(
+                bpmnProcessId, tenantId, version));
+
+    if (isLastRemainingVersion) {
+      withRetry(
+          "clear cached XML for reports referencing " + bpmnProcessId,
+          () -> reportService.clearCachedReportXml(bpmnProcessId, tenantId));
+    }
+
+    // Hard-delete last
+    withRetry(
         "delete process definition " + definitionId,
         () -> processDefinitionWriter.deleteDefinition(definitionId));
   }
 
-  private void deleteWithRetry(final String description, final Runnable deletion) {
+  private void withRetry(final String description, final Runnable runnable) {
     withRetry(
         description,
         () -> {
-          deletion.run();
+          runnable.run();
           return null;
         });
   }

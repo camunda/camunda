@@ -15,6 +15,7 @@ import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.service.db.reader.JobRegistryReader;
 import io.camunda.optimize.service.util.configuration.CacheConfiguration;
+import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.time.Duration;
 import java.util.Collection;
@@ -25,6 +26,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 /**
@@ -33,7 +36,7 @@ import org.springframework.stereotype.Component;
  * that expires after a configurable TTL and is re-fetched wholesale on the next lookup.
  */
 @Component
-public class DeletedProcessDefinitionFilter {
+public class DeletedProcessDefinitionFilter implements ConfigurationReloadable {
 
   private static final Logger LOG = LoggerFactory.getLogger(DeletedProcessDefinitionFilter.class);
   private static final String SUPPRESSED_IDS_CACHE_KEY = "suppressedProcessDefinitionIds";
@@ -42,6 +45,7 @@ public class DeletedProcessDefinitionFilter {
   private final int maxSize;
   private final Cache<String, Set<String>> cache;
 
+  @Autowired
   public DeletedProcessDefinitionFilter(
       final JobRegistryReader jobRegistryReader, final ConfigurationService configurationService) {
     this(jobRegistryReader, configurationService, Ticker.systemTicker());
@@ -62,6 +66,11 @@ public class DeletedProcessDefinitionFilter {
             .expireAfterWrite(Duration.ofMillis(cacheConfig.getDefaultTtlMillis()))
             .ticker(ticker)
             .build();
+  }
+
+  @Override
+  public void reloadConfiguration(final ApplicationContext context) {
+    cache.invalidateAll();
   }
 
   /**

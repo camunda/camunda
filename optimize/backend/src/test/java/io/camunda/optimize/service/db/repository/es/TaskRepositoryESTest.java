@@ -16,9 +16,12 @@ import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.BulkIndexByScrollFailure;
 import co.elastic.clients.elasticsearch._types.Conflicts;
+import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
+import co.elastic.clients.elasticsearch.core.UpdateByQueryRequest;
+import co.elastic.clients.elasticsearch.core.UpdateByQueryResponse;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -101,6 +104,65 @@ class TaskRepositoryESTest {
             () ->
                 taskRepositoryES.tryDeleteByQueryRequest(
                     Query.of(q -> q.matchAll(m -> m)), "test instances", true, true, "test-index"))
+        .isInstanceOf(OptimizeByQueryFailureException.class);
+  }
+
+  @Test
+  void shouldUseProceedConflictsModeByDefaultForUpdate() throws IOException {
+    // given
+    final ArgumentCaptor<UpdateByQueryRequest> requestCaptor =
+        ArgumentCaptor.forClass(UpdateByQueryRequest.class);
+    when(esClient.submitUpdateTask(requestCaptor.capture()))
+        .thenReturn(UpdateByQueryResponse.of(b -> b.updated(1L).timedOut(false)));
+
+    // when
+    taskRepositoryES.tryUpdateByQueryRequest(
+        "test reports", mock(Script.class), Query.of(q -> q.matchAll(m -> m)), "test-index");
+
+    // then -- unrelated callers keep skipping (rather than failing on) version conflicts
+    assertThat(requestCaptor.getValue().conflicts()).isEqualTo(Conflicts.Proceed);
+  }
+
+  @Test
+  void shouldUseAbortConflictsModeWhenFailOnVersionConflictsIsRequestedForUpdate()
+      throws IOException {
+    // given
+    final ArgumentCaptor<UpdateByQueryRequest> requestCaptor =
+        ArgumentCaptor.forClass(UpdateByQueryRequest.class);
+    when(esClient.submitUpdateTask(requestCaptor.capture()))
+        .thenReturn(UpdateByQueryResponse.of(b -> b.updated(1L).timedOut(false)));
+
+    // when
+    taskRepositoryES.tryUpdateByQueryRequest(
+        "test reports", mock(Script.class), Query.of(q -> q.matchAll(m -> m)), true, "test-index");
+
+    // then
+    assertThat(requestCaptor.getValue().conflicts()).isEqualTo(Conflicts.Abort);
+  }
+
+  @Test
+  void shouldThrowWhenAbortedUpdateReportsAVersionConflictFailure() throws IOException {
+    // given
+    final BulkIndexByScrollFailure conflictFailure =
+        BulkIndexByScrollFailure.of(
+            f ->
+                f.id("report-1")
+                    .index("test-index")
+                    .cause(c -> c.type("version_conflict_engine_exception").reason("conflict"))
+                    .status(409));
+    when(esClient.submitUpdateTask(any(UpdateByQueryRequest.class)))
+        .thenReturn(
+            UpdateByQueryResponse.of(b -> b.updated(0L).timedOut(false).failures(conflictFailure)));
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                taskRepositoryES.tryUpdateByQueryRequest(
+                    "test reports",
+                    mock(co.elastic.clients.elasticsearch._types.Script.class),
+                    Query.of(q -> q.matchAll(m -> m)),
+                    true,
+                    "test-index"))
         .isInstanceOf(OptimizeByQueryFailureException.class);
   }
 }

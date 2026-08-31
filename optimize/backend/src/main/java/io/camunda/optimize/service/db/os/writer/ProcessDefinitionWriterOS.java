@@ -28,8 +28,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
@@ -75,12 +77,14 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
   @Override
   public void markDefinitionAsDeleted(final String definitionId) {
     LOG.debug("Marking process definition with ID {} as deleted", definitionId);
+    // Refresh immediately: callers rely on a subsequent search seeing this delete right away
     final UpdateRequest.Builder updateReqBuilder =
         new UpdateRequest.Builder<>()
             .index(PROCESS_DEFINITION_INDEX_NAME)
             .id(definitionId)
             .script(MARK_AS_DELETED_SCRIPT)
-            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+            .refresh(Refresh.True);
     final String errorMessage =
         String.format(
             "There was a problem when trying to mark process definition with ID %s as deleted",
@@ -91,7 +95,17 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
   @Override
   public void deleteDefinition(final String definitionId) {
     LOG.debug("Deleting process definition with ID {}", definitionId);
-    osClient.delete(PROCESS_DEFINITION_INDEX_NAME, definitionId);
+    // Refresh immediately: callers rely on a subsequent search seeing this delete right away
+    final DeleteRequest.Builder request =
+        new DeleteRequest.Builder()
+            .index(PROCESS_DEFINITION_INDEX_NAME)
+            .id(definitionId)
+            .refresh(Refresh.True);
+    osClient.delete(
+        request,
+        String.format(
+            "There was a problem when trying to delete process definition with ID %s",
+            definitionId));
   }
 
   @Override
