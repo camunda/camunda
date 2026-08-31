@@ -52,12 +52,12 @@ const useBatchOperationMutationRequestBody = () =>
 
 const useSuspendProcessInstancesBatchOperationMutationRequestBody = () =>
   useProcessInstancesBatchOperationMutationRequestBody(
-    processInstancesSelectionStore.checkedActiveRootIds,
+    processInstancesSelectionStore.checkedRunningIds,
   );
 
 const useResumeProcessInstancesBatchOperationMutationRequestBody = () =>
   useProcessInstancesBatchOperationMutationRequestBody(
-    processInstancesSelectionStore.checkedSuspendedRootIds,
+    processInstancesSelectionStore.checkedSuspendedIds,
     true,
   );
 
