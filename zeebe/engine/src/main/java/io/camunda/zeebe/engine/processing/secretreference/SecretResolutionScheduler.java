@@ -48,7 +48,10 @@ import org.slf4j.LoggerFactory;
  * finds nothing but a reference was requested via {@link #wake()} since it last ran, reschedules
  * its next run at the shorter {@code wakeDelay} rather than {@code schedulingInterval}: under a
  * sustained stream of requests this keeps every cycle after the first close to {@code wakeDelay}
- * apart on its own, without ever needing to bring a scheduled cycle forward by cancelling it.
+ * apart on its own, without ever needing to bring a scheduled cycle forward by cancelling it. A
+ * cycle that neither makes progress nor is woken, and has no store waiting out a retry cooldown
+ * either, does not jump straight to {@code schedulingInterval}: see {@link #nextIdleBackoff()} for
+ * why and how it grows the delay geometrically instead.
  *
  * <p>Resolution goes through {@link
  * io.camunda.secretstore.LocallyCachedSecretStore#resolveFromStore} rather than the cache-first
@@ -124,6 +127,13 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
    * there.
    */
   private final AtomicBoolean wakePending = new AtomicBoolean();
+
+  /**
+   * The delay {@link #nextIdleBackoff()} returned last, or {@code 0} if the ladder has not started
+   * since its last reset. Read and written only from the {@link AsyncTaskGroup#SECRET_RESOLUTION}
+   * actor, the same discipline as {@link #storeRetryStates} and {@link #collectionCursor}.
+   */
+  private long idleBackoffMillis;
 
   private ReadonlyStreamProcessorContext processingContext;
   private InstantSource clock;
@@ -243,12 +253,14 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
       if (taskResultBatchFull || (capped && progressMade.get())) {
         // more pending refs than this cycle's batch cap allowed it to take; keep draining
         delay = Duration.ZERO;
+        idleBackoffMillis = 0;
       } else if (progressMade.get() || woken) {
         // either this cycle resolved something, or one was requested since the last cycle ran and
         // may not have been visible to this cycle's collection yet either way, staying on the fast
         // cadence is what lets a continuous stream of requests be resolved close to as they arrive,
         // without ever cancelling and replacing a scheduled cycle to get there
         delay = wakeDelay;
+        idleBackoffMillis = 0;
       } else {
         delay = computeNextDelay(now);
       }
@@ -258,12 +270,17 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
   }
 
   /**
-   * Returns the delay until the next execution. If any store is in cooldown with a retry deadline
-   * sooner than {@code schedulingInterval}, returns the shorter duration so backoff is honored.
+   * Returns the delay until the next execution, for a cycle that made no progress and was not
+   * woken. If any store is in cooldown with a retry deadline sooner than {@code
+   * schedulingInterval}, returns that deadline so the backoff is honored exactly: retrying earlier
+   * cannot succeed (collection skips a cooling-down store outright, see {@link
+   * #collectPendingByStore}) and there is nothing else this cycle is waiting on that retrying later
+   * would help. Otherwise nothing is known to wait for, and {@link #nextIdleBackoff()} governs the
+   * delay instead of jumping straight to {@code schedulingInterval}.
    */
   private Duration computeNextDelay(final long now) {
     if (storeRetryStates.isEmpty()) {
-      return schedulingInterval;
+      return nextIdleBackoff();
     }
     final long earliestRetryAt =
         storeRetryStates.values().stream()
@@ -275,6 +292,27 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
       return Duration.ofMillis(Math.max(0, millisUntilRetry));
     }
     return schedulingInterval;
+  }
+
+  /**
+   * Grows the delay before the next cycle geometrically from {@code wakeDelay} up to {@code
+   * schedulingInterval} instead of jumping straight there, so one cycle that happens to find
+   * nothing does not cost whichever reference arrives next a full {@code schedulingInterval} wait.
+   * Under a request rate high enough that most {@code wakeDelay}-sized windows are empty by chance
+   * alone, jumping straight to {@code schedulingInterval} after the first such miss would leave the
+   * scheduler asleep for nearly all wall-clock time; this keeps most of a request's wait within a
+   * few doublings instead, while a genuinely idle scheduler still reaches {@code
+   * schedulingInterval} after enough consecutive misses.
+   *
+   * <p>{@code wakeDelay} of zero is accepted elsewhere and would never grow if doubled from zero,
+   * so the first step is floored at 1ms.
+   */
+  private Duration nextIdleBackoff() {
+    idleBackoffMillis =
+        idleBackoffMillis == 0
+            ? Math.max(wakeDelay.toMillis(), 1)
+            : Math.min(schedulingInterval.toMillis(), idleBackoffMillis * 2);
+    return Duration.ofMillis(idleBackoffMillis);
   }
 
   private CollectedPendingRefs collectPendingByStore(final long now) {
