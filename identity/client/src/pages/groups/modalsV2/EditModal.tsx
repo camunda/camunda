@@ -62,7 +62,6 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
 
   return (
     <FormModal
-      size="sm"
       open={open}
       headline={t("editGroup")}
       onSubmit={handleSubmit}
