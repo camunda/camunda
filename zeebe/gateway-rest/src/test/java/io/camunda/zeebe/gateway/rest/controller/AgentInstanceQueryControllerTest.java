@@ -432,7 +432,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
                         new AgentInstanceFilter.Builder()
                             .processDefinitionIdOperations(List.of(Operation.eq("myProcessId")))
                             .processDefinitionVersionOperations(List.of(Operation.eq(1)))
-                            .versionTagOperations(List.of(Operation.eq("v1")))
+                            .processDefinitionVersionTagOperations(List.of(Operation.eq("v1")))
                             .build())
                     .build()),
             any());
