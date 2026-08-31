@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.metrics;
 import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretStoreUnavailableException;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetricsDoc.SecretResolutionCallResult;
+import io.camunda.zeebe.engine.metrics.SecretResolutionMetricsDoc.SecretResolutionCycleDelayReason;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetricsDoc.SecretResolutionKeyNames;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetricsDoc.SecretResolutionOutcome;
 import io.camunda.zeebe.util.micrometer.BoundedMeterCache;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.time.Duration;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -46,6 +48,8 @@ public final class SecretResolutionMetrics {
   private final Map<SecretResolutionOutcome, BoundedMeterCache<Counter>> outcomeCounters =
       new EnumMap<>(SecretResolutionOutcome.class);
   private final BoundedMeterCache<Counter> cycleErrors;
+  private final Map<SecretResolutionCycleDelayReason, Timer> cycleDelayTimers =
+      new EnumMap<>(SecretResolutionCycleDelayReason.class);
 
   public SecretResolutionMetrics(final MeterRegistry registry) {
     this.registry = registry;
@@ -56,6 +60,9 @@ public final class SecretResolutionMetrics {
       outcomeCounters.put(outcome, counterCache(registry, outcome));
     }
     cycleErrors = cycleErrorCache(registry);
+    for (final var reason : SecretResolutionCycleDelayReason.values()) {
+      cycleDelayTimers.put(reason, cycleDelayTimer(registry, reason));
+    }
   }
 
   /**
@@ -118,6 +125,11 @@ public final class SecretResolutionMetrics {
     cycleErrors.get(storeTag(storeId)).increment();
   }
 
+  /** Records the delay a resolution cycle chose for the next one, tagged by why. */
+  public void cycleDelay(final SecretResolutionCycleDelayReason reason, final Duration delay) {
+    cycleDelayTimers.get(reason).record(delay);
+  }
+
   private Counter outcomeCounter(final String storeId, final SecretResolutionOutcome outcome) {
     return outcomeCounters.get(outcome).get(storeTag(storeId));
   }
@@ -149,6 +161,18 @@ public final class SecretResolutionMetrics {
             .description(meterDoc.getDescription())
             .withRegistry(registry);
     return BoundedMeterCache.of(registry, provider, SecretResolutionKeyNames.STORE);
+  }
+
+  /**
+   * Not a {@link BoundedMeterCache}: unlike the store-keyed meters above, {@link
+   * SecretResolutionCycleDelayReason} is a small, fixed domain the engine defines, not one that
+   * grows with data the engine only later learns about, so there is no cardinality to bound.
+   */
+  private static Timer cycleDelayTimer(
+      final MeterRegistry registry, final SecretResolutionCycleDelayReason reason) {
+    return MicrometerUtil.buildTimer(SecretResolutionMetricsDoc.CYCLE_DELAY)
+        .tag(SecretResolutionKeyNames.RESULT.asString(), reason.name())
+        .register(registry);
   }
 
   /**

@@ -12,6 +12,7 @@ import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.SecretStoreUnavailableException;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetrics;
+import io.camunda.zeebe.engine.metrics.SecretResolutionMetricsDoc.SecretResolutionCycleDelayReason;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.immutable.SecretReferenceState;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
@@ -254,6 +255,7 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
         // more pending refs than this cycle's batch cap allowed it to take; keep draining
         delay = Duration.ZERO;
         idleBackoffMillis = 0;
+        metrics.cycleDelay(SecretResolutionCycleDelayReason.DRAINING, delay);
       } else if (progressMade.get() || woken) {
         // either this cycle resolved something, or one was requested since the last cycle ran and
         // may not have been visible to this cycle's collection yet either way, staying on the fast
@@ -261,6 +263,7 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
         // without ever cancelling and replacing a scheduled cycle to get there
         delay = wakeDelay;
         idleBackoffMillis = 0;
+        metrics.cycleDelay(SecretResolutionCycleDelayReason.WAKE, delay);
       } else {
         delay = computeNextDelay(now);
       }
@@ -280,7 +283,9 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
    */
   private Duration computeNextDelay(final long now) {
     if (storeRetryStates.isEmpty()) {
-      return nextIdleBackoff();
+      final var delay = nextIdleBackoff();
+      metrics.cycleDelay(SecretResolutionCycleDelayReason.IDLE_BACKOFF, delay);
+      return delay;
     }
     final long earliestRetryAt =
         storeRetryStates.values().stream()
@@ -288,10 +293,12 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
             .min()
             .getAsLong();
     final long millisUntilRetry = earliestRetryAt - now;
-    if (millisUntilRetry < schedulingInterval.toMillis()) {
-      return Duration.ofMillis(Math.max(0, millisUntilRetry));
-    }
-    return schedulingInterval;
+    final var delay =
+        millisUntilRetry < schedulingInterval.toMillis()
+            ? Duration.ofMillis(Math.max(0, millisUntilRetry))
+            : schedulingInterval;
+    metrics.cycleDelay(SecretResolutionCycleDelayReason.RETRY_COOLDOWN, delay);
+    return delay;
   }
 
   /**
