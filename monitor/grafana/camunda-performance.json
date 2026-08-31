@@ -1925,7 +1925,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "max(max(zeebe_log_appender_last_appended_position{namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) by (physicalTenant, partition) - max (zeebe_stream_processor_last_processed_position{namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) by (physicalTenant, partition))",
+          "expr": "max by (physicalTenant, partition) (zeebe_log_appender_last_appended_position{namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) - max by (physicalTenant, partition) (zeebe_stream_processor_last_processed_position{namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"})",
           "instant": false,
           "interval": "",
           "legendFormat": "{{physicalTenant}} Partition {{partition}}",
@@ -1995,7 +1995,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "max(max (zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) by (physicalTenant, partition) - max (zeebe_exporter_last_exported_position{namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) by (physicalTenant, partition))",
+          "expr": "max by (physicalTenant, partition) (zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) - max by (physicalTenant, partition) (zeebe_exporter_last_exported_position{namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"})",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -6431,20 +6431,24 @@
         "type": "query"
       },
       {
+        "allValue": ".*",
         "allowCustomValue": true,
-        "current": {},
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(atomix_role{namespace=~\"$namespace\", pod=~\"$pod\"},physicalTenant)",
+        "definition": "label_values(zeebe_health{namespace=~\"$namespace\", pod=~\"$pod\"}, physicalTenant)",
         "includeAll": true,
         "multi": true,
         "name": "physicalTenant",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(atomix_role{namespace=~\"$namespace\", pod=~\"$pod\"},physicalTenant)",
+          "query": "label_values(zeebe_health{namespace=~\"$namespace\", pod=~\"$pod\"}, physicalTenant)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
