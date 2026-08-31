@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,6 +27,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 public class ListViewProcessInstanceFromIncidentHandlerTest {
+
+  private static final String TENANT_ID = "test-tenant";
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
@@ -102,8 +105,30 @@ public class ListViewProcessInstanceFromIncidentHandlerTest {
     assertThat(entity.getKey()).isEqualTo(processInstanceKey);
     assertThat(entity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(entity.getPartitionId()).isEqualTo(incidentRecord.getPartitionId());
-    assertThat(entity.getTenantId()).isEqualTo(incidentRecord.getValue().getTenantId());
+    assertThat(entity.getTenantId()).isEqualTo(TENANT_ID);
     assertThat(entity.getErrorMessage()).isEqualTo(incidentRecord.getValue().getErrorMessage());
+  }
+
+  @Test
+  public void shouldDefaultTenantIdWhenRecordHasNone() {
+    // given
+    final var recordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withProcessInstanceKey(123L)
+            .withElementInstanceKey(123L)
+            .withTenantId("")
+            .build();
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED).withValue(recordValue));
+
+    // when
+    final var entity = new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(incidentRecord, entity);
+
+    // then
+    assertThat(entity.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -192,6 +217,7 @@ public class ListViewProcessInstanceFromIncidentHandlerTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementInstanceKey(processInstanceKey)
             .withErrorMessage(errorMessage)
+            .withTenantId(TENANT_ID)
             .build();
     return factory.generateRecord(
         ValueType.INCIDENT, r -> r.withIntent(intent).withValue(recordValue));
