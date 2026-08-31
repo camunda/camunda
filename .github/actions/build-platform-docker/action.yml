@@ -41,16 +41,6 @@ inputs:
     description: 'Enable debug logging for BuildKit daemon'
     required: false
     default: 'false'
-  aot-cache:
-    # Only camunda.Dockerfile declares AOT_CACHE, so an optimize.Dockerfile build logs a
-    # harmless "build-args were not consumed" warning for it. Expected, not a misconfiguration.
-    description: >
-      Train an AOT cache into the image, so the JVM starts faster. On by default, because
-      an image should be the image we ship; camunda.Dockerfile trains the amd64 platform
-      only, so this costs one extra Camunda boot and nothing on an arm64 build. Set to
-      false when the image is never started, e.g. one built purely to be scanned.
-    required: false
-    default: 'true'
 
 outputs:
   image:
@@ -248,7 +238,6 @@ runs:
             DATE=${{ steps.get-date.outputs.result }}
             REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
             VERSION=${{ steps.get-build-inputs.outputs.version }}
-            AOT_CACHE=${{ inputs.aot-cache }}
             ${{ steps.get-additional-build-args.outputs.result }}
           target: app
 
