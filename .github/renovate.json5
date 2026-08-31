@@ -823,6 +823,20 @@
       ],
       allowedVersions: "<4",
     },
+
+    {
+      // Disable Renovate for load tests on stable branches.
+      // Once a stable branch is branched off main, all load test dependencies
+      // under load-tests/ in stable branches are unused and unmaintained and
+      // should not be updated anymore.
+      // Only the code in the main branch is relevant and should receive
+      // updates.
+      // This is not part of .github/renovate/team-reliability-testing.json5 as
+      // matchBaseBranches needs to have baseBranchPatterns configured beforehand.
+      matchFileNames: ["load-tests/**"],
+      matchBaseBranches: ["/^stable\\/8\\..*/"],
+      enabled: false,
+    },
   ],
   dockerfile: {
     managerFilePatterns: [
