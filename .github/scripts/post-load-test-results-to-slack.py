@@ -58,6 +58,30 @@ date  = '-'.join(parts[2:5]) if len(parts) >= 5 else bench
 with open(queries_yaml) as f:
     queries = yaml.safe_load(f)['queries']
 
+# Slack rejects an entire `blocks` payload if any single mrkdwn `text.text` exceeds this
+# (undocumented but consistently ~3000 chars), failing the whole notification with
+# `invalid_blocks`. Both the metrics table (grows with queries.yaml/variants) and the
+# flamegraph-links list (grows with profiled pods/variants) are unbounded, so both are capped.
+SLACK_TEXT_LIMIT = 3000
+
+
+def _cap_mrkdwn(header, lines, limit=SLACK_TEXT_LIMIT, noun='item'):
+    """Join `header` and `lines` with newlines, dropping trailing lines — and appending an
+    "...and N more" note, itself counted against `limit` — so the result never exceeds Slack's
+    mrkdwn text limit. No-op (returns everything joined) if it already fits.
+    """
+    text = '\n'.join([header, *lines])
+    if len(text) <= limit:
+        return text
+    kept = []
+    for i, line in enumerate(lines):
+        dropped = len(lines) - i
+        note = f'…and {dropped} more {noun}{"s" if dropped != 1 else ""} — see the workflow run for full details.'
+        if len('\n'.join([header, *kept, line, note])) > limit:
+            return '\n'.join([header, *kept, note])
+        kept.append(line)
+    return '\n'.join([header, *kept])
+
 
 def fmt(v, q):
     if v is None:
@@ -91,7 +115,6 @@ rows   = [
     )
     for q in queries
 ]
-table  = '\n'.join([header, sep] + rows)
 
 # All variants' Grafana links share one time range, anchored to the first (primary) variant's
 # soak end — mirrors prior behavior, which always anchored the range on gRPC's soak end.
@@ -131,7 +154,8 @@ blocks.append({
     'type': 'section',
     'text': {
         'type': 'mrkdwn',
-        'text': '```\n' + table + '\n```',
+        # Reserve the ```\n ... \n``` fence's 8 chars so the wrapped text stays under the limit.
+        'text': '```\n' + _cap_mrkdwn('\n'.join([header, sep]), rows, SLACK_TEXT_LIMIT - 8, 'metric row') + '\n```',
     },
 })
 
@@ -140,7 +164,7 @@ if flamegraph_links:
         'type': 'section',
         'text': {
             'type': 'mrkdwn',
-            'text': f':fire: *Flamegraphs:*\n{flamegraph_links}',
+            'text': _cap_mrkdwn(':fire: *Flamegraphs:*', flamegraph_links.split('\n'), noun='flamegraph link'),
         },
     })
 
