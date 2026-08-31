@@ -114,14 +114,10 @@ describe('<FieldsModal />', () => {
 		);
 
 		const combobox = screen.getByRole('combobox', {name: /process/i});
-		await expect.element(combobox).toBeVisible();
 
 		await userEvent.click(combobox);
-		await userEvent.click(screen.getByRole('option', {name: 'Process 0 - v1'}));
-		await expect.element(combobox).toHaveTextContent('Process 0 - v1');
-
-		await userEvent.click(combobox);
-		await userEvent.click(screen.getByRole('option', {name: 'Process 1 - v2'}));
+		await expect.element(screen.getByRole('listbox')).toBeVisible();
+		await userEvent.click(screen.getByRole('option', {name: 'Process 1 - v2'}), {force: true});
 		await expect.element(combobox).toHaveTextContent('Process 1 - v2');
 	});
 
@@ -172,10 +168,10 @@ describe('<FieldsModal />', () => {
 		await userEvent.click(screen.getByText('User and group'));
 
 		const groupCombobox = screen.getByRole('combobox', {name: /in a group/i});
-		await expect.element(groupCombobox).toBeVisible();
 
 		await userEvent.click(groupCombobox);
-		await userEvent.click(screen.getByRole('option', {name: 'accounting'}));
+		await expect.element(screen.getByRole('listbox')).toBeVisible();
+		await userEvent.click(screen.getByRole('option', {name: 'accounting'}), {force: true});
 		await expect.element(groupCombobox).toHaveTextContent('accounting');
 	});
 

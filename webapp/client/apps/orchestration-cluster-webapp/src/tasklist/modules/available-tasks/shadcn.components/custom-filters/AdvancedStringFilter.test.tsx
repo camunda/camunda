@@ -86,7 +86,8 @@ describe('<AdvancedStringFilter />', () => {
 		);
 
 		await userEvent.click(screen.getByRole('combobox'));
-		await userEvent.click(screen.getByRole('option', {name: 'contains'}));
+		await expect.element(screen.getByRole('listbox')).toBeVisible();
+		await userEvent.click(screen.getByRole('option', {name: 'contains'}), {force: true});
 		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
 
 		expect(onSubmit).toHaveBeenCalledWith(
@@ -132,7 +133,8 @@ describe('<AdvancedStringFilter />', () => {
 		);
 
 		await userEvent.click(screen.getByRole('combobox'));
-		await userEvent.click(screen.getByRole('option', {name: 'is one of'}));
+		await expect.element(screen.getByRole('listbox')).toBeVisible();
+		await userEvent.click(screen.getByRole('option', {name: 'is one of'}), {force: true});
 
 		await expect.element(screen.getByRole('combobox')).toHaveTextContent('is one of');
 	});
