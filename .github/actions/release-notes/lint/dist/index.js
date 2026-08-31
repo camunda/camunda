@@ -84,19 +84,25 @@ class GithubCommentApi {
         this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
         this.headers = (0, github_1.githubHeaders)(token, { json: true });
     }
+    /**
+     * Fetch comments most-recently-updated first, stopping as soon as a page
+     * contains the sticky marker. `syncStickyComment` touches the sticky
+     * comment via `create`/`update` on every run, which keeps its `updated_at`
+     * near the top — so on a busy PR this typically returns after one page
+     * instead of walking every comment. A PR whose sticky comment doesn't exist
+     * yet still pages through everything, but that happens at most once per PR.
+     */
     async list() {
-        // Paginate through ALL comments. If the gate first runs on a PR that already
-        // has >100 comments, its own sticky comment is the newest and lands past
-        // page 1 — a page-1-only read would miss it and create a duplicate on every
-        // rerun. GitHub caps per_page at 100; a short page marks the end.
         const perPage = 100;
         const all = [];
         for (let page = 1;; page++) {
-            const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/comments?per_page=${perPage}&page=${page}`, { headers: this.headers });
+            const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/comments?per_page=${perPage}&page=${page}&sort=updated&direction=desc`, { headers: this.headers });
             if (!res.ok)
                 throw new Error(`GitHub API ${res.status} listing comments on #${this.issueNumber}`);
             const batch = (await res.json());
             all.push(...batch);
+            if (batch.some((comment) => comment.body.includes(exports.STICKY_MARKER)))
+                break;
             if (batch.length < perPage)
                 break;
         }
@@ -138,7 +144,11 @@ const title_1 = __nccwpck_require__(150);
 /** Evaluate the PR-issue link for one PR body: section refs + opt-out. */
 async function evaluateLink(resolver, body) {
     const section = (0, parser_1.extractSection)(body);
-    const optOut = (0, parser_1.isOptOutTicked)(body);
+    // Scoped to the same section as refs: the opt-out checkbox lives in the PR
+    // template's "Related issues" block, not just anywhere in the body — a
+    // missing/renamed heading must not let a stray ticked box elsewhere pass
+    // a PR whose actual section was never filled in.
+    const optOut = section ? (0, parser_1.isOptOutTicked)(section) : false;
     const refs = section ? (0, parser_1.parseRefs)(section) : [];
     const resolved = await resolver.resolve(refs);
     return (0, policy_1.decide)(resolved, optOut);
@@ -146,11 +156,11 @@ async function evaluateLink(resolver, body) {
 /**
  * Explain why a `Backport of #N` marker could not be followed to an original
  * PR, so the author sees the actual problem rather than a generic "no linked
- * issue". Only reached in the rare failure path, so the extra classify call
- * (issue vs missing) never touches the hot bot-backport path.
+ * issue". Takes the caller's classification of the ref rather than resolving
+ * it again — the caller already has it, to decide whether fetching the body
+ * is worth doing at all.
  */
-async function unresolvableBackportReason(resolver, backport) {
-    const [resolved] = await resolver.resolve([backport]);
+function unresolvableBackportReason(backport, resolved) {
     if (resolved?.crossRepo) {
         return `Backport of ${backport.repo}#${backport.number} points to another repository — attribution can only be inherited from a pull request in this repo.`;
     }
@@ -172,12 +182,14 @@ async function evaluateGate(resolver, input) {
     if (link.outcome === 'fail' && link.code === 'unlinked-undeclared') {
         const backport = (0, parser_1.parseRefs)(input.body).find((ref) => ref.kind === 'backport');
         if (backport) {
-            // fetchPullBody returns null for a 404 target OR a cross-repo marker — the
-            // resolver can only validate its own repo. Either way we cannot inherit
-            // attribution, so surface the dangling marker rather than absorbing it
-            // into the generic "no linked issue" message.
-            const originalBody = await resolver.fetchPullBody(backport.number, backport.repo);
             deliveryPath = 'backportHop';
+            // Only a same-repo pull request needs its body fetched — a cross-repo,
+            // missing, or issue-not-PR target already has everything the failure
+            // message needs from the classification alone.
+            const [resolved] = await resolver.resolve([backport]);
+            const originalBody = resolved?.target === 'pullRequest' && !resolved.crossRepo
+                ? await resolver.fetchPullBody(backport.number, backport.repo)
+                : null;
             if (originalBody === null) {
                 // The marker is the PR's stated attribution path, so speak to the marker
                 // only — the generic "add a closing keyword / tick opt-out" section advice
@@ -185,7 +197,7 @@ async function evaluateGate(resolver, input) {
                 link = {
                     outcome: 'fail',
                     code: 'unlinked-undeclared',
-                    reasons: [await unresolvableBackportReason(resolver, backport)],
+                    reasons: [unresolvableBackportReason(backport, resolved)],
                 };
             }
             else {
@@ -199,9 +211,15 @@ async function evaluateGate(resolver, input) {
                         }
                         : {
                             outcome: 'fail',
-                            code: 'unlinked-undeclared',
+                            // A pr-ref-in-section failure and an unlinked-undeclared one
+                            // point the author at different fixes, so the hop reports the
+                            // original PR's actual code rather than one fixed code for
+                            // every failure reason.
+                            code: original.code,
                             reasons: [
-                                `Backport of #${backport.number}, but that PR does not link a tracked issue either.`,
+                                original.code === 'pr-ref-in-section'
+                                    ? `Backport of #${backport.number}, but that PR's section links a pull request, not an issue.`
+                                    : `Backport of #${backport.number}, but that PR does not link a tracked issue either.`,
                                 ...original.reasons,
                             ],
                         };
@@ -317,8 +335,11 @@ exports.repoApiUrl = repoApiUrl;
 exports.GITHUB_API = 'https://api.github.com';
 const USER_AGENT = 'camunda-release-notes-gate';
 const GITHUB_API_VERSION = '2022-11-28';
-/** Auth + content-negotiation headers for the reused MONOREPO_RELEASE_APP token.
- *  Pass `json: true` for write requests that send a JSON body. */
+/** Auth + content-negotiation headers for the plain `GITHUB_TOKEN` every
+ *  caller passes in. This action resolves from the PR head on `pull_request`
+ *  (see the gate workflow's security-model header), so it must never be
+ *  given a privileged token such as MONOREPO_RELEASE_APP. Pass `json: true`
+ *  for write requests that send a JSON body. */
 function githubHeaders(token, opts = {}) {
     const headers = {
         authorization: `Bearer ${token}`,
@@ -637,6 +658,7 @@ run().catch((err) => core.setFailed(err instanceof Error ? err.message : String(
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SECTION_HEADING = exports.OPT_OUT_PHRASE = void 0;
 exports.stripHtmlComments = stripHtmlComments;
+exports.stripCode = stripCode;
 exports.parseRefs = parseRefs;
 exports.extractSection = extractSection;
 exports.isOptOutTicked = isOptOutTicked;
@@ -679,9 +701,17 @@ function kindOf(keyword) {
 function stripHtmlComments(text) {
     return text.replace(/<!--[\s\S]*?-->/g, '');
 }
+/**
+ * Strip fenced and inline Markdown code before any parsing. A reviewer citing
+ * an example — `` `closes #1234` `` in prose, or a fenced snippet quoting the
+ * template — must not be mistaken for the author's own ref or opt-out tick.
+ */
+function stripCode(text) {
+    return text.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
+}
 /** Extract every reference from the given text (already scoped by the caller). */
 function parseRefs(text) {
-    text = stripHtmlComments(text);
+    text = stripCode(stripHtmlComments(text));
     const refs = [];
     const seen = new Set(); // dedupe by match offset
     const push = (match, repo, num) => {
@@ -715,13 +745,13 @@ function extractSection(body, heading = exports.SECTION_HEADING) {
     if (start < 0)
         return null;
     const rest = lines.slice(start + 1);
-    const end = rest.findIndex((line) => /^#{1,6}\s+\S/.test(line));
+    const end = rest.findIndex((line) => /^#{1,6}\s+\S/.test(line.trim()));
     return (end < 0 ? rest : rest.slice(0, end)).join('\n');
 }
 /** True when the opt-out checkbox is present and ticked. */
 function isOptOutTicked(body) {
     const re = new RegExp(String.raw `^\s*[-*]\s*\[x\]\s*.*${escapeRe(exports.OPT_OUT_PHRASE)}`, 'im');
-    return re.test(stripHtmlComments(body));
+    return re.test(stripCode(stripHtmlComments(body)));
 }
 function escapeRe(literal) {
     return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -731,11 +761,17 @@ function escapeRe(literal) {
 /***/ }),
 
 /***/ 86:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.decide = decide;
+const parser_1 = __nccwpck_require__(883);
+/** Distinct issue numbers, in first-seen order — the same issue can appear
+ *  twice in a body (`closes #12` and its full URL) and must be reported once. */
+function uniqueNumbers(refs) {
+    return [...new Set(refs.map((ref) => ref.number))];
+}
 /**
  * Pure PR-gate decision. Given the resolved refs found inside the section and
  * whether the opt-out checkbox is ticked, decide PASS/FAIL with reasons that
@@ -753,12 +789,12 @@ function decide(refs, optOut) {
     const sameRepo = refs.filter((ref) => !ref.crossRepo && ref.kind !== 'backport');
     const prRefs = sameRepo.filter((ref) => ref.target === 'pullRequest');
     if (prRefs.length > 0) {
-        const list = prRefs.map((ref) => `#${ref.number}`).join(', ');
+        const list = uniqueNumbers(prRefs).map((number) => `#${number}`).join(', ');
         return {
             outcome: 'fail',
             code: 'pr-ref-in-section',
             reasons: [
-                `The "Related issues" section links a pull request (${list}), not an issue.`,
+                `The "${parser_1.SECTION_HEADING}" section links a pull request (${list}), not an issue.`,
                 'Link the tracked issue this PR resolves (e.g. `closes #1234`), or tick the opt-out checkbox.',
             ],
         };
@@ -769,17 +805,17 @@ function decide(refs, optOut) {
     const liveIssues = sameRepo.filter((ref) => ref.target === 'issue');
     if (liveIssues.length > 0) {
         const closing = liveIssues.some((ref) => ref.kind === 'closing');
-        const list = liveIssues.map((ref) => `#${ref.number}`).join(', ');
+        const list = uniqueNumbers(liveIssues).map((number) => `#${number}`).join(', ');
         return {
             outcome: 'pass',
             code: closing ? 'section-closing' : 'section-contributor',
-            reasons: [`Linked to issue ${list} in the "Related issues" section.`],
+            reasons: [`Linked to issue ${list} in the "${parser_1.SECTION_HEADING}" section.`],
         };
     }
-    const dead = sameRepo.filter((ref) => ref.target === 'missing').map((ref) => `#${ref.number}`);
+    const dead = uniqueNumbers(sameRepo.filter((ref) => ref.target === 'missing')).map((number) => `#${number}`);
     const crossRepo = refs.filter((ref) => ref.crossRepo).map((ref) => ref.raw);
     const reasons = [
-        'No linked issue found in the "Related issues" section, and the opt-out checkbox is not ticked.',
+        `No linked issue found in the "${parser_1.SECTION_HEADING}" section, and the opt-out checkbox is not ticked.`,
         'Add a closing keyword with the tracked issue (e.g. `closes #1234`), or tick the opt-out checkbox.',
     ];
     if (dead.length)
@@ -807,6 +843,15 @@ const MAX_REFS = 20;
  *  API even after dedup + the cap above, so a burst of distinct numbers cannot
  *  open dozens of sockets at once. */
 const CONCURRENCY = 5;
+/** Lower sorts first. Closing/backport refs decide the gate's verdict, so they
+ *  must survive the MAX_REFS cap ahead of merely-informational refs. */
+function priorityOf(ref) {
+    if (ref.kind === 'closing')
+        return 0;
+    if (ref.kind === 'backport')
+        return 1;
+    return 2;
+}
 /**
  * GitHub-API resolver: the only part of the pipeline that touches the network.
  * Classifies each ref as issue vs PR vs missing and flags cross-repo refs.
@@ -835,10 +880,16 @@ class GithubResolver {
      * Resolve every ref, deduped (repeats of the same "#N" cost one API call),
      * capped at MAX_REFS (a legitimate PR never needs more), and bounded to
      * CONCURRENCY in flight — defense against a body engineered to fan out
-     * unbounded concurrent requests using the privileged gate token.
+     * unbounded concurrent requests through the gate's token.
      */
     async resolve(refs) {
-        const capped = refs.slice(0, MAX_REFS);
+        // Closing/backport refs decide the gate's verdict; bare/"relates to" refs
+        // are informational. A stable sort keeps refs of equal priority in their
+        // original order, so when the cap below has to drop something, it drops
+        // the least consequential refs first instead of whichever came last in
+        // the body.
+        const prioritized = [...refs].sort((first, second) => priorityOf(first) - priorityOf(second));
+        const capped = prioritized.slice(0, MAX_REFS);
         const cache = new Map();
         const classifyCached = (ref) => {
             const key = `${ref.repo ?? ''}#${ref.number}`;
@@ -858,7 +909,9 @@ class GithubResolver {
                 results.push({ ...ref, target, crossRepo });
             });
         }
-        return results;
+        // Restore body order for the policy's messages — the priority sort above
+        // only controls what survives the cap, not how resolved refs get reported.
+        return results.sort((first, second) => first.index - second.index);
     }
     /**
      * Fetch a same-repo pull request's body for backport-hop validation, or null
