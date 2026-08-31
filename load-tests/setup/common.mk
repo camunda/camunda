@@ -277,8 +277,12 @@ generate-physical-tenant-values:
 # The camunda-load-tests subchart hardcodes the starter/worker resource names, so a second
 # Helm release per tenant would collide. Instead we render only those two templates from the
 # same chart, values, scenario and image as the default tester, rename them to *-pt<i>, and
-# apply — looped over pt1..ptN. REST is required because gRPC only routes to the default
-# physical tenant.
+# apply — looped over pt1..ptN. These testers are pinned to REST
+# (--set global.preferRest.enabled=true) regardless of the namespace default: per-tenant
+# isolation is wired solely through the tenant's REST base address (the credentials clone
+# below), and the load tester never sets a physical tenant id, so it emits no
+# Camunda-Physical-Tenant gRPC header — over gRPC the requests would fall back to the
+# default tenant.
 .PHONY: install-load-test-physical-tenants
 install-load-test-physical-tenants:
 	@for i in $$(seq 1 $(physical_tenant_count)); do \
