@@ -67,6 +67,10 @@ camunda.data.secondary-storage.elasticsearch.max-connections-per-route=<int>
 * `max-connections-per-route` — maximum number of connections allowed per route. For Camunda this
   is typically set to the same value as `max-connections`.
 
+Both fall back to the legacy `camunda.database.max-connections[-per-route]` keys when the unified
+keys are unset. The exporter's own `zeebe.broker.exporters.camundaexporter.args.connect.*` keys are
+not part of that fallback, so a limit set there sizes only the exporter's client.
+
 Both default to unset, in which case the underlying Apache HttpClient defaults apply. They are
 useful when a component consumes many connections (e.g. running the archiver with a high thread
 count), which can otherwise exhaust the pool and throttle other operations such as health checks.
