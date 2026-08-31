@@ -151,8 +151,29 @@ jobs:
         id: wait-for-services
         run: |
           echo "Checking if services are up..."
+          if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+            app_containers=(operate tasklist)
+          else
+            app_containers=(camunda)
+          fi
           ready=false
           for i in {1..90}; do
+            # Fail fast if an app container crashed during startup instead of
+            # waiting out the full ~15 min timeout: a container that exited
+            # (e.g. OOM-killed) will never become ready, so surface its exit
+            # state and logs immediately for triage rather than reporting a
+            # generic "failed to start in time" long after the fact.
+            for c in "${app_containers[@]}"; do
+              state="$(docker inspect -f '{{.State.Status}}' "$c" 2>/dev/null || echo missing)"
+              if [[ "$state" == "exited" || "$state" == "dead" ]]; then
+                echo "Container '$c' is '$state' — it crashed during startup and will never become ready."
+                docker inspect "$c" --format 'Container {{.Name}}: status={{.State.Status}} exitCode={{.State.ExitCode}} oomKilled={{.State.OOMKilled}}' || true
+                DATABASE=elasticsearch docker compose logs --tail 200 "$c" || true
+                echo "Services failed to start: container '$c' crashed."
+                exit 1
+              fi
+            done
+
             if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
               tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
               operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
