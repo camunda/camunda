@@ -29,7 +29,7 @@ env:
   TEST_OWNER: '@camunda/distribution'
 
 permissions:
-  actions: write
+  actions: none
   attestations: none
   checks: write
   contents: read
