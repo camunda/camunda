@@ -509,8 +509,6 @@ jobs:
           push: true
           distball: ${{ steps.build-backend.outputs.distball }}
           dockerfile: camunda.Dockerfile
-          # The image is a fixture for the Tasklist ITs, not the thing under test.
-          aot-cache: 'false'
       - name: Run Docker tests
         run: |
           ./mvnw \
