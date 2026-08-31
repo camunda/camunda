@@ -991,32 +991,15 @@
           <assembleDirectory>${project.build.directory}/camunda-zeebe</assembleDirectory>
           <configurationDirectory>config</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
-          <!-- log4j2 discovered config/log4j2.xml from the classpath; since the config
-               directory is no longer on it (see includeConfigurationDirectoryInClasspath
-               below), point log4j2 at the file directly. @BASEDIR@ is interpolated by
-               appassembler into the platform's own variable. -->
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError
-            -Dfile.encoding=UTF-8
-            -Dlog4j.configurationFile=@BASEDIR@/config/log4j2.xml
+            -Dfile.encoding=UTF-8 -Xshare:auto
             ${jvm.module.opens}</extraJvmArguments>
           <!-- Custom templates add optional @argfile support via config/jvm.options -->
           <unixScriptTemplate>${project.basedir}/src/main/scripts/unixBinTemplate</unixScriptTemplate>
           <windowsScriptTemplate>${project.basedir}/src/main/scripts/windowsBinTemplate</windowsScriptTemplate>
           <!-- This will be added to the classpath as /urs/local/camunda/driver-lib/* -->
           <endorsedDir>driver-lib</endorsedDir>
-          <!-- Keep the config directory off the classpath. A non-empty directory on the
-               classpath makes the JVM refuse to write an AOT cache and reject one at
-               runtime, which costs the Docker image its startup cache.
-
-               This does not change how Spring finds application.yaml: that is resolved
-               from Spring's default file:./config/ location, which is why it only works
-               when the process runs from the installation directory (as the Docker image
-               does). As a classpath entry the directory was in fact shadowed for
-               application.yaml, because the dist jar contributes its own
-               classpath:/application.properties, and .properties wins over .yaml within
-               one location. It did serve a config/application.properties for a process
-               started from another working directory; that is the one case this removes. -->
-          <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
+          <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
             <platform>unix</platform>

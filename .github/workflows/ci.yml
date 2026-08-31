@@ -1621,10 +1621,6 @@ jobs:
           version: ${{ env.DOCKER_IMAGE_TAG }}
           dockerfile: ${{ matrix.docker-file }}
           push: true
-          # These shards use the image as a fixture for testing something else, so a
-          # cache only slows the build down -- nine matrix entries build one. The image
-          # itself is covered by docker-checks and the Zeebe smoke tests.
-          aot-cache: 'false'
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build Integration
