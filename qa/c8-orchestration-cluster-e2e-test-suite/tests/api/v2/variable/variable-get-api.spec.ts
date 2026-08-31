@@ -61,7 +61,9 @@ test.describe.parallel('Get Variable API Tests', () => {
   });
 
   test('Get Variable Not Found', async ({request}) => {
-    const unknownVariableKey = '2251799813694876';
+    // Key below the partition-1 base (1 << 51) decodes to partition 0, which
+    // Zeebe never assigns, so it can never collide with a real variable key.
+    const unknownVariableKey = '999999999999';
     const res = await request.get(
       buildUrl(`/variables/${unknownVariableKey}`),
       {
