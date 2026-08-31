@@ -31,7 +31,7 @@ public record AgentInstanceEntity(
     Long processDefinitionKey,
     String processDefinitionId,
     Integer processDefinitionVersion,
-    @Nullable String versionTag,
+    @Nullable String processDefinitionVersionTag,
     String tenantId,
     OffsetDateTime creationDate,
     OffsetDateTime lastUpdatedDate,
