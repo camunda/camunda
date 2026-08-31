@@ -213,7 +213,7 @@ class TransactionalColumnFamily<
 
   @Override
   public void whileTrue(
-      final KeyType startAtKey, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+      final @Nullable KeyType startAtKey, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     ensureInOpenTransaction(transaction -> forEachInPrefix(startAtKey, new DbNullKey(), visitor));
   }
 
@@ -244,7 +244,7 @@ class TransactionalColumnFamily<
   @Override
   public void whileEqualPrefix(
       final DbKey keyPrefix,
-      final KeyType startAtKey,
+      final @Nullable KeyType startAtKey,
       final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     ensureInOpenTransaction(transaction -> forEachInPrefix(startAtKey, keyPrefix, visitor));
   }
@@ -463,7 +463,7 @@ class TransactionalColumnFamily<
    *     indicate whether iteration should continue or not, see {@link KeyValuePairVisitor}.
    */
   private void forEachInPrefix(
-      final DbKey startAt,
+      final @Nullable DbKey startAt,
       final DbKey prefix,
       final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     try (final var timer = metrics.measureIterateLatency()) {

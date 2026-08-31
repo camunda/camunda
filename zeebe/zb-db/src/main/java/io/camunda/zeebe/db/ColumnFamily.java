@@ -93,7 +93,7 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
    * @param startAtKey indicates on which key the iteration should start
    * @param visitor the visitor which visits the key-value pairs
    */
-  void whileTrue(KeyType startAtKey, KeyValuePairVisitor<KeyType, ValueType> visitor);
+  void whileTrue(@Nullable KeyType startAtKey, KeyValuePairVisitor<KeyType, ValueType> visitor);
 
   /**
    * Visits the key-value pairs, which are stored in the column family. The ordering depends on the
@@ -149,7 +149,9 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
    * @param visitor the visitor which visits the key-value pairs
    */
   void whileEqualPrefix(
-      DbKey keyPrefix, KeyType startAtKey, KeyValuePairVisitor<KeyType, ValueType> visitor);
+      DbKey keyPrefix,
+      @Nullable KeyType startAtKey,
+      KeyValuePairVisitor<KeyType, ValueType> visitor);
 
   /**
    * Visits the key-value pairs in reverse order, which are stored in the column family. The visitor
