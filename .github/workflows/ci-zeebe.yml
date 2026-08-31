@@ -395,9 +395,6 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           # push is needed for multi-arch images as buildkit does not support loading them locally
           push: true
-          # This job only inspects the image's labels, it never starts it, so training a
-          # cache for it would buy a startup nobody performs.
-          aot-cache: 'false'
       - name: Verify Docker image
         # Skip verification on fork PRs as there public base images are used that don't match our golden labels
         if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
