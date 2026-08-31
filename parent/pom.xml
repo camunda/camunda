@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>8.8.37-SNAPSHOT</version>
+    <version>8.8.38-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -64,7 +64,7 @@
     <version.httpclient5>5.6.4</version.httpclient5>
     <version.httpcore5>5.4.3</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.8.16</version.identity>
+    <version.identity>8.8.17</version.identity>
     <version.instancio>5.5.1</version.instancio>
     <version.surefire>3.5.6</version.surefire>
     <version.jackson>2.21.6</version.jackson>
