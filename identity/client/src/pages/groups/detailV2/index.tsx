@@ -8,24 +8,18 @@
 
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
 import { useQuery } from "@tanstack/react-query";
+import { Pencil, Trash2 } from "lucide-react";
+import { Button, PageHeader } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import { groupQueries } from "src/utility/api/groups/queries";
 import NotFound from "src/pages/not-foundV2";
 import { Breadcrumbs, StackPage } from "src/components/layoutV2/Page";
 import { DetailPageHeaderFallback } from "src/components/fallbacksV2";
-// TODO: Replace with Tailwind classes.
-import Flex from "src/components/layout/Flex";
-// TODO: Replace with PageHeader during migration. See roles/detailV2/index.tsx for example.
-import PageHeadline from "src/components/layoutV2/PageHeadline";
-// TODO: Replace with V2 tabs. See roles/detailV2/index.tsx for example.
-import Tabs from "src/components/tabs";
+import { Tabs, TabsContent, TabsHeaderList } from "src/components/tabsV2";
 import { useEntityModal } from "src/components/modalV2";
 import EditModal from "src/pages/groups/modalsV2/EditModal";
 import DeleteModal from "src/pages/groups/modalsV2/DeleteModal";
-// TODO: Remove during migration. See roles/detailV2/index.tsx for example.
-import { Description } from "src/components/layout/DetailsPageDescription";
 import Members from "src/pages/groups/detailV2/members";
 import Roles from "src/pages/groups/detailV2/roles";
 import MappingRules from "src/pages/groups/detailV2/mapping-rules";
@@ -54,47 +48,10 @@ const Details: FC<DetailsProps> = ({ isOIDC }) => {
   return (
     <StackPage>
       <>
-        <Stack gap="2">
-          <Breadcrumbs items={[{ href: "/groups", title: t("groups") }]} />
-          {loading && !group ? (
-            <DetailPageHeaderFallback hasOverflowMenu={false} />
-          ) : (
-            <Flex>
-              {group && (
-                <Stack gap="3">
-                  <Stack orientation="horizontal" gap="1">
-                    <PageHeadline>{group.name}</PageHeadline>
-                    <OverflowMenu ariaLabel={t("openGroupContextMenu")}>
-                      <OverflowMenuItem
-                        itemText={t("edit")}
-                        onClick={() => {
-                          editGroup(group);
-                        }}
-                      />
-                      <OverflowMenuItem
-                        itemText={t("delete")}
-                        isDelete
-                        onClick={() => {
-                          deleteGroup(group);
-                        }}
-                      />
-                    </OverflowMenu>
-                  </Stack>
-                  <p>
-                    {t("groupId")}: {group.groupId}
-                  </p>
-                  {group.description && (
-                    <Description>
-                      {t("description")}: {group.description}
-                    </Description>
-                  )}
-                </Stack>
-              )}
-            </Flex>
-          )}
-        </Stack>
-        {group && (
-          <Section>
+        {loading && !group ? (
+          <DetailPageHeaderFallback hasOverflowMenu={false} />
+        ) : (
+          group && (
             <Tabs
               tabs={[
                 {
@@ -124,12 +81,49 @@ const Details: FC<DetailsProps> = ({ isOIDC }) => {
               ]}
               selectedTabKey={tab}
               path={`../${id}`}
-            />
-          </Section>
+            >
+              <PageHeader
+                title={group.name}
+                description={group.description}
+                breadcrumb={
+                  <Breadcrumbs
+                    items={[
+                      { href: "..", title: t("groups") },
+                      { title: group.groupId },
+                    ]}
+                  />
+                }
+                actions={
+                  <>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => editGroup(group)}
+                    >
+                      <Pencil aria-hidden="true" />
+                      {t("editGroup")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteGroup(group)}
+                    >
+                      <Trash2 aria-hidden="true" />
+                      {t("delete")}
+                    </Button>
+                  </>
+                }
+                tabs={<TabsHeaderList />}
+              />
+              <TabsContent />
+            </Tabs>
+          )
         )}
-        {editModal}
-        {deleteModal}
       </>
+      {editModal}
+      {deleteModal}
     </StackPage>
   );
 };
