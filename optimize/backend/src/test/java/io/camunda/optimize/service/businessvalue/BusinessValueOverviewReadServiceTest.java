@@ -24,9 +24,12 @@ import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOvervie
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.CycleTimeBlock;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.MetricRange;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import io.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.repository.BusinessValueOverviewRepository;
+import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
 import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.BusinessValueConfiguration;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -51,6 +54,7 @@ class BusinessValueOverviewReadServiceTest {
   private static final OffsetDateTime NOW = OffsetDateTime.now(ZoneOffset.UTC);
 
   private BusinessValueOverviewRepository overviewRepository;
+  private BusinessValueTargetRepository targetRepository;
   private TenantService tenantService;
   private DefinitionService definitionService;
   private BusinessValueOverviewComputeService computeService;
@@ -60,6 +64,8 @@ class BusinessValueOverviewReadServiceTest {
   @BeforeEach
   void setUp() {
     overviewRepository = mock(BusinessValueOverviewRepository.class);
+    targetRepository = mock(BusinessValueTargetRepository.class);
+    when(targetRepository.readByTenants(any())).thenReturn(List.of());
     tenantService = mock(TenantService.class);
     definitionService = mock(DefinitionService.class);
     computeService = mock(BusinessValueOverviewComputeService.class);
@@ -74,6 +80,7 @@ class BusinessValueOverviewReadServiceTest {
     readService =
         new BusinessValueOverviewReadService(
             overviewRepository,
+            targetRepository,
             tenantService,
             definitionService,
             computeService,
@@ -529,6 +536,124 @@ class BusinessValueOverviewReadServiceTest {
               entry.getKey(), entry.getKey(), DefinitionType.PROCESS, entry.getValue(), Set.of()));
     }
     when(definitionService.getAllDefinitionsWithTenants(DefinitionType.PROCESS)).thenReturn(dtos);
+  }
+
+  // --- target-only definitions: imported since the last sweep, so no computed row yet ---
+
+  /**
+   * Setting a target on a definition the sweep has not measured yet used to leave it absent from L0
+   * entirely — the target was saved, and nothing showed it. The entry is what is actually known: a
+   * target, and no measurement to judge it against.
+   */
+  @Test
+  void shouldSurfaceADefinitionThatHasATargetButNoComputedRow() {
+    // given a current definition with a target and no row
+    when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any())).thenReturn(List.of());
+    stubCurrentDefinitions(new DefKey(TENANT_A, "fresh-import"));
+    when(targetRepository.readByTenants(any()))
+        .thenReturn(List.of(target(TENANT_A, "fresh-import", 1_000L, 90)));
+
+    // when
+    final BusinessValueOverviewResponseDto response =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then it counts towards coverage and targets set, but nothing is claimed to be met
+    assertThat(response.isHasAnyTarget()).isTrue();
+    assertThat(response.getCoverage().getProcessesWithTarget()).isEqualTo(1);
+    assertThat(response.getCoverage().getTotalProcesses()).isEqualTo(1);
+    assertThat(response.getAttainment().getTargetsSet()).isEqualTo(2);
+    assertThat(response.getAttainment().getTargetsMet()).isZero();
+  }
+
+  /** There is no measurement, so there is no gap to rank — an entry here would be fabricated. */
+  @Test
+  void shouldNotListATargetOnlyDefinitionAsOffTarget() {
+    // given
+    when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any())).thenReturn(List.of());
+    stubCurrentDefinitions(new DefKey(TENANT_A, "fresh-import"));
+    when(targetRepository.readByTenants(any()))
+        .thenReturn(List.of(target(TENANT_A, "fresh-import", 1_000L, 90)));
+
+    // when
+    final BusinessValueOverviewResponseDto response =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then
+    assertThat(response.getOffTarget()).isEmpty();
+  }
+
+  /**
+   * These rows were never computed, so an honest timestamp would read as stale and fire a
+   * fleet-wide recompute on every single read for as long as one target-only definition exists.
+   */
+  @Test
+  void shouldNotTriggerTheBackstopForATargetOnlyDefinition() {
+    // given only a target-only definition, and a sweep that is otherwise up to date
+    when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any())).thenReturn(List.of());
+    stubCurrentDefinitions(new DefKey(TENANT_A, "fresh-import"));
+    when(targetRepository.readByTenants(any()))
+        .thenReturn(List.of(target(TENANT_A, "fresh-import", 1_000L, 90)));
+
+    // when
+    readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then
+    verify(computeService, never()).computeOverviewRows(any());
+  }
+
+  /** A definition that already has a row must not be counted twice. */
+  @Test
+  void shouldNotDuplicateADefinitionThatAlreadyHasAComputedRow() {
+    // given a definition with both a computed row and a target
+    when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any()))
+        .thenReturn(
+            List.of(fresh(row(TENANT_A, "invoice", cyc(5_000L, 1_000L, false), autoNull(), 1, 0))));
+    stubCurrentDefinitions(new DefKey(TENANT_A, "invoice"));
+    when(targetRepository.readByTenants(any()))
+        .thenReturn(List.of(target(TENANT_A, "invoice", 1_000L, null)));
+
+    // when
+    final BusinessValueOverviewResponseDto response =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then
+    assertThat(response.getCoverage().getTotalProcesses()).isEqualTo(1);
+  }
+
+  /**
+   * The orphan filter applies to target-only entries too. A target outliving its definition would
+   * otherwise resurrect it on L0 with no way to remove it.
+   */
+  @Test
+  void shouldIgnoreATargetWhoseDefinitionNoLongerExists() {
+    // given a target for a definition that is no longer imported
+    when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any())).thenReturn(List.of());
+    stubCurrentDefinitions();
+    when(targetRepository.readByTenants(any()))
+        .thenReturn(List.of(target(TENANT_A, "deleted-process", 1_000L, 90)));
+
+    // when
+    final BusinessValueOverviewResponseDto response =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then
+    assertThat(response.isHasAnyTarget()).isFalse();
+    assertThat(response.getCoverage().getTotalProcesses()).isZero();
+  }
+
+  private static BusinessValueTargetDto target(
+      final String tenantId,
+      final String processKey,
+      final Long cycleTimeMillis,
+      final Integer automationRatePct) {
+    return new BusinessValueTargetDto(
+        processKey,
+        tenantId,
+        cycleTimeMillis,
+        cycleTimeMillis == null ? null : TargetValueUnit.MILLIS,
+        automationRatePct,
+        OffsetDateTime.now(ZoneOffset.UTC),
+        "someone");
   }
 
   private static BusinessValueOverviewDto row(

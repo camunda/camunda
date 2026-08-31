@@ -17,18 +17,22 @@ import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOvervie
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto.CategoryDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto.CoverageDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto.OffTargetEntryDto;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import io.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.repository.BusinessValueOverviewRepository;
+import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
 import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -71,6 +75,7 @@ public class BusinessValueOverviewReadService {
       org.slf4j.LoggerFactory.getLogger(BusinessValueOverviewReadService.class);
 
   private final BusinessValueOverviewRepository overviewRepository;
+  private final BusinessValueTargetRepository targetRepository;
   private final TenantService tenantService;
   private final DefinitionService definitionService;
   private final BusinessValueOverviewComputeService computeService;
@@ -85,11 +90,13 @@ public class BusinessValueOverviewReadService {
 
   public BusinessValueOverviewReadService(
       final BusinessValueOverviewRepository overviewRepository,
+      final BusinessValueTargetRepository targetRepository,
       final TenantService tenantService,
       final DefinitionService definitionService,
       final BusinessValueOverviewComputeService computeService,
       final ConfigurationService configurationService) {
     this.overviewRepository = overviewRepository;
+    this.targetRepository = targetRepository;
     this.tenantService = tenantService;
     this.definitionService = definitionService;
     this.computeService = computeService;
@@ -111,30 +118,30 @@ public class BusinessValueOverviewReadService {
           DatabaseConstants.LIST_FETCH_LIMIT);
     }
 
-    if (rawRows.isEmpty()) {
-      return emptyResponse();
-    }
-
     // Overview rows for deleted process definitions would otherwise persist forever — the
     // scheduler stops upserting them but the repository has no deletion path today. Intersecting
     // against the current fully-imported definition set at read time hides orphans immediately,
     // and skipping them here also prevents the stale-read backstop from resurrecting them via
     // computeService (which would otherwise fall back to a synthetic definition entry).
     // Storage-level cleanup is tracked separately.
-    final Set<DefinitionKey> currentDefinitions = currentDefinitions();
-    final List<BusinessValueOverviewDto> rows =
+    final Map<DefinitionKey, String> currentDefinitions = currentDefinitions();
+    final List<BusinessValueOverviewDto> computedRows =
         rawRows.stream()
             .filter(
                 row ->
-                    currentDefinitions.contains(
+                    currentDefinitions.containsKey(
                         new DefinitionKey(row.getTenantId(), row.getProcessDefinitionKey())))
             .toList();
+
+    final OffsetDateTime now = OffsetDateTime.now();
+    final List<BusinessValueOverviewDto> rows =
+        withTargetOnlyDefinitions(
+            computedRows, currentDefinitions, authorizedTenantIds, range, now);
 
     if (rows.isEmpty()) {
       return emptyResponse();
     }
 
-    final OffsetDateTime now = OffsetDateTime.now();
     final Duration staleThreshold = staleThreshold();
 
     int totalProcesses = 0;
@@ -265,16 +272,76 @@ public class BusinessValueOverviewReadService {
         List.of());
   }
 
-  private Set<DefinitionKey> currentDefinitions() {
+  private Map<DefinitionKey, String> currentDefinitions() {
     final List<DefinitionWithTenantIdsDto> definitions =
         definitionService.getAllDefinitionsWithTenants(DefinitionType.PROCESS);
-    final Set<DefinitionKey> keys = new HashSet<>();
+    final Map<DefinitionKey, String> keys = new HashMap<>();
     for (final DefinitionWithTenantIdsDto definition : definitions) {
+      final String name = definition.getName() != null ? definition.getName() : definition.getKey();
       for (final String tenantId : definition.getTenantIds()) {
-        keys.add(new DefinitionKey(tenantId, definition.getKey()));
+        keys.put(new DefinitionKey(tenantId, definition.getKey()), name);
       }
     }
     return keys;
+  }
+
+  /**
+   * Adds an entry for every definition that has a target but no computed row yet, so setting a
+   * target on a freshly imported definition shows up straight away instead of leaving it absent
+   * from L0 until the sweep first measures it.
+   *
+   * <p>The entry carries the target and no values, which is what it is: the target is known, the
+   * measurement is not. It therefore contributes to coverage and to the targets-set count, but is
+   * excluded from the off-target list by the existing null-value guards — there is no measurement
+   * to be off by.
+   *
+   * <p>Stamped with the current time so it never reads as stale. These rows were never computed, so
+   * a truthful timestamp would trip the backstop into a fleet-wide recompute on every read for as
+   * long as one target-only definition exists.
+   *
+   * <p>Not persisted. The sweep owns the index; this only shapes the response.
+   */
+  private List<BusinessValueOverviewDto> withTargetOnlyDefinitions(
+      final List<BusinessValueOverviewDto> computedRows,
+      final Map<DefinitionKey, String> currentDefinitions,
+      final List<String> authorizedTenantIds,
+      final MetricRange range,
+      final OffsetDateTime now) {
+    final Set<DefinitionKey> alreadyComputed = new HashSet<>();
+    for (final BusinessValueOverviewDto row : computedRows) {
+      alreadyComputed.add(new DefinitionKey(row.getTenantId(), row.getProcessDefinitionKey()));
+    }
+
+    final List<BusinessValueOverviewDto> synthesized = new ArrayList<>();
+    for (final BusinessValueTargetDto target :
+        targetRepository.readByTenants(authorizedTenantIds)) {
+      final DefinitionKey key =
+          new DefinitionKey(target.getTenantId(), target.getProcessDefinitionKey());
+      if (alreadyComputed.contains(key) || !currentDefinitions.containsKey(key)) {
+        continue;
+      }
+      final BusinessValueOverviewDto row =
+          new BusinessValueOverviewDto(
+              target.getTenantId(),
+              target.getProcessDefinitionKey(),
+              currentDefinitions.get(key),
+              range,
+              now,
+              BusinessValueVerdict.cycleTimeBlock(null, null),
+              BusinessValueVerdict.automationRateBlock(null, null),
+              false,
+              0,
+              0);
+      BusinessValueOverviewComputeService.applyTarget(row, target);
+      synthesized.add(row);
+    }
+
+    if (synthesized.isEmpty()) {
+      return computedRows;
+    }
+    final List<BusinessValueOverviewDto> all = new ArrayList<>(computedRows);
+    all.addAll(synthesized);
+    return all;
   }
 
   private Duration staleThreshold() {
