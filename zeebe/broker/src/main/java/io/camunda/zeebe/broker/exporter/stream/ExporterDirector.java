@@ -868,17 +868,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       }
 
       final long lowestExportedPosition = state.getLowestPosition();
-      final String nextUnexportedRecordVersion;
-      try (final LogStreamReader reader = logStream.newLogStreamReader()) {
-        reader.seekToNextEvent(lowestExportedPosition);
-        if (reader.hasNext()) {
-          final var metadata = new RecordMetadata();
-          reader.peekNext().readMetadata(metadata);
-          nextUnexportedRecordVersion = metadata.getBrokerVersion().toString();
-        } else {
-          nextUnexportedRecordVersion = null;
-        }
-      }
+      final String nextUnexportedRecordVersion =
+          peekNextUnexportedRecordVersion(lowestExportedPosition);
       final var status =
           ExportingMigrationStatusCalculator.compute(
               partitionId.number(), true, nextUnexportedRecordVersion);
@@ -912,6 +903,28 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     return new PartitionMigrationStatus(
         MigrationStatusCode.MIGRATION_IN_PROGRESS,
         status.detail() + "; exporting is " + exporterPhase + ", resume it to continue");
+  }
+
+  /**
+   * Peeks the version of the first not-yet-exported record, using its own throwaway reader
+   * instead of the {@link #logStreamReader} field the main export loop owns, since that one's
+   * cursor is actively advancing and isn't available at all in passive mode.
+   *
+   * @return {@code null} if every record up to the log head has already been exported
+   */
+  private @Nullable String peekNextUnexportedRecordVersion(final long lowestExportedPosition) {
+    try (final LogStreamReader reader = logStream.newLogStreamReader()) {
+      if (!reader.seekToNextEvent(lowestExportedPosition)) {
+        throw new IllegalStateException(
+            "expected to find an event at or after position " + lowestExportedPosition);
+      }
+      if (!reader.hasNext()) {
+        return null;
+      }
+      final var metadata = new RecordMetadata();
+      reader.peekNext().readMetadata(metadata);
+      return metadata.getBrokerVersion().toString();
+    }
   }
 
   /**
