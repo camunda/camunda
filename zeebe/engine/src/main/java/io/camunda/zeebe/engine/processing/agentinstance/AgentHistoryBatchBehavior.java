@@ -243,11 +243,15 @@ public final class AgentHistoryBatchBehavior {
       final boolean applyConfigurationChanges) {
     final var changedAttributes = new HashSet<String>();
     final var items = new ArrayList<AgentHistoryRecord>(history.size());
+    final var agentHistoryState = processingState.getAgentHistoryState();
     final var pendingByHistoryItemId = collectPendingByHistoryItemId(jobKey, jobLease);
 
     for (final var item : history) {
       final var historyItemId = item.getHistoryItemId();
-      final var matchedKey = pendingByHistoryItemId.get(historyItemId);
+      final var committedKey =
+          agentHistoryState.getCommittedHistoryItemKey(target.getAgentInstanceKey(), historyItemId);
+      final var matchedKey =
+          committedKey != null ? committedKey : pendingByHistoryItemId.get(historyItemId);
       final var isDuplicate = matchedKey != null;
       final var historyKey = isDuplicate ? matchedKey : keyGenerator.nextKey();
 
