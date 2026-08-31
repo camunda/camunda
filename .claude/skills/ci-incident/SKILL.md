@@ -29,8 +29,8 @@ stop and ask for the incident ID.
 
 ### Step 1 — Parse the incident ID
 
-The incident ID comes from `$ARGUMENTS`. If empty, ask the user for it before proceeding. Do not
-guess from recent context.
+Read the incident ID from the user's request. If it is missing, ask the user for it before
+proceeding. Do not guess from recent context.
 
 ### Step 2 — Pull incident state
 
