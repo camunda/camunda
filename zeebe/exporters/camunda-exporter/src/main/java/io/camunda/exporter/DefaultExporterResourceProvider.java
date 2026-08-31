@@ -45,9 +45,9 @@ import io.camunda.exporter.handlers.MappingRuleCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.MappingRuleDeletedHandler;
 import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
+import io.camunda.exporter.handlers.ProcessCreatedHandler;
 import io.camunda.exporter.handlers.ProcessDrainingHandler;
 import io.camunda.exporter.handlers.ProcessFullyDeletedHandler;
-import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
 import io.camunda.exporter.handlers.RoleDeletedHandler;
 import io.camunda.exporter.handlers.RoleMemberAddedHandler;
@@ -246,8 +246,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName()),
             new DecisionEvaluationHandler(
                 indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
-            new ProcessHandler(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(), processCache),
+            new ProcessCreatedHandler(
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
+                processCache,
+                partitionId == PROCESS_DEFINITION_PARTITION),
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),

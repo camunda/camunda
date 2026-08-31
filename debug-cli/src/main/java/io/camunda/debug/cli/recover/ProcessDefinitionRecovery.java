@@ -11,7 +11,7 @@ import static io.camunda.debug.cli.util.ErrorMessageUtil.rootMessage;
 
 import io.camunda.exporter.handlers.EmbeddedFormHandler;
 import io.camunda.exporter.handlers.ExportHandler;
-import io.camunda.exporter.handlers.ProcessHandler;
+import io.camunda.exporter.handlers.ProcessCreatedHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
@@ -34,7 +34,7 @@ import java.util.function.Supplier;
  */
 final class ProcessDefinitionRecovery {
 
-  private final ProcessHandler processHandler;
+  private final ProcessCreatedHandler processCreatedHandler;
   private final EmbeddedFormHandler embeddedFormHandler;
   private final Supplier<BatchRequest> batchRequestFactory;
   private final ExistingDocuments existingDocuments;
@@ -44,7 +44,7 @@ final class ProcessDefinitionRecovery {
   private final PrintWriter progress;
 
   ProcessDefinitionRecovery(
-      final ProcessHandler processHandler,
+      final ProcessCreatedHandler processCreatedHandler,
       final EmbeddedFormHandler embeddedFormHandler,
       final Supplier<BatchRequest> batchRequestFactory,
       final ExistingDocuments existingDocuments,
@@ -52,7 +52,7 @@ final class ProcessDefinitionRecovery {
       final boolean dryRun,
       final int batchSize,
       final PrintWriter progress) {
-    this.processHandler = processHandler;
+    this.processCreatedHandler = processCreatedHandler;
     this.embeddedFormHandler = embeddedFormHandler;
     this.batchRequestFactory = batchRequestFactory;
     this.existingDocuments = existingDocuments;
@@ -142,11 +142,11 @@ final class ProcessDefinitionRecovery {
         final Record<Process> record = RecoveredProcessRecord.from(process);
         if (dryRun) {
           // Exercise the mapping to surface any conversion error, but write nothing.
-          drive(processHandler, record, null);
+          drive(processCreatedHandler, record, null);
           drive(embeddedFormHandler, record, null);
           written++;
         } else {
-          drive(processHandler, record, currentBatch());
+          drive(processCreatedHandler, record, currentBatch());
           drive(embeddedFormHandler, record, currentBatch());
           // Counted optimistically here; a failing batch flush moves these back to `failed`.
           written++;
