@@ -84,7 +84,7 @@
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.5</version.protobuf>
     <version.protobuf-common>2.45.0</version.protobuf-common>
-    <version.micrometer>1.16.7</version.micrometer>
+    <version.micrometer>1.13.4</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
     <version.sbe>1.33.1</version.sbe>
     <version.scala>2.13.15</version.scala>
@@ -1021,19 +1021,6 @@
         <scope>import</scope>
       </dependency>
 
-      <!--
-        Override Spring Boot's micrometer version to address CVE-2026-59295.
-        The 1.15.x fix (1.15.13) is Spring Enterprise-only, so we move to the 1.16.x OSS line.
-        Must be declared before spring-boot-dependencies so this version wins.
-      -->
-      <dependency>
-        <groupId>io.micrometer</groupId>
-        <artifactId>micrometer-bom</artifactId>
-        <version>${version.micrometer}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
       <dependency>
         <!-- Import dependency management from Spring Boot -->
         <groupId>org.springframework.boot</groupId>
@@ -1317,6 +1304,14 @@
         <groupId>io.projectreactor.netty</groupId>
         <artifactId>reactor-netty-http</artifactId>
         <version>${version.reactor-netty}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-bom</artifactId>
+        <version>${version.micrometer}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <dependency>
