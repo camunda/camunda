@@ -624,8 +624,10 @@ paths:
       summary: Suspend process instances (batch)
       description: |
         Suspends multiple running process instances.
-        Since only ACTIVE root instances can be suspended, any given
-        filters for state and parentProcessInstanceKey are ignored and overridden during this batch operation.
+        Any given filter for state or parentProcessInstanceKey is ignored and overridden, as only
+        ACTIVE process instances can be suspended and suspension does not cascade between parent
+        and child instances, so child instances are suspended independently of their parent or
+        root instance.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -672,8 +674,10 @@ paths:
       summary: Resume process instances (batch)
       description: |
         Resumes multiple suspended process instances.
-        Since only SUSPENDED root instances can be resumed, any given
-        filters for state and parentProcessInstanceKey are ignored and overridden during this batch operation.
+        Any given filter for state or parentProcessInstanceKey is ignored and overridden, as only
+        SUSPENDED process instances can be resumed and resumption does not cascade between parent
+        and child instances, so child instances are resumed independently of their parent or root
+        instance.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -985,6 +989,8 @@ paths:
       description: |
         Suspends a running process instance, pausing further processing until it is resumed.
         Only process instances in the ACTIVE state can be suspended.
+        A child process instance can be suspended independently of its parent or root process
+        instance; suspension does not cascade to or from related instances.
       parameters:
         - name: processInstanceKey
           in: path
@@ -1038,6 +1044,8 @@ paths:
       description: |
         Resumes a suspended process instance, returning it to the ACTIVE state and continuing processing.
         Only process instances in the SUSPENDED state can be resumed.
+        A child process instance can be resumed independently of its parent or root process
+        instance; resumption does not cascade to or from related instances.
       parameters:
         - name: processInstanceKey
           in: path
