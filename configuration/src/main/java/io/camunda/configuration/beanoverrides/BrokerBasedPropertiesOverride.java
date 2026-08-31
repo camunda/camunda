@@ -285,7 +285,6 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getEngine()
         .setMaxProcessDepth(camunda.getProcessing().getEngine().getMaxProcessDepth());
-
     override
         .getExperimental()
         .getEngine()
@@ -294,6 +293,11 @@ public class BrokerBasedPropertiesOverride {
                     == EngineMappings.InputMode.COMBINED
                 ? EngineConfiguration.InputMappingMode.COMBINED
                 : EngineConfiguration.InputMappingMode.ORDERED);
+    override
+        .getExperimental()
+        .getEngine()
+        .setUserTaskCompletionVariableAuditEnabled(
+            camunda.getData().getAuditLog().isUserTaskCompletionVariableAuditEnabled());
   }
 
   private static void populateFromDistribution(

@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
@@ -51,6 +52,7 @@ public final class BpmnVariableMappingBehavior {
   private final EventTriggerBehavior eventTriggerBehavior;
   private final boolean evaluateDuplicateOutputMappingTargetsInOrder;
   private final MappingResolver inputMappingResolver;
+  private final boolean userTaskCompletionVariableAuditEnabled;
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
@@ -58,7 +60,8 @@ public final class BpmnVariableMappingBehavior {
       final VariableBehavior variableBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final boolean evaluateDuplicateOutputMappingTargetsInOrder,
-      final MappingResolver inputMappingResolver) {
+      final MappingResolver inputMappingResolver,
+      final boolean userTaskCompletionVariableAuditEnabled) {
     this.expressionProcessor = expressionProcessor;
     inputMappingExpressionProcessor = expressionProcessor.withSecretReferenceContext();
     elementInstanceState = processingState.getElementInstanceState();
@@ -69,6 +72,7 @@ public final class BpmnVariableMappingBehavior {
     this.evaluateDuplicateOutputMappingTargetsInOrder =
         evaluateDuplicateOutputMappingTargetsInOrder;
     this.inputMappingResolver = inputMappingResolver;
+    this.userTaskCompletionVariableAuditEnabled = userTaskCompletionVariableAuditEnabled;
   }
 
   /**
@@ -122,6 +126,22 @@ public final class BpmnVariableMappingBehavior {
    */
   public Either<Failure, Void> applyOutputMappings(
       final BpmnElementContext context, final ExecutableFlowNode element) {
+    return applyOutputMappings(context, element, variableBehavior);
+  }
+
+  public Either<Failure, Void> applyUserTaskOutputMappings(
+      final BpmnElementContext context, final ExecutableFlowNode element) {
+    final var outputVariableBehavior =
+        userTaskCompletionVariableAuditEnabled
+            ? variableBehavior.withVariableSource(VariableSourceRecord.userTaskCompletion())
+            : variableBehavior;
+    return applyOutputMappings(context, element, outputVariableBehavior);
+  }
+
+  private Either<Failure, Void> applyOutputMappings(
+      final BpmnElementContext context,
+      final ExecutableFlowNode element,
+      final VariableBehavior outputVariableBehavior) {
     final ProcessInstanceRecord record = context.getRecordValue();
     final long elementInstanceKey = context.getElementInstanceKey();
     final long processDefinitionKey = record.getProcessDefinitionKey();
@@ -149,7 +169,8 @@ public final class BpmnVariableMappingBehavior {
     if (outputMappings.isPresent()) {
       // set as local variables
       if (hasVariables) {
-        final Either<Failure, Void> variableEither = mapLocalVariables(context, element, variables);
+        final Either<Failure, Void> variableEither =
+            mapLocalVariables(context, element, variables, outputVariableBehavior);
         if (variableEither.isLeft()) {
           return variableEither;
         }
@@ -186,12 +207,16 @@ public final class BpmnVariableMappingBehavior {
         resultBuilder.put(mapping.targetPath(), result.get());
       }
       return mapVariables(
-          context, element, getVariableScopeKey(context), resultBuilder.toDocument());
+          context,
+          element,
+          getVariableScopeKey(context),
+          resultBuilder.toDocument(),
+          outputVariableBehavior);
 
     } else if (hasVariables) {
       // merge/propagate the event variables by default
       final Either<Failure, Void> variableEither =
-          mapVariables(context, element, elementInstanceKey, variables);
+          mapVariables(context, element, elementInstanceKey, variables, outputVariableBehavior);
       if (variableEither.isLeft()) {
         return variableEither;
       }
@@ -201,7 +226,12 @@ public final class BpmnVariableMappingBehavior {
       // event variables are set local variables instead of temporary variables
       final var localVariables = variablesState.getVariablesLocalAsDocument(elementInstanceKey);
       final Either<Failure, Void> variableEither =
-          mapVariables(context, element, getVariableScopeKey(context), localVariables);
+          mapVariables(
+              context,
+              element,
+              getVariableScopeKey(context),
+              localVariables,
+              outputVariableBehavior);
       if (variableEither.isLeft()) {
         return variableEither;
       }
@@ -213,10 +243,11 @@ public final class BpmnVariableMappingBehavior {
       final BpmnElementContext context,
       final ExecutableFlowNode element,
       final long scopeKey,
-      final DirectBuffer result) {
+      final DirectBuffer result,
+      final VariableBehavior outputVariableBehavior) {
     final ProcessInstanceRecord record = context.getRecordValue();
     try {
-      variableBehavior.mergeDocument(
+      outputVariableBehavior.mergeDocument(
           scopeKey,
           record.getProcessDefinitionKey(),
           record.getProcessInstanceKey(),
@@ -239,9 +270,17 @@ public final class BpmnVariableMappingBehavior {
       final BpmnElementContext context,
       final ExecutableFlowNode element,
       final DirectBuffer result) {
+    return mapLocalVariables(context, element, result, variableBehavior);
+  }
+
+  private @NonNull Either<Failure, Void> mapLocalVariables(
+      final BpmnElementContext context,
+      final ExecutableFlowNode element,
+      final DirectBuffer result,
+      final VariableBehavior outputVariableBehavior) {
     final ProcessInstanceRecord record = context.getRecordValue();
     try {
-      variableBehavior.mergeLocalDocument(
+      outputVariableBehavior.mergeLocalDocument(
           context.getElementInstanceKey(),
           record.getProcessDefinitionKey(),
           record.getProcessInstanceKey(),

@@ -17,7 +17,7 @@ public final class EnumProperty<E extends Enum<E>> extends BaseProperty<EnumValu
   }
 
   public EnumProperty(final String key, final Class<E> type, final E defaultValue) {
-    super(key, new EnumValue<>(type), new EnumValue<>(type, defaultValue));
+    super(key, new EnumValue<>(type, defaultValue), new EnumValue<>(type, defaultValue));
   }
 
   public EnumProperty(final StringValue key, final Class<E> type) {
@@ -25,7 +25,7 @@ public final class EnumProperty<E extends Enum<E>> extends BaseProperty<EnumValu
   }
 
   public EnumProperty(final StringValue key, final Class<E> type, final E defaultValue) {
-    super(key, new EnumValue<>(type), new EnumValue<>(type, defaultValue));
+    super(key, new EnumValue<>(type, defaultValue), new EnumValue<>(type, defaultValue));
   }
 
   public @Nullable E getValue() {

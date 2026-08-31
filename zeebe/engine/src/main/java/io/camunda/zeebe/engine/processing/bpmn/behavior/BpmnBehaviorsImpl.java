@@ -187,7 +187,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             evaluateDuplicateOutputMappingTargetsInOrder,
             config.getInputMappingMode() == EngineConfiguration.InputMappingMode.COMBINED
                 ? new CombinedMappingResolver()
-                : new OrderedMappingResolver());
+                : new OrderedMappingResolver(),
+            config.isUserTaskCompletionVariableAuditEnabled());
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
