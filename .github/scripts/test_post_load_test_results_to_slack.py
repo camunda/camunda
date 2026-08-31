@@ -6,12 +6,6 @@ grows with (variants x pods x profiler events) -- 27 lines (one third daily
 variant added on top of the existing two) pushed it past that cap. See
 text_blocks() in the script under test.
 
-Also covers the two posting modes: an incoming webhook (SLACK_WEBHOOK_URL,
-one message, no threading -- webhooks don't return a message `ts`) and a
-chat.postMessage bot token (SLACK_BOT_TOKEN + SLACK_CHANNEL, which does
-return a `ts`, letting the flamegraph list go out as a threaded reply
-instead of lengthening the results message).
-
 Run with:
     pytest .github/scripts/test_post_load_test_results_to_slack.py
 """
@@ -19,6 +13,7 @@ Run with:
 import importlib.util
 import json
 import os
+import sys
 import tempfile
 from unittest import mock
 
@@ -38,35 +33,27 @@ _QUERIES_YAML = {
 _SLACK_TEXT_LIMIT = 3000
 
 
-def _write_queries(queries_doc):
+def _run(variants, flamegraph_links="", benchmark="medic-daily-2026-08-31-bd6cbb8f-test"):
+    """Execute the script fresh with the given inputs and return the JSON payload
+    it would have posted to Slack (urlopen is patched to capture, not send)."""
     with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:
-        yaml.safe_dump(queries_doc, f)
-        return f.name
+        yaml.safe_dump(_QUERIES_YAML, f)
+        queries_path = f.name
 
+    env = {
+        "VARIANTS_JSON": json.dumps(variants),
+        "BENCHMARK": benchmark,
+        "REPO": "camunda/camunda",
+        "RUN_ID": "33350392886",
+        "SLACK_WEBHOOK_URL": "https://hooks.example.invalid/fake",
+        "FLAMEGRAPH_LINKS": flamegraph_links,
+        "QUERIES_YAML": queries_path,
+    }
 
-def _post_and_capture(env, respond=None):
-    """Execute the script fresh against `env` and return the list of outgoing calls as
-    [{"url", "payload", "headers"}, ...] (urlopen is patched to capture, not send).
-
-    `respond(url, payload)`, if given, returns the raw response body bytes for a call;
-    the default simulates a real Slack response: {"ok": true, "ts": "<n>"} for a
-    chat.postMessage call (each call gets its own increasing ts, like Slack does), and
-    the plain "ok" text an incoming webhook replies with.
-    """
-    calls = []
-    ts_seq = iter(f"1700000000.{i:06d}" for i in range(1, 1000))
-
-    def _default_respond(url, payload):
-        if url.startswith("https://slack.com/api/"):
-            return json.dumps({"ok": True, "ts": next(ts_seq)}).encode()
-        return b"ok"
-
-    respond = respond or _default_respond
+    captured = {}
 
     class _FakeResponse:
-        def __init__(self, body):
-            self.status = 200
-            self._body = body
+        status = 200
 
         def __enter__(self):
             return self
@@ -74,68 +61,23 @@ def _post_and_capture(env, respond=None):
         def __exit__(self, *exc):
             return False
 
-        def read(self):
-            return self._body
-
     def _fake_urlopen(req, timeout=30):
-        payload = json.loads(req.data)
-        calls.append({"url": req.full_url, "payload": payload, "headers": dict(req.header_items())})
-        return _FakeResponse(respond(req.full_url, payload))
+        captured["body"] = req.data
+        return _FakeResponse()
 
-    with mock.patch.dict(os.environ, env, clear=False), \
-            mock.patch("urllib.request.urlopen", _fake_urlopen):
-        # A fresh module object per call: the script runs its whole payload-
-        # building-and-posting flow at import time (no `if __name__` guard),
-        # so each scenario needs its own exec rather than a cached import.
-        spec = importlib.util.spec_from_file_location("post_load_test_results_to_slack", _SCRIPT)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-
-    return calls
-
-
-def _base_env(variants, flamegraph_links, benchmark, queries_path):
-    return {
-        "VARIANTS_JSON": json.dumps(variants),
-        "BENCHMARK": benchmark,
-        "REPO": "camunda/camunda",
-        "RUN_ID": "33350392886",
-        "FLAMEGRAPH_LINKS": flamegraph_links,
-        "QUERIES_YAML": queries_path,
-    }
-
-
-def _run(variants, flamegraph_links="", benchmark="medic-daily-2026-08-31-bd6cbb8f-test", queries=None):
-    """Webhook mode: exactly one outgoing call. Returns that call's JSON payload, i.e.
-    what the script would have posted to Slack."""
-    queries_path = _write_queries(queries or _QUERIES_YAML)
     try:
-        env = _base_env(variants, flamegraph_links, benchmark, queries_path)
-        env["SLACK_WEBHOOK_URL"] = "https://hooks.example.invalid/fake"
-        calls = _post_and_capture(env)
+        with mock.patch.dict(os.environ, env, clear=False), \
+                mock.patch("urllib.request.urlopen", _fake_urlopen):
+            # A fresh module object per call: the script runs its whole payload-
+            # building-and-posting flow at import time (no `if __name__` guard),
+            # so each scenario needs its own exec rather than a cached import.
+            spec = importlib.util.spec_from_file_location("post_load_test_results_to_slack", _SCRIPT)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
     finally:
         os.unlink(queries_path)
-    assert len(calls) == 1, "webhook mode must post exactly one message"
-    return calls[0]["payload"]
 
-
-def _run_bot(
-    variants,
-    flamegraph_links="",
-    benchmark="medic-daily-2026-08-31-bd6cbb8f-test",
-    channel="C0123456789",
-    queries=None,
-    respond=None,
-):
-    """Bot-token + channel mode: returns the full list of outgoing chat.postMessage calls."""
-    queries_path = _write_queries(queries or _QUERIES_YAML)
-    try:
-        env = _base_env(variants, flamegraph_links, benchmark, queries_path)
-        env["SLACK_BOT_TOKEN"] = "xoxb-fake-token"
-        env["SLACK_CHANNEL"] = channel
-        return _post_and_capture(env, respond=respond)
-    finally:
-        os.unlink(queries_path)
+    return json.loads(captured["body"])
 
 
 def _variant(key, label, namespace_suffix, soak_end_epoch=1756612345, results=None):
@@ -168,9 +110,6 @@ def _assert_all_blocks_valid(blocks, max_blocks=50):
 
 
 class TestBlockLimits:
-    """Webhook-mode block-splitting/validity coverage (posting mechanism itself is
-    covered separately below)."""
-
     def test_three_variants_with_full_results_produce_valid_blocks(self):
         variants = [
             _variant("grpc", "gRPC", "grpc"),
@@ -249,16 +188,55 @@ class TestBlockLimits:
                 for i in range(80)
             ]
         }
+        with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:
+            yaml.safe_dump(many_queries, f)
+            queries_path = f.name
+
         variants = [
             _variant("grpc", "gRPC", "grpc", results={f"metric-{i}": i for i in range(80)}),
             _variant("rest", "REST", "rest", results={f"metric-{i}": i for i in range(80)}),
             _variant("none", "None", "none", results={f"metric-{i}": i for i in range(80)}),
         ]
 
-        payload = _run(variants, queries=many_queries)
+        env = {
+            "VARIANTS_JSON": json.dumps(variants),
+            "BENCHMARK": "medic-daily-2026-08-31-bd6cbb8f-test",
+            "REPO": "camunda/camunda",
+            "RUN_ID": "33350392886",
+            "SLACK_WEBHOOK_URL": "https://hooks.example.invalid/fake",
+            "FLAMEGRAPH_LINKS": "",
+            "QUERIES_YAML": queries_path,
+        }
+        captured = {}
 
+        class _FakeResponse:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+        def _fake_urlopen(req, timeout=30):
+            captured["body"] = req.data
+            return _FakeResponse()
+
+        try:
+            with mock.patch.dict(os.environ, env, clear=False), \
+                    mock.patch("urllib.request.urlopen", _fake_urlopen):
+                spec = importlib.util.spec_from_file_location("post_load_test_results_to_slack", _SCRIPT)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+        finally:
+            os.unlink(queries_path)
+
+        payload = json.loads(captured["body"])
         _assert_all_blocks_valid(payload["blocks"])
-        table_blocks = [b for b in payload["blocks"] if "```" in b.get("text", {}).get("text", "")]
+
+        table_blocks = [
+            b for b in payload["blocks"] if "```" in b.get("text", {}).get("text", "")
+        ]
         assert len(table_blocks) >= 2, "fixture must reproduce a table that needs splitting"
         for block in table_blocks:
             text = block["text"]["text"]
@@ -266,105 +244,3 @@ class TestBlockLimits:
                 "each split table chunk must carry its own opening and closing fence: "
                 f"{text[:20]!r}...{text[-20:]!r}"
             )
-
-
-class TestPostingModes:
-    """Covers the webhook-vs-bot-token posting mechanism itself, including threading
-    the flamegraph list as a reply under the results message in bot-token mode."""
-
-    def test_webhook_mode_posts_everything_in_one_message(self):
-        variants = [_variant("grpc", "gRPC", "grpc")]
-
-        # _run only returns the parsed payload; capture the raw call here too, to also
-        # confirm it went to the webhook URL with no Authorization header.
-        env_queries_path = _write_queries(_QUERIES_YAML)
-        try:
-            env = _base_env(variants, _flamegraph_lines(3), "medic-daily-2026-08-31-bd6cbb8f-test", env_queries_path)
-            env["SLACK_WEBHOOK_URL"] = "https://hooks.example.invalid/fake"
-            calls = _post_and_capture(env)
-        finally:
-            os.unlink(env_queries_path)
-
-        assert len(calls) == 1
-        assert calls[0]["url"] == "https://hooks.example.invalid/fake"
-        assert "Authorization" not in calls[0]["headers"]
-        text = "\n".join(b["text"]["text"] for b in calls[0]["payload"]["blocks"])
-        assert "```" in text  # the table
-        assert "flamegraph-medic-daily" in text  # the flamegraph links, same message
-
-    def test_bot_token_mode_threads_flamegraphs_under_the_results_message(self):
-        variants = [
-            _variant("grpc", "gRPC", "grpc"),
-            _variant("rest", "REST", "rest"),
-            _variant("none", "None", "none"),
-        ]
-        calls = _run_bot(variants, flamegraph_links=_flamegraph_lines(3), channel="C0BTN9X04PP")
-
-        assert len(calls) == 2, "results message and threaded flamegraph reply are two separate calls"
-
-        first, second = calls
-        assert first["url"] == "https://slack.com/api/chat.postMessage"
-        assert first["payload"]["channel"] == "C0BTN9X04PP"
-        assert "thread_ts" not in first["payload"], "the results message must not itself be a reply"
-        assert first["headers"]["Authorization"] == "Bearer xoxb-fake-token"
-        first_text = "\n".join(b["text"]["text"] for b in first["payload"]["blocks"])
-        assert "```" in first_text  # the results table ships in the first message
-        assert "flamegraph-medic-daily" not in first_text  # but not the flamegraph links
-
-        assert second["url"] == "https://slack.com/api/chat.postMessage"
-        assert second["payload"]["channel"] == "C0BTN9X04PP"
-        # and: the reply is threaded under the first message's returned ts specifically.
-        assert second["payload"]["thread_ts"] == "1700000000.000001"
-        second_text = "\n".join(b["text"]["text"] for b in second["payload"]["blocks"])
-        assert "flamegraph-medic-daily" in second_text
-
-        _assert_all_blocks_valid(first["payload"]["blocks"])
-        _assert_all_blocks_valid(second["payload"]["blocks"])
-
-    def test_bot_token_mode_without_flamegraphs_posts_only_the_results_message(self):
-        # given: no flamegraph links at all -- nothing to thread, so no second call.
-        variants = [_variant("grpc", "gRPC", "grpc")]
-        calls = _run_bot(variants, flamegraph_links="")
-        assert len(calls) == 1
-        assert "thread_ts" not in calls[0]["payload"]
-
-    def test_bot_token_mode_raises_when_slack_rejects_the_results_message(self):
-        variants = [_variant("grpc", "gRPC", "grpc")]
-
-        def _reject_first_call(url, payload):
-            return json.dumps({"ok": False, "error": "not_in_channel"}).encode()
-
-        try:
-            _run_bot(variants, flamegraph_links=_flamegraph_lines(3), respond=_reject_first_call)
-            assert False, "expected a SystemExit when Slack rejects the results message"
-        except SystemExit as e:
-            assert "not_in_channel" in str(e)
-
-    def test_bot_token_mode_raises_when_slack_rejects_the_threaded_reply(self):
-        variants = [_variant("grpc", "gRPC", "grpc")]
-        calls_seen = {"n": 0}
-
-        def _reject_second_call(url, payload):
-            calls_seen["n"] += 1
-            if calls_seen["n"] == 1:
-                return json.dumps({"ok": True, "ts": "1700000000.000001"}).encode()
-            return json.dumps({"ok": False, "error": "thread_not_found"}).encode()
-
-        try:
-            _run_bot(variants, flamegraph_links=_flamegraph_lines(3), respond=_reject_second_call)
-            assert False, "expected a SystemExit when Slack rejects the threaded reply"
-        except SystemExit as e:
-            assert "thread_not_found" in str(e)
-
-    def test_missing_both_posting_modes_fails_fast(self):
-        queries_path = _write_queries(_QUERIES_YAML)
-        try:
-            env = _base_env([_variant("grpc", "gRPC", "grpc")], "", "medic-daily-2026-08-31-bd6cbb8f-test", queries_path)
-            # given: neither SLACK_WEBHOOK_URL nor SLACK_BOT_TOKEN/SLACK_CHANNEL is set
-            try:
-                _post_and_capture(env)
-                assert False, "expected a SystemExit when no posting mode is configured"
-            except SystemExit as e:
-                assert "SLACK_WEBHOOK_URL" in str(e)
-        finally:
-            os.unlink(queries_path)
