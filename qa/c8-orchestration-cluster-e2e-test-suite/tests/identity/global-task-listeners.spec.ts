@@ -21,7 +21,10 @@ import {cleanupGlobalTaskListeners} from 'utils/globalTaskListenerCleanup';
 
 const createdListenerIds: string[] = [];
 
-test.describe.serial('global task listeners CRUD', () => {
+// TEMPORARY: .only to isolate "deletes a global task listener" for repeated
+// runs while diagnosing a Delete-button-not-visible failure. Remove before
+// merge -- this must never land on release-8.10.0-alpha5-rc3 permanently.
+test.describe.serial.only('global task listeners CRUD', () => {
   let NEW_LISTENER: ReturnType<typeof createUniqueGlobalTaskListener>;
   let EDITED_LISTENER: ReturnType<typeof createEditedGlobalTaskListener>;
 
