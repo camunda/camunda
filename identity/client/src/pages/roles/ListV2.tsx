@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { Edit, TrashCan } from "@carbon/react/icons";
+import { Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
@@ -93,13 +93,13 @@ const List: FC<ListProps> = ({ defaultRoleIds }) => {
         menuItems={[
           {
             label: t("editRole"),
-            icon: Edit,
+            icon: Pencil,
             onClick: editRole,
             disabled: ({ roleId }: Role) => defaultRoleIds.includes(roleId),
           },
           {
             label: t("delete"),
-            icon: TrashCan,
+            icon: Trash2,
             isDangerous: true,
             onClick: deleteRole,
             disabled: ({ roleId }: Role) => defaultRoleIds.includes(roleId),

@@ -6,13 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Search } from "@carbon/react";
-import ListBox from "@carbon/react/es/components/ListBox";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Button,
+  cn,
+  Command,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  Text,
+} from "@camunda/design-system";
+import { XIcon } from "lucide-react";
 import useDebounce from "react-debounced";
-// TODO: Replace with design-system and Tailwind
-import { SecondaryText } from "src/components/form/Text";
-import styled from "styled-components";
+import useTranslate from "src/utility/localization";
 
 type DropdownSearchProps<Item extends Record<string, unknown>> = {
   items: Item[];
@@ -32,32 +41,6 @@ type ItemWithTitleAndSubTitle<Item> = Item & {
   subTitle?: string;
 };
 
-const InvalidSearchWrapper = styled.div<{ $invalid: boolean }>`
-  ${({ $invalid }) =>
-    $invalid &&
-    `
-    .cds--search-input {
-      outline: 2px solid var(--cds-support-error, #da1e28);
-      outline-offset: -2px;
-    }
-  `}
-`;
-
-const ListStyleWrapper = styled.div`
-  & .cds--list-box__menu-item,
-  & .cds--list-box__menu-item__option {
-    height: auto;
-  }
-`;
-
-const MenuItemWrapper = styled.div<{ $isSelected: boolean }>`
-  & .cds--list-box__menu-item {
-    ${({ $isSelected }) =>
-      $isSelected
-        ? "background-color: var(--cds-layer-selected) !important"
-        : ""};
-  }
-`;
 const DropdownSearch = <Item extends Record<string, unknown>>({
   placeholder,
   onChange = () => {},
@@ -70,111 +53,128 @@ const DropdownSearch = <Item extends Record<string, unknown>>({
   autoFocus = false,
   invalid = false,
 }: DropdownSearchProps<Item>) => {
+  const { t } = useTranslate();
   const debounce = useDebounce();
   const [search, setSearch] = useState("");
-  const [selectedResult, setSelectedResult] = useState<number>(-1);
+  const [highlightedKey, setHighlightedKey] = useState<string>();
 
   // `items` is already the server's search result for the current `search`
   // text, so it's rendered directly rather than accumulated/re-filtered here.
-  const filteredItems: ItemWithTitleAndSubTitle<Item>[] = useMemo(
+  const visibleItems: ItemWithTitleAndSubTitle<Item>[] = useMemo(
     () =>
-      items.map((item) => ({
-        ...item,
-        title: itemTitle(item),
-        subTitle: itemSubTitle ? itemSubTitle(item) : undefined,
-      })),
-    [items, itemTitle, itemSubTitle],
+      items
+        .map((item) => ({
+          ...item,
+          title: itemTitle(item),
+          subTitle: itemSubTitle ? itemSubTitle(item) : undefined,
+        }))
+        .filter(filter),
+    [items, itemTitle, itemSubTitle, filter],
   );
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
+  useEffect(() => {
+    setHighlightedKey(visibleItems[0]?.[keyAttribute] as string | undefined);
+  }, [visibleItems, keyAttribute]);
+
+  const handleSearchChange = (value: string) => {
     setSearch(value);
     debounce(() => onChange(value));
-    setSelectedResult(-1);
   };
 
   const handleClear = () => {
     setSearch("");
     onChange("");
-    setSelectedResult(-1);
   };
 
   const handleSelect = (item: Item) => {
     onSelect(item);
     setSearch("");
     onChange("");
-    setSelectedResult(-1);
   };
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (
-      event.key === "ArrowDown" &&
-      selectedResult < filteredItems.length - 1
-    ) {
-      event.preventDefault();
-      event.stopPropagation();
-      setSelectedResult(selectedResult + 1);
-    }
-
-    if (event.key === "ArrowUp" && selectedResult > 0) {
-      event.preventDefault();
-      event.stopPropagation();
-      setSelectedResult(selectedResult - 1);
-    }
-
-    if (
-      event.key === "Enter" &&
-      selectedResult >= 0 &&
-      selectedResult < filteredItems.length
-    ) {
-      event.preventDefault();
-      event.stopPropagation();
-      handleSelect(filteredItems[selectedResult]);
-    }
-  };
-
-  useEffect(() => {
-    if (filteredItems.length > 0) setSelectedResult(0);
-  }, [filteredItems.length]);
 
   return (
-    <ListBox disabled={false} type="inline" isOpen>
-      <InvalidSearchWrapper $invalid={invalid}>
-        <Search
-          labelText={placeholder}
-          placeholder={placeholder}
-          onChange={handleChange}
-          onClear={handleClear}
-          value={search}
-          autoFocus={autoFocus}
-          onKeyDown={handleKeyDown}
-        />
-      </InvalidSearchWrapper>
-      {search && (
-        <ListStyleWrapper>
-          <ListBox.Menu id="list-box">
-            {filteredItems.filter(filter).map((item, index) => {
+    <Command
+      shouldFilter={false}
+      value={highlightedKey}
+      onValueChange={setHighlightedKey}
+      className="w-full overflow-visible bg-transparent"
+    >
+      <Popover
+        open={Boolean(search)}
+        onOpenChange={(open) => {
+          if (!open) handleClear();
+        }}
+      >
+        <PopoverAnchor asChild>
+          <div
+            className={cn(
+              "relative",
+              invalid && "ring-2 ring-inset ring-danger-action-default",
+            )}
+          >
+            <CommandInput
+              value={search}
+              onValueChange={handleSearchChange}
+              placeholder={placeholder}
+              autoFocus={autoFocus}
+              aria-label={placeholder}
+              aria-invalid={invalid}
+              className={cn(search && "pr-8")}
+            />
+            {search && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="absolute inset-y-0 right-1 my-auto"
+                aria-label={t("clearSearch")}
+                onClick={handleClear}
+              >
+                <XIcon aria-hidden="true" />
+              </Button>
+            )}
+          </div>
+        </PopoverAnchor>
+        <PopoverContent
+          align="start"
+          sideOffset={4}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          // `CommandInput` lives outside this content (in the anchor), so a
+          // mousedown here would otherwise blur it — Radix then reads that
+          // blur as focus leaving the popover and dismisses it before the
+          // click ever fires, so `CommandItem.onSelect` never runs. Keeping
+          // focus on the input the whole time avoids the race entirely.
+          onMouseDown={(e) => e.preventDefault()}
+          // `pointer-events-auto` restores interactivity inside a Dialog: the
+          // popover portals as a sibling of the dialog, so it inherits
+          // `pointer-events: none` from the scroll-locked <body> (DS #496).
+          className="pointer-events-auto w-(--radix-popover-trigger-width) p-1"
+        >
+          <CommandList>
+            {visibleItems.map((item) => {
               const { title, subTitle } = item;
 
               return (
-                <MenuItemWrapper
+                <CommandItem
                   key={item[keyAttribute] as string}
-                  $isSelected={index === selectedResult}
+                  value={item[keyAttribute] as string}
+                  title={title}
+                  onSelect={() => handleSelect(item)}
+                  className="flex-col items-start"
                 >
-                  <ListBox.MenuItem
-                    title={title}
-                    onClick={() => handleSelect(item)}
-                  >
-                    {title}
-                    {subTitle && <SecondaryText>{subTitle}</SecondaryText>}
-                  </ListBox.MenuItem>
-                </MenuItemWrapper>
+                  {title}
+                  {subTitle && (
+                    <Text as="p" variant="helper">
+                      {subTitle}
+                    </Text>
+                  )}
+                </CommandItem>
               );
             })}
-          </ListBox.Menu>
-        </ListStyleWrapper>
-      )}
-    </ListBox>
+          </CommandList>
+        </PopoverContent>
+      </Popover>
+    </Command>
   );
 };
 

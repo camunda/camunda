@@ -278,7 +278,7 @@ const EntityList = <D extends EntityData>({
   return (
     <div className="flex flex-col gap-3">
       {(searchKey || addEntityLabel) && (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 justify-end">
           {searchKey && (
             <SearchBar
               searchKey={searchKey}
