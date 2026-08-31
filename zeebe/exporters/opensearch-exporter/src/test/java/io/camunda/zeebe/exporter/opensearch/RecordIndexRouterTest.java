@@ -30,9 +30,9 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
  */
 @Execution(ExecutionMode.CONCURRENT)
 final class RecordIndexRouterTest {
+  private static final String INDEX = "zeebe-record_job_8.11.0_2026-08-28";
   private final ProtocolFactory recordFactory = new ProtocolFactory();
   private final IndexConfiguration config = new IndexConfiguration();
-  private static final String INDEX = "zeebe-record_job_8.11.0_2026-08-28";
   private final RecordIndexRouter router =
       new RecordIndexRouter(config, index -> config.getNumberOfShards());
 
