@@ -1,9 +1,4 @@
 # Release-notes PR-gate (epic #53605, work unit #53593).
-#
-# SECURITY MODEL (v3) — read before editing:
-#   * Runs on plain `pull_request`. There is NO `pull_request_target` here, and
-#     none may be added: it is denied repo-wide by
-#     .github/conftest-gha-best-practices.rego.
 #   * On `pull_request` this workflow and the local action resolve from the PR
 #     head, so a PR can edit the code that judges it. That is the same trust
 #     model as every other lint in ci.yml (actionlint, spotless, commitlint), and
@@ -52,6 +47,7 @@ permissions: {}
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_OWNER: '@camunda/engineering-operations'
 
 jobs:
   pr-issue-link:
@@ -63,7 +59,6 @@ jobs:
       pull-requests: write # sticky comment + no-issue label (internal PRs only)
       issues: write # recreate the no-issue label if it was deleted
     env:
-      TEST_OWNER: '@camunda/engineering-operations'
       TEST_PRODUCT: Orchestration Cluster
       TEST_TYPE: CI Helper
     steps:
