@@ -246,6 +246,7 @@ services:
       - POSTGRESQL_MASTER_HOST=postgres-primary
       - POSTGRESQL_REPLICATION_USER=repl_user
       - POSTGRESQL_REPLICATION_PASSWORD=repl_pass
+      - POSTGRESQL_EXTRA_FLAGS=-c recovery_min_apply_delay=${POSTGRES_REPLICA_APPLY_DELAY:-0}
     networks:
       - pgnet
     healthcheck:
@@ -267,6 +268,7 @@ services:
       - POSTGRESQL_MASTER_HOST=postgres-primary
       - POSTGRESQL_REPLICATION_USER=repl_user
       - POSTGRESQL_REPLICATION_PASSWORD=repl_pass
+      - POSTGRESQL_EXTRA_FLAGS=-c recovery_min_apply_delay=${POSTGRES_REPLICA_APPLY_DELAY:-0}
     networks:
       - pgnet
     healthcheck:
