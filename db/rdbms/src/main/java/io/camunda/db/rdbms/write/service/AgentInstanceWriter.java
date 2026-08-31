@@ -58,7 +58,7 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
                   .processDefinitionId(agentInstance.processDefinitionId())
                   .processDefinitionKey(agentInstance.processDefinitionKey())
                   .processDefinitionVersion(agentInstance.processDefinitionVersion())
-                  .versionTag(agentInstance.versionTag())
+                  .processDefinitionVersionTag(agentInstance.processDefinitionVersionTag())
                   .elementId(agentInstance.elementId())
                   .status(agentInstance.status())
                   .model(agentInstance.model())

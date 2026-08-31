@@ -64,7 +64,7 @@ public class AgentInstanceIT {
                     .processDefinitionId("migrated-" + nextStringId())
                     .processDefinitionKey(model.processDefinitionKey() + 1)
                     .processDefinitionVersion(model.processDefinitionVersion() + 1)
-                    .versionTag("v2")
+                    .processDefinitionVersionTag("v2")
                     .agentDefinitionKey(model.agentDefinitionKey() + 1)
                     .elementId("migrated-element"));
     final RdbmsWriters rdbmsWriters = testApplication.getRdbmsService().createWriter(0);
@@ -80,7 +80,7 @@ public class AgentInstanceIT {
     assertThat(entity.processDefinitionId()).isEqualTo(migrated.processDefinitionId());
     assertThat(entity.processDefinitionKey()).isEqualTo(migrated.processDefinitionKey());
     assertThat(entity.processDefinitionVersion()).isEqualTo(migrated.processDefinitionVersion());
-    assertThat(entity.versionTag()).isEqualTo("v2");
+    assertThat(entity.processDefinitionVersionTag()).isEqualTo("v2");
     assertThat(entity.agentDefinitionKey()).isEqualTo(migrated.agentDefinitionKey());
     assertThat(entity.elementId()).isEqualTo("migrated-element");
   }

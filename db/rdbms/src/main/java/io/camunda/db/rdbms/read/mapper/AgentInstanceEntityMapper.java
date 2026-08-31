@@ -48,7 +48,7 @@ public class AgentInstanceEntityMapper {
         dbModel.processDefinitionKey(),
         nullToEmpty(dbModel.processDefinitionId()),
         dbModel.processDefinitionVersion(),
-        dbModel.versionTag(),
+        dbModel.processDefinitionVersionTag(),
         nullToEmpty(dbModel.tenantId()),
         dbModel.creationDate(),
         dbModel.lastUpdatedDate(),
