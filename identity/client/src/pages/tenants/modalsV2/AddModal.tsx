@@ -100,6 +100,7 @@ const AddTenantModal: FC<AddTenantModalProps> = ({
         open={open}
         headline={t("tenantCreatedSuccessfully", { name: createdTenant.name })}
         onClose={onSuccess}
+        onSubmit={onSuccess}
         hideCancelButton
         confirmLabel={t("gotIt")}
       >

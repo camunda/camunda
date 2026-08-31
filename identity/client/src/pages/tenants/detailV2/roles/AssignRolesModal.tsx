@@ -21,7 +21,7 @@ const AssignRolesModal: FC<
     { assignedRoles: Role[] }
   >
 > = ({ entity: tenant, assignedRoles, onSuccess, open, onClose }) => {
-  const { t, Translate } = useTranslate("tenants");
+  const { t } = useTranslate("tenants");
   const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
   const [loadingAssignRole, setLoadingAssignRole] = useState(false);
 
@@ -67,9 +67,7 @@ const AssignRolesModal: FC<
       submitDisabled={!canSubmit}
       onClose={onClose}
     >
-      <p>
-        <Translate>Search and assign role to tenant</Translate>
-      </p>
+      <p>{t("searchAndAssignRoleToTenant")}</p>
       <RoleMultiSelect
         value={selectedRoles}
         onChange={setSelectedRoles}
