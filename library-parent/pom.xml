@@ -38,15 +38,7 @@
   <dependencyManagement>
     <dependencies>
       <!-- Re-import these BOMs (first-import-wins) ahead of spring-boot-dependencies so its
-      vulnerable netty/jackson/log4j/plexus-utils/micrometer pins don't leak into the flattened
-      clients. -->
-      <dependency>
-        <groupId>io.micrometer</groupId>
-        <artifactId>micrometer-bom</artifactId>
-        <version>${version.micrometer}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
+      vulnerable netty/jackson/log4j/plexus-utils pins don't leak into the flattened clients. -->
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
