@@ -12,7 +12,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperat
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
-import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringMatchPhraseInSingleHasChild;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
@@ -53,7 +52,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ProcessDefinitionStatisticsFilterTransformer
-    extends IndexFilterTransformer<ProcessDefinitionStatisticsFilter> {
+    extends IndexFilterTransformer<ProcessDefinitionStatisticsFilter>
+    implements OrFilterTransformer<ProcessDefinitionStatisticsFilter> {
 
   private final ServiceTransformers transformers;
 
@@ -65,25 +65,17 @@ public class ProcessDefinitionStatisticsFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final ProcessDefinitionStatisticsFilter filter) {
-
     final var queries = new ArrayList<SearchQuery>();
     queries.add(term(JOIN_RELATION, ACTIVITIES_JOIN_RELATION));
     queries.add(
         hasParentQuery(
             PROCESS_INSTANCE_JOIN_RELATION, term(PROCESS_KEY, filter.processDefinitionKey())));
-    queries.addAll(toSearchQueryFields(filter));
-
-    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
-      final var orQueries = new ArrayList<SearchQuery>();
-      filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).forEach(orQueries::add);
-      queries.add(or(orQueries));
-    }
-
+    queries.addAll(toSearchQueryFieldsWithOr(filter));
     return and(queries);
   }
 
-  public ArrayList<SearchQuery> toSearchQueryFields(
-      final ProcessDefinitionStatisticsFilter filter) {
+  @Override
+  public List<SearchQuery> toSearchQueryFields(final ProcessDefinitionStatisticsFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     toProcessInstanceQueries(filter)
         .ifPresent(

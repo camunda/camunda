@@ -104,6 +104,35 @@ public class BatchOperationStateTest {
   }
 
   @Test
+  void shouldCreateBatchOperationWithOrFilterAndSurviveMsgPackRoundTrip()
+      throws JsonProcessingException {
+    // given
+    final var batchOperationKey = 1L;
+    final var type = BatchOperationType.CANCEL_PROCESS_INSTANCE;
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .orFilters(
+                List.of(
+                    new ProcessInstanceFilter.Builder().processDefinitionIds("a").build(),
+                    new ProcessInstanceFilter.Builder().processDefinitionIds("b").build()))
+            .build();
+    final var record =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(type)
+            .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)));
+
+    // when
+    state.create(batchOperationKey, record);
+
+    // then
+    final var batchOperation = state.get(batchOperationKey).get();
+    final var recordFilter =
+        new ObjectMapper().readValue(batchOperation.getEntityFilter(), ProcessInstanceFilter.class);
+    assertThat(recordFilter).isEqualTo(filter);
+  }
+
+  @Test
   void shouldCreateBatchOperationForMigration() throws JsonProcessingException {
     // given
     final var batchOperationKey = 1L;

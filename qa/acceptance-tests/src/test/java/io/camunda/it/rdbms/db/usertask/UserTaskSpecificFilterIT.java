@@ -98,6 +98,11 @@ public class UserTaskSpecificFilterIT {
                         new Builder().assignees("user1").build(),
                         new Builder().assignees("user3").build()))
                 .build(),
-            List.of(44L)));
+            List.of(44L)),
+        Arguments.of(
+            new UserTaskFilter.Builder()
+                .orFilters(List.of(new Builder().build(), new Builder().assignees("user2").build()))
+                .build(),
+            List.of(42L, 43L, 44L)));
   }
 }

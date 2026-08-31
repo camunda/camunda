@@ -1182,6 +1182,31 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
             });
   }
 
+  @Test
+  public void shouldIgnoreOrClauseWhenItContainsAnEmptyFilter() {
+    // given
+    final var filter =
+        FilterBuilders.userTask(
+            f ->
+                f.assignees("user1")
+                    .orFilters(
+                        List.of(
+                            new Builder().build(),
+                            new Builder().candidateGroups("groupA").build())));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            query -> {
+              assertThat(query.must()).hasSize(3);
+              assertSearchTermQuery(query.must().get(0).queryOption(), "assignee", "user1");
+            });
+  }
+
   private static void assertSearchTermQuery(
       final SearchQueryOption query, final String field, final Object expectedValue) {
     assertThat(query)

@@ -11,7 +11,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.prefix;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
@@ -29,7 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FlownodeInstanceFilterTransformer
-    extends IndexFilterTransformer<FlowNodeInstanceFilter> {
+    extends IndexFilterTransformer<FlowNodeInstanceFilter>
+    implements OrFilterTransformer<FlowNodeInstanceFilter> {
 
   public FlownodeInstanceFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
@@ -37,18 +37,11 @@ public class FlownodeInstanceFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final FlowNodeInstanceFilter filter) {
-    final var queries = new ArrayList<>(toSearchQueryFields(filter));
-
-    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
-      final var orQueries = new ArrayList<SearchQuery>();
-      filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).forEach(orQueries::add);
-      queries.add(or(orQueries));
-    }
-
-    return and(queries);
+    return and(toSearchQueryFieldsWithOr(filter));
   }
 
-  private List<SearchQuery> toSearchQueryFields(final FlowNodeInstanceFilter filter) {
+  @Override
+  public List<SearchQuery> toSearchQueryFields(final FlowNodeInstanceFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(longTerms(KEY, filter.flowNodeInstanceKeys())).ifPresent(queries::add);
     ofNullable(longTerms(PROCESS_INSTANCE_KEY, filter.processInstanceKeys()))
