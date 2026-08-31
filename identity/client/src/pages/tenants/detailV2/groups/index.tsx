@@ -7,13 +7,12 @@
  */
 
 import { FC } from "react";
-import { TrashCan } from "@carbon/react/icons";
-// TODO: Replace with ErrorInlineNotification during design system migration
-import { C3EmptyState } from "@camunda/camunda-composite-components";
+import { Trash2 } from "lucide-react";
 import useTranslate from "src/utility/localization";
 import { getGroupsByTenantId } from "src/utility/api/tenants";
 import EntityList from "src/components/entityListV2";
 import { useEntityModal } from "src/components/modalV2";
+import { ErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
 import AssignGroupsModal from "src/pages/tenants/detailV2/groups/AssignGroupsModal";
 import AssignGroupModal from "src/pages/tenants/detailV2/groups/AssignGroupModal";
 import DeleteModal from "src/pages/tenants/detailV2/groups/DeleteModal";
@@ -59,12 +58,12 @@ const Groups: FC<GroupsProps> = ({ tenantId, isCamundaGroupsEnabled }) => {
 
   if (!loading && !success)
     return (
-      <C3EmptyState
-        heading={t("somethingsWrong")}
-        description={t("unableToLoadResource", {
+      <ErrorInlineNotification
+        title={t("somethingsWrong")}
+        subtitle={t("unableToLoadResource", {
           resourceType: t("group").toLowerCase(),
         })}
-        button={{ label: t("retry"), onClick: reload }}
+        actionButton={{ label: t("retry"), onClick: reload }}
       />
     );
 
@@ -107,7 +106,7 @@ const Groups: FC<GroupsProps> = ({ tenantId, isCamundaGroupsEnabled }) => {
         menuItems={[
           {
             label: t("remove"),
-            icon: TrashCan,
+            icon: Trash2,
             isDangerous: true,
             onClick: unassignGroup,
           },
