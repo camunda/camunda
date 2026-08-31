@@ -107,21 +107,26 @@ export class GithubCommentApi implements CommentApi {
     this.headers = githubHeaders(token, { json: true });
   }
 
+  /**
+   * Fetch comments most-recently-updated first, stopping as soon as a page
+   * contains the sticky marker. `syncStickyComment` touches the sticky
+   * comment via `create`/`update` on every run, which keeps its `updated_at`
+   * near the top — so on a busy PR this typically returns after one page
+   * instead of walking every comment. A PR whose sticky comment doesn't exist
+   * yet still pages through everything, but that happens at most once per PR.
+   */
   async list(): Promise<IssueComment[]> {
-    // Paginate through ALL comments. If the gate first runs on a PR that already
-    // has >100 comments, its own sticky comment is the newest and lands past
-    // page 1 — a page-1-only read would miss it and create a duplicate on every
-    // rerun. GitHub caps per_page at 100; a short page marks the end.
     const perPage = 100;
     const all: IssueComment[] = [];
     for (let page = 1; ; page++) {
       const res = await fetch(
-        `${this.repoUrl}/issues/${this.issueNumber}/comments?per_page=${perPage}&page=${page}`,
+        `${this.repoUrl}/issues/${this.issueNumber}/comments?per_page=${perPage}&page=${page}&sort=updated&direction=desc`,
         { headers: this.headers },
       );
       if (!res.ok) throw new Error(`GitHub API ${res.status} listing comments on #${this.issueNumber}`);
       const batch = (await res.json()) as IssueComment[];
       all.push(...batch);
+      if (batch.some((comment) => comment.body.includes(STICKY_MARKER))) break;
       if (batch.length < perPage) break;
     }
     return all;
