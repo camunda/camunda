@@ -62,7 +62,7 @@ final class ClusterBrokerVersionMigrationStatusProviderTest {
   void shouldReportMigrationInProgressWhenOneBrokerIsOnAnOlderMinorVersion() {
     // given - one broker hasn't restarted on the target version yet
     final var currentVersion = VersionUtil.getVersion();
-    final var previousVersion = VersionUtil.getPreviousSemanticVersion().orElseThrow().toString();
+    final var previousVersion = oneMinorBehind(currentVersion);
     final var client =
         setupBrokerClient(
             List.of(BROKER_1, BROKER_2),
@@ -149,7 +149,7 @@ final class ClusterBrokerVersionMigrationStatusProviderTest {
   @Test
   void shouldReportTheSameStatusUnderEveryKnownPhysicalTenant() {
     // given - broker membership/version is cluster-wide, not scoped to any one physical tenant
-    final var previousVersion = VersionUtil.getPreviousSemanticVersion().orElseThrow().toString();
+    final var previousVersion = oneMinorBehind(VersionUtil.getVersion());
     final var client = setupBrokerClient(List.of(BROKER_1), Map.of(BROKER_1, previousVersion));
     final var provider =
         new ClusterBrokerVersionMigrationStatusProvider(
@@ -162,6 +162,17 @@ final class ClusterBrokerVersionMigrationStatusProviderTest {
     assertThat(statuses).containsOnlyKeys("tenant-a", "tenant-b");
     assertThat(statuses.get("tenant-a")).isEqualTo(statuses.get("tenant-b"));
     assertThat(statuses.get("tenant-a").state()).isEqualTo(MigrationState.MIGRATION_IN_PROGRESS);
+  }
+
+  /**
+   * A version exactly one minor behind {@code version} -- {@code VersionUtil
+   * .getPreviousSemanticVersion()} is a separately-configured backwards-compatibility baseline that
+   * only coincidentally stays one minor behind {@code VersionUtil.getVersion()}, so relying on it
+   * here would make this test depend on the two staying in lockstep.
+   */
+  private static String oneMinorBehind(final String version) {
+    final var semanticVersion = SemanticVersion.parse(version).orElseThrow();
+    return semanticVersion.major() + "." + (semanticVersion.minor() - 1) + ".0";
   }
 
   private static String withPatchOffset(final String version, final int offset) {
