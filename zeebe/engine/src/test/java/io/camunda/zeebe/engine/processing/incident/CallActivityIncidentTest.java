@@ -228,7 +228,7 @@ public final class CallActivityIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'wfChild' to be 'STRING', but was 'NULL'. \
+            Expected the process id expression 'wfChild' on call activity 'call' to be STRING, but was NULL. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'wfChild'""");
   }
@@ -257,9 +257,55 @@ public final class CallActivityIncidentTest {
     assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression '"
+            "Expected the process id expression '"
                 + PROCESS_ID_VARIABLE
-                + "' to be 'STRING', but was 'NUMBER'.");
+                + "' on call activity 'call' to be STRING, but was NUMBER.");
+  }
+
+  @Test
+  public void shouldIncludeCallActivityElementIdInIncidentMessageWithMultipleCallActivities() {
+    // given
+    final String brokenCallActivityId = "brokenCall";
+    final String workingCallActivityId = "workingCall";
+    final String workingChildProcessId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-child-working.bpmn",
+            Bpmn.createExecutableProcess(workingChildProcessId).startEvent().done())
+        .withXmlResource(
+            "wf-parent-multi-call-activity.bpmn",
+            Bpmn.createExecutableProcess(parentProcessId)
+                .startEvent()
+                .parallelGateway("fork")
+                .callActivity(
+                    brokenCallActivityId, c -> c.zeebeProcessIdExpression(PROCESS_ID_VARIABLE))
+                .endEvent()
+                .moveToNode("fork")
+                .callActivity(workingCallActivityId, c -> c.zeebeProcessId(workingChildProcessId))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(brokenCallActivityId)
+            .getFirst();
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            Expected the process id expression 'wfChild' on call activity 'brokenCall' to be STRING, but was NULL. \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'wfChild'""");
   }
 
   @Test
@@ -288,7 +334,7 @@ public final class CallActivityIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'wfChild' to be 'STRING', but was 'NULL'. \
+            Expected the process id expression 'wfChild' on call activity 'call' to be STRING, but was NULL. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'wfChild'""");
   }

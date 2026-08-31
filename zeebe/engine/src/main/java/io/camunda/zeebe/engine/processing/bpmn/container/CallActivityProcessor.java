@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.container;
 
 import io.camunda.zeebe.el.EvaluationResult;
+import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
@@ -259,10 +260,36 @@ public final class CallActivityProcessor
   private Either<Failure, DirectBuffer> evaluateProcessId(
       final BpmnElementContext context, final ExecutableCallActivity element) {
     final var processIdExpression = element.getCalledElementProcessId();
-    final var scopeKey = context.getElementInstanceKey();
-    final var tenantId = context.getTenantId();
-    return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
-        processIdExpression, scopeKey, tenantId);
+    return expressionProcessor
+        .evaluateAnyExpression(
+            processIdExpression, context.getElementInstanceKey(), context.getTenantId())
+        .flatMap(result -> resolveProcessIdFromResult(result, element, context));
+  }
+
+  private Either<Failure, DirectBuffer> resolveProcessIdFromResult(
+      final EvaluationResult result,
+      final ExecutableCallActivity element,
+      final BpmnElementContext context) {
+    if (result.getType() != ResultType.STRING) {
+      return Either.left(nonStringProcessIdFailure(result, element, context));
+    }
+    return Either.right(BufferUtil.wrapString(result.getString()));
+  }
+
+  private Failure nonStringProcessIdFailure(
+      final EvaluationResult result,
+      final ExecutableCallActivity element,
+      final BpmnElementContext context) {
+    return new Failure(
+        "Expected the process id expression '%s' on call activity '%s' to be %s, but was %s.%s"
+            .formatted(
+                result.getExpression(),
+                BufferUtil.bufferAsString(element.getId()),
+                ResultType.STRING,
+                result.getType(),
+                formatWarnings(result)),
+        ErrorType.EXTRACT_VALUE_ERROR,
+        context.getElementInstanceKey());
   }
 
   /**
