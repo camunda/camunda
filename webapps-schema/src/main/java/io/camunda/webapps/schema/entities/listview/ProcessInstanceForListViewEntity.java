@@ -301,9 +301,9 @@ public class ProcessInstanceForListViewEntity
    * node. Incidents attached to a flow node carry their message on the corresponding {@link
    * FlowNodeInstanceForListViewEntity} instead.
    *
-   * <p>Attention! This field will be filled in only for data imported after v. 8.11.0.
+   * <p>Attention! This field will be filled in only for data imported after v. 8.9.18.
    */
-  @SinceVersion(value = "8.11.0", requireDefault = false)
+  @SinceVersion(value = "8.9.18", requireDefault = false)
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String errorMessage;
 

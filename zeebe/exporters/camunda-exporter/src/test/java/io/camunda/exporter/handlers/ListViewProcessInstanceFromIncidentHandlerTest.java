@@ -11,9 +11,6 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ER
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
-import io.camunda.exporter.index.TargetIndex;
-import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -46,17 +43,13 @@ public class ListViewProcessInstanceFromIncidentHandlerTest {
   }
 
   @Test
-  void shouldExtractIdAndIndexes() {
+  void shouldGenerateIdFromProcessInstanceKey() {
     // given
-    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
-    final TargetIndex index = TargetIndex.mainIndex(indexName);
-    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final Record<IncidentRecordValue> incidentRecord =
         createProcessLevelIncidentRecord(IncidentIntent.CREATED, 123L);
 
     // when - then
-    assertThat(underTest.extractIdAndIndexes(indexLocator, incidentRecord))
-        .containsExactly(new IdAndIndex("123", index));
+    assertThat(underTest.generateIds(incidentRecord)).containsExactly("123");
   }
 
   @Test
@@ -81,18 +74,17 @@ public class ListViewProcessInstanceFromIncidentHandlerTest {
             .setTenantId("tenantId")
             .setErrorMessage("error");
 
-    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(ERROR_MSG, "error");
 
     // when
-    underTest.flush(index, inputEntity, mockRequest);
+    underTest.flush(inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
-        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
+        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
   }
 
   @Test

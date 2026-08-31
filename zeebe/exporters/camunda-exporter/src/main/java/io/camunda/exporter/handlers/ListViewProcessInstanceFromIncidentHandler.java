@@ -10,7 +10,6 @@ package io.camunda.exporter.handlers;
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
 
-import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -41,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * reach this handler as created/resolved pairs.
  */
 public class ListViewProcessInstanceFromIncidentHandler
-    implements OrdinalIndexExportHandler<ProcessInstanceForListViewEntity, IncidentRecordValue> {
+    implements ExportHandler<ProcessInstanceForListViewEntity, IncidentRecordValue> {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewProcessInstanceFromIncidentHandler.class);
@@ -105,21 +104,19 @@ public class ListViewProcessInstanceFromIncidentHandler
   }
 
   @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
+  @Override
   public void flush(
-      final TargetIndex index,
-      final ProcessInstanceForListViewEntity entity,
-      final BatchRequest batchRequest) {
+      final ProcessInstanceForListViewEntity entity, final BatchRequest batchRequest) {
 
     LOGGER.debug("Process instance for list view: id {}", entity.getId());
     final Map<String, Object> updateFields = new LinkedHashMap<>();
     updateFields.put(ERROR_MSG, entity.getErrorMessage());
 
-    batchRequest.upsert(index, entity.getId(), entity, updateFields);
-  }
-
-  @Override
-  public String getIndexName() {
-    return indexName;
+    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
 
   private String trimWhitespace(final String str) {

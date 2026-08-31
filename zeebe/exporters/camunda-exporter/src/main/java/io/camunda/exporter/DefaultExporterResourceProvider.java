@@ -44,7 +44,6 @@ import io.camunda.exporter.handlers.JobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
-import io.camunda.exporter.handlers.ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
