@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { Edit, TrashCan } from "@carbon/react/icons";
+import { Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
@@ -97,13 +97,13 @@ const List: FC<ListProps> = ({ isOIDC }) => {
         menuItems={[
           {
             label: t("edit"),
-            icon: Edit,
+            icon: Pencil,
             onClick: editTenant,
             disabled: (tenant) => isDefaultTenant(tenant.tenantId),
           },
           {
             label: t("delete"),
-            icon: TrashCan,
+            icon: Trash2,
             isDangerous: true,
             disabled: (tenant) => isDefaultTenant(tenant.tenantId),
             onClick: (tenant) =>
