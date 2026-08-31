@@ -24,21 +24,21 @@ import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-public class ProcessHandler implements MainIndexExporterHandler<ProcessEntity, Process> {
+public class ProcessCreatedHandler implements MainIndexExporterHandler<ProcessEntity, Process> {
 
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
   private final ExtensionPropertyConfiguration extensionPropertiesConfiguration;
   private final boolean exportDocument;
 
-  public ProcessHandler(
+  public ProcessCreatedHandler(
       final String indexName,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
       final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     this(indexName, processCache, extensionPropertiesConfiguration, true);
   }
 
-  public ProcessHandler(
+  public ProcessCreatedHandler(
       final String indexName,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
       final ExtensionPropertyConfiguration extensionPropertiesConfiguration,

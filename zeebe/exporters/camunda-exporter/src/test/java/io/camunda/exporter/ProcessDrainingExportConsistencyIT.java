@@ -43,8 +43,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * secondary storage.
  *
  * <p>{@code Process:CREATED} is distributed to every partition. {@link
- * io.camunda.exporter.handlers.ProcessHandler} still runs {@code updateEntity} everywhere so the
- * process cache stays warm, but only partition 1 may index the shared process document. {@link
+ * io.camunda.exporter.handlers.ProcessCreatedHandler} still runs {@code updateEntity} everywhere so
+ * the process cache stays warm, but only partition 1 may index the shared process document. {@link
  * io.camunda.exporter.handlers.ProcessDrainingHandler} is also partition-1-only. If another
  * partition indexed {@code CREATED} after partition 1 had already written {@code DRAINING}, the
  * full-document index would clobber state back to {@code ACTIVE}.
