@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-bom</artifactId>
-    <version>8.9.18-SNAPSHOT</version>
+    <version>8.9.19-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -66,7 +66,7 @@
     <version.httpclient5>5.6.4</version.httpclient5>
     <version.httpcore5>5.4.3</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.9.8</version.identity>
+    <version.identity>8.9.9</version.identity>
     <version.instancio>5.5.1</version.instancio>
     <version.jackson>2.21.6</version.jackson>
     <version.jackson3>3.1.6</version.jackson3>
