@@ -76,17 +76,12 @@ export class IdentityGlobalTaskListenersPage {
         name: 'Listener type',
       });
     this.createGlobalTaskListenerEventTypeToggle =
-      this.createGlobalTaskListenerModal.locator(
-        '#event-type-multiselect button',
-      );
-    this.createGlobalTaskListenerEventTypeMenu =
-      this.createGlobalTaskListenerModal.locator(
-        '#event-type-multiselect .cds--list-box__menu',
-      );
+      this.createGlobalTaskListenerModal.locator('[data-slot="multi-select"]');
+    // The design-system MultiSelect renders its list in a portal outside the
+    // dialog, so this cannot be scoped to the modal.
+    this.createGlobalTaskListenerEventTypeMenu = page.getByRole('listbox');
     this.createGlobalTaskListenerInlineError =
-      this.createGlobalTaskListenerModal.locator(
-        '.cds--inline-notification--error',
-      );
+      this.createGlobalTaskListenerModal.getByRole('alert');
     this.createGlobalTaskListenerModalCancelButton =
       this.createGlobalTaskListenerModal.getByRole('button', {name: 'Cancel'});
     this.createGlobalTaskListenerModalCreateButton =
@@ -158,12 +153,10 @@ export class IdentityGlobalTaskListenersPage {
     if (newEventTypeLabel) {
       await this.editGlobalTaskListenerTypeField.blur();
       const editEventTypeToggle = this.editGlobalTaskListenerModal.locator(
-        '#event-type-multiselect-edit button',
+        '[data-slot="multi-select"]',
       );
       await editEventTypeToggle.click();
-      const editEventTypeMenu = this.editGlobalTaskListenerModal.locator(
-        '#event-type-multiselect-edit .cds--list-box__menu',
-      );
+      const editEventTypeMenu = this.page.getByRole('listbox');
       await expect(editEventTypeMenu).toBeVisible();
       await this.page
         .locator('[role="option"]', {hasText: newEventTypeLabel})
