@@ -202,11 +202,44 @@ public final class PostgresReplicationClusterContainer
     LOG.info("PostgreSQL replica promoted to primary");
   }
 
+  /**
+   * Dynamically changes how long the standby waits before applying WAL commits from the primary.
+   */
+  public void setReplicaApplyDelay(final Duration delay) {
+    if (delay.isNegative()) {
+      throw new IllegalArgumentException("Replica apply delay must not be negative");
+    }
+
+    final var delayInMillis = delay.toMillis();
+    LOG.info("Setting PostgreSQL replica apply delay to {} ms", delayInMillis);
+    executeOnReplica("ALTER SYSTEM SET recovery_min_apply_delay = '%dms'".formatted(delayInMillis));
+    reloadReplicaConfiguration();
+  }
+
+  public void resetReplicaApplyDelay() {
+    LOG.info("Resetting PostgreSQL replica apply delay");
+    executeOnReplica("ALTER SYSTEM RESET recovery_min_apply_delay");
+    reloadReplicaConfiguration();
+  }
+
   private Connection replicaConnection() throws Exception {
     return DriverManager.getConnection(
         "jdbc:postgresql://%s:%d/%s".formatted(getReplicaHost(), getReplicaPort(), DATABASE_NAME),
         USERNAME,
         PASSWORD);
+  }
+
+  private void reloadReplicaConfiguration() {
+    executeOnReplica("SELECT pg_reload_conf()");
+  }
+
+  private void executeOnReplica(final String sql) {
+    try (final Connection conn = replicaConnection();
+        final Statement stmt = conn.createStatement()) {
+      stmt.execute(sql);
+    } catch (final Exception e) {
+      throw new IllegalStateException("Failed to execute SQL on PostgreSQL replica: " + sql, e);
+    }
   }
 
   private void waitForReplication() {
