@@ -2,8 +2,9 @@
 """Build and post the daily load-test results table to Slack.
 
 Renders a side-by-side metrics table — one column per variant — from the end-of-soak metric
-snapshots and posts it to the reliability-testing Slack channel via an incoming webhook. Invoked
-by the `notify-results` job of `.github/workflows/camunda-daily-load-tests.yml`.
+snapshots and posts it to the reliability-testing Slack channel, either via an incoming webhook
+or via a chat.postMessage bot token (see "Posting mode" below). Invoked by the `notify-results`
+job of `.github/workflows/camunda-daily-load-tests.yml`.
 
 Metric names, descriptions, and display formats are sourced from `queries.yaml` (the single
 source of truth shared with `loadTestMetrics.sh`), so adding a metric there automatically adds a
@@ -17,9 +18,21 @@ Required environment variables:
   VARIANTS_JSON       JSON array of {key, label, namespace, soakEndEpoch, results} objects, one
                       per variant, in display order. `results` is {metric_name: value}.
   BENCHMARK           Benchmark name, e.g. medic-daily-YYYY-MM-DD-<sha>-test.
-  SLACK_WEBHOOK_URL   Incoming-webhook URL to post to.
   REPO                GitHub repo slug, e.g. camunda/camunda.
   RUN_ID              GitHub Actions run id (used to link the workflow run).
+
+Posting mode -- one of the following two is required:
+  SLACK_WEBHOOK_URL   Incoming-webhook URL to post to. Posts the results (header, dashboard
+                      links, table) and the flamegraph links in a single message, since an
+                      incoming webhook's response carries no message `ts` to thread a reply off.
+  SLACK_BOT_TOKEN +   A `chat:write` bot token and the target channel (id or name). When both
+  SLACK_CHANNEL       are set, this takes priority over SLACK_WEBHOOK_URL: the results are
+                      posted first via chat.postMessage, then -- if there are any flamegraph
+                      links -- posted again as a second chat.postMessage carrying `thread_ts`
+                      set to the first call's `ts`, so the flamegraph list lands as a threaded
+                      reply under the results message instead of lengthening it. The bot must
+                      already be a member of SLACK_CHANNEL (or the channel must be public and
+                      the token scoped with chat:write.public).
 
 Optional:
   QUERIES_YAML        Path to queries.yaml. Default:
@@ -29,7 +42,7 @@ Optional:
                       "• <url|name>\n• <url|name>"), built by the
                       `List flamegraph artifacts` step in the calling job via
                       actions/github-script + listWorkflowRunArtifacts. Empty
-                      or unset omits the flamegraphs line.
+                      or unset omits the flamegraphs message entirely.
 """
 import json
 import os
@@ -44,8 +57,15 @@ variants = json.loads(os.environ.get('VARIANTS_JSON') or '[]')
 bench    = os.environ['BENCHMARK']
 repo     = os.environ['REPO']
 run_id   = os.environ['RUN_ID']
-webhook  = os.environ['SLACK_WEBHOOK_URL']
+webhook  = os.environ.get('SLACK_WEBHOOK_URL', '').strip()
+bot_token = os.environ.get('SLACK_BOT_TOKEN', '').strip()
+slack_channel = os.environ.get('SLACK_CHANNEL', '').strip()
 flamegraph_links = os.environ.get('FLAMEGRAPH_LINKS', '').strip()
+
+if not (bot_token and slack_channel) and not webhook:
+    raise SystemExit(
+        'Set either SLACK_WEBHOOK_URL, or both SLACK_BOT_TOKEN and SLACK_CHANNEL.'
+    )
 
 queries_yaml = os.environ.get('QUERIES_YAML', 'load-tests/docs/scripts/queries.yaml')
 
@@ -144,7 +164,7 @@ def text_blocks(text, wrap=lambda chunk: chunk):
     ]
 
 
-blocks = text_blocks(
+main_blocks = text_blocks(
     f':bar_chart: *Daily Load Test Results — {date}*\nDuration: 3 h · <{run_url}|Workflow run>'
 )
 
@@ -152,25 +172,71 @@ blocks = text_blocks(
 # is empty, which the calling workflow already gates on, but keep this defensive at the script
 # level too (e.g. against direct/manual invocation with an empty VARIANTS_JSON).
 if dash_links:
-    blocks.extend(text_blocks(dash_links))
+    main_blocks.extend(text_blocks(dash_links))
 
-blocks.extend(text_blocks(table, wrap=lambda chunk: f'```\n{chunk}\n```'))
+main_blocks.extend(text_blocks(table, wrap=lambda chunk: f'```\n{chunk}\n```'))
 
-if flamegraph_links:
-    blocks.extend(text_blocks(f':fire: *Flamegraphs:*\n{flamegraph_links}'))
-
-payload = {'blocks': blocks}
-
-body = json.dumps(payload).encode()
-req  = urllib.request.Request(
-    webhook, data=body, headers={'Content-Type': 'application/json'}
+# Kept as its own block list (rather than folded into main_blocks) so bot-token mode can post
+# it as a threaded reply under the results message instead of appending it to the same one.
+flamegraph_blocks = (
+    text_blocks(f':fire: *Flamegraphs:*\n{flamegraph_links}') if flamegraph_links else []
 )
-try:
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        print(f'Slack response: {resp.status}')
-except urllib.error.HTTPError as e:
-    print(f'Slack HTTP error: {e.code} {e.read().decode()}')
-    raise
-except (urllib.error.URLError, socket.timeout) as e:
-    print(f'Slack connection error: {e}')
-    raise
+
+
+def _post(url, payload, headers):
+    """POST JSON and return (status, raw response body text). Doesn't assume the body is JSON --
+    an incoming webhook replies with the plain string "ok", not a JSON object; only
+    chat.postMessage's response is JSON, and callers that need it decode it themselves."""
+    req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return resp.status, resp.read().decode()
+    except urllib.error.HTTPError as e:
+        print(f'Slack HTTP error: {e.code} {e.read().decode()}')
+        raise
+    except (urllib.error.URLError, socket.timeout) as e:
+        print(f'Slack connection error: {e}')
+        raise
+
+
+if bot_token and slack_channel:
+    # chat.postMessage (unlike an incoming webhook) returns the posted message's `ts`, which is
+    # what lets the flamegraph list go out as a threaded reply instead of lengthening the main
+    # message. Mirrors the chat.postMessage + thread_ts pattern already used in
+    # rc-delta-slack-summary.sh / release-rc-delta-slack-summary.yml.
+    headers = {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Authorization': f'Bearer {bot_token}',
+    }
+    _, raw = _post(
+        'https://slack.com/api/chat.postMessage',
+        {'channel': slack_channel, 'text': f'Daily Load Test Results — {date}', 'blocks': main_blocks},
+        headers,
+    )
+    result = json.loads(raw)
+    if not result.get('ok'):
+        raise SystemExit(f"Slack chat.postMessage failed: {result.get('error')}")
+    print(f"Slack response: ok (ts={result['ts']})")
+
+    if flamegraph_blocks:
+        _, raw = _post(
+            'https://slack.com/api/chat.postMessage',
+            {
+                'channel': slack_channel,
+                'thread_ts': result['ts'],
+                'text': 'Flamegraphs',
+                'blocks': flamegraph_blocks,
+            },
+            headers,
+        )
+        reply = json.loads(raw)
+        if not reply.get('ok'):
+            raise SystemExit(f"Slack chat.postMessage (thread reply) failed: {reply.get('error')}")
+        print('Posted flamegraph links as a threaded reply')
+else:
+    # Incoming webhook: no `ts` comes back, so there's no message to thread a reply under --
+    # everything goes out in one message, same as before this script supported bot-token mode.
+    status, _ = _post(
+        webhook, {'blocks': main_blocks + flamegraph_blocks}, {'Content-Type': 'application/json'}
+    )
+    print(f'Slack response: {status}')
