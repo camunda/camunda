@@ -19,15 +19,13 @@ defaults:
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_OWNER: '@camunda/engineering-operations'
 
 jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions:
-      contents: read
     env:
-      TEST_OWNER: '@camunda/engineering-operations'
       TEST_PRODUCT: Orchestration Cluster
       TEST_TYPE: CI Helper
     steps:
