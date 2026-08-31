@@ -27,6 +27,12 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Must run on the Processing State Machine's actor because side effects are not necessarily
  * thread-safe.
+ *
+ * <p>The queue is bounded. Processing reads uncommitted records, so it can run arbitrarily far
+ * ahead of the commit index while commits are slow, and every queued entry retains its responses
+ * and post-commit task closures until it runs. {@link #hasCapacity()} lets the processing state
+ * machine stop reading new records once the queue is full, which bounds that memory. Capacity frees
+ * up on commit, which never depends on further processing, so this cannot deadlock.
  */
 final class SideEffectRunner implements CommittedPositionListener {
   private static final Logger LOG = LoggerFactory.getLogger(SideEffectRunner.class);
@@ -35,6 +41,8 @@ final class SideEffectRunner implements CommittedPositionListener {
   private final ActorControl actor;
   private final ProcessingMetrics processingMetrics;
   private final CommandResponseWriter responseWriter;
+  private final int maxPendingSideEffects;
+  private final Runnable onCapacityAvailable;
   private final Queue<SideEffects> sideEffects;
   private long highestCommittedPosition = StreamProcessor.UNSET_POSITION;
   private boolean executingSideEffects;
@@ -43,12 +51,26 @@ final class SideEffectRunner implements CommittedPositionListener {
       final int partitionId,
       final ActorControl actor,
       final ProcessingMetrics processingMetrics,
-      final CommandResponseWriter responseWriter) {
+      final CommandResponseWriter responseWriter,
+      final int maxPendingSideEffects,
+      final Runnable onCapacityAvailable) {
     this.actor = actor;
     this.processingMetrics = processingMetrics;
     this.responseWriter = responseWriter;
     this.partitionId = partitionId;
+    this.maxPendingSideEffects = maxPendingSideEffects;
+    this.onCapacityAvailable = onCapacityAvailable;
     sideEffects = new ArrayDeque<>();
+  }
+
+  /**
+   * Whether another processing result's side effects fit in the queue.
+   *
+   * <p>Must be called on {@link #actor}'s thread. The processing state machine checks this before
+   * it reads the next record, so the queue never grows beyond {@code maxPendingSideEffects}.
+   */
+  boolean hasCapacity() {
+    return sideEffects.size() < maxPendingSideEffects;
   }
 
   /**
@@ -120,11 +142,19 @@ final class SideEffectRunner implements CommittedPositionListener {
   }
 
   private void completeSideEffects(final SideEffects completedSideEffects) {
+    final var wasFull = !hasCapacity();
     sideEffects.remove();
     processingMetrics.setPendingSideEffects(sideEffects.size());
     executingSideEffects = false;
     completedSideEffects.completionCallback().run();
     executeNextSideEffects();
+    if (wasFull) {
+      // Processing stopped reading records because the queue was full. Nothing else will wake it:
+      // the records it stopped on are already appended, so no append notification is coming.
+      // Signalling only on the full -> not-full transition keeps this to one job per stall
+      // instead of one per side effect.
+      onCapacityAvailable.run();
+    }
   }
 
   private void sendResponses(final Collection<ProcessingResponse> responses) {
