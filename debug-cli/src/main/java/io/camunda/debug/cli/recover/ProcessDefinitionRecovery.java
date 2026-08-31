@@ -11,7 +11,7 @@ import static io.camunda.debug.cli.util.ErrorMessageUtil.rootMessage;
 
 import io.camunda.exporter.handlers.EmbeddedFormHandler;
 import io.camunda.exporter.handlers.ExportHandler;
-import io.camunda.exporter.handlers.ProcessHandler;
+import io.camunda.exporter.handlers.ProcessCreatedHandler;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -35,7 +35,7 @@ import java.util.function.Supplier;
  */
 final class ProcessDefinitionRecovery {
 
-  private final ProcessHandler processHandler;
+  private final ProcessCreatedHandler processHandler;
   private final EmbeddedFormHandler embeddedFormHandler;
   private final Supplier<BatchRequest> batchRequestFactory;
   private final ExistingDocuments existingDocuments;
@@ -45,7 +45,7 @@ final class ProcessDefinitionRecovery {
   private final PrintWriter progress;
 
   ProcessDefinitionRecovery(
-      final ProcessHandler processHandler,
+      final ProcessCreatedHandler processHandler,
       final EmbeddedFormHandler embeddedFormHandler,
       final Supplier<BatchRequest> batchRequestFactory,
       final ExistingDocuments existingDocuments,

@@ -13,10 +13,10 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Throwaway {@link ExporterEntityCache} for driving {@code ProcessHandler} during recovery. {@code
- * ProcessHandler#updateEntity} only ever writes to the cache (to speed up sibling handlers during
- * normal export); it never reads from it, and no sibling handlers run here, so every read returns
- * empty and every write is discarded.
+ * Throwaway {@link ExporterEntityCache} for driving {@code ProcessCreatedHandler} during recovery.
+ * {@code ProcessCreatedHandler#updateEntity} only ever writes to the cache (to speed up sibling
+ * handlers during normal export); it never reads from it, and no sibling handlers run here, so
+ * every read returns empty and every write is discarded.
  */
 final class NoopProcessCache implements ExporterEntityCache<Long, CachedProcessEntity> {
 

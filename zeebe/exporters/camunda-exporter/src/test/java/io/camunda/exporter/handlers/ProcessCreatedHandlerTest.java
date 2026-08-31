@@ -32,12 +32,12 @@ import java.nio.file.Path;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ProcessHandlerTest {
+public class ProcessCreatedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-process";
   private final TestProcessCache processCache = new TestProcessCache();
-  private final ProcessHandler underTest =
-      new ProcessHandler(indexName, processCache, new ExtensionPropertyConfiguration());
+  private final ProcessCreatedHandler underTest =
+      new ProcessCreatedHandler(indexName, processCache, new ExtensionPropertyConfiguration());
 
   @Test
   void testGetHandledValueType() {
@@ -111,7 +111,8 @@ public class ProcessHandlerTest {
   void shouldNotIndexDocumentWhenExportDocumentIsDisabled() {
     // given
     final var handler =
-        new ProcessHandler(indexName, processCache, new ExtensionPropertyConfiguration(), false);
+        new ProcessCreatedHandler(
+            indexName, processCache, new ExtensionPropertyConfiguration(), false);
     final ProcessEntity inputEntity = new ProcessEntity().setId("111");
     final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
