@@ -1,7 +1,8 @@
 {
   "_comment": "Vulnerability gate exceptions — governs the pr-vuln-check job in ci.yml. Gate rules (in check.py): block if fixable (any severity) or high/critical (any fix status). Dev-scoped deps excluded. Add GHSA IDs below with reason, tracking issue, and review-by date. File is CODEOWNERS-protected.",
   "_example": "GHSA-xxxx-xxxx-xxxx: Vetted: no exploit path in our usage; INC-XYZ; review by 2026-12-01",
+  "_reason_GHSA-g3pr-3p32-fp23": "io.micrometer:micrometer-core@1.14.14 — Vetted: no exploit path in our usage; INC-7443; review by 2026-31-08; no patch release available as OSS ended",
   "allow-ghsas": [
-    "GHSA-g3pr-3p32-fp23: Vetted: no exploit path in our usage; INC-7443; review by 2026-31-08; no patch release available as OSS ended"
+    "GHSA-g3pr-3p32-fp23"
   ]
 }
