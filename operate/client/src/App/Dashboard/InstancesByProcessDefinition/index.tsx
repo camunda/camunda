@@ -23,6 +23,8 @@ import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod
 import {DEFAULT_TENANT} from 'modules/constants';
 import {InlineLoading} from '@carbon/react';
 import {getClientConfig} from 'modules/utils/getClientConfig';
+import {useDrainingProcessDefinitions} from 'modules/queries/processDefinitions/useDrainingProcessDefinitions';
+import {DRAINING_MESSAGES} from 'modules/utils/draining';
 
 type Props = {
   status: 'pending' | 'error' | 'success';
@@ -45,6 +47,8 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
 }) => {
   const tenantsById = useAvailableTenants();
   const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
+
+  const {data: draining} = useDrainingProcessDefinitions();
 
   const rows = useMemo(
     () =>
@@ -128,13 +132,15 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
                 }}
                 incidentsCount={activeInstancesWithIncidentCount}
                 activeInstancesCount={activeInstancesWithoutIncidentCount}
+                isDraining={!!draining?.byId.has(processDefinitionId)}
+                drainingDescription={DRAINING_MESSAGES.allVersions}
                 size="medium"
               />
             </LinkWrapper>
           ),
         };
       }),
-    [items, tenantsById, isMultiTenancyEnabled],
+    [items, tenantsById, isMultiTenancyEnabled, draining],
   );
 
   const expandedContents = useMemo(
@@ -160,6 +166,7 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
                 processDefinitionId={processDefinitionId}
                 processName={latestProcessDefinitionName || processDefinitionId}
                 tenantId={normalizedTenantId}
+                drainingDefinitionKeys={draining?.byKey}
               />
             );
           }
@@ -168,7 +175,7 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
         },
         {},
       ),
-    [items],
+    [items, draining?.byKey],
   );
 
   if (status === 'pending') {

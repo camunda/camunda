@@ -28,6 +28,7 @@ test.describe('variables and incidents', () => {
       mockProcessesResponses({
         processDefinitions: [
           {
+            state: 'ACTIVE',
             processDefinitionId: 'order-process',
             version: 1,
             name: 'order-process',

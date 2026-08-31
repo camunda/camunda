@@ -21,6 +21,8 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {searchResult, createProcessDefinition} from 'modules/testUtils';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -45,6 +47,10 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('<ProcessOperations />', () => {
+  beforeEach(() => {
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+  });
+
   afterEach(() => {
     mockQueryClient.clear();
   });
@@ -444,6 +450,42 @@ describe('<ProcessOperations />', () => {
         name: 'Only process definitions without running instances can be deleted.',
       }),
     ).toBeDisabled();
+  });
+
+  it('should show draining tag instead of delete button when definition is draining', async () => {
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionKey: '2251799813687094',
+          state: 'DRAINING',
+        }),
+      ]),
+    );
+
+    render(
+      <ProcessOperations
+        processDefinitionKey="2251799813687094"
+        processName="myProcess"
+        processVersion={2}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(await screen.findByTestId('draining-tag')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: /^delete process definition/i,
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('should enable delete button when process instances could not be fetched', async () => {

@@ -27,6 +27,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 const singleVersionSelection: ProcessDefinitionSelection = {
   kind: 'single-version',
   definition: {
+    state: 'ACTIVE',
     processDefinitionId: 'MyProcess',
     processDefinitionKey: '123',
     name: 'My Process',

@@ -18,11 +18,13 @@ import {mockInstance, Wrapper} from './index.setup';
 
 import {
   createIncident,
+  createProcessDefinition,
   createUser,
   mockCallActivityProcessXML,
   mockProcessXML,
   searchResult,
 } from 'modules/testUtils';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {notificationsStore} from 'modules/stores/notifications';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
@@ -43,6 +45,7 @@ describe('InstanceHeader', () => {
   beforeEach(() => {
     mockFetchCallHierarchy().withSuccess([]);
     mockMe().withSuccess(createUser());
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
   });
 
   it('should render process instance data', async () => {
@@ -313,6 +316,7 @@ describe('InstanceHeader', () => {
         tenantId: mockInstance.tenantId,
         resourceName: null,
         hasStartForm: false,
+        state: 'ACTIVE',
       },
     );
 
@@ -356,5 +360,41 @@ describe('InstanceHeader', () => {
         screen.queryByRole('button', {name: /Modify Instance/}),
       ).not.toBeInTheDocument(),
     );
+  });
+
+  it('should render a draining tag when the process definition is draining', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionKey: '123',
+          state: 'DRAINING',
+        }),
+      ]),
+    );
+
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-header-skeleton'),
+    );
+
+    expect(await screen.findByTestId('draining-tag')).toBeInTheDocument();
+  });
+
+  it('should not render a draining tag when the process definition is not draining', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-header-skeleton'),
+    );
+
+    expect(screen.queryByTestId('draining-tag')).not.toBeInTheDocument();
   });
 });
