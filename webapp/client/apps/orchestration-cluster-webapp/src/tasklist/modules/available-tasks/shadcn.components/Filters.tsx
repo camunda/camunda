@@ -13,33 +13,23 @@ import {
 	DropdownMenuRadioGroup,
 	DropdownMenuRadioItem,
 	DropdownMenuTrigger,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
 } from '@camunda/design-system';
+import {useSuspenseQuery} from '@tanstack/react-query';
 import {useNavigate, useSearch} from '@tanstack/react-router';
 import {ArrowDownWideNarrow} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
-import {
-	isBuiltInFilter,
-	tasklistIndexSearchSchema,
-	type BuiltInFilter,
-	type TasklistIndexSearch,
-} from '#/tasklist/modules/available-tasks/searchSchema';
-import {useCallback} from 'react';
+import {tasklistIndexSearchSchema, type TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';
+import {useCallback, useState} from 'react';
+import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
+import {queries} from '#/shared/http/queries';
+import {getCustomFilterSearch} from '#/tasklist/modules/available-tasks/getCustomFilterSearch';
+import {FilterSelect} from './FilterSelect';
+import {CustomFiltersModal} from './custom-filters/CustomFiltersModal';
+import {DeleteFilterModal} from './custom-filters/DeleteFilterModal';
 
 type Props = {
 	disabled?: boolean;
 };
-
-const BUILT_IN_FILTERS: {id: BuiltInFilter; labelKey: string}[] = [
-	{id: 'all-open', labelKey: 'tasklist.taskFiltersAllOpenTasks'},
-	{id: 'assigned-to-me', labelKey: 'tasklist.taskFiltersAssignedToMe'},
-	{id: 'unassigned', labelKey: 'tasklist.taskFiltersUnassigned'},
-	{id: 'completed', labelKey: 'tasklist.taskFiltersCompleted'},
-];
 
 const SORTING_OPTIONS_ORDER = [
 	'creation',
@@ -68,21 +58,75 @@ const Filters: React.FC<Props> = ({disabled = false}) => {
 	const {t} = useTranslation();
 	const {sortBy, filter} = useSearch({from: '/shadcn/_auth/tasklist/_tasks'});
 	const navigate = useNavigate();
+	const search = useSearch({from: '/shadcn/_auth/tasklist/_tasks'});
+	const [isCustomFiltersModalOpen, setIsCustomFiltersModalOpen] = useState(false);
+	const [customFilterToEdit, setCustomFilterToEdit] = useState<string | undefined>();
+	const [customFilterToDelete, setCustomFilterToDelete] = useState<string | undefined>();
+	const {data: username} = useSuspenseQuery({
+		...queries.getCurrentUser(),
+		select: ({username}) => username,
+	});
 
 	const completionEligible = filter === 'completed' || filter === 'custom';
 	const sortOptionsOrder = completionEligible ? COMPLETION_SORTING_OPTIONS_ORDER : SORTING_OPTIONS_ORDER;
 
 	const onFilterChange = useCallback(
 		(newFilter: string) => {
+			if (!['all-open', 'assigned-to-me', 'unassigned', 'completed'].includes(newFilter)) {
+				navigate({
+					to: '.',
+					search: getCustomFilterSearch({currentSearch: search, filter: newFilter, username}),
+				});
+				return;
+			}
+
 			navigate({
 				to: '.',
-				search: {
-					filter: newFilter,
-					sortBy: newFilter === 'completed' ? 'completion' : 'creation',
-				},
+				search: newFilter === 'completed' ? {filter: newFilter, sortBy: 'completion'} : {filter: newFilter},
 			});
 		},
-		[navigate],
+		[navigate, search, username],
+	);
+
+	const closeModal = useCallback(() => {
+		setIsCustomFiltersModalOpen(false);
+		setCustomFilterToEdit(undefined);
+	}, []);
+
+	const handleSuccess = useCallback(
+		(filterId: string) => {
+			closeModal();
+			navigate({
+				to: '.',
+				search: getCustomFilterSearch({currentSearch: search, filter: filterId, username}),
+			});
+		},
+		[closeModal, navigate, search, username],
+	);
+
+	const deleteFilter = useCallback((filterId: string) => {
+		const storedFilters = getStateLocally('tasklist.customFilters') ?? {};
+		const {[filterId]: _, ...remainingFilters} = storedFilters;
+		storeStateLocally('tasklist.customFilters', remainingFilters);
+	}, []);
+
+	const handleDelete = useCallback(() => {
+		deleteFilter(customFilterToDelete!);
+
+		if (filter === customFilterToDelete) {
+			navigate({to: '.', search: {filter: 'all-open'}});
+		}
+
+		setCustomFilterToDelete(undefined);
+	}, [deleteFilter, customFilterToDelete, filter, navigate]);
+
+	const handleModalDelete = useCallback(
+		(filterId: string) => {
+			deleteFilter(filterId);
+			navigate({to: '.', search: {filter: 'all-open'}});
+			closeModal();
+		},
+		[deleteFilter, navigate, closeModal],
 	);
 
 	const onSort = useCallback(
@@ -100,19 +144,28 @@ const Filters: React.FC<Props> = ({disabled = false}) => {
 			className="flex w-full items-center justify-between gap-2"
 			aria-label={t('tasklist.taskFiltersHeaderAria')}
 		>
-			{/* custom filters aren't selectable here yet (camunda/camunda#60225); the placeholder covers that case */}
-			<Select value={isBuiltInFilter(filter) ? filter : ''} onValueChange={onFilterChange} disabled={disabled}>
-				<SelectTrigger aria-label={t('tasklist.taskFiltersHeaderAria')}>
-					<SelectValue placeholder={t('tasklist.taskFilterPanelCustom')} />
-				</SelectTrigger>
-				<SelectContent>
-					{BUILT_IN_FILTERS.map(({id, labelKey}) => (
-						<SelectItem key={id} value={id}>
-							{t(labelKey)}
-						</SelectItem>
-					))}
-				</SelectContent>
-			</Select>
+			<FilterSelect
+				filter={filter}
+				disabled={disabled}
+				onFilterChange={onFilterChange}
+				onCreateFilter={() => setIsCustomFiltersModalOpen(true)}
+				onEditFilter={setCustomFilterToEdit}
+				onDeleteFilter={setCustomFilterToDelete}
+			/>
+			<CustomFiltersModal
+				filterId={customFilterToEdit}
+				isOpen={isCustomFiltersModalOpen || customFilterToEdit !== undefined}
+				onClose={closeModal}
+				onSuccess={handleSuccess}
+				onDelete={handleModalDelete}
+			/>
+			<DeleteFilterModal
+				data-testid="direct-delete-filter-modal"
+				filterId={customFilterToDelete ?? ''}
+				isOpen={customFilterToDelete !== undefined}
+				onClose={() => setCustomFilterToDelete(undefined)}
+				onDelete={handleDelete}
+			/>
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<Button

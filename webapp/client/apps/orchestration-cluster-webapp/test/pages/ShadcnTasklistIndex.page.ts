@@ -9,17 +9,29 @@
 import {type Page} from '@playwright/test';
 import {BasePage} from './BasePage';
 import {ShadcnHeader} from './ShadcnHeader';
+import {ShadcnCustomFiltersModal, ShadcnDeleteFilterModal, ShadcnFilterNameModal} from './ShadcnCustomFiltersModal';
 
 class ShadcnTasklistIndexPage extends BasePage {
 	readonly header: ShadcnHeader;
+	readonly customFiltersModal: ShadcnCustomFiltersModal;
+	readonly filterNameModal: ShadcnFilterNameModal;
+	readonly deleteFilterModal: ShadcnDeleteFilterModal;
 
 	constructor(page: Page) {
 		super(page);
 		this.header = new ShadcnHeader(page);
+		this.customFiltersModal = new ShadcnCustomFiltersModal(page);
+		this.filterNameModal = new ShadcnFilterNameModal(page);
+		this.deleteFilterModal = new ShadcnDeleteFilterModal(page);
 	}
 
-	async goto() {
-		return this.page.goto('/shadcn/tasklist');
+	async goto(search?: string) {
+		return this.page.goto(`/shadcn/tasklist${search ?? ''}`);
+	}
+
+	async seedCustomFilters(filters: Record<string, Record<string, unknown>>) {
+		const serialized = JSON.stringify(filters);
+		await this.page.addInitScript(`localStorage.setItem('tasklist.customFilters', ${JSON.stringify(serialized)})`);
 	}
 
 	get tasksPanel() {
@@ -27,11 +39,47 @@ class ShadcnTasklistIndexPage extends BasePage {
 	}
 
 	get filterSelect() {
-		return this.page.getByRole('combobox', {name: 'Filters'});
+		return this.page.getByRole('button', {name: 'Filters', exact: true});
 	}
 
 	filterOption(name: string) {
-		return this.page.getByRole('option', {name});
+		return this.page.getByRole('menuitem', {name, exact: true});
+	}
+
+	tasksPanelHeading(filterName: 'All open tasks' | 'Assigned to me' | 'Unassigned' | 'Completed' | (string & {})) {
+		return this.filterSelect.filter({hasText: new RegExp(`^${filterName}$`)});
+	}
+
+	async expandFilters() {
+		await this.filterSelect.click();
+	}
+
+	get newFilterButton() {
+		return this.page.getByRole('menuitem', {name: 'New filter', exact: true});
+	}
+
+	get filterTasksButton() {
+		return {
+			click: async () => {
+				await this.expandFilters();
+				await this.newFilterButton.click();
+			},
+		};
+	}
+
+	customFilterLink(name: string) {
+		return this.page
+			.getByRole('menuitem', {name, exact: true})
+			.or(this.filterSelect.filter({hasText: new RegExp(`^${name}$`)}))
+			.last();
+	}
+
+	get customFilterActionsButton() {
+		return this.page.getByRole('menuitem', {name: /custom filter actions/i});
+	}
+
+	customFilterOverflowItem(name: 'Edit' | 'Delete') {
+		return this.page.getByRole('menuitem', {name, exact: true});
 	}
 
 	get sortButton() {
