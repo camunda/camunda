@@ -31,7 +31,7 @@ env:
 permissions:
   actions: none
   attestations: none
-  checks: write
+  checks: none
   contents: read
   deployments: none
   id-token: none
@@ -42,7 +42,7 @@ permissions:
   pull-requests: none
   repository-projects: none
   security-events: none
-  statuses: write
+  statuses: none
 
 jobs:
   linting:
