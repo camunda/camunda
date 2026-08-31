@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrati
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.ProcessInstanceMigrationPreconditionFailedException;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.usertask.UserTaskActions;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
@@ -274,6 +275,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
     // anything in secondary storage
     userTaskRecord.setAssignee(assignee);
     userTaskRecord.setAssigneeChanged();
+    userTaskRecord.setAction(UserTaskActions.ASSIGN);
     stateWriter.appendFollowUpEvent(
         userTaskRecord.getUserTaskKey(), UserTaskIntent.ASSIGNING, userTaskRecord);
     userTaskBehavior.userTaskAssigned(userTaskRecord, assignee);
