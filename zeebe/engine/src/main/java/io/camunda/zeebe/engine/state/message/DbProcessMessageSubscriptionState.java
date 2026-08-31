@@ -128,7 +128,10 @@ public final class DbProcessMessageSubscriptionState
         record,
         s -> {
           s.setRecord(record).setOpened();
-          s.getRecord().setSubscriptionKey(subscriptionKey);
+          // Reset, not preserved: a future close site that forgets to set this explicitly then
+          // inherits false (delete) instead of a stale true from an earlier suspend cycle, which
+          // would wrongly restore the row instead of deleting it.
+          s.getRecord().setSubscriptionKey(subscriptionKey).setClosedForSuspend(false);
         });
   }
 

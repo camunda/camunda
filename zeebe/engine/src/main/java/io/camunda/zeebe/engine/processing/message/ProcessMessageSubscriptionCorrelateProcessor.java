@@ -115,15 +115,6 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       rejectCommand(command, RejectionType.INVALID_STATE, ALREADY_CLOSING_MESSAGE);
       return;
 
-    } else if (suspensionState.getSuspensionState(record.getProcessInstanceKey())
-        == SuspensionState.State.SUSPENDED) {
-      // Race window: SUSPEND already deleted the message-side subscription, but this CORRELATE
-      // was already in flight. Reject to release the message-side lock — another active
-      // subscriber can then correlate, or the message returns 404. Gated on exact SUSPENDED, not
-      // isSuspended(); see suspensionBehavior() below for why RESUMING must fall through instead.
-      rejectCommand(command, RejectionType.INVALID_STATE, SUSPENDED_PI_MESSAGE);
-      return;
-
     } else if (isStaleGeneration(record, subscription)) {
       // E.g. a K1 correlate delayed across a suspend/resume cycle that re-subscribed with a new
       // key K2 — applying it would trigger the element against a subscription that no longer
@@ -145,6 +136,17 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       // attempt recovering from a previous acknowledgment that didn't make it to the other
       // partition.
       sendAcknowledgeCommand(record);
+      return;
+
+    } else if (suspensionState.getSuspensionState(record.getProcessInstanceKey())
+        == SuspensionState.State.SUSPENDED) {
+      // Race window: SUSPEND already deleted the message-side subscription, but this CORRELATE
+      // was already in flight. Reject to release the message-side lock — another active
+      // subscriber can then correlate, or the message returns 404. Gated on exact SUSPENDED, not
+      // isSuspended(); see suspensionBehavior() below for why RESUMING must fall through instead.
+      // Checked last so a stale or duplicate correlate goes through those paths instead, without
+      // releasing a live replacement's correlation lock.
+      rejectCommand(command, RejectionType.INVALID_STATE, SUSPENDED_PI_MESSAGE);
       return;
     }
 
