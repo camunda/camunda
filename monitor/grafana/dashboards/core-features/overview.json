@@ -6698,7 +6698,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Rate of analytics log records the exporter emits (process instance, user task, incident, tenant and heartbeat events).\n\nIncludes the periodic heartbeat, which uses the same logger as the analytics events and is scheduled unconditionally by AnalyticsExporter.open() — there is no category or sampling gate on it. A cluster processing nothing therefore still shows a low steady rate here, so read this alongside the record handling panel rather than as proof that analytics data is being produced. By the same token, zero does not mean the handler categories are misconfigured: it means the exporter never opened or the log pipeline is dead.\n\nThe series is otel_sdk_log_total, not otel_sdk_log_created_total: the SDK counter is otel.sdk.log.created, and the Prometheus client strips the reserved _created suffix before appending _total.\n\nShows the top 10 partitions.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
+          "description": "Rate of analytics log records the exporter emits (process instance, user task, incident, tenant and heartbeat events).\n\nIncludes the periodic heartbeat, which uses the same logger as the analytics events and is scheduled unconditionally by AnalyticsExporter.open() — there is no category or sampling gate on it. A cluster processing nothing therefore still shows a low steady rate here, so read this alongside the record handling panel rather than as proof that analytics data is being produced. By the same token, zero does not mean the handler categories are misconfigured: it means the exporter never opened or the log pipeline is dead.\n\nShows the top 10 partitions.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -6905,7 +6905,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Average duration of an OTLP export request to the analytics backend, by signal and HTTP response status. The instrument is a summary, so only the average is available — there are no buckets to take a quantile from.\n\nShows the top 10 series.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
+          "description": "Average duration of an OTLP export request to the analytics backend, by signal and HTTP response status.\n\nShows the top 10 series.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -9041,5 +9041,5 @@
   "timezone": "browser",
   "title": "Core Features Overview",
   "uid": "core-features-overview",
-  "version": 3
+  "version": 4
 }
