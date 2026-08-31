@@ -580,8 +580,11 @@ entity:
 
 businessValue:
   # How often the business-value overview index is refreshed for all definitions and all range
-  # presets (7d, 30d, 3m, 6m). The given number is the interval in seconds. Default: 24h.
-  overviewRefreshInterval: ${CAMUNDA_OPTIMIZE_BUSINESS_VALUE_OVERVIEW_REFRESH_INTERVAL:86400}
+  # presets (7d, 30d, 3m, 6m). The given number is the interval in seconds. Default: 1h. This also
+  # sets how long a definition imported after the last sweep waits before its measured values
+  # appear. The stale-read threshold derives from it at twice its value. Raise it on a large
+  # catalog, where the 3m and 6m presets scan the most instance data per sweep.
+  overviewRefreshInterval: ${CAMUNDA_OPTIMIZE_BUSINESS_VALUE_OVERVIEW_REFRESH_INTERVAL:3600}
   # Kill switch for the background overview computation. Set to false to stop the sweep without
   # taking the dashboard down: existing rows stay readable and the endpoint keeps serving, the
   # numbers simply stop advancing until it is re-enabled. Requires an Optimize restart to take
