@@ -297,15 +297,18 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getEngine()
         .setInputComparisonMode(
-            toEngineMode(
+            toNullableEngineMode(
                 camunda.getProcessing().getEngine().getMappings().getInputComparisonMode()));
   }
 
-  private static InputMappingMode toEngineMode(final @Nullable InputMode mode) {
-    if (mode == null) {
-      return null;
-    }
+  /** Converts the required primary input mode — never returns null since the mode has a default. */
+  private static InputMappingMode toEngineMode(final InputMode mode) {
     return mode == InputMode.COMBINED ? InputMappingMode.COMBINED : InputMappingMode.ORDERED;
+  }
+
+  /** Converts the optional comparison mode — returns null when no comparison mode is configured. */
+  private static @Nullable InputMappingMode toNullableEngineMode(final @Nullable InputMode mode) {
+    return mode == null ? null : toEngineMode(mode);
   }
 
   private static void populateFromDistribution(

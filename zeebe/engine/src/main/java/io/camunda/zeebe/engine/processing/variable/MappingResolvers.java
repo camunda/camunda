@@ -8,9 +8,11 @@
 package io.camunda.zeebe.engine.processing.variable;
 
 import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /** Utility methods for working with {@link MappingResolver} instances. */
+@NullMarked
 public final class MappingResolvers {
 
   private MappingResolvers() {}
