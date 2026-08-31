@@ -24,12 +24,11 @@ Required environment variables:
 Optional:
   QUERIES_YAML        Path to queries.yaml. Default:
                       load-tests/docs/scripts/queries.yaml
-  FLAMEGRAPH_LINKS    Pre-rendered Slack mrkdwn links to this run's flamegraph
-                      artifacts, one bullet per line (e.g.
-                      "• <url|name>\n• <url|name>"), built by the
-                      `List flamegraph artifacts` step in the calling job via
-                      actions/github-script + listWorkflowRunArtifacts. Empty
-                      or unset omits the flamegraphs line.
+
+Per-artifact flamegraph links used to be listed in the Slack message, but with 3 variants x 3
+pods x 3 profile types (cpu/wall/alloc) profiled daily, that list grows past Slack's mrkdwn text
+limit and gets the whole message rejected (`invalid_blocks`) — see the "Workflow run" link in the
+results message instead, which lists every artifact including flamegraphs.
 """
 import json
 import os
@@ -45,7 +44,6 @@ bench    = os.environ['BENCHMARK']
 repo     = os.environ['REPO']
 run_id   = os.environ['RUN_ID']
 webhook  = os.environ['SLACK_WEBHOOK_URL']
-flamegraph_links = os.environ.get('FLAMEGRAPH_LINKS', '').strip()
 
 queries_yaml = os.environ.get('QUERIES_YAML', 'load-tests/docs/scripts/queries.yaml')
 
@@ -60,8 +58,8 @@ with open(queries_yaml) as f:
 
 # Slack rejects an entire `blocks` payload if any single mrkdwn `text.text` exceeds this
 # (undocumented but consistently ~3000 chars), failing the whole notification with
-# `invalid_blocks`. Both the metrics table (grows with queries.yaml/variants) and the
-# flamegraph-links list (grows with profiled pods/variants) are unbounded, so both are capped.
+# `invalid_blocks`. The metrics table is unbounded (grows with queries.yaml/variants), so it's
+# capped.
 SLACK_TEXT_LIMIT = 3000
 
 
@@ -174,15 +172,6 @@ blocks.append({
         'text': '```\n' + _cap_mrkdwn('\n'.join([header, sep]), rows, SLACK_TEXT_LIMIT - 8, 'metric row') + '\n```',
     },
 })
-
-if flamegraph_links:
-    blocks.append({
-        'type': 'section',
-        'text': {
-            'type': 'mrkdwn',
-            'text': _cap_mrkdwn(':fire: *Flamegraphs:*', flamegraph_links.split('\n'), noun='flamegraph link'),
-        },
-    })
 
 payload = {'blocks': blocks}
 

@@ -1,11 +1,14 @@
-"""Unit tests for post-load-test-results-to-slack.py — specifically that the metrics-table and
-flamegraph-links `mrkdwn` blocks it builds always stay under Slack's ~3000-char text limit, no
-matter how much data (queries, variants, profiled pods) they're built from.
+"""Unit tests for post-load-test-results-to-slack.py — specifically that the metrics-table
+`mrkdwn` block it builds always stays under Slack's ~3000-char text limit, no matter how much
+data (queries, variants) it's built from.
 
 Slack rejects the *entire* `blocks` payload with `invalid_blocks` if any single block's text
 exceeds that limit — this is exactly what broke the "Notify Slack with results" job on the
 2026-08-27 and 2026-08-31 daily runs, once profiling 3 variants x 3 pods x 3 profile types
-produced 27 flamegraph links in one block.
+produced 27 flamegraph links in one block. Per-artifact flamegraph links are no longer posted to
+Slack at all (see the module docstring), which sidesteps that specific growth path, but the
+metrics table remains unbounded (more queries, more/wider variants), so `_cap_mrkdwn` still
+guards it.
 
 The script executes its whole body at import time (env vars in, a Slack POST out), so each test
 loads a fresh copy via importlib with env vars set and `urlopen` mocked out — no real network
@@ -48,15 +51,7 @@ def _variant(key, label, **result_overrides):
     }
 
 
-def _flamegraph_bullets(n):
-    return "\n".join(
-        f"• <https://github.com/camunda/camunda/actions/runs/33350392886/artifacts/{9700000000 + i}"
-        f"|flamegraph-medic-daily-2026-08-31-abc1234-test-grpc-cpu-camunda-{i % 3}-20260831>"
-        for i in range(n)
-    )
-
-
-def _load(monkeypatch, variants, flamegraph_links="", queries_yaml=None):
+def _load(monkeypatch, variants, queries_yaml=None):
     """Run the script end-to-end with the given inputs and return the loaded module so tests
     can inspect the `blocks` it built. `urlopen` is mocked — nothing is sent over the network.
     """
@@ -65,7 +60,6 @@ def _load(monkeypatch, variants, flamegraph_links="", queries_yaml=None):
     monkeypatch.setenv("REPO", "camunda/camunda")
     monkeypatch.setenv("RUN_ID", "33350392886")
     monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.example/test")
-    monkeypatch.setenv("FLAMEGRAPH_LINKS", flamegraph_links)
     if queries_yaml is not None:
         monkeypatch.setenv("QUERIES_YAML", queries_yaml)
     else:
@@ -122,42 +116,16 @@ class TestCapMrkdwn:
         assert len(result) <= 200
 
 
-class TestFlamegraphBlockCap:
-    def test_few_links_pass_through_unchanged(self, monkeypatch):
-        links = _flamegraph_bullets(3)
-        module = _load(monkeypatch, [_variant("grpc", "gRPC")], flamegraph_links=links)
-        text = _block_text(module, "Flamegraphs")
-        assert text == f":fire: *Flamegraphs:*\n{links}"
-
-    def test_27_links_like_the_broken_daily_runs_stays_under_slack_limit(self, monkeypatch):
-        # given: the exact shape that broke runs 33080825631 (08-27) and 33350392886 (08-31) —
-        # 3 variants x 3 pods x 3 profile types (cpu/wall/alloc) = 27 flamegraph artifacts
-        links = _flamegraph_bullets(27)
-        assert len(f":fire: *Flamegraphs:*\n{links}") > 3000  # sanity: this used to break Slack
-
-        # when
+class TestNoFlamegraphBlock:
+    def test_slack_message_never_contains_a_flamegraphs_block(self, monkeypatch):
+        # Per-artifact flamegraph links used to be posted as their own block and, with enough
+        # profiled pods/variants, blew past Slack's mrkdwn limit (see module docstring). They're
+        # no longer posted at all — the "Workflow run" link in the header block covers it.
         module = _load(
             monkeypatch,
             [_variant("grpc", "gRPC"), _variant("rest", "REST"), _variant("none", "None")],
-            flamegraph_links=links,
         )
-        text = _block_text(module, "Flamegraphs")
-
-        # then
-        assert len(text) <= module.SLACK_TEXT_LIMIT
-        assert "more flamegraph link" in text
-
-    def test_never_exceeds_limit_across_a_range_of_artifact_counts(self, monkeypatch):
-        for n in (0, 1, 26, 27, 28, 60, 200):
-            links = _flamegraph_bullets(n)
-            module = _load(monkeypatch, [_variant("grpc", "gRPC")], flamegraph_links=links)
-            has_flamegraph_block = any(
-                "Flamegraphs" in b["text"]["text"] for b in module.blocks
-            )
-            if n == 0:
-                assert not has_flamegraph_block  # empty FLAMEGRAPH_LINKS omits the block
-            else:
-                assert len(_block_text(module, "Flamegraphs")) <= module.SLACK_TEXT_LIMIT
+        assert not any("Flamegraphs" in b["text"]["text"] for b in module.blocks)
 
 
 class TestMetricsTableBlockCap:

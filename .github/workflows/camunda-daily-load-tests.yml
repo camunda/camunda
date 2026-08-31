@@ -2,8 +2,9 @@
 #              and REST (both against Elasticsearch), and no-secondary-storage (exporters
 #              disabled). After a 15-minute warmup, profiles the next 30 minutes of each variant
 #              via async-profiler. After a 3-hour soak: snapshots metrics as a GitHub artifact,
-#              posts a side-by-side summary table (with flamegraph links) to Slack, then
-#              immediately deletes the namespaces to reduce cost.
+#              posts a side-by-side summary table to Slack (linking back to the workflow run for
+#              flamegraphs and other artifacts), then immediately deletes the namespaces to
+#              reduce cost.
 #              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
 #              Each variant's full lifecycle (setup, warmup, profile, soak, collect-metrics,
 #              cleanup) is delegated to the reusable stress-load-test.yml workflow via a
@@ -200,31 +201,11 @@ jobs:
     if: always() && needs.aggregate-metrics.result == 'success' && needs.aggregate-metrics.outputs.variants-json != '[]'
     timeout-minutes: 5
     permissions:
-      actions: read
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: List flamegraph artifacts
-        id: flamegraph-artifacts
-        # Best-effort enhancement: a failure here shouldn't block the Slack results
-        # notification, it just means the Slack message omits flamegraph links.
-        continue-on-error: true
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            const { data } = await github.rest.actions.listWorkflowRunArtifacts({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.runId,
-            });
-            const runURL = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const links = data.artifacts
-              .filter(a => a.name.startsWith('flamegraph-'))
-              .map(a => `• <${runURL}/artifacts/${a.id}|${a.name}>`)
-              .join('\n');
-            core.setOutput('links', links);
       - name: Import Slack webhook from Vault
         id: slack-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -245,7 +226,6 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
-          FLAMEGRAPH_LINKS: ${{ steps.flamegraph-artifacts.outputs.links }}
         run: python3 .github/scripts/post-load-test-results-to-slack.py
       - name: Observe build status
         if: always()
