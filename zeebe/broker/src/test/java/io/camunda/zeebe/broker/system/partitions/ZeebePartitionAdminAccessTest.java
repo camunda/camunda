@@ -192,5 +192,20 @@ final class ZeebePartitionAdminAccessTest {
       assertThat(status.code()).isEqualTo(MigrationStatusCode.UNKNOWN);
       assertThat(status.detail()).contains("no exporter director running");
     }
+
+    @Test
+    void shouldReportUnknownRatherThanHangWhenReadingTheStatusThrows() {
+      // given - a synchronous failure, e.g. before the exporter director's own future is even
+      // returned, must still complete this method's future rather than leave it hanging forever
+      when(adminControl.getExporterDirector())
+          .thenThrow(new RuntimeException("Exporter director lookup fails"));
+
+      // when
+      final var status = sut.getExportingMigrationStatus().join();
+
+      // then
+      assertThat(status.code()).isEqualTo(MigrationStatusCode.UNKNOWN);
+      assertThat(status.detail()).contains("Exporter director lookup fails");
+    }
   }
 }
