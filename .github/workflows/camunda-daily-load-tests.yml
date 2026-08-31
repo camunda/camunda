@@ -209,7 +209,14 @@ jobs:
       - name: List flamegraph artifacts
         id: flamegraph-artifacts
         # Best-effort enhancement: a failure here shouldn't block the Slack results
-        # notification, it just means the Slack message omits flamegraph links.
+        # notification, it just means the Slack message omits the flamegraph link.
+        #
+        # One link to the run's own artifacts page, not one line per flamegraph artifact:
+        # with 3 profiler events x 3 pods x N variants, itemizing every artifact made this
+        # block's length scale with variant count (27 lines / 4395 chars once a third daily
+        # variant was added, over Slack's 3000-char section-text cap -- see #61442). A single
+        # link is both simpler to read in Slack and structurally incapable of hitting that
+        # cap no matter how many variants or pods this ever grows to.
         continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
@@ -219,12 +226,9 @@ jobs:
               repo: context.repo.repo,
               run_id: context.runId,
             });
+            const hasFlamegraphs = data.artifacts.some(a => a.name.startsWith('flamegraph-'));
             const runURL = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const links = data.artifacts
-              .filter(a => a.name.startsWith('flamegraph-'))
-              .map(a => `• <${runURL}/artifacts/${a.id}|${a.name}>`)
-              .join('\n');
-            core.setOutput('links', links);
+            core.setOutput('links', hasFlamegraphs ? `<${runURL}|View in this run's artifacts>` : '');
       - name: Import Slack webhook from Vault
         id: slack-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0

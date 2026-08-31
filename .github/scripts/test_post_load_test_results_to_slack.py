@@ -1,10 +1,14 @@
 """Unit tests for post-load-test-results-to-slack.py
 
-Regression coverage for the "400 invalid_blocks" failure: Slack caps a section
-block's mrkdwn text.text at 3000 characters, and the flamegraph-links block
-grows with (variants x pods x profiler events) -- 27 lines (one third daily
-variant added on top of the existing two) pushed it past that cap. See
-text_blocks() in the script under test.
+Regression coverage for the "400 invalid_blocks" failure: Slack caps a section block's
+mrkdwn text.text at 3000 characters. The flamegraph-links block used to itemize one bullet
+line per flamegraph artifact, which grew with (variants x pods x profiler events) -- 27
+lines (one third daily variant added on top of the existing two) pushed it past that cap.
+The fix has two parts: the calling workflow now renders the flamegraph block as a single
+link to the run's artifacts page instead of one line per artifact (structurally incapable
+of hitting the cap), and this script's text_blocks() defensively splits any block that
+still manages to exceed the cap (dash_links, the results table) into multiple blocks on
+line boundaries.
 
 Run with:
     pytest .github/scripts/test_post_load_test_results_to_slack.py
@@ -13,7 +17,6 @@ Run with:
 import importlib.util
 import json
 import os
-import sys
 import tempfile
 from unittest import mock
 
@@ -90,12 +93,11 @@ def _variant(key, label, namespace_suffix, soak_end_epoch=1756612345, results=No
     }
 
 
-def _flamegraph_lines(n):
+def _flamegraph_link():
+    # Matches what the `List flamegraph artifacts` workflow step actually emits: one link to
+    # the run's artifacts page, not one line per flamegraph artifact (see module docstring).
     run_url = "https://github.com/camunda/camunda/actions/runs/33350392886"
-    return "\n".join(
-        f"• <{run_url}/artifacts/{9000000000 + i}|flamegraph-medic-daily-2026-08-31-bd6cbb8f-test-variant-{i}-cpu-camunda-0-20260831>"
-        for i in range(n)
-    )
+    return f"<{run_url}|View in this run's artifacts>"
 
 
 def _assert_all_blocks_valid(blocks, max_blocks=50):
@@ -135,47 +137,32 @@ class TestBlockLimits:
         payload = _run([])
         _assert_all_blocks_valid(payload["blocks"])
 
-    def test_oversized_flamegraph_list_is_split_across_multiple_blocks(self):
-        # given: the exact regression scenario -- 3 variants x 3 pods x 3 profiler
-        # events = 27 flamegraph lines, which is what actually broke production
-        # (2 variants/18 lines = 2937 chars, just under the cap; 3 variants/27
-        # lines = 4395 chars, over it).
+    def test_flamegraph_link_renders_as_a_single_short_block_regardless_of_variant_count(self):
+        # given: the real shape FLAMEGRAPH_LINKS now takes -- a single link to the run's
+        # artifacts page, built once by the workflow regardless of how many variants, pods,
+        # or profiler events actually ran (see module docstring for what itemizing every
+        # artifact used to cost). Three variants here to also confirm the link's size is
+        # independent of variant count, not just small by coincidence.
         variants = [
             _variant("grpc", "gRPC", "grpc"),
             _variant("rest", "REST", "rest"),
             _variant("none", "None", "none"),
         ]
-        flamegraph_links = _flamegraph_lines(27)
-        assert len(flamegraph_links) > _SLACK_TEXT_LIMIT, "test fixture must reproduce the over-limit case"
+        flamegraph_link = _flamegraph_link()
 
-        payload = _run(variants, flamegraph_links=flamegraph_links)
-
-        _assert_all_blocks_valid(payload["blocks"])
-        # and: the flamegraph content must actually have been split into more
-        # than one block, not silently truncated or dropped.
-        flamegraph_blocks = [
-            b for b in payload["blocks"]
-            if "Flamegraphs" in b.get("text", {}).get("text", "")
-            or "flamegraph-medic-daily" in b.get("text", {}).get("text", "")
-        ]
-        assert len(flamegraph_blocks) >= 2
-        rebuilt = "\n".join(b["text"]["text"] for b in flamegraph_blocks)
-        for i in range(27):
-            assert f"flamegraph-medic-daily-2026-08-31-bd6cbb8f-test-variant-{i}-cpu-camunda-0-20260831" in rebuilt
-
-    def test_small_flamegraph_list_stays_in_one_block(self):
-        # given: the pre-regression, under-the-cap case (2 variants worth of links)
-        variants = [_variant("grpc", "gRPC", "grpc")]
-        flamegraph_links = _flamegraph_lines(18)
-        assert len(flamegraph_links) <= _SLACK_TEXT_LIMIT
-
-        payload = _run(variants, flamegraph_links=flamegraph_links)
+        payload = _run(variants, flamegraph_links=flamegraph_link)
 
         _assert_all_blocks_valid(payload["blocks"])
         flamegraph_blocks = [
             b for b in payload["blocks"] if "Flamegraphs" in b.get("text", {}).get("text", "")
         ]
-        assert len(flamegraph_blocks) == 1
+        assert len(flamegraph_blocks) == 1, "a single link must never need splitting"
+        assert flamegraph_link in flamegraph_blocks[0]["text"]["text"]
+
+    def test_no_flamegraph_links_omits_the_flamegraphs_block(self):
+        payload = _run([_variant("grpc", "gRPC", "grpc")], flamegraph_links="")
+        _assert_all_blocks_valid(payload["blocks"])
+        assert not any("Flamegraphs" in b.get("text", {}).get("text", "") for b in payload["blocks"])
 
     def test_oversized_table_splits_into_independently_fenced_blocks(self):
         # given: enough metric rows that the table itself (not just the flamegraph list)
