@@ -52,7 +52,7 @@ public final class AgentInstanceEntity
   private int processDefinitionVersion;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private String versionTag;
+  private String processDefinitionVersionTag;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String tenantId;
@@ -195,12 +195,13 @@ public final class AgentInstanceEntity
     return this;
   }
 
-  public String getVersionTag() {
-    return versionTag;
+  public String getProcessDefinitionVersionTag() {
+    return processDefinitionVersionTag;
   }
 
-  public AgentInstanceEntity setVersionTag(final String versionTag) {
-    this.versionTag = versionTag;
+  public AgentInstanceEntity setProcessDefinitionVersionTag(
+      final String processDefinitionVersionTag) {
+    this.processDefinitionVersionTag = processDefinitionVersionTag;
     return this;
   }
 
@@ -389,7 +390,7 @@ public final class AgentInstanceEntity
         bpmnProcessId,
         processDefinitionKey,
         processDefinitionVersion,
-        versionTag,
+        processDefinitionVersionTag,
         tenantId,
         partitionId,
         status,
@@ -428,7 +429,7 @@ public final class AgentInstanceEntity
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && processDefinitionKey == that.processDefinitionKey
         && processDefinitionVersion == that.processDefinitionVersion
-        && Objects.equals(versionTag, that.versionTag)
+        && Objects.equals(processDefinitionVersionTag, that.processDefinitionVersionTag)
         && Objects.equals(tenantId, that.tenantId)
         && partitionId == that.partitionId
         && Objects.equals(status, that.status)
@@ -474,8 +475,8 @@ public final class AgentInstanceEntity
         + processDefinitionKey
         + ", processDefinitionVersion="
         + processDefinitionVersion
-        + ", versionTag='"
-        + versionTag
+        + ", processDefinitionVersionTag='"
+        + processDefinitionVersionTag
         + '\''
         + ", tenantId='"
         + tenantId
