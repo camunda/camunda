@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.startsWith;
+import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ColumnFamilyMetrics;
@@ -467,8 +468,8 @@ class TransactionalColumnFamily<
       final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     try (final var timer = metrics.measureIterateLatency()) {
       final var seekTarget = Objects.requireNonNullElse(startAt, prefix);
-      Objects.requireNonNull(prefix);
-      Objects.requireNonNull(visitor);
+      requireNonNull(prefix);
+      requireNonNull(visitor);
 
       /*
        * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on
@@ -516,9 +517,9 @@ class TransactionalColumnFamily<
       final DbKey prefix,
       final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     try (final var timer = metrics.measureIterateLatency()) {
-      Objects.requireNonNull(startAt);
-      Objects.requireNonNull(prefix);
-      Objects.requireNonNull(visitor);
+      requireNonNull(startAt);
+      requireNonNull(prefix);
+      requireNonNull(visitor);
 
       columnFamilyContext.withPrefixKey(
           prefix,
@@ -556,7 +557,7 @@ class TransactionalColumnFamily<
    *     the given startAt.
    */
   private long countEachInPrefix(final DbKey prefix) {
-    final var seekTarget = Objects.requireNonNull(prefix);
+    final var seekTarget = requireNonNull(prefix);
 
     final var count = new MutableLong(0);
 
@@ -617,8 +618,8 @@ class TransactionalColumnFamily<
       final DbKey startAt, final DbKey prefix, final KeyVisitor<KeyType> visitor) {
     try (final var timer = metrics.measureIterateLatency()) {
       final var seekTarget = Objects.requireNonNullElse(startAt, prefix);
-      Objects.requireNonNull(prefix);
-      Objects.requireNonNull(visitor);
+      requireNonNull(prefix);
+      requireNonNull(visitor);
 
       columnFamilyContext.withPrefixKey(
           prefix,
@@ -655,9 +656,9 @@ class TransactionalColumnFamily<
   private void forEachKeyInPrefixReverse(
       final DbKey startAt, final DbKey prefix, final KeyVisitor<KeyType> visitor) {
     try (final var timer = metrics.measureIterateLatency()) {
-      Objects.requireNonNull(startAt);
-      Objects.requireNonNull(prefix);
-      Objects.requireNonNull(visitor);
+      requireNonNull(startAt);
+      requireNonNull(prefix);
+      requireNonNull(visitor);
 
       columnFamilyContext.withPrefixKey(
           prefix,
