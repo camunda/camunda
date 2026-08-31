@@ -43,8 +43,16 @@ $carbon-btn-action: ':not(:disabled):not(.cds--btn--disabled):not(.cds--modal-cl
   --optimize-input-border-radius: 0.5rem;
   --optimize-button-border-radius: 0.5rem;
   --optimize-checkbox-border-radius: 0.25rem;
-  // Not a Carbon token, so re-emitting the theme further down leaves it intact.
+  // Not a Carbon token, so re-emitting the theme further down leaves it intact. Dashboards can
+  // still layer `.dark` on top (presentation mode), which flips `--cds-text-primary` to a light
+  // colour while this stayed white, painting text and icons white-on-white — hence the override.
   --optimize-field-background: #ffffff;
+
+  &.dark {
+    // Matches Carbon's g100 `field-01`, the same surface `.dark`'s `theme.theme($g100)` gives
+    // every other field on this page.
+    --optimize-field-background: #262626;
+  }
 
   @include carbon-fields {
     // Optimize is on the `white` theme, where Carbon swaps the subtle pair, so `subtle-01` is the
@@ -236,8 +244,8 @@ $carbon-btn-action: ':not(:disabled):not(.cds--btn--disabled):not(.cds--modal-cl
 
 // Carbon fills fields grey through `--cds-field*`, and so do Optimize's own stylesheets, so setting
 // the tokens reaches both without outranking seventeen rules. Every point that re-emits the theme
-// resets them for its subtree, which is why popovers and modals stayed grey. Dark variants are left
-// alone.
+// resets them for its subtree, which is why popovers and modals stayed grey. `--optimize-field-
+// background` carries its own `.dark` override above, so this stays correct there too.
 .optimize-nav-v2,
 .optimize-nav-v2 .Modal,
 .optimize-nav-v2 .cds--layer-one,
