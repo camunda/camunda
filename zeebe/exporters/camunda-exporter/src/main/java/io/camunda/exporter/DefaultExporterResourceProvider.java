@@ -313,7 +313,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ProcessHandler(
                 indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
                 processCache,
-                configuration.getExtensionProperties()),
+                configuration.getExtensionProperties(),
+                partitionId == PROCESS_DEFINITION_PARTITION),
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),

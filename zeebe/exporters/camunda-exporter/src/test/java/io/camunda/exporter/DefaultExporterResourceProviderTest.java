@@ -20,6 +20,7 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.ProcessDrainingHandler;
 import io.camunda.exporter.handlers.ProcessFullyDeletedHandler;
+import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
@@ -393,6 +394,7 @@ public class DefaultExporterResourceProviderTest {
     final var handlers = provider.getExportHandlers();
 
     // then
+    assertThat(handlers).anyMatch(ProcessHandler.class::isInstance);
     assertThat(handlers).anyMatch(ProcessDrainingHandler.class::isInstance);
     assertThat(handlers).anyMatch(ProcessFullyDeletedHandler.class::isInstance);
   }
@@ -413,6 +415,7 @@ public class DefaultExporterResourceProviderTest {
     final var handlers = provider.getExportHandlers();
 
     // then
+    assertThat(handlers).anyMatch(ProcessHandler.class::isInstance);
     assertThat(handlers).noneMatch(ProcessDrainingHandler.class::isInstance);
     assertThat(handlers).noneMatch(ProcessFullyDeletedHandler.class::isInstance);
   }
