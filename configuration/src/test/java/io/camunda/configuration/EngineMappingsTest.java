@@ -69,4 +69,31 @@ public class EngineMappingsTest {
           .isEqualTo(EngineConfiguration.InputMappingMode.ORDERED);
     }
   }
+
+  @Nested
+  @DisplayName("Comparison mode")
+  @SpringJUnitConfig({
+    UnifiedConfiguration.class,
+    BrokerBasedPropertiesOverride.class,
+    UnifiedConfigurationHelper.class
+  })
+  @ActiveProfiles("broker")
+  @TestPropertySource(
+      properties = {
+        "camunda.processing.engine.mappings.input-mode=COMBINED",
+        "camunda.processing.engine.mappings.input-comparison-mode=ORDERED",
+      })
+  class ComparisonMode {
+    final BrokerBasedProperties brokerCfg;
+
+    ComparisonMode(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetInputComparisonMode() {
+      assertThat(brokerCfg.getExperimental().getEngine().getInputComparisonMode())
+          .isEqualTo(EngineConfiguration.InputMappingMode.ORDERED);
+    }
+  }
 }

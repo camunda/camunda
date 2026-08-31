@@ -41,7 +41,7 @@ public final class CombinedMappingResolver implements MappingResolver {
 
   @Override
   public Either<Failure, DirectBuffer> resolveInputMappings(
-      final InputMappings inputMappings, final ScopedExpressionProcessor processor) {
+      final InputMappings inputMappings, final MappingExpressionProcessor processor) {
     return processor.evaluateVariableMappingExpression(inputMappings.combinedExpression());
   }
 }
