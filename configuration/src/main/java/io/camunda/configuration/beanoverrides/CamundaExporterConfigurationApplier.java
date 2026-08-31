@@ -70,10 +70,9 @@ public final class CamundaExporterConfigurationApplier {
         source.getConnectionTimeout() != null
             ? Math.toIntExact(source.getConnectionTimeout().toMillis())
             : null);
-    // Unlike the fields above, these two register no legacy property on their source getter:
-    // they were born with the unified property, so there is no pre-unified path to migrate from.
-    // 'zeebe.broker.exporters.camundaexporter.args.connect.maxConnections[PerRoute]' still binds
-    // onto this same target, so copy only when set — an unset unified value must not wipe it.
+    // Unlike the fields above, these two do not list the exporter args among their legacy
+    // properties: 'zeebe.broker.exporters.camundaexporter.args.connect.maxConnections[PerRoute]'
+    // binds onto this same target, so copy only when set — an unset unified value must not wipe it.
     final var maxConnections = source.getMaxConnections();
     if (maxConnections != null) {
       target.setMaxConnections(maxConnections);
