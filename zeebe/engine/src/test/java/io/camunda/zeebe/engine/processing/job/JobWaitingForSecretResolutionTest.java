@@ -63,9 +63,12 @@ public final class JobWaitingForSecretResolutionTest {
     deploy();
     final long jobKey = parkedJob();
 
-    // then
+    // then - the creation-time warmup also requests this reference (carrying no job key of its
+    // own, see SecretResolutionWarmupTest), so the request that actually parked this job is
+    // whichever one names its key rather than necessarily the first
     assertThat(
             RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
+                .filter(record -> record.getValue().getJobKeys().contains(jobKey))
                 .getFirst()
                 .getValue()
                 .getJobKeys())

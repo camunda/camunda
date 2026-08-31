@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWrit
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.SecretReferenceState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
@@ -79,6 +80,7 @@ public class BpmnJobActivationBehavior {
   private final CslTenantCheck tenantCheck;
   private final JobAuthorizationLogger jobAuthorizationLogger;
   private final JobSecretLookup secretLookup;
+  private final SecretReferenceState secretReferenceState;
   private final BpmnIncidentBehavior incidentBehavior;
 
   public BpmnJobActivationBehavior(
@@ -103,6 +105,7 @@ public class BpmnJobActivationBehavior {
     this.tenantCheck = tenantCheck;
     jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
     secretLookup = new JobSecretLookup(secretStoreRegistry);
+    secretReferenceState = state.getSecretReferenceState();
     this.incidentBehavior = incidentBehavior;
   }
 
@@ -115,6 +118,12 @@ public class BpmnJobActivationBehavior {
    * job with a non-cached reference is not activated at all: its resolution is requested and the
    * job is parked until it resolves, which pushes it (see {@code
    * SecretReferenceBatchReactivateJobsProcessor}).
+   *
+   * <p>A job that stays activatable because no stream matched its type has its non-cached
+   * references warmed instead: the resolution is requested without parking the job, so a long
+   * poll's own check (see {@code JobBatchCollector}) is more likely to find the value already
+   * cached by the time it runs. That poll still parks the job itself on a miss; this only gives the
+   * resolution a head start over it.
    */
   public void publishWork(final long jobKey, final JobRecord jobRecord) {
     publishWork(jobKey, jobRecord, new HashSet<>());
@@ -174,7 +183,9 @@ public class BpmnJobActivationBehavior {
               jobMetrics.countJobEvent(JobAction.SKIPPED_LEASED, jobKind, jobType);
             });
       }
-      // the job stays activatable; a long poll checks its secret references when it collects it
+      // the job stays activatable; a long poll checks its secret references when it collects it.
+      // Warming the resolution here only gives that check a head start, it never replaces it
+      requestWarmResolution(jobKey, wrappedJobRecord);
       notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
       return true;
     }
@@ -278,6 +289,61 @@ public class BpmnJobActivationBehavior {
       notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
     }
     return batchHadRoom;
+  }
+
+  /**
+   * Requests the background resolution of the job's non-cached references without parking the job
+   * or its jobs keys: a long poll still runs {@link JobSecretLookup#check} itself when it collects
+   * the job (see {@code JobBatchCollector}) and parks it on a miss exactly as it does today, so
+   * this only gives the resolution a head start over that first poll. A reference already pending
+   * is not requested again, so many jobs referencing the same non-cached secret in one window cost
+   * one request, not one per job.
+   *
+   * <p>Stops appending once the record batch is full instead of letting the append overflow and
+   * roll back the command being processed; the references left out are requested again by whichever
+   * poll or push eventually reaches the job, exactly as if this warmup had not run.
+   *
+   * <p>A failing check is caught rather than left to propagate: unlike the poll's own check (see
+   * {@code JobBatchCollector}) or the push's real check above, whose failure is the caller's only
+   * way to learn a secret store is broken, this runs piggy-backed on whatever command happened to
+   * create or reactivate the job - a warmup failure must not fail that unrelated command. The next
+   * poll or push still runs the real check and surfaces the same failure through its own, correct
+   * path.
+   */
+  private void requestWarmResolution(final long jobKey, final JobRecord jobRecord) {
+    final SecretCheckResult secrets;
+    try {
+      secrets = secretLookup.check(jobRecord);
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Failed to warm the secret resolution of the job with key {} of type '{}'; a later poll "
+              + "or push will check its references again",
+          jobKey,
+          jobRecord.getType(),
+          e);
+      return;
+    }
+    if (secrets.nonCachedSecrets().isEmpty()) {
+      return;
+    }
+    final Set<SecretReference> requested = new HashSet<>();
+    for (final Secret secret : secrets.nonCachedSecrets()) {
+      final SecretReference reference = secret.reference();
+      if (!requested.add(reference)
+          || secretReferenceState.isPending(reference.storeId(), reference.name())) {
+        continue;
+      }
+      final var event =
+          new SecretReferenceRecord()
+              .setStoreId(reference.storeId())
+              .setSecretReference(reference.name());
+      if (!stateWriter.canWriteEventOfLength(
+          event.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
+        return;
+      }
+      stateWriter.appendFollowUpEvent(
+          keyGenerator.nextKey(), SecretReferenceIntent.RESOLUTION_REQUESTED, event);
+    }
   }
 
   /** Notifies the workers of the job type unless this batch of jobs already did. */
