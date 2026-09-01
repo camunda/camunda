@@ -37,8 +37,15 @@ type ProcessesSearch = {
 	sort?: string;
 };
 
+// The route schema types the date params as plain strings, so a hand-edited URL can carry
+// something `Date` cannot parse. Drop the bound rather than letting `toISOString` throw and
+// take the whole page down with it.
 function toISO(value: string | undefined): string | undefined {
-	return value ? new Date(value).toISOString() : undefined;
+	if (!value) {
+		return undefined;
+	}
+	const date = new Date(value);
+	return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
 function getSelectedStates({active, completed, canceled}: ProcessesSearch): ProcessInstanceState[] {
