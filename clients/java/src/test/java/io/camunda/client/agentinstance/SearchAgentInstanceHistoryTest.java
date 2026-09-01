@@ -273,6 +273,9 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
                 new AgentInstanceHistoryItemMetrics()
                     .inputTokens(10L)
                     .outputTokens(20L)
+                    .reasoningTokenCount(30L)
+                    .cacheCreationTokenCount(40L)
+                    .cacheReadTokenCount(50L)
                     .durationMs(100L))
             .toolCalls(
                 Collections.singletonList(
@@ -335,6 +338,18 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
           final AgentInstanceHistoryMetrics metrics = item.getMetrics();
           softly.assertThat(metrics.getInputTokens()).as("inputTokens").isEqualTo(10L);
           softly.assertThat(metrics.getOutputTokens()).as("outputTokens").isEqualTo(20L);
+          softly
+              .assertThat(metrics.getReasoningTokenCount())
+              .as("reasoningTokenCount")
+              .isEqualTo(30L);
+          softly
+              .assertThat(metrics.getCacheCreationTokenCount())
+              .as("cacheCreationTokenCount")
+              .isEqualTo(40L);
+          softly
+              .assertThat(metrics.getCacheReadTokenCount())
+              .as("cacheReadTokenCount")
+              .isEqualTo(50L);
           softly.assertThat(metrics.getDurationMs()).as("durationMs").isEqualTo(100L);
 
           softly.assertThat(item.getToolCalls()).as("toolCalls").hasSize(1);
