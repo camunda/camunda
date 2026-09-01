@@ -17,6 +17,6 @@
     "@types/node": "24.13.3",
     "@vercel/ncc": "0.38.3",
     "tsx": "4.23.12",
-    "typescript": "5.7.3"
+    "typescript": "5.9.3"
   }
 }
