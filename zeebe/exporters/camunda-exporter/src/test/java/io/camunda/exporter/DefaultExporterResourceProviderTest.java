@@ -18,6 +18,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.ProcessCreatedHandler;
 import io.camunda.exporter.handlers.ProcessDrainingHandler;
 import io.camunda.exporter.handlers.ProcessFullyDeletedHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
@@ -378,7 +379,7 @@ public class DefaultExporterResourceProviderTest {
   }
 
   @Test
-  void shouldRegisterProcessLifecycleHandlersOnlyOnDeploymentPartition() {
+  void shouldRegisterProcessCreatedDrainingAndDeletionHandlersOnDeploymentPartition() {
     // given
     final var config = new ExporterConfiguration();
     final var provider = new DefaultExporterResourceProvider();
@@ -393,12 +394,13 @@ public class DefaultExporterResourceProviderTest {
     final var handlers = provider.getExportHandlers();
 
     // then
+    assertThat(handlers).anyMatch(ProcessCreatedHandler.class::isInstance);
     assertThat(handlers).anyMatch(ProcessDrainingHandler.class::isInstance);
     assertThat(handlers).anyMatch(ProcessFullyDeletedHandler.class::isInstance);
   }
 
   @Test
-  void shouldNotRegisterProcessLifecycleHandlersOnNonDeploymentPartition() {
+  void shouldNotRegisterProcessDrainingOrDeletionHandlersOnNonDeploymentPartition() {
     // given
     final var config = new ExporterConfiguration();
     final var provider = new DefaultExporterResourceProvider();
@@ -413,6 +415,7 @@ public class DefaultExporterResourceProviderTest {
     final var handlers = provider.getExportHandlers();
 
     // then
+    assertThat(handlers).anyMatch(ProcessCreatedHandler.class::isInstance);
     assertThat(handlers).noneMatch(ProcessDrainingHandler.class::isInstance);
     assertThat(handlers).noneMatch(ProcessFullyDeletedHandler.class::isInstance);
   }
