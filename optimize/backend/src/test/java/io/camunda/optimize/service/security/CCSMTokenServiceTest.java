@@ -395,6 +395,23 @@ public class CCSMTokenServiceTest {
   }
 
   @Test
+  void shouldResolveCurrentUserIdFromCslPrincipalForBearerRequests() {
+    // given — CSL authenticates a bearer request as a JWT; the id must still come from the
+    // configured username-claim, not the raw sub claim
+    SecurityContextHolder.getContext().setAuthentication(jwtAuthentication("bearer-token"));
+    when(camundaAuthenticationProviderProvider.getIfAvailable())
+        .thenReturn(camundaAuthenticationProvider);
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.user("preferred-username")));
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserIdFromAuthToken();
+
+    // then — id comes from the CSL principal, without decoding the bearer token
+    assertThat(result).contains("preferred-username");
+  }
+
+  @Test
   void shouldFallBackToSubClaimForCurrentUserIdWhenNotUnderCsl() {
     // given — legacy CCSM: no CSL principal provider, id derived from the token's sub claim
     setCurrentRequestWithAuthCookie(ACCESS_TOKEN_VALUE);
