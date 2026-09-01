@@ -785,6 +785,13 @@ final class SecretResolutionSchedulerTest {
     assertThat(delayCaptor.getAllValues().subList(1, 10))
         .extracting(Duration::toMillis)
         .containsExactly(50L, 100L, 200L, 400L, 800L, 1600L, 3200L, 5000L, 5000L);
+
+    // and - every one of those 9 cycles recorded IDLE_BACKOFF, not some other reason, on the
+    // cycle-delay meter itself
+    assertThat(cycleDelayTimer(SecretResolutionCycleDelayReason.IDLE_BACKOFF).count()).isEqualTo(9);
+    assertThat(cycleDelayTimer(SecretResolutionCycleDelayReason.WAKE).count()).isEqualTo(0);
+    assertThat(cycleDelayTimer(SecretResolutionCycleDelayReason.RETRY_COOLDOWN).count())
+        .isEqualTo(0);
   }
 
   @Test
