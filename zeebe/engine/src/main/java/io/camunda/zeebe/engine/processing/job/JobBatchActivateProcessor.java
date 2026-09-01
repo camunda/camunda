@@ -246,7 +246,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     if (anyRequested) {
       // once per activation rather than per reference: the flag it sets is consumed by whichever
       // cycle runs next, so setting it more than once per activation adds nothing
-      secretResolutionScheduler.wake();
+      secretResolutionScheduler.stayAwake();
     }
   }
 

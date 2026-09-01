@@ -755,7 +755,7 @@ final class SecretResolutionSchedulerTest {
   @Test
   void shouldStartIdleBackoffAtWakeDelayWhenACycleFindsNothingPendingAndWasNotWoken()
       throws Exception {
-    // given - no pending refs at all, and wake() was never called
+    // given - no pending refs at all, and stayAwake() was never called
     doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
 
     // when
@@ -772,7 +772,7 @@ final class SecretResolutionSchedulerTest {
 
   @Test
   void shouldGrowIdleBackoffGeometricallyAndCapAtSchedulingInterval() throws Exception {
-    // given - no pending refs at all, and wake() is never called
+    // given - no pending refs at all, and stayAwake() is never called
     doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
 
     // when - enough consecutive empty cycles run for the ladder to reach and then stay at the cap.
@@ -858,7 +858,7 @@ final class SecretResolutionSchedulerTest {
   void shouldStayOnWakeDelayWhenACycleFindsNothingPendingButWasWoken() throws Exception {
     // given - no pending refs, but an activation requested a resolution since the last cycle ran
     doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
-    scheduler.wake();
+    scheduler.stayAwake();
 
     // when
     scheduler.resolveSecrets(resultBuilder);
@@ -880,7 +880,7 @@ final class SecretResolutionSchedulerTest {
 
     // when - a fresh activation parks a job on the same, still-cooling store and wakes the
     // scheduler before the cooldown has elapsed
-    scheduler.wake();
+    scheduler.stayAwake();
     stubPending(STORE_ID, "db-password");
     scheduler.resolveSecrets(resultBuilder);
 
@@ -902,7 +902,7 @@ final class SecretResolutionSchedulerTest {
   void shouldConsumeTheWakeFlagSoOnlyTheNextCycleIsAffected() throws Exception {
     // given - woken once, then a cycle runs and finds nothing (consuming the flag)
     doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
-    scheduler.wake();
+    scheduler.stayAwake();
     scheduler.resolveSecrets(resultBuilder);
 
     // when - a second cycle runs without a further wake and still finds nothing
@@ -926,7 +926,7 @@ final class SecretResolutionSchedulerTest {
     scheduler.resolveSecrets(resultBuilder);
 
     // when - a wake arrives and the cycle it triggers still finds nothing pending
-    scheduler.wake();
+    scheduler.stayAwake();
     scheduler.resolveSecrets(resultBuilder);
 
     // and - a further unwoken, empty cycle runs
@@ -952,9 +952,9 @@ final class SecretResolutionSchedulerTest {
     // given - setUp already scheduled once via onRecovered
 
     // when
-    scheduler.wake();
+    scheduler.stayAwake();
 
-    // then - wake() only sets a flag; it does not itself touch the scheduling chain
+    // then - stayAwake() only sets a flag; it does not itself touch the scheduling chain
     verify(scheduleService, times(1)).runDelayedAsync(any(), any(), any());
   }
 
