@@ -96,46 +96,57 @@ export class IdentityRolesDetailsPage {
     email: string;
     password: string;
   }) {
-    // The assign-user modal's cmdk search is debounced + server-driven, and
-    // the option for a just-created user is eventually consistent: a single
-    // query can return empty and get cached by react-query, so simply waiting
-    // longer on one search does not recover. Mirror the authorizations owner
-    // search (#51442) remedy: on failure, reload to reset the query cache and
-    // retry the whole open-search-select flow.
+    const assignedCell = this.assignedUsersList.getByRole('cell', {
+      name: user.email,
+    });
+
+    // The assign-user modal's cmdk search is debounced + server-driven, and the
+    // option for a just-created user is eventually consistent: a single query
+    // can return empty and get cached by react-query, so waiting longer on one
+    // search does not recover. Mirror the authorizations owner search (#51442)
+    // remedy and reload between attempts to reset the query cache.
+    //
+    // Only the modal interaction is retried, and only while the user is still
+    // unassigned: `AssignMembersModal` passes the assigned users as `excluded`,
+    // so once a submit has landed the option is gone from the results for good
+    // and re-running the search could only ever fail.
     const maxRetries = 3;
-    let lastError: Error | null = null;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        await this.assignUserButton.click();
-        await expect(this.assignUserModal).toBeVisible();
-        await this.assignUserModalSearchField.fill(user.username);
-        // Match on the username: it is the option's title and is always
-        // present regardless of the user's display name.
-        const option = this.assignUserModalSearchResult
-          .getByRole('option')
-          .filter({hasText: user.username})
-          .first();
-        await expect(option).toBeVisible({timeout: 30000});
-        await option.click({timeout: 20000, force: true});
-        await this.assignUserModalAssignButton.click();
-        await expect(this.assignUserModal).toBeHidden();
-
-        const item = this.assignedUsersList.getByRole('cell', {
-          name: user.email,
-        });
-        await waitForItemInList(this.page, item, {
-          emptyStateLocator: this.emptyState,
-        });
-        return;
+        await this.selectUserInAssignModal(user.username);
+        break;
       } catch (error) {
-        lastError = error as Error;
-        if (attempt < maxRetries) {
-          await sleep(10000);
-          await this.page.reload();
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        await sleep(10000);
+        await this.page.reload();
+        if (await assignedCell.isVisible()) {
+          break;
         }
       }
     }
-    throw lastError;
+
+    await waitForItemInList(this.page, assignedCell, {
+      timeout: 60000,
+      emptyStateLocator: this.emptyState,
+    });
+  }
+
+  private async selectUserInAssignModal(username: string): Promise<void> {
+    await this.assignUserButton.click();
+    await expect(this.assignUserModal).toBeVisible();
+    await this.assignUserModalSearchField.fill(username);
+    // Match on the username: `EntitySearchMultiSelect` passes `getId` as the
+    // option title, so it is always present regardless of the display name.
+    const option = this.assignUserModalSearchResult
+      .getByRole('option')
+      .filter({hasText: username})
+      .first();
+    await expect(option).toBeVisible({timeout: 30000});
+    await option.click({timeout: 20000});
+    await this.assignUserModalAssignButton.click();
+    await expect(this.assignUserModal).toBeHidden();
   }
 
   async unassignUserFromRole(userName: string): Promise<void> {
