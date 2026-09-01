@@ -75,6 +75,7 @@
   "removeMappingRuleFromTenant": "Are you sure you want to remove <strong>{{mappingRuleId}}</strong> from this tenant?",
   "removeRoleFromTenant": "Are you sure you want to remove <strong>{{roleId}}</strong> from this tenant?",
   "searchAndAssignGroupToTenant": "Search and assign group to tenant",
+  "searchAndAssignRoleToTenant": "Search and assign role to tenant",
   "assignClientToTenant": "Assign client to tenant",
   "tenantClientRemoved": "Tenant client removed",
   "removeClientFromTenant": "Are you sure you want to remove <strong>{{clientId}}</strong> from this tenant?",
