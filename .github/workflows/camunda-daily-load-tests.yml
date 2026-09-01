@@ -163,16 +163,12 @@ jobs:
           if [ "$manifest" = '[]' ]; then
             echo "::warning::No variant metrics artifacts found; Slack summary and legacy artifact will be empty"
           fi
-          # Written to a FILE (not $GITHUB_OUTPUT): job outputs in this job are unsafe here — this
-          # job also uses secrets.VAULT_* below (Observe build status), and GitHub Actions silently
-          # drops any $GITHUB_OUTPUT write whose value happens to contain a substring matching a
-          # secret registered anywhere in the job (see
-          # https://github.com/orgs/community/discussions/26636). That bit the 2026-09-01 run: the
-          # manifest was built correctly but the variants-json *output* came back empty, and
-          # notify-results posted a header-only table even though every variant's data was intact
-          # in this job's own artifact. Files aren't subject to output-masking, so the artifact is
-          # the only reliable transport here — same reasoning already applied to
-          # upload-variant-metrics above.
+          # Written to a FILE, not $GITHUB_OUTPUT: this job also uses secrets.VAULT_* below (Observe
+          # build status), and GitHub Actions silently drops any $GITHUB_OUTPUT write whose value
+          # happens to contain a substring matching a secret registered anywhere in the job (see
+          # https://github.com/orgs/community/discussions/26636). Files aren't subject to that
+          # masking, so the artifact is the only reliable transport here — same reasoning already
+          # applied to upload-variant-metrics above.
           echo "$manifest" > variants.json
       - name: Upload combined metrics artifact
         if: always()
@@ -205,9 +201,9 @@ jobs:
     name: Notify Slack with results
     runs-on: ubuntu-latest
     needs: [ benchmark-data, aggregate-metrics ]
-    # Data-presence is checked inside the script after the manifest download, not here: the
-    # job output that used to gate it is gone (see the comment in aggregate-metrics above).
-    # Manual runs post only when explicitly asked; the scheduled run always posts.
+    # Data-presence is checked inside post-load-test-results-to-slack.py after the manifest
+    # download, not here. Manual runs post only when explicitly asked; the scheduled run always
+    # posts.
     if: >
       always() &&
       needs.aggregate-metrics.result == 'success' &&
