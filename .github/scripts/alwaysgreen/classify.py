@@ -99,7 +99,6 @@ def normalise_base_ref(ref: str) -> str:
 
 SURFACE_SM_E2E = "sm-smoke-e2e"
 SURFACE_SAAS_E2E = "saas-smoke-e2e"
-SURFACE_SAAS_PROVISIONING = "saas-provisioning"
 SURFACE_SAAS_CI = "saas-ci"
 SURFACE_SAAS_INFRA = "saas-infra"
 SURFACE_HELM_INSTALL = "helm-install"
@@ -204,6 +203,7 @@ class SpecCounts:
     total: int = 0
     failed: int = 0
     flaky: int = 0
+    #: Reported in the triage log only. Not a gate: see saas_surface_from_counts.
     setup_failed: int = 0
 
 
@@ -239,13 +239,29 @@ def saas_surface_from_counts(counts: SpecCounts, *, has_artifacts: bool) -> str:
     stays `saas-infra`: there the downstream died before Playwright produced any
     evidence, and the failing job is as likely to be the provisioning API as
     anything in the repository.
+
+    A run whose failures all sit in `test-setup.spec.ts` used to classify as
+    `saas-provisioning` and was never dispatched. That rule read the file name as
+    proof of an environment problem, and the file does not carry that meaning: it
+    mixes cluster/org creation with ordinary Playwright UI flows ("Create Project
+    Folder for User N" drives `ModelerHomePage.createCrossComponentProjectFolder`).
+    It silently dropped real test failures — on downstream run 33483343722 the
+    trace shows a healthy app with the button on screen, failing on a retry where
+    the project already existed.
+
+    Nothing in the report separates those two. The same locator error was an
+    outage on run 33463316996 (a Modeler `/api/internal/login` 500 left the page on
+    its loading spinner) and a test bug on 33483343722, and the failure ratio does
+    not split them either: 20% of specs failed in the outage against 3.6% in the
+    test bug, with the genuine cluster-health runs spanning both. The fix agent
+    reads the trace and does tell them apart, in 7-14 minutes, so the judgement is
+    left to it rather than guessed at here. `setup_failed` is still counted, for
+    the triage log only.
     """
     if not has_artifacts or counts.total == 0:
         return SURFACE_SAAS_INFRA
     if counts.failed == 0:
         return SURFACE_SAAS_CI
-    if counts.setup_failed == counts.failed:
-        return SURFACE_SAAS_PROVISIONING
     return SURFACE_SAAS_E2E
 
 
