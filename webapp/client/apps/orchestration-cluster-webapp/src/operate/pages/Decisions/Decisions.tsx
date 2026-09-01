@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo, useState} from 'react';
+import {useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
@@ -15,7 +15,6 @@ import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import {decisionDefinitionSelectionOptions, decisionDefinitionsOptions} from './decisions.queries';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {getClientConfig} from '#/shared/config/getClientConfig';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {InstancesList} from '#/operate/shared/InstancesList/InstancesList';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel/FiltersPanel';
 import {Title, Form as StyledForm} from '#/operate/shared/FiltersPanel/styled';
@@ -38,6 +37,9 @@ type FiltersFormValues = OptionalFilterValues & {
 type Props = DecisionsSearch;
 
 type DecisionItem = {id: string; label: string};
+type DecisionVersionItem = {id: string; version?: number};
+
+const ALL_VERSIONS_ITEM: DecisionVersionItem = {id: 'all'};
 
 const Decisions: React.FC<Props> = ({
 	decisionDefinitionId,
@@ -93,7 +95,7 @@ const Decisions: React.FC<Props> = ({
 		return items;
 	}, [data, decisionDefinitionId, decisionDefinitionSelectionQuery.data, decisionDefinitionVersionsQuery.data]);
 
-	const versionNumbers = useMemo<(number | undefined)[]>(() => {
+	const versionItems = useMemo<DecisionVersionItem[]>(() => {
 		if (!decisionDefinitionId) {
 			return [];
 		}
@@ -108,8 +110,8 @@ const Decisions: React.FC<Props> = ({
 		if (decisionDefinitionVersion !== undefined) {
 			versionSet.add(decisionDefinitionVersion);
 		}
-		const versions = [...versionSet].sort((a, b) => b - a);
-		return [undefined, ...versions];
+		const versions = [...versionSet].sort((a, b) => b - a).map((version) => ({id: String(version), version}));
+		return [ALL_VERSIONS_ITEM, ...versions];
 	}, [
 		data,
 		decisionDefinitionId,
@@ -119,6 +121,10 @@ const Decisions: React.FC<Props> = ({
 	]);
 
 	const selectedDecision = decisionItems.find((item) => item.id === decisionDefinitionId) ?? null;
+	const selectedVersion =
+		decisionDefinitionId === undefined
+			? null
+			: (versionItems.find(({version}) => version === decisionDefinitionVersion) ?? ALL_VERSIONS_ITEM);
 
 	const decisionDefinitionSelection = useMemo<DecisionDefinitionSelection>(() => {
 		if (!decisionDefinitionId || decisionDefinitionSelectionQuery.status !== 'success') {
@@ -156,35 +162,6 @@ const Decisions: React.FC<Props> = ({
 		decisionDefinitionSelectionQuery.status,
 		decisionDefinitionVersion,
 		specificTenantId,
-	]);
-
-	useEffect(() => {
-		if (
-			decisionDefinitionId === undefined ||
-			decisionDefinitionSelectionQuery.status !== 'success' ||
-			decisionDefinitionSelectionQuery.fetchStatus !== 'idle' ||
-			decisionDefinitionSelection.kind !== 'no-match'
-		) {
-			return;
-		}
-
-		void navigate({
-			to: '.',
-			search: (prev) => ({...prev, decisionDefinitionId: undefined, decisionDefinitionVersion: undefined}),
-			replace: true,
-		});
-		notificationsStore.displayNotification({
-			kind: 'error',
-			title: t('operate.decisions.diagramPanel.decisionNotFoundTitle'),
-			isDismissable: true,
-		});
-	}, [
-		decisionDefinitionId,
-		decisionDefinitionSelection,
-		decisionDefinitionSelectionQuery.fetchStatus,
-		decisionDefinitionSelectionQuery.status,
-		navigate,
-		t,
 	]);
 
 	const hasOptionalFilters =
@@ -271,7 +248,8 @@ const Decisions: React.FC<Props> = ({
 																search: (prev) => ({
 																	...prev,
 																	decisionDefinitionId: selectedItem?.id,
-																	decisionDefinitionVersion: undefined,
+																	decisionDefinitionVersion:
+																		selectedItem?.id === decisionDefinitionId ? decisionDefinitionVersion : undefined,
 																}),
 															});
 														}}
@@ -280,19 +258,22 @@ const Decisions: React.FC<Props> = ({
 														id="decision-version-filter"
 														titleText={t('operate.decisions.filters.version')}
 														label={t('operate.decisions.filters.selectVersion')}
-														items={versionNumbers}
+														items={versionItems}
 														itemToString={(item) =>
-															item === undefined || item === null
+															item?.version === undefined
 																? t('operate.decisions.filters.allVersions')
-																: String(item)
+																: String(item.version)
 														}
-														selectedItem={decisionDefinitionVersion}
+														selectedItem={selectedVersion}
 														disabled={!decisionDefinitionId}
 														size="sm"
 														onChange={({selectedItem}) => {
 															void navigate({
 																to: '.',
-																search: (prev) => ({...prev, decisionDefinitionVersion: selectedItem ?? undefined}),
+																search: (prev) => ({
+																	...prev,
+																	decisionDefinitionVersion: selectedItem?.version,
+																}),
 															});
 														}}
 													/>

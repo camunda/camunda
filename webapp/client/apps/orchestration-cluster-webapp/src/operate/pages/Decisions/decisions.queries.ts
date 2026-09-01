@@ -39,15 +39,18 @@ function decisionDefinitionSelectionOptions({
 	decisionDefinitionVersion,
 	tenantId,
 }: DecisionDefinitionSelectionOptions) {
-	return queries.queryDecisionDefinitions({
-		filter: {
-			decisionDefinitionId,
-			version: decisionDefinitionVersion,
-			tenantId,
-		},
-		page: {limit: decisionDefinitionVersion === undefined ? 1 : 2},
-		sort: [{field: 'version', order: 'desc'}],
-	});
+	return {
+		...queries.queryDecisionDefinitions({
+			filter: {
+				decisionDefinitionId,
+				version: decisionDefinitionVersion,
+				tenantId,
+			},
+			page: {limit: decisionDefinitionVersion === undefined ? 1 : 2},
+			sort: [{field: 'version', order: 'desc'}],
+		}),
+		staleTime: 5000,
+	};
 }
 
 export {decisionDefinitionsOptions, decisionDefinitionSelectionOptions};

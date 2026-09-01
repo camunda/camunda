@@ -6,52 +6,51 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {skipToken, useQuery} from '@tanstack/react-query';
-import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
+import {useEffect} from 'react';
+import {skipToken, useInfiniteQuery} from '@tanstack/react-query';
 import {request} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
+import {mapQueryError} from '#/shared/http/mapQueryError';
 
 const PAGE_LIMIT = 1000;
 
 function useDecisionDefinitionVersions(decisionDefinitionId?: string, tenantId?: string) {
-	return useQuery({
+	const query = useInfiniteQuery({
 		queryKey: ['decisionDefinitionVersions', decisionDefinitionId, tenantId] as const,
 		queryFn:
 			decisionDefinitionId === undefined
 				? skipToken
-				: async (): Promise<DecisionDefinition[]> => {
-						const definitions: DecisionDefinition[] = [];
-						let after: string | undefined;
-
-						while (true) {
-							const {response, error} = await request(
-								endpoints.queryDecisionDefinitions({
-									filter: {decisionDefinitionId, tenantId},
-									sort: [{field: 'version', order: 'desc'}],
-									page: {after, limit: PAGE_LIMIT},
-								}),
-							);
-							if (error !== null) {
-								throw error;
-							}
-
-							const result = await response.json();
-							definitions.push(...result.items);
-
-							const nextCursor = result.page.endCursor ?? undefined;
-							if (
-								result.items.length === 0 ||
-								nextCursor === undefined ||
-								nextCursor === after ||
-								(!result.page.hasMoreTotalItems && definitions.length >= result.page.totalItems)
-							) {
-								return definitions;
-							}
-							after = nextCursor;
+				: async ({pageParam}) => {
+						const {response, error} = await request(
+							endpoints.queryDecisionDefinitions({
+								filter: {decisionDefinitionId, tenantId},
+								sort: [{field: 'version', order: 'desc'}],
+								page: {after: pageParam, limit: PAGE_LIMIT},
+							}),
+						);
+						if (error !== null) {
+							throw mapQueryError(error);
 						}
+
+						return response.json();
 					},
+		initialPageParam: undefined as string | undefined,
+		getNextPageParam: (lastPage, _pages, lastPageParam) => {
+			const nextCursor = lastPage.page.endCursor ?? undefined;
+			return lastPage.page.hasMoreTotalItems && nextCursor !== lastPageParam ? nextCursor : undefined;
+		},
+		select: ({pages}) => pages.flatMap((page) => page.items),
 		staleTime: 'static',
 	});
+
+	const {fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError} = query;
+	useEffect(() => {
+		if (hasNextPage && !isFetchingNextPage && !isFetchNextPageError) {
+			void fetchNextPage();
+		}
+	}, [fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError]);
+
+	return query;
 }
 
 export {useDecisionDefinitionVersions};

@@ -7,7 +7,7 @@
  */
 
 import styled from 'styled-components';
-import {Link} from '@carbon/react';
+import {Link, Stack} from '@carbon/react';
 import {PanelHeader as BasePanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {CopiableContent as BaseCopiableContent} from '#/operate/shared/PanelHeader/CopiableContent';
 
@@ -35,6 +35,12 @@ const Section = styled.section`
 	flex-direction: column;
 `;
 
+const DecisionError = styled(Stack)`
+	flex-grow: 1;
+	align-items: center;
+	justify-content: center;
+`;
+
 const PanelHeader = styled(BasePanelHeader)`
 	padding-right: 0;
 `;
@@ -53,4 +59,4 @@ const CopiableContent = styled(BaseCopiableContent)`
 	}
 `;
 
-export {Container, DecisionName, InstanceLink, Section, PanelHeader, CopiableContent};
+export {Container, DecisionName, InstanceLink, Section, DecisionError, PanelHeader, CopiableContent};
