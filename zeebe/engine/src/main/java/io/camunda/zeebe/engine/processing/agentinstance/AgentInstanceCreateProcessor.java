@@ -227,13 +227,28 @@ public final class AgentInstanceCreateProcessor
           commandValue.getJobKey(),
           commandValue.getJobLease(),
           commandValue.getElementInstanceKey(),
-          commandValue.getHistory(),
-          true);
+          commandValue.getHistory());
     }
+
+    // event.getHistory() allocates a fresh list on every call — now that
+    // applyInstanceChangesFromHistory has populated it above, read it once here and reuse it for
+    // both loops below.
+    final var history = event.getHistory();
+
+    // Unlike UPDATE (which defers this to AgentHistoryCommitProcessor, once the item is actually
+    // committed), CREATE applies a CONFIGURATION item's changes right here, before its own
+    // AGENT_INSTANCE:CREATED is appended below — so a newly created instance always starts with a
+    // valid, usable definition instead of a placeholder one.
+    history.stream()
+        .filter(Predicate.not(AgentHistoryRecordValue::isDuplicate))
+        .filter(item -> item.getRole() == AgentHistoryRole.CONFIGURATION)
+        .forEach(item -> AgentHistoryBatchBehavior.applyConfigurationChanges(event, item));
 
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.CREATED, event);
 
-    event.getHistory().stream()
+    // AGENT_HISTORY items reference their AgentInstance parent by key, so they can only be
+    // created after AGENT_INSTANCE:CREATED above has assigned that key.
+    history.stream()
         .filter(Predicate.not(AgentHistoryRecordValue::isDuplicate))
         .forEach(
             item -> {
