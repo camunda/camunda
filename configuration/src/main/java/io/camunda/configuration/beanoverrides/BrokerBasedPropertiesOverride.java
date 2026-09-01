@@ -13,6 +13,7 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
 import io.camunda.configuration.EngineMappings.InputMode;
+import io.camunda.configuration.EngineMappings.OutputMode;
 import io.camunda.configuration.EngineStorageOrdinals;
 import io.camunda.configuration.Export;
 import io.camunda.configuration.Exporter;
@@ -70,6 +71,7 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
+import io.camunda.zeebe.engine.EngineConfiguration.OutputMappingMode;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
@@ -278,12 +280,6 @@ public class BrokerBasedPropertiesOverride {
 
     override
         .getExperimental()
-        .getFeatures()
-        .setEvaluateDuplicateOutputMappingTargetsInOrder(
-            camunda.getProcessing().getEngine().isEvaluateDuplicateOutputMappingTargetsInOrder());
-
-    override
-        .getExperimental()
         .getEngine()
         .setMaxProcessDepth(camunda.getProcessing().getEngine().getMaxProcessDepth());
 
@@ -299,6 +295,12 @@ public class BrokerBasedPropertiesOverride {
         .setInputComparisonMode(
             toEngineMode(
                 camunda.getProcessing().getEngine().getMappings().getInputComparisonMode()));
+
+    override
+        .getExperimental()
+        .getEngine()
+        .setOutputMappingMode(
+            toEngineOutputMode(camunda.getProcessing().getEngine().getMappings().getOutputMode()));
   }
 
   private static InputMappingMode toEngineMode(final @Nullable InputMode mode) {
@@ -306,6 +308,12 @@ public class BrokerBasedPropertiesOverride {
       return null;
     }
     return mode == InputMode.COMBINED ? InputMappingMode.COMBINED : InputMappingMode.ORDERED;
+  }
+
+  private static OutputMappingMode toEngineOutputMode(final OutputMode outputMode) {
+    return outputMode == OutputMode.COMBINED
+        ? OutputMappingMode.COMBINED
+        : OutputMappingMode.ORDERED;
   }
 
   private static void populateFromDistribution(

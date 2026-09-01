@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ClusterVariab
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping;
+import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference.DetectedSecret;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
@@ -158,17 +159,29 @@ public final class VariableMappingTransformer {
 
   /**
    * Transforms the output mappings, keeping each mapping as its own source expression plus target
-   * path so they can be evaluated one by one in modeling order at runtime. A nested target merges
-   * with the existing scope value at every path level at runtime (see {@code
-   * OutputMappingResultBuilder}).
+   * path so they can be evaluated one by one in modeling order at runtime, and also precomputes the
+   * combined FEEL context expression for {@code CombinedOutputMappingResolver} to evaluate on each
+   * completion without rebuilding it.
+   *
+   * <p>A nested target merges with the existing scope value at every path level in ORDERED mode
+   * (see {@code OutputMappingResultBuilder}). In COMBINED mode the pre-built expression evaluates
+   * all mappings in a single FEEL context literal against the outer (job-variable) scope.
    */
-  public List<OutputMapping> transformOutputMappings(
+  public OutputMappings transformOutputMappings(
       final Collection<? extends ZeebeMapping> outputMappings,
       final ExpressionLanguage expressionLanguage) {
 
-    return toMappings(outputMappings, expressionLanguage).stream()
-        .map(mapping -> new OutputMapping(mapping.source, splitPathExpression(mapping.target)))
-        .toList();
+    final var mappings = toMappings(outputMappings, expressionLanguage);
+    final var context = asContext(mappings);
+    final var contextExpression =
+        asFeelContextExpression(context, (contextValue, contextPath) -> contextValue);
+    final var combinedExpression = parseExpression(contextExpression, expressionLanguage);
+
+    final var transformedMappings =
+        mappings.stream()
+            .map(mapping -> new OutputMapping(mapping.source, splitPathExpression(mapping.target)))
+            .toList();
+    return new OutputMappings(combinedExpression, transformedMappings);
   }
 
   /**

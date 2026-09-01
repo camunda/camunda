@@ -193,11 +193,14 @@ public final class VariableOutputMappingTransformerTest {
       final String expectedOutput) {
     // given
     final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
-    outputMappings.forEach(
-        mapping ->
-            assertThat(mapping.source().isValid())
-                .describedAs("Expected valid expression: %s", mapping.source().getFailureMessage())
-                .isTrue());
+    outputMappings
+        .mappings()
+        .forEach(
+            mapping ->
+                assertThat(mapping.source().isValid())
+                    .describedAs(
+                        "Expected valid expression: %s", mapping.source().getFailureMessage())
+                    .isTrue());
 
     // when: evaluate the mappings one by one in modeling order, same as
     // BpmnVariableMappingBehavior.applyOutputMappings does at runtime — accumulated results
@@ -208,7 +211,7 @@ public final class VariableOutputMappingTransformerTest {
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
                     .orElse(null));
-    for (final var mapping : outputMappings) {
+    for (final var mapping : outputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
             final var accumulated = resultBuilder.get(name);
@@ -242,7 +245,7 @@ public final class VariableOutputMappingTransformerTest {
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
                     .orElse(null));
     EvaluationResult failure = null;
-    for (final var mapping : outputMappings) {
+    for (final var mapping : outputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
             final var accumulated = resultBuilder.get(name);
@@ -282,7 +285,7 @@ public final class VariableOutputMappingTransformerTest {
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
                     .orElse(null));
-    for (final var mapping : outputMappings) {
+    for (final var mapping : outputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
             final var accumulated = resultBuilder.get(name);
@@ -315,7 +318,7 @@ public final class VariableOutputMappingTransformerTest {
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
                     .orElse(null));
-    for (final var mapping : outputMappings) {
+    for (final var mapping : outputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
             final var accumulated = resultBuilder.get(name);

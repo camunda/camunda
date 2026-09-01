@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.engine.EngineConfiguration.OutputMappingMode;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -15,7 +16,7 @@ import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
-import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping;
+import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMappings;
 import io.camunda.zeebe.engine.processing.variable.MappingContext;
 import io.camunda.zeebe.engine.processing.variable.MappingExpressionProcessor;
 import io.camunda.zeebe.engine.processing.variable.MappingResolver;
@@ -32,9 +33,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NonNull;
@@ -50,7 +48,7 @@ public final class BpmnVariableMappingBehavior {
   private final EventScopeInstanceState eventScopeInstanceState;
 
   private final EventTriggerBehavior eventTriggerBehavior;
-  private final boolean evaluateDuplicateOutputMappingTargetsInOrder;
+  private final OutputMappingMode outputMappingMode;
   private final MappingResolver inputMappingResolver;
 
   public BpmnVariableMappingBehavior(
@@ -58,8 +56,8 @@ public final class BpmnVariableMappingBehavior {
       final ProcessingState processingState,
       final VariableBehavior variableBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder,
-      final MappingResolver inputMappingResolver) {
+      final MappingResolver inputMappingResolver,
+      final OutputMappingMode outputMappingMode) {
     this.expressionProcessor = expressionProcessor;
     inputMappingExpressionProcessor = expressionProcessor.withSecretReferenceContext();
     elementInstanceState = processingState.getElementInstanceState();
@@ -67,9 +65,8 @@ public final class BpmnVariableMappingBehavior {
     this.variableBehavior = variableBehavior;
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     this.eventTriggerBehavior = eventTriggerBehavior;
-    this.evaluateDuplicateOutputMappingTargetsInOrder =
-        evaluateDuplicateOutputMappingTargetsInOrder;
     this.inputMappingResolver = inputMappingResolver;
+    this.outputMappingMode = outputMappingMode;
   }
 
   /**
@@ -133,7 +130,7 @@ public final class BpmnVariableMappingBehavior {
     final long processDefinitionKey = record.getProcessDefinitionKey();
     final long processInstanceKey = record.getProcessInstanceKey();
     final String tenantId = context.getTenantId();
-    final Optional<List<OutputMapping>> outputMappings = element.getOutputMappings();
+    final Optional<OutputMappings> outputMappings = element.getOutputMappings();
 
     final EventTrigger eventTrigger = eventScopeInstanceState.peekEventTrigger(elementInstanceKey);
     boolean hasVariables = false;
@@ -161,43 +158,54 @@ public final class BpmnVariableMappingBehavior {
         }
       }
 
-      // Resolves the current scope value at a nested target's path so the builder can merge into
-      // it and keep the existing sibling properties: look up the top-level variable in the element
-      // scope, then navigate into it along the remaining path segments (null when absent).
-      final var resultBuilder =
-          new OutputMappingResultBuilder(
-              path ->
-                  Optional.ofNullable(
-                          variablesState.getVariable(
-                              elementInstanceKey, BufferUtil.wrapString(path.getFirst())))
-                      .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
-                      .orElse(null));
-      // crosses from Zeebe's Either<Failure, T> world into FEEL's Either<DirectBuffer,
-      // EvaluationContext> convention (Left = terminal value or absence) for this one lambda
-      final var processor =
-          expressionProcessor.prependContext(name -> Either.left(resultBuilder.get(name)));
+      final Either<Failure, DirectBuffer> result;
+      if (outputMappingMode == OutputMappingMode.COMBINED) {
+        // evaluate the single pre-built FEEL context expression against the outer scope
+        result =
+            expressionProcessor.evaluateVariableMappingExpression(
+                outputMappings.get().combinedExpression(), elementInstanceKey, tenantId);
+      } else {
+        // ORDERED: evaluate each mapping in turn; each sees results of earlier ones
+        // Resolves the current scope value at a nested target's path so the builder can merge into
+        // it and keep the existing sibling properties: look up the top-level variable in the
+        // element
+        // scope, then navigate into it along the remaining path segments (null when absent).
+        final var resultBuilder =
+            new OutputMappingResultBuilder(
+                path ->
+                    Optional.ofNullable(
+                            variablesState.getVariable(
+                                elementInstanceKey, BufferUtil.wrapString(path.getFirst())))
+                        .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
+                        .orElse(null));
+        // crosses from Zeebe's Either<Failure, T> world into FEEL's Either<DirectBuffer,
+        // EvaluationContext> convention (Left = terminal value or absence) for this one lambda
+        final var processor =
+            expressionProcessor.prependContext(name -> Either.left(resultBuilder.get(name)));
 
-      final var mappingsToEvaluate =
-          evaluateDuplicateOutputMappingTargetsInOrder
-              ? outputMappings.get()
-              : withoutSupersededDuplicateTargets(outputMappings.get());
-
-      for (final OutputMapping mapping : mappingsToEvaluate) {
-        final var result =
-            processor.evaluateVariableMappingExpression(
-                mapping.source(), elementInstanceKey, tenantId);
-        if (result.isLeft()) {
-          return Either.left(result.getLeft());
+        Either<Failure, DirectBuffer> loopResult = null;
+        for (final var mapping : outputMappings.get().mappings()) {
+          final var r =
+              processor.evaluateVariableMappingExpression(
+                  mapping.source(), elementInstanceKey, tenantId);
+          if (r.isLeft()) {
+            loopResult = Either.left(r.getLeft());
+            break;
+          }
+          resultBuilder.put(mapping.targetPath(), r.get());
         }
-        resultBuilder.put(mapping.targetPath(), result.get());
+        result = loopResult != null ? loopResult : Either.right(resultBuilder.toDocument());
       }
-      return mapVariables(
-          context, element, getVariableScopeKey(context), resultBuilder.toDocument());
+
+      if (result.isLeft()) {
+        return Either.left(result.getLeft());
+      }
+      return propagateVariables(context, element, getVariableScopeKey(context), result.get());
 
     } else if (hasVariables) {
       // merge/propagate the event variables by default
       final Either<Failure, Void> variableEither =
-          mapVariables(context, element, elementInstanceKey, variables);
+          propagateVariables(context, element, elementInstanceKey, variables);
       if (variableEither.isLeft()) {
         return variableEither;
       }
@@ -207,7 +215,7 @@ public final class BpmnVariableMappingBehavior {
       // event variables are set local variables instead of temporary variables
       final var localVariables = variablesState.getVariablesLocalAsDocument(elementInstanceKey);
       final Either<Failure, Void> variableEither =
-          mapVariables(context, element, getVariableScopeKey(context), localVariables);
+          propagateVariables(context, element, getVariableScopeKey(context), localVariables);
       if (variableEither.isLeft()) {
         return variableEither;
       }
@@ -215,7 +223,7 @@ public final class BpmnVariableMappingBehavior {
     return Either.right(null);
   }
 
-  private @NonNull Either<Failure, Void> mapVariables(
+  private @NonNull Either<Failure, Void> propagateVariables(
       final BpmnElementContext context,
       final ExecutableFlowNode element,
       final long scopeKey,
@@ -290,40 +298,5 @@ public final class BpmnVariableMappingBehavior {
     } else {
       return false;
     }
-  }
-
-  /**
-   * Reproduces the target-collision handling of the removed combined-FEEL-context builder, for the
-   * {@code evaluateDuplicateOutputMappingTargetsInOrder} kill-switch: a mapping whose target path
-   * collides with an earlier one (equal, or one a prefix of the other) replaces it outright,
-   * keeping the FIRST colliding mapping's position but the LAST one's value -- mirroring how
-   * re-inserting an existing key into a {@code LinkedHashMap} keeps its iteration position but
-   * replaces its value. The superseded mapping's source is dropped entirely and never evaluated.
-   */
-  static List<OutputMapping> withoutSupersededDuplicateTargets(final List<OutputMapping> mappings) {
-    record Survivor(int firstIndex, OutputMapping mapping) {}
-
-    final var survivors = new ArrayList<Survivor>();
-    for (int i = 0; i < mappings.size(); i++) {
-      final var mapping = mappings.get(i);
-      var firstIndex = i;
-      final var iterator = survivors.iterator();
-      while (iterator.hasNext()) {
-        final var existing = iterator.next();
-        if (collides(existing.mapping().targetPath(), mapping.targetPath())) {
-          firstIndex = Math.min(firstIndex, existing.firstIndex());
-          iterator.remove();
-        }
-      }
-      survivors.add(new Survivor(firstIndex, mapping));
-    }
-    survivors.sort(Comparator.comparingInt(Survivor::firstIndex));
-    return survivors.stream().map(Survivor::mapping).toList();
-  }
-
-  private static boolean collides(final List<String> a, final List<String> b) {
-    final var shorter = a.size() <= b.size() ? a : b;
-    final var longer = a.size() <= b.size() ? b : a;
-    return longer.subList(0, shorter.size()).equals(shorter);
   }
 }
