@@ -11,7 +11,10 @@ import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
+	mockCancelProcessInstanceEndpoint,
 	mockGetBatchOperationEndpoint,
+	mockGetProcessInstanceCallHierarchyEndpoint,
+	mockGetProcessInstanceEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
 	mockQueryProcessInstancesEndpoint,
 	mockResolveProcessInstanceIncidentsEndpoint,
@@ -67,6 +70,12 @@ function renderSearchHarness(initial: ProcessesSearch, next: ProcessesSearch) {
 	return renderWithRouter(Harness, {path: '/operate/processes'});
 }
 
+function mockNoBatchOperationItems() {
+	return mockQueryBatchOperationItemsEndpoint({
+		successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+	});
+}
+
 describe('<InstancesTable />', () => {
 	beforeEach(() => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
@@ -90,6 +99,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
+			mockNoBatchOperationItems(),
 		);
 
 		const screen = await renderInstancesTable();
@@ -119,6 +129,7 @@ describe('<InstancesTable />', () => {
 					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '42'})]}),
 				),
 			}),
+			mockNoBatchOperationItems(),
 		);
 
 		const screen = await renderInstancesTable();
@@ -135,6 +146,7 @@ describe('<InstancesTable />', () => {
 					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
 				),
 			}),
+			mockNoBatchOperationItems(),
 		);
 
 		const screen = await renderInstancesTable();
@@ -159,6 +171,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
+			mockNoBatchOperationItems(),
 		);
 
 		const screen = await renderInstancesTable();
@@ -176,6 +189,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
+			mockNoBatchOperationItems(),
 		);
 
 		const screen = await renderInstancesTable();
@@ -204,6 +218,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
+			mockNoBatchOperationItems(),
 		);
 
 		const screen = await renderInstancesTable({...BASE_SEARCH, startDateFrom: 'not-a-date'});
@@ -220,6 +235,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
+			mockNoBatchOperationItems(),
 		);
 
 		const screen = await renderSearchHarness(BASE_SEARCH, {
@@ -243,6 +259,7 @@ describe('<InstancesTable />', () => {
 					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
 				),
 			}),
+			mockNoBatchOperationItems(),
 		);
 
 		const screen = await renderInstancesTable();
@@ -269,6 +286,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
+			mockNoBatchOperationItems(),
 		);
 
 		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
@@ -420,6 +438,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
+			mockNoBatchOperationItems(),
 		);
 
 		const screen = await renderInstancesTable();
@@ -468,6 +487,52 @@ describe('<InstancesTable />', () => {
 		const screen = await renderInstancesTable();
 
 		await expect.element(screen.getByRole('button', {name: /cancel/i})).toBeVisible();
+	});
+
+	it('should wait for a suspended instance cancellation to finish', async ({worker}) => {
+		let stateRequests = 0;
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'SUSPENDED'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+			mockGetProcessInstanceCallHierarchyEndpoint({
+				successResponse: HttpResponse.json([]),
+			}),
+			mockCancelProcessInstanceEndpoint({
+				successResponse: new HttpResponse(null, {status: 204}),
+			}),
+			mockGetProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProcessInstance({processInstanceKey: '1', state: 'SUSPENDED'})),
+			}),
+		);
+		worker.events.on('request:start', ({request}) => {
+			if (request.method === 'GET' && request.url.endsWith('/v2/process-instances/1')) {
+				stateRequests += 1;
+			}
+		});
+
+		const screen = await renderInstancesTable();
+		await userEvent.click(screen.getByRole('button', {name: /cancel/i}));
+		await userEvent.click(screen.getByRole('button', {name: 'Apply', exact: true}));
+
+		await expect.poll(() => stateRequests).toBe(1);
+		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
+
+		worker.use(
+			mockGetProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProcessInstance({processInstanceKey: '1', state: 'TERMINATED'})),
+			}),
+		);
+
+		await expect.poll(() => stateRequests, {timeout: 3000}).toBe(2);
+		await expect.element(screen.getByTestId('operation-spinner')).not.toBeInTheDocument();
 	});
 
 	it('should offer only delete for a finished instance', async ({worker}) => {
