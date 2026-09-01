@@ -67,13 +67,7 @@ function useOperationItemsForInstances(batchOperationKey: string | undefined, pr
 		enabled: batchOperationKey !== undefined && processInstanceKeys.length > 0,
 		refetchInterval: (query) => {
 			const items = query.state.data;
-			if (items === undefined) {
-				return false;
-			}
-
-			const instancesWithItems = new Set(items.map(({processInstanceKey}) => processInstanceKey));
-			const hasMissingItems = processInstanceKeys.some((key) => !instancesWithItems.has(key));
-			return items.some(({state}) => state === 'ACTIVE') || hasMissingItems ? ACTIVE_ITEMS_REFETCH_INTERVAL_MS : false;
+			return items?.some(({state}) => state === 'ACTIVE') ? ACTIVE_ITEMS_REFETCH_INTERVAL_MS : false;
 		},
 	});
 }
