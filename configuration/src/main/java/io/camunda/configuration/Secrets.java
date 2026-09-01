@@ -310,12 +310,27 @@ public class Secrets {
      */
     private String path = "/etc/camunda/secrets";
 
+    /**
+     * BENCHMARK ONLY, never set in production. When set, every {@code resolve} call sleeps this
+     * many milliseconds per requested name before reading the file, simulating a real cloud secret
+     * manager's round trip on top of local disk. Absent (the default), resolution is unaffected.
+     */
+    private @Nullable Long benchmarkSimulatedLatencyMs;
+
     public String getPath() {
       return path;
     }
 
     public void setPath(final String path) {
       this.path = path;
+    }
+
+    public @Nullable Long getBenchmarkSimulatedLatencyMs() {
+      return benchmarkSimulatedLatencyMs;
+    }
+
+    public void setBenchmarkSimulatedLatencyMs(final @Nullable Long benchmarkSimulatedLatencyMs) {
+      this.benchmarkSimulatedLatencyMs = benchmarkSimulatedLatencyMs;
     }
   }
 

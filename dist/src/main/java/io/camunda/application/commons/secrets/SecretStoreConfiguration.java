@@ -18,8 +18,10 @@ import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.secretstore.ConcurrentSecretStore;
 import io.camunda.secretstore.NoopSecretStore;
 import io.camunda.secretstore.SecretCacheFactory;
+import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
+import io.camunda.secretstore.SecretStoreUnavailableException;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
 import io.camunda.secretstore.aws.AwsSecretsManagerStoreConfig;
 import io.camunda.secretstore.file.FileBasedSecretStore;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.ArrayList;
@@ -43,6 +46,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -233,6 +237,58 @@ public class SecretStoreConfiguration {
         config.getMaxSize(), config.getTtl(), timeSource, meterRegistry);
   }
 
+  /**
+   * BENCHMARK ONLY. Pays {@code perNameDelay} per name before delegating, simulating the round trip
+   * a real cloud secret manager would cost. See {@link
+   * #withSimulatedLatencyForBenchmarking(SecretStore)}, the only place this is constructed.
+   */
+  private static final class SimulatedLatencySecretStore implements SecretStore {
+
+    private final SecretStore delegate;
+    private final Duration perNameDelay;
+
+    SimulatedLatencySecretStore(final SecretStore delegate, final Duration perNameDelay) {
+      this.delegate = delegate;
+      this.perNameDelay = perNameDelay;
+    }
+
+    @Override
+    public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
+      if (!names.isEmpty()) {
+        try {
+          Thread.sleep(perNameDelay.multipliedBy(names.size()).toMillis());
+        } catch (final InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new SecretStoreUnavailableException(
+              "Interrupted while simulating secret store latency", e);
+        }
+      }
+      return delegate.resolve(names);
+    }
+
+    @Override
+    public List<String> list() {
+      return delegate.list();
+    }
+
+    /**
+     * One name per call, rather than the wrapped store's answer. The store under this is the file
+     * store, which reports that it covers the whole request because a local disk read has no round
+     * trip to overlap. Once this wrapper has layered a per-name round trip on top of it, that is no
+     * longer true, and answering the delegate's MAX_VALUE would keep the registry from wrapping it
+     * for concurrency at all, leaving this benchmark measuring nothing.
+     */
+    @Override
+    public int namesPerCall() {
+      return 1;
+    }
+
+    @Override
+    public void close() {
+      delegate.close();
+    }
+  }
+
   private static void closeAll(final List<SecretStore> stores) {
     for (final var store : stores) {
       try {
@@ -305,7 +361,27 @@ public class SecretStoreConfiguration {
               + tenantId
               + "' has no path configured");
     }
-    return new FileBasedSecretStore(Path.of(path));
+    return withSimulatedLatencyForBenchmarking(
+        new FileBasedSecretStore(Path.of(path)), config.getBenchmarkSimulatedLatencyMs());
+  }
+
+  /**
+   * BENCHMARK ONLY, never set this in production. When {@code benchmarkSimulatedLatencyMs} is
+   * non-null, wraps the store with that fixed per-name delay before every {@link
+   * SecretStore#resolve}, so the resolution path can be measured against a store as slow as a real
+   * cloud secret manager without needing one. Absent (the default), returns the store unchanged.
+   */
+  private static SecretStore withSimulatedLatencyForBenchmarking(
+      final SecretStore store, final @Nullable Long benchmarkSimulatedLatencyMs) {
+    if (benchmarkSimulatedLatencyMs == null) {
+      return store;
+    }
+    final var perNameDelay = Duration.ofMillis(benchmarkSimulatedLatencyMs);
+    LOG.warn(
+        "BENCHMARK ONLY: wrapping a secret store with a simulated {} delay per name; "
+            + "this must never be set in production",
+        perNameDelay);
+    return new SimulatedLatencySecretStore(store, perNameDelay);
   }
 
   private static SecretStore awsStore(
