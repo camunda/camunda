@@ -37,7 +37,7 @@ function useOperationItemsForInstances(batchOperationKey: string | undefined, pr
 	return useQuery({
 		...batchOperationItemsOptions({
 			filter: {
-				batchOperationKey: {$eq: batchOperationKey!},
+				batchOperationKey: batchOperationKey === undefined ? undefined : {$eq: batchOperationKey},
 				processInstanceKey: {$in: processInstanceKeys},
 			},
 			page: {limit: processInstanceKeys.length},
