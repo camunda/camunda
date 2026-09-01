@@ -953,5 +953,20 @@
       ],
       datasourceTemplate: "github-tags",
     },
+    {
+      // Per-family extractVersion keeps each sub-action's tags from matching another family's release line.
+      description: "Track camunda/infra-global-github-actions sub-actions pinned to a per-action release tag (comment format '# <action>: vX.Y.Z'), which the default github-actions manager cannot version-track.",
+      customType: "regex",
+      managerFilePatterns: [
+        "/^\\.github/.+\\.ya?ml$/",
+      ],
+      matchStrings: [
+        "uses:\\s*camunda/infra-global-github-actions/(?<actionPath>[\\w./-]+)@(?<currentDigest>[a-f0-9]{40})\\s*#\\s*(?<actionTag>[\\w-]+):\\s*v(?<currentValue>\\d+\\.\\d+\\.\\d+)\\b",
+      ],
+      depNameTemplate: "camunda/infra-global-github-actions/{{{actionTag}}}",
+      packageNameTemplate: "camunda/infra-global-github-actions",
+      datasourceTemplate: "github-tags",
+      extractVersionTemplate: "^{{{actionTag}}}-(?<version>\\d+\\.\\d+\\.\\d+)$",
+    },
   ],
 }
