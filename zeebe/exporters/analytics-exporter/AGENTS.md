@@ -68,7 +68,7 @@ Replicated log
 |      ValueType      |      Intent       |                Handler                 |              event.name               |                         Extra filter                         |
 |---------------------|-------------------|----------------------------------------|---------------------------------------|--------------------------------------------------------------|
 | PROCESS_INSTANCE    | ELEMENT_ACTIVATED | ProcessInstanceElementActivatedHandler | `camunda.process.instance.activated`  | bpmnElementType == PROCESS && parentProcessInstanceKey == -1 |
-| USER_TASK           | CREATED           | UserTaskCreatedHandler                 | `user_task_created`                   | —                                                            |
+| USER_TASK           | CREATED           | UserTaskCreatedHandler                 | `camunda.user_task.created`           | —                                                            |
 | USER_TASK           | ASSIGNED          | UserTaskAssignedHandler                | `camunda.user_task.assigned`          | skips empty assignee                                         |
 | TENANT              | CREATED           | TenantCreatedHandler                   | `camunda.tenant.created`              | —                                                            |
 | TENANT              | DELETED           | TenantDeletedHandler                   | `camunda.tenant.deleted`              | —                                                            |
@@ -83,7 +83,7 @@ Replicated log
 | AGENT_INSTANCE      | CREATED           | AgentInstanceCreatedHandler            | `camunda.agent.instance.created`      | —                                                            |
 | AGENT_INSTANCE      | COMPLETED         | AgentInstanceCompletedHandler          | `camunda.agent.instance.completed`    | —                                                            |
 | DECISION_EVALUATION | EVALUATED         | DecisionInstanceEvaluatedHandler       | (counter only, no event)              | —                                                            |
-| —                   | —                 | (scheduled)                            | `heartbeat`                           | every heartbeatInterval, carries broker/exporter versions    |
+| —                   | —                 | (scheduled)                            | `camunda.telemetry.heartbeat`         | every heartbeatInterval, carries broker/exporter versions    |
 
 ### Adding a New Event Handler
 

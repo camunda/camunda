@@ -156,7 +156,7 @@ variables, or any other end-user data.
 |   Source record    |       Intent        |              Event name               |                                               Notes                                                |
 |--------------------|---------------------|---------------------------------------|----------------------------------------------------------------------------------------------------|
 | `PROCESS_INSTANCE` | `ELEMENT_ACTIVATED` | `camunda.process.instance.activated`  | Emitted when a root process element is activated, so it covers every start type.                   |
-| `USER_TASK`        | `CREATED`           | `user_task_created`                   | Emitted for every new user task.                                                                   |
+| `USER_TASK`        | `CREATED`           | `camunda.user_task.created`           | Emitted for every new user task.                                                                   |
 | `USER_TASK`        | `ASSIGNED`          | `camunda.user_task.assigned`          | Emitted for every user task assignment with a non-empty assignee.                                  |
 | `TENANT`           | `CREATED`           | `camunda.tenant.created`              | Emitted for every new tenant.                                                                      |
 | `TENANT`           | `DELETED`           | `camunda.tenant.deleted`              | Emitted for every deleted tenant.                                                                  |
@@ -170,10 +170,11 @@ variables, or any other end-user data.
 | `FORM`             | `DELETED`           | `camunda.form.definition.deleted`     | Emitted once per deleted form definition.                                                          |
 | `AGENT_INSTANCE`   | `CREATED`           | `camunda.agent.instance.created`      | Emitted for every created agent instance.                                                          |
 | `AGENT_INSTANCE`   | `COMPLETED`         | `camunda.agent.instance.completed`    | Emitted for every completed agent instance.                                                        |
-| —                  | —                   | `heartbeat`                           | Emitted periodically by the partition leader (see `heartbeat-interval`).                           |
+| —                  | —                   | `camunda.telemetry.heartbeat`         | Emitted periodically by the partition leader (see `heartbeat-interval`).                           |
 
-`user_task_created` and `heartbeat` predate the analytics data contract and still carry flat
-snake_case names. Every other signal uses the canonical dotted contract name.
+Every signal uses the canonical `camunda.<namespace>.<action>` contract name. `user_task_created`
+and `heartbeat` carried flat pre-contract names until 8.10 and were renamed to
+`camunda.user_task.created` and `camunda.telemetry.heartbeat`.
 
 ### Common log record attributes
 
@@ -205,7 +206,7 @@ process instance passes through however it was started: the client API, or a mes
 or conditional start event. Process instances started by a call activity are excluded, so the event
 counts root instances only.
 
-**`user_task_created`**
+**`camunda.user_task.created`**
 
 |            Attribute             |  Type  |            Description            |
 |----------------------------------|--------|-----------------------------------|
@@ -329,14 +330,14 @@ two agree.
 
 ### Heartbeat attributes
 
-The `heartbeat` event carries static cluster metadata instead of the common log/sequence
+The `camunda.telemetry.heartbeat` event carries static cluster metadata instead of the common log/sequence
 attributes (heartbeats are not tied to the log stream):
 
-|              Attribute               |  Type  |                               Description                                |
-|--------------------------------------|--------|--------------------------------------------------------------------------|
-| `event.name`                         | string | Always `heartbeat`.                                                      |
-| `camunda.heartbeat.broker_version`   | string | Broker version (matches `io.camunda.zeebe.util.VersionUtil#getVersion`). |
-| `camunda.heartbeat.exporter_version` | string | Analytics exporter version.                                              |
+|                   Attribute                    |  Type  |                               Description                                |
+|------------------------------------------------|--------|--------------------------------------------------------------------------|
+| `event.name`                                   | string | Always `camunda.telemetry.heartbeat`.                                    |
+| `camunda.telemetry.heartbeat.broker_version`   | string | Broker version (matches `io.camunda.zeebe.util.VersionUtil#getVersion`). |
+| `camunda.telemetry.heartbeat.exporter_version` | string | Analytics exporter version.                                              |
 
 The analytics schema URL (`https://camunda.io/schemas/analytics/v1`) is delivered automatically via
 the OTel instrumentation scope on every record, not as a per-record attribute.

@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Emits a {@code user_task_created} OTel event for each user task creation. Emits only safe
+ * Emits a {@code camunda.user_task.created} OTel event for each user task creation. Emits only safe
  * process-metadata attributes — never assignee, candidate users, candidate groups, or variables.
  */
 public final class UserTaskCreatedHandler implements AnalyticsHandler<UserTaskRecordValue> {
