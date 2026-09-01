@@ -37,6 +37,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
@@ -239,7 +240,7 @@ public final class JobWorkerBuilderImpl
             maxJobsActive,
             withLease);
 
-    final JobExecutor jobExecutor;
+    final Executor jobExecutor;
     if (enableStreaming) {
       if (streamTimeout != null) {
         ensurePositive("streamTimeout", streamTimeout);
@@ -273,9 +274,7 @@ public final class JobWorkerBuilderImpl
       jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
     } else {
       jobStreamer = JobStreamer.noop();
-      // without job push nothing else takes the executor's capacity, so the worker's own count of
-      // the jobs it activated is all it needs to keep within maxJobsActive
-      jobExecutor = jobHandlingExecutor::execute;
+      jobExecutor = jobHandlingExecutor;
     }
 
     final JobWorkerImpl jobWorker =

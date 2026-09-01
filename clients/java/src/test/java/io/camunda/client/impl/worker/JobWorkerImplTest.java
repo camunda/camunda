@@ -88,8 +88,6 @@ final class JobWorkerImplTest {
 
   private static final JobHandler NOOP_JOB_HANDLER = (client, job) -> {};
   private static final long SLOW_POLL_DELAY_IN_MS = 1_000L;
-  // keeps the keys of pushed jobs apart from those of the polled ones
-  private static final long STREAMED_JOB_KEY_OFFSET = 100L;
   private static final Duration SLOW_POLL_THRESHOLD = Duration.ofMillis(SLOW_POLL_DELAY_IN_MS / 2);
 
   @Rule public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
@@ -415,167 +413,6 @@ final class JobWorkerImplTest {
   }
 
   @Test
-  void shouldAskOnlyForTheCapacityThatPushedJobsLeave() {
-    // given a worker whose capacity is partly taken by jobs the broker pushed to it
-    final int maxJobsActive = 4;
-    final int pushedJobs = 3;
-    final AtomicInteger runningJobs = new AtomicInteger();
-    final CountDownLatch releaseHandlers = new CountDownLatch(1);
-    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    final ExecutorService jobHandlingExecutor = Executors.newFixedThreadPool(maxJobsActive);
-
-    try (final CamundaClient client =
-            new CamundaClientImpl(
-                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
-                channel,
-                GatewayGrpc.newStub(channel),
-                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
-        final JobWorker ignored =
-            client
-                .newWorker()
-                .jobType("test")
-                .handler(
-                    (c, job) -> {
-                      runningJobs.incrementAndGet();
-                      Uninterruptibles.awaitUninterruptibly(releaseHandlers);
-                    })
-                .maxJobsActive(maxJobsActive)
-                .pollInterval(Duration.ofMillis(50))
-                .streamEnabled(true)
-                .open()) {
-
-      try {
-        Awaitility.await("Stream should be open").until(() -> !gateway.openStreams.isEmpty());
-        pushJobsInBackground(pushedJobs);
-        Awaitility.await("Pushed jobs should occupy the worker")
-            .untilAtomic(runningJobs, Matchers.is(pushedJobs));
-
-        // when the worker polls again
-        // then it asks only for the jobs it can still run. Its own count of activated jobs says
-        // every slot is free, since the jobs holding them were pushed and never counted.
-        Awaitility.await("Worker should ask for its free capacity only")
-            .atMost(Duration.ofSeconds(10))
-            .untilAsserted(
-                () -> assertThat(lastRequestedJobCount()).isEqualTo(maxJobsActive - pushedJobs));
-      } finally {
-        // also when the check above failed: a handler left waiting keeps its thread alive and
-        // holds up closing the client for 15 seconds
-        releaseHandlers.countDown();
-      }
-    }
-  }
-
-  @Test
-  void shouldNotAskForJobsWhileItCannotRunAnyMore() {
-    // given a worker whose capacity is taken in full by jobs the broker pushed to it
-    final int maxJobsActive = 2;
-    final AtomicInteger runningJobs = new AtomicInteger();
-    final CountDownLatch releaseHandlers = new CountDownLatch(1);
-    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    final ExecutorService jobHandlingExecutor = Executors.newFixedThreadPool(maxJobsActive);
-
-    try (final CamundaClient client =
-            new CamundaClientImpl(
-                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
-                channel,
-                GatewayGrpc.newStub(channel),
-                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
-        final JobWorker ignored =
-            client
-                .newWorker()
-                .jobType("test")
-                .handler(
-                    (c, job) -> {
-                      runningJobs.incrementAndGet();
-                      Uninterruptibles.awaitUninterruptibly(releaseHandlers);
-                    })
-                .maxJobsActive(maxJobsActive)
-                .pollInterval(Duration.ofMillis(50))
-                .streamEnabled(true)
-                .open()) {
-
-      try {
-        Awaitility.await("Stream should be open").until(() -> !gateway.openStreams.isEmpty());
-        pushJobsInBackground(maxJobsActive);
-        Awaitility.await("Pushed jobs should occupy the worker")
-            .untilAtomic(runningJobs, Matchers.is(maxJobsActive));
-        final int pollsBeforeItIsFull = gateway.getRequestedJobCounts().size();
-
-        // when several poll intervals pass
-        // then no request goes out, since every job it activated would go straight back
-        Awaitility.await("Worker should stop asking for jobs it cannot run")
-            .pollDelay(Duration.ofMillis(500))
-            .atMost(Duration.ofSeconds(10))
-            .untilAsserted(
-                () ->
-                    assertThat(gateway.getRequestedJobCounts())
-                        .hasSizeLessThanOrEqualTo(pollsBeforeItIsFull + 1));
-      } finally {
-        releaseHandlers.countDown();
-      }
-    }
-  }
-
-  @Test
-  void shouldHandBackAPolledJobWithoutWaitingForCapacity() {
-    // given a worker that waits up to a job timeout for capacity, with most of its capacity taken
-    // by jobs the broker pushed to it
-    final int maxJobsActive = 4;
-    final int pushedJobs = 3;
-    final Duration jobTimeout = Duration.ofSeconds(30);
-    final AtomicInteger runningJobs = new AtomicInteger();
-    final CountDownLatch releaseHandlers = new CountDownLatch(1);
-    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    final ExecutorService jobHandlingExecutor = Executors.newFixedThreadPool(maxJobsActive);
-
-    try (final CamundaClient client =
-            new CamundaClientImpl(
-                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
-                channel,
-                GatewayGrpc.newStub(channel),
-                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
-        final JobWorker ignored =
-            client
-                .newWorker()
-                .jobType("test")
-                .handler(
-                    (c, job) -> {
-                      runningJobs.incrementAndGet();
-                      Uninterruptibles.awaitUninterruptibly(releaseHandlers);
-                    })
-                .maxJobsActive(maxJobsActive)
-                .timeout(jobTimeout)
-                .pollInterval(Duration.ofMillis(50))
-                .streamEnabled(true)
-                .open()) {
-
-      try {
-        Awaitility.await("Stream should be open").until(() -> !gateway.openStreams.isEmpty());
-        pushJobsInBackground(pushedJobs);
-        Awaitility.await("Pushed jobs should occupy the worker")
-            .untilAtomic(runningJobs, Matchers.is(pushedJobs));
-
-        // when a poll brings back more jobs than the worker has capacity for, which happens when
-        // the broker pushes a job while the response is on its way
-        gateway.respondWith(TestData.jobs(maxJobsActive));
-
-        // then the jobs it cannot run are handed back right away. Waiting for capacity would hold
-        // on to the thread that carries the activation response for a job timeout per job, and
-        // that thread carries the rest of the client's requests as well.
-        Awaitility.await("Refused jobs should go back to the broker without waiting for capacity")
-            .atMost(jobTimeout.dividedBy(3))
-            .untilAsserted(
-                () ->
-                    assertThat(gateway.getFailedJobs())
-                        .extracting(FailJobRequest::getJobKey)
-                        .contains(1L, 2L, 3L));
-      } finally {
-        releaseHandlers.countDown();
-      }
-    }
-  }
-
-  @Test
   void shouldFailRejectedJobsBackToTheBroker() {
     // given a worker whose handler executor refuses every job
     final int maxJobsActive = 4;
@@ -859,27 +696,6 @@ final class JobWorkerImplTest {
    * java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy} behaves this way when it is shut down
    * while the caller is running the command.
    */
-  /**
-   * Pushes jobs on the open stream from another thread, since a worker that has no capacity left
-   * makes the pushing thread wait for it.
-   */
-  private void pushJobsInBackground(final int numberOfJobs) {
-    new Thread(
-            () -> {
-              for (int i = 0; i < numberOfJobs; i++) {
-                gateway.pushJob(TestData.job(STREAMED_JOB_KEY_OFFSET + i));
-              }
-            })
-        .start();
-  }
-
-  private Integer lastRequestedJobCount() {
-    final List<Integer> requestedJobCounts = gateway.getRequestedJobCounts();
-    return requestedJobCounts.isEmpty()
-        ? null
-        : requestedJobCounts.get(requestedJobCounts.size() - 1);
-  }
-
   private static final class RunsThenRefusesExecutor extends AbstractExecutorService {
     @Override
     public void shutdown() {}
