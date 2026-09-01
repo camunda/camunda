@@ -355,6 +355,18 @@ class OperateProcessesPage {
     await this.applyCancelBatchOperationDialogButton.click();
   }
 
+  // When a cancel confirmation dialog was opened but never submitted (e.g. the
+  // instance-list poll re-rendered the table mid-flow), it stays open and its
+  // buttons cover the select-all checkbox. Dismiss it so a retry can start from
+  // a clean state; a no-op when no dialog is open.
+  async dismissOpenCancelBatchOperationDialog(): Promise<void> {
+    const dialog = this.page.getByRole('dialog').first();
+    if (await dialog.isVisible()) {
+      await this.page.keyboard.press('Escape');
+      await expect(dialog).toBeHidden();
+    }
+  }
+
   async clickMigrateBatchOperationButton(): Promise<void> {
     await this.migrateBatchOperationButton.click();
   }

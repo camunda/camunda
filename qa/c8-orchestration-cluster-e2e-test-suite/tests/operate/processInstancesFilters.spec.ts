@@ -489,7 +489,19 @@ test.describe('Process Instances Filters', () => {
           await expect(page.getByText('2 results')).toBeVisible();
         },
         onFailure: async () => {
-          await page.reload();
+          // A bare reload drops the just-typed process-instance-key filter
+          // (its debounced URL update can still be in flight when the first
+          // assertion fails), leaving the table showing every instance instead
+          // of the two we filtered for. Rebuild the whole filter from a known
+          // reset state before retrying so the two keys are reapplied.
+          await operateFiltersPanelPage.clickResetFilters();
+          await operateFiltersPanelPage.displayOptionalFilter(
+            'Process Instance Key(s)',
+          );
+          await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
+          await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+            `${variableProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
+          );
         },
       });
     });
@@ -623,6 +635,11 @@ test.describe('Process Instances Filters', () => {
       // select-all -> cancel -> apply as a unit until the batch operation is
       // actually submitted (the "Go to operation details" link appears).
       await expect(async () => {
+        // A prior iteration can open the cancel confirmation dialog but fail to
+        // submit it when the poll re-renders the table. A left-open dialog
+        // covers the select-all checkbox and wedges every later retry, so
+        // dismiss it first to keep this block idempotent.
+        await operateProcessesPage.dismissOpenCancelBatchOperationDialog();
         await operateProcessesPage.selectAllRowsCheckbox.click();
         await operateProcessesPage.clickCancelBatchOperationButton();
         await operateProcessesPage.clickApplyCancelBatchOperationDialogButton();
