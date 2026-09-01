@@ -11,20 +11,25 @@ import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
+	mockGetBatchOperationEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
 	mockQueryProcessInstancesEndpoint,
+	mockResolveProcessInstanceIncidentsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {
 	createProcessInstance,
 	createQueryProcessInstancesResponse,
 } from '#/shared-test-modules/api-mocks/process-instances';
 import {
+	createBatchOperation,
 	createBatchOperationItem,
 	createQueryBatchOperationItemsResponse,
 } from '#/shared-test-modules/api-mocks/batch-operations';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {useState} from 'react';
 import {userEvent} from 'vitest/browser';
+import {Notifications} from '#/shared/notifications/components/Notifications';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {InstancesTable} from './InstancesTable';
 import type {ProcessesSearch} from './processesFilter';
 
@@ -37,6 +42,7 @@ function renderInstancesTable(search: ProcessesSearch = BASE_SEARCH) {
 			// full page's Frame/ResizablePanel normally provides — give it one here in isolation.
 			<div style={{height: '100vh'}}>
 				<InstancesTable search={search} />
+				<Notifications />
 			</div>
 		),
 		{path: '/operate/processes'},
@@ -69,6 +75,7 @@ describe('<InstancesTable />', () => {
 	afterEach(() => {
 		vi.useRealTimers();
 		sessionStorage.clear();
+		notificationsStore.reset();
 	});
 
 	it('should render process instance rows', async ({worker}) => {
@@ -421,5 +428,109 @@ describe('<InstancesTable />', () => {
 			.element(screen.getByRole('link', {name: 'View parent instance 99'}))
 			.toHaveAttribute('href', '/operate/processes/99');
 		await expect.element(screen.getByText('None')).toBeVisible();
+	});
+
+	it('should offer retry and cancel for an active instance with an incident', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'ACTIVE', hasIncident: true})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+
+		await expect.element(screen.getByRole('button', {name: /retry/i})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /cancel/i})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /delete/i})).not.toBeInTheDocument();
+	});
+
+	it('should offer only delete for a finished instance', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [
+							createProcessInstance({
+								processInstanceKey: '1',
+								state: 'COMPLETED',
+								endDate: '2026-01-15T11:00:00.000Z',
+							}),
+						],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+		);
+
+		const screen = await renderInstancesTable({...BASE_SEARCH, completed: true});
+
+		await expect.element(screen.getByRole('button', {name: /delete/i})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /cancel/i})).not.toBeInTheDocument();
+	});
+
+	it('should retry incidents and refresh the list once the batch operation settles', async ({worker}) => {
+		let resolveRequests = 0;
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'ACTIVE', hasIncident: true})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+			mockResolveProcessInstanceIncidentsEndpoint({
+				successResponse: HttpResponse.json({batchOperationKey: 'batch-op-1'}),
+			}),
+			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(createBatchOperation({batchOperationKey: 'batch-op-1', state: 'COMPLETED'})),
+			}),
+		);
+		worker.events.on('request:start', ({request}) => {
+			if (request.url.includes('/incident-resolution')) {
+				resolveRequests += 1;
+			}
+		});
+
+		const screen = await renderInstancesTable();
+
+		await userEvent.click(screen.getByRole('button', {name: /retry/i}));
+
+		await expect.poll(() => resolveRequests).toBe(1);
+	});
+
+	it('should notify the user when an operation fails', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'ACTIVE', hasIncident: true})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+			mockResolveProcessInstanceIncidentsEndpoint({
+				successResponse: new HttpResponse(null, {status: 500}),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+
+		await userEvent.click(screen.getByRole('button', {name: /retry/i}));
+
+		await expect.element(screen.getByText('Failed to retry incidents')).toBeVisible();
 	});
 });

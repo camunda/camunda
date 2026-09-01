@@ -514,6 +514,13 @@
 					"endDate": "End Date",
 					"operationState": "Operation State",
 					"operationStateLoading": "Loading...",
+					"operations": {
+						"header": "Operations",
+						"resolveIncidentsFailed": "Failed to retry incidents",
+						"cancelFailed": "Failed to cancel process instance",
+						"deleteFailed": "Failed to delete process instance",
+						"deleteScheduled": "Instance is scheduled for deletion"
+					},
 					"parentProcessInstanceKey": "Parent Process Instance Key",
 					"viewInstance": "View instance {{key}}",
 					"viewParentInstance": "View parent instance {{key}}",
