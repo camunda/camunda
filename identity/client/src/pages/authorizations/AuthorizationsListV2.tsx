@@ -7,8 +7,8 @@
  */
 
 import { FC } from "react";
-import { Add, TrashCan } from "@carbon/react/icons";
-import { C3EmptyState } from "@camunda/camunda-composite-components";
+import { Plus, Trash2 } from "lucide-react";
+import { Button, EmptyState } from "@camunda/design-system";
 import { SearchResponse, usePagination } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import EntityList from "src/components/entityListV2";
@@ -101,7 +101,7 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
           menuItems={[
             {
               label: t("delete"),
-              icon: TrashCan,
+              icon: Trash2,
               isDangerous: true,
               onClick: deleteAuthorization,
               disabled: ({ ownerType, ownerId }) =>
@@ -114,18 +114,21 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
           {...paginationProps}
         />
       ) : (
-        <C3EmptyState
+        <EmptyState
           heading={t("noAuthorizationsYet", {
             tab: t(tab),
           })}
           description={t("authorizationDescription")}
-          button={{
-            label: t("createAuthorization"),
-            onClick: () => {
-              addAuthorization(tab);
-            },
-            icon: Add,
-          }}
+          action={
+            <Button
+              onClick={() => {
+                addAuthorization(tab);
+              }}
+            >
+              <Plus data-icon="inline-start" aria-hidden="true" />
+              {t("createAuthorization")}
+            </Button>
+          }
         />
       )}
       {addAuthorizationModal}
