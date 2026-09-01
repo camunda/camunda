@@ -387,8 +387,9 @@ components:
           type: string
           description: The value of the claim to match.
         name:
-          type: string
           description: The name of the mapping rule.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         mappingRuleId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'

@@ -11,6 +11,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
@@ -20,6 +21,7 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
+import java.util.ArrayList;
 
 public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
   public RoleFilterTransformer(final IndexDescriptor indexDescriptor) {
@@ -32,28 +34,39 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
       return createMultipleMemberTypeQuery(filter);
     }
 
-    return and(
-        filter.roleId() == null ? null : term(RoleIndex.ROLE_ID, filter.roleId()),
-        filter.name() == null ? null : term(RoleIndex.NAME, filter.name()),
-        filter.description() == null ? null : term(RoleIndex.DESCRIPTION, filter.description()),
-        term(RoleIndex.JOIN, IdentityJoinRelationshipType.ROLE.getType()),
-        filter.memberIds() == null
-            ? null
-            : filter.memberIds().isEmpty()
-                ? matchNone()
-                : hasChildQuery(
-                    IdentityJoinRelationshipType.MEMBER.getType(),
-                    stringTerms(RoleIndex.MEMBER_ID, filter.memberIds())),
-        filter.childMemberType() == null
-            ? null
-            : hasChildQuery(
-                IdentityJoinRelationshipType.MEMBER.getType(),
-                term(RoleIndex.MEMBER_TYPE, filter.childMemberType().name())),
-        filter.roleIds() == null
-            ? null
-            : filter.roleIds().isEmpty()
-                ? matchNone()
-                : stringTerms(RoleIndex.ROLE_ID, filter.roleIds()));
+    final var queries = new ArrayList<SearchQuery>();
+    if (filter.roleId() != null) {
+      queries.add(term(RoleIndex.ROLE_ID, filter.roleId()));
+    }
+    if (filter.nameOperations() != null && !filter.nameOperations().isEmpty()) {
+      queries.addAll(stringOperations(RoleIndex.NAME, filter.nameOperations()));
+    }
+    if (filter.description() != null) {
+      queries.add(term(RoleIndex.DESCRIPTION, filter.description()));
+    }
+    queries.add(term(RoleIndex.JOIN, IdentityJoinRelationshipType.ROLE.getType()));
+    if (filter.memberIds() != null) {
+      queries.add(
+          filter.memberIds().isEmpty()
+              ? matchNone()
+              : hasChildQuery(
+                  IdentityJoinRelationshipType.MEMBER.getType(),
+                  stringTerms(RoleIndex.MEMBER_ID, filter.memberIds())));
+    }
+    if (filter.childMemberType() != null) {
+      queries.add(
+          hasChildQuery(
+              IdentityJoinRelationshipType.MEMBER.getType(),
+              term(RoleIndex.MEMBER_TYPE, filter.childMemberType().name())));
+    }
+    if (filter.roleIds() != null) {
+      queries.add(
+          filter.roleIds().isEmpty()
+              ? matchNone()
+              : stringTerms(RoleIndex.ROLE_ID, filter.roleIds()));
+    }
+
+    return and(queries);
   }
 
   @Override

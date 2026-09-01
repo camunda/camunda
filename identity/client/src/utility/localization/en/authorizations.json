@@ -2,7 +2,6 @@
   "owner": "Owner",
   "ownerType": "Owner type",
   "ownerId": "Owner ID",
-  "selectOwner": "Select an owner",
   "searchByOwnerId": "Search by owner ID",
   "resourceId": "Resource ID",
   "resourcePropertyName": "Resource Property Name",

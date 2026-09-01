@@ -1018,7 +1018,8 @@ components:
             - $ref: 'identifiers.yaml#/components/schemas/RoleId'
         name:
           description: The role name search filters.
-          type: string
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
 
     RoleSearchQueryResult:
       description: Role search response.

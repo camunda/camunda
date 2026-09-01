@@ -7,7 +7,13 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
+import {
+	API_VERSION,
+	advancedStringFilterSchema,
+	getQueryRequestBodySchema,
+	getQueryResponseBodySchema,
+	type Endpoint,
+} from './common';
 
 const mappingRuleSchema = z.object({
 	mappingRuleId: z.string(),
@@ -35,14 +41,12 @@ type UpdateMappingRuleResponseBody = z.infer<typeof updateMappingRuleResponseBod
 
 const queryMappingRulesRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['mappingRuleId', 'claimName', 'claimValue', 'name'] as const,
-	filter: mappingRuleSchema
-		.pick({
-			mappingRuleId: true,
-			claimName: true,
-			claimValue: true,
-			name: true,
-		})
-		.partial(),
+	filter: z.object({
+		mappingRuleId: z.string().optional(),
+		claimName: z.string().optional(),
+		claimValue: z.string().optional(),
+		name: advancedStringFilterSchema.optional(),
+	}),
 });
 type QueryMappingRulesRequestBody = z.infer<typeof queryMappingRulesRequestBodySchema>;
 
