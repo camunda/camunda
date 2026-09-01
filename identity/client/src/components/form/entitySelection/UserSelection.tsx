@@ -22,7 +22,16 @@ const itemToString = (user: User) => user.name || user.username;
 const itemSubTitle = (user: User) => user.email;
 const search = (search: string) =>
   userQueries.search(
-    search === "" ? {} : { filter: { username: { $like: `*${search}*` } } },
+    search === ""
+      ? {}
+      : {
+          filter: {
+            $or: [
+              { name: { $like: `*${search}*` } },
+              { email: { $like: `*${search}*` } },
+            ],
+          },
+        },
   );
 
 export const UserMultiSelect: FC<EntitySearchMultiSelectProps<User>> = (
