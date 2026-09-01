@@ -793,7 +793,11 @@ jobs:
     # zeebeVersion. success() keeps the implicit needs-succeeded gate that a
     # custom `if` would otherwise drop.
     if: success() && needs.build-and-push.outputs.image-tag != ''
-    timeout-minutes: 30
+    # Must stay above the wait-downstream poll budget (70m) so that loop, not the
+    # runner, ends the wait: a job-level timeout cancels the step before it can
+    # write downstream_conclusion, and `cancelled` does not match the
+    # `contains(needs.*.result, 'failure')` gate on alwaysgreen-triage.
+    timeout-minutes: 75
     permissions: { }
     steps:
       - name: Checkout repository
@@ -887,7 +891,10 @@ jobs:
 
           RUN_ID=""
 
-          for _ in {1..80}; do
+          # 140 ticks x 30s = 70m. A downstream run that fails takes far longer
+          # than one that passes (~20m), because every failing spec burns its
+          # retries and per-test timeout; the observed worst case is ~57m.
+          for _ in {1..140}; do
             if [[ -z "$RUN_ID" ]]; then
               # A retry-exhausted poll must not end the wait: this loop is the
               # timeout mechanism, so fall through to the next tick. Only a
