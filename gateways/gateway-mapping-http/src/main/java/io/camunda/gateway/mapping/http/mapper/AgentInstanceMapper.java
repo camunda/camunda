@@ -167,6 +167,15 @@ public class AgentInstanceMapper {
       if (metrics.getOutputTokens() != null) {
         recordMetrics.setOutputTokens(metrics.getOutputTokens());
       }
+      if (metrics.getReasoningTokenCount() != null) {
+        recordMetrics.setReasoningTokenCount(metrics.getReasoningTokenCount());
+      }
+      if (metrics.getCacheCreationTokenCount() != null) {
+        recordMetrics.setCacheCreationTokenCount(metrics.getCacheCreationTokenCount());
+      }
+      if (metrics.getCacheReadTokenCount() != null) {
+        recordMetrics.setCacheReadTokenCount(metrics.getCacheReadTokenCount());
+      }
       if (metrics.getDurationMs() != null) {
         recordMetrics.setDurationMs(metrics.getDurationMs());
       }
