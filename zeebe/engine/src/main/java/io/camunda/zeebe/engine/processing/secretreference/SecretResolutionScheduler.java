@@ -317,12 +317,14 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
    * schedulingInterval} after enough consecutive misses.
    *
    * <p>{@code wakeDelay} of zero is accepted elsewhere and would never grow if doubled from zero,
-   * so the first step is floored at 1ms.
+   * so the first step is floored at 1ms; a {@code wakeDelay} configured larger than {@code
+   * schedulingInterval} is clamped the same way, so the first step never overshoots the cap it is
+   * meant to climb towards.
    */
   private Duration nextIdleBackoff() {
     idleBackoffMillis =
         idleBackoffMillis == 0
-            ? Math.max(wakeDelay.toMillis(), 1)
+            ? Math.min(schedulingInterval.toMillis(), Math.max(wakeDelay.toMillis(), 1))
             : Math.min(schedulingInterval.toMillis(), idleBackoffMillis * 2);
     return Duration.ofMillis(idleBackoffMillis);
   }
