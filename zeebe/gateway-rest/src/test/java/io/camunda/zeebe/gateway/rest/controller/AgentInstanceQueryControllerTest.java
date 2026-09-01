@@ -74,7 +74,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
               "openai",
               List.of(
                   new ContentItem(ContentType.TEXT, "You are a helpful assistant.", null, null))),
-          new AgentInstanceMetrics(100L, 200L, 3, 5),
+          new AgentInstanceMetrics(100L, 200L, 0L, 0L, 0L, 3, 5),
           new AgentInstanceLimits(10000L, 10, 50),
           List.of(new AgentInstanceTool("search", "Search the web", "searchElement")),
           "AgentTask",
