@@ -95,7 +95,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final MessageCorrelationMetrics messageCorrelationMetrics,
       final ProcessDefinitionMetrics processDefinitionMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final SecretStoreRegistry secretStoreRegistry) {
@@ -183,9 +182,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState,
             variableBehavior,
             eventTriggerBehavior,
-            evaluateDuplicateOutputMappingTargetsInOrder,
-            MappingResolvers.forMode(
-                config.getInputMappingMode(), config.getInputComparisonMode()));
+            MappingResolvers.forMode(config.getInputMappingMode(), config.getInputComparisonMode()),
+            config.getOutputMappingMode());
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
