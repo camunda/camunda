@@ -701,6 +701,96 @@ class SecretStoreConfigurationTest {
   }
 
   @Test
+  void shouldFailToBuildRegistriesWhenMaxConcurrencyIsBelowOne() {
+    // given a max-concurrency of 0 and no stores configured at all
+    final var resolver = resolverFor(Map.of("camunda.secrets.max-concurrency", "0"));
+
+    // when / then the registries fail to build, naming the offending property
+    assertThatThrownBy(() -> registries(resolver))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("camunda.secrets.max-concurrency");
+  }
+
+  @Test
+  void shouldResolveEveryNameCorrectlyThroughTheConcurrencyWrapper(@TempDir final Path secretsDir)
+      throws IOException {
+    // given a file store (a one-by-one store) holding several secrets, at the default
+    // max-concurrency, so resolving all of them fans out across chunks
+    for (var i = 0; i < 5; i++) {
+      Files.writeString(secretsDir.resolve("secret-" + i), "value-" + i);
+    }
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.file.default.path", secretsDir.toString()));
+    final var store =
+        registries(resolver)
+            .byPhysicalTenant()
+            .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            .getStores()
+            .get(SecretStoreRegistry.DEFAULT_STORE_ID);
+
+    // when
+    final var names = Set.of("secret-0", "secret-1", "secret-2", "secret-3", "secret-4");
+    final var results = store.resolveFromStore(names);
+
+    // then every name is answered with its own value; chunking must not mix up which name
+    // resolved to which value
+    names.forEach(
+        name ->
+            assertThat(results.get(name))
+                .isEqualTo(new Resolved(name.replace("secret-", "value-"))));
+  }
+
+  @Test
+  void shouldResolveEveryNameCorrectlyWhenMaxConcurrencyIsOne(@TempDir final Path secretsDir)
+      throws IOException {
+    // given the same store, with concurrency explicitly disabled: today's behavior, kept as a
+    // regression check
+    for (var i = 0; i < 5; i++) {
+      Files.writeString(secretsDir.resolve("secret-" + i), "value-" + i);
+    }
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.file.default.path",
+                secretsDir.toString(),
+                "camunda.secrets.max-concurrency",
+                "1"));
+    final var store =
+        registries(resolver)
+            .byPhysicalTenant()
+            .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            .getStores()
+            .get(SecretStoreRegistry.DEFAULT_STORE_ID);
+
+    // when
+    final var names = Set.of("secret-0", "secret-1", "secret-2", "secret-3", "secret-4");
+    final var results = store.resolveFromStore(names);
+
+    // then
+    names.forEach(
+        name ->
+            assertThat(results.get(name))
+                .isEqualTo(new Resolved(name.replace("secret-", "value-"))));
+  }
+
+  @Test
+  void shouldStillIdentifyStoreTypeThroughTheConcurrencyWrapper(@TempDir final Path secretsDir) {
+    // given a file store, wrapped for concurrency at the default max-concurrency
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.file.default.path", secretsDir.toString()));
+    final var store =
+        registries(resolver)
+            .byPhysicalTenant()
+            .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            .getStores()
+            .get(SecretStoreRegistry.DEFAULT_STORE_ID);
+
+    // then a caller asking which store was configured gets the same answer whether or not
+    // concurrency wrapped it, exactly as caching already guarantees
+    assertThat(store.is(FileBasedSecretStore.class)).isTrue();
+  }
+
+  @Test
   void shouldDefaultToTheProductionCacheDefaults() {
     // given the configuration module restates the cache defaults as literals, since it does not
     // depend on secret-store-api
