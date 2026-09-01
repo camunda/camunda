@@ -720,7 +720,7 @@ public final class DbProcessState implements MutableProcessState {
     final var hasPending = new MutableBoolean();
     pendingProcessDeletionsPerPartitionColumnFamily.whileEqualPrefix(
         this.processDefinitionKey,
-        ignored -> {
+        (key, value) -> {
           hasPending.set(true);
           return false;
         });
