@@ -236,7 +236,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       // to the next activation, which keeps its jobs activatable.
       if (!stateWriter.canWriteEventOfLength(
           event.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
-        return;
+        // stop appending, but still wake for whatever was already appended above
+        break;
       }
       stateWriter.appendFollowUpEvent(
           keyGenerator.nextKey(), SecretReferenceIntent.RESOLUTION_REQUESTED, event);
