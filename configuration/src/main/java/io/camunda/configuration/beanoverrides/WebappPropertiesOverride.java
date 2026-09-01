@@ -26,11 +26,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
  */
 @Configuration
 @Profile("!restore")
-@EnableConfigurationProperties({
-  WebappProperties.class,
-  LegacyOperateProperties.class,
-  LegacyTasklistProperties.class
-})
+@EnableConfigurationProperties({WebappProperties.class, LegacyOperateProperties.class})
 @DependsOn("unifiedConfigurationHelper")
 public class WebappPropertiesOverride {
 
@@ -38,17 +34,14 @@ public class WebappPropertiesOverride {
 
   private final WebappProperties webappProperties;
   private final LegacyOperateProperties legacyOperateProperties;
-  private final LegacyTasklistProperties legacyTasklistProperties;
   private final ConfigurableEnvironment environment;
 
   public WebappPropertiesOverride(
       final WebappProperties webappProperties,
       final LegacyOperateProperties legacyOperateProperties,
-      final LegacyTasklistProperties legacyTasklistProperties,
       final ConfigurableEnvironment environment) {
     this.webappProperties = webappProperties;
     this.legacyOperateProperties = legacyOperateProperties;
-    this.legacyTasklistProperties = legacyTasklistProperties;
     this.environment = environment;
   }
 
@@ -81,7 +74,8 @@ public class WebappPropertiesOverride {
 
   private void applyEnterpriseFallback(final WebappProperties target) {
     if (environment.getProperty("camunda.webapp.enterprise") == null
-        && (legacyOperateProperties.isEnterprise() || legacyTasklistProperties.isEnterprise())) {
+        && (legacyOperateProperties.isEnterprise()
+            || environment.getProperty("camunda.tasklist.enterprise", Boolean.class, false))) {
       target.setEnterprise(true);
     }
   }
@@ -95,9 +89,8 @@ public class WebappPropertiesOverride {
 
   private void applyCloudFallbacks(final WebappProperties target) {
     final Cloud cloud = target.getCloud();
-
-    if (cloud.getStage() == null && legacyTasklistProperties.getCloud().getStage() != null) {
-      cloud.setStage(legacyTasklistProperties.getCloud().getStage());
+    if (cloud.getStage() == null) {
+      cloud.setStage(environment.getProperty("camunda.tasklist.cloud.stage"));
     }
   }
 }

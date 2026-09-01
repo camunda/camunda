@@ -296,10 +296,10 @@ CI / <componentName> / [<testType>] <testName> / <ownerName> / ...
 
 `testType` can be things like: `UT` for Unit Tests, `IT` for Integration Tests, `Smoke` for smoke tests, etc.
 
-For example, Core Features Unit Tests for Tasklist would be appear as
+For example, Core Features Unit Tests for the orchestration-cluster webapp appear as
 
 ```
-CI / Tasklist / [UT] Core Features / Run Unit Tests
+CI / Webapp / [UT] Core Features / Run Unit Tests
 ```
 
 Importer Integration Tests for Operate would appear as
@@ -912,4 +912,3 @@ Is your CI check part of the [Unified CI's](#unified-ci) `ci.yml`?
    ```
 
    This loop will take a while (1 hour or more depending on the CI check) so let it run in the background. After it finished, visit https://github.com/camunda/camunda/actions/workflows/ci.yml?query=branch%3AYOURBRANCHNAME and see if there are any failures (indicates lack of robustness).
-

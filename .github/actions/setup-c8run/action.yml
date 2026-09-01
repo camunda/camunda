@@ -117,12 +117,6 @@ runs:
       with:
         node-version: 24
 
-    - name: Install node dependencies
-      if: ${{ inputs.source-build == 'true' }}
-      uses: ./.github/actions/npm-ci-with-retry
-      with:
-        directory: ./tasklist/client
-
     - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
       if: ${{ inputs.source-build == 'true' }}
       with:

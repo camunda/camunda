@@ -157,7 +157,6 @@
       ],
       matchFileNames: [
         "operate/**",
-        "tasklist/**",
         "identity/**",
         "optimize/**",
       ],
@@ -517,14 +516,13 @@
       enabled: false,
     },
     {
-      description: "Disable Maven lookup for internal monorepo parent POMs (operate-qa, tasklist-qa, camunda-qa) that are never published to any external registry. depType 'parent' (non-root) is not covered by the parent-root exclusion above.",
+      description: "Disable Maven lookup for internal monorepo parent POMs (operate-qa, camunda-qa) that are never published to any external registry. depType 'parent' (non-root) is not covered by the parent-root exclusion above.",
       matchManagers: [
         "maven",
       ],
       matchPackageNames: [
         "io.camunda:operate-qa",
         "io.camunda:camunda-qa",
-        "io.camunda:tasklist-qa",
       ],
       enabled: false,
     },
@@ -572,20 +570,6 @@
       ],
       groupName: "operate patch dependencies",
       groupSlug: "operate-patch",
-    },
-    {
-      description: "Group patch updates per project (Tasklist).",
-      matchManagers: [
-        "npm",
-      ],
-      matchFileNames: [
-        "tasklist/**",
-      ],
-      matchUpdateTypes: [
-        "patch",
-      ],
-      groupName: "tasklist patch dependencies",
-      groupSlug: "tasklist-patch",
     },
     {
       description: "Group patch updates per project (Identity).",

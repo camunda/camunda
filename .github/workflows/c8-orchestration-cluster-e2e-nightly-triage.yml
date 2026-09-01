@@ -203,10 +203,14 @@ jobs:
             # Build the list of json-report artifact patterns to download
             declare -a patterns=()
             if [ "$test_type" = "e2e" ]; then
-              # Each version has different modes; just attempt both -- gh will silently miss
-              for mode in v1 v2; do
-                patterns+=("json-report-nightly-e2e-${safe_version}-${mode}|${mode}")
-              done
+              if [ "$version" = "main" ]; then
+                patterns+=("json-report-nightly-e2e-${safe_version}|current")
+              else
+                # Stable versions have different modes; gh silently ignores missing artifacts.
+                for mode in v1 v2; do
+                  patterns+=("json-report-nightly-e2e-${safe_version}-${mode}|${mode}")
+                done
+              fi
             elif [ "$test_type" = "api_es" ]; then
               # Trailing glob tolerates the mode suffix (e.g. "-profiles") the
               # API-tests job now appends to the artifact name. Does not collide

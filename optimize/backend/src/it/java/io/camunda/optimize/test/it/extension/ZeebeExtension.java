@@ -153,12 +153,8 @@ public class ZeebeExtension implements BeforeAllCallback, AfterAllCallback {
                 dbType.getId(),
                 "camunda.database.url",
                 "http://localhost:9200",
-                "camunda.tasklist.database",
-                dbType.getId(),
                 "camunda.operate.database",
                 dbType.getId(),
-                "camunda.tasklist." + dbType.getId() + ".url",
-                "http://localhost:9200",
                 "camunda.operate." + dbType.getId() + ".url",
                 "http://localhost:9200"))
         .start();

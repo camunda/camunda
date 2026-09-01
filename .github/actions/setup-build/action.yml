@@ -101,9 +101,6 @@ runs:
           "optimize": {
             "path": "secret/data/products/optimize/ci/camunda-optimize"
           },
-          "tasklist": {
-            "path": "secret/data/products/tasklist/ci/tasklist"
-          },
           "zeebe": {
             "path": "secret/data/products/zeebe/ci/zeebe"
           }
@@ -128,7 +125,7 @@ runs:
       # Infer team from workflow (.yml) file name if possible, otherwise default to camunda
       worklow=$(basename ${WORKFLOW_REF%@*})  # remove Github ref part and extract filename
       team=camunda
-      if [[ "$worklow" =~ ^(operate|optimize|tasklist|zeebe)-.*\.(yml|yaml)$ ]]; then
+      if [[ "$worklow" =~ ^(operate|optimize|zeebe)-.*\.(yml|yaml)$ ]]; then
         team=${BASH_REMATCH[1]}
       fi
 

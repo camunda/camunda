@@ -1,13 +1,16 @@
 ---
 
 name: frontend-migrator
-description: Use when migrating, porting, or rewriting frontend code from operate/client/ or tasklist/client/ to the orchestration cluster webapp. Trigger when migrating legacy pages/components, converting React Router to TanStack Router, replacing MobX with TanStack Query, rewriting styled-components as SCSS, converting legacy tests to Vitest browser mode, or asking how a legacy pattern maps to the new app.
+description: Use when migrating, porting, or rewriting frontend code from operate/client/ or historical Tasklist implementations to the orchestration cluster webapp. Trigger when migrating legacy pages/components, converting React Router to TanStack Router, replacing MobX with TanStack Query, rewriting styled-components as SCSS, converting legacy tests to Vitest browser mode, or asking how a legacy pattern maps to the new app.
 
 ---
 
 # Frontend Migration: Legacy to Orchestration Cluster Webapp
 
-The orchestration cluster webapp (`webapp/client/apps/orchestration-cluster-webapp/`) is replacing the legacy Operate, Tasklist, and Admin frontends. Migration is a **rewrite using new patterns**, not a code port. The legacy code is the specification of *what* the feature does; the new code follows a different architecture for *how*.
+The orchestration cluster webapp (`webapp/client/apps/orchestration-cluster-webapp/`) contains
+Tasklist and is replacing the legacy Operate and Admin frontends. Migration is a **rewrite using new
+patterns**, not a code port. Legacy code is the specification of *what* a feature does; the new code
+follows a different architecture for *how*.
 
 This skill is the translation layer. It maps legacy patterns to their target equivalents so you produce code that fits the new codebase from the start. For target conventions (pod areas + shared structure, data loading tiers, forms, feature flags), defer to the `frontend-feature` skill. For test-writing details, defer to `frontend-unit-test` and `frontend-integration-test`.
 

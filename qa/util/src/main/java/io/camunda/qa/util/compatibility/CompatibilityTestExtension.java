@@ -233,7 +233,8 @@ public class CompatibilityTestExtension
     // Configure database connection using the configurator
     final String databaseUrl = getDatabaseUrl();
     final CompatibilityTestDatabaseConfigurator dbConfigurator =
-        new CompatibilityTestDatabaseConfigurator(testPrefix, databaseType, databaseUrl);
+        new CompatibilityTestDatabaseConfigurator(
+            testPrefix, databaseType, databaseUrl, !version.endsWith("SNAPSHOT"));
 
     dbConfigurator.configureCamundaContainer(camundaContainer);
 
