@@ -38,6 +38,8 @@ import { Route as CarbonAuthTasklistProcessesRouteRouteImport } from './routes/_
 import { Route as ShadcnAuthTasklistSplatRouteImport } from './routes/shadcn/_auth/tasklist/$'
 import { Route as ShadcnAuthTasklistTasksRouteRouteImport } from './routes/shadcn/_auth/tasklist/_tasks/route'
 import { Route as ShadcnAuthTasklistProcessesRouteRouteImport } from './routes/shadcn/_auth/tasklist/processes/route'
+import { Route as CarbonAuthOperateBatchOperationsIndexRouteImport } from './routes/_carbon/_auth/operate/batch-operations/index'
+import { Route as CarbonAuthOperateBatchOperationsBatchOperationKeyRouteImport } from './routes/_carbon/_auth/operate/batch-operations/$batchOperationKey'
 import { Route as CarbonAuthOperateDecisionsIndexRouteImport } from './routes/_carbon/_auth/operate/decisions/index'
 import { Route as CarbonAuthOperateDecisionsDecisionInstanceIdRouteImport } from './routes/_carbon/_auth/operate/decisions/$decisionInstanceId'
 import { Route as CarbonAuthTasklistTasksIndexRouteImport } from './routes/_carbon/_auth/tasklist/_tasks/index'
@@ -203,6 +205,18 @@ const ShadcnAuthTasklistProcessesRouteRoute =
     path: '/processes',
     getParentRoute: () => ShadcnAuthTasklistRouteRoute,
   } as any)
+const CarbonAuthOperateBatchOperationsIndexRoute =
+  CarbonAuthOperateBatchOperationsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => CarbonAuthOperateBatchOperationsRoute,
+  } as any)
+const CarbonAuthOperateBatchOperationsBatchOperationKeyRoute =
+  CarbonAuthOperateBatchOperationsBatchOperationKeyRouteImport.update({
+    id: '/$batchOperationKey',
+    path: '/$batchOperationKey',
+    getParentRoute: () => CarbonAuthOperateBatchOperationsRoute,
+  } as any)
 const CarbonAuthOperateDecisionsIndexRoute =
   CarbonAuthOperateDecisionsIndexRouteImport.update({
     id: '/',
@@ -317,7 +331,7 @@ export interface FileRoutesByFullPath {
   '/shadcn/tasklist/processes': typeof ShadcnAuthTasklistProcessesRouteRouteWithChildren
   '/admin/$': typeof CarbonAuthAdminSplatRoute
   '/operate/$': typeof CarbonAuthOperateSplatRoute
-  '/operate/batch-operations': typeof CarbonAuthOperateBatchOperationsRoute
+  '/operate/batch-operations': typeof CarbonAuthOperateBatchOperationsRouteWithChildren
   '/operate/decisions': typeof CarbonAuthOperateDecisionsRouteWithChildren
   '/operate/operations-log': typeof CarbonAuthOperateOperationsLogRoute
   '/operate/processes': typeof CarbonAuthOperateProcessesRoute
@@ -327,7 +341,9 @@ export interface FileRoutesByFullPath {
   '/operate/': typeof CarbonAuthOperateIndexRoute
   '/tasklist/$userTaskKey': typeof CarbonAuthTasklistTasksUserTaskKeyRouteRouteWithChildren
   '/shadcn/tasklist/$userTaskKey': typeof ShadcnAuthTasklistTasksUserTaskKeyRouteRouteWithChildren
+  '/operate/batch-operations/$batchOperationKey': typeof CarbonAuthOperateBatchOperationsBatchOperationKeyRoute
   '/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
+  '/operate/batch-operations/': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/operate/decisions/': typeof CarbonAuthOperateDecisionsIndexRoute
   '/tasklist/': typeof CarbonAuthTasklistTasksIndexRoute
   '/shadcn/tasklist/': typeof ShadcnAuthTasklistTasksIndexRoute
@@ -356,14 +372,15 @@ export interface FileRoutesByTo {
   '/shadcn/tasklist/processes': typeof ShadcnAuthTasklistProcessesRouteRouteWithChildren
   '/admin/$': typeof CarbonAuthAdminSplatRoute
   '/operate/$': typeof CarbonAuthOperateSplatRoute
-  '/operate/batch-operations': typeof CarbonAuthOperateBatchOperationsRoute
   '/operate/operations-log': typeof CarbonAuthOperateOperationsLogRoute
   '/operate/processes': typeof CarbonAuthOperateProcessesRoute
   '/tasklist/$': typeof CarbonAuthTasklistSplatRoute
   '/shadcn/tasklist/$': typeof ShadcnAuthTasklistSplatRoute
   '/admin': typeof CarbonAuthAdminIndexRoute
   '/operate': typeof CarbonAuthOperateIndexRoute
+  '/operate/batch-operations/$batchOperationKey': typeof CarbonAuthOperateBatchOperationsBatchOperationKeyRoute
   '/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
+  '/operate/batch-operations': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/operate/decisions': typeof CarbonAuthOperateDecisionsIndexRoute
   '/tasklist/$userTaskKey/history': typeof CarbonAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
   '/shadcn/tasklist/$userTaskKey/history': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
@@ -399,7 +416,7 @@ export interface FileRoutesById {
   '/shadcn/_auth/tasklist/processes': typeof ShadcnAuthTasklistProcessesRouteRouteWithChildren
   '/_carbon/_auth/admin/$': typeof CarbonAuthAdminSplatRoute
   '/_carbon/_auth/operate/$': typeof CarbonAuthOperateSplatRoute
-  '/_carbon/_auth/operate/batch-operations': typeof CarbonAuthOperateBatchOperationsRoute
+  '/_carbon/_auth/operate/batch-operations': typeof CarbonAuthOperateBatchOperationsRouteWithChildren
   '/_carbon/_auth/operate/decisions': typeof CarbonAuthOperateDecisionsRouteWithChildren
   '/_carbon/_auth/operate/operations-log': typeof CarbonAuthOperateOperationsLogRoute
   '/_carbon/_auth/operate/processes': typeof CarbonAuthOperateProcessesRoute
@@ -409,7 +426,9 @@ export interface FileRoutesById {
   '/_carbon/_auth/operate/': typeof CarbonAuthOperateIndexRoute
   '/_carbon/_auth/tasklist/_tasks/$userTaskKey': typeof CarbonAuthTasklistTasksUserTaskKeyRouteRouteWithChildren
   '/shadcn/_auth/tasklist/_tasks/$userTaskKey': typeof ShadcnAuthTasklistTasksUserTaskKeyRouteRouteWithChildren
+  '/_carbon/_auth/operate/batch-operations/$batchOperationKey': typeof CarbonAuthOperateBatchOperationsBatchOperationKeyRoute
   '/_carbon/_auth/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
+  '/_carbon/_auth/operate/batch-operations/': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/_carbon/_auth/operate/decisions/': typeof CarbonAuthOperateDecisionsIndexRoute
   '/_carbon/_auth/tasklist/_tasks/': typeof CarbonAuthTasklistTasksIndexRoute
   '/shadcn/_auth/tasklist/_tasks/': typeof ShadcnAuthTasklistTasksIndexRoute
@@ -453,7 +472,9 @@ export interface FileRouteTypes {
     | '/operate/'
     | '/tasklist/$userTaskKey'
     | '/shadcn/tasklist/$userTaskKey'
+    | '/operate/batch-operations/$batchOperationKey'
     | '/operate/decisions/$decisionInstanceId'
+    | '/operate/batch-operations/'
     | '/operate/decisions/'
     | '/tasklist/'
     | '/shadcn/tasklist/'
@@ -482,14 +503,15 @@ export interface FileRouteTypes {
     | '/shadcn/tasklist/processes'
     | '/admin/$'
     | '/operate/$'
-    | '/operate/batch-operations'
     | '/operate/operations-log'
     | '/operate/processes'
     | '/tasklist/$'
     | '/shadcn/tasklist/$'
     | '/admin'
     | '/operate'
+    | '/operate/batch-operations/$batchOperationKey'
     | '/operate/decisions/$decisionInstanceId'
+    | '/operate/batch-operations'
     | '/operate/decisions'
     | '/tasklist/$userTaskKey/history'
     | '/shadcn/tasklist/$userTaskKey/history'
@@ -534,7 +556,9 @@ export interface FileRouteTypes {
     | '/_carbon/_auth/operate/'
     | '/_carbon/_auth/tasklist/_tasks/$userTaskKey'
     | '/shadcn/_auth/tasklist/_tasks/$userTaskKey'
+    | '/_carbon/_auth/operate/batch-operations/$batchOperationKey'
     | '/_carbon/_auth/operate/decisions/$decisionInstanceId'
+    | '/_carbon/_auth/operate/batch-operations/'
     | '/_carbon/_auth/operate/decisions/'
     | '/_carbon/_auth/tasklist/_tasks/'
     | '/shadcn/_auth/tasklist/_tasks/'
@@ -760,6 +784,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShadcnAuthTasklistProcessesRouteRouteImport
       parentRoute: typeof ShadcnAuthTasklistRouteRoute
     }
+    '/_carbon/_auth/operate/batch-operations/': {
+      id: '/_carbon/_auth/operate/batch-operations/'
+      path: '/'
+      fullPath: '/operate/batch-operations/'
+      preLoaderRoute: typeof CarbonAuthOperateBatchOperationsIndexRouteImport
+      parentRoute: typeof CarbonAuthOperateBatchOperationsRoute
+    }
+    '/_carbon/_auth/operate/batch-operations/$batchOperationKey': {
+      id: '/_carbon/_auth/operate/batch-operations/$batchOperationKey'
+      path: '/$batchOperationKey'
+      fullPath: '/operate/batch-operations/$batchOperationKey'
+      preLoaderRoute: typeof CarbonAuthOperateBatchOperationsBatchOperationKeyRouteImport
+      parentRoute: typeof CarbonAuthOperateBatchOperationsRoute
+    }
     '/_carbon/_auth/operate/decisions/': {
       id: '/_carbon/_auth/operate/decisions/'
       path: '/'
@@ -888,6 +926,24 @@ const CarbonAuthAdminRouteRouteChildren: CarbonAuthAdminRouteRouteChildren = {
 const CarbonAuthAdminRouteRouteWithChildren =
   CarbonAuthAdminRouteRoute._addFileChildren(CarbonAuthAdminRouteRouteChildren)
 
+interface CarbonAuthOperateBatchOperationsRouteChildren {
+  CarbonAuthOperateBatchOperationsBatchOperationKeyRoute: typeof CarbonAuthOperateBatchOperationsBatchOperationKeyRoute
+  CarbonAuthOperateBatchOperationsIndexRoute: typeof CarbonAuthOperateBatchOperationsIndexRoute
+}
+
+const CarbonAuthOperateBatchOperationsRouteChildren: CarbonAuthOperateBatchOperationsRouteChildren =
+  {
+    CarbonAuthOperateBatchOperationsBatchOperationKeyRoute:
+      CarbonAuthOperateBatchOperationsBatchOperationKeyRoute,
+    CarbonAuthOperateBatchOperationsIndexRoute:
+      CarbonAuthOperateBatchOperationsIndexRoute,
+  }
+
+const CarbonAuthOperateBatchOperationsRouteWithChildren =
+  CarbonAuthOperateBatchOperationsRoute._addFileChildren(
+    CarbonAuthOperateBatchOperationsRouteChildren,
+  )
+
 interface CarbonAuthOperateDecisionsRouteChildren {
   CarbonAuthOperateDecisionsDecisionInstanceIdRoute: typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
   CarbonAuthOperateDecisionsIndexRoute: typeof CarbonAuthOperateDecisionsIndexRoute
@@ -907,7 +963,7 @@ const CarbonAuthOperateDecisionsRouteWithChildren =
 
 interface CarbonAuthOperateRouteRouteChildren {
   CarbonAuthOperateSplatRoute: typeof CarbonAuthOperateSplatRoute
-  CarbonAuthOperateBatchOperationsRoute: typeof CarbonAuthOperateBatchOperationsRoute
+  CarbonAuthOperateBatchOperationsRoute: typeof CarbonAuthOperateBatchOperationsRouteWithChildren
   CarbonAuthOperateDecisionsRoute: typeof CarbonAuthOperateDecisionsRouteWithChildren
   CarbonAuthOperateOperationsLogRoute: typeof CarbonAuthOperateOperationsLogRoute
   CarbonAuthOperateProcessesRoute: typeof CarbonAuthOperateProcessesRoute
@@ -918,7 +974,7 @@ const CarbonAuthOperateRouteRouteChildren: CarbonAuthOperateRouteRouteChildren =
   {
     CarbonAuthOperateSplatRoute: CarbonAuthOperateSplatRoute,
     CarbonAuthOperateBatchOperationsRoute:
-      CarbonAuthOperateBatchOperationsRoute,
+      CarbonAuthOperateBatchOperationsRouteWithChildren,
     CarbonAuthOperateDecisionsRoute:
       CarbonAuthOperateDecisionsRouteWithChildren,
     CarbonAuthOperateOperationsLogRoute: CarbonAuthOperateOperationsLogRoute,
