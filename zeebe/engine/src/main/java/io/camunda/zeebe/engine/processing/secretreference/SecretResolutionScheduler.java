@@ -302,6 +302,10 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
         millisUntilRetry < schedulingInterval.toMillis()
             ? Duration.ofMillis(Math.max(0, millisUntilRetry))
             : schedulingInterval;
+    // a cooldown deadline is a known wait, not an idle miss, so reset the ladder here too: the
+    // reference that unblocks once the cooldown ends should not have to wait out steps the ladder
+    // climbed before the store went into cooldown
+    idleBackoffMillis = 0;
     metrics.cycleDelay(SecretResolutionCycleDelayReason.RETRY_COOLDOWN, delay);
     return delay;
   }
