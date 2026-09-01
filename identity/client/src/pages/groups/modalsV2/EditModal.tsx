@@ -13,7 +13,7 @@ import useTranslate from "src/utility/localization";
 import { useNotifications } from "src/components/notifications";
 import { groupMutations } from "src/utility/api/groups/mutations";
 import TextField from "src/components/formV2/TextField";
-import { isValidId } from "src/utility/validate.ts";
+import { getIdPattern, isValidId } from "src/utility/validate.ts";
 import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const EditModal: FC<UseEntityModalProps<Group>> = ({
@@ -80,7 +80,13 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
           validateGroupId(value);
           setGroupId(value);
         }}
-        errors={!isGroupIdValid ? t("pleaseEnterValidGroupId") : []}
+        errors={
+          !isGroupIdValid
+            ? t("pleaseEnterValidGroupId", {
+                pattern: getIdPattern(),
+              })
+            : []
+        }
         readOnly
       />
       <TextField
