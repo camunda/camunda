@@ -31,17 +31,15 @@ type AbstractEntitySearchSingleSelectProps<
 
 /**
  * Public props for a concrete per-entity single-select (e.g. UserSingleSelect):
- * everything technical (search, getId, itemToString, errorTitle) is bound by
- * the concrete implementation. itemSubTitle gets a concrete default but
- * remains overridable per call site, since some consumers need different copy.
+ * everything technical (search, getId, itemToString, itemSubTitle, errorTitle)
+ * is fixed by the concrete implementation and not overridable per call site.
  */
 export type EntitySearchSingleSelectProps<
   Entity extends Record<string, unknown>,
 > = Omit<
   AbstractEntitySearchSingleSelectProps<Entity>,
   "search" | "getId" | "itemToString" | "itemSubTitle" | "errorTitle"
-> &
-  Partial<Pick<AbstractEntitySearchSingleSelectProps<Entity>, "itemSubTitle">>;
+>;
 
 const EntitySearchSingleSelect = <Entity extends Record<string, unknown>>({
   search,
