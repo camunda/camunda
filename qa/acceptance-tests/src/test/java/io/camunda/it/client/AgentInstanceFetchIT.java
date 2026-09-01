@@ -181,7 +181,13 @@ public class AgentInstanceFetchIT {
                                 .toolCallId(UUID.randomUUID().toString())
                                 .toolName("search")
                                 .elementId("searchTask")))
-                    .metrics(new AgentInstanceHistoryMetrics().inputTokens(50L).outputTokens(100L)),
+                    .metrics(
+                        new AgentInstanceHistoryMetrics()
+                            .inputTokens(50L)
+                            .outputTokens(100L)
+                            .reasoningTokenCount(10L)
+                            .cacheCreationTokenCount(5L)
+                            .cacheReadTokenCount(2L)),
                 new AgentInstanceHistoryItem()
                     .historyItemId(UUID.randomUUID().toString())
                     .loopIteration(2)
@@ -193,7 +199,13 @@ public class AgentInstanceFetchIT {
                             new AgentInstanceHistoryToolCall()
                                 .toolCallId(UUID.randomUUID().toString())
                                 .toolName("summarize")))
-                    .metrics(new AgentInstanceHistoryMetrics().inputTokens(50L).outputTokens(100L)),
+                    .metrics(
+                        new AgentInstanceHistoryMetrics()
+                            .inputTokens(50L)
+                            .outputTokens(100L)
+                            .reasoningTokenCount(10L)
+                            .cacheCreationTokenCount(5L)
+                            .cacheReadTokenCount(2L)),
                 new AgentInstanceHistoryItem()
                     .historyItemId(UUID.randomUUID().toString())
                     .loopIteration(3)
@@ -201,7 +213,12 @@ public class AgentInstanceFetchIT {
                     .content(List.of(AgentInstanceHistoryContent.text("Done.")))
                     .producedAt(OffsetDateTime.now())
                     .metrics(
-                        new AgentInstanceHistoryMetrics().inputTokens(50L).outputTokens(100L))))
+                        new AgentInstanceHistoryMetrics()
+                            .inputTokens(50L)
+                            .outputTokens(100L)
+                            .reasoningTokenCount(10L)
+                            .cacheCreationTokenCount(5L)
+                            .cacheReadTokenCount(2L))))
         .send()
         .join();
     camundaClient.newCompleteCommand(activatedJob2).execute();
@@ -286,6 +303,18 @@ public class AgentInstanceFetchIT {
           softly.assertThat(metrics).as("metrics").isNotNull();
           softly.assertThat(metrics.getInputTokens()).as("metrics.inputTokens").isEqualTo(0L);
           softly.assertThat(metrics.getOutputTokens()).as("metrics.outputTokens").isEqualTo(0L);
+          softly
+              .assertThat(metrics.getReasoningTokenCount())
+              .as("metrics.reasoningTokenCount")
+              .isEqualTo(0L);
+          softly
+              .assertThat(metrics.getCacheCreationTokenCount())
+              .as("metrics.cacheCreationTokenCount")
+              .isEqualTo(0L);
+          softly
+              .assertThat(metrics.getCacheReadTokenCount())
+              .as("metrics.cacheReadTokenCount")
+              .isEqualTo(0L);
           softly.assertThat(metrics.getModelCalls()).as("metrics.modelCalls").isEqualTo(0);
           softly.assertThat(metrics.getToolCalls()).as("metrics.toolCalls").isEqualTo(0);
 
@@ -349,6 +378,18 @@ public class AgentInstanceFetchIT {
           final var metrics = response.getMetrics();
           softly.assertThat(metrics.getInputTokens()).as("metrics.inputTokens").isEqualTo(150L);
           softly.assertThat(metrics.getOutputTokens()).as("metrics.outputTokens").isEqualTo(300L);
+          softly
+              .assertThat(metrics.getReasoningTokenCount())
+              .as("metrics.reasoningTokenCount")
+              .isEqualTo(30L);
+          softly
+              .assertThat(metrics.getCacheCreationTokenCount())
+              .as("metrics.cacheCreationTokenCount")
+              .isEqualTo(15L);
+          softly
+              .assertThat(metrics.getCacheReadTokenCount())
+              .as("metrics.cacheReadTokenCount")
+              .isEqualTo(6L);
           softly.assertThat(metrics.getModelCalls()).as("metrics.modelCalls").isEqualTo(3);
           softly.assertThat(metrics.getToolCalls()).as("metrics.toolCalls").isEqualTo(2);
 
