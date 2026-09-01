@@ -24,6 +24,7 @@ import {RadioButtonChecked, WarningFilled, CheckmarkOutline} from '#/operate/sha
 import {IndentedGroup, CanceledIcon} from './styled';
 import {OptionalFiltersFormGroup, type OptionalFilter, type OptionalFilterValues} from './OptionalFiltersFormGroup';
 import {DiagramPanel, type ProcessDefinitionSelection} from './DiagramPanel';
+import {InstancesTable} from './InstancesTable';
 
 type FiltersFormValues = OptionalFilterValues & {tenantId?: string};
 
@@ -35,6 +36,7 @@ type Props = {
 	incidents: boolean;
 	completed: boolean;
 	canceled: boolean;
+	sort?: string;
 } & FiltersFormValues;
 
 type ProcessItem = {id: string; label: string};
@@ -58,6 +60,7 @@ const Processes: React.FC<Props> = ({
 	startDateTo,
 	endDateFrom,
 	endDateTo,
+	sort,
 }) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
@@ -378,7 +381,31 @@ const Processes: React.FC<Props> = ({
 					canceled={canceled}
 				/>
 			}
-			bottomPanel={<div />}
+			bottomPanel={
+				<InstancesTable
+					search={{
+						process,
+						version,
+						elementId,
+						tenantId,
+						processInstanceKey,
+						parentProcessInstanceKey,
+						businessId,
+						batchOperationKey,
+						errorMessage,
+						hasRetriesLeft,
+						startDateFrom,
+						startDateTo,
+						endDateFrom,
+						endDateTo,
+						active,
+						incidents,
+						completed,
+						canceled,
+						sort,
+					}}
+				/>
+			}
 		/>
 	);
 };

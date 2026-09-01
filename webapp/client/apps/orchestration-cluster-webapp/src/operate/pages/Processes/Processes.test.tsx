@@ -11,11 +11,15 @@ import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
-import {mockQueryProcessDefinitionsEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockQueryProcessDefinitionsEndpoint,
+	mockQueryProcessInstancesEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {Processes} from './Processes';
 
@@ -56,6 +60,8 @@ function renderPage(props?: RenderProps) {
 	);
 }
 
+const EMPTY_PROCESS_INSTANCES = HttpResponse.json(createQueryProcessInstancesResponse());
+
 describe('<Processes />', () => {
 	beforeEach(() => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
@@ -66,7 +72,10 @@ describe('<Processes />', () => {
 	});
 
 	it('should render the filter sections', async ({worker}) => {
-		worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
 
 		const screen = await renderPage();
 
@@ -77,7 +86,10 @@ describe('<Processes />', () => {
 	});
 
 	it('should disable the version dropdown until a process is selected', async ({worker}) => {
-		worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
 
 		const screen = await renderPage();
 
@@ -85,7 +97,10 @@ describe('<Processes />', () => {
 	});
 
 	it('should enable the version dropdown once a process is selected', async ({worker}) => {
-		worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
 
 		const screen = await renderPage({process: 'order-process'});
 
@@ -93,7 +108,10 @@ describe('<Processes />', () => {
 	});
 
 	it('should always render the element combobox as disabled', async ({worker}) => {
-		worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
 
 		const screen = await renderPage({process: 'order-process', version: 1});
 
@@ -101,7 +119,10 @@ describe('<Processes />', () => {
 	});
 
 	it('should navigate resetting version and elementId when a process is selected', async ({worker}) => {
-		worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
 
 		const screen = await renderPage({process: 'payment-process', version: 1, elementId: 'some-element'});
 
@@ -120,7 +141,10 @@ describe('<Processes />', () => {
 	});
 
 	it('should navigate resetting elementId when a version is selected', async ({worker}) => {
-		worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
 
 		const screen = await renderPage({process: 'order-process', elementId: 'some-element'});
 
@@ -138,7 +162,10 @@ describe('<Processes />', () => {
 
 	describe('parent checkbox derivation', () => {
 		it('shows the running checkbox checked when both active and incidents are true', async ({worker}) => {
-			worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			);
 
 			const screen = await renderPage({active: true, incidents: true});
 
@@ -146,7 +173,10 @@ describe('<Processes />', () => {
 		});
 
 		it('shows the running checkbox indeterminate when only one of active/incidents is true', async ({worker}) => {
-			worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			);
 
 			const screen = await renderPage({active: true, incidents: false});
 
@@ -155,7 +185,10 @@ describe('<Processes />', () => {
 		});
 
 		it('shows the finished checkbox checked when both completed and canceled are true', async ({worker}) => {
-			worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			);
 
 			const screen = await renderPage({completed: true, canceled: true});
 
@@ -163,7 +196,10 @@ describe('<Processes />', () => {
 		});
 
 		it('shows the finished checkbox indeterminate when only one of completed/canceled is true', async ({worker}) => {
-			worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			);
 
 			const screen = await renderPage({completed: true, canceled: false});
 
@@ -174,7 +210,10 @@ describe('<Processes />', () => {
 
 	describe('reset button', () => {
 		it('is disabled at the default filter state', async ({worker}) => {
-			worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			);
 
 			const screen = await renderPage();
 
@@ -182,7 +221,10 @@ describe('<Processes />', () => {
 		});
 
 		it('is enabled once a process is selected', async ({worker}) => {
-			worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			);
 
 			const screen = await renderPage({process: 'order-process'});
 
@@ -190,7 +232,10 @@ describe('<Processes />', () => {
 		});
 
 		it('is enabled once a non-default instance state checkbox is set', async ({worker}) => {
-			worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			);
 
 			const screen = await renderPage({completed: true});
 

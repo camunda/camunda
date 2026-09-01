@@ -502,6 +502,25 @@
 					"startDatePopoverTitle": "Filter instances by start date",
 					"endDatePopoverTitle": "Filter instances by end date"
 				},
+				"instancesTable": {
+					"title": "Process Instances",
+					"name": "Name",
+					"processInstanceKey": "Process Instance Key",
+					"version": "Version",
+					"versionTag": "Version Tag",
+					"businessId": "Business ID",
+					"tenant": "Tenant",
+					"startDate": "Start Date",
+					"endDate": "End Date",
+					"parentProcessInstanceKey": "Parent Process Instance Key",
+					"viewInstance": "View instance {{key}}",
+					"viewParentInstance": "View parent instance {{key}}",
+					"none": "None",
+					"selectAll": "Select all instances",
+					"selectRow": "Select instance {{key}}",
+					"emptyMessage": "There are no Instances matching this filter set",
+					"emptyAdditionalInfo": "To see some results, select at least one Instance state"
+				},
 				"diagramHeader": {
 					"title": "Process",
 					"processName": "Process name",
