@@ -53,6 +53,18 @@ public interface SecretStore extends AutoCloseable {
     return storeType.isInstance(this);
   }
 
+  /**
+   * Whether {@link #resolve} costs one backend call per name rather than covering several names
+   * with a single call (a batched or container-style store already does the latter, as does a store
+   * backed by local disk that pays no round trip at all). {@link ConcurrentSecretStore} reads this
+   * to decide whether resolving through a bounded thread pool has anything to gain: fanning out a
+   * store that already covers many names per call would only add backend calls, not remove round
+   * trips.
+   */
+  default boolean resolvesOneByOne() {
+    return false;
+  }
+
   @Override
   default void close() {}
 }
