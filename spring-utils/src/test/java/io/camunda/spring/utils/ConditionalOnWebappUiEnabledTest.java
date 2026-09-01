@@ -102,13 +102,18 @@ public class ConditionalOnWebappUiEnabledTest {
   }
 
   @Test
-  void shouldIgnoreTasklistLegacyProperty() {
+  void shouldNotMatchWhenTasklistLegacyPropertyIsFalse() {
+    // given
     when(metadata.getAnnotationAttributes(condition.getConditionalClassName()))
         .thenReturn(Map.of("value", new String[] {"tasklist"}));
+    when(environment.getProperty(TASKLIST_LEGACY_PROPERTY, Boolean.class, true)).thenReturn(false);
     when(environment.getProperty(TASKLIST_UNIFIED_PROPERTY, Boolean.class, true)).thenReturn(true);
     when(environment.getProperty(TASKLIST_UI_PROPERTY, Boolean.class, true)).thenReturn(true);
 
-    assertThat(condition.matches(context, metadata)).isTrue();
-    verify(environment, never()).getProperty(TASKLIST_LEGACY_PROPERTY, Boolean.class, true);
+    // when
+    final boolean result = condition.matches(context, metadata);
+
+    // then
+    assertThat(result).isFalse();
   }
 }
