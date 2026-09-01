@@ -26,7 +26,9 @@ import static org.mockito.Mockito.withSettings;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.impl.ReconfigurationHelper;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.ControllableRaftServerProtocol;
@@ -91,6 +93,10 @@ public final class ControllableRaftContexts {
   private final Map<MemberId, DeterministicSingleThreadContext> deterministicExecutors =
       new HashMap<>();
   private final Map<MemberId, CompletableFuture<?>> futuresToFailOnClose = new HashMap<>();
+  // Pending promote/demote/leave futures per member. Unlike futuresToFailOnClose, these carry no
+  // membership bookkeeping; they are only failed when the member's context is torn down, because
+  // their internal retries run on the closed context's scheduler and would never complete.
+  private final Map<MemberId, CompletableFuture<?>> pendingMemberOperations = new HashMap<>();
 
   private Path directory;
   private Random random;
@@ -181,6 +187,7 @@ public final class ControllableRaftContexts {
     leadersAtTerms.clear();
     votesAtTerms.clear();
     futuresToFailOnClose.clear();
+    pendingMemberOperations.clear();
     bootstrappedMembers.clear();
     directory = null;
     MicrometerUtil.close(meterRegistry);
@@ -468,7 +475,7 @@ public final class ControllableRaftContexts {
 
   public void restart(final MemberId memberId) {
     final var raftcontext = raftServers.get(memberId);
-    raftcontext.getThreadContext().execute(raftcontext::close);
+    raftcontext.getThreadContext().execute(() -> closeRaftContext(raftcontext));
     runUntilDone(memberId);
     deterministicExecutors.remove(memberId).close();
     snapshotStores.get(memberId).close();
@@ -484,6 +491,7 @@ public final class ControllableRaftContexts {
         pendingJoin.completeExceptionally(new RuntimeException("Shutting down"));
       }
     }
+    failPendingMemberOperation(memberId);
 
     final var newContext = createRaftContextForMember(random, Integer.parseInt(memberId.id()));
     // Only members that are part of the cluster restart via bootstrap. A member whose join did
@@ -499,17 +507,74 @@ public final class ControllableRaftContexts {
 
   public CompletableFuture<Void> join(
       final MemberId memberId, final Collection<MemberId> otherMembers) {
+    return join(memberId, RaftMember.Type.ACTIVE, otherMembers);
+  }
+
+  public CompletableFuture<Void> join(
+      final MemberId memberId,
+      final RaftMember.Type type,
+      final Collection<MemberId> otherMembers) {
     final var raftcontext = raftServers.get(memberId);
-    raftcontext.getThreadContext().execute(raftcontext::close);
+    raftcontext.getThreadContext().execute(() -> closeRaftContext(raftcontext));
     runUntilDone(memberId);
 
     deterministicExecutors.remove(memberId).close();
     snapshotStores.get(memberId).close();
     MicrometerUtil.close(meterRegistries.get(memberId));
+    failPendingMemberOperation(memberId);
     createRaftContextForMember(random, Integer.parseInt(memberId.id()));
-    final var future = raftServers.get(memberId).getCluster().join(otherMembers);
+    final var future = raftServers.get(memberId).getCluster().join(type, otherMembers);
     futuresToFailOnClose.put(memberId, future);
     return future;
+  }
+
+  // Promote, demote and leave are deliberately not part of the random RaftOperation streams:
+  // randomly changing arbitrary members' types would make the properties' goals meaningless.
+  // Properties drive them explicitly and retry on failure, like they do with join.
+
+  /** Requests the promotion of the given member's local member to ACTIVE. */
+  public CompletableFuture<Void> promote(final MemberId memberId) {
+    final var future =
+        raftServers.get(memberId).getCluster().getLocalMember().promote(RaftMember.Type.ACTIVE);
+    pendingMemberOperations.put(memberId, future);
+    return future;
+  }
+
+  /** Requests the demotion of the given member's local member to PASSIVE. */
+  public CompletableFuture<Void> demote(final MemberId memberId) {
+    final var future =
+        raftServers.get(memberId).getCluster().getLocalMember().demote(RaftMember.Type.PASSIVE);
+    pendingMemberOperations.put(memberId, future);
+    return future;
+  }
+
+  /** Requests that the given member leaves the cluster. */
+  public CompletableFuture<Void> leave(final MemberId memberId) {
+    final var future = new ReconfigurationHelper(raftServers.get(memberId)).leave();
+    pendingMemberOperations.put(memberId, future);
+    return future;
+  }
+
+  /**
+   * Mirrors {@link io.atomix.raft.impl.DefaultRaftServer#shutdown()}: transition to INACTIVE before
+   * closing so that the current role - in particular a leader's appender - is stopped first. Tasks
+   * already queued behind the close (append callbacks, reconfiguration completions) then no-op on
+   * the stopped role instead of touching the closed, unmapped journal, which crashed with "journal
+   * not open" or a SIGSEGV in the memory-mapped segment.
+   */
+  private static void closeRaftContext(final RaftContext raftContext) {
+    raftContext.transition(RaftServer.Role.INACTIVE);
+    raftContext.close();
+  }
+
+  private void failPendingMemberOperation(final MemberId memberId) {
+    final var pendingOperation = pendingMemberOperations.remove(memberId);
+    if (pendingOperation != null && !pendingOperation.isDone()) {
+      // The operation's internal retries are driven by timers on the closed context's scheduler
+      // and would never complete; fail the future so that properties retry the operation on the
+      // new context.
+      pendingOperation.completeExceptionally(new RuntimeException("Shutting down"));
+    }
   }
 
   // This is a different from other operations, as it restarts the node and force operations on
@@ -520,7 +585,7 @@ public final class ControllableRaftContexts {
     LOG.info("Shutting down member {}", memberId.id());
     {
       final var raftContext = raftServers.get(memberId);
-      raftContext.getThreadContext().execute(raftContext::close);
+      raftContext.getThreadContext().execute(() -> closeRaftContext(raftContext));
       runUntilDone(memberId);
     }
     deterministicExecutors.remove(memberId).close();
@@ -596,21 +661,20 @@ public final class ControllableRaftContexts {
 
   // Verify that committed entries in all logs are equal
   public void assertAllLogsEqual() {
+    assertAllLogsEqual(raftServers.keySet());
+  }
+
+  // Verify that committed entries in the given members' logs are equal
+  public void assertAllLogsEqual(final Collection<MemberId> members) {
+    final var contexts = members.stream().map(raftServers::get).toList();
     final var readers =
-        raftServers.values().stream()
+        contexts.stream()
             .collect(Collectors.toMap(Function.identity(), s -> s.getLog().openCommittedReader()));
     long index =
-        raftServers.values().stream()
-                .map(s -> s.getLog().getFirstIndex())
-                .min(Long::compareTo)
-                .orElse(1L)
-            - 1;
+        contexts.stream().map(s -> s.getLog().getFirstIndex()).min(Long::compareTo).orElse(1L) - 1;
 
     final long commitIndexOnLeader =
-        raftServers.values().stream()
-            .map(RaftContext::getCommitIndex)
-            .max(Long::compareTo)
-            .orElseThrow();
+        contexts.stream().map(RaftContext::getCommitIndex).max(Long::compareTo).orElseThrow();
 
     while (index < commitIndexOnLeader) {
       final var nextIndex = index + 1;
@@ -788,7 +852,16 @@ public final class ControllableRaftContexts {
   }
 
   public boolean allMembersAreReady() {
-    return raftServers.values().stream()
+    return allMembersAreReady(raftServers.keySet());
+  }
+
+  /**
+   * Like {@link #allMembersAreReady()}, but only for the given members. Useful when a member left
+   * the cluster and is thus never READY again.
+   */
+  public boolean allMembersAreReady(final Collection<MemberId> members) {
+    return members.stream()
+        .map(raftServers::get)
         .map(RaftContext::getState)
         .filter(state -> !READY.equals(state))
         .findAny()
