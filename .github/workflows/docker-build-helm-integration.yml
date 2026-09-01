@@ -7,11 +7,11 @@ name: Docker Build, Helm Deploy & E2E Tests (SaaS + Helm)
 on:
   push:
     branches:
-      - main
+      - stable/8.10
   workflow_dispatch:
     inputs:
       version:
-        description: 'Docker image version tag (defaults to ...-mq<PR_NUMBER>-run<run_id>-a<attempt> for merge queue, ...-dispatch-run<run_id>-a<attempt> for manual dispatch, or ...-main-run<run_id>-a<attempt> for push to main)'
+        description: 'Docker image version tag (defaults to ...-mq<PR_NUMBER>-run<run_id>-a<attempt> for merge queue, ...-dispatch-run<run_id>-a<attempt> for manual dispatch, or ...-mq<PR_NUMBER|SHA>-run<run_id>-a<attempt> for push to stable/8.10 — the mq prefix is required by the Harbor replication filter `**-mq**-run**`)'
         type: string
         required: false
       helmRepositoryBranchName:
@@ -108,9 +108,10 @@ jobs:
   #   1. required org secrets are present
   #   2. expected Vault paths are readable from this repo
   #   3. when a user supplies inputs.version on workflow_dispatch, it
-  #      matches one of the three documented tag shapes — otherwise the
-  #      build would push a tag the Harbor replication filter silently
-  #      drops, and helm-deploy would later fail with ImagePullBackOff.
+  #      matches one of the two documented tag shapes — otherwise the
+  #      build would push a tag that the Harbor replication filter
+  #      (`**-mq**-run**`) silently drops, and helm-deploy would later
+  #      fail with ImagePullBackOff.
   # Fails fast before any expensive build job runs.
   preflight:
     name: Preflight checks
@@ -167,11 +168,10 @@ jobs:
         id: check-tag-shape
         # The only tag this job has access to before build-and-push runs is
         # the user-supplied workflow_dispatch override. Validate that it
-        # matches one of the three documented shapes:
-        #   - "...-main-run<run_id>-a<attempt>"               (push to main)
-        #   - "...-mq<PR_NUMBER>-run<run_id>-a<attempt>"      (merge_group)
-        #   - "...-dispatch-run<run_id>-a<attempt>"           (workflow_dispatch)
-        # Other event paths synthesize the tag inside
+        # matches one of the two documented shapes:
+        #   - "...-mq<PR_NUMBER|SHA>-run<run_id>-a<attempt>"   (replicated)
+        #   - "...-dispatch-run<run_id>-a<attempt>"            (not replicated)
+        # Other event paths (push, merge_group) synthesize the tag inside
         # build-and-push.set-image-tag, which is the single source of truth
         # for that logic — preflight cannot validate that tag without
         # duplicating the producer.
@@ -183,11 +183,13 @@ jobs:
             echo "No inputs.version provided — tag will be synthesized by build-and-push.set-image-tag."
             exit 0
           fi
-          contract_re='^.+-(main|dispatch|mq[0-9]+)-run[0-9]+-a[0-9]+$'
+          mq_re='^.+-mq[A-Za-z0-9]+-run[0-9]+-a[0-9]+$'
+          dispatch_re='^.+-dispatch-run[0-9]+-a[0-9]+$'
           echo "Validating inputs.version: $INPUT_VERSION"
-          if [[ ! "$INPUT_VERSION" =~ $contract_re ]]; then
-            echo "inputs.version '$INPUT_VERSION' does not match the documented contract:" >&2
-            echo "  **-(main|dispatch|mq<digits>)-run**-a**" >&2
+          if [[ ! "$INPUT_VERSION" =~ $mq_re && ! "$INPUT_VERSION" =~ $dispatch_re ]]; then
+            echo "inputs.version '$INPUT_VERSION' does not match either documented shape:" >&2
+            echo "  - **-mq**-run**-a**     (Harbor-replicated)" >&2
+            echo "  - **-dispatch-run**-a** (not replicated)" >&2
             exit 1
           fi
           echo "inputs.version shape OK."
@@ -452,8 +454,24 @@ jobs:
             # For manual dispatch: <maven-version>-dispatch-run<run_id>-a<run_attempt> (e.g., 8.10.0-SNAPSHOT-dispatch-run12345678-a1)
             echo "tag=${MAVEN_VERSION}-dispatch-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
           else
-            # For push to main: <maven-version>-main-run<run_id>-a<run_attempt> (e.g., 8.10.0-SNAPSHOT-main-run12345678-a1)
-            echo "tag=${MAVEN_VERSION}-main-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+            # For push to stable/8.10 (typically a backport): synthesize an
+            # `-mq<N>-run<id>-a<n>` tag from the original PR number carried in
+            # the commit subject's "(#NNNN)" suffix so the SRE Harbor
+            # replication filter `**-mq**-run**` accepts the image. A
+            # `-main-run` tag would both name the wrong branch and collide
+            # with main's own generation filter.
+            # Fall back to a 7-char SHA-based mq tag if the subject doesn't
+            # carry a PR number (manual squash, rebase, force-push).
+            SUBJECT=$(git log -1 --format=%s)
+            PR_NUM=$(sed -nE 's|.*\(#([0-9]+)\).*|\1|p' <<< "${SUBJECT}")
+            if [[ -n "${PR_NUM}" ]]; then
+              # e.g. 8.10.0-SNAPSHOT-mq61428-run12345678-a1
+              echo "tag=${MAVEN_VERSION}-mq${PR_NUM}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+            else
+              SHA_SHORT="${GITHUB_SHA::7}"
+              echo "::warning::Could not derive PR number from commit subject '${SUBJECT}'; using SHA-based mq tag instead."
+              echo "tag=${MAVEN_VERSION}-mq${SHA_SHORT}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       - name: Download Operate frontend artifact
@@ -810,7 +828,7 @@ jobs:
           IMAGE_TAG: ${{ needs.build-and-push.outputs.image-tag }}
         run: |
           # Use the image tag as the generation name to match filter patterns
-          # e.g., "8.10.0-SNAPSHOT-main-run12345678-a1" matches "**-main-run**-a**"
+          # e.g., "8.10.0-SNAPSHOT-mq61428-run12345678-a1" matches "**-mq**-run**-a**"
           GEN_NAME="${IMAGE_TAG}"
 
           curl -X POST \
