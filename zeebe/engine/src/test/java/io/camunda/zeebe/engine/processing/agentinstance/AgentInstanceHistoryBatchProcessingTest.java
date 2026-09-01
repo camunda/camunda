@@ -3047,6 +3047,133 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
+  public void shouldAccumulateMetricsOnceForSameItemIdPendingUnderTwoLeases() {
+    // given — the same historyItemId arrives under a second lease while the first lease's copy
+    // is still pending (the job has not completed, so neither copy is committed or discarded
+    // yet). The metrics-accumulated-ids mechanism keys on historyItemId alone, so it must
+    // recognize the second copy as the same id and skip re-accumulating its metrics, even though
+    // the two copies live under different leases and neither has won yet.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+
+    // Activation 1 (superseded): push the item under lease1, carrying non-zero token/tool-call
+    // deltas, then fail the job to trigger re-activation. Its copy stays pending — never
+    // committed, never discarded.
+    final var batch1 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+    final var jobIndex1 = batch1.getValue().getJobKeys().indexOf(jobKey);
+    final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getLeaseToken();
+
+    final var firstItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-pending-under-two-leases")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("hi"));
+    firstItem.getMetrics().setInputTokens(100L).setOutputTokens(40L);
+    firstItem.addToolCall(
+        new AgentHistoryEmbeddedToolCall().setToolCallId("call-1").setToolName("lookup"));
+    final var firstUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(lease1)
+            .withHistory(List.of(firstItem))
+            .update();
+    assertThat(firstUpdate.getValue().getMetrics().getInputTokens()).isEqualTo(100L);
+    assertThat(firstUpdate.getValue().getMetrics().getOutputTokens()).isEqualTo(40L);
+    assertThat(firstUpdate.getValue().getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(firstUpdate.getValue().getMetrics().getToolCalls()).isEqualTo(1);
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(helper.getJobType())
+        .withLeaseToken(lease1)
+        .withRetries(1)
+        .fail();
+
+    // Activation 2: re-activate under a new lease — lease1's copy is still pending, the job has
+    // not completed — then resend the same historyItemId with its own (different) deltas.
+    final var batch2 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
+    final var jobIndex2 = batch2.getValue().getJobKeys().indexOf(jobKey);
+    final var lease2 = batch2.getValue().getJobs().get(jobIndex2).getLeaseToken();
+    assertThat(lease2).as("re-activation must advance the lease token").isNotEqualTo(lease1);
+
+    final var secondItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-pending-under-two-leases")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("hi"));
+    secondItem.getMetrics().setInputTokens(200L).setOutputTokens(80L);
+    secondItem.addToolCall(
+        new AgentHistoryEmbeddedToolCall().setToolCallId("call-2").setToolName("lookup"));
+
+    // when
+    final var secondUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(lease2)
+            .withHistory(List.of(secondItem))
+            .update();
+
+    // then — the second copy shares the first copy's historyItemId, so its metrics must not be
+    // counted again: totals stay exactly where the first (still-pending) copy left them.
+    assertThat(secondUpdate.getValue().getMetrics().getInputTokens())
+        .as("item-pending-under-two-leases' metrics were already accumulated under lease1")
+        .isEqualTo(100L);
+    assertThat(secondUpdate.getValue().getMetrics().getOutputTokens())
+        .as("item-pending-under-two-leases' metrics were already accumulated under lease1")
+        .isEqualTo(40L);
+    assertThat(secondUpdate.getValue().getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(secondUpdate.getValue().getMetrics().getToolCalls()).isEqualTo(1);
+    assertThat(secondUpdate.getValue().getChangedAttributes())
+        .as("metrics were skipped for the item already accumulated under lease1")
+        .doesNotContain("metrics");
+  }
+
+  @Test
   public void shouldAcceptPushFromSecondElementInstanceAfterFirstCompletes() {
     // given — a sequential multi-instance AI-agent service task: EI1 activates, completes, then
     // EI2 activates. This is the counter-case to the second-active-writer rejection above: it
