@@ -799,6 +799,16 @@ public final class ProcessingStateMachine implements CloseableSilently {
     return errorHandlingPhase != ErrorHandlingPhase.ENDLESS_ERROR_LOOP;
   }
 
+  /**
+   * How long processing has been continuously stopped because pending side effects filled the
+   * queue, or {@link Duration#ZERO} if it currently has room to read more. Lets the stream
+   * processor tell a stall that has outlasted a normal commit round trip from the brief, expected
+   * waits of healthy operation.
+   */
+  public Duration getPendingSideEffectsBlockedDuration() {
+    return sideEffectRunner.capacityExhaustedDuration();
+  }
+
   public void startProcessing(final LastProcessingPositions lastProcessingPositions) {
     // Replay ends at the end of the log and returns the lastSourceRecordPosition
     // which is equal to the last processed position

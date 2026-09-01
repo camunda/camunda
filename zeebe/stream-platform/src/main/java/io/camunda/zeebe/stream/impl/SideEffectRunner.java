@@ -9,11 +9,13 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.logstreams.storage.LogStorage.CommittedPositionListener;
 import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.PostCommitTask;
 import io.camunda.zeebe.stream.api.ProcessingResponse;
 import io.camunda.zeebe.stream.impl.metrics.ProcessingMetrics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.List;
@@ -46,6 +48,8 @@ final class SideEffectRunner implements CommittedPositionListener {
   private final Queue<SideEffects> sideEffects;
   private long highestCommittedPosition = StreamProcessor.UNSET_POSITION;
   private boolean executingSideEffects;
+  private volatile boolean capacityExhausted;
+  private volatile long capacityExhaustedSinceMillis;
 
   SideEffectRunner(
       final int partitionId,
@@ -71,6 +75,22 @@ final class SideEffectRunner implements CommittedPositionListener {
    */
   boolean hasCapacity() {
     return sideEffects.size() < maxPendingSideEffects;
+  }
+
+  /**
+   * How long the queue has been continuously at {@code maxPendingSideEffects}, or {@link
+   * Duration#ZERO} if it currently has room. Distinguishes a stall that has outlasted a normal
+   * commit round trip from the brief, expected waits that happen under healthy operation.
+   *
+   * <p>Must be called on {@link #actor}'s thread to read a value consistent with {@link
+   * #hasCapacity()}; the stream processor's health report calls it from other threads too, where it
+   * still returns a safe, if possibly stale, answer.
+   */
+  Duration capacityExhaustedDuration() {
+    return capacityExhausted
+        ? Duration.ofMillis(
+            Math.max(0, ActorClock.currentTimeMillis() - capacityExhaustedSinceMillis))
+        : Duration.ZERO;
   }
 
   /**
@@ -106,6 +126,12 @@ final class SideEffectRunner implements CommittedPositionListener {
             new AggregatePostCommitTask(partitionId, position, postCommitTasks),
             completionCallback));
     processingMetrics.setPendingSideEffects(sideEffects.size());
+    if (!capacityExhausted && !hasCapacity()) {
+      // Ordered before the flag write below: a reader that observes capacityExhausted == true is
+      // then guaranteed to observe this timestamp too.
+      capacityExhaustedSinceMillis = ActorClock.currentTimeMillis();
+      capacityExhausted = true;
+    }
     executeNextSideEffects();
   }
 
@@ -149,6 +175,7 @@ final class SideEffectRunner implements CommittedPositionListener {
     completedSideEffects.completionCallback().run();
     executeNextSideEffects();
     if (wasFull) {
+      capacityExhausted = false;
       // Processing stopped reading records because the queue was full. Nothing else will wake it:
       // the records it stopped on are already appended, so no append notification is coming.
       // Signalling only on the full -> not-full transition keeps this to one job per stall
