@@ -6,24 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {skipToken, useQuery} from '@tanstack/react-query';
+import {useSuspenseQuery} from '@tanstack/react-query';
 import {request} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
 
-function useDecisionDefinitionXml(decisionDefinitionKey?: string) {
-	return useQuery({
+function useDecisionDefinitionXml(decisionDefinitionKey: string) {
+	return useSuspenseQuery({
 		queryKey: ['decisionDefinitionXml', decisionDefinitionKey] as const,
-		queryFn:
-			decisionDefinitionKey === undefined
-				? skipToken
-				: async () => {
-						const {response, error} = await request(endpoints.getDecisionDefinitionXml({decisionDefinitionKey}));
-						if (error !== null) {
-							throw error;
-						}
+		queryFn: async () => {
+			const {response, error} = await request(endpoints.getDecisionDefinitionXml({decisionDefinitionKey}));
+			if (error !== null) {
+				throw error;
+			}
 
-						return response.text();
-					},
+			return response.text();
+		},
 		staleTime: 'static',
 	});
 }

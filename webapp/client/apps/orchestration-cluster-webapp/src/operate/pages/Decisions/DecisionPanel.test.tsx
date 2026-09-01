@@ -67,4 +67,23 @@ describe('<DecisionPanel />', () => {
 		await expect.element(screen.getByTestId('decision-viewer')).toBeVisible();
 		await expect.element(screen.getByText('Invoice Amount')).toBeVisible();
 	});
+
+	it('retries loading a decision definition after an error', async ({worker}) => {
+		worker.use(
+			mockGetDecisionDefinitionXmlEndpoint({
+				successResponse: HttpResponse.json({}, {status: 500}),
+			}),
+		);
+
+		const screen = await renderDecisionPanel({
+			decisionDefinitionSelection: {kind: 'single-version', definition: DEFINITION},
+		});
+
+		await expect.element(screen.getByText('Data could not be fetched')).toBeVisible();
+		worker.use(mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}));
+
+		await screen.getByRole('button', {name: 'Try again'}).click();
+
+		await expect.element(screen.getByTestId('decision-viewer')).toBeVisible();
+	});
 });

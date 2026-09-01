@@ -6,14 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {Suspense} from 'react';
 import {useTranslation} from 'react-i18next';
+import {ErrorBoundary} from 'react-error-boundary';
+import {QueryErrorResetBoundary} from '@tanstack/react-query';
+import {Button} from '@carbon/react';
 import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {DecisionViewer} from '#/operate/shared/DecisionViewer';
 import {DiagramShell} from '#/operate/shared/DiagramShell/DiagramShell';
+import {ErrorMessage} from '#/operate/shared/ErrorMessage/ErrorMessage';
 import {DecisionHeader} from './DecisionHeader';
 import {useDecisionDefinitionXml} from './useDecisionDefinitionXml';
 import {getDecisionDefinitionName} from './getDecisionDefinitionName';
-import {Section} from './styled';
+import {DecisionError, Section} from './styled';
 
 type DecisionDefinitionSelection =
 	| {kind: 'no-match'}
@@ -27,39 +32,39 @@ type Props = {
 	isDefinitionSelectionError?: boolean;
 };
 
+const DecisionDiagram: React.FC<{definition: DecisionDefinition}> = ({definition}) => {
+	const {data: xml} = useDecisionDefinitionXml(definition.decisionDefinitionKey);
+
+	return (
+		<DiagramShell status="content">
+			<DecisionViewer xml={xml} decisionViewId={definition.decisionDefinitionId} />
+		</DiagramShell>
+	);
+};
+
+const DecisionDiagramError: React.FC<{onRetry: () => void}> = ({onRetry}) => {
+	const {t} = useTranslation();
+
+	return (
+		<DecisionError gap={5}>
+			<ErrorMessage />
+			<Button kind="tertiary" size="sm" onClick={onRetry}>
+				{t('errorGenericErrorPageButtonLabel')}
+			</Button>
+		</DecisionError>
+	);
+};
+
 const DecisionPanel: React.FC<Props> = ({
 	decisionDefinitionSelection,
 	isDefinitionSelectionLoading = false,
 	isDefinitionSelectionError = false,
 }) => {
 	const {t} = useTranslation();
-	const selectedDefinitionKey =
-		decisionDefinitionSelection.kind === 'single-version'
-			? decisionDefinitionSelection.definition.decisionDefinitionKey
-			: undefined;
-	const selectedDefinitionId =
-		decisionDefinitionSelection.kind === 'single-version'
-			? decisionDefinitionSelection.definition.decisionDefinitionId
-			: undefined;
 	const selectedDefinitionName =
 		decisionDefinitionSelection.kind !== 'no-match'
 			? getDecisionDefinitionName(decisionDefinitionSelection.definition)
 			: t('operate.decisions.diagramHeader.title');
-
-	const {data: xml, isFetching: isXmlFetching, isError: isXmlError} = useDecisionDefinitionXml(selectedDefinitionKey);
-
-	const getStatus = () => {
-		if (isDefinitionSelectionLoading || isXmlFetching) {
-			return 'loading';
-		}
-		if (isDefinitionSelectionError || isXmlError) {
-			return 'error';
-		}
-		if (decisionDefinitionSelection.kind !== 'single-version') {
-			return 'empty';
-		}
-		return 'content';
-	};
 
 	const getEmptyMessage = () => {
 		switch (decisionDefinitionSelection.kind) {
@@ -84,9 +89,37 @@ const DecisionPanel: React.FC<Props> = ({
 	return (
 		<Section aria-label="Decision Panel">
 			<DecisionHeader decisionDefinitionSelection={decisionDefinitionSelection} />
-			<DiagramShell status={getStatus()} emptyMessage={getEmptyMessage()}>
-				<DecisionViewer xml={xml ?? null} decisionViewId={selectedDefinitionId ?? null} />
-			</DiagramShell>
+			{(() => {
+				if (isDefinitionSelectionLoading) {
+					return <DiagramShell status="loading">{null}</DiagramShell>;
+				}
+				if (isDefinitionSelectionError) {
+					return <DiagramShell status="error">{null}</DiagramShell>;
+				}
+				if (decisionDefinitionSelection.kind !== 'single-version') {
+					return (
+						<DiagramShell status="empty" emptyMessage={getEmptyMessage()}>
+							{null}
+						</DiagramShell>
+					);
+				}
+
+				return (
+					<QueryErrorResetBoundary>
+						{({reset}) => (
+							<ErrorBoundary
+								onReset={reset}
+								fallbackRender={({resetErrorBoundary}) => <DecisionDiagramError onRetry={resetErrorBoundary} />}
+								resetKeys={[decisionDefinitionSelection.definition.decisionDefinitionKey]}
+							>
+								<Suspense fallback={<DiagramShell status="loading">{null}</DiagramShell>}>
+									<DecisionDiagram definition={decisionDefinitionSelection.definition} />
+								</Suspense>
+							</ErrorBoundary>
+						)}
+					</QueryErrorResetBoundary>
+				);
+			})()}
 		</Section>
 	);
 };
