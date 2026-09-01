@@ -3541,6 +3541,126 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
+  public void shouldAccumulateMetricsPerAgentInstanceForSameHistoryItemId() {
+    // given — agent instance A receives "item-shared" with non-zero metrics
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKeyA = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKeyA =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKeyA)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var agentInstanceKeyA =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKeyA)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobAKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKeyA)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+
+    final var itemForA =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-shared")
+            .setRole(AgentHistoryRole.USER)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("hi"));
+    itemForA.getMetrics().setInputTokens(10L).setOutputTokens(5L);
+    final var updateA =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKeyA)
+            .withElementInstanceKey(elementInstanceKeyA)
+            .withJobKey(jobAKey)
+            .withHistory(List.of(itemForA))
+            .update();
+
+    // then — instance A's metrics reflect its own item
+    assertThat(updateA.getValue().getMetrics().getInputTokens()).isEqualTo(10L);
+    assertThat(updateA.getValue().getMetrics().getOutputTokens()).isEqualTo(5L);
+
+    // given — a second, unrelated agent instance B
+    final var processInstanceKeyB = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKeyB =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKeyB)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var agentInstanceKeyB =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKeyB)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobBKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKeyB)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+
+    // when — the SAME historyItemId ("item-shared") is sent to agent instance B for the first
+    // time, carrying its own (different) non-zero metrics
+    final var itemForB =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-shared")
+            .setRole(AgentHistoryRole.USER)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("hi"));
+    itemForB.getMetrics().setInputTokens(20L).setOutputTokens(8L);
+    final var updateB =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKeyB)
+            .withElementInstanceKey(elementInstanceKeyB)
+            .withJobKey(jobBKey)
+            .withHistory(List.of(itemForB))
+            .update();
+
+    // then — instance B accumulates its own metrics; the same historyItemId already accumulated
+    // on instance A does not cause B's accumulation to be skipped, because the
+    // metrics-accumulated-ids store is keyed by (agentInstanceKey, historyItemId), not by
+    // historyItemId alone.
+    assertThat(updateB.getValue().getMetrics().getInputTokens())
+        .as("instance B accumulates its own metrics for item-shared, unaffected by instance A")
+        .isEqualTo(20L);
+    assertThat(updateB.getValue().getMetrics().getOutputTokens())
+        .as("instance B accumulates its own metrics for item-shared, unaffected by instance A")
+        .isEqualTo(8L);
+    assertThat(updateB.getValue().getChangedAttributes())
+        .as("metrics were not skipped for instance B's first-ever item-shared")
+        .contains("metrics");
+  }
+
+  @Test
   public void shouldNotTreatDiscardedItemAsDuplicateWhenResent() {
     // given — one job pushes two items under two different leases: "item-committed" under
     // lease-1, "item-discarded" under lease-2. Both carry non-zero token deltas so a later
