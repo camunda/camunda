@@ -388,7 +388,13 @@ public final class AgentHistoryEntity
         outputTokens,
         durationMs,
         content,
-        toolCalls);
+        toolCalls,
+        historyItemId,
+        tools,
+        model,
+        provider,
+        limits,
+        systemPrompt);
   }
 
   @Override
@@ -420,7 +426,13 @@ public final class AgentHistoryEntity
         && Objects.equals(outputTokens, that.outputTokens)
         && Objects.equals(durationMs, that.durationMs)
         && Objects.equals(content, that.content)
-        && Objects.equals(toolCalls, that.toolCalls);
+        && Objects.equals(toolCalls, that.toolCalls)
+        && Objects.equals(historyItemId, that.historyItemId)
+        && Objects.equals(tools, that.tools)
+        && Objects.equals(model, that.model)
+        && Objects.equals(provider, that.provider)
+        && Objects.equals(limits, that.limits)
+        && Objects.equals(systemPrompt, that.systemPrompt);
   }
 
   @Override
@@ -472,6 +484,21 @@ public final class AgentHistoryEntity
         + content
         + ", toolCalls="
         + toolCalls
+        + ", historyItemId='"
+        + historyItemId
+        + '\''
+        + ", tools="
+        + tools
+        + ", model='"
+        + model
+        + '\''
+        + ", provider='"
+        + provider
+        + '\''
+        + ", limits="
+        + limits
+        + ", systemPrompt="
+        + systemPrompt
         + '}';
   }
 
