@@ -46,6 +46,9 @@ public final class AgentHistoryFixtures extends CommonFixtures {
             .producedAt(OffsetDateTime.now())
             .inputTokens(100L)
             .outputTokens(50L)
+            .reasoningTokenCount(30L)
+            .cacheCreationTokenCount(20L)
+            .cacheReadTokenCount(10L)
             .durationMs(200L)
             .contentItems(List.of())
             .toolCallValues(List.of());
