@@ -19,14 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.response.ActivatedJobImpl;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,16 +33,11 @@ import java.util.function.IntConsumer;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 final class JobWorkerMetricsTest {
 
   private static final int AUTO_COMPLETE_ALL_JOBS = 0;
-  private static final Executor REFUSING_EXECUTOR =
-      command -> {
-        throw new RejectedExecutionException("The executor has no capacity");
-      };
-  private final DeterministicScheduler executor = new AlwaysRunningDeterministicScheduler();
+  private final DeterministicScheduler executor = new DeterministicScheduler();
 
   private JobWorkerImpl createWorker(
       final int autoCompleteCount,
@@ -64,53 +56,26 @@ final class JobWorkerMetricsTest {
       final JobPoller poller,
       final JobStreamer streamer,
       final JobWorkerMetrics metrics) {
-    return createWorker(autoCompleteCount, poller, streamer, metrics, executor);
-  }
-
-  private JobWorkerImpl createWorker(
-      final int autoCompleteCount,
-      final JobPoller poller,
-      final JobStreamer streamer,
-      final JobWorkerMetrics metrics,
-      final Executor jobExecutor) {
     return new JobWorkerImpl(
         32,
         executor,
         Duration.ofSeconds(30),
-        Mockito.mock(JobClient.class),
         new TestJobRunnableFactory(autoCompleteCount),
         poller,
         streamer,
         delay -> delay,
         delay -> delay,
         metrics,
-        jobExecutor);
+        executor);
   }
 
   private JobPoller createNoopJobPoller() {
     return (maxJobsToActivate, jobConsumer, doneCallback, errorCallback, openSupplier) -> {};
   }
 
-  /**
-   * The worker asks the scheduler whether it is still running when the executor refuses a job.
-   * {@link DeterministicScheduler} answers both questions by throwing.
-   */
-  private static final class AlwaysRunningDeterministicScheduler extends DeterministicScheduler {
-    @Override
-    public boolean isShutdown() {
-      return false;
-    }
-
-    @Override
-    public boolean isTerminated() {
-      return false;
-    }
-  }
-
   private static final class TestJobWorkerMetrics implements JobWorkerMetrics {
     private final AtomicInteger jobsActivated = new AtomicInteger();
     private final AtomicInteger jobsHandled = new AtomicInteger();
-    private final AtomicInteger jobsRefused = new AtomicInteger();
 
     @Override
     public void jobActivated(final int count) {
@@ -120,11 +85,6 @@ final class JobWorkerMetricsTest {
     @Override
     public void jobHandled(final int count) {
       jobsHandled.addAndGet(count);
-    }
-
-    @Override
-    public void jobRefused(final int count) {
-      jobsRefused.addAndGet(count);
     }
   }
 
@@ -229,32 +189,6 @@ final class JobWorkerMetricsTest {
         assertThat(metrics.jobsHandled).hasValue(2);
       }
     }
-
-    @Test
-    void shouldCountARefusedJobAsRefused() {
-      // given a worker whose handler executor takes no job at all
-      final TestJobStreamer streamer = new TestJobStreamer();
-      final TestJobWorkerMetrics metrics = new TestJobWorkerMetrics();
-
-      try (final JobWorkerImpl ignored =
-          createWorker(
-              AUTO_COMPLETE_ALL_JOBS,
-              createNoopJobPoller(),
-              streamer,
-              metrics,
-              REFUSING_EXECUTOR)) {
-        // when the broker pushes two jobs to it
-        streamer.streamJob();
-        streamer.streamJob();
-
-        // then the jobs are reported as refused rather than as still being worked on, so that
-        // activated minus handled minus refused reads as the nothing the worker is really doing
-        executor.runUntilIdle();
-        assertThat(metrics.jobsActivated).hasValue(2);
-        assertThat(metrics.jobsHandled).hasValue(0);
-        assertThat(metrics.jobsRefused).hasValue(2);
-      }
-    }
   }
 
   @Nested
@@ -294,29 +228,6 @@ final class JobWorkerMetricsTest {
         // then
         executor.runUntilIdle();
         assertThat(metrics.jobsHandled).hasValue(3);
-      }
-    }
-
-    @Test
-    void shouldCountARefusedJobAsRefused() {
-      // given a worker whose handler executor takes no job at all
-      final TestJobPoller poller = new TestJobPoller();
-      final TestJobWorkerMetrics metrics = new TestJobWorkerMetrics();
-
-      try (final JobWorkerImpl ignored =
-          createWorker(
-              AUTO_COMPLETE_ALL_JOBS, poller, JobStreamer.noop(), metrics, REFUSING_EXECUTOR)) {
-        // when the poller hands over two jobs
-        executor.tick(1, TimeUnit.MINUTES);
-        poller.produceJob();
-        poller.produceJob();
-
-        // then the jobs are reported as refused rather than as still being worked on, so that
-        // activated minus handled minus refused reads as the nothing the worker is really doing
-        executor.runUntilIdle();
-        assertThat(metrics.jobsActivated).hasValue(2);
-        assertThat(metrics.jobsHandled).hasValue(0);
-        assertThat(metrics.jobsRefused).hasValue(2);
       }
     }
   }

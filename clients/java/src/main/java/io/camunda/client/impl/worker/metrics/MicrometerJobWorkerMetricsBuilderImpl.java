@@ -44,13 +44,9 @@ public final class MicrometerJobWorkerMetricsBuilderImpl
   public JobWorkerMetrics build() {
     final Counter jobActivatedCounter = meterRegistry.counter(Names.JOB_ACTIVATED.asString(), tags);
     final Counter jobHandledCounter = meterRegistry.counter(Names.JOB_HANDLED.asString(), tags);
-    final Counter jobRefusedCounter = meterRegistry.counter(Names.JOB_REFUSED.asString(), tags);
     final Counter streamInactivityRecreatedCounter =
         meterRegistry.counter(Names.STREAM_INACTIVITY_RECREATED.asString(), tags);
     return new MicrometerJobWorkerMetrics(
-        jobActivatedCounter,
-        jobHandledCounter,
-        jobRefusedCounter,
-        streamInactivityRecreatedCounter);
+        jobActivatedCounter, jobHandledCounter, streamInactivityRecreatedCounter);
   }
 }
