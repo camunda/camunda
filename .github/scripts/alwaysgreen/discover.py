@@ -37,17 +37,21 @@ FIX_WORKFLOW = os.environ.get("ALWAYSGREEN_FIX_WORKFLOW", "alwaysgreen-fix.yml")
 FIX_LABEL = os.environ.get("ALWAYSGREEN_FIX_LABEL", "alwaysgreen-fix")
 #: Prefix of the per-dispatch-key label the fix workflow stamps on every PR it opens.
 KEY_LABEL_PREFIX = "alwaysgreen-key:"
-#: How long a no-fix verdict that filed a tracking issue keeps its fingerprints out
-#: of dispatch. See planning.verdict_is_settled for which verdicts qualify.
-NO_FIX_COOLDOWN_DAYS = int(os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS", "7"))
-#: How long a no-fix verdict that recorded nothing durable holds. Such a verdict
-#: describes the conditions the agent met, not a property of the test, and the
-#: conditions move on a scale of hours: the pipeline runs every 20-40 minutes and an
-#: agent takes 7-14, so this still costs at most a few dispatches a day while a real
-#: outage lasts, and stops a transient one from masking the next week of failures.
-NO_FIX_UNSETTLED_COOLDOWN_HOURS = int(
-    os.environ.get("ALWAYSGREEN_NO_FIX_UNSETTLED_COOLDOWN_HOURS", "6")
-)
+#: How long a no-fix verdict keeps its fingerprints out of dispatch.
+#:
+#: A no-fix verdict records no issue and nothing to close — FIX-AGENT.md is explicit
+#: that it "expires on its own" — so it is a statement about the conditions the agent
+#: met, not about the test. Conditions move on a scale of hours, and seven days let a
+#: transient one mask a week of later failures: run 33464059381 met a Web Modeler
+#: `/api/internal/login` 500, correctly declined to mask it, and thereby suppressed
+#: both SaaS smoke tests until 2026-09-08 — long after the outage had cleared.
+#:
+#: The pipeline runs every 20-40 minutes and an agent takes 7-14, so a genuinely
+#: persistent problem costs a few dispatches a day at this window rather than one a
+#: week. If that proves too eager, the answer is an escalation ladder — stop
+#: dispatching after N consecutive no-fix verdicts on one fingerprint and tell a
+#: human — not a longer blind window.
+NO_FIX_COOLDOWN_HOURS = int(os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_HOURS", "6"))
 #: How long an open fix PR keeps holding its dispatch key; see
 #: planning.PR_LOCK_TTL_DAYS. Set to 0 to restore the old never-expiring lock.
 PR_LOCK_TTL_DAYS = int(
@@ -463,13 +467,7 @@ def recent_no_fix_fingerprints(workdir: Path) -> set[str]:
     if not isinstance(runs, list):
         return set()
 
-    now = datetime.now(timezone.utc)
-    # The per-verdict window is only known once the manifest is read, so the
-    # pre-download filter has to use the longest one either branch can produce.
-    cutoff = now - max(
-        timedelta(days=NO_FIX_COOLDOWN_DAYS),
-        timedelta(hours=NO_FIX_UNSETTLED_COOLDOWN_HOURS),
-    )
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=NO_FIX_COOLDOWN_HOURS)
     out: set[str] = set()
     fetched = 0
     for run in runs:
@@ -490,20 +488,11 @@ def recent_no_fix_fingerprints(workdir: Path) -> set[str]:
         fetched += 1
         metas = read_json_files(dest, "fix-meta.json")
         fps = read_json_files(dest, "fingerprints.json")
-        meta = metas[0] if metas else None
-        claimed = planning.verdict_fingerprints(meta, fps[0] if fps else None)
-        if not claimed:
-            continue
-        if not planning.verdict_still_binds(
-            meta,
-            created,
-            now,
-            settled_days=NO_FIX_COOLDOWN_DAYS,
-            unsettled_hours=NO_FIX_UNSETTLED_COOLDOWN_HOURS,
-        ):
-            log(f"run {run_id} no-fix verdict expired for {sorted(claimed)}")
-            continue
-        log(f"run {run_id} recorded no fix for {sorted(claimed)}")
+        claimed = planning.verdict_fingerprints(
+            metas[0] if metas else None, fps[0] if fps else None
+        )
+        if claimed:
+            log(f"run {run_id} recorded no fix for {sorted(claimed)}")
         out |= claimed
     return out
 

@@ -138,64 +138,6 @@ def verdict_fingerprints(
     return {str(fp)[:8] for fp in fingerprints if fp}
 
 
-def verdict_is_settled(fix_meta: object) -> bool:
-    """Whether a no-fix verdict recorded something durable about the failure.
-
-    A verdict that filed or reused a tracking issue has established a fact that
-    outlives the run, and its fingerprints can stay suppressed for the long window.
-    A verdict that recorded nothing has not: it says the agent could not act *at
-    that moment*, which is a statement about conditions rather than about the test.
-
-    Deliberately keyed on `product_bugs` rather than on `category`. The category is
-    free text written by the agent, so a new phrasing would silently change how
-    long a verdict binds; the presence of a filed issue is structural. Run
-    33464059381 is the case this separates: the SaaS Web Modeler returned HTTP 500
-    on `/api/internal/login`, the agent correctly declined to mask it, filed
-    nothing because the fault was in another team's service, and the verdict then
-    suppressed both smoke tests for the full seven days — long after the outage had
-    cleared.
-    """
-    if not isinstance(fix_meta, dict):
-        return False
-    bugs = fix_meta.get("product_bugs")
-    return isinstance(bugs, list) and bool(bugs)
-
-
-def verdict_still_binds(
-    fix_meta: object,
-    created_at: str | None,
-    now: datetime,
-    *,
-    settled_days: int,
-    unsettled_hours: int,
-) -> bool:
-    """Whether a past no-fix verdict should still suppress, given its age.
-
-    An unparseable or missing timestamp keeps the verdict, matching the `ok` bias in
-    discover's key lookups: an unproven state suppresses rather than risks a
-    duplicate agent. A window of 0 disables that half of the rule.
-    """
-    window = (
-        timedelta(days=settled_days)
-        if verdict_is_settled(fix_meta)
-        else timedelta(hours=unsettled_hours)
-    )
-    if window <= timedelta(0):
-        return False
-    text = (created_at or "").strip()
-    if not text:
-        return True
-    try:
-        created = datetime.fromisoformat(text.replace("Z", "+00:00"))
-    except ValueError:
-        return True
-    if created.tzinfo is None:
-        created = created.replace(tzinfo=timezone.utc)
-    if now.tzinfo is None:
-        now = now.replace(tzinfo=timezone.utc)
-    return now - created <= window
-
-
 @dataclass
 class Candidate:
     """One surface that failed on one base ref, with the evidence for it."""
