@@ -593,11 +593,8 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  # Every Java job builds this module with `-Dquickly`, which sets `skip.fe.build`
-  # and skips its npm build entirely; the only place that actually ran it was the
-  # main-only `deploy-snapshots` job. A renovate lockfile bump therefore merged
-  # green and broke the reactor for everyone afterwards (issue #61613). This job
-  # runs the same `npm run build` on the PR that changes the module.
+  # Java jobs skip this npm build via `-Dquickly`, so without this job it only
+  # ran on main, in `deploy-snapshots` -- too late to keep a break off main.
   process-test-coverage-frontend:
     if: needs.detect-changes.outputs.process-test-coverage-frontend-changes == 'true'
     needs: [ detect-changes ]

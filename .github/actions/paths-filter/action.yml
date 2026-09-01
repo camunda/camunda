@@ -378,10 +378,7 @@ runs:
           - 'identity/client/**'
           - 'optimize/client/**'
 
-        # This frontend lives inside a Maven module rather than a client/ folder,
-        # so `frontend-change` above does not reach it. Its npm build runs during
-        # `generate-resources`, which means a break here fails every reactor build
-        # that pulls the module in (see issue #61613).
+        # Lives in a Maven module, not a client/ folder, so `frontend-change` misses it.
         process-test-coverage-frontend-change:
           - 'testing/camunda-process-test-coverage/**'
 
