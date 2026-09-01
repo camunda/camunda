@@ -3177,4 +3177,109 @@ public class AgentInstanceHistoryBatchProcessingTest {
                 + " from this resend")
         .hasSize(2);
   }
+
+  @Test
+  public void shouldRejectResendAfterJobHasCompleted() {
+    // given — a sequential multi-instance AI-agent service task. A plain single-service-task
+    // process won't do here: completing EI1's job also completes EI1, and with a single task that
+    // completes the whole process (and the agent instance with it), leaving nothing left to
+    // reject a resend against. Routing the resend through EI2 — still active — isolates the one
+    // thing this test is about: job1 itself is no longer ACTIVATED.
+    final var multiInstanceProcessId = "dedup-sequential-multi-instance-resend-after-completion";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(multiInstanceProcessId)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t ->
+                        t.zeebeJobType(helper.getJobType())
+                            .zeebeAiAgentTaskDefinition()
+                            .multiInstance(
+                                m ->
+                                    m.sequential()
+                                        .zeebeInputCollectionExpression("items")
+                                        .zeebeInputElement("item")))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(multiInstanceProcessId)
+            .withVariables(Map.of("items", List.of("a", "b")))
+            .create();
+    final var ei1 =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    ENGINE.job().ofInstance(processInstanceKey).withType(helper.getJobType()).complete();
+
+    final var ei2 =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .limit(2)
+            .toList()
+            .get(1)
+            .getKey();
+
+    // when — a resend reuses job1 (EI1's own, now-completed job) but targets EI2 (still active),
+    // so the rejection reflects job1's own state, not EI2's — which is otherwise valid.
+    final var job1Key =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .filter(r -> r.getValue().getElementInstanceKey() == ei1)
+            .getFirst()
+            .getKey();
+
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(ei2)
+            .withJobKey(job1Key)
+            .withHistory(
+                List.of(
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-after-completion")
+                        .setRole(AgentHistoryRole.USER)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("resend after completion"))))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRecordType())
+        .as("job1 is no longer ACTIVATED, so the resend must be rejected")
+        .isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType())
+        .as("job1 is no longer ACTIVATED, so the resend must be rejected")
+        .isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejection.getRejectionReason())
+        .as("job1 is no longer ACTIVATED, so the resend must be rejected")
+        .contains(
+            ("Expected to update agent instance related to job with key '%d', but job was not "
+                    + "active.")
+                .formatted(job1Key));
+  }
 }
