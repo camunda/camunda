@@ -5497,7 +5497,7 @@ final class JsonSerializableToJsonTest {
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack(Map.of("page", 1)))));
+                      .setObject(Map.of("page", 1)));
               record.addSystemPrompt(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.TEXT)
@@ -5590,27 +5590,23 @@ final class JsonSerializableToJsonTest {
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(
-                          wrapArray(
-                              MsgPackConverter.convertToMsgPack(
-                                  List.of(Map.of("id", 1), Map.of("id", 2))))));
+                      .setObject(List.of(Map.of("id", 1), Map.of("id", 2))));
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(
-                          wrapArray(MsgPackConverter.convertToMsgPack(List.of(10, 20, 30)))));
+                      .setObject(List.of(10, 20, 30)));
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack(42))));
+                      .setObject(42));
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack(true))));
+                      .setObject(true));
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack((Object) "hello"))));
+                      .setObject("hello"));
               return record;
             },
         """
