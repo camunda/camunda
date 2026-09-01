@@ -2173,10 +2173,14 @@ public final class SearchQueryResponseMapper {
             .build();
 
     final var m = entity.metrics();
+    // TODO: reasoning/cache token counts are not yet exposed here; wired in a follow-up change.
     final var metrics =
         AgentInstanceMetrics.Builder.create()
             .inputTokens(m.inputTokens())
             .outputTokens(m.outputTokens())
+            .reasoningTokenCount(0L)
+            .cacheCreationTokenCount(0L)
+            .cacheReadTokenCount(0L)
             .modelCalls(m.modelCalls())
             .toolCalls(m.toolCalls())
             .build();

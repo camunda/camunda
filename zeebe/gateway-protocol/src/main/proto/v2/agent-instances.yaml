@@ -534,6 +534,9 @@ components:
       required:
         - inputTokens
         - outputTokens
+        - reasoningTokenCount
+        - cacheCreationTokenCount
+        - cacheReadTokenCount
         - modelCalls
         - toolCalls
       properties:
@@ -545,6 +548,18 @@ components:
           type: integer
           format: int64
           description: Total output tokens produced across all model calls.
+        reasoningTokenCount:
+          type: integer
+          format: int64
+          description: Total reasoning tokens consumed across all model calls.
+        cacheCreationTokenCount:
+          type: integer
+          format: int64
+          description: Total tokens used to create prompt cache entries across all model calls.
+        cacheReadTokenCount:
+          type: integer
+          format: int64
+          description: Total tokens read from prompt cache across all model calls.
         modelCalls:
           type: integer
           format: int32
