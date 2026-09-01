@@ -156,6 +156,9 @@ public class AgentInstanceHistorySearchIT {
                             new AgentInstanceHistoryMetrics()
                                 .inputTokens(512L)
                                 .outputTokens(148L)
+                                .reasoningTokenCount(64L)
+                                .cacheCreationTokenCount(32L)
+                                .cacheReadTokenCount(16L)
                                 .durationMs(1200L)),
                     new AgentInstanceHistoryItem()
                         .historyItemId(UUID.randomUUID().toString())
@@ -346,6 +349,15 @@ public class AgentInstanceHistorySearchIT {
               assertThat(m.getOutputTokens())
                   .as("outputTokens must match the value provided at creation")
                   .isEqualTo(148L);
+              assertThat(m.getReasoningTokenCount())
+                  .as("reasoningTokenCount must match the value provided at creation")
+                  .isEqualTo(64L);
+              assertThat(m.getCacheCreationTokenCount())
+                  .as("cacheCreationTokenCount must match the value provided at creation")
+                  .isEqualTo(32L);
+              assertThat(m.getCacheReadTokenCount())
+                  .as("cacheReadTokenCount must match the value provided at creation")
+                  .isEqualTo(16L);
               assertThat(m.getDurationMs())
                   .as("durationMs must match the value provided at creation")
                   .isEqualTo(1200L);

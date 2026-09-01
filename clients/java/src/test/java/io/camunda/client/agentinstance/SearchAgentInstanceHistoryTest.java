@@ -392,6 +392,45 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
   }
 
   @Test
+  void shouldMapPartiallyPopulatedMetrics() {
+    // given
+    gatewayService.onAgentInstanceHistorySearchRequest(
+        AGENT_INSTANCE_KEY,
+        Instancio.create(AgentInstanceHistorySearchQueryResult.class)
+            .items(
+                Collections.singletonList(
+                    Instancio.create(AgentInstanceHistoryItemResult.class)
+                        .historyItemKey("1")
+                        .agentInstanceKey("1")
+                        .elementInstanceKey("1")
+                        .jobKey("1")
+                        .producedAt(null)
+                        .metrics(
+                            new AgentInstanceHistoryItemMetrics()
+                                .inputTokens(10L)
+                                .cacheCreationTokenCount(5L)))));
+
+    // when
+    final SearchResponse<AgentInstanceHistory> result =
+        client.newAgentInstanceHistorySearchRequest(AGENT_INSTANCE_KEY).send().join();
+
+    // then
+    final AgentInstanceHistoryMetrics metrics = result.items().get(0).getMetrics();
+    assertSoftly(
+        softly -> {
+          softly.assertThat(metrics.getInputTokens()).as("inputTokens").isEqualTo(10L);
+          softly.assertThat(metrics.getOutputTokens()).as("outputTokens").isNull();
+          softly.assertThat(metrics.getReasoningTokenCount()).as("reasoningTokenCount").isNull();
+          softly
+              .assertThat(metrics.getCacheCreationTokenCount())
+              .as("cacheCreationTokenCount")
+              .isEqualTo(5L);
+          softly.assertThat(metrics.getCacheReadTokenCount()).as("cacheReadTokenCount").isNull();
+          softly.assertThat(metrics.getDurationMs()).as("durationMs").isNull();
+        });
+  }
+
+  @Test
   void shouldMapDocumentContent() {
     // given
     final DocumentReference ref = new DocumentReference().documentId("doc-1").storeId("store-a");
