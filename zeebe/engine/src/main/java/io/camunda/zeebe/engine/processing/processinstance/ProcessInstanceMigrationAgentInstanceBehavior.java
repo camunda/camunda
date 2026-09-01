@@ -127,7 +127,7 @@ public class ProcessInstanceMigrationAgentInstanceBehavior {
             .setProcessDefinitionKey(targetProcessDefinition.getKey())
             .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
             .setBpmnProcessId(BufferUtil.bufferAsString(targetProcessDefinition.getBpmnProcessId()))
-            .setVersionTag(targetProcessDefinition.getVersionTag())
+            .setProcessDefinitionVersionTag(targetProcessDefinition.getVersionTag())
             .setElementId(targetElementId)
             .setAgentDefinitionKey(
                 resolveAgentDefinitionKey(

@@ -33,7 +33,7 @@ public record AgentInstanceDbModel(
     String processDefinitionId,
     long processDefinitionKey,
     int processDefinitionVersion,
-    String versionTag,
+    String processDefinitionVersionTag,
     String tenantId,
     int partitionId,
     AgentInstanceStatus status,
@@ -74,7 +74,7 @@ public record AgentInstanceDbModel(
       final String processDefinitionId,
       final long processDefinitionKey,
       final int processDefinitionVersion,
-      final String versionTag,
+      final String processDefinitionVersionTag,
       final String tenantId,
       final int partitionId,
       final AgentInstanceStatus status,
@@ -101,7 +101,7 @@ public record AgentInstanceDbModel(
         processDefinitionId,
         processDefinitionKey,
         processDefinitionVersion,
-        versionTag,
+        processDefinitionVersionTag,
         tenantId,
         partitionId,
         status,
@@ -146,7 +146,7 @@ public record AgentInstanceDbModel(
         processDefinitionId,
         processDefinitionKey,
         processDefinitionVersion,
-        versionTag,
+        processDefinitionVersionTag,
         tenantId,
         partitionId,
         status,
@@ -247,7 +247,7 @@ public record AgentInstanceDbModel(
         .processDefinitionId(processDefinitionId)
         .processDefinitionKey(processDefinitionKey)
         .processDefinitionVersion(processDefinitionVersion)
-        .versionTag(versionTag)
+        .processDefinitionVersionTag(processDefinitionVersionTag)
         .tenantId(tenantId)
         .partitionId(partitionId)
         .status(status)
@@ -277,7 +277,7 @@ public record AgentInstanceDbModel(
     private String processDefinitionId;
     private long processDefinitionKey;
     private int processDefinitionVersion;
-    private String versionTag;
+    private String processDefinitionVersionTag;
     private String tenantId;
     private int partitionId;
     private AgentInstanceStatus status;
@@ -348,8 +348,8 @@ public record AgentInstanceDbModel(
       return this;
     }
 
-    public Builder versionTag(final String versionTag) {
-      this.versionTag = versionTag;
+    public Builder processDefinitionVersionTag(final String processDefinitionVersionTag) {
+      this.processDefinitionVersionTag = processDefinitionVersionTag;
       return this;
     }
 
@@ -465,7 +465,7 @@ public record AgentInstanceDbModel(
           processDefinitionId,
           processDefinitionKey,
           processDefinitionVersion,
-          versionTag,
+          processDefinitionVersionTag,
           tenantId,
           partitionId,
           status,

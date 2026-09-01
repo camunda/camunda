@@ -2223,7 +2223,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(keyToString(entity.processDefinitionKey()))
         .processDefinitionId(entity.processDefinitionId())
         .processDefinitionVersion(entity.processDefinitionVersion())
-        .processDefinitionVersionTag(entity.versionTag())
+        .processDefinitionVersionTag(entity.processDefinitionVersionTag())
         .tenantId(entity.tenantId())
         .creationDate(formatDate(entity.creationDate()))
         .lastUpdatedDate(formatDate(entity.lastUpdatedDate()))

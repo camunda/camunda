@@ -22,12 +22,12 @@ import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTempla
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.OUTPUT_TOKENS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION_TAG;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROVIDER;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.STATUS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.SYSTEM_PROMPT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
-import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.VERSION_TAG;
 
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
@@ -112,7 +112,8 @@ public class AgentInstanceHandler
         .setBpmnProcessId(value.getBpmnProcessId())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessDefinitionVersion(value.getProcessDefinitionVersion())
-        .setVersionTag(ExporterUtil.emptyToNull(value.getVersionTag()))
+        .setProcessDefinitionVersionTag(
+            ExporterUtil.emptyToNull(value.getProcessDefinitionVersionTag()))
         .setTenantId(value.getTenantId())
         .setStatus(mapStatus(value.getStatus()))
         .setModel(value.getDefinition().getModel())
@@ -151,7 +152,7 @@ public class AgentInstanceHandler
     updateFields.put(PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
     updateFields.put(AGENT_DEFINITION_KEY, entity.getAgentDefinitionKey());
     updateFields.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
-    updateFields.put(VERSION_TAG, entity.getVersionTag());
+    updateFields.put(PROCESS_DEFINITION_VERSION_TAG, entity.getProcessDefinitionVersionTag());
     updateFields.put(ELEMENT_ID, entity.getElementId());
 
     // Runtime fields

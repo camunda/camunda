@@ -22,12 +22,12 @@ import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTempla
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.OUTPUT_TOKENS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION_TAG;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROVIDER;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.STATUS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.SYSTEM_PROMPT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
-import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.VERSION_TAG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -126,7 +126,7 @@ final class AgentInstanceHandlerTest {
     final long processDefinitionKey = 400L;
     final long agentDefinitionKey = 401L;
     final int processDefinitionVersion = 2;
-    final String versionTag = "v2";
+    final String processDefinitionVersionTag = "v2";
     final String tenantId = "<default>";
     final String model = "gpt-4o";
     final String provider = "openai";
@@ -162,7 +162,7 @@ final class AgentInstanceHandlerTest {
             .withProcessDefinitionKey(processDefinitionKey)
             .withAgentDefinitionKey(agentDefinitionKey)
             .withProcessDefinitionVersion(processDefinitionVersion)
-            .withVersionTag(versionTag)
+            .withProcessDefinitionVersionTag(processDefinitionVersionTag)
             .withTenantId(tenantId)
             .withStatus(io.camunda.zeebe.protocol.record.value.AgentInstanceStatus.INITIALIZING)
             .withDefinition(
@@ -215,7 +215,7 @@ final class AgentInstanceHandlerTest {
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(entity.getAgentDefinitionKey()).isEqualTo(agentDefinitionKey);
     assertThat(entity.getProcessDefinitionVersion()).isEqualTo(processDefinitionVersion);
-    assertThat(entity.getVersionTag()).isEqualTo(versionTag);
+    assertThat(entity.getProcessDefinitionVersionTag()).isEqualTo(processDefinitionVersionTag);
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
     assertThat(entity.getStatus()).isEqualTo(AgentInstanceStatus.INITIALIZING);
     assertThat(entity.getModel()).isEqualTo(model);
@@ -466,7 +466,8 @@ final class AgentInstanceHandlerTest {
     expectedUpdateFields.put(PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
     expectedUpdateFields.put(AGENT_DEFINITION_KEY, entity.getAgentDefinitionKey());
     expectedUpdateFields.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
-    expectedUpdateFields.put(VERSION_TAG, entity.getVersionTag());
+    expectedUpdateFields.put(
+        PROCESS_DEFINITION_VERSION_TAG, entity.getProcessDefinitionVersionTag());
     expectedUpdateFields.put(ELEMENT_ID, entity.getElementId());
 
     verify(mockRequest, times(1)).upsert(index, entity.getId(), entity, expectedUpdateFields);

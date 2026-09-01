@@ -55,7 +55,7 @@ class AgentInstanceEntityTransformerTest {
     source.setProcessDefinitionKey(400L);
     source.setBpmnProcessId("myProcess");
     source.setProcessDefinitionVersion(2);
-    source.setVersionTag("v2");
+    source.setProcessDefinitionVersionTag("v2");
     source.setTenantId("<default>");
     source.setCreationDate(OffsetDateTime.parse("2024-01-01T00:00:00Z"));
     source.setLastUpdatedDate(OffsetDateTime.parse("2024-01-02T00:00:00Z"));
@@ -95,7 +95,7 @@ class AgentInstanceEntityTransformerTest {
     assertThat(result.processDefinitionKey()).isEqualTo(400L);
     assertThat(result.processDefinitionId()).isEqualTo("myProcess");
     assertThat(result.processDefinitionVersion()).isEqualTo(2);
-    assertThat(result.versionTag()).isEqualTo("v2");
+    assertThat(result.processDefinitionVersionTag()).isEqualTo("v2");
     assertThat(result.tenantId()).isEqualTo("<default>");
     assertThat(result.creationDate()).isEqualTo(OffsetDateTime.parse("2024-01-01T00:00:00Z"));
     assertThat(result.lastUpdatedDate()).isEqualTo(OffsetDateTime.parse("2024-01-02T00:00:00Z"));

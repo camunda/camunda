@@ -26,7 +26,7 @@ public class AgentInstanceTemplate extends AbstractTemplateDescriptor
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
-  public static final String VERSION_TAG = "versionTag";
+  public static final String PROCESS_DEFINITION_VERSION_TAG = "processDefinitionVersionTag";
   public static final String TENANT_ID = "tenantId";
   public static final String STATUS = "status";
   public static final String MODEL = "model";

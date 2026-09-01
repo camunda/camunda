@@ -1685,7 +1685,7 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::processDefinitionVersionOperations);
       ofNullable(filter.getProcessDefinitionVersionTag())
           .map(mapToStringOperations())
-          .ifPresent(builder::versionTagOperations);
+          .ifPresent(builder::processDefinitionVersionTagOperations);
     }
 
     return validationErrors.isEmpty()

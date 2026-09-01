@@ -124,8 +124,8 @@ class AgentInstanceFilterTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  void shouldQueryByVersionTag() {
-    final var filter = FilterBuilders.agentInstance(f -> f.versionTags("v1"));
+  void shouldQueryByProcessDefinitionVersionTag() {
+    final var filter = FilterBuilders.agentInstance(f -> f.processDefinitionVersionTags("v1"));
 
     final var searchRequest = transformQuery(filter);
 
@@ -133,7 +133,7 @@ class AgentInstanceFilterTransformerTest extends AbstractTransformerTest {
         .isInstanceOfSatisfying(
             SearchTermQuery.class,
             t -> {
-              assertThat(t.field()).isEqualTo("versionTag");
+              assertThat(t.field()).isEqualTo("processDefinitionVersionTag");
               assertThat(t.value().stringValue()).isEqualTo("v1");
             });
   }
@@ -262,7 +262,7 @@ class AgentInstanceFilterTransformerTest extends AbstractTransformerTest {
                     .processDefinitionKeys(400L)
                     .processDefinitionIds("myProcess")
                     .processDefinitionVersions(2)
-                    .versionTags("v1")
+                    .processDefinitionVersionTags("v1")
                     .elementIds("Task_1")
                     .statuses("RUNNING")
                     .tenantIds("<default>")
