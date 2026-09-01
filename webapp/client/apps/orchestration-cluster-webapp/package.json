@@ -29,7 +29,7 @@
 		"@carbon/layout": "11.58.0",
 		"@carbon/react": "1.112.0",
 		"@carbon/styles": "1.114.0",
-		"@carbon/type": "11.65.0",
+		"@carbon/type": "11.66.0",
 		"@devbookhq/splitter": "1.4.2",
 		"@monaco-editor/react": "4.7.0",
 		"@tailwindcss/vite": "4.3.3",
