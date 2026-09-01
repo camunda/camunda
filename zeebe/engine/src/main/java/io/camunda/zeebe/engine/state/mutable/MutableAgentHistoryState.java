@@ -46,4 +46,10 @@ public interface MutableAgentHistoryState extends AgentHistoryState {
    * its metrics again.
    */
   void markMetricsAccumulated(long agentInstanceKey, String historyItemId);
+
+  /**
+   * Deletes every metrics-accumulated-id entry recorded for {@code agentInstanceKey}. Called once,
+   * when the agent instance completes.
+   */
+  void deleteMetricsAccumulatedIds(long agentInstanceKey);
 }
