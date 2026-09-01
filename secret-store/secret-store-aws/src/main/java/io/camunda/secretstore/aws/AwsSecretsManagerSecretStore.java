@@ -165,6 +165,11 @@ public final class AwsSecretsManagerSecretStore implements SecretStore {
   }
 
   @Override
+  public boolean resolvesOneByOne() {
+    return resolver.resolvesOneByOne();
+  }
+
+  @Override
   public void close() {
     client.close();
   }

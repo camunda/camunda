@@ -37,4 +37,13 @@ interface AwsSecretResolver {
    * to the caller, which logs a warning and continues; called once at construction time.
    */
   void validateConnectivity();
+
+  /**
+   * Whether {@link #resolve} issues one AWS call per name. {@code false} for a container secret
+   * (one shared secret covers every name) and for the batched flat mode (one {@code
+   * BatchGetSecretValue} call already covers several names).
+   */
+  default boolean resolvesOneByOne() {
+    return false;
+  }
 }

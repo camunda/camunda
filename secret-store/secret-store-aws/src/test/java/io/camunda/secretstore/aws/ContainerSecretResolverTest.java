@@ -37,6 +37,15 @@ class ContainerSecretResolverTest {
   @Mock private SecretsManagerClient client;
 
   @Test
+  void shouldNotResolveOneByOne() {
+    // given a container secret fetches every reference in one GetSecretValue call
+    final var resolver = new ContainerSecretResolver(client, "camunda/", "app-config");
+
+    // then
+    assertThat(resolver.resolvesOneByOne()).isFalse();
+  }
+
+  @Test
   void shouldResolveEmptyMapWithoutFetchingContainerSecretForEmptyNames() {
     // given
     final var resolver = new ContainerSecretResolver(client, "camunda/", "app-config");

@@ -119,6 +119,25 @@ class AwsSecretsManagerSecretStoreTest {
   }
 
   @Test
+  void shouldResolveOneByOneWhenBatchingDisabled() {
+    // given
+    final var store = new AwsSecretsManagerSecretStore(client, "camunda/");
+
+    // then
+    assertThat(store.resolvesOneByOne()).isTrue();
+  }
+
+  @Test
+  void shouldNotResolveOneByOneWhenBatchingEnabled() {
+    // given batching already covers several secrets per call, so chunking it across a thread
+    // pool would only add calls, not remove round trips
+    final var store = new AwsSecretsManagerSecretStore(client, "camunda/", true, 20);
+
+    // then
+    assertThat(store.resolvesOneByOne()).isFalse();
+  }
+
+  @Test
   void shouldReturnNotFoundForMissingSecret() {
     // given
     final var store = new AwsSecretsManagerSecretStore(client, "");
