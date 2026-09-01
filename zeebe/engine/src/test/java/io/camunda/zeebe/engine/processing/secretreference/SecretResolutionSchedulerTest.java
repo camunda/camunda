@@ -21,6 +21,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.secretstore.ConcurrentSecretStore;
 import io.camunda.secretstore.InMemorySecretCache;
 import io.camunda.secretstore.SecretCache;
 import io.camunda.secretstore.SecretErrorCode;
@@ -49,11 +50,16 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1481,6 +1487,39 @@ final class SecretResolutionSchedulerTest {
                     .doesNotContain("db-password", "s3cr3t"));
   }
 
+  @Test
+  void shouldShrinkCycleDurationWhenAOneByOneStoreResolvesConcurrently() throws Exception {
+    // given a store that pays a fixed delay per name inside one resolve() call, the shape a real
+    // one-by-one cloud store's cost takes, wrapped for concurrent resolution as the registry does
+    // in production once max-concurrency is above 1
+    final var perNameDelay = Duration.ofMillis(20);
+    final var refs = IntStream.range(0, 16).mapToObj(i -> "secret-" + i).toArray(String[]::new);
+    final var sleepingStore = new SleepingOneByOneStore(perNameDelay);
+    final ExecutorService pool = Executors.newFixedThreadPool(8);
+    try {
+      final var wrappedStore = new ConcurrentSecretStore(sleepingStore, pool, 8);
+      final var registry =
+          new SecretStoreRegistry(
+              Map.of(STORE_ID, wrappedStore), Map.of(STORE_ID, new InMemorySecretCache()));
+      final var localScheduler =
+          new SecretResolutionScheduler(
+              () -> scheduledTaskState, registry, new EngineConfiguration(), metrics);
+      localScheduler.onRecovered(context);
+      stubPending(STORE_ID, refs);
+
+      // when
+      localScheduler.resolveSecrets(resultBuilder);
+
+      // then 16 names at concurrency 8 cost 2 sequential rounds, not 16 back-to-back round trips
+      final var timer = resolutionTimer(STORE_ID, SecretResolutionCallResult.RETURNED);
+      assertThat(timer).isNotNull();
+      assertThat(timer.totalTime(TimeUnit.MILLISECONDS))
+          .isLessThan(perNameDelay.toMillis() * refs.length / 2.0);
+    } finally {
+      pool.shutdownNow();
+    }
+  }
+
   private double outcomeCount(final String storeId, final SecretResolutionOutcome outcome) {
     final var counter =
         meterRegistry
@@ -1560,5 +1599,42 @@ final class SecretResolutionSchedulerTest {
             })
         .when(secretReferenceState)
         .visitPendingSecretReferences(any(), any());
+  }
+
+  /**
+   * Pays {@code perNameDelay} per name inside one {@link #resolve} call, exactly as a real
+   * one-by-one cloud store's serialized cost does.
+   */
+  private static final class SleepingOneByOneStore implements SecretStore {
+
+    private final Duration perNameDelay;
+
+    SleepingOneByOneStore(final Duration perNameDelay) {
+      this.perNameDelay = perNameDelay;
+    }
+
+    @Override
+    public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
+      try {
+        Thread.sleep(perNameDelay.multipliedBy(names.size()).toMillis());
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new SecretStoreUnavailableException("interrupted", e);
+      }
+      final Map<String, SecretResolutionResult> results = new LinkedHashMap<>();
+      names.forEach(
+          name -> results.put(name, new SecretResolutionResult.Resolved(name + "-value")));
+      return results;
+    }
+
+    @Override
+    public List<String> list() {
+      return List.of();
+    }
+
+    @Override
+    public boolean resolvesOneByOne() {
+      return true;
+    }
   }
 }
