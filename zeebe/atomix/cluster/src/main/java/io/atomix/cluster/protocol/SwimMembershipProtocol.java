@@ -63,6 +63,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,8 +146,7 @@ public class SwimMembershipProtocol
   private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics;
 
   SwimMembershipProtocol(final SwimMembershipProtocolConfig config, final MeterRegistry registry) {
-    // the low bit is set so a generated instance ID can never collide with UNKNOWN_INSTANCE_ID
-    this(config, registry, ThreadLocalRandom.current().nextLong() | 1L);
+    this(config, registry, null);
   }
 
   /**
@@ -157,9 +157,11 @@ public class SwimMembershipProtocol
   SwimMembershipProtocol(
       final SwimMembershipProtocolConfig config,
       final MeterRegistry registry,
-      final long localInstanceId) {
+      @Nullable final Long localInstanceId) {
     this.config = config;
-    this.localInstanceId = localInstanceId;
+    // the low bit is set so a generated instance ID can never collide with UNKNOWN_INSTANCE_ID
+    this.localInstanceId =
+        localInstanceId != null ? localInstanceId : ThreadLocalRandom.current().nextLong() | 1L;
     swimMembershipProtocolMetrics = new SwimMembershipProtocolMetrics(registry);
     LOGGER.debug("Starting SwimMembership protocol with instanceId {}", this.localInstanceId);
   }
