@@ -198,18 +198,76 @@ def iter_specs(report: Any) -> Iterator[dict]:
 
 _SETUP_SPEC_RE = re.compile(r"test-setup\.spec\.[jt]s$")
 
+#: Error signatures that mark a failed setup spec as an environment problem the fix
+#: agent has no lever on, matched against the spec's last attempt error.
+#:
+#: The file name alone is not the signal. `tests/8.x/test-setup.spec.ts` mixes two
+#: unrelated families: cluster/org provisioning ("Create Default Cluster"), and
+#: ordinary Playwright UI flows ("Create Project Folder for User N", which drives
+#: `ModelerHomePage.createCrossComponentProjectFolder`). Only the first is reliably
+#: environment. Sampled over the 15 failing SaaS downstream runs to 2026-09-01, the
+#: failing setup specs were 10 cluster-health assertions and 4 locator clicks in the
+#: Modeler flow.
+#:
+#: Those 4 are not one thing, and the message does not separate them: on run
+#: 33483343722 the trace shows the app healthy and the button present, failing on a
+#: retry where the project already existed (a test bug), while run 33463316996 shows
+#: the identical message caused by a Modeler `/api/internal/login` 500 that left the
+#: page on its loading spinner (an outage). Triage sees only the report and cannot
+#: tell those apart; the fix agent reads the trace and can, and its `no-fix` verdict
+#: plus the cooldown bound the cost of guessing wrong. Dropping the whole family on
+#: the file name loses the fixable half silently, and is already inconsistent with
+#: the same failure arriving via `smoke-tests.spec.ts`, which is dispatched.
+_PROVISIONING_ERROR_MARKERS = (
+    # Cluster came up but never reached a healthy status.
+    'Received: "Unhealthy"',
+    # Auth0/identity provider refused the login the whole suite depends on.
+    "AUTH0_RATE_LIMIT",
+    "identity provider returned an error page",
+)
+
+
+def is_provisioning_error(message: str | None) -> bool:
+    """Whether a failed setup spec's error points at the environment, not the test.
+
+    Deliberately narrow: anything unrecognised reads as a test failure and gets an
+    agent. The reverse bias is what let a renamed button sit red across three runs
+    with no dispatch — an agent spent on an environment failure costs one run and a
+    `no-fix` verdict that then suppresses the surface for the cooldown, while a
+    missed test failure is silent until someone reads the nightly by hand.
+
+    A login that failed on a changed selector therefore still dispatches: its
+    message carries the locator, not an identity-provider marker.
+
+    Matched against the ANSI-stripped message. Playwright colours its assertion
+    diff and highlights the differing run *inside* the word, so the raw text of a
+    cluster-health failure carries colour codes both around and within
+    `"Unhealthy"` and no marker matches until they are stripped.
+    """
+    text = clean_error(message, limit=4000)
+    return any(marker in text for marker in _PROVISIONING_ERROR_MARKERS)
+
+
+def _last_error_message(spec: dict) -> str:
+    """The error of a spec's final attempt, which is the one that made it fail."""
+    tests = spec.get("tests") or []
+    first = tests[0] if tests else {}
+    results = (first or {}).get("results") or []
+    last = results[-1] if results else {}
+    return ((last or {}).get("error") or {}).get("message") or ""
+
 
 @dataclass(frozen=True)
 class SpecCounts:
     total: int = 0
     failed: int = 0
     flaky: int = 0
-    setup_failed: int = 0
+    provisioning_failed: int = 0
 
 
 def count_specs(report: Any) -> SpecCounts:
     """Count specs in a report, mirroring the categories the pipeline reports."""
-    total = failed = flaky = setup_failed = 0
+    total = failed = flaky = provisioning_failed = 0
     for spec in iter_specs(report):
         total += 1
         ok = spec.get("ok")
@@ -217,11 +275,13 @@ def count_specs(report: Any) -> SpecCounts:
         retried = any(len((t or {}).get("results") or []) > 1 for t in tests)
         if ok is False:
             failed += 1
-            if _SETUP_SPEC_RE.search(spec.get("file") or ""):
-                setup_failed += 1
+            if _SETUP_SPEC_RE.search(spec.get("file") or "") and is_provisioning_error(
+                _last_error_message(spec)
+            ):
+                provisioning_failed += 1
         elif ok is True and retried:
             flaky += 1
-    return SpecCounts(total, failed, flaky, setup_failed)
+    return SpecCounts(total, failed, flaky, provisioning_failed)
 
 
 def saas_surface_from_counts(counts: SpecCounts, *, has_artifacts: bool) -> str:
@@ -239,12 +299,17 @@ def saas_surface_from_counts(counts: SpecCounts, *, has_artifacts: bool) -> str:
     stays `saas-infra`: there the downstream died before Playwright produced any
     evidence, and the failing job is as likely to be the provisioning API as
     anything in the repository.
+
+    `saas-provisioning` needs every failing spec to be a provisioning failure by
+    its *error* (see `is_provisioning_error`), not merely by living in
+    `test-setup.spec.ts`. A run that trips one recognised environment error and one
+    locator failure is a run with a test bug in it, and goes to the agent.
     """
     if not has_artifacts or counts.total == 0:
         return SURFACE_SAAS_INFRA
     if counts.failed == 0:
         return SURFACE_SAAS_CI
-    if counts.setup_failed == counts.failed:
+    if counts.provisioning_failed == counts.failed:
         return SURFACE_SAAS_PROVISIONING
     return SURFACE_SAAS_E2E
 

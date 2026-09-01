@@ -221,7 +221,7 @@ def saas_candidate(run_id: str, base_ref: str, job_name: str, workdir: Path) -> 
                     counts.total + c.total,
                     counts.failed + c.failed,
                     counts.flaky + c.flaky,
-                    counts.setup_failed + c.setup_failed,
+                    counts.provisioning_failed + c.provisioning_failed,
                 )
                 suite = classify.suite_from_rootdir(
                     ((report.get("config") or {}).get("rootDir"))
@@ -235,7 +235,8 @@ def saas_candidate(run_id: str, base_ref: str, job_name: str, workdir: Path) -> 
     cand.surface = classify.saas_surface_from_counts(counts, has_artifacts=has_reports)
     log(
         f"saas counts total={counts.total} failed={counts.failed} "
-        f"flaky={counts.flaky} setup_failed={counts.setup_failed} -> {cand.surface}"
+        f"flaky={counts.flaky} provisioning_failed={counts.provisioning_failed} "
+        f"-> {cand.surface}"
     )
     if cand.surface == classify.SURFACE_SAAS_CI:
         # Every spec passed, so the report-derived specs describe nothing that

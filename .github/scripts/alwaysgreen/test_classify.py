@@ -171,19 +171,116 @@ def _nested_report(specs):
     }
 
 
+#: Real errors, trimmed, from the failing SaaS setup specs sampled to 2026-09-01.
+CLUSTER_UNHEALTHY_ERROR = (
+    'Error: expect(received).toBe(expected) // Object.is equality\n'
+    'Expected: "Healthy"\nReceived: "Unhealthy"'
+)
+AUTH0_ERROR = (
+    "Error: Login failed after 5 attempts: Error: AUTH0_RATE_LIMIT: "
+    "identity provider returned an error page"
+)
+NEW_PROJECT_LOCATOR_ERROR = (
+    "Error: Failed to click locator getByRole('button', "
+    "{ name: 'New project' }) after 3 attempts."
+)
+
+
+def _failed_spec(file: str, title: str, message: str) -> dict:
+    return {
+        "file": file,
+        "title": title,
+        "ok": False,
+        "tests": [{"results": [{"status": "failed", "error": {"message": message}}]}],
+    }
+
+
 def test_counting_walks_nested_suites():
     # The pipeline's own one-level walk returns 0 here; that is the bug this
     # guards. Real example: downstream run 30259132560 was 15 specs / 2 failures.
     report = _nested_report(
         [
-            {"file": "test-setup.spec.ts", "title": "a", "ok": False, "tests": [{"results": [{"status": "failed"}]}]},
+            _failed_spec("test-setup.spec.ts", "a", CLUSTER_UNHEALTHY_ERROR),
             {"file": "smoke-tests.spec.ts", "title": "b", "ok": True, "tests": [{"results": [{"status": "passed"}]}]},
         ]
     )
     counts = classify.count_specs(report)
     assert counts.total == 2
     assert counts.failed == 1
-    assert counts.setup_failed == 1
+    assert counts.provisioning_failed == 1
+
+
+def test_setup_spec_with_ui_error_is_not_counted_as_provisioning():
+    # Downstream run 33483343722: "Create Project Folder for User 3" in
+    # test-setup.spec.ts, with the trace showing a healthy app and the button on
+    # screen, failing on a retry where the project already existed. A test bug,
+    # dropped with no dispatch because the count keyed off the file name.
+    report = _nested_report(
+        [
+            _failed_spec(
+                "test-setup.spec.ts",
+                "Create Project Folder for User 1",
+                NEW_PROJECT_LOCATOR_ERROR,
+            )
+        ]
+    )
+    counts = classify.count_specs(report)
+    assert counts.failed == 1
+    assert counts.provisioning_failed == 0
+
+
+def test_setup_spec_with_environment_error_is_counted_as_provisioning():
+    report = _nested_report(
+        [
+            _failed_spec(
+                "test-setup.spec.ts", "Create AWS Cluster", CLUSTER_UNHEALTHY_ERROR
+            ),
+            _failed_spec("test-setup.spec.ts", "Create Default Cluster", AUTH0_ERROR),
+        ]
+    )
+    counts = classify.count_specs(report)
+    assert counts.failed == 2
+    assert counts.provisioning_failed == 2
+
+
+def test_provisioning_error_recognises_only_environment_signatures():
+    assert classify.is_provisioning_error(CLUSTER_UNHEALTHY_ERROR)
+    assert classify.is_provisioning_error(AUTH0_ERROR)
+    assert not classify.is_provisioning_error(NEW_PROJECT_LOCATOR_ERROR)
+    assert not classify.is_provisioning_error("")
+    assert not classify.is_provisioning_error(None)
+
+
+def test_provisioning_error_survives_playwright_colour_codes():
+    # Verbatim from downstream run 33437577072. Playwright colours the assertion
+    # diff and marks the differing run *inside* the word, so the marker only
+    # appears once the ANSI is stripped.
+    raw = (
+        "Error: \x1b[2mexpect(\x1b[22m\x1b[31mreceived\x1b[39m\x1b[2m).\x1b[22m"
+        "toBe\x1b[2m(\x1b[22m\x1b[32mexpected\x1b[39m\x1b[2m) // Object.is "
+        'equality\x1b[22m\n\nExpected: \x1b[32m"\x1b[7mH\x1b[27mealthy"\x1b[39m\n'
+        'Received: \x1b[31m"\x1b[7mUnh\x1b[27mealthy"\x1b[39m\n\nCall Log:'
+    )
+    assert classify.is_provisioning_error(raw)
+
+
+def test_login_failure_on_a_changed_selector_is_not_provisioning():
+    # The login helper wraps whatever broke, so "Login failed after N attempts"
+    # alone must not read as environment: only the identity-provider markers do.
+    message = (
+        "Error: Login failed after 5 attempts: Error: Failed to click locator "
+        "getByRole('button', { name: 'Sign in' }) after 3 attempts."
+    )
+    assert not classify.is_provisioning_error(message)
+
+
+def test_failure_outside_a_setup_spec_is_never_provisioning():
+    # An unhealthy-cluster assertion in a normal spec is still a spec the agent
+    # is allowed to look at; the provisioning carve-out is setup-only.
+    report = _nested_report(
+        [_failed_spec("smoke-tests.spec.ts", "c", CLUSTER_UNHEALTHY_ERROR)]
+    )
+    assert classify.count_specs(report).provisioning_failed == 0
 
 
 def test_flaky_counts_retried_specs_that_passed():
@@ -214,7 +311,7 @@ def test_empty_report_counts_zero():
 def test_setup_only_failures_are_provisioning():
     # Observed shape: every failing spec was in test-setup.spec.ts
     # (Create Default Cluster / Create AWS Cluster).
-    counts = classify.SpecCounts(total=15, failed=2, flaky=0, setup_failed=2)
+    counts = classify.SpecCounts(total=15, failed=2, flaky=0, provisioning_failed=2)
     assert (
         classify.saas_surface_from_counts(counts, has_artifacts=True)
         == classify.SURFACE_SAAS_PROVISIONING
@@ -222,7 +319,17 @@ def test_setup_only_failures_are_provisioning():
 
 
 def test_real_test_failures_are_saas_e2e():
-    counts = classify.SpecCounts(total=15, failed=2, flaky=0, setup_failed=0)
+    counts = classify.SpecCounts(total=15, failed=2, flaky=0, provisioning_failed=0)
+    assert (
+        classify.saas_surface_from_counts(counts, has_artifacts=True)
+        == classify.SURFACE_SAAS_E2E
+    )
+
+
+def test_mixed_environment_and_test_failures_are_saas_e2e():
+    # One recognised environment error alongside a real test failure still leaves
+    # a test to fix, so the run goes to the agent rather than being written off.
+    counts = classify.SpecCounts(total=15, failed=3, flaky=0, provisioning_failed=2)
     assert (
         classify.saas_surface_from_counts(counts, has_artifacts=True)
         == classify.SURFACE_SAAS_E2E
