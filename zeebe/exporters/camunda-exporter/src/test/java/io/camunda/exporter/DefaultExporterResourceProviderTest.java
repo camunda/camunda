@@ -379,7 +379,7 @@ public class DefaultExporterResourceProviderTest {
   }
 
   @Test
-  void shouldRegisterProcessLifecycleHandlersOnlyOnDeploymentPartition() {
+  void shouldRegisterProcessCreatedDrainingAndDeletionHandlersOnDeploymentPartition() {
     // given
     final var config = new ExporterConfiguration();
     final var provider = new DefaultExporterResourceProvider();
@@ -400,7 +400,7 @@ public class DefaultExporterResourceProviderTest {
   }
 
   @Test
-  void shouldNotRegisterProcessLifecycleHandlersOnNonDeploymentPartition() {
+  void shouldNotRegisterProcessDrainingOrDeletionHandlersOnNonDeploymentPartition() {
     // given
     final var config = new ExporterConfiguration();
     final var provider = new DefaultExporterResourceProvider();

@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -52,8 +53,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 final class ProcessDrainingExportConsistencyIT {
 
   private static final long PROCESS_DEFINITION_KEY = 2_251_799_813_685_862L;
-  private static final int DEPLOYMENT_PARTITION = 1;
-  private static final int OTHER_PARTITION = 2;
+  private static final int DEPLOYMENT_PARTITION =
+      DefaultExporterResourceProvider.PROCESS_DEFINITION_PARTITION;
+  private static final int OTHER_PARTITION = DEPLOYMENT_PARTITION + 1;
 
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
 
@@ -68,7 +70,7 @@ final class ProcessDrainingExportConsistencyIT {
 
   @BeforeEach
   void beforeEach() {
-    testPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+    testPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase(Locale.ROOT);
   }
 
   @AfterEach
