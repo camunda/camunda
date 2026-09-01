@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +43,8 @@ class OutputMappingResolverComparisonTest {
   private static final CombinedOutputMappingResolver COMBINED = new CombinedOutputMappingResolver();
 
   @Nested
-  @DisplayName("Non-overlapping targets")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("Non-overlapping targets")
   class NonOverlappingTargets {
     @Test
     void shouldProduceSameResultForDistinctTargets() {
@@ -57,7 +57,8 @@ class OutputMappingResolverComparisonTest {
   }
 
   @Nested
-  @DisplayName("Duplicate target with intermediate read")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("Duplicate target with intermediate read")
   class DuplicateTargetWithIntermediateRead {
     @Test
     void shouldDifferOnIntermediateValueVisibility() {
@@ -73,7 +74,8 @@ class OutputMappingResolverComparisonTest {
   }
 
   @Nested
-  @DisplayName("Nested target scope seeding")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("Nested target scope seeding")
   class NestedTargetScopeSeeding {
     @Test
     void shouldPreserveSiblingKeysForNestedTarget() {
