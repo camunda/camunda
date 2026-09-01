@@ -83,6 +83,15 @@ public final class AgentHistoryEntity
   private Long outputTokens;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Long reasoningTokenCount;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Long cacheCreationTokenCount;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Long cacheReadTokenCount;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
   private Long durationMs;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
@@ -284,6 +293,33 @@ public final class AgentHistoryEntity
     return this;
   }
 
+  public Long getReasoningTokenCount() {
+    return reasoningTokenCount;
+  }
+
+  public AgentHistoryEntity setReasoningTokenCount(final Long reasoningTokenCount) {
+    this.reasoningTokenCount = reasoningTokenCount;
+    return this;
+  }
+
+  public Long getCacheCreationTokenCount() {
+    return cacheCreationTokenCount;
+  }
+
+  public AgentHistoryEntity setCacheCreationTokenCount(final Long cacheCreationTokenCount) {
+    this.cacheCreationTokenCount = cacheCreationTokenCount;
+    return this;
+  }
+
+  public Long getCacheReadTokenCount() {
+    return cacheReadTokenCount;
+  }
+
+  public AgentHistoryEntity setCacheReadTokenCount(final Long cacheReadTokenCount) {
+    this.cacheReadTokenCount = cacheReadTokenCount;
+    return this;
+  }
+
   public Long getDurationMs() {
     return durationMs;
   }
@@ -386,6 +422,9 @@ public final class AgentHistoryEntity
         producedAt,
         inputTokens,
         outputTokens,
+        reasoningTokenCount,
+        cacheCreationTokenCount,
+        cacheReadTokenCount,
         durationMs,
         content,
         toolCalls,
@@ -424,6 +463,9 @@ public final class AgentHistoryEntity
         && Objects.equals(producedAt, that.producedAt)
         && Objects.equals(inputTokens, that.inputTokens)
         && Objects.equals(outputTokens, that.outputTokens)
+        && Objects.equals(reasoningTokenCount, that.reasoningTokenCount)
+        && Objects.equals(cacheCreationTokenCount, that.cacheCreationTokenCount)
+        && Objects.equals(cacheReadTokenCount, that.cacheReadTokenCount)
         && Objects.equals(durationMs, that.durationMs)
         && Objects.equals(content, that.content)
         && Objects.equals(toolCalls, that.toolCalls)
@@ -478,6 +520,12 @@ public final class AgentHistoryEntity
         + inputTokens
         + ", outputTokens="
         + outputTokens
+        + ", reasoningTokenCount="
+        + reasoningTokenCount
+        + ", cacheCreationTokenCount="
+        + cacheCreationTokenCount
+        + ", cacheReadTokenCount="
+        + cacheReadTokenCount
         + ", durationMs="
         + durationMs
         + ", content="
