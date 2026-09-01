@@ -18,9 +18,19 @@ import type { Role, User } from "@camunda/camunda-api-zod-schemas/8.10";
 const AssignMembersModal: FC<
   UseEntityModalCustomProps<
     { roleId: Role["roleId"] },
-    { assignedUsers: User[] }
+    {
+      assignedUsers: User[];
+      onItemsAssigned: (count: number) => void;
+    }
   >
-> = ({ entity: { roleId }, assignedUsers, onSuccess, open, onClose }) => {
+> = ({
+  entity: { roleId },
+  assignedUsers,
+  onSuccess,
+  onItemsAssigned,
+  open,
+  onClose,
+}) => {
   const { t } = useTranslate("roles");
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
@@ -42,6 +52,7 @@ const AssignMembersModal: FC<
           callAssignUser({ username, roleId }),
         ),
       );
+      onItemsAssigned(selectedUsers.length);
       onSuccess();
     } catch {
       // error handled globally

@@ -25,7 +25,10 @@ type UseEnrichedUsersResult = {
   users: UserWithId[];
   loading: boolean;
   success: boolean;
-  reload: () => void;
+  reload: () => Promise<{
+    data?: QueryUsersResponseBody | QueryUsersByGroupResponseBody;
+    isSuccess: boolean;
+  }>;
   paginationProps: {
     page: { pageNumber: number; pageSize: number; totalItems?: number };
     setPageNumber: (page: number) => void;
@@ -105,9 +108,7 @@ export function useEnrichedUsers<P>(
     users,
     loading,
     success,
-    reload: () => {
-      void membersQuery.refetch();
-    },
+    reload: membersQuery.refetch,
     paginationProps: {
       page: { ...page, ...membersQuery.data?.page },
       setPageNumber,

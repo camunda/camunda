@@ -25,7 +25,10 @@ type UseEnrichedGroupsResult = {
   groups: GroupWithId[];
   loading: boolean;
   success: boolean;
-  reload: () => void;
+  reload: () => Promise<{
+    data?: QueryGroupsResponseBody | QueryGroupsByRoleResponseBody;
+    isSuccess: boolean;
+  }>;
   paginationProps: {
     page: { pageNumber: number; pageSize: number; totalItems?: number };
     setPageNumber: (page: number) => void;
@@ -106,9 +109,7 @@ export function useEnrichedGroups<P>(
     groups,
     loading,
     success,
-    reload: () => {
-      void membersQuery.refetch();
-    },
+    reload: membersQuery.refetch,
     paginationProps: {
       page: { ...page, ...membersQuery.data?.page },
       setPageNumber,
