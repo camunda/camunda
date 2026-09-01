@@ -30,8 +30,9 @@ async function queryBatchOperationItems(
 }
 
 /**
- * Fetches all batch-operation items for the visible instances, so the list can report every item
- * produced by operations such as resolving multiple incidents in one process instance.
+ * Fetches all batch-operation items for the currently loaded process-instance rows, so the list
+ * can report every item produced by operations such as resolving multiple incidents in one
+ * process instance.
  */
 function useOperationItemsForInstances(batchOperationKey: string | undefined, processInstanceKeys: string[]) {
 	const filter = {
