@@ -42,7 +42,7 @@
     "react-final-form": "7.0.0",
     "react-final-form-arrays": "4.0.0",
     "react-markdown": "10.1.0",
-    "react-router-dom": "7.18.1",
+    "react-router-dom": "7.18.3",
     "react-transition-group": "4.4.5",
     "remark-gfm": "4.0.1",
     "styled-components": "6.5.0",
@@ -85,12 +85,12 @@
     "@typescript-eslint/eslint-plugin": "8.68.0",
     "@typescript-eslint/parser": "8.68.0",
     "@vitejs/plugin-react": "6.0.1",
-    "@vitest/browser": "4.1.5",
-    "@vitest/browser-playwright": "4.1.5",
-    "@vitest/coverage-istanbul": "4.1.5",
-    "@vitest/coverage-v8": "4.1.5",
+    "@vitest/browser": "4.1.11",
+    "@vitest/browser-playwright": "4.1.11",
+    "@vitest/coverage-istanbul": "4.1.11",
+    "@vitest/coverage-v8": "4.1.11",
     "@vitest/eslint-plugin": "1.6.20",
-    "@vitest/ui": "4.1.5",
+    "@vitest/ui": "4.1.11",
     "cross-env": "10.1.0",
     "eslint": "10.9.0",
     "eslint-plugin-import-x": "4.17.1",
@@ -112,7 +112,7 @@
     "typescript-eslint": "8.68.0",
     "vite": "8.2.1",
     "vite-plugin-svgr": "5.2.0",
-    "vitest": "4.1.5",
+    "vitest": "4.1.11",
     "vitest-browser-react": "2.2.0"
   },
   "scarfSettings": {
@@ -121,5 +121,10 @@
   "msw": {
     "workerDirectory": "public"
   },
-  "packageManager": "npm@12.0.0"
+  "packageManager": "npm@12.0.0",
+  "overrides": {
+    "monaco-editor": {
+      "dompurify": "3.4.14"
+    }
+  }
 }
