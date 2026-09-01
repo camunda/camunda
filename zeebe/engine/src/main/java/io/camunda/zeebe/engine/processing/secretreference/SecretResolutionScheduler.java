@@ -46,13 +46,13 @@ import org.slf4j.LoggerFactory;
  * the next cycle — which is scheduled immediately ({@link Duration#ZERO}) instead of waiting the
  * normal {@code schedulingInterval} (unless a store is currently in retry cooldown, in which case
  * the cooldown-aware delay is honored instead). Likewise, a cycle that resolves anything, or that
- * finds nothing but a reference was requested via {@link #wake()} since it last ran, reschedules
- * its next run at the shorter {@code wakeDelay} rather than {@code schedulingInterval}: under a
- * sustained stream of requests this keeps every cycle after the first close to {@code wakeDelay}
- * apart on its own, without ever needing to bring a scheduled cycle forward by cancelling it. A
- * cycle that neither makes progress nor is woken, and has no store waiting out a retry cooldown
- * either, does not jump straight to {@code schedulingInterval}: see {@link #nextIdleBackoff()} for
- * why and how it grows the delay geometrically instead.
+ * finds nothing but a reference was requested via {@link #stayAwake()} since it last ran,
+ * reschedules its next run at the shorter {@code wakeDelay} rather than {@code schedulingInterval}:
+ * under a sustained stream of requests this keeps every cycle after the first close to {@code
+ * wakeDelay} apart on its own, without ever needing to bring a scheduled cycle forward by
+ * cancelling it. A cycle that neither makes progress nor is woken, and has no store waiting out a
+ * retry cooldown either, does not jump straight to {@code schedulingInterval}: see {@link
+ * #nextIdleBackoff()} for why and how it grows the delay geometrically instead.
  *
  * <p>Resolution goes through {@link
  * io.camunda.secretstore.LocallyCachedSecretStore#resolveFromStore} rather than the cache-first
@@ -113,7 +113,7 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
   private final AtomicBoolean taskScheduled = new AtomicBoolean();
 
   /**
-   * Set by {@link #wake()}, consulted and cleared at the start of each cycle. Marks that some
+   * Set by {@link #stayAwake()}, consulted and cleared at the start of each cycle. Marks that some
    * activation requested a resolution since the last cycle ran, even if that activation's own
    * {@code RESOLUTION_REQUESTED} record is not yet what makes a cycle's collection non-empty (the
    * two are written from different actors and can interleave either way). A cycle that finds this
@@ -199,7 +199,7 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
    * covers the gap where a cycle's collection happens to find nothing pending because it raced a
    * request that is about to be written, not because the scheduler is genuinely idle.
    */
-  public void wake() {
+  public void stayAwake() {
     wakePending.set(true);
   }
 
