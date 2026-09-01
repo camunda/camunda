@@ -1,0 +1,22 @@
+{
+  "name": "release-notes-action",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared release-notes reference parser + PR-gate lint (epic camunda/camunda#53605). The parser module is imported unchanged by the generator (#57713) — do not fork logic.",
+  "engines": {
+    "node": ">=24"
+  },
+  "type": "commonjs",
+  "scripts": {
+    "build:lint": "ncc build src/lint.ts -o lint/dist --no-source-map-register",
+    "build": "npm run build:lint",
+    "test": "node --import tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "24.0.0",
+    "@vercel/ncc": "0.38.3",
+    "tsx": "4.19.2",
+    "typescript": "5.7.3"
+  }
+}
