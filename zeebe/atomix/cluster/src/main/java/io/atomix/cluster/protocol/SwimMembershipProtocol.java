@@ -348,17 +348,7 @@ public class SwimMembershipProtocol
       if (!Objects.equals(member.version(), swimMember.version())
           || member.nodeVersion() > swimMember.nodeVersion()
           || hasRebooted(member, swimMember)) {
-        members.remove(member.id());
-        randomMembers.remove(swimMember);
-        post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_REMOVED, swimMember.copy()));
-        swimMember = new SwimMember(member);
-        swimMember.setState(State.ALIVE);
-        members.put(member.id(), swimMember);
-        randomMembers.add(swimMember);
-        Collections.shuffle(randomMembers);
-        LOGGER.info("{} - Evicted member for new version {}", localMember.id(), swimMember);
-        post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_ADDED, swimMember.copy()));
-        recordUpdate(swimMember.copy());
+        replaceMember(member, swimMember);
       } else {
         // Update the term for the local member.
         swimMember.setIncarnationNumber(member.incarnationNumber());
@@ -417,6 +407,23 @@ public class SwimMembershipProtocol
       return true;
     }
     return false;
+  }
+
+  /**
+   * Replaces the member we track with the run the update describes, as a removal and an addition.
+   */
+  private void replaceMember(final ImmutableMember member, final SwimMember swimMember) {
+    members.remove(member.id());
+    randomMembers.remove(swimMember);
+    post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_REMOVED, swimMember.copy()));
+    final var newMember = new SwimMember(member);
+    newMember.setState(State.ALIVE);
+    members.put(member.id(), newMember);
+    randomMembers.add(newMember);
+    Collections.shuffle(randomMembers);
+    LOGGER.info("{} - Evicted member for new version {}", localMember.id(), newMember);
+    post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_ADDED, newMember.copy()));
+    recordUpdate(newMember.copy());
   }
 
   /**
