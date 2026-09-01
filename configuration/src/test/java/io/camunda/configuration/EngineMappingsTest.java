@@ -42,6 +42,12 @@ public class EngineMappingsTest {
       assertThat(brokerCfg.getExperimental().getEngine().getInputMappingMode())
           .isEqualTo(EngineConfiguration.InputMappingMode.COMBINED);
     }
+
+    @Test
+    void shouldDefaultOutputModeToCombined() {
+      assertThat(brokerCfg.getExperimental().getEngine().getOutputMappingMode())
+          .isEqualTo(EngineConfiguration.OutputMappingMode.COMBINED);
+    }
   }
 
   @Nested
@@ -94,6 +100,29 @@ public class EngineMappingsTest {
     void shouldSetInputComparisonMode() {
       assertThat(brokerCfg.getExperimental().getEngine().getInputComparisonMode())
           .isEqualTo(EngineConfiguration.InputMappingMode.ORDERED);
+    }
+  }
+
+  @Nested
+  @DisplayName("Output mode override (ORDERED)")
+  @SpringJUnitConfig({
+    UnifiedConfiguration.class,
+    BrokerBasedPropertiesOverride.class,
+    UnifiedConfigurationHelper.class
+  })
+  @ActiveProfiles("broker")
+  @TestPropertySource(properties = {"camunda.processing.engine.mappings.output-mode=ORDERED"})
+  class OutputModeOverride {
+    final BrokerBasedProperties brokerCfg;
+
+    OutputModeOverride(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetOutputModeToOrdered() {
+      assertThat(brokerCfg.getExperimental().getEngine().getOutputMappingMode())
+          .isEqualTo(EngineConfiguration.OutputMappingMode.ORDERED);
     }
   }
 }
