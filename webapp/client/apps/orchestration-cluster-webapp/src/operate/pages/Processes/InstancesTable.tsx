@@ -8,8 +8,13 @@
 
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
-import {DataTableSkeleton, InlineLoading} from '@carbon/react';
-import type {BatchOperationItem, ProcessInstance, ProcessInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
+import {DataTableSkeleton, SkeletonText} from '@carbon/react';
+import type {
+	BatchOperationItem,
+	BatchOperationItemState,
+	ProcessInstance,
+	ProcessInstanceState,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {StateIcon} from '#/operate/shared/StateIcon/StateIcon';
@@ -21,7 +26,7 @@ import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {useProcessInstancesSearch} from './useProcessInstancesSearch';
 import {useOperationItemsForInstances} from './batchOperationItems.queries';
 import type {ProcessesSearch} from './processesFilter';
-import {InstancesTableContainer, ProcessName, InstanceLink} from './styled';
+import {InstancesTableContainer, ProcessName, InstanceLink, VisuallyHiddenStatus} from './styled';
 
 type Props = {
 	search: ProcessesSearch;
@@ -32,6 +37,24 @@ function getDisplayState(instance: ProcessInstance): ProcessInstanceState | 'INC
 		return 'SUSPENDED';
 	}
 	return instance.hasIncident ? 'INCIDENT' : instance.state;
+}
+
+const OPERATION_STATE_ORDER: BatchOperationItemState[] = ['FAILED', 'ACTIVE', 'CANCELED', 'SKIPPED', 'COMPLETED'];
+
+function getOperationStatesByInstance(items: BatchOperationItem[] | undefined) {
+	const statesByInstance = new Map<string, Set<BatchOperationItemState>>();
+	for (const item of items ?? []) {
+		const states = statesByInstance.get(item.processInstanceKey) ?? new Set<BatchOperationItemState>();
+		states.add(item.state);
+		statesByInstance.set(item.processInstanceKey, states);
+	}
+
+	return new Map(
+		[...statesByInstance].map(([processInstanceKey, states]) => [
+			processInstanceKey,
+			OPERATION_STATE_ORDER.filter((state) => states.has(state)).join(', '),
+		]),
+	);
 }
 
 const InstancesTable: React.FC<Props> = ({search}) => {
@@ -57,14 +80,12 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 	const batchOperationKey = search.batchOperationKey || undefined;
 	const isOperationStateColumnVisible = batchOperationKey !== undefined;
 	const processInstanceKeys = processInstances.map((instance) => instance.processInstanceKey);
-	const {data: operationItemsData, isLoading: isLoadingOperationItems} = useOperationItemsForInstances(
-		batchOperationKey,
-		processInstanceKeys,
-	);
-	const operationItemsByInstance = useMemo(
-		() => new Map<string, BatchOperationItem>(operationItemsData?.items.map((item) => [item.processInstanceKey, item])),
-		[operationItemsData],
-	);
+	const {
+		data: operationItems,
+		isLoading: isLoadingOperationItems,
+		isError: isOperationItemsError,
+	} = useOperationItemsForInstances(batchOperationKey, processInstanceKeys);
+	const operationItemsByInstance = useMemo(() => getOperationStatesByInstance(operationItems), [operationItems]);
 	const isTenantColumnVisible =
 		getClientConfig().deployment.isMultiTenancyEnabled && !isSpecificTenant(search.tenantId);
 	const hasVersionTags = processInstances.some(({processDefinitionVersionTag}) => Boolean(processDefinitionVersionTag));
@@ -92,9 +113,11 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 						label: t('operate.processes.instancesTable.operationState'),
 						render: (row: ProcessInstance) =>
 							isLoadingOperationItems ? (
-								<InlineLoading description={t('operate.processes.instancesTable.operationStateLoading')} />
+								<SkeletonText width="6rem" />
+							) : isOperationItemsError ? (
+								t('operate.shared.errorMessage.message')
 							) : (
-								(operationItemsByInstance.get(row.processInstanceKey)?.state ?? '--')
+								(operationItemsByInstance.get(row.processInstanceKey) ?? '--')
 							),
 					},
 				]
@@ -204,6 +227,11 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				count={totalCount}
 				hasMoreTotalItems={hasMoreTotalItems}
 			/>
+			{isLoadingOperationItems && (
+				<VisuallyHiddenStatus role="status" aria-live="polite">
+					{t('operate.processes.instancesTable.operationStateLoading')}
+				</VisuallyHiddenStatus>
+			)}
 			{status === 'pending' && isFetching ? (
 				<DataTableSkeleton columnCount={columns.length} rowCount={5} showHeader={false} showToolbar={false} />
 			) : (
