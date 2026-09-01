@@ -245,7 +245,7 @@ public class AgentInstanceMapper {
     } else if (content instanceof final AgentInstanceObjectContent obj) {
       result.setContentType(AgentHistoryContentType.OBJECT);
       if (obj.getObject() != null) {
-        result.setObject(toMsgPackBuffer(obj.getObject()));
+        result.setObject(obj.getObject());
       }
     }
     return result;

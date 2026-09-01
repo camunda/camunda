@@ -134,7 +134,7 @@ final class AgentHistoryRecordTest {
     final var objectBlock =
         new AgentHistoryMessageContent()
             .setContentType(AgentHistoryContentType.OBJECT)
-            .setObject(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(objectData)));
+            .setObject(objectData);
 
     final AgentHistoryRecord original =
         new AgentHistoryRecord().setContent(List.of(textBlock, documentBlock, objectBlock));
@@ -180,7 +180,7 @@ final class AgentHistoryRecordTest {
     final var content =
         new AgentHistoryMessageContent()
             .setContentType(AgentHistoryContentType.OBJECT)
-            .setObject(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(value)));
+            .setObject(value);
 
     // when
     final var copy = new AgentHistoryMessageContent();
