@@ -40,6 +40,9 @@ class AgentInstanceEntityTransformerTest {
                 AgentHistoryContentType.TEXT, "You are helpful.", null, null)));
     source.setInputTokens(50L);
     source.setOutputTokens(30L);
+    source.setReasoningTokenCount(18L);
+    source.setCacheCreationTokenCount(12L);
+    source.setCacheReadTokenCount(6L);
     source.setModelCalls(2);
     source.setToolCalls(3);
     source.setMaxTokens(1000L);
@@ -77,6 +80,9 @@ class AgentInstanceEntityTransformerTest {
         .containsExactly(new ContentItem(ContentType.TEXT, "You are helpful.", null, null));
     assertThat(result.metrics().inputTokens()).isEqualTo(50L);
     assertThat(result.metrics().outputTokens()).isEqualTo(30L);
+    assertThat(result.metrics().reasoningTokenCount()).isEqualTo(18L);
+    assertThat(result.metrics().cacheCreationTokenCount()).isEqualTo(12L);
+    assertThat(result.metrics().cacheReadTokenCount()).isEqualTo(6L);
     assertThat(result.metrics().modelCalls()).isEqualTo(2);
     assertThat(result.metrics().toolCalls()).isEqualTo(3);
     assertThat(result.limits().maxTokens()).isEqualTo(1000L);
