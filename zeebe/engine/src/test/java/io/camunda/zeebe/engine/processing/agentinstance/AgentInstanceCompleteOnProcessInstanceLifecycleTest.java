@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -40,8 +39,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
 
   private static final String PROCESS_ID = "process";
   private static final String AGENT_TASK_ID = "agent-task";
-  private static final String AGENT_JOB_TYPE =
-      JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX + "-agent-instance-complete-test";
+  private static final String AGENT_JOB_TYPE = "agent-instance-complete-test";
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -205,7 +203,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
   public void
       shouldDiscardPendingAgentHistoryBeforeCompletingAgentInstanceWhenProcessInstanceCanceled() {
     // given
-    final String agenticJobType = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
+    final String agenticJobType = "discard-pending-agent-history-test";
     ENGINE
         .deployment()
         .withXmlResource(
