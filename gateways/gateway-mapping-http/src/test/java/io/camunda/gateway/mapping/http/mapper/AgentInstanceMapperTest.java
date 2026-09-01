@@ -151,6 +151,9 @@ class AgentInstanceMapperTest {
           AgentInstanceHistoryItemMetrics.Builder.create()
               .inputTokens(512L)
               .outputTokens(128L)
+              .reasoningTokenCount(64L)
+              .cacheCreationTokenCount(32L)
+              .cacheReadTokenCount(16L)
               .durationMs(1500L)
               .build());
       request.setHistory(List.of(item));
@@ -167,6 +170,9 @@ class AgentInstanceMapperTest {
       assertThat(mappedItem.getToolCalls().get(0).getToolName()).isEqualTo("extract_data");
       assertThat(mappedItem.getMetrics().getInputTokens()).isEqualTo(512L);
       assertThat(mappedItem.getMetrics().getOutputTokens()).isEqualTo(128L);
+      assertThat(mappedItem.getMetrics().getReasoningTokenCount()).isEqualTo(64L);
+      assertThat(mappedItem.getMetrics().getCacheCreationTokenCount()).isEqualTo(32L);
+      assertThat(mappedItem.getMetrics().getCacheReadTokenCount()).isEqualTo(16L);
       assertThat(mappedItem.getMetrics().getDurationMs()).isEqualTo(1500L);
       assertThat(mappedItem.getProducedAt())
           .isEqualTo(OffsetDateTime.parse("2025-06-01T12:00:00Z").toInstant().toEpochMilli());
