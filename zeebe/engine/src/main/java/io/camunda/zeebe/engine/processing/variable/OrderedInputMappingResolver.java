@@ -22,10 +22,10 @@ import org.jspecify.annotations.NullMarked;
  * name shadows it totally. Resolution stops at the first failing mapping.
  */
 @NullMarked
-public final class OrderedMappingResolver implements MappingResolver {
+public final class OrderedInputMappingResolver implements MappingResolver<InputMappings> {
 
   @Override
-  public Either<Failure, DirectBuffer> resolveInputMappings(
+  public Either<Failure, DirectBuffer> resolve(
       final InputMappings inputMappings, final MappingExpressionProcessor processor) {
     final var resultBuilder =
         new InputMappingResultBuilder(

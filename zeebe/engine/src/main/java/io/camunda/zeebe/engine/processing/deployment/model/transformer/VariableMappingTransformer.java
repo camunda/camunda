@@ -160,7 +160,7 @@ public final class VariableMappingTransformer {
   /**
    * Transforms the output mappings, keeping each mapping as its own source expression plus target
    * path so they can be evaluated one by one in modeling order at runtime, and also precomputes the
-   * combined FEEL context expression for {@code CombinedOutputMappingResolver} to evaluate on each
+   * combined FEEL context expression for {@code CombinedInputMappingResolver} to evaluate on each
    * completion without rebuilding it.
    *
    * <p>A nested target merges with the existing scope value at every path level in ORDERED mode
