@@ -10,13 +10,11 @@ package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -237,7 +235,7 @@ final class AgentHistoryRecordTest {
             .setToolCallId("call-123")
             .setToolName("myTool")
             .setElementId("element-456")
-            .setArguments(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(args)));
+            .setArguments(args);
 
     final AgentHistoryRecord original = new AgentHistoryRecord().setToolCalls(List.of(toolCall));
 

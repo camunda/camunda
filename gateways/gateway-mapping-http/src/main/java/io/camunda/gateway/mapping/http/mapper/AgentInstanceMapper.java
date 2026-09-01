@@ -259,7 +259,7 @@ public class AgentInstanceMapper {
       result.setElementId(toolCall.getElementId());
     }
     if (toolCall.getArguments() != null) {
-      result.setArguments(toMsgPackBuffer(toolCall.getArguments()));
+      result.setArguments(toolCall.getArguments());
     }
     return result;
   }
