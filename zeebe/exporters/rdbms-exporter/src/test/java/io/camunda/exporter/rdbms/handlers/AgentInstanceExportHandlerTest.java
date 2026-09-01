@@ -141,6 +141,9 @@ class AgentInstanceExportHandlerTest {
     // metrics
     assertThat(model.inputTokens()).isEqualTo(100L);
     assertThat(model.outputTokens()).isEqualTo(50L);
+    assertThat(model.reasoningTokenCount()).isEqualTo(20L);
+    assertThat(model.cacheCreationTokenCount()).isEqualTo(15L);
+    assertThat(model.cacheReadTokenCount()).isEqualTo(10L);
     assertThat(model.modelCalls()).isEqualTo(3);
     assertThat(model.toolCalls()).isEqualTo(2);
     // tools
@@ -376,6 +379,9 @@ class AgentInstanceExportHandlerTest {
             ImmutableAgentInstanceMetricsValue.builder()
                 .withInputTokens(100L)
                 .withOutputTokens(50L)
+                .withReasoningTokenCount(20L)
+                .withCacheCreationTokenCount(15L)
+                .withCacheReadTokenCount(10L)
                 .withModelCalls(3)
                 .withToolCalls(2)
                 .build())
