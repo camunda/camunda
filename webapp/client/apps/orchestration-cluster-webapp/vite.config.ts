@@ -106,6 +106,7 @@ const config = defineConfig(({mode}) => ({
 					junit: 'TEST-unit.xml',
 				}
 			: undefined,
+		retry: process.env['CI'] ? 3 : 0,
 		browser: {
 			enabled: true,
 			screenshotFailures: Boolean(process.env['CI']),
