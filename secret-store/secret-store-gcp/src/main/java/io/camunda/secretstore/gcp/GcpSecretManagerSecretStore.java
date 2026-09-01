@@ -187,6 +187,11 @@ public final class GcpSecretManagerSecretStore implements SecretStore {
   }
 
   @Override
+  public boolean resolvesOneByOne() {
+    return resolver.resolvesOneByOne();
+  }
+
+  @Override
   public void close() {
     client.close();
   }

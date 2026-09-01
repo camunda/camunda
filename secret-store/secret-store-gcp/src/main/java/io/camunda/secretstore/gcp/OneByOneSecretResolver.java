@@ -94,6 +94,11 @@ final class OneByOneSecretResolver implements GcpSecretResolver {
   }
 
   @Override
+  public boolean resolvesOneByOne() {
+    return true;
+  }
+
+  @Override
   public void validateConnectivity() {
     // one-by-one mode resolves via accessSecretVersion and lists via listSecrets; a single-result
     // listSecrets is the cheapest probe that exercises this mode's IAM footprint.

@@ -37,4 +37,13 @@ interface GcpSecretResolver {
    * to the caller, which logs a warning and continues; called once at store build time.
    */
   void validateConnectivity();
+
+  /**
+   * Whether {@link #resolve} issues one {@code accessSecretVersion} call per name. {@code false}
+   * for a container secret, which reads every requested name from one shared secret in a single
+   * call.
+   */
+  default boolean resolvesOneByOne() {
+    return false;
+  }
 }
