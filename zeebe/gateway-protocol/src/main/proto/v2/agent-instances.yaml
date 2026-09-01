@@ -1196,6 +1196,9 @@ components:
       required:
         - inputTokens
         - outputTokens
+        - reasoningTokenCount
+        - cacheCreationTokenCount
+        - cacheReadTokenCount
         - durationMs
       properties:
         inputTokens:
@@ -1205,6 +1208,21 @@ components:
           format: int64
         outputTokens:
           description: Output tokens produced by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        reasoningTokenCount:
+          description: Reasoning tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        cacheCreationTokenCount:
+          description: Cache-creation tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        cacheReadTokenCount:
+          description: Cache-read tokens consumed by this LLM call. Null when not provided.
           nullable: true
           type: integer
           format: int64
