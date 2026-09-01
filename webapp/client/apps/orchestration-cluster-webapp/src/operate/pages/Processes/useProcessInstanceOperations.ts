@@ -9,7 +9,7 @@
 import {useCallback, useState} from 'react';
 import {useQueryClient, type QueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
-import type {BatchOperation, BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {BatchOperation, BatchOperationType, ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
@@ -23,12 +23,12 @@ type OperationType = Extract<
 // Listed as "still going" rather than "done" so a state the API adds later ends the wait instead
 // of spinning on it. FAILED and SUSPENDED both end it: the row then reports what happened through
 // the operation-state column rather than leaving a spinner up forever.
-const IN_PROGRESS_STATES: BatchOperation['state'][] = ['CREATED', 'ACTIVE'];
+const IN_PROGRESS_BATCH_OPERATION_STATES: BatchOperation['state'][] = ['CREATED', 'ACTIVE'];
 
 /**
- * Waits for the batch operation the command created to leave its transitional state. The
- * instances list is only worth refetching once the operation has actually been applied —
- * invalidating on the 202 would just re-read the unchanged instance.
+ * Waits for the batch operation a command created to leave its transitional state. The instances
+ * list is only worth refetching once the operation has been applied — invalidating on the 202
+ * would just re-read the unchanged instance.
  */
 async function waitForBatchOperation(queryClient: QueryClient, batchOperationKey: string) {
 	await queryClient.fetchQuery({
@@ -39,7 +39,7 @@ async function waitForBatchOperation(queryClient: QueryClient, batchOperationKey
 				throw mapQueryError(error);
 			}
 			const batchOperation: BatchOperation = await response.json();
-			if (IN_PROGRESS_STATES.includes(batchOperation.state)) {
+			if (IN_PROGRESS_BATCH_OPERATION_STATES.includes(batchOperation.state)) {
 				throw new Error('batch operation is still running');
 			}
 			return batchOperation;
@@ -49,28 +49,45 @@ async function waitForBatchOperation(queryClient: QueryClient, batchOperationKey
 }
 
 /**
- * Row-level process instance commands. Each POSTs the command, waits for the batch operation it
- * creates to settle, then invalidates the instances list. Delete is the exception: the instance
- * is gone rather than changed, so there is no settled state worth waiting for and the list is
- * refreshed immediately — matching legacy's `shouldSkipResultCheck` default per operation.
+ * Cancellation returns 204 with no body — there is no batch operation to follow — so completion is
+ * observed on the instance itself, as legacy does.
+ */
+async function waitForInstanceToLeaveActive(queryClient: QueryClient, processInstanceKey: string) {
+	await queryClient.fetchQuery({
+		queryKey: ['processInstanceState', processInstanceKey] as const,
+		queryFn: async (): Promise<ProcessInstance> => {
+			const {response, error} = await request(endpoints.getProcessInstance(processInstanceKey));
+			if (error !== null) {
+				throw mapQueryError(error);
+			}
+			const processInstance: ProcessInstance = await response.json();
+			if (processInstance.state === 'ACTIVE') {
+				throw new Error('process instance is still running');
+			}
+			return processInstance;
+		},
+		retry: true,
+	});
+}
+
+/**
+ * Row-level process instance commands. Each sends its command, waits for it to take effect, then
+ * invalidates the instances list. Delete is the exception: the instance is gone rather than
+ * changed, so there is nothing to wait on and the list refreshes immediately — matching legacy's
+ * `shouldSkipResultCheck` default per operation.
  */
 function useProcessInstanceOperations(processInstanceKey: string) {
 	const {t} = useTranslation();
 	const queryClient = useQueryClient();
-	const [pendingOperation, setPendingOperation] = useState<OperationType | null>(null);
+	// A set rather than a single slot: an instance can offer two actions at once, and each button
+	// must stay disabled for the life of its own command rather than until any command finishes.
+	const [pendingOperations, setPendingOperations] = useState<ReadonlySet<OperationType>>(new Set());
 
 	const run = useCallback(
-		async (
-			operationType: OperationType,
-			send: () => Promise<{batchOperationKey: string} | null>,
-			errorTitle: string,
-		) => {
-			setPendingOperation(operationType);
+		async (operationType: OperationType, send: () => Promise<void>, errorTitle: string) => {
+			setPendingOperations((current) => new Set(current).add(operationType));
 			try {
-				const accepted = await send();
-				if (accepted !== null) {
-					await waitForBatchOperation(queryClient, accepted.batchOperationKey);
-				}
+				await send();
 				await queryClient.invalidateQueries({queryKey: ['processInstances']});
 			} catch (error) {
 				notificationsStore.displayNotification({
@@ -80,7 +97,11 @@ function useProcessInstanceOperations(processInstanceKey: string) {
 					isDismissable: true,
 				});
 			} finally {
-				setPendingOperation(null);
+				setPendingOperations((current) => {
+					const next = new Set(current);
+					next.delete(operationType);
+					return next;
+				});
 			}
 		},
 		[queryClient],
@@ -95,11 +116,12 @@ function useProcessInstanceOperations(processInstanceKey: string) {
 					if (error !== null) {
 						throw mapQueryError(error);
 					}
-					return response.json();
+					const {batchOperationKey} = (await response.json()) as {batchOperationKey: string};
+					await waitForBatchOperation(queryClient, batchOperationKey);
 				},
 				t('operate.processes.instancesTable.operations.resolveIncidentsFailed'),
 			),
-		[processInstanceKey, run, t],
+		[processInstanceKey, queryClient, run, t],
 	);
 
 	const cancel = useCallback(
@@ -107,15 +129,15 @@ function useProcessInstanceOperations(processInstanceKey: string) {
 			run(
 				'CANCEL_PROCESS_INSTANCE',
 				async () => {
-					const {response, error} = await request(endpoints.cancelProcessInstance(processInstanceKey));
+					const {error} = await request(endpoints.cancelProcessInstance(processInstanceKey));
 					if (error !== null) {
 						throw mapQueryError(error);
 					}
-					return response.json();
+					await waitForInstanceToLeaveActive(queryClient, processInstanceKey);
 				},
 				t('operate.processes.instancesTable.operations.cancelFailed'),
 			),
-		[processInstanceKey, run, t],
+		[processInstanceKey, queryClient, run, t],
 	);
 
 	const remove = useCallback(
@@ -132,14 +154,14 @@ function useProcessInstanceOperations(processInstanceKey: string) {
 						title: t('operate.processes.instancesTable.operations.deleteScheduled'),
 						isDismissable: true,
 					});
-					return null;
 				},
 				t('operate.processes.instancesTable.operations.deleteFailed'),
 			),
 		[processInstanceKey, run, t],
 	);
 
-	return {pendingOperation, resolveIncidents, cancel, remove};
+	return {pendingOperations, resolveIncidents, cancel, remove};
 }
 
 export {useProcessInstanceOperations};
+export type {OperationType};
