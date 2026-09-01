@@ -168,6 +168,8 @@ public final class ProcessingStateMachine implements CloseableSilently {
   private final LogStreamWriter logStreamWriter;
   private boolean inProcessing;
   private final int maxCommandsInBatch;
+  // -1 if batch processing time is unlimited
+  private final long maxBatchProcessingTimeNanos;
   private int processedCommandsCount;
   private final ProcessingMetrics processingMetrics;
   private final SideEffectRunner sideEffectRunner;
@@ -192,6 +194,9 @@ public final class ProcessingStateMachine implements CloseableSilently {
     abortCondition = context.getAbortCondition();
     lastProcessedPositionState = context.getLastProcessedPositionState();
     maxCommandsInBatch = context.getMaxCommandsInBatch();
+    final var maxBatchProcessingTime = context.getMaxBatchProcessingTime();
+    maxBatchProcessingTimeNanos =
+        maxBatchProcessingTime != null ? maxBatchProcessingTime.toNanos() : -1;
 
     // Waiting between write attempts is safe: processing of the next record is guarded by
     // `inProcessing`, and no other job on this actor touches the open transaction or writes to
@@ -394,6 +399,12 @@ public final class ProcessingStateMachine implements CloseableSilently {
     final var processingResultBuilder = newProcessingResultBuilder(initialCommand);
     var lastProcessingResultSize = 0;
 
+    // Measured with System.nanoTime instead of the stream clock: the stream clock is sourced from
+    // the actor clock which does not advance within a single actor job (i.e. during this batch),
+    // and it can be pinned or offset through the clock management API which must not affect how
+    // long we allow a batch to grow.
+    final var batchStartTimeNanos = System.nanoTime();
+
     // It might be that we reached the batch size limit during processing a command.
     // We rolled back the transaction and processing result and retried the processing.
     // We know that we can process until the last processed commands count, which is why we set it
@@ -424,6 +435,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
               .orElseThrow(() -> NoSuchProcessorException.forRecord(command));
 
       currentProcessingResult = currentProcessor.process(command, processingResultBuilder);
+      currentProcessingResult.getProcessingResponse().ifPresent(pendingResponses::add);
 
       final BatchProcessingStepResult batchProcessingStepResult =
           collectBatchProcessingStepResult(
@@ -431,11 +443,11 @@ public final class ProcessingStateMachine implements CloseableSilently {
               lastProcessingResultSize,
               // +1 since we already need include the current command in the calculation
               pendingCommands.size() + processedCommandsCount + 1,
-              currentProcessingBatchLimit);
+              currentProcessingBatchLimit,
+              shouldTruncateBatch(batchStartTimeNanos));
 
       pendingCommands.addAll(batchProcessingStepResult.toProcess());
       pendingWrites.addAll(batchProcessingStepResult.toWrite());
-      currentProcessingResult.getProcessingResponse().ifPresent(pendingResponses::add);
 
       lastProcessingResultSize = currentProcessingResult.getRecordBatch().entries().size();
       processedCommandsCount++;
@@ -455,6 +467,9 @@ public final class ProcessingStateMachine implements CloseableSilently {
    *     command
    * @param currentBatchSize the current batch size (only commands counted), includes already
    *     processed and pending commands
+   * @param truncateBatch true if the batch should not grow any further, in which case follow-up
+   *     commands are written unmarked and processed later in their own batch instead of growing
+   *     this one
    * @return the result of the current batch processing step, which contains the next to processed
    *     commands and the records which should be written to the log
    */
@@ -462,7 +477,8 @@ public final class ProcessingStateMachine implements CloseableSilently {
       final ProcessingResult processingResult,
       final int lastProcessingResultSize,
       final int currentBatchSize,
-      final int currentProcessingBatchLimit) {
+      final int currentProcessingBatchLimit,
+      final boolean truncateBatch) {
 
     final var commandsToProcess = new ArrayList<TypedRecord<?>>();
     final var toWriteEntries = new ArrayList<LogAppendEntry>();
@@ -476,18 +492,39 @@ public final class ProcessingStateMachine implements CloseableSilently {
               if (entry.recordMetadata().getRecordType() == RecordType.COMMAND
                   && potentialBatchSize < currentProcessingBatchLimit
                   && !processingResult.shouldProcessInASeparateBatch()) {
-                commandsToProcess.add(
-                    new UnwrittenRecord(
-                        entry.key(),
-                        context.getPartitionId(),
-                        entry.recordValue(),
-                        entry.recordMetadata()));
-                toWriteEntry = LogAppendEntry.ofProcessed(entry);
+                if (truncateBatch) {
+                  processingMetrics.commandDeferredAfterTimeExhausted();
+                } else {
+                  commandsToProcess.add(
+                      new UnwrittenRecord(
+                          entry.key(),
+                          context.getPartitionId(),
+                          entry.recordValue(),
+                          entry.recordMetadata()));
+                  toWriteEntry = LogAppendEntry.ofProcessed(entry);
+                }
               }
               toWriteEntries.add(toWriteEntry);
             });
 
     return new BatchProcessingStepResult(commandsToProcess, toWriteEntries);
+  }
+
+  /**
+   * Once the maximum batch processing time is exhausted, the batch is truncated only if someone
+   * actually benefits from it: either a client waiting on a response from this batch, or further
+   * records waiting on the log, which may be commands that require a response themselves. Otherwise
+   * we might as well continue batching, since deferring follow-up commands costs an additional
+   * write-commit-read cycle.
+   */
+  private boolean shouldTruncateBatch(final long batchStartTimeNanos) {
+    return isBatchProcessingTimeExhausted(batchStartTimeNanos)
+        && (!pendingResponses.isEmpty() || logStreamReader.hasNext());
+  }
+
+  private boolean isBatchProcessingTimeExhausted(final long batchStartTimeNanos) {
+    return maxBatchProcessingTimeNanos >= 0
+        && System.nanoTime() - batchStartTimeNanos >= maxBatchProcessingTimeNanos;
   }
 
   private void onError(final Throwable error, final NextProcessingStep nextStep) {
