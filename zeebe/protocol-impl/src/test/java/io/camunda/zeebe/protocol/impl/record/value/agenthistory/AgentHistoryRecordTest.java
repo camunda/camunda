@@ -170,7 +170,8 @@ final class AgentHistoryRecordTest {
         Arguments.of(Named.named("array of scalars", List.of(10, 20, 30)), List.class),
         Arguments.of(Named.named("number", 42), Integer.class),
         Arguments.of(Named.named("boolean", true), Boolean.class),
-        Arguments.of(Named.named("string scalar", "hello"), String.class));
+        Arguments.of(Named.named("string scalar", "hello"), String.class),
+        Arguments.of(Named.named("null", null), null));
   }
 
   @ParameterizedTest(name = "shouldRoundTripObjectContent [{0}]")
@@ -187,7 +188,11 @@ final class AgentHistoryRecordTest {
     copy.copy(content);
 
     // then
-    assertThat(copy.getObject()).isInstanceOf(expectedType).isEqualTo(value);
+    if (value == null) {
+      assertThat(copy.getObject()).isNull();
+    } else {
+      assertThat(copy.getObject()).isInstanceOf(expectedType).isEqualTo(value);
+    }
   }
 
   @Test
