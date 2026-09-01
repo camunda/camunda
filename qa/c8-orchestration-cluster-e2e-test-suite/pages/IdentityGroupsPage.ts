@@ -8,7 +8,6 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
-import {sleep} from 'utils/sleep';
 import {defaultAssertionOptions} from '../utils/constants';
 import {
   findLocatorInPaginatedList,
@@ -18,6 +17,7 @@ import {
 export class IdentityGroupsPage {
   private page: Page;
   readonly groupsList: Locator;
+  readonly assignedUsersList: Locator;
   readonly createGroupButton: Locator;
   readonly editGroupButton: (rowName?: string) => Locator;
   readonly deleteGroupButton: (rowName?: string) => Locator;
@@ -51,6 +51,8 @@ export class IdentityGroupsPage {
   constructor(page: Page) {
     this.page = page;
     this.groupsList = page.getByRole('table');
+    // The members table on a group's detail page.
+    this.assignedUsersList = page.getByRole('table');
 
     this.selectGroupRow = (name) =>
       this.groupsList.getByRole('row', {name: name});
@@ -231,6 +233,14 @@ export class IdentityGroupsPage {
     await option.click({timeout: 20000});
     await this.assignUserButtonModal.click();
     await expect(this.assignUserModal).toBeHidden();
-    await sleep(8000);
+    // Wait for the member row rather than sleeping for a fixed 8s: both
+    // callers navigate away immediately afterwards, so the assignment has to
+    // be observable before returning. The members table renders username,
+    // name and email, and the email is the unique column.
+    await waitForItemInList(
+      this.page,
+      this.assignedUsersList.getByRole('cell', {name: userEmail}),
+      {timeout: 60000},
+    );
   }
 }
