@@ -38,9 +38,10 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Runs input-mapping scenarios through both {@link MappingResolver} implementations side by side,
- * so each test documents where {@link OrderedMappingResolver} (the current per-mapping behavior,
- * "Today") and {@link CombinedMappingResolver} (the resurrected pre-{@code baddd911435}
- * combined-FEEL-context behavior, "8.9.0") agree, and precisely why they diverge where they don't.
+ * so each test documents where {@link OrderedInputMappingResolver} (the current per-mapping
+ * behavior, "Today") and {@link CombinedInputMappingResolver} (the resurrected pre-{@code
+ * baddd911435} combined-FEEL-context behavior, "8.9.0") agree, and precisely why they diverge where
+ * they don't.
  *
  * <p>Tests are grouped into {@code @Nested} classes mirroring the eight numbered rules of the
  * internal "Rules that input mappings adhere to" reference doc, one class per rule, with each
@@ -49,8 +50,8 @@ import org.junit.jupiter.api.Test;
  * camunda/camunda#60011 -- that test intentionally asserts today's actual, non-ideal output, not
  * the proposed fix, and will need deliberate updating once that issue is fixed. Rule 7 (partial
  * shadowing) turned out, once this test exercised a real ancestor-scope hierarchy instead of a flat
- * in-memory stand-in, to already be correctly implemented by {@link OrderedMappingResolver} for
- * every scenario here -- the actual gap sits in {@link CombinedMappingResolver}'s single
+ * in-memory stand-in, to already be correctly implemented by {@link OrderedInputMappingResolver}
+ * for every scenario here -- the actual gap sits in {@link CombinedInputMappingResolver}'s single
  * combined-FEEL-context evaluation, which loses an ancestor's untouched sibling once that object's
  * root has been partially mapped (see 7.3-7.5). Two further groups cover scenarios the doc doesn't
  * address: the qualified/bare-name self-reference cases from issue #60551 that motivated this whole
@@ -67,7 +68,7 @@ import org.junit.jupiter.api.Test;
  * by {@link Helpers#buildProcessor}, which walks the provided scope chain from innermost to
  * outermost -- no embedded database required.
  */
-class MappingResolverComparisonTest {
+class InputMappingResolverComparisonTest {
 
   private static final ExpressionLanguage EXPRESSION_LANGUAGE =
       ExpressionLanguageFactory.createExpressionLanguage(
@@ -75,8 +76,8 @@ class MappingResolverComparisonTest {
   private static final Duration DEFAULT_TIMEOUT =
       EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT;
 
-  private static final OrderedMappingResolver ORDERED = new OrderedMappingResolver();
-  private static final CombinedMappingResolver LEGACY = new CombinedMappingResolver();
+  private static final OrderedInputMappingResolver ORDERED = new OrderedInputMappingResolver();
+  private static final CombinedInputMappingResolver LEGACY = new CombinedInputMappingResolver();
 
   @Nested
   @DisplayName("Rule 1: an input mapping creates a local variable")
@@ -345,8 +346,8 @@ class MappingResolverComparisonTest {
   @Nested
   @DisplayName(
       "Rule 7: variables from a higher scope are partially shadowed by input mappings"
-          + " (OrderedMappingResolver already implements this correctly; the gap is in"
-          + " CombinedMappingResolver/8.9.0's combined-FEEL-context evaluation, which loses an"
+          + " (OrderedInputMappingResolver already implements this correctly; the gap is in"
+          + " CombinedInputMappingResolver/8.9.0's combined-FEEL-context evaluation, which loses an"
           + " ancestor's untouched sibling once that object's root has been partially mapped)")
   class Rule7PartiallyShadowsHigherScope {
 
@@ -455,9 +456,9 @@ class MappingResolverComparisonTest {
   @Nested
   @DisplayName(
       "Rule 8: types survive across input mappings within one resolver context, but not when"
-          + " written through MsgPack (confirmed bug camunda/camunda#60011). OrderedMappingResolver"
+          + " written through MsgPack (confirmed bug camunda/camunda#60011). OrderedInputMappingResolver"
           + " is the broken party here: it loses the FEEL type at every mapping boundary via the"
-          + " MsgPack round-trip. CombinedMappingResolver evaluates all mappings in one FEEL"
+          + " MsgPack round-trip. CombinedInputMappingResolver evaluates all mappings in one FEEL"
           + " context expression, so the type survives. When input-comparison-mode=ORDERED is used"
           + " with the COMBINED default, any mapping that reads a FEEL-typed value set by an"
           + " earlier mapping WILL trigger comparison warnings -- that is expected and correct."
@@ -466,8 +467,8 @@ class MappingResolverComparisonTest {
 
     @Test
     @DisplayName(
-        "8.1 OrderedMappingResolver loses the FEEL type at the mapping boundary (bug #60011);"
-            + " CombinedMappingResolver preserves it within the single FEEL context")
+        "8.1 OrderedInputMappingResolver loses the FEEL type at the mapping boundary (bug #60011);"
+            + " CombinedInputMappingResolver preserves it within the single FEEL context")
     void shouldLoseTheFeelTypeAcrossMappingsInOrderedButNotInCombined() {
       final var mappings =
           List.of(Helpers.mapping("=duration(\"P1DT2H\")", "x"), Helpers.mapping("=x.days", "y"));
@@ -667,8 +668,7 @@ class MappingResolverComparisonTest {
       final var inputMappings =
           new VariableMappingTransformer().transformInputMappings(mappings, EXPRESSION_LANGUAGE);
       return new ResolverResults(
-          ORDERED.resolveInputMappings(inputMappings, processor),
-          LEGACY.resolveInputMappings(inputMappings, processor));
+          ORDERED.resolve(inputMappings, processor), LEGACY.resolve(inputMappings, processor));
     }
 
     /**
