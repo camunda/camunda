@@ -150,7 +150,7 @@
     <version.jnr-posix>3.2.2</version.jnr-posix>
     <version.jnr-constants>0.11.0</version.jnr-constants>
     <version.feign>13.14</version.feign>
-    <version.google-sdk>26.86.0</version.google-sdk>
+    <version.google-sdk>26.87.0</version.google-sdk>
     <!-- Must stay >= the version gax-httpjson needs; see the override further down in
          dependencyManagement for why this is pinned at all. -->
     <version.google-http-client>2.2.0</version.google-http-client>
