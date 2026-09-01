@@ -83,7 +83,6 @@ const AssignMembersModal: FC<
         value={selectedUsers}
         onChange={setSelectedUsers}
         excluded={assignedUsers}
-        placeholder={t("searchByUsernameOrName")}
         autoFocus
       />
     </FormModal>
