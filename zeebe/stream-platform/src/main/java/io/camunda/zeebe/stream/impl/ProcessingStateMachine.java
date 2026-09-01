@@ -168,6 +168,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
   private final LogStreamWriter logStreamWriter;
   private boolean inProcessing;
   private final int maxCommandsInBatch;
+  private final int maxPendingSideEffects;
   private int processedCommandsCount;
   private final ProcessingMetrics processingMetrics;
   private final SideEffectRunner sideEffectRunner;
@@ -192,6 +193,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
     abortCondition = context.getAbortCondition();
     lastProcessedPositionState = context.getLastProcessedPositionState();
     maxCommandsInBatch = context.getMaxCommandsInBatch();
+    maxPendingSideEffects = context.getMaxPendingSideEffects();
 
     // Waiting between write attempts is safe: processing of the next record is guarded by
     // `inProcessing`, and no other job on this actor touches the open transaction or writes to
@@ -214,7 +216,12 @@ public final class ProcessingStateMachine implements CloseableSilently {
     processingMetrics = new ProcessingMetrics(context.getMeterRegistry());
     sideEffectRunner =
         new SideEffectRunner(
-            context.getPartitionId(), actor, processingMetrics, context.getCommandResponseWriter());
+            context.getPartitionId(),
+            actor,
+            processingMetrics,
+            context.getCommandResponseWriter(),
+            maxPendingSideEffects,
+            () -> actor.submit(this::tryToReadNextRecord));
     context.getLogStream().registerCommittedPositionListener(sideEffectRunner);
     final EventFilter commandFilter =
         event -> {
@@ -275,6 +282,12 @@ public final class ProcessingStateMachine implements CloseableSilently {
     }
 
     if (shouldProcessNext.getAsBoolean() && hasNext) {
+      if (!sideEffectRunner.hasCapacity()) {
+        // Stop before consuming the record, so no seek is needed once capacity frees up. The
+        // runner wakes us again when it drains an entry.
+        return;
+      }
+
       final var currentRecord = logStreamReader.next();
       this.currentRecord = currentRecord;
 
@@ -784,6 +797,16 @@ public final class ProcessingStateMachine implements CloseableSilently {
 
   public boolean isMakingProgress() {
     return errorHandlingPhase != ErrorHandlingPhase.ENDLESS_ERROR_LOOP;
+  }
+
+  /**
+   * How long processing has been continuously stopped because pending side effects filled the
+   * queue, or {@link Duration#ZERO} if it currently has room to read more. Lets the stream
+   * processor tell a stall that has outlasted a normal commit round trip from the brief, expected
+   * waits of healthy operation.
+   */
+  public Duration getPendingSideEffectsBlockedDuration() {
+    return sideEffectRunner.capacityExhaustedDuration();
   }
 
   public void startProcessing(final LastProcessingPositions lastProcessingPositions) {

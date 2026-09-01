@@ -218,6 +218,7 @@ public class BrokerBasedPropertiesOverride {
     // processing
     override.getProcessing().setMaxCommandsInBatch(processing.getMaxCommandsInBatch());
     override.getProcessing().setMaxRecoverableRetries(processing.getMaxRecoverableRetries());
+    override.getProcessing().setMaxPendingSideEffects(processing.getMaxPendingSideEffects());
     override
         .getProcessing()
         .setScheduledTaskCheckInterval(processing.getScheduledTasksCheckInterval());

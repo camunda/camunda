@@ -1430,6 +1430,14 @@ camunda: # Type: io.camunda.configuration.Camunda
     # (see maxMessageSize), processing will be rolled back and retried with a smaller maximum batch size.
     # Lowering the command limit can reduce the frequency of rollback and retry.
     max-commands-in-batch: 100 # Type: Integer, Env: CAMUNDA_PROCESSING_MAXCOMMANDSINBATCH
+    # Sets how many processed records may wait for their side effects to be committed before processing
+    # stops reading new records. Processing reads records as soon as they are appended, while a record's
+    # side effects, such as command responses, only run once its results are committed. This limit bounds
+    # the memory those waiting side effects retain when commits are slow. It is a safety valve rather than
+    # a tuning knob: the default sits far above the number of records processed within one commit round
+    # trip, so it should not be reached in normal operation. Raise it only to trade memory for throughput
+    # on a partition whose commit latency is genuinely high. Must be a positive integer. Default is 1000.
+    max-pending-side-effects: 1000 # Type: Integer, Env: CAMUNDA_PROCESSING_MAXPENDINGSIDEEFFECTS
     # Sets the maximum number of recoverable retries for state update and replay operations. When the
     # limit is reached, the operation fails and the partition restarts. Must be a positive integer.
     # Default is 1000.
