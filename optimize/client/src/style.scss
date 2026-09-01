@@ -55,6 +55,10 @@ html {
   min-height: 0; // for firefox see https://stackoverflow.com/a/28639686
 }
 
+// Aligns Carbon's surfaces with the design system that the V2 navigation renders. Imported here so
+// it lands after Carbon in the cascade.
+@import 'design-system-alignment.scss';
+
 body {
   height: 100%;
 }

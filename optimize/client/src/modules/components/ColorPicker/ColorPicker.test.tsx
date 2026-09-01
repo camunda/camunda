@@ -9,6 +9,7 @@
 import {shallow} from 'enzyme';
 
 import ColorPicker from './ColorPicker';
+import colorsObj from './colors.json';
 
 it('should include 16 colors by default', () => {
   const node = shallow(<ColorPicker onChange={() => {}} />);
@@ -36,11 +37,12 @@ it('should invoke onChange when a color is selected', () => {
 it('should generate correct amount of colors', () => {
   const colors = ColorPicker.getGeneratedColors(18);
   expect(colors.length).toBe(18);
-  expect(colors[17]).toBe('#54e09c');
 });
 
 it('should should repeat generated colors if they are not enough', () => {
+  const {colors: palette} = colorsObj;
+
   const colors = ColorPicker.getGeneratedColors(200);
-  expect(colors.length).toBe(200);
-  expect(colors[63]).toBe(colors[0]);
+
+  expect(colors).toEqual(Array.from({length: 200}, (_, idx) => palette[idx % palette.length]));
 });

@@ -1,0 +1,113 @@
+@use '@carbon/styles/scss/spacing';
+
+// The design system's stylesheet carries only the utilities its navigation uses, so the table's own
+// -- `border-b`, `bg-neutral-background-*`, `focus-visible:` -- match no rule, and its borders fall
+// back to `currentColor`. Redrawn from Carbon's tokens so the table sits in Optimize's palette.
+//
+// Scoped to the V2 class rather than `.EntityList`, so the legacy list keeps its own appearance
+// even though both variants share the base stylesheet.
+.EntityListV2 {
+  // Optimize clears the browser's focus ring globally, and Carbon re-adds one only for its own
+  // components.
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--cds-focus);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  // The wrapper draws the card -- `rounded-xl` and a border -- but not the utility colouring it.
+  div:has(> table) {
+    border-color: var(--cds-border-subtle-00, #e0e0e0);
+  }
+
+  table {
+    inline-size: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+
+    thead tr {
+      background-color: var(--cds-layer-01);
+    }
+
+    tr {
+      border-color: var(--cds-border-subtle-00, #e0e0e0);
+    }
+
+    tbody tr:last-child {
+      border-bottom-width: 0;
+    }
+
+    tbody tr:hover {
+      background-color: var(--cds-layer-hover-01);
+    }
+  }
+
+  .entityTitle {
+    margin-bottom: spacing.$spacing-05;
+  }
+
+  .entityToolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: spacing.$spacing-05;
+    margin-bottom: spacing.$spacing-05;
+  }
+
+  .entitySearch {
+    max-inline-size: 20rem;
+  }
+
+  // Carbon floors its menu buttons at 48px, so the action stands taller than the field beside it.
+  .entityToolbarAction .cds--btn {
+    block-size: 2.25rem;
+    min-block-size: 2.25rem;
+    padding-block: 0;
+    display: inline-flex;
+    align-items: center;
+
+    // Its chevron sits at a fixed offset measured from the 48px button.
+    svg {
+      inset-block-start: 50%;
+      margin-block-start: 0;
+      transform: translateY(-50%);
+    }
+  }
+
+  // The design system draws the box in `--input`, near-invisible against the grey header and hover
+  // rows. Only while unchecked -- checked and indeterminate carry their own fill.
+  [role='checkbox'][data-state='unchecked'] {
+    border-color: var(--cds-border-strong-01);
+  }
+
+  .entityMeta {
+    display: block;
+    // A table cell grows to fit its content, so the ellipsis has nothing to act on without a bound.
+    max-inline-size: 20rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .entityCell {
+    display: flex;
+    align-items: center;
+    gap: spacing.$spacing-04;
+  }
+
+  .entityText {
+    display: flex;
+    flex-direction: column;
+    gap: spacing.$spacing-01;
+    min-width: 0;
+    // Bounds the name's ellipsis, the same as `.entityMeta`.
+    max-inline-size: 20rem;
+  }
+
+  .entityType {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
