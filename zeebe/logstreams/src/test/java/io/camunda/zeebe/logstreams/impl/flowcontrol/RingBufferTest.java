@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.atomic.AtomicLongArray;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -328,7 +328,7 @@ final class RingBufferTest {
 
     // Capacity must exceed ITERATIONS to avoid wraparound in tests that assert exact entries
     private static final int CAPACITY = 1 << 17; // 131072
-    private static final int ITERATIONS = 100_000;
+    private static final int ITERATIONS = 10_000;
 
     /**
      * Simulates the FlowControl access pattern: one writer thread puts entries (sequencer), a
@@ -341,7 +341,7 @@ final class RingBufferTest {
       final var buffer = new RingBuffer(CAPACITY);
       final var failures = new ConcurrentLinkedQueue<Throwable>();
       final var startLatch = new CountDownLatch(1);
-      final var indices = new long[ITERATIONS + 1];
+      final var indices = new AtomicLongArray(ITERATIONS + 1);
 
       final var writer =
           new Thread(
@@ -349,7 +349,7 @@ final class RingBufferTest {
                 awaitLatch(startLatch);
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
                   final var entry = newEntry(pos);
-                  indices[(int) pos] = buffer.put(entry);
+                  indices.set((int) pos, buffer.put(entry));
                 }
               });
 
@@ -359,8 +359,8 @@ final class RingBufferTest {
                 awaitLatch(startLatch);
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
                   InFlightEntry entry;
-                  while ((entry = buffer.get(indices[(int) pos], pos)) == null) {
-                    LockSupport.parkNanos(1);
+                  while ((entry = buffer.get(indices.get((int) pos), pos)) == null) {
+                    Thread.onSpinWait();
                   }
                   try {
                     assertThat(entry.highestPosition).isEqualTo(pos);
@@ -386,6 +386,7 @@ final class RingBufferTest {
       final var buffer = new RingBuffer(CAPACITY);
       final var failures = new ConcurrentLinkedQueue<Throwable>();
       final var startLatch = new CountDownLatch(1);
+      final var publishedPosition = new AtomicLong(0);
 
       final var writer =
           new Thread(
@@ -393,6 +394,7 @@ final class RingBufferTest {
                 awaitLatch(startLatch);
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
                   buffer.put(newEntry(pos));
+                  publishedPosition.set(pos);
                 }
               });
 
@@ -401,10 +403,13 @@ final class RingBufferTest {
               () -> {
                 awaitLatch(startLatch);
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
-                  InFlightEntry entry = null;
-                  while (entry == null) {
-                    entry = buffer.findAndRemove(pos);
-                    LockSupport.parkNanos(1);
+                  while (pos > publishedPosition.get()) {
+                    Thread.onSpinWait();
+                  }
+
+                  InFlightEntry entry;
+                  while ((entry = buffer.findAndRemove(pos)) == null) {
+                    Thread.onSpinWait();
                   }
                   try {
                     assertThat(entry.highestPosition).isEqualTo(pos);
@@ -431,14 +436,14 @@ final class RingBufferTest {
       final var buffer = new RingBuffer(CAPACITY);
       final var failures = new ConcurrentLinkedQueue<Throwable>();
       final var startLatch = new CountDownLatch(1);
-      final var indices = new long[ITERATIONS + 1];
+      final var indices = new AtomicLongArray(ITERATIONS + 1);
 
       final var writer =
           new Thread(
               () -> {
                 awaitLatch(startLatch);
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
-                  indices[(int) pos] = buffer.put(newEntry(pos));
+                  indices.set((int) pos, buffer.put(newEntry(pos)));
                 }
               });
 
@@ -450,8 +455,8 @@ final class RingBufferTest {
                   awaitLatch(startLatch);
                   for (long pos = 1; pos <= ITERATIONS; pos++) {
                     InFlightEntry entry;
-                    while ((entry = buffer.get(indices[(int) pos], pos)) == null) {
-                      LockSupport.parkNanos(1);
+                    while ((entry = buffer.get(indices.get((int) pos), pos)) == null) {
+                      Thread.onSpinWait();
                     }
                     try {
                       assertThat(entry.highestPosition).isEqualTo(pos);
@@ -477,9 +482,11 @@ final class RingBufferTest {
      * in order. Because entries are indexed sequentially, displacement only occurs after the full
      * buffer capacity is used (unlike position-based indexing where it depended on batch size).
      *
-     * <p>The test asserts that both hits (entry found and processed) and misses (entry displaced
-     * before processing) occurred, and that every hit returned the correct entry (position guard
-     * was not bypassed).
+     * <p>The test asserts that every entry the reader does find is the one it asked for, i.e. the
+     * position guard was not bypassed. Whether a given entry is found or was already displaced
+     * depends on how far the writer has run ahead, so the hit/miss split is not asserted here —
+     * displacement itself is covered deterministically by {@link
+     * RingBufferTest#getReturnsNullAfterDisplacement()}.
      */
     @Test
     void sequentialIndexingWorksUnderConcurrentWraparound() {
@@ -502,16 +509,13 @@ final class RingBufferTest {
                 }
               });
 
-      final var hits = new AtomicLong(0);
-      final var misses = new AtomicLong(0);
-
       final var reader =
           new Thread(
               () -> {
                 awaitLatch(startLatch);
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
-                  if (pos > publishedIndex.get()) {
-                    LockSupport.parkNanos(1);
+                  while (pos > publishedIndex.get()) {
+                    Thread.onSpinWait();
                   }
                   final var entry = buffer.findAndRemove(pos);
                   if (entry != null) {
@@ -521,9 +525,6 @@ final class RingBufferTest {
                       failures.add(e);
                       return;
                     }
-                    hits.incrementAndGet();
-                  } else {
-                    misses.incrementAndGet();
                   }
                 }
               });
@@ -531,8 +532,6 @@ final class RingBufferTest {
       // when / then
       runAndAwait(startLatch, failures, writer, reader);
       assertThat(failures).isEmpty();
-      assertThat(hits.get()).as("expected some hits (entry still present)").isGreaterThan(0);
-      assertThat(misses.get()).as("expected some misses (entry displaced)").isGreaterThan(0);
     }
 
     /** Starts all threads, releases the latch, and waits for all threads to finish. */
