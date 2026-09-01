@@ -14,9 +14,10 @@ import {
 	InProgress,
 	MisuseOutline,
 	PauseOutlineFilled,
+	SkipForwardFilled,
 	type CarbonIconType,
 } from '@carbon/react/icons';
-import type {BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {BatchOperationItemState, BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Container} from './styled';
 
 type Config = {
@@ -25,7 +26,7 @@ type Config = {
 	label: string;
 };
 
-const STATE_CONFIG: Record<BatchOperationState, Config> = {
+const STATE_CONFIG: Record<BatchOperationState | BatchOperationItemState, Config> = {
 	COMPLETED: {Icon: CheckmarkFilled, color: 'var(--cds-status-green)', label: 'Completed'},
 	ACTIVE: {Icon: InProgress, color: 'var(--cds-status-blue)', label: 'Active'},
 	SUSPENDED: {Icon: PauseOutlineFilled, color: 'var(--cds-status-gray)', label: 'Suspended'},
@@ -33,10 +34,11 @@ const STATE_CONFIG: Record<BatchOperationState, Config> = {
 	FAILED: {Icon: ErrorFilled, color: 'var(--cds-status-red)', label: 'Failed'},
 	CREATED: {Icon: CircleDash, color: 'var(--cds-status-gray)', label: 'Created'},
 	PARTIALLY_COMPLETED: {Icon: Incomplete, color: 'var(--cds-status-blue)', label: 'Partially completed'},
+	SKIPPED: {Icon: SkipForwardFilled, color: 'var(--cds-status-gray)', label: 'Skipped'},
 };
 
 type Props = {
-	state: BatchOperationState;
+	state: BatchOperationState | BatchOperationItemState;
 };
 
 const BatchStateIndicator: React.FC<Props> = ({state}) => {
