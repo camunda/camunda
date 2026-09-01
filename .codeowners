@@ -460,3 +460,9 @@ optimize.Dockerfile         @camunda/core-features
 # Optimize frontend: overrides the broad /optimize/ rule above, which predates the
 # optimize-frontend/optimize-backend team split.
 /optimize/client/           @camunda/optimize-frontend
+
+# Tasklist webapp + frontend: overrides the broad /tasklist/ rule above, which
+# predates the 2026-07-01 reorg moving Tasklist ownership out of Core Features.
+# Mirrors the /operate/client/ and /optimize/client/ overrides above.
+/tasklist/client/           @camunda/human-task-orchestration
+/tasklist/webapp/           @camunda/human-task-orchestration
