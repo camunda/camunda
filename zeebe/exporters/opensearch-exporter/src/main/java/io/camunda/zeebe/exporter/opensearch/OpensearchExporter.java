@@ -211,7 +211,10 @@ public class OpensearchExporter implements Exporter {
     }
 
     final String minimumAge = configuration.retention.getMinimumAge();
-    if (minimumAge != null && !CHECKER_MIN_AGE.test(minimumAge)) {
+    if (minimumAge == null || minimumAge.isBlank()) {
+      throw new ExporterException("Opensearch minimumAge must not be null or blank.");
+    }
+    if (!CHECKER_MIN_AGE.test(minimumAge)) {
       throw new ExporterException(
           String.format(
               "Opensearch minimumAge '%s' must match pattern '%s', but didn't.",
