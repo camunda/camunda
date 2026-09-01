@@ -126,7 +126,7 @@ public class CCSMTenantAuthorizationServiceTest {
   }
 
   @Test
-  public void emptyTenantAuthorizationsAreNotCachedAndAreRetried() {
+  public void shouldNotCacheEmptyTenantAuthorizationsAndRetry() {
     // given — Identity resolves no tenants on the first attempt (e.g. a transient hiccup), then the
     // real tenants once it recovers
     final List<TenantDto> authorizedTenants =
