@@ -716,6 +716,8 @@ final class SecretResolutionSchedulerTest {
     final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
     verify(scheduleService).runDelayedAsync(delayCaptor.capture(), any(), any());
     assertThat(delayCaptor.getValue()).isEqualTo(Duration.ZERO);
+    // and - the cycle-delay meter is tagged DRAINING for this reschedule, not some other reason
+    assertThat(cycleDelayTimer(SecretResolutionCycleDelayReason.DRAINING).count()).isEqualTo(1);
   }
 
   @Test
@@ -746,6 +748,8 @@ final class SecretResolutionSchedulerTest {
     verify(scheduleService).runDelayedAsync(delayCaptor.capture(), any(), any());
     assertThat(delayCaptor.getValue())
         .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_WAKE_DELAY);
+    // and - the cycle-delay meter is tagged WAKE for this reschedule, not some other reason
+    assertThat(cycleDelayTimer(SecretResolutionCycleDelayReason.WAKE).count()).isEqualTo(1);
   }
 
   @Test
