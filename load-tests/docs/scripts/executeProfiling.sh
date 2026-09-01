@@ -17,10 +17,6 @@
 #   PROFILING_DURATION - profiling duration in seconds (default: 100)
 set -oxe pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=load-tests/setup/utils.sh
-. "${SCRIPT_DIR}/../../setup/utils.sh"
-
 if [ -z "$1" ]; then
   echo "Error: Missing required argument <POD-NAME>."
   echo "Usage: ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS] [TEST-TYPE]"
@@ -89,7 +85,7 @@ kubectl exec "$pod_name" -- ./data/asprof -e "$profiler_event" -d "${PROFILING_D
 
 # Copy result into specified output directory.
 mkdir -p "$OUTPUT_DIR"
-retry_with_backoff kubectl cp "$pod_name:$containerPath/$filename" "$OUTPUT_DIR/$filename"
+kubectl cp "$pod_name:$containerPath/$filename" "$OUTPUT_DIR/$filename"
 
 # Clean up
 # Comment out the following lines to make exeuction faster next time
