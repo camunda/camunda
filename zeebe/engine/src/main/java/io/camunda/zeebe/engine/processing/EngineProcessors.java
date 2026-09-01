@@ -284,7 +284,6 @@ public final class EngineProcessors {
             messageCorrelationMetrics,
             processDefinitionMetrics,
             featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope(),
-            featureFlags.evaluateDuplicateOutputMappingTargetsInOrder(),
             cslCheck,
             tenantCheck,
             secretStoreRegistry);
@@ -639,7 +638,6 @@ public final class EngineProcessors {
       final MessageCorrelationMetrics messageCorrelationMetrics,
       final ProcessDefinitionMetrics processDefinitionMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final SecretStoreRegistry secretStoreRegistry) {
@@ -660,7 +658,6 @@ public final class EngineProcessors {
         messageCorrelationMetrics,
         processDefinitionMetrics,
         evaluateBoundaryEventCorrelationKeyInActivityScope,
-        evaluateDuplicateOutputMappingTargetsInOrder,
         cslCheck,
         tenantCheck,
         secretStoreRegistry);

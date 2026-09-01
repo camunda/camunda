@@ -16,6 +16,7 @@ import org.jspecify.annotations.Nullable;
 public class EngineMappings {
 
   private InputMode inputMode = InputMode.COMBINED;
+  private OutputMode outputMode = OutputMode.COMBINED;
 
   /**
    * When set, evaluates input mappings with both the primary resolver ({@code inputMode}) and this
@@ -32,9 +33,14 @@ public class EngineMappings {
     COMBINED
   }
 
+  public enum OutputMode {
+    ORDERED,
+    COMBINED
+  }
+
   /**
    * Controls the input-mapping resolver used during process instance execution. When set to {@code
-   * COMBINED}, the engine uses {@code CombinedMappingResolver} which merges all input mappings into
+   * COMBINED}, the engine uses {@code CombinedInputMappingResolver} which merges all input mappings into
    * a single combined result. When set to {@code ORDERED}, the engine uses {@code
    * OrderedMappingResolver} which applies mappings in modeling order.
    *
@@ -59,12 +65,22 @@ public class EngineMappings {
     this.inputComparisonMode = inputComparisonMode;
   }
 
+  public OutputMode getOutputMode() {
+    return outputMode;
+  }
+
+  public void setOutputMode(final OutputMode outputMode) {
+    this.outputMode = outputMode;
+  }
+
   @Override
   public String toString() {
     return "EngineMappings{inputMode="
         + inputMode
         + ", inputComparisonMode="
         + inputComparisonMode
+        + ", outputMode="
+        + outputMode
         + '}';
   }
 }

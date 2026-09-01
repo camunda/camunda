@@ -1343,6 +1343,10 @@ camunda: # Type: io.camunda.configuration.Camunda
         # only: each activation evaluates mappings with both resolvers and compares the
         # result documents, which adds overhead for large mapping sets.
         input-comparison-mode: ~ # Type: InputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTCOMPARISONMODE
+        # Controls which output-mapping evaluation strategy to use: ORDERED (default, per-mapping
+        # declaration order) or COMBINED (legacy combined-FEEL-context behavior restoring the
+        # pre-#59087 single-expression evaluation).
+        output-mode: COMBINED # Type: OutputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTMODE
 
     flow-control: # Type: io.camunda.configuration.FlowControl
       request: # Type: io.camunda.configuration.Limit

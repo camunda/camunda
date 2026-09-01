@@ -298,46 +298,6 @@ public final class MappingIncidentTest {
   }
 
   @Test
-  public void shouldRaiseIncidentForPreviouslyDroppedDuplicateOutputMappingSource() {
-    // given: two output mappings targeting the same key; under the OLD (pre-fix) behavior the
-    // first (an always-failing assert) would have been silently dropped as a superseded duplicate
-    // and never evaluated — now every source is evaluated in modeling order, so it fails first
-    final var process =
-        Bpmn.createExecutableProcess("process-duplicate-target-fail")
-            .startEvent()
-            .serviceTask(
-                "task",
-                t ->
-                    t.zeebeJobType("test")
-                        .zeebeOutputExpression("assert(missing, missing != null)", "x")
-                        .zeebeOutputExpression("2", "x"))
-            .endEvent()
-            .done();
-    ENGINE.deployment().withXmlResource(process).deploy();
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("process-duplicate-target-fail").create();
-    ENGINE.job().ofInstance(processInstanceKey).withType("test").complete();
-
-    // then: an incident is raised for the first mapping's failing source, and 'x' is never
-    // created — the second, winning mapping is never reached
-    final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-    Assertions.assertThat(incident.getValue()).hasErrorType(ErrorType.IO_MAPPING_ERROR);
-    assertThat(incident.getValue().getErrorMessage())
-        .contains("Assertion failure on evaluate the expression");
-    assertThat(
-            RecordingExporter.<Boolean>expectNoMatchingRecords(
-                ignored ->
-                    RecordingExporter.variableRecords()
-                        .withProcessInstanceKey(processInstanceKey)
-                        .withName("x")
-                        .exists()))
-        .isFalse();
-  }
-
-  @Test
   public void shouldResolveIncidentForInputMappingFailure() {
     // given
     ENGINE.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();

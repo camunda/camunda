@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 import static io.camunda.zeebe.engine.processing.variable.mapping.VariableValue.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
@@ -21,28 +22,32 @@ import org.junit.Rule;
 import org.junit.Test;
 
 /**
- * Characterization tests for the {@code evaluateDuplicateOutputMappingTargetsInOrder} kill-switch:
- * with the flag disabled, output mappings with colliding targets are handled the way the removed
- * combined-FEEL-context builder used to handle them, not by the current one-by-one evaluation.
+ * Characterization tests for {@link EngineConfiguration.OutputMappingMode#COMBINED}: output
+ * mappings are evaluated by a single pre-built FEEL context expression that mirrors the pre-{@code
+ * #59087} combined-FEEL-context-builder behavior. Duplicate targets are resolved at deploy time
+ * when building the context expression — later mappings to the same key overwrite earlier ones, so
+ * the failing source of a superseded duplicate is never evaluated. This mode acts as a kill-switch
+ * for users who depended on the old single-expression evaluation semantics.
  */
-public final class DuplicateOutputMappingTargetFeatureFlagTest {
+public final class CombinedOutputMappingModeTest {
 
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withFeatureFlags(f -> f.setEvaluateDuplicateOutputMappingTargetsInOrder(false));
+          .withEngineConfig(
+              c -> c.setOutputMappingMode(EngineConfiguration.OutputMappingMode.COMBINED));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldReproduceOldValuesForInterleavedDuplicateTargetsWhenDisabled() {
-    // given: the PR's canonical duplicate-target example (1 -> x, x -> y, 2 -> x); with the flag
-    // enabled this yields x=2, y=1 (see ActivityOutputMappingTest#shouldApplyOutputMappings), but
-    // the old combined-FEEL-context builder kept x's map position at its first occurrence while
-    // overwriting its value in place, so 'y's reference to 'x' resolved to the already-overwritten
-    // value
+  public void shouldReproduceOldValuesForInterleavedDuplicateTargets() {
+    // given: the PR's canonical duplicate-target example (1 -> x, x -> y, 2 -> x); with
+    // ORDERED mode this yields x=2, y=1 (see ActivityOutputMappingTest#shouldApplyOutputMappings),
+    // but the COMBINED mode builds a single FEEL context expression {x:2, y:x} where duplicate
+    // target 'x' is resolved at deploy time to its last-winning value (2); within the FEEL context
+    // literal, 'y:x' sees the earlier sibling entry 'x:2', so y=2
     final var process =
         Bpmn.createExecutableProcess("process-duplicate-target-old-semantics")
             .startEvent()
@@ -62,7 +67,7 @@ public final class DuplicateOutputMappingTargetFeatureFlagTest {
     // when
     ENGINE.job().ofInstance(processInstanceKey).withType("test").complete();
 
-    // then: x=2 (last write wins) and y=2 (not y=1, the flag-enabled value); the output mapping
+    // then: x=2 (last write wins) and y=2 (not y=1, the ORDERED mode value); the output mapping
     // is applied while the task is completing, so its variable merge is exported before the
     // task's own ELEMENT_COMPLETED record
     assertThat(
@@ -76,13 +81,14 @@ public final class DuplicateOutputMappingTargetFeatureFlagTest {
   }
 
   @Test
-  public void shouldSuppressIncidentFromSupersededDuplicateOutputMappingSourceWhenDisabled() {
+  public void shouldSuppressIncidentFromSupersededDuplicateOutputMappingSource() {
     // given: two output mappings targeting the same key; the first one's source always fails.
-    // With the flag enabled (default), every source is evaluated in modeling order, so this
-    // fails and raises an incident (see
+    // With ORDERED mode (default), every source is evaluated in modeling order, so this fails and
+    // raises an incident (see
     // MappingIncidentTest#shouldRaiseIncidentForPreviouslyDroppedDuplicateOutputMappingSource).
-    // With the flag disabled, the first mapping is treated as a superseded duplicate target and
-    // its source is never evaluated, reproducing the old silent-drop behavior.
+    // With COMBINED mode, the combined FEEL context expression is built at deploy time: the
+    // duplicate target 'x' is resolved to its last-winning source ('2'), so the failing first
+    // source never appears in the expression and the incident is suppressed.
     final var process =
         Bpmn.createExecutableProcess("process-duplicate-target-fail-suppressed")
             .startEvent()
