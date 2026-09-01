@@ -42,7 +42,7 @@ public class EngineMappings {
    * Controls the input-mapping resolver used during process instance execution. When set to {@code
    * COMBINED}, the engine uses {@code CombinedInputMappingResolver} which merges all input mappings into
    * a single combined result. When set to {@code ORDERED}, the engine uses {@code
-   * OrderedMappingResolver} which applies mappings in modeling order.
+   * OrderedInputMappingResolver} which applies mappings in modeling order.
    *
    * <p>This configuration can be accessed via the environment variable: <br>
    * {@code camunda.processing.engine.mappings.input-mode}.

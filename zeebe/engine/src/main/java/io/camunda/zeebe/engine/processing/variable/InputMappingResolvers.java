@@ -8,33 +8,34 @@
 package io.camunda.zeebe.engine.processing.variable;
 
 import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-/** Utility methods for working with {@link MappingResolver} instances. */
+/** Utility methods for working with {@link MappingResolver} instances for input mappings. */
 @NullMarked
-public final class MappingResolvers {
+public final class InputMappingResolvers {
 
-  private MappingResolvers() {}
+  private InputMappingResolvers() {}
 
   /**
    * Returns a resolver for the given input mode. If {@code comparisonMode} is non-null and
    * different from {@code inputMode}, wraps both in a {@link ComparingMappingResolver} that logs a
    * warning when results differ.
    */
-  public static MappingResolver forMode(
+  public static MappingResolver<InputMappings> forMode(
       final InputMappingMode inputMode, final @Nullable InputMappingMode comparisonMode) {
     final var primary = singleResolver(inputMode);
     if (comparisonMode == null || comparisonMode == inputMode) {
       return primary;
     }
-    return new ComparingMappingResolver(primary, singleResolver(comparisonMode));
+    return new ComparingMappingResolver<>(primary, singleResolver(comparisonMode));
   }
 
-  private static MappingResolver singleResolver(final InputMappingMode mode) {
+  private static MappingResolver<InputMappings> singleResolver(final InputMappingMode mode) {
     return switch (mode) {
-      case COMBINED -> new CombinedMappingResolver();
-      case ORDERED -> new OrderedMappingResolver();
+      case COMBINED -> new CombinedInputMappingResolver();
+      case ORDERED -> new OrderedInputMappingResolver();
     };
   }
 }
