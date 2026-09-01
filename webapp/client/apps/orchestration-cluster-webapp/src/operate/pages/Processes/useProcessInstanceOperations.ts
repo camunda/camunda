@@ -10,7 +10,8 @@ import {useCallback, useState} from 'react';
 import {useQueryClient, type QueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import type {BatchOperation, BatchOperationType, ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
-import {request} from '#/shared/http/request';
+import {ForbiddenError} from '#/shared/errors';
+import {request, requestErrorSchema} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
@@ -25,6 +26,21 @@ type OperationType = Extract<
 // the operation-state column rather than leaving a spinner up forever.
 const IN_PROGRESS_BATCH_OPERATION_STATES: BatchOperation['state'][] = ['CREATED', 'ACTIVE'];
 const TERMINAL_PROCESS_INSTANCE_STATES: ProcessInstance['state'][] = ['COMPLETED', 'TERMINATED'];
+
+function getOperationErrorSubtitle(error: unknown): string | undefined {
+	if (error instanceof Error) {
+		return error.message;
+	}
+
+	const requestError = requestErrorSchema.safeParse(error);
+	if (!requestError.success) {
+		return undefined;
+	}
+
+	return requestError.data.variant === 'network-error'
+		? requestError.data.networkError.message
+		: requestError.data.response.statusText || undefined;
+}
 
 /**
  * Waits for the batch operation a command created to leave its transitional state. The instances
@@ -91,10 +107,15 @@ function useProcessInstanceOperations(processInstanceKey: string) {
 				await send();
 				await queryClient.invalidateQueries({queryKey: ['processInstances']});
 			} catch (error) {
+				const isForbiddenIncidentRetry = operationType === 'RESOLVE_INCIDENT' && error instanceof ForbiddenError;
 				notificationsStore.displayNotification({
-					kind: 'error',
-					title: errorTitle,
-					subtitle: error instanceof Error ? error.message : undefined,
+					kind: isForbiddenIncidentRetry ? 'warning' : 'error',
+					title: isForbiddenIncidentRetry
+						? t('operate.processes.instancesTable.operations.forbiddenTitle')
+						: errorTitle,
+					subtitle: isForbiddenIncidentRetry
+						? t('operate.processes.instancesTable.operations.forbiddenSubtitle')
+						: getOperationErrorSubtitle(error),
 					isDismissable: true,
 				});
 			} finally {
@@ -105,7 +126,7 @@ function useProcessInstanceOperations(processInstanceKey: string) {
 				});
 			}
 		},
-		[queryClient],
+		[queryClient, t],
 	);
 
 	const resolveIncidents = useCallback(
