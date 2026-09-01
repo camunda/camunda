@@ -18,9 +18,12 @@ import type { Group, Role } from "@camunda/camunda-api-zod-schemas/8.10";
 const AssignGroupModal: FC<
   UseEntityModalCustomProps<
     { roleId: Role["roleId"] },
-    { assignedGroups: Group[] }
+    {
+      assignedGroups: Group[];
+      onItemsAssigned: (count: number) => void;
+    }
   >
-> = ({ entity: { roleId }, onSuccess, open, onClose }) => {
+> = ({ entity: { roleId }, onSuccess, onItemsAssigned, open, onClose }) => {
   const { t } = useTranslate("roles");
   const [groupId, setGroupId] = useState("");
   const qc = useQueryClient();
@@ -32,7 +35,15 @@ const AssignGroupModal: FC<
 
   const handleSubmit = () => {
     if (!canSubmit) return;
-    mutate({ groupId, roleId }, { onSuccess });
+    mutate(
+      { groupId, roleId },
+      {
+        onSuccess: () => {
+          onItemsAssigned(1);
+          onSuccess();
+        },
+      },
+    );
   };
 
   useEffect(() => {
