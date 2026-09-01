@@ -28,7 +28,6 @@ import io.atomix.raft.utils.ForceConfigureQuorum;
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.ThreadContext;
 import java.net.ConnectException;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -212,7 +211,7 @@ public final class ReconfigurationHelper {
                     "Join request accepted at index {}, waiting for the configuration entry to"
                         + " commit locally",
                     response.index());
-                awaitLocalCommit(response.index(), result, deadline);
+                awaitLocalCommit(response.index(), result);
               } else if (response.error().type() == RaftError.Type.NO_LEADER
                   || response.error().type() == RaftError.Type.CONFIGURATION_ERROR) {
                 if (Instant.now().isBefore(deadline)) {
@@ -262,28 +261,24 @@ public final class ReconfigurationHelper {
    * to what this node has itself persisted, so waiting for the local commit index - not the
    * leader's - is what guarantees the entry is durable here too.
    *
+   * <p>The wait runs on its own {@link RaftContext#getJoinCatchUpTimeout()} budget rather than what
+   * remains of the join-request deadline, which may be mostly spent on retries by the time the join
+   * is accepted: reaching the accepted index is paced by replication - potentially a snapshot
+   * install plus a log replay - not by request round-trips.
+   *
    * @param index the index of the configuration entry admitting this member
    * @param result the future to complete once the entry commits locally
-   * @param deadline until when to wait before failing {@code result}
    */
-  private void awaitLocalCommit(
-      final long index, final CompletableFuture<Void> result, final Instant deadline) {
+  private void awaitLocalCommit(final long index, final CompletableFuture<Void> result) {
     if (raftContext.getCommitIndex() >= index) {
       LOGGER.debug("Configuration entry at index {} is already committed locally", index);
       result.complete(null);
       return;
     }
-    if (!Instant.now().isBefore(deadline)) {
-      result.completeExceptionally(
-          new TimeoutException(
-              "Join request was accepted at index %d, but that configuration entry did not commit"
-                  + " locally within the configuration change timeout".formatted(index)));
-      return;
-    }
 
     // Self-removing: whichever of the commit notification or the timeout fires first cancels the
-    // other. Needs a mutable field for the timeout handle because the listener has to be
-    // registered before that handle exists.
+    // other. Needs a mutable field for the timeout handle because the timeout's callback captures
+    // the listener, so the listener must exist before the handle does.
     final var listener =
         new RaftCommitListener() {
           Scheduled timeout;
@@ -301,14 +296,14 @@ public final class ReconfigurationHelper {
         };
     listener.timeout =
         threadContext.schedule(
-            Duration.between(Instant.now(), deadline),
+            raftContext.getJoinCatchUpTimeout(),
             () -> {
               raftContext.removeCommitListener(listener);
               result.completeExceptionally(
                   new TimeoutException(
                       "Join request was accepted at index %d, but that configuration entry did"
-                          + " not commit locally within the configuration change timeout"
-                              .formatted(index)));
+                          + " not commit locally within the join catch-up timeout of %s"
+                              .formatted(index, raftContext.getJoinCatchUpTimeout())));
             });
     raftContext.addCommitListener(listener);
   }
