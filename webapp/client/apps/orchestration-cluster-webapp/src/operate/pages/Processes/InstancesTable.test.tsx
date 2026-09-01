@@ -607,7 +607,7 @@ describe('<InstancesTable />', () => {
 				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
 			}),
 			mockResolveProcessInstanceIncidentsEndpoint({
-				successResponse: new HttpResponse(null, {status: 500}),
+				successResponse: new HttpResponse(null, {status: 500, statusText: 'Internal Server Error'}),
 			}),
 		);
 
@@ -616,5 +616,32 @@ describe('<InstancesTable />', () => {
 		await userEvent.click(screen.getByRole('button', {name: /retry/i}));
 
 		await expect.element(screen.getByText('Failed to retry incidents')).toBeVisible();
+		await expect.element(screen.getByText('Internal Server Error')).toBeVisible();
+	});
+
+	it('should warn the user when incident retry is forbidden', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'ACTIVE', hasIncident: true})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+			mockResolveProcessInstanceIncidentsEndpoint({
+				successResponse: new HttpResponse(null, {status: 403}),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+
+		await userEvent.click(screen.getByRole('button', {name: /retry/i}));
+
+		await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
+		await expect.element(screen.getByText('Please contact the administrator if you need access.')).toBeVisible();
+		expect(document.querySelector('.cds--toast-notification--warning')).not.toBeNull();
 	});
 });

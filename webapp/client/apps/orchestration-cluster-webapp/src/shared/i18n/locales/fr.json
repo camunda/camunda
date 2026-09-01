@@ -508,7 +508,9 @@
 						"resolveIncidentsFailed": "Échec de la relance des incidents",
 						"cancelFailed": "Échec de l'annulation de l'instance de processus",
 						"deleteFailed": "Échec de la suppression de l'instance de processus",
-						"deleteScheduled": "L'instance est planifiée pour suppression"
+						"deleteScheduled": "L'instance est planifiée pour suppression",
+						"forbiddenTitle": "Vous n'avez pas la permission d'effectuer cette opération",
+						"forbiddenSubtitle": "Veuillez contacter votre administrateur si vous avez besoin d'un accès."
 					},
 					"parentProcessInstanceKey": "Clé d'instance de processus parente",
 					"viewInstance": "Afficher l'instance {{key}}",

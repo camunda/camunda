@@ -519,7 +519,9 @@
 						"resolveIncidentsFailed": "Failed to retry incidents",
 						"cancelFailed": "Failed to cancel process instance",
 						"deleteFailed": "Failed to delete process instance",
-						"deleteScheduled": "Instance is scheduled for deletion"
+						"deleteScheduled": "Instance is scheduled for deletion",
+						"forbiddenTitle": "You don't have permission to perform this operation",
+						"forbiddenSubtitle": "Please contact the administrator if you need access."
 					},
 					"parentProcessInstanceKey": "Parent Process Instance Key",
 					"viewInstance": "View instance {{key}}",

@@ -505,7 +505,9 @@
 						"resolveIncidentsFailed": "No se pudieron reintentar las incidencias",
 						"cancelFailed": "No se pudo cancelar la instancia de proceso",
 						"deleteFailed": "No se pudo eliminar la instancia de proceso",
-						"deleteScheduled": "La instancia está programada para eliminación"
+						"deleteScheduled": "La instancia está programada para eliminación",
+						"forbiddenTitle": "No tiene permiso para realizar esta operación",
+						"forbiddenSubtitle": "Póngase en contacto con su administrador si necesita acceso."
 					},
 					"parentProcessInstanceKey": "Clave de instancia de proceso principal",
 					"viewInstance": "Ver instancia {{key}}",
