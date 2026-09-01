@@ -38,9 +38,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class DeletedProcessDefinitionFilter implements ConfigurationReloadable {
 
+  private static final int MAX_SUPPRESSED_IDS_TO_LOG = 100;
   private static final Logger LOG = LoggerFactory.getLogger(DeletedProcessDefinitionFilter.class);
   private static final String SUPPRESSED_IDS_CACHE_KEY = "suppressedProcessDefinitionIds";
-
   private final JobRegistryReader jobRegistryReader;
   private final int maxSize;
   private final Cache<String, Set<String>> cache;
@@ -107,10 +107,15 @@ public class DeletedProcessDefinitionFilter implements ConfigurationReloadable {
         entries.stream()
             .filter(entry -> !suppressedIds.contains(processDefinitionIdExtractor.apply(entry)))
             .toList();
-    LOG.debug(
-        "Suppressing import of {} entries for process definition ids {} with a deletion job.",
-        entries.size() - filteredEntries.size(),
-        suppressedIds);
+    if (LOG.isDebugEnabled()) {
+      final String suppressedIdsToLog =
+          suppressedIds.stream().limit(MAX_SUPPRESSED_IDS_TO_LOG).collect(Collectors.joining(", "))
+              + (suppressedIds.size() > MAX_SUPPRESSED_IDS_TO_LOG ? ", ..." : "");
+      LOG.debug(
+          "Suppressing import of {} entries for process definition ids with a deletion job: {}",
+          entries.size() - filteredEntries.size(),
+          suppressedIdsToLog);
+    }
     return filteredEntries;
   }
 
