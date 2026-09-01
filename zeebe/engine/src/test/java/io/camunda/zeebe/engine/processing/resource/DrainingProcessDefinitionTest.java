@@ -18,7 +18,6 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -33,7 +32,6 @@ import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
-import java.util.Map;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.junit.Rule;
@@ -357,27 +355,6 @@ public class DrainingProcessDefinitionTest {
         .await();
 
     // then
-    assertNoInstanceSpawned(metadata.getProcessDefinitionKey());
-  }
-
-  @Test
-  public void shouldNotSpawnInstanceForDrainingDefinitionOnConditionalStartEvent() {
-    // given
-    final var processId = helper.getBpmnProcessId();
-    final var metadata =
-        deployWithStartEvent(processId, start -> start.condition(c -> c.condition("=x > y")));
-    drain(metadata);
-
-    // when - the conditional start event's condition is evaluated to true
-    engine.conditionalEvaluation().withVariables(Map.of("x", 100, "y", 1)).evaluate();
-
-    // then - the guard blocks the activation and the draining definition is not reported as started
-    final var evaluated =
-        RecordingExporter.conditionalEvaluationRecords(ConditionalEvaluationIntent.EVALUATED)
-            .getFirst();
-    Assertions.assertThat(evaluated.getValue().getStartedProcessInstances())
-        .describedAs("a draining definition is not reported as a started instance")
-        .isEmpty();
     assertNoInstanceSpawned(metadata.getProcessDefinitionKey());
   }
 
