@@ -14,6 +14,7 @@ import {
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
+	mockQueryProcessInstancesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
@@ -23,6 +24,10 @@ import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {
+	createProcessInstance,
+	createQueryProcessInstancesResponse,
+} from '#/shared-test-modules/api-mocks/process-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 test.beforeEach(({network}) => {
@@ -49,6 +54,16 @@ test.beforeEach(({network}) => {
 				}),
 			),
 		}),
+		mockQueryProcessInstancesEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryProcessInstancesResponse({
+					items: [
+						createProcessInstance({processInstanceKey: '1001', processDefinitionName: 'Order Process'}),
+						createProcessInstance({processInstanceKey: '1002', processDefinitionName: 'Payment Process'}),
+					],
+				}),
+			),
+		}),
 	);
 });
 
@@ -64,5 +79,15 @@ test.describe('Operate processes page', () => {
 		await operateProcessesPage.goto();
 
 		await expect(operateProcessesPage.resetFiltersButton).toBeDisabled();
+	});
+
+	test('should list the matching process instances and link each one to its details page', async ({
+		operateProcessesPage,
+	}) => {
+		await operateProcessesPage.goto();
+
+		await expect(operateProcessesPage.instancesTable).toBeVisible();
+		await expect(operateProcessesPage.instanceLink('1001')).toHaveAttribute('href', '/operate/processes/1001');
+		await expect(operateProcessesPage.instanceLink('1002')).toHaveAttribute('href', '/operate/processes/1002');
 	});
 });
