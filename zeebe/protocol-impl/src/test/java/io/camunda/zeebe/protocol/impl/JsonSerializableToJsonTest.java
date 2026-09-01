@@ -5507,9 +5507,7 @@ final class JsonSerializableToJsonTest {
                       .setToolCallId("call_abc123")
                       .setToolName("extract_line_items")
                       .setElementId("extract-line-items-task")
-                      .setArguments(
-                          wrapArray(
-                              MsgPackConverter.convertToMsgPack(Map.of("documentId", "inv-001")))));
+                      .setArguments(Map.of("documentId", "inv-001")));
               record.getMetrics().setInputTokens(512L).setOutputTokens(148L).setDurationMs(1200L);
               return record;
             },
