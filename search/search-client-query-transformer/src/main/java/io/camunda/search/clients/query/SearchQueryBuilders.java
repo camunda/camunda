@@ -479,8 +479,18 @@ public final class SearchQueryBuilders {
         .toList();
   }
 
-  public static <C extends List<Operation<String>>> SearchQuery stringMatchPhraseInSingleHasChild(
-      final String field, final C operations, final String childType) {
+  /**
+   * Matches the given field against all operations, either on a single child document of the given
+   * type or on the document itself.
+   *
+   * <p>The document itself is included because a value is not always carried by a child: an
+   * incident error message, for instance, lives on the flow node child document, unless the
+   * incident was raised at the process level (e.g. by a process level execution listener), in which
+   * case it lives on the process instance document.
+   */
+  public static <C extends List<Operation<String>>>
+      SearchQuery stringMatchPhraseInSingleHasChildOrSelf(
+          final String field, final C operations, final String childType) {
 
     if (operations == null || operations.isEmpty()) {
       return null;
@@ -499,7 +509,8 @@ public final class SearchQueryBuilders {
                             .mustNot(List.of(matchPhrase(field, op.value()))))
                     .toSearchQuery());
         case EXISTS -> innerClauses.add(bool(b -> b.must(List.of(exists(field)))).toSearchQuery());
-        case NOT_EXISTS -> allClauses.add(not(hasChildQuery(childType, exists(field))));
+        case NOT_EXISTS ->
+            allClauses.add(and(not(hasChildQuery(childType, exists(field))), not(exists(field))));
         case IN ->
             innerClauses.add(
                 or(op.values().stream().map(value -> matchPhrase(field, value)).toList()));
@@ -511,7 +522,8 @@ public final class SearchQueryBuilders {
     }
 
     if (!innerClauses.isEmpty()) {
-      allClauses.add(hasChildQuery(childType, bool(b -> b.must(innerClauses)).toSearchQuery()));
+      final var matchingClauses = bool(b -> b.must(innerClauses)).toSearchQuery();
+      allClauses.add(or(hasChildQuery(childType, matchingClauses), matchingClauses));
     }
 
     return and(allClauses);
