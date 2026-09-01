@@ -7,8 +7,11 @@
  */
 package io.camunda.optimize.service.db.repository;
 
+import java.util.concurrent.CompletableFuture;
+
 public interface SnapshotRepository {
   void deleteOptimizeSnapshots(final Long backupId);
 
-  void triggerSnapshot(final String snapshotName, final String[] indexNames);
+  /** The returned future always completes normally, even if snapshot creation fails. */
+  CompletableFuture<Void> triggerSnapshot(final String snapshotName, final String[] indexNames);
 }

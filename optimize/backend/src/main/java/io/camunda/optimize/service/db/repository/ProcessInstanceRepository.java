@@ -18,6 +18,8 @@ public interface ProcessInstanceRepository {
   void deleteByIds(
       final String index, final String itemName, final List<String> processInstanceIds);
 
+  void deleteByDefinitionId(final String bpmnProcessId, final String definitionId);
+
   void bulkImport(final String bulkRequestName, final List<ImportRequestDto> importRequests);
 
   boolean processDefinitionHasStartedInstances(String processDefinitionKey);

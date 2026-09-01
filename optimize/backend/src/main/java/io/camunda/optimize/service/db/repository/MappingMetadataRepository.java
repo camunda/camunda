@@ -7,10 +7,11 @@
  */
 package io.camunda.optimize.service.db.repository;
 
+import io.camunda.optimize.service.db.schema.BackupPriority;
 import java.util.Set;
 
 public interface MappingMetadataRepository {
-  String[] getIndexAliasesWithImportIndexFlag(final boolean isImportIndex);
+  String[] getIndexAliasesWithBackupPriority(final BackupPriority backupPriority);
 
   /**
    * Returns the process definition keys that currently have an instance index, <strong>lowercased
