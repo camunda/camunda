@@ -12,6 +12,7 @@ import {DataTableSkeleton, SkeletonText} from '@carbon/react';
 import type {
 	BatchOperationItem,
 	BatchOperationItemState,
+	BatchOperationType,
 	ProcessInstance,
 	ProcessInstanceState,
 } from '@camunda/camunda-api-zod-schemas/8.10';
@@ -24,7 +25,8 @@ import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {useProcessInstancesSearch} from './useProcessInstancesSearch';
-import {useOperationItemsForInstances} from './batchOperationItems.queries';
+import {useActiveOperationItemsForInstances, useOperationItemsForInstances} from './batchOperationItems.queries';
+import {InstanceOperations} from './InstanceOperations';
 import type {ProcessesSearch} from './processesFilter';
 import {InstancesTableContainer, ProcessName, InstanceLink, VisuallyHiddenStatus} from './styled';
 
@@ -86,6 +88,19 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		isError: isOperationItemsError,
 	} = useOperationItemsForInstances(batchOperationKey, processInstanceKeys);
 	const operationItemsByInstance = useMemo(() => getOperationStatesByInstance(operationItems), [operationItems]);
+	const {data: activeOperationItems} = useActiveOperationItemsForInstances(processInstanceKeys);
+	const activeOperationsByInstance = useMemo(() => {
+		const byInstance = new Map<string, BatchOperationType[]>();
+		activeOperationItems?.forEach((item) => {
+			const existing = byInstance.get(item.processInstanceKey);
+			if (existing === undefined) {
+				byInstance.set(item.processInstanceKey, [item.operationType]);
+			} else {
+				existing.push(item.operationType);
+			}
+		});
+		return byInstance;
+	}, [activeOperationItems]);
 	const isTenantColumnVisible =
 		getClientConfig().deployment.isMultiTenancyEnabled && !isSpecificTenant(search.tenantId);
 	const hasVersionTags = processInstances.some(({processDefinitionVersionTag}) => Boolean(processDefinitionVersionTag));
@@ -203,6 +218,16 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				) : (
 					t('operate.processes.instancesTable.none')
 				),
+		},
+		{
+			key: 'operations',
+			label: t('operate.processes.instancesTable.operations.header'),
+			render: (row: ProcessInstance) => (
+				<InstanceOperations
+					processInstance={row}
+					activeOperations={activeOperationsByInstance.get(row.processInstanceKey) ?? []}
+				/>
+			),
 		},
 	];
 

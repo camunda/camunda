@@ -59,6 +59,9 @@ test.beforeEach(({network}) => {
 				}),
 			),
 		}),
+		mockQueryBatchOperationItemsEndpoint({
+			successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse()),
+		}),
 		mockQueryProcessInstancesEndpoint({
 			successResponse: HttpResponse.json(
 				createQueryProcessInstancesResponse({

@@ -17,6 +17,8 @@ import {
 	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	type QueryProcessInstancesRequestBody,
+	type CancelProcessInstanceRequestBody,
+	type DeleteProcessInstanceRequestBody,
 	type QueryBatchOperationsRequestBody,
 	type QueryBatchOperationItemsRequestBody,
 	type QueryDecisionDefinitionsRequestBody,
@@ -212,6 +214,28 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getProcessDefinitionInstanceVersionStatistics.method,
 			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	resolveProcessInstanceIncidents: (processInstanceKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.resolveProcessInstanceIncidents.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.resolveProcessInstanceIncidents.method,
+		}),
+
+	cancelProcessInstance: (processInstanceKey: string, body?: CancelProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.cancelProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.cancelProcessInstance.method,
+			body: JSON.stringify(body ?? {}),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	deleteProcessInstance: (processInstanceKey: string, body?: DeleteProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteProcessInstance.method,
+			body: JSON.stringify(body ?? {}),
 			headers: {'Content-Type': 'application/json'},
 		}),
 
