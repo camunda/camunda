@@ -502,8 +502,6 @@
 					"viewInstance": "Instanz {{key}} anzeigen",
 					"viewParentInstance": "Übergeordnete Instanz {{key}} anzeigen",
 					"none": "Keine",
-					"selectAll": "Alle Instanzen auswählen",
-					"selectRow": "Instanz {{key}} auswählen",
 					"emptyMessage": "Es gibt keine Instanzen, die diesem Filtersatz entsprechen",
 					"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen"
 				},

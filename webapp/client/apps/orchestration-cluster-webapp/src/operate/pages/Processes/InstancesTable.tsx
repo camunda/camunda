@@ -6,16 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {ProcessInstance, ProcessInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
+import {DataTableSkeleton} from '@carbon/react';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {StateIcon} from '#/operate/shared/StateIcon/StateIcon';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/EmptyMessage';
 import {ErrorMessage} from '#/operate/shared/ErrorMessage/ErrorMessage';
 import {getClientConfig} from '#/shared/config/getClientConfig';
-import {useInstancesSelection} from '#/operate/shared/hooks/useInstancesSelection';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {useProcessInstancesSearch} from './useProcessInstancesSearch';
@@ -49,21 +48,6 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		hasNextPage,
 		fetchNextPage,
 	} = useProcessInstancesSearch(search);
-
-	const selection = useInstancesSelection(totalCount);
-
-	// Sort is excluded deliberately: legacy keys this on the filter set only, so reordering the
-	// list keeps the selection rather than clearing it.
-	const searchKey = useMemo(() => {
-		const {sort: _sort, ...filters} = search;
-		return JSON.stringify(filters);
-	}, [search]);
-	// Keyed on the serialized search rather than the object identity, mirroring legacy's
-	// `filtersJSON` effect key: a new filter set invalidates whatever was selected.
-	const resetSelection = selection.reset;
-	useEffect(() => {
-		resetSelection();
-	}, [searchKey, resetSelection]);
 
 	const isTenantColumnVisible =
 		getClientConfig().deployment.isMultiTenancyEnabled && !isSpecificTenant(search.tenantId);
@@ -190,32 +174,28 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				count={totalCount}
 				hasMoreTotalItems={hasMoreTotalItems}
 			/>
-			<PaginatedSortableTable<ProcessInstance>
-				columns={columns}
-				rows={processInstances}
-				rowKey={(row) => row.processInstanceKey}
-				// `isPlaceholderData` keeps the overlay to filter and sort changes, where the rows on
-				// screen are stale. A background poll refetches the same key and must not dim the table.
-				isFetching={isFetching && isPlaceholderData && !isFetchingPreviousPage && !isFetchingNextPage}
-				emptyState={emptyState}
-				selectionType="checkbox"
-				selectAllLabel={t('operate.processes.instancesTable.selectAll')}
-				selectRowLabel={(id) => t('operate.processes.instancesTable.selectRow', {key: id})}
-				checkIsAllSelected={() => selection.isAllSelected}
-				checkIsIndeterminate={() => selection.isIndeterminate}
-				checkIsRowSelected={selection.isRowSelected}
-				onSelectAll={selection.selectAll}
-				onSelect={selection.select}
-				pagination={{
-					hasPreviousPage,
-					hasNextPage,
-					isFetchingPreviousPage,
-					isFetchingNextPage,
-					fetchPreviousPage,
-					fetchNextPage,
-				}}
-				data-testid="process-instances-table"
-			/>
+			{status === 'pending' && isFetching ? (
+				<DataTableSkeleton columnCount={columns.length} rowCount={5} showHeader={false} showToolbar={false} />
+			) : (
+				<PaginatedSortableTable<ProcessInstance>
+					columns={columns}
+					rows={processInstances}
+					rowKey={(row) => row.processInstanceKey}
+					// `isPlaceholderData` keeps the overlay to filter and sort changes, where the rows on
+					// screen are stale. A background poll refetches the same key and must not dim the table.
+					isFetching={isFetching && isPlaceholderData && !isFetchingPreviousPage && !isFetchingNextPage}
+					emptyState={emptyState}
+					pagination={{
+						hasPreviousPage,
+						hasNextPage,
+						isFetchingPreviousPage,
+						isFetchingNextPage,
+						fetchPreviousPage,
+						fetchNextPage,
+					}}
+					data-testid="process-instances-table"
+				/>
+			)}
 		</InstancesTableContainer>
 	);
 };

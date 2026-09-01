@@ -502,8 +502,6 @@
 					"viewInstance": "Ver instancia {{key}}",
 					"viewParentInstance": "Ver instancia principal {{key}}",
 					"none": "Ninguna",
-					"selectAll": "Seleccionar todas las instancias",
-					"selectRow": "Seleccionar instancia {{key}}",
 					"emptyMessage": "No hay instancias que coincidan con este conjunto de filtros",
 					"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia"
 				},

@@ -83,6 +83,20 @@ describe('<InstancesTable />', () => {
 		await expect.element(screen.getByText('Payment Process')).toBeVisible();
 	});
 
+	it('should show a loading table instead of the empty state while initially fetching', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessInstancesResponse()),
+				delay: 'infinite',
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+
+		await expect.element(screen.getByRole('table')).toBeVisible();
+		await expect.element(screen.getByText('There are no Instances matching this filter set')).not.toBeInTheDocument();
+	});
+
 	it('should link each instance key to its process instance page', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({
@@ -205,28 +219,6 @@ describe('<InstancesTable />', () => {
 
 		await expect.element(screen.getByText('Order Process')).not.toBeInTheDocument();
 		await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
-	});
-
-	it('should keep the row selection when only the sort changes', async ({worker}) => {
-		worker.use(
-			mockQueryProcessInstancesEndpoint({
-				successResponse: HttpResponse.json(
-					createQueryProcessInstancesResponse({
-						items: [createProcessInstance({processInstanceKey: '1', processDefinitionName: 'Order Process'})],
-					}),
-				),
-			}),
-		);
-
-		const screen = await renderSearchHarness(BASE_SEARCH, {...BASE_SEARCH, sort: 'processInstanceKey+asc'});
-		// Carbon renders the row checkbox as a visually hidden input behind its label, so click the
-		// label the user actually sees.
-		await screen.getByRole('checkbox', {name: 'Select instance 1'}).click({force: true});
-		await expect.element(screen.getByRole('checkbox', {name: 'Select instance 1'})).toBeChecked();
-
-		await userEvent.click(screen.getByRole('button', {name: 'change search'}));
-
-		await expect.element(screen.getByRole('checkbox', {name: 'Select instance 1'})).toBeChecked();
 	});
 
 	it('should show the parent instance link only when the instance has a parent', async ({worker}) => {
