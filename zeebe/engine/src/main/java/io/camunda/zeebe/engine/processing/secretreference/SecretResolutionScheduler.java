@@ -209,10 +209,12 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
     final long now = clock.millis();
     boolean taskResultBatchFull = false;
     boolean capped = false;
+    Set<String> cooldownSkippedStores = Set.of();
     final var progressMade = new MutableBoolean(false);
     try {
       final CollectedPendingRefs pending = collectPendingByStore(now);
       capped = pending.capped();
+      cooldownSkippedStores = pending.cooldownSkippedStores();
       final Map<String, Set<String>> pendingByStore = pending.refsByStore();
       // Prune retry state for stores confirmed to have zero pending refs this cycle. Only
       // trustworthy when the scan was both uncapped AND didn't skip any store for cooldown —
@@ -256,11 +258,14 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
         delay = Duration.ZERO;
         idleBackoffMillis = 0;
         metrics.cycleDelay(SecretResolutionCycleDelayReason.DRAINING, delay);
-      } else if (progressMade.get() || woken) {
+      } else if ((progressMade.get() || woken) && cooldownSkippedStores.isEmpty()) {
         // either this cycle resolved something, or one was requested since the last cycle ran and
-        // may not have been visible to this cycle's collection yet either way, staying on the fast
+        // may not have been visible to this cycle's collection yet; either way, staying on the fast
         // cadence is what lets a continuous stream of requests be resolved close to as they arrive,
-        // without ever cancelling and replacing a scheduled cycle to get there
+        // without ever cancelling and replacing a scheduled cycle to get there. Gated on no store
+        // cooling down: a wake this cycle cannot be served by a store that is already known to be
+        // unavailable, so the fast cadence would just re-scan the same backlog for nothing. The
+        // cooldown deadline computed below is what retrying earlier could actually help with.
         delay = wakeDelay;
         idleBackoffMillis = 0;
         metrics.cycleDelay(SecretResolutionCycleDelayReason.WAKE, delay);

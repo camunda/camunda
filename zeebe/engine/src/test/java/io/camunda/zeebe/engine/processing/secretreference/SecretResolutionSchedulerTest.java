@@ -32,6 +32,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetrics;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetricsDoc;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetricsDoc.SecretResolutionCallResult;
+import io.camunda.zeebe.engine.metrics.SecretResolutionMetricsDoc.SecretResolutionCycleDelayReason;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetricsDoc.SecretResolutionKeyNames;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetricsDoc.SecretResolutionOutcome;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -859,6 +860,34 @@ final class SecretResolutionSchedulerTest {
   }
 
   @Test
+  void shouldHonorRetryCooldownRatherThanWakeDelayWhenWokenWhileTheStoreIsCoolingDown()
+      throws Exception {
+    // given - the store fails once and enters cooldown (nextAttemptAt = 1000ms; clock stays at 0)
+    stubPending(STORE_ID, "db-password");
+    when(secretStore.resolve(any())).thenThrow(new SecretStoreUnavailableException("store down"));
+    scheduler.resolveSecrets(resultBuilder);
+
+    // when - a fresh activation parks a job on the same, still-cooling store and wakes the
+    // scheduler before the cooldown has elapsed
+    scheduler.wake();
+    stubPending(STORE_ID, "db-password");
+    scheduler.resolveSecrets(resultBuilder);
+
+    // then - the wake does not override the cooldown: collection skips the cooling store's ref
+    // outright (see collectPendingByStore), so nothing was resolvable this cycle either way, and
+    // the fast wakeDelay cadence would only re-scan a backlog this cycle already knows is blocked
+    final var delayCaptor2 = ArgumentCaptor.forClass(Duration.class);
+    // three calls: onRecovered's initial schedule, first cycle (failure -> retry delay), second
+    // cycle (woken, but still cooling down -> retry delay again, not wakeDelay)
+    verify(scheduleService, times(3)).runDelayedAsync(delayCaptor2.capture(), any(), any());
+    assertThat(delayCaptor2.getAllValues().get(2))
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_INITIAL_DELAY);
+    assertThat(cycleDelayTimer(SecretResolutionCycleDelayReason.WAKE).count()).isEqualTo(0);
+    assertThat(cycleDelayTimer(SecretResolutionCycleDelayReason.RETRY_COOLDOWN).count())
+        .isEqualTo(2);
+  }
+
+  @Test
   void shouldConsumeTheWakeFlagSoOnlyTheNextCycleIsAffected() throws Exception {
     // given - woken once, then a cycle runs and finds nothing (consuming the flag)
     doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
@@ -1465,6 +1494,16 @@ final class SecretResolutionSchedulerTest {
         .find(SecretResolutionMetricsDoc.RESOLUTION_DURATION.getName())
         .tag(SecretResolutionKeyNames.STORE.asString(), storeId)
         .tag(SecretResolutionKeyNames.RESULT.asString(), callResult.name())
+        .timer();
+  }
+
+  /**
+   * {@link SecretResolutionMetricsDoc#CYCLE_DELAY} carries no store tag, unlike the meter above.
+   */
+  private Timer cycleDelayTimer(final SecretResolutionCycleDelayReason reason) {
+    return meterRegistry
+        .find(SecretResolutionMetricsDoc.CYCLE_DELAY.getName())
+        .tag(SecretResolutionKeyNames.RESULT.asString(), reason.name())
         .timer();
   }
 
