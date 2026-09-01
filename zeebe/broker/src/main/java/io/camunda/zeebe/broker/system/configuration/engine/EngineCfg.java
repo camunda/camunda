@@ -28,6 +28,8 @@ public final class EngineCfg implements ConfigurationEntry {
   private EngineConfiguration.InputMappingMode inputMappingMode =
       EngineConfiguration.InputMappingMode.COMBINED;
   private @Nullable InputMappingMode inputComparisonMode = null;
+  private EngineConfiguration.OutputMappingMode outputMappingMode =
+      EngineConfiguration.OutputMappingMode.COMBINED;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
   private ExpressionCfg expression = new ExpressionCfg();
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
@@ -140,6 +142,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.inputComparisonMode = inputComparisonMode;
   }
 
+  public EngineConfiguration.OutputMappingMode getOutputMappingMode() {
+    return outputMappingMode;
+  }
+
+  public void setOutputMappingMode(final EngineConfiguration.OutputMappingMode outputMappingMode) {
+    this.outputMappingMode = outputMappingMode;
+  }
+
   public GlobalListenersCfg getGlobalListeners() {
     return globalListeners;
   }
@@ -225,6 +235,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + inputMappingMode
         + ", inputComparisonMode="
         + inputComparisonMode
+        + ", outputMappingMode="
+        + outputMappingMode
         + '}';
   }
 
@@ -288,6 +300,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setArchiverlessEnabled(storageOrdinals.isEnableArchiverless())
         .setFixedStorageOrdinalKey(storageOrdinals.getFixedStorageOrdinalKey())
         .setInputMappingMode(inputMappingMode)
-        .setInputComparisonMode(inputComparisonMode);
+        .setInputComparisonMode(inputComparisonMode)
+        .setOutputMappingMode(outputMappingMode);
   }
 }
