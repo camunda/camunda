@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
-import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemMetrics;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemMetricsRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
 import io.camunda.gateway.protocol.model.AgentInstanceLimits;
 import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
@@ -148,7 +148,7 @@ class AgentInstanceMapperTest {
               .build();
       item.setToolCalls(List.of(toolCall));
       item.setMetrics(
-          AgentInstanceHistoryItemMetrics.Builder.create()
+          AgentInstanceHistoryItemMetricsRequest.Builder.create()
               .inputTokens(512L)
               .outputTokens(128L)
               .reasoningTokenCount(64L)
