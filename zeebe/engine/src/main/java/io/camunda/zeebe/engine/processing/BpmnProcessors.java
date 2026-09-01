@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstructionActivateProcessor;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstructionCompleteProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
@@ -88,7 +89,8 @@ public final class BpmnProcessors {
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final ProcessEngineMetrics processEngineMetrics) {
+      final ProcessEngineMetrics processEngineMetrics,
+      final SuspensionMetrics suspensionMetrics) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -103,8 +105,9 @@ public final class BpmnProcessors {
         bpmnBehaviors.jobActivationBehavior(),
         subscriptionCommandSender,
         transientProcessMessageSubscriptionState,
-        clock);
-    addBufferedCommandProcessor(writers, typedRecordProcessors, processingState);
+        clock,
+        suspensionMetrics);
+    addBufferedCommandProcessor(writers, typedRecordProcessors, processingState, suspensionMetrics);
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(
@@ -183,7 +186,8 @@ public final class BpmnProcessors {
       final BpmnJobActivationBehavior jobActivationBehavior,
       final SubscriptionCommandSender subscriptionCommandSender,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final SuspensionMetrics suspensionMetrics) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,
@@ -192,11 +196,12 @@ public final class BpmnProcessors {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.RESUME,
-        new ProcessInstanceResumeProcessor(processingState, writers, cslCheck));
+        new ProcessInstanceResumeProcessor(processingState, writers, cslCheck, suspensionMetrics));
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.RESUME_JOBS,
-        new ProcessInstanceResumeJobsProcessor(processingState, writers, jobActivationBehavior));
+        new ProcessInstanceResumeJobsProcessor(
+            processingState, writers, jobActivationBehavior, suspensionMetrics));
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.COMPLETE_RESUMING,
@@ -204,7 +209,8 @@ public final class BpmnProcessors {
             processingState.getElementInstanceState(),
             processingState.getSuspensionState(),
             writers,
-            timerChecker));
+            timerChecker,
+            suspensionMetrics));
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.SUSPEND,
@@ -214,17 +220,19 @@ public final class BpmnProcessors {
             cslCheck,
             subscriptionCommandSender,
             transientProcessMessageSubscriptionState,
-            clock));
+            clock,
+            suspensionMetrics));
   }
 
   private static void addBufferedCommandProcessor(
       final Writers writers,
       final TypedRecordProcessors typedRecordProcessors,
-      final ProcessingState processingState) {
+      final ProcessingState processingState,
+      final SuspensionMetrics suspensionMetrics) {
     typedRecordProcessors.onCommand(
         ValueType.BUFFERED_COMMAND,
         BufferedCommandIntent.DRAIN,
-        new BufferedCommandDrainProcessor(processingState, writers));
+        new BufferedCommandDrainProcessor(processingState, writers, suspensionMetrics));
   }
 
   private static void addBpmnStepProcessor(

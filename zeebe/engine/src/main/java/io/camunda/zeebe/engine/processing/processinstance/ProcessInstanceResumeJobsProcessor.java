@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
@@ -87,11 +88,13 @@ public final class ProcessInstanceResumeJobsProcessor
   private final SuspensionState suspensionState;
   private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
+  private final SuspensionMetrics suspensionMetrics;
 
   public ProcessInstanceResumeJobsProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final SuspensionMetrics suspensionMetrics) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
@@ -99,8 +102,9 @@ public final class ProcessInstanceResumeJobsProcessor
     suspensionState = processingState.getSuspensionState();
     suspensionJobBehavior =
         new ProcessInstanceSuspensionJobBehavior(
-            elementInstanceState, processingState.getJobState(), stateWriter);
+            elementInstanceState, processingState.getJobState(), stateWriter, suspensionMetrics);
     this.jobActivationBehavior = jobActivationBehavior;
+    this.suspensionMetrics = suspensionMetrics;
   }
 
   @Override
@@ -147,6 +151,7 @@ public final class ProcessInstanceResumeJobsProcessor
         (jobKey, job) -> {
           stateWriter.appendFollowUpEvent(jobKey, JobIntent.RESUMED, job);
           jobActivationBehavior.publishWork(jobKey, job, new HashSet<>());
+          suspensionMetrics.jobResumed();
           resumedJobKey.set(jobKey);
           return false;
         });

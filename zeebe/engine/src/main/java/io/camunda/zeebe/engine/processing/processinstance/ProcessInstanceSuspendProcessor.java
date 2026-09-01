@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
@@ -57,6 +58,7 @@ public final class ProcessInstanceSuspendProcessor
   private final SuspensionState suspensionState;
   private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
   private final ProcessInstanceSuspensionMessageSubscriptionBehavior suspensionSubscriptionBehavior;
+  private final SuspensionMetrics suspensionMetrics;
 
   public ProcessInstanceSuspendProcessor(
       final ProcessingState processingState,
@@ -64,7 +66,8 @@ public final class ProcessInstanceSuspendProcessor
       final CslAuthorizationCheck cslCheck,
       final SubscriptionCommandSender subscriptionCommandSender,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final SuspensionMetrics suspensionMetrics) {
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     stateWriter = writers.state();
@@ -74,7 +77,7 @@ public final class ProcessInstanceSuspendProcessor
     suspensionState = processingState.getSuspensionState();
     suspensionJobBehavior =
         new ProcessInstanceSuspensionJobBehavior(
-            elementInstanceState, processingState.getJobState(), stateWriter);
+            elementInstanceState, processingState.getJobState(), stateWriter, suspensionMetrics);
     suspensionSubscriptionBehavior =
         new ProcessInstanceSuspensionMessageSubscriptionBehavior(
             elementInstanceState,
@@ -84,6 +87,7 @@ public final class ProcessInstanceSuspendProcessor
             subscriptionCommandSender,
             transientProcessMessageSubscriptionState,
             clock);
+    this.suspensionMetrics = suspensionMetrics;
   }
 
   @Override
@@ -102,6 +106,7 @@ public final class ProcessInstanceSuspendProcessor
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDED, value);
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.SUSPENDED, value, command);
+    suspensionMetrics.instanceSuspended();
   }
 
   private boolean validateCommand(

@@ -33,6 +33,7 @@ import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetrics;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.metrics.TenantMetrics;
 import io.camunda.zeebe.engine.processing.agenthistory.AgentHistoryProcessors;
 import io.camunda.zeebe.engine.processing.agentinstance.AgentInstanceProcessors;
@@ -88,6 +89,7 @@ import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContextImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.tenant.TenantProcessors;
@@ -174,6 +176,10 @@ public final class EngineProcessors {
     final var tenantMetrics = new TenantMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var messageCorrelationMetrics =
         new MessageCorrelationMetrics(typedRecordProcessorContext.getMeterRegistry());
+    final var suspensionMetrics =
+        new SuspensionMetrics(typedRecordProcessorContext.getMeterRegistry());
+    ((TypedRecordProcessorContextImpl) typedRecordProcessorContext)
+        .setSuspensionMetrics(suspensionMetrics);
     final var secretResolutionMetrics =
         new SecretResolutionMetrics(typedRecordProcessorContext.getMeterRegistry());
     // built here rather than with the other secret reference processors because the job activation
@@ -361,7 +367,9 @@ public final class EngineProcessors {
             asyncRequestBehavior,
             cslCheck,
             transientProcessMessageSubscriptionState,
-            processEngineMetrics);
+            processEngineMetrics,
+            suspensionMetrics);
+    typedRecordProcessors.withListener(suspensionMetrics);
 
     addDecisionProcessors(
         typedRecordProcessors, decisionBehavior, writers, processingState, cslCheck);
@@ -686,7 +694,8 @@ public final class EngineProcessors {
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final ProcessEngineMetrics processEngineMetrics) {
+      final ProcessEngineMetrics processEngineMetrics,
+      final SuspensionMetrics suspensionMetrics) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -703,7 +712,8 @@ public final class EngineProcessors {
         asyncRequestBehavior,
         cslCheck,
         transientProcessMessageSubscriptionState,
-        processEngineMetrics);
+        processEngineMetrics,
+        suspensionMetrics);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(

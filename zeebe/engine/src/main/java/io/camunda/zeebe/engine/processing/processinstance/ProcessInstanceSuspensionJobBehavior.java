@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -45,14 +46,17 @@ public final class ProcessInstanceSuspensionJobBehavior {
   private final ElementInstanceState elementInstanceState;
   private final JobState jobState;
   private final StateWriter stateWriter;
+  private final SuspensionMetrics suspensionMetrics;
 
   public ProcessInstanceSuspensionJobBehavior(
       final ElementInstanceState elementInstanceState,
       final JobState jobState,
-      final StateWriter stateWriter) {
+      final StateWriter stateWriter,
+      final SuspensionMetrics suspensionMetrics) {
     this.elementInstanceState = elementInstanceState;
     this.jobState = jobState;
     this.stateWriter = stateWriter;
+    this.suspensionMetrics = suspensionMetrics;
   }
 
   /** Appends {@link JobIntent#SUSPENDED} for every job in {@link #SUSPENDABLE_STATES}. */
@@ -69,6 +73,7 @@ public final class ProcessInstanceSuspensionJobBehavior {
                 SUSPENDABLE_STATES,
                 (jobKey, job) -> {
                   stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job);
+                  suspensionMetrics.jobSuspended();
                   return true;
                 }));
   }

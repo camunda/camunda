@@ -11,6 +11,7 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsImpl;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
@@ -41,6 +42,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final ControllableStreamClock clock;
   private final EngineSecurityConfig securityConfig;
   private final MeterRegistry meterRegistry;
+  private SuspensionMetrics suspensionMetrics;
 
   public TypedRecordProcessorContextImpl(
       final RecordProcessorContext context,
@@ -134,5 +136,14 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   @Override
   public MeterRegistry getMeterRegistry() {
     return meterRegistry;
+  }
+
+  public void setSuspensionMetrics(final SuspensionMetrics suspensionMetrics) {
+    this.suspensionMetrics = suspensionMetrics;
+  }
+
+  @Override
+  public SuspensionMetrics getSuspensionMetrics() {
+    return suspensionMetrics;
   }
 }

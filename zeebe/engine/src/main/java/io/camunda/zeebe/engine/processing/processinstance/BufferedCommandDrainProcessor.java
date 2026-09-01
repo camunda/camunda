@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
@@ -61,15 +62,19 @@ public final class BufferedCommandDrainProcessor
   private final SuspensionState suspensionState;
   private final ElementInstanceState elementInstanceState;
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
+  private final SuspensionMetrics suspensionMetrics;
 
   public BufferedCommandDrainProcessor(
-      final ProcessingState processingState, final Writers writers) {
+      final ProcessingState processingState,
+      final Writers writers,
+      final SuspensionMetrics suspensionMetrics) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     suspensionState = processingState.getSuspensionState();
     elementInstanceState = processingState.getElementInstanceState();
     processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
+    this.suspensionMetrics = suspensionMetrics;
   }
 
   @Override
@@ -93,6 +98,7 @@ public final class BufferedCommandDrainProcessor
     } else {
       appendNextDrainCommand(drainValue);
     }
+    suspensionMetrics.commandDrained();
   }
 
   /**
