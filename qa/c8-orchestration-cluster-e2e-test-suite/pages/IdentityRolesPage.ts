@@ -48,8 +48,15 @@ export class IdentityRolesPage {
     });
     this.editRoleButton = (rowName) =>
       this.rolesList.getByRole('row', {name: rowName}).getByLabel('Edit role');
+    // The design-system list renders the destructive row action as a button
+    // labelled by its visible text, not by `aria-label` (`entityListV2` sets
+    // `iconOnly: !!Icon && !isDangerous`), so match it by role and accessible
+    // name, as `IdentityUsersPage.deleteUserButton` already does. Edit stays on
+    // `getByLabel` because it is icon-only and keeps its `aria-label`.
     this.deleteRoleButton = (rowName) =>
-      this.rolesList.getByRole('row', {name: rowName}).getByLabel('Delete');
+      this.rolesList
+        .getByRole('row', {name: rowName})
+        .getByRole('button', {name: 'Delete', exact: true});
     this.createRoleModal = page.getByRole('dialog', {
       name: 'Create role',
     });
