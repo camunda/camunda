@@ -83,7 +83,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -290,24 +289,30 @@ public class BrokerBasedPropertiesOverride {
         .setInputMappingMode(
             toEngineMode(camunda.getProcessing().getEngine().getMappings().getInputMode()));
 
+    final var inputComparisonMode =
+        camunda.getProcessing().getEngine().getMappings().getInputComparisonMode();
     override
         .getExperimental()
         .getEngine()
         .setInputComparisonMode(
-            toEngineMode(
-                camunda.getProcessing().getEngine().getMappings().getInputComparisonMode()));
+            inputComparisonMode != null ? toEngineMode(inputComparisonMode) : null);
 
     override
         .getExperimental()
         .getEngine()
         .setOutputMappingMode(
             toEngineOutputMode(camunda.getProcessing().getEngine().getMappings().getOutputMode()));
+
+    final var outputComparisonMode =
+        camunda.getProcessing().getEngine().getMappings().getOutputComparisonMode();
+    override
+        .getExperimental()
+        .getEngine()
+        .setOutputComparisonMode(
+            outputComparisonMode != null ? toEngineOutputMode(outputComparisonMode) : null);
   }
 
-  private static InputMappingMode toEngineMode(final @Nullable InputMode mode) {
-    if (mode == null) {
-      return null;
-    }
+  private static InputMappingMode toEngineMode(final InputMode mode) {
     return mode == InputMode.COMBINED ? InputMappingMode.COMBINED : InputMappingMode.ORDERED;
   }
 
