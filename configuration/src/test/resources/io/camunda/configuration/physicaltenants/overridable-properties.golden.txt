@@ -314,6 +314,7 @@ processing.engine.secrets.retry-backoff-factor
 processing.engine.secrets.retry-initial-delay
 processing.engine.secrets.retry-max-attempts
 processing.engine.secrets.retry-max-delay
+processing.engine.secrets.wake-delay
 processing.engine.storage-ordinals.enable-archiverless
 processing.engine.storage-ordinals.fixed-storage-ordinal-key
 processing.engine.validators.results-output-max-size
