@@ -75,7 +75,89 @@ class ShadcnTaskDetailPage extends BasePage {
 	}
 
 	get completeTaskButton() {
-		return this.page.getByRole('button', {name: 'Complete task'});
+		return this.page.getByRole('button', {name: /^Complete Task$/i});
+	}
+
+	get completionLabel() {
+		return this.page.getByTestId('completion-label');
+	}
+
+	get variablesHeading() {
+		return this.variablesTable.getByRole('columnheader', {name: 'Name', exact: true});
+	}
+
+	get variablesTable() {
+		return this.page.getByTestId('variables-table');
+	}
+
+	get addVariableButton() {
+		return this.page.getByRole('button', {name: 'Add Variable'});
+	}
+
+	variableValueInput(name: string) {
+		return this.variablesTable.getByRole('textbox', {name: `${name} Value`, exact: true});
+	}
+
+	newVariableNameInput(ordinal: string) {
+		return this.variablesTable.getByRole('textbox', {name: `${ordinal} variable name`, exact: true});
+	}
+
+	newVariableValueInput(ordinal: string) {
+		return this.variablesTable.getByRole('textbox', {name: `${ordinal} variable value`, exact: true});
+	}
+
+	get firstNewVariableNameInput() {
+		return this.newVariableNameInput('1st');
+	}
+
+	get firstNewVariableValueInput() {
+		return this.newVariableValueInput('1st');
+	}
+
+	get firstNewVariableRemoveButton() {
+		return this.variablesTable.getByRole('button', {name: 'Remove 1st new variable'});
+	}
+
+	get fillAllVariableFieldsWarning() {
+		return this.page.getByRole('button', {name: 'You first have to fill all fields'});
+	}
+
+	get openJsonEditorButtons() {
+		return this.variablesTable.getByRole('button', {name: 'Open JSON code editor'});
+	}
+
+	jsonEditorDialog(title: 'Edit Variable' | 'View Variable') {
+		return this.page.getByRole('dialog', {name: title});
+	}
+
+	jsonEditorInput(title: 'Edit Variable' | 'View Variable') {
+		return this.jsonEditorDialog(title).getByRole('textbox');
+	}
+
+	jsonEditorContent(title: 'Edit Variable' | 'View Variable', text: string) {
+		return this.jsonEditorDialog(title).locator('.view-lines').getByText(text, {exact: false});
+	}
+
+	get applyJsonEditorButton() {
+		return this.page.getByRole('button', {name: 'Apply'});
+	}
+
+	get invalidVariableValueError() {
+		return this.variablesTable.getByRole('row').filter({hasText: 'Value has to be JSON or a literal'});
+	}
+
+	get missingVariableNameError() {
+		return this.variablesTable.getByRole('row').filter({hasText: 'Name has to be filled'});
+	}
+
+	async replaceVariableValue(name: string, value: string) {
+		const input = this.variableValueInput(name);
+		await input.press('ControlOrMeta+a');
+		await input.pressSequentially(value);
+	}
+
+	async replaceJsonEditorValue(value: string) {
+		await this.jsonEditorInput('Edit Variable').pressSequentially(value);
 	}
 
 	get assignee() {

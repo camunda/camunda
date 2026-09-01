@@ -85,6 +85,105 @@ test('should match the task details page snapshot', async ({network, shadcnTaskD
 	await expect(page).toHaveScreenshot();
 });
 
+test('should match the new variable row snapshot', async ({network, shadcnTaskDetailPage: taskDetailPage, page}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createUserTask({
+					userTaskKey: USER_TASK_KEY,
+					state: 'CREATED',
+					name: 'Review purchase order',
+					processName: 'Procurement process',
+					assignee: 'demo',
+				}),
+			),
+		}),
+	);
+
+	await taskDetailPage.seedHideNotificationBanner();
+	await taskDetailPage.goto(USER_TASK_KEY);
+	await taskDetailPage.addVariableButton.click();
+	await expect(taskDetailPage.firstNewVariableNameInput).toBeFocused();
+	await expect(taskDetailPage.firstNewVariableValueInput).toBeVisible();
+	await taskDetailPage.variablesHeading.click();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the variable validation error snapshot', async ({
+	network,
+	shadcnTaskDetailPage: taskDetailPage,
+	page,
+}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createUserTask({
+					userTaskKey: USER_TASK_KEY,
+					state: 'CREATED',
+					name: 'Review purchase order',
+					processName: 'Procurement process',
+					assignee: 'demo',
+				}),
+			),
+		}),
+		mockQueryVariablesByUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryVariablesByUserTaskResponse({
+					items: [createVariable({name: 'validationAmount', value: '249.99', variableKey: '2251799813685291'})],
+				}),
+			),
+		}),
+	);
+
+	await taskDetailPage.seedHideNotificationBanner();
+	await taskDetailPage.goto(USER_TASK_KEY);
+	await taskDetailPage.variableValueInput('validationAmount').fill('{invalid');
+	await taskDetailPage.variablesHeading.click();
+	await expect(taskDetailPage.invalidVariableValueError).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the JSON editor modal snapshot', async ({network, shadcnTaskDetailPage: taskDetailPage, page}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createUserTask({
+					userTaskKey: USER_TASK_KEY,
+					state: 'CREATED',
+					name: 'Review purchase order',
+					processName: 'Procurement process',
+					assignee: 'demo',
+				}),
+			),
+		}),
+		mockQueryVariablesByUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryVariablesByUserTaskResponse({
+					items: [
+						createVariable({
+							name: 'purchaseOrder',
+							value: '{"orderId":"ORDER-2024-0042","approved":true}',
+							variableKey: '2251799813685292',
+						}),
+					],
+				}),
+			),
+		}),
+	);
+
+	await taskDetailPage.seedHideNotificationBanner();
+	await taskDetailPage.goto(USER_TASK_KEY);
+	await taskDetailPage.openJsonEditorButtons.first().click();
+	await expect(taskDetailPage.jsonEditorDialog('Edit Variable')).toBeVisible();
+	await expect(taskDetailPage.applyJsonEditorButton).toBeVisible();
+	await expect(taskDetailPage.jsonEditorContent('Edit Variable', 'orderId')).toBeVisible();
+	await taskDetailPage.jsonEditorInput('Edit Variable').evaluate((element) => element.blur());
+
+	await expect(page).toHaveScreenshot({caret: 'hide'});
+});
+
 test('should match the unassigned task details snapshot', async ({network, shadcnTaskDetailPage, page}) => {
 	network.use(
 		mockGetUserTaskEndpoint({
@@ -107,6 +206,48 @@ test('should match the unassigned task details snapshot', async ({network, shadc
 	await expect(shadcnTaskDetailPage.detailsInfo).toBeVisible();
 	await expect(shadcnTaskDetailPage.taskName('Review supplier onboarding')).toBeVisible();
 	await expect(shadcnTaskDetailPage.completeTaskButton).toBeDisabled();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the completed task details snapshot', async ({
+	network,
+	shadcnTaskDetailPage: taskDetailPage,
+	page,
+}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createUserTask({
+					userTaskKey: USER_TASK_KEY,
+					state: 'COMPLETED',
+					name: 'Approve expense report',
+					processName: 'Finance process',
+					assignee: 'demo',
+					completionDate: '2024-02-20T16:45:00.000Z',
+					creationDate: '2024-02-18T10:00:00.000Z',
+					priority: 50,
+				}),
+			),
+		}),
+		mockQueryVariablesByUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryVariablesByUserTaskResponse({
+					items: [
+						createVariable({name: 'approvedAmount', value: '175.5', variableKey: '2251799813685293'}),
+						createVariable({name: 'approvalStatus', value: '"approved"', variableKey: '2251799813685294'}),
+					],
+				}),
+			),
+		}),
+	);
+
+	await taskDetailPage.seedHideNotificationBanner();
+	await taskDetailPage.goto(USER_TASK_KEY);
+	await expect(taskDetailPage.completionLabel).toBeVisible();
+	await expect(taskDetailPage.completeTaskButton).not.toBeVisible();
+	await expect(taskDetailPage.variablesTable.getByText('approvedAmount', {exact: true})).toBeVisible();
+	await expect(taskDetailPage.variablesTable.getByText('approvalStatus', {exact: true})).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });
