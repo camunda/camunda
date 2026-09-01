@@ -70,6 +70,7 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY = Duration.ofSeconds(30);
   public static final int DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR = 2;
   public static final int DEFAULT_SECRET_RESOLUTION_BATCH_LIMIT = 20;
+  public static final Duration DEFAULT_SECRET_RESOLUTION_WAKE_DELAY = Duration.ofMillis(50);
   public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
@@ -156,6 +157,7 @@ public final class EngineConfiguration {
   private Duration secretResolutionRetryMaxDelay = DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY;
   private int secretResolutionRetryBackoffFactor = DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR;
   private int secretResolutionBatchLimit = DEFAULT_SECRET_RESOLUTION_BATCH_LIMIT;
+  private Duration secretResolutionWakeDelay = DEFAULT_SECRET_RESOLUTION_WAKE_DELAY;
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
@@ -479,6 +481,27 @@ public final class EngineConfiguration {
               .formatted(secretResolutionBatchLimit));
     }
     this.secretResolutionBatchLimit = secretResolutionBatchLimit;
+    return this;
+  }
+
+  public Duration getSecretResolutionWakeDelay() {
+    return secretResolutionWakeDelay;
+  }
+
+  /**
+   * How long a cycle that resolved something, or that was woken since it last ran, waits before its
+   * next run. Kept short so a sustained stream of secret references is resolved close to as they
+   * arrive; falls back to {@code secretResolutionInterval} once a cycle finds nothing pending and
+   * was not woken.
+   */
+  public EngineConfiguration setSecretResolutionWakeDelay(
+      final Duration secretResolutionWakeDelay) {
+    if (secretResolutionWakeDelay.isNegative()) {
+      throw new IllegalArgumentException(
+          "secretResolutionWakeDelay must not be negative but was %s"
+              .formatted(secretResolutionWakeDelay));
+    }
+    this.secretResolutionWakeDelay = secretResolutionWakeDelay;
     return this;
   }
 

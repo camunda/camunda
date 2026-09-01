@@ -149,7 +149,78 @@ public enum SecretResolutionMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /** The delay a resolution cycle chose for the next one, tagged by why */
+  CYCLE_DELAY {
+    @Override
+    public String getDescription() {
+      return "The delay a resolution cycle chose for the next one, tagged by why: DRAINING when "
+          + "more pending refs remained than the batch cap allowed this cycle to take (always "
+          + "zero), WAKE when this cycle resolved something or was woken, IDLE_BACKOFF when it did "
+          + "neither and no store is in retry cooldown, and RETRY_COOLDOWN when a store's cooldown "
+          + "deadline set the delay instead. IDLE_BACKOFF is the one to watch: it grows "
+          + "geometrically on consecutive misses (see SecretResolutionScheduler#nextIdleBackoff), "
+          + "and its distribution says directly whether that ladder is behaving as intended, rather "
+          + "than leaving it to be inferred from the cycle rate alone.";
+    }
+
+    @Override
+    public String getName() {
+      return "camunda.secret.resolution.cycle.delay";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public String getBaseUnit() {
+      return "seconds";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {SecretResolutionKeyNames.RESULT};
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      // the domain of interest here starts well below MicrometerUtil.defaultPrometheusBuckets()'s
+      // lowest bucket (5ms) and stops at schedulingInterval's default (5s) rather than running out
+      // to the remote-call timeouts RESOLUTION_DURATION's buckets are built for
+      return new Duration[] {
+        Duration.ofMillis(10),
+        Duration.ofMillis(50),
+        Duration.ofMillis(100),
+        Duration.ofMillis(250),
+        Duration.ofMillis(500),
+        Duration.ofSeconds(1),
+        Duration.ofMillis(2500),
+        Duration.ofSeconds(5)
+      };
+    }
   };
+
+  /**
+   * The value domain of the {@link SecretResolutionKeyNames#RESULT} tag on {@link #CYCLE_DELAY}.
+   */
+  public enum SecretResolutionCycleDelayReason {
+    /** More pending refs remained than the batch cap allowed this cycle to take */
+    DRAINING,
+    /** This cycle resolved something, or a reference was requested since the last cycle ran */
+    WAKE,
+    /** Neither of the above, and no store is in retry cooldown */
+    IDLE_BACKOFF,
+    /** Neither of the above, and a store's retry cooldown deadline set the delay instead */
+    RETRY_COOLDOWN
+  }
 
   @SuppressWarnings("NullableProblems")
   public enum SecretResolutionKeyNames implements KeyName {
@@ -162,9 +233,12 @@ public enum SecretResolutionMetricsDoc implements ExtendedMeterDocumentation {
     STORE("store"),
     /**
      * What the measured operation resulted in: a {@link SecretResolutionOutcome} on {@link
-     * SecretResolutionMetricsDoc#RESOLUTION_OUTCOME}, and the coarser {@link
+     * SecretResolutionMetricsDoc#RESOLUTION_OUTCOME}, the coarser {@link
      * SecretResolutionCallResult} on {@link SecretResolutionMetricsDoc#RESOLUTION_DURATION}, which
-     * measures a whole batch call and so cannot attribute a per-reference outcome to it.
+     * measures a whole batch call and so cannot attribute a per-reference outcome to it, and (on
+     * {@link SecretResolutionMetricsDoc#CYCLE_DELAY}, not a result at all, but the same tag reused
+     * for it) a {@link SecretResolutionCycleDelayReason} naming why the cycle chose its delay
+     * rather than what it resolved.
      */
     RESULT("result");
 

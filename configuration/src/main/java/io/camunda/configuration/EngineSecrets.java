@@ -21,6 +21,7 @@ public class EngineSecrets {
   public static final Duration DEFAULT_RETRY_MAX_DELAY = Duration.ofSeconds(30);
   public static final int DEFAULT_RETRY_BACKOFF_FACTOR = 2;
   public static final int DEFAULT_BATCH_RESOLUTION_LIMIT = 20;
+  public static final Duration DEFAULT_WAKE_DELAY = Duration.ofMillis(50);
 
   private Duration interval = DEFAULT_INTERVAL;
   private int retryMaxAttempts = DEFAULT_RETRY_MAX_ATTEMPTS;
@@ -28,6 +29,7 @@ public class EngineSecrets {
   private Duration retryMaxDelay = DEFAULT_RETRY_MAX_DELAY;
   private int retryBackoffFactor = DEFAULT_RETRY_BACKOFF_FACTOR;
   private int batchResolutionLimit = DEFAULT_BATCH_RESOLUTION_LIMIT;
+  private Duration wakeDelay = DEFAULT_WAKE_DELAY;
 
   /**
    * Cadence at which the secret resolution scheduler polls for pending secret references. This
@@ -118,5 +120,21 @@ public class EngineSecrets {
 
   public void setBatchResolutionLimit(final int batchResolutionLimit) {
     this.batchResolutionLimit = batchResolutionLimit;
+  }
+
+  /**
+   * How long a cycle that resolved something, or that was recently asked to, waits before its next
+   * run rather than waiting for the full {@code interval}. This configuration can be accessed via
+   * the environment variable: <br>
+   * {@code camunda.processing.engine.secrets.wake-delay}.
+   *
+   * <p>Defaults to {@code 50ms}.
+   */
+  public Duration getWakeDelay() {
+    return wakeDelay;
+  }
+
+  public void setWakeDelay(final Duration wakeDelay) {
+    this.wakeDelay = wakeDelay;
   }
 }

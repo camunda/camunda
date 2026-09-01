@@ -21,6 +21,7 @@ public class SecretResolutionCfg implements ConfigurationEntry {
   private int retryBackoffFactor =
       EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR;
   private int batchResolutionLimit = EngineConfiguration.DEFAULT_SECRET_RESOLUTION_BATCH_LIMIT;
+  private Duration wakeDelay = EngineConfiguration.DEFAULT_SECRET_RESOLUTION_WAKE_DELAY;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -54,6 +55,12 @@ public class SecretResolutionCfg implements ConfigurationEntry {
       throw new IllegalArgumentException(
           "Secret resolution batchResolutionLimit must be at least 1 but was %d"
               .formatted(batchResolutionLimit));
+    }
+    // zero is meaningful here: every cycle that resolves something reschedules at wakeDelay
+    // regardless, so zero just means the very next one runs as soon as the actor is free
+    if (wakeDelay == null || wakeDelay.isNegative()) {
+      throw new IllegalArgumentException(
+          "Secret resolution wakeDelay must not be negative but was %s".formatted(wakeDelay));
     }
   }
 
@@ -105,6 +112,14 @@ public class SecretResolutionCfg implements ConfigurationEntry {
     this.batchResolutionLimit = batchResolutionLimit;
   }
 
+  public Duration getWakeDelay() {
+    return wakeDelay;
+  }
+
+  public void setWakeDelay(final Duration wakeDelay) {
+    this.wakeDelay = wakeDelay;
+  }
+
   @Override
   public String toString() {
     return "SecretResolutionCfg{"
@@ -120,6 +135,8 @@ public class SecretResolutionCfg implements ConfigurationEntry {
         + retryBackoffFactor
         + ", batchResolutionLimit="
         + batchResolutionLimit
+        + ", wakeDelay="
+        + wakeDelay
         + '}';
   }
 }
