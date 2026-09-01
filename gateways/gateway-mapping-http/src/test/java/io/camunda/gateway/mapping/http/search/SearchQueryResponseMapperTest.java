@@ -1075,6 +1075,48 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
+  void shouldMapAllMetricsForAgentInstance() {
+    // given
+    final var entity =
+        new AgentInstanceEntity(
+            123L, // agentInstanceKey
+            654L, // agentDefinitionKey
+            List.of(456L), // elementInstanceKeys
+            AgentInstanceEntity.AgentInstanceStatus.IDLE,
+            new AgentInstanceEntity.AgentInstanceDefinition(
+                "gpt-4o",
+                "openai",
+                List.of(new ContentItem(ContentType.TEXT, "You are helpful", null, null))),
+            new AgentInstanceEntity.AgentInstanceMetrics(10L, 20L, 30L, 40L, 50L, 1, 2),
+            new AgentInstanceEntity.AgentInstanceLimits(1000L, 5, 6),
+            List.of(
+                new AgentInstanceEntity.AgentInstanceTool("search", "Web search", "searchTask")),
+            "agentElement", // elementId
+            789L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            321L, // processDefinitionKey
+            "processId", // processDefinitionId
+            1, // processDefinitionVersion
+            "v1", // versionTag
+            "tenant", // tenantId
+            OffsetDateTime.now(), // creationDate
+            OffsetDateTime.now(), // lastUpdatedDate
+            null); // completionDate
+
+    // when
+    final var response = SearchQueryResponseMapper.toAgentInstanceResult(entity);
+
+    // then
+    assertThat(response.getMetrics().getInputTokens()).isEqualTo(10);
+    assertThat(response.getMetrics().getOutputTokens()).isEqualTo(20);
+    assertThat(response.getMetrics().getReasoningTokenCount()).isEqualTo(30);
+    assertThat(response.getMetrics().getCacheCreationTokenCount()).isEqualTo(40);
+    assertThat(response.getMetrics().getCacheReadTokenCount()).isEqualTo(50);
+    assertThat(response.getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(response.getMetrics().getToolCalls()).isEqualTo(2);
+  }
+
+  @Test
   void shouldMapNullRootProcessInstanceKeyForVariableItem() {
     // given
     final var entity =
