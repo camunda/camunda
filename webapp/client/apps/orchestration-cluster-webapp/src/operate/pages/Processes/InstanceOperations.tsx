@@ -22,6 +22,7 @@ const InstanceOperations: React.FC<Props> = ({processInstance, activeOperations}
 	const {pendingOperation, resolveIncidents, cancel, remove} = useProcessInstanceOperations(processInstanceKey);
 
 	const isActive = state === 'ACTIVE';
+	const isSuspended = state === 'SUSPENDED';
 	const isFinished = state === 'COMPLETED' || state === 'TERMINATED';
 	// A row is busy while its own command is in flight or while the server still reports an
 	// operation running against this instance from elsewhere (a batch operation, another tab).
@@ -41,7 +42,9 @@ const InstanceOperations: React.FC<Props> = ({processInstance, activeOperations}
 			});
 		}
 
-		if (isActive) {
+		// Legacy offers cancel on a suspended instance too. Suspend/resume themselves wait on
+		// #61094, which brings both the shared renderers and the filter that surfaces these rows.
+		if (isActive || isSuspended) {
 			configs.push({
 				type: 'CANCEL_PROCESS_INSTANCE',
 				onExecute: () => void cancel(),
@@ -58,7 +61,17 @@ const InstanceOperations: React.FC<Props> = ({processInstance, activeOperations}
 		}
 
 		return configs;
-	}, [activeOperations, cancel, hasIncident, isActive, isFinished, pendingOperation, remove, resolveIncidents]);
+	}, [
+		activeOperations,
+		cancel,
+		hasIncident,
+		isActive,
+		isFinished,
+		isSuspended,
+		pendingOperation,
+		remove,
+		resolveIncidents,
+	]);
 
 	return <Operations operations={operations} processInstanceKey={processInstanceKey} isLoading={isLoading} />;
 };
