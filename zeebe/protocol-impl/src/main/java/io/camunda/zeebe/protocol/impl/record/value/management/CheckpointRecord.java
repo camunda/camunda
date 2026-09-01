@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import org.jspecify.annotations.Nullable;
 
 public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRecordValue {
 
@@ -59,7 +60,7 @@ public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRe
     return this;
   }
 
-  public CheckpointRecord setCheckpointType(final CheckpointType checkpointType) {
+  public CheckpointRecord setCheckpointType(@Nullable final CheckpointType checkpointType) {
     checkpointTypeProperty.setValue(checkpointType);
     return this;
   }
