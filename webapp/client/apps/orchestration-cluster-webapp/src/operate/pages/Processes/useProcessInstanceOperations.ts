@@ -24,6 +24,7 @@ type OperationType = Extract<
 // of spinning on it. FAILED and SUSPENDED both end it: the row then reports what happened through
 // the operation-state column rather than leaving a spinner up forever.
 const IN_PROGRESS_BATCH_OPERATION_STATES: BatchOperation['state'][] = ['CREATED', 'ACTIVE'];
+const TERMINAL_PROCESS_INSTANCE_STATES: ProcessInstance['state'][] = ['COMPLETED', 'TERMINATED'];
 
 /**
  * Waits for the batch operation a command created to leave its transitional state. The instances
@@ -52,7 +53,7 @@ async function waitForBatchOperation(queryClient: QueryClient, batchOperationKey
  * Cancellation returns 204 with no body — there is no batch operation to follow — so completion is
  * observed on the instance itself, as legacy does.
  */
-async function waitForInstanceToLeaveActive(queryClient: QueryClient, processInstanceKey: string) {
+async function waitForInstanceToFinish(queryClient: QueryClient, processInstanceKey: string) {
 	await queryClient.fetchQuery({
 		queryKey: ['processInstanceState', processInstanceKey] as const,
 		queryFn: async (): Promise<ProcessInstance> => {
@@ -61,7 +62,7 @@ async function waitForInstanceToLeaveActive(queryClient: QueryClient, processIns
 				throw mapQueryError(error);
 			}
 			const processInstance: ProcessInstance = await response.json();
-			if (processInstance.state === 'ACTIVE') {
+			if (!TERMINAL_PROCESS_INSTANCE_STATES.includes(processInstance.state)) {
 				throw new Error('process instance is still running');
 			}
 			return processInstance;
@@ -133,7 +134,7 @@ function useProcessInstanceOperations(processInstanceKey: string) {
 					if (error !== null) {
 						throw mapQueryError(error);
 					}
-					await waitForInstanceToLeaveActive(queryClient, processInstanceKey);
+					await waitForInstanceToFinish(queryClient, processInstanceKey);
 				},
 				t('operate.processes.instancesTable.operations.cancelFailed'),
 			),

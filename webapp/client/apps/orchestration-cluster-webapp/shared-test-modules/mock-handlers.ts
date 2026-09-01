@@ -94,6 +94,11 @@ const mockQueryProcessInstancesEndpoint = createEndpointMock({
 	method: endpoints.queryProcessInstances.method,
 });
 
+const mockGetProcessInstanceEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessInstance.getUrl({processInstanceKey: ':processInstanceKey'}),
+	method: endpoints.getProcessInstance.method,
+});
+
 const mockQueryDecisionDefinitionsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryDecisionDefinitions.getUrl(),
 	method: endpoints.queryDecisionDefinitions.method,
@@ -241,6 +246,7 @@ export {
 	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 	mockQueryBatchOperationsEndpoint,
 	mockQueryProcessInstancesEndpoint,
+	mockGetProcessInstanceEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
 	mockGetBatchOperationEndpoint,
 	mockResolveProcessInstanceIncidentsEndpoint,
