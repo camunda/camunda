@@ -31,6 +31,16 @@ const STATIC_DIR = path.join(OUTPUT_DIR, 'static');
 module.exports = {
   entry: path.join(FRONTEND_DIR, 'app.js'),
 
+  experiments: {
+    // index.html is a Java-side template, not a webpack HTML asset: it is copied
+    // verbatim below and only becomes valid HTML/JS once CoverageReportUtil
+    // substitutes the {{ COVERAGE_DATA }} placeholder. Since webpack 5.110 the
+    // native HTML experiment defaults on, which makes the default minimizer
+    // claim .html assets and parse their inline <script> with terser — the
+    // placeholder is not JavaScript, so that fails the build.
+    html: false,
+  },
+
   output: {
     path: STATIC_DIR,
     filename: 'bundle.js',
