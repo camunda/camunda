@@ -20,7 +20,10 @@ type OperationType = Extract<
 	'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE' | 'DELETE_PROCESS_INSTANCE'
 >;
 
-const SETTLED_STATES: BatchOperation['state'][] = ['COMPLETED', 'PARTIALLY_COMPLETED', 'CANCELED'];
+// Listed as "still going" rather than "done" so a state the API adds later ends the wait instead
+// of spinning on it. FAILED and SUSPENDED both end it: the row then reports what happened through
+// the operation-state column rather than leaving a spinner up forever.
+const IN_PROGRESS_STATES: BatchOperation['state'][] = ['CREATED', 'ACTIVE'];
 
 /**
  * Waits for the batch operation the command created to leave its transitional state. The
@@ -36,7 +39,7 @@ async function waitForBatchOperation(queryClient: QueryClient, batchOperationKey
 				throw mapQueryError(error);
 			}
 			const batchOperation: BatchOperation = await response.json();
-			if (!SETTLED_STATES.includes(batchOperation.state)) {
+			if (IN_PROGRESS_STATES.includes(batchOperation.state)) {
 				throw new Error('batch operation is still running');
 			}
 			return batchOperation;
