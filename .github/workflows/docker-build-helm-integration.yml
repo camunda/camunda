@@ -826,10 +826,10 @@ jobs:
                       "gen_name": "'"${GEN_NAME}"'",
                       "c8Version": "8.10",
                       "zeebeVersion": "${{ needs.build-and-push.outputs.image-tag }}",
-                      "operateVersion": "SNAPSHOT",
-                      "tasklistVersion": "SNAPSHOT",
-                      "connectorsVersion": "SNAPSHOT",
-                      "optimizeVersion": "SNAPSHOT"
+                      "operateVersion": "8.10-SNAPSHOT",
+                      "tasklistVersion": "8.10-SNAPSHOT",
+                      "connectorsVersion": "8.10-SNAPSHOT",
+                      "optimizeVersion": "8.10-SNAPSHOT"
                   }
                 }'
 
