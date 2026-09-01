@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSta
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -26,11 +27,15 @@ import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class EventHandle {
 
+  private static final Logger LOG = LoggerFactory.getLogger(EventHandle.class);
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
   private final ProcessInstanceRecord recordForPICreation = new ProcessInstanceRecord();
@@ -191,6 +196,13 @@ public final class EventHandle {
       final DirectBuffer correlationKey,
       final DirectBuffer variables) {
 
+    // Validate before generating a key so we neither waste a key nor emit a CORRELATED event when
+    // no instance will be created (definition draining or already removed).
+    if (!canCreateInstanceForStartEvent(
+        subscription.getProcessDefinitionKey(), subscription.getTenantId())) {
+      return -1L;
+    }
+
     final var newProcessInstanceKey = keyGenerator.nextKey();
     startEventSubscriptionRecord
         .setProcessDefinitionKey(subscription.getProcessDefinitionKey())
@@ -218,12 +230,18 @@ public final class EventHandle {
     return newProcessInstanceKey;
   }
 
-  public void activateProcessInstanceForStartEvent(
+  public boolean activateProcessInstanceForStartEvent(
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer targetElementId,
       final DirectBuffer variablesBuffer,
       final String tenantId) {
+
+    if (!canCreateInstanceForStartEvent(processDefinitionKey, tenantId)) {
+      return false;
+    }
+
+    final var process = processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
 
     triggeringProcessEvent(
         processDefinitionKey,
@@ -232,8 +250,6 @@ public final class EventHandle {
         processDefinitionKey /* The eventScope for the start event is the process definition key */,
         targetElementId,
         variablesBuffer);
-
-    final var process = processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
 
     recordForPICreation
         .setBpmnProcessId(process.getBpmnProcessId())
@@ -246,5 +262,29 @@ public final class EventHandle {
 
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);
+    return true;
+  }
+
+  private boolean canCreateInstanceForStartEvent(
+      final long processDefinitionKey, final String tenantId) {
+    final DeployedProcess process =
+        processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
+    if (process == null) {
+      LOG.debug(
+          "Skipping start-event instance creation: process definition with key {} (tenant '{}') no longer exists.",
+          processDefinitionKey,
+          tenantId);
+      return false;
+    }
+    if (process.isDraining() && LOG.isDebugEnabled()) {
+      LOG.debug(
+          "Skipping start-event instance creation: process '{}' version {} (key {}, tenant '{}') is draining and no longer accepts new instances.",
+          BufferUtil.bufferAsString(process.getBpmnProcessId()),
+          process.getVersion(),
+          process.getKey(),
+          tenantId);
+      return false;
+    }
+    return true;
   }
 }
