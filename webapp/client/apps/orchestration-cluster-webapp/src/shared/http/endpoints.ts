@@ -223,14 +223,14 @@ const endpoints = {
 			method: unifiedAPIEndpoints.resolveProcessInstanceIncidents.method,
 		}),
 
-	// Both bodies are optional, but an empty object is not a valid one — `operationReference` is
-	// required once the body is present — so send no body at all when there is no payload.
 	getProcessInstance: (processInstanceKey: string) =>
 		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstance.getUrl({processInstanceKey})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getProcessInstance.method,
 		}),
 
+	// Both bodies are optional, but an empty object is not a valid one — `operationReference` is
+	// required once the body is present — so send no body at all when there is no payload.
 	cancelProcessInstance: (processInstanceKey: string, body?: CancelProcessInstanceRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.cancelProcessInstance.getUrl({processInstanceKey})), {
 			...BASE_REQUEST_OPTIONS,
