@@ -24,7 +24,7 @@ import org.jspecify.annotations.NullMarked;
  * same RFC-6901 leaf JSON pointer; empty when no input mapping references a cluster variable.
  *
  * <p>{@code combinedExpression} is the pre-parsed FEEL context literal built from all mappings at
- * deploy/load time for {@code CombinedMappingResolver} to evaluate on each activation without
+ * deploy/load time for {@code CombinedInputMappingResolver} to evaluate on each activation without
  * rebuilding it. Deploy-time parsing rejects invalid FEEL by throwing, so by the time this record
  * exists the field is always a valid expression.
  */

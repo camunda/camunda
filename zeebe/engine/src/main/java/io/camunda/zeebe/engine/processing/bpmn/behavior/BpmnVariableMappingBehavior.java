@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import io.camunda.zeebe.engine.EngineConfiguration.OutputMappingMode;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -20,8 +19,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping
 import io.camunda.zeebe.engine.processing.variable.MappingContext;
 import io.camunda.zeebe.engine.processing.variable.MappingExpressionProcessor;
 import io.camunda.zeebe.engine.processing.variable.MappingResolver;
-import io.camunda.zeebe.engine.processing.variable.MsgPackPath;
-import io.camunda.zeebe.engine.processing.variable.OutputMappingResultBuilder;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -32,7 +29,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NonNull;
@@ -48,16 +44,16 @@ public final class BpmnVariableMappingBehavior {
   private final EventScopeInstanceState eventScopeInstanceState;
 
   private final EventTriggerBehavior eventTriggerBehavior;
-  private final OutputMappingMode outputMappingMode;
-  private final MappingResolver inputMappingResolver;
+  private final MappingResolver<InputMappings> inputMappingResolver;
+  private final MappingResolver<OutputMappings> outputMappingResolver;
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
       final ProcessingState processingState,
       final VariableBehavior variableBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final MappingResolver inputMappingResolver,
-      final OutputMappingMode outputMappingMode) {
+      final MappingResolver<InputMappings> inputMappingResolver,
+      final MappingResolver<OutputMappings> outputMappingResolver) {
     this.expressionProcessor = expressionProcessor;
     inputMappingExpressionProcessor = expressionProcessor.withSecretReferenceContext();
     elementInstanceState = processingState.getElementInstanceState();
@@ -66,7 +62,7 @@ public final class BpmnVariableMappingBehavior {
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.inputMappingResolver = inputMappingResolver;
-    this.outputMappingMode = outputMappingMode;
+    this.outputMappingResolver = outputMappingResolver;
   }
 
   /**
@@ -101,7 +97,7 @@ public final class BpmnVariableMappingBehavior {
             context.getProcessDefinitionKey(),
             context.getTenantId());
     final var result =
-        inputMappingResolver.resolveInputMappings(
+        inputMappingResolver.resolve(
             inputMappings.get(),
             new MappingExpressionProcessor(inputMappingExpressionProcessor, mappingContext));
     if (result.isLeft()) {
@@ -164,49 +160,22 @@ public final class BpmnVariableMappingBehavior {
         }
       }
 
-      final Either<Failure, DirectBuffer> result;
-      if (outputMappingMode == OutputMappingMode.COMBINED) {
-        // evaluate the single pre-built FEEL context expression against the outer scope
-        result =
-            expressionProcessor.evaluateVariableMappingExpression(
-                outputMappings.get().combinedExpression(), elementInstanceKey, tenantId);
-      } else {
-        // ORDERED: evaluate each mapping in turn; each sees results of earlier ones
-        // Resolves the current scope value at a nested target's path so the builder can merge into
-        // it and keep the existing sibling properties: look up the top-level variable in the
-        // element
-        // scope, then navigate into it along the remaining path segments (null when absent).
-        final var resultBuilder =
-            new OutputMappingResultBuilder(
-                path ->
-                    Optional.ofNullable(
-                            variablesState.getVariable(
-                                elementInstanceKey, BufferUtil.wrapString(path.getFirst())))
-                        .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
-                        .orElse(null));
-        // crosses from Zeebe's Either<Failure, T> world into FEEL's Either<DirectBuffer,
-        // EvaluationContext> convention (Left = terminal value or absence) for this one lambda
-        final var processor =
-            expressionProcessor.prependContext(name -> Either.left(resultBuilder.get(name)));
-
-        Either<Failure, DirectBuffer> loopResult = null;
-        for (final var mapping : outputMappings.get().mappings()) {
-          final var r =
-              processor.evaluateVariableMappingExpression(
-                  mapping.source(), elementInstanceKey, tenantId);
-          if (r.isLeft()) {
-            loopResult = Either.left(r.getLeft());
-            break;
-          }
-          resultBuilder.put(mapping.targetPath(), r.get());
-        }
-        result = loopResult != null ? loopResult : Either.right(resultBuilder.toDocument());
+      final var mappingContext =
+          new MappingContext(
+              element.getId(),
+              elementInstanceKey,
+              processInstanceKey,
+              processDefinitionKey,
+              tenantId);
+      final var resolveResult =
+          outputMappingResolver.resolve(
+              outputMappings.get(),
+              new MappingExpressionProcessor(expressionProcessor, mappingContext));
+      if (resolveResult.isLeft()) {
+        return Either.left(resolveResult.getLeft());
       }
-
-      if (result.isLeft()) {
-        return Either.left(result.getLeft());
-      }
-      return propagateVariables(context, element, getVariableScopeKey(context), result.get());
+      return propagateVariables(
+          context, element, getVariableScopeKey(context), resolveResult.get());
 
     } else if (hasVariables) {
       // merge/propagate the event variables by default
