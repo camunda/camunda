@@ -20,7 +20,6 @@ import {
   createCancellationBatch,
   cancelBatchOperation,
   createCompletedBatchOperation,
-  suspendBatchOperation,
   expectBatchState,
 } from '@requestHelpers';
 /* eslint-disable playwright/expect-expect */
@@ -41,29 +40,18 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
   test('Cancel active batch operation returns 204 and status becomes CANCELED', async ({
     request,
   }) => {
+    // Use a large instance count so the batch stays ACTIVE long enough for the
+    // cancel command to catch it in flight. Cancellation time scales with the
+    // instance count: a 3-instance batch completes in ~2.5s, so a 30-instance
+    // batch can reach a terminal state between the accepted create and the
+    // first cancel retry, and cancelling a finished batch correctly returns a
+    // permanent 404 that the 240s retry budget cannot recover from. Mirrors the
+    // instance count the sibling suspend suite already relies on for the same
+    // reason.
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        return createCancellationBatch(request, 30);
+        return createCancellationBatch(request, 500);
       });
-
-    // A CANCEL batch over these instances reaches COMPLETED in ~2-4s
-    // regardless of the instance count (the engine terminates the waiting
-    // service-task instances in parallel, so more instances do not lengthen
-    // the run). Racing a cancel against a still-ACTIVE batch is therefore
-    // inherently flaky: under this spec's parallel load the batch can finish
-    // first, and cancelling a COMPLETED batch correctly returns 404 — which
-    // the 240s retry can never recover from. Suspend the batch first to freeze
-    // it in an in-progress state (the same mechanism the sibling suspend suite
-    // relies on) so the subsequent cancel deterministically exercises the
-    // 204 -> CANCELED path.
-    await test.step('Suspend batch operation to keep it in progress', async () => {
-      const res = await suspendBatchOperation(request, key);
-      await assertStatusCode(res, 204);
-    });
-
-    await test.step('Wait for suspended state', async () => {
-      await expectBatchState(request, key, 'SUSPENDED');
-    });
 
     await test.step('Cancel batch operation', async () => {
       const res = await cancelBatchOperation(request, key);
@@ -78,12 +66,11 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
   test('Cancel batch operation twice fails on second request', async ({
     request,
   }) => {
+    // Same reason as the test above: the first cancel has to land while the
+    // batch is still ACTIVE, and 30 instances can finish before it does.
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        // 30 instances (matching the suspend suite) keep the batch running
-        // long enough to cancel before it completes; a 10-instance batch can
-        // finish first, making the cancel return 404 instead of 204.
-        return createCancellationBatch(request, 30);
+        return createCancellationBatch(request, 500);
       });
 
     await test.step('Send first cancel request', async () => {
