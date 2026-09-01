@@ -52,10 +52,12 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 	const selection = useInstancesSelection(totalCount);
 
 	const searchKey = useMemo(() => JSON.stringify(search), [search]);
+	// Keyed on the serialized search rather than the object identity, mirroring legacy's
+	// `filtersJSON` effect key: a new filter set invalidates whatever was selected.
+	const resetSelection = selection.reset;
 	useEffect(() => {
-		selection.reset();
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- reset selection only when the filter set changes, mirroring legacy's `filtersJSON` effect key
-	}, [searchKey]);
+		resetSelection();
+	}, [searchKey, resetSelection]);
 
 	const isTenantColumnVisible =
 		getClientConfig().deployment.isMultiTenancyEnabled && !isSpecificTenant(search.tenantId);

@@ -146,6 +146,22 @@ describe('<InstancesTable />', () => {
 		await expect.element(screen.getByText('To see some results, select at least one Instance state')).toBeVisible();
 	});
 
+	it('should still render when a hand-edited URL carries an unparseable date', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', processDefinitionName: 'Order Process'})],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderInstancesTable({...BASE_SEARCH, startDateFrom: 'not-a-date'});
+
+		await expect.element(screen.getByText('Order Process')).toBeVisible();
+	});
+
 	it('should show the parent instance link only when the instance has a parent', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({
