@@ -226,6 +226,9 @@ public class AgentInstanceHistoryImpl implements AgentInstanceHistory {
     return new AgentInstanceHistoryMetrics()
         .inputTokens(proto.getInputTokens())
         .outputTokens(proto.getOutputTokens())
+        .reasoningTokenCount(proto.getReasoningTokenCount())
+        .cacheCreationTokenCount(proto.getCacheCreationTokenCount())
+        .cacheReadTokenCount(proto.getCacheReadTokenCount())
         .durationMs(proto.getDurationMs());
   }
 

@@ -171,6 +171,9 @@ final class AgentInstanceHistoryMapper {
     return new AgentInstanceHistoryItemMetricsRequest()
         .inputTokens(metrics.getInputTokens())
         .outputTokens(metrics.getOutputTokens())
+        .reasoningTokenCount(metrics.getReasoningTokenCount())
+        .cacheCreationTokenCount(metrics.getCacheCreationTokenCount())
+        .cacheReadTokenCount(metrics.getCacheReadTokenCount())
         .durationMs(metrics.getDurationMs());
   }
 
