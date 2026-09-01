@@ -43,6 +43,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
@@ -585,6 +586,19 @@ final class OpensearchExporterTest {
           .isInstanceOf(ExporterException.class)
           .hasMessageContaining("must match pattern '^[0-9]+[dhms]$'")
           .hasMessageContaining("minimumAge '" + invalidMinimumAge + "'");
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" "})
+    void shouldNotAllowNullOrBlankMinimumAge(final String invalidMinimumAge) {
+      // given
+      config.retention.setMinimumAge(invalidMinimumAge);
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context))
+          .isInstanceOf(ExporterException.class)
+          .hasMessageContaining("must not be null or blank");
     }
 
     @ParameterizedTest(name = "{0}")
