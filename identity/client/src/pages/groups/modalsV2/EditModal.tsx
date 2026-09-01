@@ -8,11 +8,11 @@
 
 import { FC, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FormModal, UseEntityModalProps } from "src/components/modal";
+import { FormModal, UseEntityModalProps } from "src/components/modalV2";
 import useTranslate from "src/utility/localization";
 import { useNotifications } from "src/components/notifications";
 import { groupMutations } from "src/utility/api/groups/mutations";
-import TextField from "src/components/form/TextField";
+import TextField from "src/components/formV2/TextField";
 import { isValidId } from "src/utility/validate.ts";
 import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -62,7 +62,6 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
 
   return (
     <FormModal
-      size="sm"
       open={open}
       headline={t("editGroup")}
       onSubmit={handleSubmit}
@@ -81,7 +80,7 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
           validateGroupId(value);
           setGroupId(value);
         }}
-        errors={!isGroupIdValid ? t("pleaseEnterValidGroupId") : undefined}
+        errors={!isGroupIdValid ? [t("pleaseEnterValidGroupId")] : []}
         readOnly
       />
       <TextField
