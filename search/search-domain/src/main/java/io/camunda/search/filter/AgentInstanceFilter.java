@@ -27,7 +27,7 @@ public record AgentInstanceFilter(
     List<Operation<Long>> processDefinitionKeyOperations,
     List<Operation<String>> processDefinitionIdOperations,
     List<Operation<Integer>> processDefinitionVersionOperations,
-    List<Operation<String>> versionTagOperations,
+    List<Operation<String>> processDefinitionVersionTagOperations,
     List<Operation<String>> elementIdOperations,
     List<Operation<String>> statusOperations,
     List<Operation<String>> tenantIdOperations,
@@ -51,7 +51,7 @@ public record AgentInstanceFilter(
     private List<Operation<Long>> processDefinitionKeyOperations;
     private List<Operation<String>> processDefinitionIdOperations;
     private List<Operation<Integer>> processDefinitionVersionOperations;
-    private List<Operation<String>> versionTagOperations;
+    private List<Operation<String>> processDefinitionVersionTagOperations;
     private List<Operation<String>> elementIdOperations;
     private List<Operation<String>> statusOperations;
     private List<Operation<String>> tenantIdOperations;
@@ -181,19 +181,20 @@ public record AgentInstanceFilter(
       return processDefinitionVersionOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
-    public Builder versionTagOperations(final List<Operation<String>> operations) {
-      versionTagOperations = addValuesToList(versionTagOperations, operations);
+    public Builder processDefinitionVersionTagOperations(final List<Operation<String>> operations) {
+      processDefinitionVersionTagOperations =
+          addValuesToList(processDefinitionVersionTagOperations, operations);
       return this;
     }
 
     @SafeVarargs
-    public final Builder versionTagOperations(
+    public final Builder processDefinitionVersionTagOperations(
         final Operation<String> operation, final Operation<String>... operations) {
-      return versionTagOperations(collectValues(operation, operations));
+      return processDefinitionVersionTagOperations(collectValues(operation, operations));
     }
 
-    public Builder versionTags(final String value, final String... values) {
-      return versionTagOperations(FilterUtil.mapDefaultToOperation(value, values));
+    public Builder processDefinitionVersionTags(final String value, final String... values) {
+      return processDefinitionVersionTagOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder elementIdOperations(final List<Operation<String>> operations) {
@@ -285,7 +286,8 @@ public record AgentInstanceFilter(
           Objects.requireNonNullElse(processDefinitionKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionVersionOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(versionTagOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(
+              processDefinitionVersionTagOperations, Collections.emptyList()),
           Objects.requireNonNullElse(elementIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(statusOperations, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),

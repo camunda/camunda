@@ -39,7 +39,7 @@ final class AgentInstanceRecordTest {
     assertThat(record.getRootProcessInstanceKey()).isEqualTo(-1L);
     assertThat(record.getProcessDefinitionVersion()).isEqualTo(-1);
     assertThat(record.getAgentDefinitionKey()).isEqualTo(-1L);
-    assertThat(record.getVersionTag()).isEmpty();
+    assertThat(record.getProcessDefinitionVersionTag()).isEmpty();
     assertThat(record.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
@@ -57,7 +57,7 @@ final class AgentInstanceRecordTest {
             .setRootProcessInstanceKey(2251799813685000L)
             .setProcessDefinitionVersion(3)
             .setAgentDefinitionKey(2251799813685077L)
-            .setVersionTag("v1.2")
+            .setProcessDefinitionVersionTag("v1.2")
             .setTenantId("acme");
 
     // when
@@ -75,7 +75,8 @@ final class AgentInstanceRecordTest {
     assertThat(copy.getProcessDefinitionVersion())
         .isEqualTo(original.getProcessDefinitionVersion());
     assertThat(copy.getAgentDefinitionKey()).isEqualTo(original.getAgentDefinitionKey());
-    assertThat(copy.getVersionTag()).isEqualTo(original.getVersionTag());
+    assertThat(copy.getProcessDefinitionVersionTag())
+        .isEqualTo(original.getProcessDefinitionVersionTag());
     assertThat(copy.getTenantId()).isEqualTo(original.getTenantId());
   }
 

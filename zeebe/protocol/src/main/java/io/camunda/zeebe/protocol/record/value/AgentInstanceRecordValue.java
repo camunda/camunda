@@ -85,7 +85,7 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
   /**
    * @return the version tag of the process definition
    */
-  String getVersionTag();
+  String getProcessDefinitionVersionTag();
 
   /**
    * @return the ID of the tenant that owns this agent instance

@@ -140,7 +140,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   }
 
   @Override
-  public String getVersionTag() {
+  public String getProcessDefinitionVersionTag() {
     return null;
   }
 

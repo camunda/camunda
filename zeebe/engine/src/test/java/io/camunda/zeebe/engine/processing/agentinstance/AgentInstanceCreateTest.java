@@ -187,14 +187,14 @@ public class AgentInstanceCreateTest {
   }
 
   @Test
-  public void shouldFetchVersionTagFromProcessState() {
+  public void shouldFetchProcessDefinitionVersionTagFromProcessState() {
     // given
-    final var versionTag = "v1.2.3";
+    final var processDefinitionVersionTag = "v1.2.3";
     ENGINE
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
-                .versionTag(versionTag)
+                .versionTag(processDefinitionVersionTag)
                 .startEvent()
                 .serviceTask(
                     SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
@@ -210,7 +210,8 @@ public class AgentInstanceCreateTest {
         ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
 
     // then
-    assertThat(created.getValue().getVersionTag()).isEqualTo(versionTag);
+    assertThat(created.getValue().getProcessDefinitionVersionTag())
+        .isEqualTo(processDefinitionVersionTag);
   }
 
   @Test

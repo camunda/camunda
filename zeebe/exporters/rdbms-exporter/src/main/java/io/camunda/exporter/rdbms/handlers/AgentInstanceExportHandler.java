@@ -74,7 +74,8 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
             .processDefinitionId(value.getBpmnProcessId())
             .processDefinitionKey(value.getProcessDefinitionKey())
             .processDefinitionVersion(value.getProcessDefinitionVersion())
-            .versionTag(ExportUtil.emptyToNull(value.getVersionTag()))
+            .processDefinitionVersionTag(
+                ExportUtil.emptyToNull(value.getProcessDefinitionVersionTag()))
             .tenantId(value.getTenantId())
             .partitionId(record.getPartitionId())
             .status(mapStatus(value.getStatus()))
