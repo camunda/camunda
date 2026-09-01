@@ -8,7 +8,13 @@
 
 import { FC, useMemo, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { TabsVertical, Tab, TabPanels } from "@carbon/react";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Text,
+} from "@camunda/design-system";
 import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
@@ -19,13 +25,6 @@ import {
   RESOURCE_TYPES_WITHOUT_TENANT,
 } from "src/utility/api/authorizations";
 import { TranslatedErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
-// TODO: Replace with new design system components and Tailwind.
-import {
-  CustomTabListVertical,
-  CustomTabPanel,
-  TabsContainer,
-  TabsTitle,
-} from "./components";
 import AuthorizationList from "./AuthorizationsListV2";
 import { Paths } from "src/components/global/routePaths";
 import type {
@@ -124,42 +123,46 @@ const List: FC<ListProps> = ({
         linkText={t("authorizations").toLowerCase()}
         docsLinkPath="/components/concepts/access-control/authorizations/"
       />
-      <TabsTitle>{t("resourceType")}</TabsTitle>
-      <TabsContainer>
-        <TabsVertical
-          selectedIndex={authorizationTabs.indexOf(activeTab)}
-          onChange={(tab: { selectedIndex: number }) => {
-            const newTab = authorizationTabs[tab.selectedIndex];
-            resetPagination();
-            setActiveTab(newTab);
-            void navigate(`${Paths.authorizations()}/${newTab}`);
-          }}
-        >
-          <CustomTabListVertical aria-label={t("authorizationType")}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          const newTab = value as ResourceType;
+          resetPagination();
+          setActiveTab(newTab);
+          void navigate(`${Paths.authorizations()}/${newTab}`);
+        }}
+        orientation="vertical"
+        className="gap-8"
+      >
+        <div className="flex flex-col gap-2">
+          <Text as="p" variant="label-md" className="text-muted-foreground">
+            {t("resourceType")}
+          </Text>
+          <TabsList aria-label={t("authorizationType")}>
             {authorizationTabs.map((tab) => (
-              <Tab key={tab}>{t(tab)}</Tab>
+              <TabsTrigger key={tab} value={tab}>
+                {t(tab)}
+              </TabsTrigger>
             ))}
-          </CustomTabListVertical>
-          <TabPanels>
-            {authorizationTabs.map((tab) => (
-              <CustomTabPanel key={tab}>
-                <AuthorizationList
-                  tab={tab}
-                  data={transformedData}
-                  loading={loading}
-                  reload={reload}
-                  paginationProps={paginationProps}
-                  isOIDC={isOIDC}
-                  isCamundaGroupsEnabled={isCamundaGroupsEnabled}
-                  isTenantsApiEnabled={isTenantsApiEnabled}
-                  resourcePermissions={resourcePermissions}
-                  defaultRoleIds={defaultRoleIds}
-                />
-              </CustomTabPanel>
-            ))}
-          </TabPanels>
-        </TabsVertical>
-      </TabsContainer>
+          </TabsList>
+        </div>
+        {authorizationTabs.map((tab) => (
+          <TabsContent key={tab} value={tab}>
+            <AuthorizationList
+              tab={tab}
+              data={transformedData}
+              loading={loading}
+              reload={reload}
+              paginationProps={paginationProps}
+              isOIDC={isOIDC}
+              isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+              isTenantsApiEnabled={isTenantsApiEnabled}
+              resourcePermissions={resourcePermissions}
+              defaultRoleIds={defaultRoleIds}
+            />
+          </TabsContent>
+        ))}
+      </Tabs>
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("authorizationLoadError")}
