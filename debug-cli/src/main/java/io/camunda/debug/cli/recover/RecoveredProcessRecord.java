@@ -27,8 +27,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 /**
  * A synthetic {@link Record} of a process deployment, reconstructed from a {@link PersistedProcess}
  * read out of primary storage (RocksDB). It carries a {@link ProcessIntent#CREATED} intent and a
- * {@link ProcessRecord} value so that it can drive the real {@code ProcessHandler} and {@code
- * EmbeddedFormHandler} exactly as a freshly-exported deployment would. This guarantees the
+ * {@link ProcessRecord} value so that it can drive the real {@code ProcessCreatedHandler} and
+ * {@code EmbeddedFormHandler} exactly as a freshly-exported deployment would. This guarantees the
  * recovered secondary-storage documents are identical to normally-exported ones and inherits any
  * future handler changes for free.
  *
