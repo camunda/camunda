@@ -35,11 +35,9 @@ public @interface ConditionalOnWebappEnabled {
     }
 
     protected Set<String> getRequiredProperties(final String webappName) {
-      final String unifiedProperty = "camunda.webapps." + webappName + ".enabled";
-      if ("tasklist".equals(webappName)) {
-        return Set.of(unifiedProperty);
-      }
-      return Set.of("camunda." + webappName + ".webapp-enabled", unifiedProperty);
+      return Set.of(
+          "camunda." + webappName + ".webapp-enabled",
+          "camunda.webapps." + webappName + ".enabled");
     }
 
     @Override
