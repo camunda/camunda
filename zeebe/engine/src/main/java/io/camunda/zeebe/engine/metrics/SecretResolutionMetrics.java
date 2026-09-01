@@ -31,14 +31,17 @@ import java.util.function.Supplier;
  * <p>The per-reference outcomes and the per-cycle errors are separate meters rather than values on
  * one counter, so that neither can be added to the other by a query that aggregates across a tag.
  *
- * <p>Every meter is tagged by store ID, which is not known up front: it comes from the pending
- * secret references in state, not from configuration, and the engine resolves references for store
- * IDs it has no configured store for. The meters are therefore held in {@link BoundedMeterCache}s
- * keyed by store ID. The domain is small today — the default store ID every {@code
- * camunda.secrets.<name>} reference carries, plus {@link SecretResolutionKeyNames#NO_STORE} for a
- * reference written before that ID existed — but once store selection is wired to the engine (<a
- * href="https://github.com/camunda/camunda/issues/56563">#56563</a>) a store ID becomes
+ * <p>Every meter but one is tagged by store ID, which is not known up front: it comes from the
+ * pending secret references in state, not from configuration, and the engine resolves references
+ * for store IDs it has no configured store for. The meters are therefore held in {@link
+ * BoundedMeterCache}s keyed by store ID. The domain is small today — the default store ID every
+ * {@code camunda.secrets.<name>} reference carries, plus {@link SecretResolutionKeyNames#NO_STORE}
+ * for a reference written before that ID existed — but once store selection is wired to the engine
+ * (<a href="https://github.com/camunda/camunda/issues/56563">#56563</a>) a store ID becomes
  * process-author input, and the bound is what keeps that from growing the registry without limit.
+ * The exception is {@link #cycleDelay}: the scheduler's own per-cycle decision, not an operation
+ * against any particular store, so it carries no store tag and is registered directly instead of
+ * through a {@link BoundedMeterCache}.
  */
 public final class SecretResolutionMetrics {
 

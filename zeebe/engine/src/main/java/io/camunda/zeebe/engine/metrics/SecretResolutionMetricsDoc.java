@@ -233,9 +233,12 @@ public enum SecretResolutionMetricsDoc implements ExtendedMeterDocumentation {
     STORE("store"),
     /**
      * What the measured operation resulted in: a {@link SecretResolutionOutcome} on {@link
-     * SecretResolutionMetricsDoc#RESOLUTION_OUTCOME}, and the coarser {@link
+     * SecretResolutionMetricsDoc#RESOLUTION_OUTCOME}, the coarser {@link
      * SecretResolutionCallResult} on {@link SecretResolutionMetricsDoc#RESOLUTION_DURATION}, which
-     * measures a whole batch call and so cannot attribute a per-reference outcome to it.
+     * measures a whole batch call and so cannot attribute a per-reference outcome to it, and (on
+     * {@link SecretResolutionMetricsDoc#CYCLE_DELAY}, not a result at all, but the same tag reused
+     * for it) a {@link SecretResolutionCycleDelayReason} naming why the cycle chose its delay
+     * rather than what it resolved.
      */
     RESULT("result");
 
