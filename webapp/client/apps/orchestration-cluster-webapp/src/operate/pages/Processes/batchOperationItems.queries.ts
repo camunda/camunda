@@ -91,7 +91,7 @@ function useActiveOperationItemsForInstances(processInstanceKeys: string[]) {
 		queryKey: ['batchOperationItems', filter] as const,
 		queryFn: () => queryAllBatchOperationItems(filter),
 		enabled: processInstanceKeys.length > 0,
-		refetchInterval: (query) => (query.state.data?.length ?? 0) > 0 ? ACTIVE_ITEMS_REFETCH_INTERVAL_MS : false,
+		refetchInterval: (query) => ((query.state.data?.length ?? 0) > 0 ? ACTIVE_ITEMS_REFETCH_INTERVAL_MS : false),
 	});
 }
 
