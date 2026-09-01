@@ -8,10 +8,15 @@
 
 import { FC, lazy, Suspense } from "react";
 import { ListPageFallback } from "src/components/fallbacks";
+import { ListPageFallback as ListPageFallbackV2 } from "src/components/fallbacksV2";
 import PageRoutes from "src/components/router/PageRoutes";
+import { IS_NEW_DESIGN_SYSTEM_ENABLED } from "src/feature-flags";
 import Detail from "src/pages/groups/detail";
+import DetailV2 from "src/pages/groups/detailV2";
 
-const List = lazy(() => import("./List"));
+const List = lazy(() =>
+  IS_NEW_DESIGN_SYSTEM_ENABLED ? import("./ListV2") : import("./List"),
+);
 
 type GroupsProps = {
   isOIDC: boolean;
@@ -20,11 +25,25 @@ type GroupsProps = {
 const Groups: FC<GroupsProps> = ({ isOIDC }) => (
   <PageRoutes
     indexElement={
-      <Suspense fallback={<ListPageFallback />}>
+      <Suspense
+        fallback={
+          IS_NEW_DESIGN_SYSTEM_ENABLED ? (
+            <ListPageFallbackV2 />
+          ) : (
+            <ListPageFallback />
+          )
+        }
+      >
         <List />
       </Suspense>
     }
-    detailElement={<Detail isOIDC={isOIDC} />}
+    detailElement={
+      IS_NEW_DESIGN_SYSTEM_ENABLED ? (
+        <DetailV2 isOIDC={isOIDC} />
+      ) : (
+        <Detail isOIDC={isOIDC} />
+      )
+    }
   />
 );
 
