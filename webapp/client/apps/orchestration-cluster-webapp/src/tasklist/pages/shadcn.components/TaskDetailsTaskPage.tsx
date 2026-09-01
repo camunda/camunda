@@ -10,7 +10,7 @@ import type {CurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-sch
 import {useNavigate} from '@tanstack/react-router';
 import {useCallback} from 'react';
 import type {TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';
-import {CompleteTaskButton} from '#/tasklist/modules/task-details/shadcn.components/CompleteTaskButton';
+import {TaskDetailsForm} from '#/tasklist/modules/task-details-form/shadcn.components/TaskDetailsForm';
 import {useTaskCompletion} from '#/tasklist/modules/task-details/useTaskCompletion';
 import {TaskDetailsVariables} from '#/tasklist/modules/task-details-variables/shadcn.components/TaskDetailsVariables';
 
@@ -62,16 +62,14 @@ const TaskDetailsTaskPage: React.FC<Props> = ({
 
 	if (formSchema !== null) {
 		return (
-			<div className="flex h-full min-h-0 flex-col" data-testid="task-tab-content">
-				<footer className="mt-auto flex w-full justify-end border-t border-border p-4">
-					<CompleteTaskButton
-						status={status}
-						isDisabled={!isCompletionAllowed}
-						isHidden={isHidden}
-						onClick={() => complete({})}
-					/>
-				</footer>
-			</div>
+			<TaskDetailsForm
+				formSchema={formSchema}
+				variables={variables}
+				completionStatus={status}
+				isCompletionAllowed={isCompletionAllowed}
+				isHidden={isHidden}
+				onSubmit={complete}
+			/>
 		);
 	}
 
