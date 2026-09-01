@@ -303,9 +303,10 @@ public final class CallActivityIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected the process id expression 'wfChild' on call activity 'brokenCall' to be STRING, but was NULL. \
+            Expected the process id expression '%s' on call activity 'brokenCall' to be STRING, but was NULL. \
             The evaluation reported the following warnings:
-            [NO_VARIABLE_FOUND] No variable found with name 'wfChild'""");
+            [NO_VARIABLE_FOUND] No variable found with name '%s'"""
+                .formatted(PROCESS_ID_VARIABLE, PROCESS_ID_VARIABLE));
   }
 
   @Test
