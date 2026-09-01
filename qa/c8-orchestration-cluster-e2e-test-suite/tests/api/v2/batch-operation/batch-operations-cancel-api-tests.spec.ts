@@ -20,6 +20,7 @@ import {
   createCancellationBatch,
   cancelBatchOperation,
   createCompletedBatchOperation,
+  suspendBatchOperation,
   expectBatchState,
 } from '@requestHelpers';
 /* eslint-disable playwright/expect-expect */
@@ -42,11 +43,27 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
   }) => {
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        // 30 instances (matching the suspend suite) keep the batch running
-        // long enough to cancel before it completes; a 10-instance batch can
-        // finish first, making the cancel return 404 instead of 204.
         return createCancellationBatch(request, 30);
       });
+
+    // A CANCEL batch over these instances reaches COMPLETED in ~2-4s
+    // regardless of the instance count (the engine terminates the waiting
+    // service-task instances in parallel, so more instances do not lengthen
+    // the run). Racing a cancel against a still-ACTIVE batch is therefore
+    // inherently flaky: under this spec's parallel load the batch can finish
+    // first, and cancelling a COMPLETED batch correctly returns 404 — which
+    // the 240s retry can never recover from. Suspend the batch first to freeze
+    // it in an in-progress state (the same mechanism the sibling suspend suite
+    // relies on) so the subsequent cancel deterministically exercises the
+    // 204 -> CANCELED path.
+    await test.step('Suspend batch operation to keep it in progress', async () => {
+      const res = await suspendBatchOperation(request, key);
+      await assertStatusCode(res, 204);
+    });
+
+    await test.step('Wait for suspended state', async () => {
+      await expectBatchState(request, key, 'SUSPENDED');
+    });
 
     await test.step('Cancel batch operation', async () => {
       const res = await cancelBatchOperation(request, key);
