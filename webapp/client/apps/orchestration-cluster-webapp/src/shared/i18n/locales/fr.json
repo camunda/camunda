@@ -505,8 +505,6 @@
 					"viewInstance": "Afficher l'instance {{key}}",
 					"viewParentInstance": "Afficher l'instance parente {{key}}",
 					"none": "Aucune",
-					"selectAll": "Sélectionner toutes les instances",
-					"selectRow": "Sélectionner l'instance {{key}}",
 					"emptyMessage": "Aucune instance ne correspond à ce jeu de filtres",
 					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance"
 				},

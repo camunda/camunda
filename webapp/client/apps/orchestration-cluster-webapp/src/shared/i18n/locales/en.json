@@ -516,8 +516,6 @@
 					"viewInstance": "View instance {{key}}",
 					"viewParentInstance": "View parent instance {{key}}",
 					"none": "None",
-					"selectAll": "Select all instances",
-					"selectRow": "Select instance {{key}}",
 					"emptyMessage": "There are no Instances matching this filter set",
 					"emptyAdditionalInfo": "To see some results, select at least one Instance state"
 				},
