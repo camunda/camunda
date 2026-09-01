@@ -667,6 +667,40 @@
 			"batchOperations": {
 				"title": "Opérations par lots"
 			},
+			"batchOperation": {
+				"title": "Opérations par lots",
+				"pageTitle": "Operate : Opération par lots {{name}}",
+				"notFoundNotificationTitle": "L'opération par lots {{batchOperationKey}} n'a pas pu être trouvée",
+				"loadErrorTitle": "Impossible de charger les détails de l'opération par lots",
+				"backButton": "Retour aux opérations par lots",
+				"forbidden": {
+					"heading": "403 - Vous n'avez pas la permission de consulter ces informations",
+					"description": "Contactez votre administrateur pour obtenir l'accès.",
+					"learnMoreLink": "En savoir plus sur les autorisations"
+				},
+				"tiles": {
+					"state": "État du lot",
+					"summaryOfItems": "Résumé des éléments",
+					"startDate": "Date de début",
+					"endDate": "Date de fin",
+					"actor": "Acteur"
+				},
+				"itemsTable": {
+					"title": "Éléments",
+					"state": "État du lot",
+					"date": "Date",
+					"processInstanceKey": "Clé d'instance de processus",
+					"decisionInstanceKey": "Clé d'instance de décision",
+					"incidentKey": "Clé d'incident",
+					"noProcessInstance": "Aucune instance de processus",
+					"noDecisionInstance": "Aucune instance de décision",
+					"noIncident": "Aucun incident",
+					"viewProcessInstance": "Voir l'instance de processus {{key}}",
+					"viewDecisionInstance": "Voir l'instance de décision {{key}}",
+					"failureReason": "Raison de l'échec : {{message}}",
+					"emptyMessage": "Aucun élément trouvé"
+				}
+			},
 			"shared": {
 				"errorMessage": {
 					"message": "Les données n'ont pas pu être récupérées",

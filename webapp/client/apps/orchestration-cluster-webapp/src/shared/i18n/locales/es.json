@@ -664,6 +664,40 @@
 			"batchOperations": {
 				"title": "Operaciones en lote"
 			},
+			"batchOperation": {
+				"title": "Operaciones en lote",
+				"pageTitle": "Operate: Operación en lote {{name}}",
+				"notFoundNotificationTitle": "No se pudo encontrar la operación en lote {{batchOperationKey}}",
+				"loadErrorTitle": "No se pudieron cargar los detalles de la operación en lote",
+				"backButton": "Volver a operaciones en lote",
+				"forbidden": {
+					"heading": "403 - No tiene permiso para ver esta información",
+					"description": "Póngase en contacto con su administrador para obtener acceso.",
+					"learnMoreLink": "Más información sobre los permisos"
+				},
+				"tiles": {
+					"state": "Estado del lote",
+					"summaryOfItems": "Resumen de elementos",
+					"startDate": "Fecha de inicio",
+					"endDate": "Fecha de finalización",
+					"actor": "Actor"
+				},
+				"itemsTable": {
+					"title": "Elementos",
+					"state": "Estado del lote",
+					"date": "Fecha",
+					"processInstanceKey": "Clave de instancia de proceso",
+					"decisionInstanceKey": "Clave de instancia de decisión",
+					"incidentKey": "Clave de incidente",
+					"noProcessInstance": "Sin instancia de proceso",
+					"noDecisionInstance": "Sin instancia de decisión",
+					"noIncident": "Sin incidente",
+					"viewProcessInstance": "Ver instancia de proceso {{key}}",
+					"viewDecisionInstance": "Ver instancia de decisión {{key}}",
+					"failureReason": "Motivo del fallo: {{message}}",
+					"emptyMessage": "No se encontraron elementos"
+				}
+			},
 			"shared": {
 				"errorMessage": {
 					"message": "No se pudieron recuperar los datos",
