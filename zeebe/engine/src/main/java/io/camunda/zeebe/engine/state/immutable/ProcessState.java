@@ -76,6 +76,12 @@ public interface ProcessState {
 
   void forEachProcessWithLatestVersion(PersistedProcessVisitor visitor);
 
+  /** Whether the given partition still owes a drain report for the given process definition. */
+  boolean hasPendingDeletion(long processDefinitionKey, int partitionId);
+
+  /** Whether any partition still owes a drain report for the given process definition. */
+  boolean hasPendingDeletion(long processDefinitionKey);
+
   record ProcessIdentifier(String tenantId, long processDefinitionKey)
       implements ResourceIdentifier {}
 

@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscrip
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessDeletionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessResultSenderBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
@@ -42,6 +43,7 @@ public final class ProcessProcessor
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final BpmnJobBehavior jobBehavior;
+  private final BpmnProcessDeletionBehavior processDeletionBehavior;
   private final AsyncRequestState asyncRequestState;
 
   public ProcessProcessor(
@@ -56,6 +58,7 @@ public final class ProcessProcessor
     bufferedMessageStartEventBehavior = bpmnBehaviors.bufferedMessageStartEventBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
     jobBehavior = bpmnBehaviors.jobBehavior();
+    processDeletionBehavior = bpmnBehaviors.processDeletionBehavior();
     this.asyncRequestState = asyncRequestState;
   }
 
@@ -216,7 +219,11 @@ public final class ProcessProcessor
       final Function<BpmnElementContext, Either<Failure, BpmnElementContext>> transitionOperation) {
 
     final var postTransitionAction = getPostTransitionAction(element, context);
-    return transitionOperation.apply(context).thenDo(postTransitionAction);
+    return transitionOperation
+        .apply(context)
+        .thenDo(postTransitionAction)
+        // once the instance is removed, finalize the definition's deletion if it was draining
+        .thenDo(processDeletionBehavior::finalizeDeletionIfDraining);
   }
 
   private Consumer<BpmnElementContext> getPostTransitionAction(

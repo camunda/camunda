@@ -245,7 +245,11 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   RUNTIME_INSTRUCTIONS(124, PARTITION_LOCAL),
 
-  MULTI_INSTANCE_INPUT_COLLECTION(125, PARTITION_LOCAL);
+  MULTI_INSTANCE_INPUT_COLLECTION(125, PARTITION_LOCAL),
+
+  // (processDefinitionKey, partitionId) → ∅: partitions that still owe a drain report for a
+  // definition being deleted while it has running instances. Lives on the aggregating partition.
+  PENDING_PROCESS_DELETIONS_PER_PARTITION(159, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

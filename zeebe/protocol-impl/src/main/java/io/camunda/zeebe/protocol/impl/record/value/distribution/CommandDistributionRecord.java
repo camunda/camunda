@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
@@ -64,6 +65,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   // You'll need to register any of the records value's that you want to distribute
   static {
     RECORDS_BY_TYPE.put(ValueType.DEPLOYMENT, DeploymentRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.PROCESS, ProcessRecord::new);
     RECORDS_BY_TYPE.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionRecord::new);
     RECORDS_BY_TYPE.put(ValueType.RESOURCE_DELETION, ResourceDeletionRecord::new);
     RECORDS_BY_TYPE.put(ValueType.SIGNAL, SignalRecord::new);
