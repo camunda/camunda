@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 /** FileSet use in Manifest serialization, in order to list all stored files. */
 public record FileSet(List<NamedFile> files) {
@@ -36,7 +37,7 @@ public record FileSet(List<NamedFile> files) {
     }
   }
 
-  public static FileSet of(final NamedFileSet fileSet) {
+  public static FileSet of(final @Nullable NamedFileSet fileSet) {
     if (fileSet == null) {
       return new FileSet(List.of());
     }
