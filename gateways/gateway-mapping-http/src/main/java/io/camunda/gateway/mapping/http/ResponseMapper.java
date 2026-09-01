@@ -470,7 +470,7 @@ public final class ResponseMapper {
   public static MessagePublicationResult toMessagePublicationResponse(
       final BrokerResponse<MessageRecord> brokerResponse) {
     return MessagePublicationResult.Builder.create()
-        .tenantId(brokerResponse.getResponse().getTenantId())
+        .tenantId(brokerResponse.getResponseOrThrow().getTenantId())
         .messageKey(keyToString(brokerResponse.getKey()))
         .build();
   }
@@ -652,14 +652,14 @@ public final class ResponseMapper {
   public static SignalBroadcastResult toSignalBroadcastResponse(
       final BrokerResponse<SignalRecord> brokerResponse) {
     return SignalBroadcastResult.Builder.create()
-        .tenantId(brokerResponse.getResponse().getTenantId())
+        .tenantId(brokerResponse.getResponseOrThrow().getTenantId())
         .signalKey(keyToString(brokerResponse.getKey()))
         .build();
   }
 
   public static EvaluateConditionalResult toConditionalEvaluationResponse(
       final BrokerResponse<ConditionalEvaluationRecord> brokerResponse) {
-    final var response = brokerResponse.getResponse();
+    final var response = brokerResponse.getResponseOrThrow();
     final var processInstances =
         response.getStartedProcessInstances().stream()
             .map(
@@ -807,7 +807,7 @@ public final class ResponseMapper {
 
   public static EvaluateDecisionResult toEvaluateDecisionResponse(
       final BrokerResponse<DecisionEvaluationRecord> brokerResponse) {
-    final var decisionEvaluationRecord = brokerResponse.getResponse();
+    final var decisionEvaluationRecord = brokerResponse.getResponseOrThrow();
     final var evaluatedDecisions = buildEvaluatedDecisions(decisionEvaluationRecord);
     return EvaluateDecisionResult.Builder.create()
         .decisionDefinitionId(decisionEvaluationRecord.getDecisionId())

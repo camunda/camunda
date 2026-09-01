@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.client.api;
 import static io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.FAILED_REQUESTS;
 import static io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.REQUEST_LATENCY;
 import static io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.TOTAL_REQUESTS;
+import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.RequestKeyNames;
 import io.camunda.zeebe.util.collection.Map3D;
@@ -18,7 +19,6 @@ import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -33,7 +33,7 @@ public final class BrokerClientRequestMetrics {
   private final Map3D<Integer, String, Enum<?>, Counter> failedRequests;
 
   public BrokerClientRequestMetrics(final MeterRegistry registry) {
-    this.registry = Objects.requireNonNull(registry, "must specify a meter registry");
+    this.registry = requireNonNull(registry, "must specify a meter registry");
 
     requestLatency = Table.simple();
     totalRequests = Table.simple();

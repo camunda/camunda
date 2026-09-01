@@ -17,6 +17,7 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public final class BrokerExecuteQuery extends BrokerRequest<String> {
   private final ExecuteQueryRequest request = new ExecuteQueryRequest();
@@ -58,7 +59,7 @@ public final class BrokerExecuteQuery extends BrokerRequest<String> {
    * @return null to avoid writing any serialized value
    */
   @Override
-  public BufferWriter getRequestWriter() {
+  public @Nullable BufferWriter getRequestWriter() {
     return null;
   }
 
