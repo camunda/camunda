@@ -162,6 +162,15 @@ outputs:
         steps.filter-common.outputs.frontend-change == 'true' ||
         steps.filter-identity.outputs.frontend-identity == 'true'
       }}
+  process-test-coverage-frontend-changes:
+    description: Output whether the Camunda Process Test coverage report frontend should be built
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.process-test-coverage-frontend-change == 'true'
+      }}
   zeebe-changes:
     description: Output whether any Zeebe code has changed
     value: >-
@@ -368,6 +377,13 @@ runs:
           - 'tasklist/client/**'
           - 'identity/client/**'
           - 'optimize/client/**'
+
+        # This frontend lives inside a Maven module rather than a client/ folder,
+        # so `frontend-change` above does not reach it. Its npm build runs during
+        # `generate-resources`, which means a break here fails every reactor build
+        # that pulls the module in (see issue #61613).
+        process-test-coverage-frontend-change:
+          - 'testing/camunda-process-test-coverage/**'
 
         protobuf-change:
           - '**/*.proto'

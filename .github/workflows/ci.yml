@@ -60,6 +60,7 @@ jobs:
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
       optimize-dockerfile-changes: ${{ steps.filter.outputs.optimize-dockerfile-changes }}
+      process-test-coverage-frontend-changes: ${{ steps.filter.outputs.process-test-coverage-frontend-changes }}
       protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
       openapi-changes: ${{ steps.filter.outputs.openapi-changes }}
       stable-branch-changes: ${{ steps.filter.outputs.stable-branch-changes }}
@@ -582,6 +583,38 @@ jobs:
           path: optimize/client/dist
           retention-days: 2
           if-no-files-found: error
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  # Every Java job builds this module with `-Dquickly`, which sets `skip.fe.build`
+  # and skips its npm build entirely; the only place that actually ran it was the
+  # main-only `deploy-snapshots` job. A renovate lockfile bump therefore merged
+  # green and broke the reactor for everyone afterwards (issue #61613). This job
+  # runs the same `npm run build` on the PR that changes the module.
+  process-test-coverage-frontend:
+    if: needs.detect-changes.outputs.process-test-coverage-frontend-changes == 'true'
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/build-frontend
+        id: build-process-test-coverage-fe
+        with:
+          directory: ./testing/camunda-process-test-coverage
+          package-manager: "npm"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -2762,6 +2795,7 @@ jobs:
       - pin-check
       - pr-maven-snapshot
       - pr-vuln-check
+      - process-test-coverage-frontend
       - protobuf-checks
       - rdbms-integration-tests
       - release-notes-action
