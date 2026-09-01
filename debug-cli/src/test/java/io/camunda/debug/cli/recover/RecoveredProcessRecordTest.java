@@ -61,9 +61,8 @@ final class RecoveredProcessRecordTest {
 
   @Test
   void shouldProduceSameProcessEntityAsRealHandlerReads() throws IOException {
-    // given — the anti-drift guarantee: driving the real ProcessCreatedHandler off a record
-    // reconstructed
-    // from primary storage yields a document carrying exactly the persisted-process data.
+    // given — anti-drift guarantee: driving ProcessCreatedHandler off a record reconstructed from
+    // primary storage yields a document carrying exactly the persisted-process data.
     final var resource = readResource(RESOURCE);
     final var persisted =
         persistedProcess(
