@@ -123,7 +123,7 @@ function buildMixedStateElementFilter(search: ProcessesSearch, elementId: string
 function buildStateAndElementFilter(search: ProcessesSearch): ProcessInstancesFilter {
 	const stateFilter = buildStateFilter(search);
 
-	if (search.elementId === undefined) {
+	if (!search.elementId) {
 		return stateFilter;
 	}
 
@@ -145,7 +145,7 @@ function buildStateAndElementFilter(search: ProcessesSearch): ProcessInstancesFi
 function mapProcessInstancesFilter(search: ProcessesSearch): ProcessInstancesFilter | undefined {
 	const hasStateFilters = search.active || search.incidents || search.completed || search.canceled;
 
-	if (!hasStateFilters && search.batchOperationKey === undefined && search.elementId === undefined) {
+	if (!hasStateFilters && !search.batchOperationKey && !search.elementId) {
 		return undefined;
 	}
 
@@ -156,7 +156,7 @@ function mapProcessInstancesFilter(search: ProcessesSearch): ProcessInstancesFil
 		...filter,
 		processDefinitionId: search.process ? {$eq: search.process} : undefined,
 		processDefinitionVersion: search.version,
-		tenantId: isSpecificTenant(search.tenantId) ? {$eq: search.tenantId} : undefined,
+		tenantId: search.tenantId && isSpecificTenant(search.tenantId) ? {$eq: search.tenantId} : undefined,
 		processInstanceKey: instanceKeys.length > 0 ? {$in: instanceKeys} : undefined,
 		parentProcessInstanceKey: search.parentProcessInstanceKey ? {$eq: search.parentProcessInstanceKey} : undefined,
 		batchOperationKey: search.batchOperationKey ? {$eq: search.batchOperationKey} : undefined,
