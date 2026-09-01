@@ -14,10 +14,38 @@ import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
+import io.camunda.security.api.model.authz.EntityType;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class GroupFilterTransformerTest extends AbstractTransformerTest {
+
+  @Test
+  void shouldCombineMemberIdsByTypeQueryWithTopLevelFilterAndOrFilters() {
+    // given
+    final var filter =
+        FilterBuilders.group(
+            f ->
+                f.groupIds("group-top")
+                    .memberIdsByType(Map.of(EntityType.USER, Set.of("user-1")))
+                    .orFilters(List.of(FilterBuilders.group(f1 -> f1.groupIds("group-1")))));
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    // memberIdsByType must not short-circuit the top-level groupId filter or the $or group —
+    // all criteria must be ANDed together, as they are for every other filter combination.
+    assertThat(searchQuery.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            bool -> {
+              assertThat(bool.must()).hasSize(4);
+              assertThat(termValue(bool.must().get(0))).isEqualTo("group-top");
+            });
+  }
 
   @Test
   void shouldQueryByNameWithLikeOperation() {

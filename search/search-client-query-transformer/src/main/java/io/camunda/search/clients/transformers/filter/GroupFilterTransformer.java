@@ -33,11 +33,11 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
 
   @Override
   public SearchQuery toSearchQuery(final GroupFilter filter) {
-    if (filter.memberIdsByType() != null && !filter.memberIdsByType().isEmpty()) {
-      return createMultipleMemberTypeQuery(filter);
-    }
-
     final var queries = new ArrayList<>(toSearchQueryFields(filter));
+
+    if (filter.memberIdsByType() != null && !filter.memberIdsByType().isEmpty()) {
+      queries.add(createMultipleMemberTypeQuery(filter));
+    }
 
     if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
       queries.add(or(filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).toList()));
