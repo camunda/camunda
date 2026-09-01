@@ -16,6 +16,8 @@ import {
 	createQueryProcessInstancesResponse,
 } from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {useState} from 'react';
+import {userEvent} from 'vitest/browser';
 import {InstancesTable} from './InstancesTable';
 import type {ProcessesSearch} from './processesFilter';
 
@@ -32,6 +34,24 @@ function renderInstancesTable(search: ProcessesSearch = BASE_SEARCH) {
 		),
 		{path: '/operate/processes'},
 	);
+}
+
+// Renders the table with a button that swaps in a second search, so a filter or sort change can be
+// driven the way the page drives it — by handing the component a new search — rather than remounting.
+function renderSearchHarness(initial: ProcessesSearch, next: ProcessesSearch) {
+	function Harness() {
+		const [search, setSearch] = useState(initial);
+		return (
+			<div style={{height: '100vh'}}>
+				<button type="button" onClick={() => setSearch(next)}>
+					change search
+				</button>
+				<InstancesTable search={search} />
+			</div>
+		);
+	}
+
+	return renderWithRouter(Harness, {path: '/operate/processes'});
 }
 
 describe('<InstancesTable />', () => {
@@ -160,6 +180,53 @@ describe('<InstancesTable />', () => {
 		const screen = await renderInstancesTable({...BASE_SEARCH, startDateFrom: 'not-a-date'});
 
 		await expect.element(screen.getByText('Order Process')).toBeVisible();
+	});
+
+	it('should clear stale rows when the last instance state filter is removed', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', processDefinitionName: 'Order Process'})],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderSearchHarness(BASE_SEARCH, {
+			active: false,
+			incidents: false,
+			completed: false,
+			canceled: false,
+		});
+		await expect.element(screen.getByText('Order Process')).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'change search'}));
+
+		await expect.element(screen.getByText('Order Process')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
+	});
+
+	it('should keep the row selection when only the sort changes', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', processDefinitionName: 'Order Process'})],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderSearchHarness(BASE_SEARCH, {...BASE_SEARCH, sort: 'processInstanceKey+asc'});
+		// Carbon renders the row checkbox as a visually hidden input behind its label, so click the
+		// label the user actually sees.
+		await screen.getByRole('checkbox', {name: 'Select instance 1'}).click({force: true});
+		await expect.element(screen.getByRole('checkbox', {name: 'Select instance 1'})).toBeChecked();
+
+		await userEvent.click(screen.getByRole('button', {name: 'change search'}));
+
+		await expect.element(screen.getByRole('checkbox', {name: 'Select instance 1'})).toBeChecked();
 	});
 
 	it('should show the parent instance link only when the instance has a parent', async ({worker}) => {

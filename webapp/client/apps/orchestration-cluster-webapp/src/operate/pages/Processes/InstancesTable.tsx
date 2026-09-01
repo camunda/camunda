@@ -41,6 +41,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		hasMoreTotalItems,
 		status,
 		isFetching,
+		isPlaceholderData,
 		isFetchingPreviousPage,
 		hasPreviousPage,
 		fetchPreviousPage,
@@ -51,7 +52,12 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 
 	const selection = useInstancesSelection(totalCount);
 
-	const searchKey = useMemo(() => JSON.stringify(search), [search]);
+	// Sort is excluded deliberately: legacy keys this on the filter set only, so reordering the
+	// list keeps the selection rather than clearing it.
+	const searchKey = useMemo(() => {
+		const {sort: _sort, ...filters} = search;
+		return JSON.stringify(filters);
+	}, [search]);
 	// Keyed on the serialized search rather than the object identity, mirroring legacy's
 	// `filtersJSON` effect key: a new filter set invalidates whatever was selected.
 	const resetSelection = selection.reset;
@@ -188,7 +194,9 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				columns={columns}
 				rows={processInstances}
 				rowKey={(row) => row.processInstanceKey}
-				isFetching={isFetching && !isFetchingPreviousPage && !isFetchingNextPage}
+				// `isPlaceholderData` keeps the overlay to filter and sort changes, where the rows on
+				// screen are stale. A background poll refetches the same key and must not dim the table.
+				isFetching={isFetching && isPlaceholderData && !isFetchingPreviousPage && !isFetchingNextPage}
 				emptyState={emptyState}
 				selectionType="checkbox"
 				selectAllLabel={t('operate.processes.instancesTable.selectAll')}

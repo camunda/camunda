@@ -50,14 +50,17 @@ function useProcessInstancesSearch(search: ProcessesSearch) {
 			const previousPage = firstPageParam - PAGE_LIMIT;
 			return previousPage < 0 ? undefined : previousPage;
 		},
-		placeholderData: (previousData) => previousData,
-		maxPages: 2,
+		// Only while the query can actually run: keeping the previous page as placeholder data once
+		// it is disabled would leave the last result on screen instead of the empty state.
+		placeholderData: filter === undefined ? undefined : (previousData) => previousData,
+		maxPages: 5,
 	});
 
 	const {
 		data,
 		status,
 		isFetching,
+		isPlaceholderData,
 		isFetchingPreviousPage,
 		hasPreviousPage,
 		fetchPreviousPage,
@@ -69,6 +72,7 @@ function useProcessInstancesSearch(search: ProcessesSearch) {
 	return {
 		status,
 		isFetching,
+		isPlaceholderData,
 		isFetchingPreviousPage,
 		hasPreviousPage,
 		fetchPreviousPage,
