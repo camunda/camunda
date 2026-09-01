@@ -361,7 +361,7 @@ public class AgentHistoryCommitLifecycleIT {
                     new AgentInstanceHistoryItem()
                         .historyItemId(historyItemId)
                         .loopIteration(1)
-                        .role(AgentInstanceHistoryRole.ASSISTANT)
+                        .role(AgentInstanceHistoryRole.TOOL_RESULT)
                         .content(
                             List.of(
                                 AgentInstanceHistoryContent.text("I can help with many tasks.")))
@@ -419,7 +419,7 @@ public class AgentHistoryCommitLifecycleIT {
                     new AgentInstanceHistoryItem()
                         .historyItemId(historyItemId)
                         .loopIteration(1)
-                        .role(AgentInstanceHistoryRole.ASSISTANT)
+                        .role(AgentInstanceHistoryRole.TOOL_RESULT)
                         .content(
                             List.of(AgentInstanceHistoryContent.text("A different resent answer.")))
                         .producedAt(OffsetDateTime.parse("2025-06-01T10:00:00Z"))
@@ -451,7 +451,7 @@ public class AgentHistoryCommitLifecycleIT {
               final var response =
                   camundaClient
                       .newAgentInstanceHistorySearchRequest(agentInstanceKey)
-                      .filter(f -> f.role(AgentInstanceHistoryRole.ASSISTANT))
+                      .filter(f -> f.role(AgentInstanceHistoryRole.TOOL_RESULT))
                       .execute();
               assertThat(response.items())
                   .as("exactly one history item persists for the id resent across jobs")
@@ -489,8 +489,8 @@ public class AgentHistoryCommitLifecycleIT {
                   .as("aggregated tokens must count job A's item once, not job B's resend too")
                   .isEqualTo(50L);
               assertThat(aggregatedMetrics.getModelCalls())
-                  .as("deduped resend must not be counted as an extra model call")
-                  .isEqualTo(1);
+                  .as("TOOL_RESULT items never count as model calls, deduped or not")
+                  .isEqualTo(0);
             });
   }
 
