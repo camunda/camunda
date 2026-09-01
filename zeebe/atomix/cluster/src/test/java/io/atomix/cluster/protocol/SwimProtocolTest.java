@@ -93,7 +93,9 @@ public class SwimProtocolTest extends ConcurrentTestCase {
         null,
         new Properties(),
         version,
-        System.currentTimeMillis());
+        System.currentTimeMillis(),
+        // the protocol takes the instance ID of its own run, not the seed member's
+        SwimMembershipProtocol.UNKNOWN_INSTANCE_ID);
   }
 
   @Before
@@ -331,9 +333,163 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   @Test
   public void shouldSynchronizePeriodically() throws InterruptedException {
     // given
+<<<<<<< HEAD
     startProtocol(member1);
     startProtocol(member2);
     final SwimMembershipProtocol protocol3 = startProtocol(member3);
+=======
+    reset(true);
+    startProtocol(member1, member1.id().toString());
+    startProtocol(member2, member2.id().toString());
+
+    awaitMembers(member2, member1, member2);
+    awaitMembers(member1, member1, member2);
+
+    clearEvents(member1, member2);
+
+    // when - starting a member with new node version but all other properties unchanged
+    final var currentVersion = versions.get(member2.id().id());
+    // version can be null
+    final var nextVersion = currentVersion != null ? currentVersion + 1 : 0;
+    final var member2NewVersion =
+        member(
+            member2.id().id(),
+            nextVersion, // only update the node id version
+            member2.address().host(),
+            member2.address().port(),
+            version1 // use the same software version
+            );
+    startProtocol(member2NewVersion, "member2-" + member2.id().id());
+
+    // then
+    Awaitility.await("Member 2 old node version removed")
+        .atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> checkEvent(member1, MEMBER_REMOVED, member2));
+    checkEvent(member1, MEMBER_ADDED, member2NewVersion);
+
+    // verify that all members have only the new version of member2
+    for (final var entry : protocols.entrySet()) {
+      final var id = entry.getKey();
+      if (!id.equals(member2NewVersion.id())) {
+        final var memberView = ((SwimMember) entry.getValue().getMember(member2NewVersion.id()));
+        assertThat(memberView.nodeVersion())
+            .describedAs("Member %s has new version of member 2", id)
+            .isEqualTo(nextVersion);
+      }
+    }
+  }
+
+  @Test
+  public void shouldRemovePreviousRunOfRestartedMember() throws InterruptedException {
+    // given
+    reset(false);
+    startProtocol(member1, member1.id().toString());
+    startProtocol(member2, member2.id().toString());
+
+    awaitMembers(member2, member1, member2);
+    awaitMembers(member1, member1, member2);
+
+    clearEvents(member1, member2);
+
+    // when - member 2 restarts with every property unchanged, and fast enough that member 1 never
+    // reports it as failed. startProtocol stops the previous run without gossiping anything, which
+    // is what a non-graceful kill looks like to the rest of the cluster.
+    startProtocol(member2, "member2-restarted");
+
+    // then - member 1 sees the previous run leave and the new one join, so that anything it holds
+    // per member is rebuilt for the new run
+    Awaitility.await("Previous run of member 2 removed")
+        .atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> checkEvent(member1, MEMBER_REMOVED, member2));
+    checkEvent(member1, MEMBER_ADDED, member2);
+  }
+
+  @Test
+  public void shouldKeepRestartedMemberWhichReportsNoInstanceId() throws InterruptedException {
+    // given - a member on a version predating the instance ID
+    reset(false);
+    startProtocol(member1, member1.id().toString());
+    startProtocolWithoutInstanceId(member2, member2.id().toString());
+
+    awaitMembers(member2, member1, member2);
+    awaitMembers(member1, member1, member2);
+
+    clearEvents(member1, member2);
+
+    // when - it restarts, still reporting no instance ID
+    startProtocolWithoutInstanceId(member2, "member2-restarted");
+
+    // then - member 1 cannot tell the two runs apart, so it keeps the member it has rather than
+    // churning through a removal for every update it receives
+    checkNoEvent(member1, Duration.ofSeconds(2));
+  }
+
+  @Test
+  public void shouldKeepMemberWhenAnUpdateStopsReportingItsInstanceId()
+      throws InterruptedException {
+    // given - a member which reports a instance ID
+    reset(false);
+    startProtocol(member1, member1.id().toString());
+    startProtocol(member2, member2.id().toString());
+
+    awaitMembers(member2, member1, member2);
+    awaitMembers(member1, member1, member2);
+
+    clearEvents(member1, member2);
+
+    // when - the same member is next heard of without one, as happens while a rolling update is in
+    // progress and its updates are relayed through a member that drops the field
+    startProtocolWithoutInstanceId(member2, "member2-without-boot-id");
+
+    // then - the missing instance ID is read as no information rather than as a different run
+    checkNoEvent(member1, Duration.ofSeconds(2));
+  }
+
+  @Test
+  public void oldVersionShouldLeaveWhenNewVersionIsDetected() throws InterruptedException {
+    // given
+    reset(true);
+    startProtocol(member1, member1.id().toString() + "-v" + member1.nodeVersion());
+    startProtocol(member2, member2.id().toString() + "-v" + member2.nodeVersion());
+
+    awaitMembers(member2, member1, member2);
+    awaitMembers(member1, member1, member2);
+
+    clearEvents(member1, member2);
+
+    // when - starting a member with new version
+    final var oldVersionProtocol = protocols.get(member2.id());
+
+    final var currentVersion = versions.get(member2.id().id());
+    final var nextVersion = currentVersion != null ? currentVersion + 1 : 0;
+    final int nextVersionPort = member2.address().port() + 10;
+    final var member2NewVersion =
+        member(member2.id().id(), nextVersion, member2.address().host(), nextVersionPort, version2);
+    startSwimMembershipProtocol(
+        member2NewVersion,
+        UnaryOperator.identity(),
+        member2.id().toString() + "-v" + nextVersion,
+        null);
+    Awaitility.await("Member 2 old version removed")
+        .atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> checkEvent(member1, MEMBER_REMOVED, member2));
+    checkEvent(member1, MEMBER_ADDED, member2NewVersion);
+
+    // then - verify that old version leaves itself
+    Awaitility.await("Member 2 old version is stopped")
+        .until(() -> !oldVersionProtocol.isStarted());
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldSynchronizePeriodically(final boolean withVersions)
+      throws InterruptedException {
+    // given
+    reset(withVersions);
+    startProtocol(member1, member1.id().toString());
+    startProtocol(member2, member2.id().toString());
+    final SwimMembershipProtocol protocol3 = startProtocol(member3, member3.id().toString());
+>>>>>>> b57f3120 (fix: distinguish restarted SWIM members from long-lived ones)
 
     // wait for all nodes to know about each other
     checkEvents(
@@ -403,7 +559,21 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     return startProtocol(member, UnaryOperator.identity());
   }
 
+  /**
+   * Starts a member which reports no instance ID at all, i.e. one running a version predating the
+   * field.
+   */
+  private SwimMembershipProtocol startProtocolWithoutInstanceId(
+      final SwimMember member, final String actorSchedulerName) {
+    return startProtocol(
+        member,
+        UnaryOperator.identity(),
+        actorSchedulerName,
+        SwimMembershipProtocol.UNKNOWN_INSTANCE_ID);
+  }
+
   private SwimMembershipProtocol startProtocol(
+<<<<<<< HEAD
       final Member member, final UnaryOperator<SwimMembershipProtocolConfig> configurator) {
     final SwimMembershipProtocol protocol =
         new SwimMembershipProtocol(
@@ -415,6 +585,47 @@ public class SwimProtocolTest extends ConcurrentTestCase {
                     .setFailureTimeout(FAILURE_INTERVAL)
                     .setSyncInterval(SYNC_INTERVAL)),
             meterRegistry);
+=======
+      final SwimMember member,
+      final UnaryOperator<SwimMembershipProtocolConfig> configurator,
+      final String actorSchedulerName) {
+    return startProtocol(member, configurator, actorSchedulerName, null);
+  }
+
+  private SwimMembershipProtocol startProtocol(
+      final SwimMember member,
+      final UnaryOperator<SwimMembershipProtocolConfig> configurator,
+      final String actorSchedulerName,
+      final Long instanceId) {
+    final SwimMembershipProtocol protocol =
+        startSwimMembershipProtocol(member, configurator, actorSchedulerName, instanceId);
+    final var previous = protocols.put(member.id(), protocol);
+    // stops previous one
+    if (previous != null) {
+      previous.leave(member);
+    }
+    return protocol;
+  }
+
+  // starts new version of the protocol for the same member id without stopping the previous one
+  private SwimMembershipProtocol startSwimMembershipProtocol(
+      final SwimMember member,
+      final UnaryOperator<SwimMembershipProtocolConfig> configurator,
+      final String actorSchedulerName,
+      final Long instanceId) {
+    final var config =
+        configurator.apply(
+            new SwimMembershipProtocolConfig()
+                .setGossipInterval(GOSSIP_INTERVAL)
+                .setProbeInterval(PROBE_INTERVAL)
+                .setProbeTimeout(PROBE_TIMEOUT)
+                .setFailureTimeout(FAILURE_INTERVAL)
+                .setSyncInterval(SYNC_INTERVAL));
+    final SwimMembershipProtocol protocol =
+        instanceId == null
+            ? new SwimMembershipProtocol(config, actorSchedulerName, meterRegistry)
+            : new SwimMembershipProtocol(config, actorSchedulerName, meterRegistry, instanceId);
+>>>>>>> b57f3120 (fix: distinguish restarted SWIM members from long-lived ones)
     final TestGroupMembershipEventListener listener = new TestGroupMembershipEventListener();
     listeners.put(member.id(), listener);
     protocol.addListener(listener);
@@ -505,6 +716,13 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     }
   }
 
+  private void checkNoEvent(final Member member, final Duration within)
+      throws InterruptedException {
+    assertThat(listeners.get(member.id()).nextEvent(within))
+        .describedAs("Member %s observed no membership event", member.id())
+        .isNull();
+  }
+
   private GroupMembershipEvent nextEvent(final Member member) throws InterruptedException {
     final TestGroupMembershipEventListener listener = listeners.get(member.id());
     return listener != null ? listener.nextEvent() : null;
@@ -521,7 +739,11 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     }
 
     GroupMembershipEvent nextEvent() throws InterruptedException {
-      return queue.poll(10, TimeUnit.SECONDS);
+      return nextEvent(Duration.ofSeconds(10));
+    }
+
+    GroupMembershipEvent nextEvent(final Duration timeout) throws InterruptedException {
+      return queue.poll(timeout.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     public void clear() {

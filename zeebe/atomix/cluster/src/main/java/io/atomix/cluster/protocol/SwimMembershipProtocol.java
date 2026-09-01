@@ -36,6 +36,7 @@ import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -53,6 +54,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -70,6 +72,14 @@ public class SwimMembershipProtocol
     implements GroupMembershipProtocol {
 
   public static final Type TYPE = new Type();
+
+  /**
+   * Reported by a member which does not know its own instance ID: either it runs a version
+   * predating the field, or it is a stub built from discovery data before the real member was ever
+   * probed.
+   */
+  static final long UNKNOWN_INSTANCE_ID = 0L;
+
   private static final Logger LOGGER = LoggerFactory.getLogger("io.atomix.cluster.protocol.swim");
   private static final Logger GOSSIP_LOGGER =
       LoggerFactory.getLogger("io.atomix.cluster.protocol.swim.gossip");
@@ -95,6 +105,14 @@ public class SwimMembershipProtocol
               .build());
 
   private final SwimMembershipProtocolConfig config;
+
+  /**
+   * Identifies this run of the local member, so that a member which restarts fast enough to keep
+   * its ID and to never be reported as failed is still recognised as a new member. Held per
+   * protocol instance rather than per JVM so that several members can run in one JVM, as tests do.
+   */
+  private final long localInstanceId;
+
   private final AtomicBoolean started = new AtomicBoolean();
   private final Map<MemberId, SwimMember> members = Maps.newConcurrentMap();
   private final List<SwimMember> randomMembers = Lists.newCopyOnWriteArrayList();
@@ -124,11 +142,45 @@ public class SwimMembershipProtocol
   private ScheduledFuture<?> probeFuture;
   private ScheduledFuture<?> syncFuture;
 
+<<<<<<< HEAD
   private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics;
 
   SwimMembershipProtocol(final SwimMembershipProtocolConfig config, final MeterRegistry registry) {
+=======
+  SwimMembershipProtocol(
+      final SwimMembershipProtocolConfig config,
+      final String actorSchedulerName,
+      final MeterRegistry registry) {
+    // the low bit is set so a generated instance ID can never collide with UNKNOWN_INSTANCE_ID
+    this(config, actorSchedulerName, registry, ThreadLocalRandom.current().nextLong() | 1L);
+  }
+
+  /**
+   * Only for tests, which need to pretend to be a member that reports no instance ID at all, i.e.
+   * one running a version predating the field.
+   */
+  @VisibleForTesting
+  SwimMembershipProtocol(
+      final SwimMembershipProtocolConfig config,
+      final String actorSchedulerName,
+      final MeterRegistry registry,
+      final long localInstanceId) {
+>>>>>>> b57f3120 (fix: distinguish restarted SWIM members from long-lived ones)
     this.config = config;
+    this.localInstanceId = localInstanceId;
     swimMembershipProtocolMetrics = new SwimMembershipProtocolMetrics(registry);
+<<<<<<< HEAD
+=======
+
+    LOGGER.debug("Starting SwimMembership protocol with instanceId {}", this.localInstanceId);
+
+    swimScheduler =
+        Executors.newSingleThreadScheduledExecutor(
+            namedThreads("atomix-cluster-heartbeat-sender", LOGGER, actorSchedulerName));
+    eventExecutor =
+        Executors.newSingleThreadExecutor(
+            namedThreads("atomix-cluster-events", LOGGER, actorSchedulerName));
+>>>>>>> b57f3120 (fix: distinguish restarted SWIM members from long-lived ones)
   }
 
   /**
@@ -170,7 +222,8 @@ public class SwimMembershipProtocol
               member.host(),
               member.properties(),
               member.version(),
-              System.currentTimeMillis());
+              System.currentTimeMillis(),
+              localInstanceId);
       localProperties.putAll(localMember.properties());
       discoveryService.addListener(discoveryEventListener);
 
@@ -273,9 +326,22 @@ public class SwimMembershipProtocol
       return false;
     }
     // If the term has been increased, update the member and record a gossip event.
+<<<<<<< HEAD
     else if (member.incarnationNumber() > swimMember.getIncarnationNumber()) {
       // If the member's version has changed, remove the old member and add the new member.
       if (!Objects.equals(member.version(), swimMember.version())) {
+=======
+    else if (member.incarnationNumber() > swimMember.getIncarnationNumber()
+        // Although this would not happen, we handle the case where the higher node version has a
+        // lower incarnation number.
+        || member.nodeVersion() > swimMember.nodeVersion()) {
+      // If the member's software version, nodeVersion or instance ID has changed, remove the old
+      // member
+      // and add the new member.
+      if (!Objects.equals(member.version(), swimMember.version())
+          || member.nodeVersion() > swimMember.nodeVersion()
+          || hasRebooted(member, swimMember)) {
+>>>>>>> b57f3120 (fix: distinguish restarted SWIM members from long-lived ones)
         members.remove(member.id());
         randomMembers.remove(swimMember);
         post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_REMOVED, swimMember.copy()));
@@ -345,6 +411,22 @@ public class SwimMembershipProtocol
       return true;
     }
     return false;
+  }
+
+  /**
+   * Whether the update describes a different run of the member we already track. Only meaningful
+   * once the incarnation number has advanced, which is what orders the two runs: a instance ID is
+   * random, so on its own it cannot tell a newer run from gossip about an older one.
+   *
+   * <p>An {@link #UNKNOWN_INSTANCE_ID} on either side means no answer rather than a different run.
+   * A member on a version predating the field always reports it, and so does an update relayed
+   * through such a member, which drops the field when it re-encodes the update. Treating that as a
+   * reboot would evict members repeatedly for the length of a rolling update.
+   */
+  private boolean hasRebooted(final ImmutableMember member, final SwimMember swimMember) {
+    return member.instanceId() != UNKNOWN_INSTANCE_ID
+        && swimMember.instanceId() != UNKNOWN_INSTANCE_ID
+        && member.instanceId() != swimMember.instanceId();
   }
 
   private void triggerReachabilityEventOnDeath(final SwimMember swimMember) {
@@ -901,12 +983,34 @@ public class SwimMembershipProtocol
     }
   }
 
+<<<<<<< HEAD
   /** Immutable member. */
+=======
+  /**
+   * Immutable member.
+   *
+   * <p>This class is serialized with Kryo using {@code CompatibleFieldSerializer} with chunked
+   * encoding, which provides backward and forward compatibility for field changes.
+   *
+   * <h2>Serialization Revisions</h2>
+   *
+   * <ul>
+   *   <li><b>Revision 1:</b> Initial version with fields: id, address, zone, rack, host,
+   *       properties, version, timestamp, state, incarnationNumber
+   *   <li><b>Revision 2:</b> Added {@code nodeVersion} field. Defaults to 0L when deserializing
+   *       messages from older versions.
+   *   <li><b>Revision 3:</b> Added {@code instanceId} field. Defaults to {@link
+   *       #UNKNOWN_INSTANCE_ID} when deserializing messages from older versions.
+   * </ul>
+   */
+>>>>>>> b57f3120 (fix: distinguish restarted SWIM members from long-lived ones)
   static class ImmutableMember extends Member {
     private final Version version;
     private final long timestamp;
     private final State state;
     private final long incarnationNumber;
+    // revision 3:
+    private final long instanceId;
 
     ImmutableMember(
         final MemberId id,
@@ -918,12 +1022,19 @@ public class SwimMembershipProtocol
         final Version version,
         final long timestamp,
         final State state,
+<<<<<<< HEAD
         final long incarnationNumber) {
       super(id, address, zone, rack, host, properties);
+=======
+        final long incarnationNumber,
+        final long instanceId) {
+      super(id, nodeVersion, address, zone, rack, host, properties);
+>>>>>>> b57f3120 (fix: distinguish restarted SWIM members from long-lived ones)
       this.version = version;
       this.timestamp = timestamp;
       this.state = state;
       this.incarnationNumber = incarnationNumber;
+      this.instanceId = instanceId;
     }
 
     @Override
@@ -935,8 +1046,16 @@ public class SwimMembershipProtocol
           .add("version", version())
           .add("timestamp", timestamp())
           .add("state", state())
+<<<<<<< HEAD
           .add("incarnationNumber", incarnationNumber())
           .toString();
+=======
+          .add("incarnationNumber", incarnationNumber());
+      if (instanceId != UNKNOWN_INSTANCE_ID) {
+        helper.add("instanceId", instanceId);
+      }
+      return helper.toString();
+>>>>>>> b57f3120 (fix: distinguish restarted SWIM members from long-lived ones)
     }
 
     @Override
@@ -966,20 +1085,54 @@ public class SwimMembershipProtocol
     long incarnationNumber() {
       return incarnationNumber;
     }
+
+    /**
+     * Returns the ID of the run of the member this update describes, or {@link
+     * #UNKNOWN_INSTANCE_ID} if it does not report one.
+     *
+     * @return the member's instance ID
+     */
+    long instanceId() {
+      return instanceId;
+    }
   }
 
+<<<<<<< HEAD
   /** Swim member. */
+=======
+  /**
+   * Swim member.
+   *
+   * <p>This class is serialized with Kryo using {@link
+   * com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer} with chunked encoding, which
+   * provides backward and forward compatibility for field changes.
+   *
+   * <h2>Serialization Revisions</h2>
+   *
+   * <ul>
+   *   <li><b>Revision 1:</b> Initial version with fields: id, address, zone, rack, host,
+   *       properties, version, timestamp, state, incarnationNumber, updated
+   *   <li><b>Revision 2:</b> Added {@code nodeVersion} field. Defaults to 0L when deserializing
+   *       messages from older versions.
+   *   <li><b>Revision 3:</b> Added {@code instanceId} field. Defaults to {@link
+   *       #UNKNOWN_INSTANCE_ID} when deserializing messages from older versions.
+   * </ul>
+   */
+>>>>>>> b57f3120 (fix: distinguish restarted SWIM members from long-lived ones)
   static class SwimMember extends Member {
     private final Version version;
     private final long timestamp;
     private volatile State state;
     private volatile long incarnationNumber;
     private volatile long updated;
+    // revision 3:
+    private final long instanceId;
 
     SwimMember(final MemberId id, final Address address) {
       super(id, address);
       version = null;
       timestamp = 0;
+      instanceId = UNKNOWN_INSTANCE_ID;
     }
 
     SwimMember(
@@ -990,10 +1143,17 @@ public class SwimMembershipProtocol
         final String host,
         final Properties properties,
         final Version version,
+<<<<<<< HEAD
         final long timestamp) {
       super(id, address, zone, rack, host, properties);
+=======
+        final long timestamp,
+        final long instanceId) {
+      super(id, nodeVersion, address, zone, rack, host, properties);
+>>>>>>> b57f3120 (fix: distinguish restarted SWIM members from long-lived ones)
       this.version = version;
       this.timestamp = timestamp;
+      this.instanceId = instanceId;
       incarnationNumber = System.currentTimeMillis();
     }
 
@@ -1009,6 +1169,7 @@ public class SwimMembershipProtocol
       timestamp = member.timestamp;
       state = member.state;
       incarnationNumber = member.incarnationNumber;
+      instanceId = member.instanceId;
     }
 
     /**
@@ -1117,7 +1278,17 @@ public class SwimMembershipProtocol
           version(),
           timestamp(),
           state,
-          incarnationNumber);
+          incarnationNumber,
+          instanceId);
+    }
+
+    /**
+     * Returns the ID of the run of this member, or {@link #UNKNOWN_INSTANCE_ID} if it is not known.
+     *
+     * @return this member's instance ID
+     */
+    long instanceId() {
+      return instanceId;
     }
   }
 
