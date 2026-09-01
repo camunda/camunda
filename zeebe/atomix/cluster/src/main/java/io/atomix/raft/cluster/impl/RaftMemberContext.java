@@ -223,7 +223,15 @@ public final class RaftMemberContext {
 
   /** Completes an append request to the member. */
   public void completeAppend() {
-    inFlightAppendCount--;
+    // Floor at zero: resetState() zeroes the in-flight count - necessarily so, because it must
+    // recover slots stranded by a previous leader's closed appender, whose response callbacks
+    // never run - but responses to appends started before a reset within the same leadership
+    // still arrive here. For example, a member's type change (such as a promotion) resets its
+    // state while heartbeats to it are in flight. Without the floor, such a response makes the
+    // count negative, and canAppend()/canHeartbeat() - both testing for == 0 - may never hold
+    // again, permanently silencing the leader towards this member. With the floor, the worst
+    // case is a transiently over-permissive count, i.e. one extra concurrent append.
+    inFlightAppendCount = Math.max(0, inFlightAppendCount - 1);
   }
 
   /**
