@@ -50,10 +50,10 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
       committedHistoryItemIdsColumnFamily;
 
   // Metrics-accumulated ids: (agentInstanceKey, historyItemId) -> nil
-  // Composite key supports prefix search by agentInstanceKey alone. Kept separate from
-  // committedHistoryItemIdsColumnFamily: that store's value is echoed back as the item's
-  // agentHistoryKey, so writing an entry there at creation time would make a created-then-
-  // discarded item look committed on resend.
+  // Supports prefix search by agentInstanceKey alone, for the one-shot delete on instance
+  // completion. Kept separate from committedHistoryItemIdsColumnFamily: that store's value is
+  // echoed back as the item's agentHistoryKey, so writing an entry there at creation time would
+  // make a created-then-discarded item look committed on resend.
   private final DbLong metricsAccumulatedAgentInstanceKey = new DbLong();
   private final DbString metricsAccumulatedHistoryItemId = new DbString();
   private final DbCompositeKey<DbLong, DbString> metricsAccumulatedKey =
@@ -195,5 +195,22 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
     metricsAccumulatedAgentInstanceKey.wrapLong(agentInstanceKey);
     metricsAccumulatedHistoryItemId.wrapString(historyItemId);
     metricsAccumulatedIdsColumnFamily.upsert(metricsAccumulatedKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void deleteMetricsAccumulatedIds(final long agentInstanceKey) {
+    metricsAccumulatedAgentInstanceKey.wrapLong(agentInstanceKey);
+    // Collect the ids in one pass, then delete in a second: mutating the column family while its
+    // own iterator is still open is unsafe (RocksDB explicitly warns against it), so this must not
+    // call deleteExisting from inside the whileEqualPrefix visitor below.
+    final var historyItemIds = new ArrayList<String>();
+    final Consumer<DbCompositeKey<DbLong, DbString>> collectHistoryItemId =
+        key -> historyItemIds.add(key.second().toString());
+    metricsAccumulatedIdsColumnFamily.whileEqualPrefix(
+        metricsAccumulatedAgentInstanceKey, collectHistoryItemId);
+    for (final var historyItemId : historyItemIds) {
+      metricsAccumulatedHistoryItemId.wrapString(historyItemId);
+      metricsAccumulatedIdsColumnFamily.deleteExisting(metricsAccumulatedKey);
+    }
   }
 }
