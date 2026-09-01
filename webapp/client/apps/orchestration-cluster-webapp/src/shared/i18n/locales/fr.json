@@ -501,6 +501,8 @@
 					"tenant": "Locataire",
 					"startDate": "Date de début",
 					"endDate": "Date de fin",
+					"operationState": "État de l'opération",
+					"operationStateLoading": "Chargement...",
 					"parentProcessInstanceKey": "Clé d'instance de processus parente",
 					"viewInstance": "Afficher l'instance {{key}}",
 					"viewParentInstance": "Afficher l'instance parente {{key}}",

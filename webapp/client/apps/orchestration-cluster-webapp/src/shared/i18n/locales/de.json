@@ -498,6 +498,8 @@
 					"tenant": "Mandant",
 					"startDate": "Startdatum",
 					"endDate": "Enddatum",
+					"operationState": "Vorgangsstatus",
+					"operationStateLoading": "Wird geladen...",
 					"parentProcessInstanceKey": "Übergeordneter Prozessinstanz-Schlüssel",
 					"viewInstance": "Instanz {{key}} anzeigen",
 					"viewParentInstance": "Übergeordnete Instanz {{key}} anzeigen",
