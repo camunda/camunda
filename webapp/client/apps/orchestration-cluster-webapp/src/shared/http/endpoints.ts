@@ -18,6 +18,7 @@ import {
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	type QueryProcessInstancesRequestBody,
 	type QueryBatchOperationsRequestBody,
+	type QueryBatchOperationItemsRequestBody,
 	type QueryDecisionDefinitionsRequestBody,
 	type QueryDecisionInstancesRequestBody,
 	type CreateDecisionInstancesDeletionBatchOperationRequestBody,
@@ -226,6 +227,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.queryBatchOperations.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryBatchOperations.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryBatchOperationItems: (body: QueryBatchOperationItemsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryBatchOperationItems.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryBatchOperationItems.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),

@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
-import type {ProcessInstance, ProcessInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
-import {DataTableSkeleton} from '@carbon/react';
+import {DataTableSkeleton, InlineLoading} from '@carbon/react';
+import type {BatchOperationItem, ProcessInstance, ProcessInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {StateIcon} from '#/operate/shared/StateIcon/StateIcon';
@@ -18,6 +19,7 @@ import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {useProcessInstancesSearch} from './useProcessInstancesSearch';
+import {useOperationItemsForInstances} from './batchOperationItems.queries';
 import type {ProcessesSearch} from './processesFilter';
 import {InstancesTableContainer, ProcessName, InstanceLink} from './styled';
 
@@ -49,6 +51,20 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		fetchNextPage,
 	} = useProcessInstancesSearch(search);
 
+	// The operation-state column only exists while the list is filtered by a batch operation —
+	// outside that filter there is no operation for a row to report on. Truthiness, as in legacy,
+	// so an empty key from a hand-edited URL behaves like no filter at all.
+	const batchOperationKey = search.batchOperationKey || undefined;
+	const isOperationStateColumnVisible = batchOperationKey !== undefined;
+	const processInstanceKeys = processInstances.map((instance) => instance.processInstanceKey);
+	const {data: operationItemsData, isLoading: isLoadingOperationItems} = useOperationItemsForInstances(
+		batchOperationKey,
+		processInstanceKeys,
+	);
+	const operationItemsByInstance = useMemo(
+		() => new Map<string, BatchOperationItem>(operationItemsData?.items.map((item) => [item.processInstanceKey, item])),
+		[operationItemsData],
+	);
 	const isTenantColumnVisible =
 		getClientConfig().deployment.isMultiTenancyEnabled && !isSpecificTenant(search.tenantId);
 	const hasVersionTags = processInstances.some(({processDefinitionVersionTag}) => Boolean(processDefinitionVersionTag));
@@ -69,6 +85,20 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				</ProcessName>
 			),
 		},
+		...(isOperationStateColumnVisible
+			? [
+					{
+						key: 'instanceOperationState',
+						label: t('operate.processes.instancesTable.operationState'),
+						render: (row: ProcessInstance) =>
+							isLoadingOperationItems ? (
+								<InlineLoading description={t('operate.processes.instancesTable.operationStateLoading')} />
+							) : (
+								(operationItemsByInstance.get(row.processInstanceKey)?.state ?? '--')
+							),
+					},
+				]
+			: []),
 		{
 			key: 'processInstanceKey',
 			sortKey: 'processInstanceKey',

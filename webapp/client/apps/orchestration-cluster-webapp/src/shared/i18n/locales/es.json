@@ -501,6 +501,8 @@
 					"tenant": "Inquilino",
 					"startDate": "Fecha de inicio",
 					"endDate": "Fecha de fin",
+					"operationState": "Estado de la operación",
+					"operationStateLoading": "Cargando...",
 					"parentProcessInstanceKey": "Clave de instancia de proceso principal",
 					"viewInstance": "Ver instancia {{key}}",
 					"viewParentInstance": "Ver instancia principal {{key}}",
