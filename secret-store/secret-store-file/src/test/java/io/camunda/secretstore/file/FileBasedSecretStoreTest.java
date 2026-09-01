@@ -97,6 +97,15 @@ class FileBasedSecretStoreTest {
   }
 
   @Test
+  void shouldResolveOneByOne() {
+    // given a resolve() call reads one file per name
+    final var store = new FileBasedSecretStore(secretsDir);
+
+    // then
+    assertThat(store.resolvesOneByOne()).isTrue();
+  }
+
+  @Test
   void shouldListAllSecrets() throws IOException {
     // given
     writeSecret("a", "1");

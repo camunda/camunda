@@ -66,6 +66,11 @@ public final class FileBasedSecretStore implements SecretStore {
   }
 
   @Override
+  public boolean resolvesOneByOne() {
+    return true;
+  }
+
+  @Override
   public List<String> list() {
     requireDirectory();
     final var refs = new ArrayList<String>();
