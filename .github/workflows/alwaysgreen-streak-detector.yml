@@ -47,7 +47,7 @@ env:
   STREAK_MARKER_ACTIVE: 'AlwaysGreen streak (active)'
   STREAK_MARKER_RESOLVED: 'AlwaysGreen streak (resolved)'
   # Space-separated list of protected base refs to check every tick.
-  MONITORED_BRANCHES: 'main stable/8.7 stable/8.8 stable/8.9'
+  MONITORED_BRANCHES: 'main stable/8.7 stable/8.8 stable/8.9 stable/8.10'
 
 defaults:
   run:
