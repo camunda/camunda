@@ -75,9 +75,9 @@ public class SwimMembershipProtocol
   public static final Type TYPE = new Type();
 
   /**
-   * Reported by a member which does not know its own instance ID: either it runs a version
-   * predating the field, or it is a stub built from discovery data before the real member was ever
-   * probed.
+   * Reported by a member which does not know its own instance ID: this is usually sent by a node
+   * with a version before this field was introduced. Note that because of gossip, information about
+   * an updated node might contain this value if it was sent by a node with an older version.
    */
   static final long UNKNOWN_INSTANCE_ID = 0L;
 
@@ -283,12 +283,14 @@ public class SwimMembershipProtocol
   }
 
   /**
-   * Updates the state for the given member.
+   * Updates the state for the given member. Package private so that tests can reproduce a sequence
+   * which depends on the exact order updates arrive in, which gossip does not let them control.
    *
    * @param member the member for which to update the state
    * @return whether the state for the member was updated
    */
-  private boolean updateState(final ImmutableMember member) {
+  @VisibleForTesting
+  boolean updateState(final ImmutableMember member) {
     // If the member matches the local member, ignore the update.
     if (member.id().equals(localMember.id())) {
       return false;
@@ -315,17 +317,24 @@ public class SwimMembershipProtocol
             member);
       }
       return false;
+    } else if (member.incarnationNumber() >= swimMember.getIncarnationNumber()
+        && hasRebooted(member, swimMember)) {
+      replaceMember(member, swimMember);
+      return false;
     }
     // If the term has been increased, update the member and record a gossip event.
     else if (member.incarnationNumber() > swimMember.getIncarnationNumber()) {
-      // If the member's software version or instance ID has changed, remove the old member and add
-      // the new member.
-      if (!Objects.equals(member.version(), swimMember.version())
-          || hasRebooted(member, swimMember)) {
+      // If the member's software version has changed, remove the old member and add the new member.
+      if (!Objects.equals(member.version(), swimMember.version())) {
         replaceMember(member, swimMember);
       } else {
-        // Update the term for the local member.
+        // Update the incarnation number for the member.
         swimMember.setIncarnationNumber(member.incarnationNumber());
+        // The instance ID might not be set even by the original node when the cluster is upgrading:
+        // older nodes gossip that information without the instanceId. Take it from the update
+        // rather than keeping the previous one, so that we never gossip an ID we were not told for
+        // this incarnation number.
+        swimMember.setInstanceId(member.instanceId());
 
         // If the state has been changed to ALIVE, trigger a REACHABILITY_CHANGED event and then
         // update metadata.
@@ -355,30 +364,45 @@ public class SwimMembershipProtocol
         return true;
       }
     }
-    // If the term remained the same but the state has progressed, update the state and trigger
-    // events.
-    else if (member.incarnationNumber() == swimMember.getIncarnationNumber()
-        && member.state().ordinal() > swimMember.getState().ordinal()) {
-      swimMember.setState(member.state());
+    // If the term remained the same, the update can still describe a different run, or progress the
+    // state.
+    else if (member.incarnationNumber() == swimMember.getIncarnationNumber()) {
+      var updated = false;
 
-      // If the updated state is SUSPECT, post a REACHABILITY_CHANGED event and record an update.
-      if (member.state() == State.SUSPECT) {
-        LOGGER.info("{} - Member unreachable {}", localMember.id(), swimMember);
-        post(
-            new GroupMembershipEvent(
-                GroupMembershipEvent.Type.REACHABILITY_CHANGED, swimMember.copy()));
-        if (config.isNotifySuspect()) {
-          gossip(swimMember, Lists.newArrayList(swimMember.copy()));
+      // The update can carry an instance ID we do not hold for this incarnation number, because a
+      // previous update for it was relayed by an old version and lost the field. Adopt it, so that
+      // we and the peers we gossip to can tell a later restart apart from this run.
+      if (member.instanceId() != UNKNOWN_INSTANCE_ID
+          && member.instanceId() != swimMember.instanceId()) {
+        swimMember.setInstanceId(member.instanceId());
+        recordUpdate(swimMember.copy());
+        updated = true;
+      }
+
+      if (member.state().ordinal() > swimMember.getState().ordinal()) {
+        swimMember.setState(member.state());
+
+        // If the updated state is SUSPECT, post a REACHABILITY_CHANGED event and record an update.
+        if (member.state() == State.SUSPECT) {
+          LOGGER.info("{} - Member unreachable {}", localMember.id(), swimMember);
+          post(
+              new GroupMembershipEvent(
+                  GroupMembershipEvent.Type.REACHABILITY_CHANGED, swimMember.copy()));
+          if (config.isNotifySuspect()) {
+            gossip(swimMember, Lists.newArrayList(swimMember.copy()));
+          }
         }
+        // If the updated state is DEAD, post a REACHABILITY_CHANGED event if necessary, then post a
+        // MEMBER_REMOVED
+        // event and record an update.
+        else if (member.state() == State.DEAD) {
+          tryRemoveMember(swimMember);
+        }
+        recordUpdate(swimMember.copy());
+        updated = true;
       }
-      // If the updated state is DEAD, post a REACHABILITY_CHANGED event if necessary, then post a
-      // MEMBER_REMOVED
-      // event and record an update.
-      else if (member.state() == State.DEAD) {
-        tryRemoveMember(swimMember);
-      }
-      recordUpdate(swimMember.copy());
-      return true;
+
+      return updated;
     }
     return false;
   }
@@ -401,9 +425,9 @@ public class SwimMembershipProtocol
   }
 
   /**
-   * Whether the update describes a different run of the member we already track. Only meaningful
-   * once the incarnation number has advanced, which is what orders the two runs: a instance ID is
-   * random, so on its own it cannot tell a newer run from gossip about an older one.
+   * Whether the update describes a different run of the member we already track. Judged against the
+   * last instance ID we ever saw for the member, not the one from the most recent update: that
+   * update may have lost the field in relaying, and the comparison has to survive the gap.
    *
    * <p>An {@link #UNKNOWN_INSTANCE_ID} on either side means no answer rather than a different run.
    * A member on a version predating the field always reports it, and so does an update relayed
@@ -412,8 +436,8 @@ public class SwimMembershipProtocol
    */
   private boolean hasRebooted(final ImmutableMember member, final SwimMember swimMember) {
     return member.instanceId() != UNKNOWN_INSTANCE_ID
-        && swimMember.instanceId() != UNKNOWN_INSTANCE_ID
-        && member.instanceId() != swimMember.instanceId();
+        && swimMember.lastKnownInstanceId() != UNKNOWN_INSTANCE_ID
+        && member.instanceId() != swimMember.lastKnownInstanceId();
   }
 
   private void triggerReachabilityEventOnDeath(final SwimMember swimMember) {
@@ -1093,14 +1117,18 @@ public class SwimMembershipProtocol
     private volatile State state;
     private volatile long incarnationNumber;
     private volatile long updated;
-    // revision 3:
-    private final long instanceId;
+    // revision 3: the instance ID the most recent accepted update reported, which is what
+    // copy() passes on, and the last one this member was ever seen with, which is not. They differ
+    // only while the most recent update carried no ID at all.
+    private volatile long instanceId;
+    private volatile long lastKnownInstanceId;
 
     SwimMember(final MemberId id, final Address address) {
       super(id, address);
       version = null;
       timestamp = 0;
       instanceId = UNKNOWN_INSTANCE_ID;
+      lastKnownInstanceId = UNKNOWN_INSTANCE_ID;
     }
 
     SwimMember(
@@ -1117,6 +1145,7 @@ public class SwimMembershipProtocol
       this.version = version;
       this.timestamp = timestamp;
       this.instanceId = instanceId;
+      lastKnownInstanceId = instanceId;
       incarnationNumber = System.currentTimeMillis();
     }
 
@@ -1133,6 +1162,7 @@ public class SwimMembershipProtocol
       state = member.state;
       incarnationNumber = member.incarnationNumber;
       instanceId = member.instanceId;
+      lastKnownInstanceId = member.instanceId;
     }
 
     /**
@@ -1246,12 +1276,37 @@ public class SwimMembershipProtocol
     }
 
     /**
-     * Returns the ID of the run of this member, or {@link #UNKNOWN_INSTANCE_ID} if it is not known.
+     * Returns the instance ID the most recent accepted update reported for this member, or {@link
+     * #UNKNOWN_INSTANCE_ID} if that update carried none.
      *
      * @return this member's instance ID
      */
     long instanceId() {
       return instanceId;
+    }
+
+    /**
+     * Records the instance ID an update reported for this member. {@link #UNKNOWN_INSTANCE_ID}
+     * means the update carried none, which leaves {@link #lastKnownInstanceId} untouched.
+     *
+     * @param instanceId the instance ID the member was last reported with
+     */
+    void setInstanceId(final long instanceId) {
+      this.instanceId = instanceId;
+      if (instanceId != UNKNOWN_INSTANCE_ID) {
+        lastKnownInstanceId = instanceId;
+      }
+    }
+
+    /**
+     * Returns the last instance ID this member was ever seen with, or {@link #UNKNOWN_INSTANCE_ID}
+     * if it was never seen with one. Kept out of {@link #copy()} so that we only ever pass on an ID
+     * we were actually told about.
+     *
+     * @return the last known instance ID of this member
+     */
+    long lastKnownInstanceId() {
+      return lastKnownInstanceId;
     }
   }
 
