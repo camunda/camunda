@@ -35,6 +35,7 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -86,6 +87,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public static final long UNSET_POSITION = -1L;
   public static final Duration HEALTH_CHECK_TICK_DURATION = Duration.ofSeconds(5);
 
+  /**
+   * How long processing may sit at the pending-side-effects limit before it counts as a stall
+   * rather than a normal, brief wait for the next commit. Well above a commit round trip under
+   * healthy operation (milliseconds), so ordinary operation never crosses it.
+   */
+  public static final Duration PENDING_SIDE_EFFECTS_STALL_THRESHOLD = Duration.ofSeconds(30);
+
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
@@ -95,6 +103,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final StreamProcessorMetrics metrics;
   private final StageableScheduledCommandCache scheduledCommandCache;
+  // Reused across ticks so the warning repeats at most once per
+  // PENDING_SIDE_EFFECTS_STALL_THRESHOLD
+  // for as long as the stall lasts, instead of once per health-check tick.
+  private final Logger pendingSideEffectsStallLogger =
+      new ThrottledLogger(LOG, PENDING_SIDE_EFFECTS_STALL_THRESHOLD);
 
   // log stream
   private final LogStream logStream;
@@ -305,6 +318,23 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void healthCheckTick() {
     lastTickTime = ActorClock.currentTimeMillis();
     actor.schedule(HEALTH_CHECK_TICK_DURATION, this::healthCheckTick);
+    warnIfStalledOnPendingSideEffects();
+  }
+
+  private void warnIfStalledOnPendingSideEffects() {
+    if (processingStateMachine == null) {
+      return;
+    }
+
+    final var stalledFor = processingStateMachine.getPendingSideEffectsBlockedDuration();
+    if (stalledFor.compareTo(PENDING_SIDE_EFFECTS_STALL_THRESHOLD) >= 0) {
+      pendingSideEffectsStallLogger.warn(
+          "Processing on partition {} has been stalled for {} waiting for pending side effects to "
+              + "commit. This can mean replication is lagging, or that maxPendingSideEffects is too "
+              + "low for this partition's commit latency.",
+          partitionId,
+          stalledFor);
+    }
   }
 
   private void startProcessing(final LastProcessingPositions lastProcessingPositions) {
@@ -502,6 +532,20 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     if (processingStateMachine != null && !processingStateMachine.isMakingProgress()) {
       return HealthReport.unhealthy(this)
           .withMessage("Processing not making progress. It is in an error handling loop.", instant);
+    }
+
+    // A processor stalled here keeps ticking normally: it is not blocked in a runUntilDone loop,
+    // it is simply choosing not to read further records, so the check below would not catch it.
+    if (processingStateMachine != null) {
+      final var stalledFor = processingStateMachine.getPendingSideEffectsBlockedDuration();
+      if (stalledFor.compareTo(PENDING_SIDE_EFFECTS_STALL_THRESHOLD) >= 0) {
+        return HealthReport.unhealthy(this)
+            .withMessage(
+                "Processing has been stalled for "
+                    + stalledFor
+                    + " waiting for pending side effects to commit",
+                instant);
+      }
     }
 
     // If healthCheckTick was not invoked it indicates the actor is blocked in a runUntilDone loop.
