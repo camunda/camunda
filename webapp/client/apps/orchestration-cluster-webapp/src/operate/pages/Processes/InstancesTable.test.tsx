@@ -496,7 +496,7 @@ describe('<InstancesTable />', () => {
 		await expect.element(screen.getByRole('button', {name: /cancel/i})).not.toBeInTheDocument();
 	});
 
-	it('should retry incidents and refresh the list once the batch operation settles', async ({worker}) => {
+	it('should send the incident retry command for the clicked row', async ({worker}) => {
 		let resolveRequests = 0;
 		worker.use(
 			mockQueryProcessInstancesEndpoint({
