@@ -451,6 +451,25 @@ describe('<InstancesTable />', () => {
 		await expect.element(screen.getByRole('button', {name: /delete/i})).not.toBeInTheDocument();
 	});
 
+	it('should offer cancel for a suspended instance', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'SUSPENDED'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+
+		await expect.element(screen.getByRole('button', {name: /cancel/i})).toBeVisible();
+	});
+
 	it('should offer only delete for a finished instance', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({
