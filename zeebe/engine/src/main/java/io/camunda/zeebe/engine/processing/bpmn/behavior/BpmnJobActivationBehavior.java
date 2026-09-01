@@ -316,6 +316,12 @@ public class BpmnJobActivationBehavior {
    * create or reactivate the job - a warmup failure must not fail that unrelated command. The next
    * poll or push still runs the real check and surfaces the same failure through its own, correct
    * path.
+   *
+   * <p>Wakes the scheduler too, same as {@code JobBatchActivateProcessor#requestSecretResolution}
+   * and {@link #requestResolutionAndPark}: this is exactly the kind of activation {@link
+   * SecretResolutionScheduler#stayAwake()} exists for, and this is often the earliest such
+   * activation for a reference - deduped requests from a later poll or push never call it, so
+   * skipping it here would leave the reference's only wake-up call unmade.
    */
   private void requestWarmResolution(final long jobKey, final JobRecord jobRecord) {
     final SecretCheckResult secrets;
@@ -334,6 +340,7 @@ public class BpmnJobActivationBehavior {
       return;
     }
     final Set<SecretReference> requested = new HashSet<>();
+    boolean anyRequested = false;
     for (final Secret secret : secrets.nonCachedSecrets()) {
       final SecretReference reference = secret.reference();
       if (!requested.add(reference)
@@ -346,10 +353,15 @@ public class BpmnJobActivationBehavior {
               .setSecretReference(reference.name());
       if (!stateWriter.canWriteEventOfLength(
           event.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
-        return;
+        break;
       }
       stateWriter.appendFollowUpEvent(
           keyGenerator.nextKey(), SecretReferenceIntent.RESOLUTION_REQUESTED, event);
+      anyRequested = true;
+    }
+    if (anyRequested) {
+      // once per activation rather than per reference, same as the other two request sites
+      secretResolutionScheduler.stayAwake();
     }
   }
 
