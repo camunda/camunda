@@ -23,6 +23,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * <ul>
  *   <li>{@code camunda.secrets.cache.ttl}
  *   <li>{@code camunda.secrets.cache.max-size}
+ *   <li>{@code camunda.secrets.max-concurrency}
  *   <li>{@code camunda.secrets.stores.file.<id>.path}
  *   <li>{@code camunda.secrets.stores.aws.<id>.region}
  *   <li>{@code camunda.secrets.stores.aws.<id>.path-prefix}
@@ -45,8 +46,25 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 @NullMarked
 public class Secrets {
 
+  /**
+   * Default for {@link #maxConcurrency}, restated here as a literal for the same reason {@link
+   * Cache}'s defaults are: this module deliberately does not depend on {@code secret-store-api}.
+   */
+  private static final int DEFAULT_MAX_CONCURRENCY = 8;
+
   @NestedConfigurationProperty private Stores stores = new Stores();
   @NestedConfigurationProperty private Cache cache = new Cache();
+
+  /**
+   * How many names a store that pays one backend call per name ({@code resolvesOneByOne()}) may
+   * resolve concurrently, on a thread pool shared by every store the registry wraps. {@code 1}
+   * resolves exactly as before this setting existed: one call at a time, on the calling thread. A
+   * store that already covers several names per call (a batched or container-style store, or one
+   * backed by local disk) is unaffected either way.
+   *
+   * <p>Defaults to {@code 8}.
+   */
+  private Integer maxConcurrency = DEFAULT_MAX_CONCURRENCY;
 
   public Stores getStores() {
     return stores;
@@ -67,6 +85,26 @@ public class Secrets {
 
   public void setCache(final Cache cache) {
     this.cache = cache;
+  }
+
+  /**
+   * @throws IllegalArgumentException if max-concurrency is below 1
+   */
+  public int getMaxConcurrency() {
+    if (maxConcurrency < 1) {
+      throw new IllegalArgumentException(
+          "camunda.secrets.max-concurrency must be at least 1, but was " + maxConcurrency);
+    }
+    return maxConcurrency;
+  }
+
+  /**
+   * @param maxConcurrency the configured value, or {@code null}, bound to the same outcome {@code
+   *     ttl}/{@code max-size} already have, rather than the two disagreeing on what an empty value
+   *     means (routine for an env-var-driven deployment)
+   */
+  public void setMaxConcurrency(final @Nullable Integer maxConcurrency) {
+    this.maxConcurrency = maxConcurrency == null ? DEFAULT_MAX_CONCURRENCY : maxConcurrency;
   }
 
   public static class Stores {
