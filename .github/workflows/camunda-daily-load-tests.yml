@@ -2,8 +2,9 @@
 #              and REST (both against Elasticsearch), and no-secondary-storage (exporters
 #              disabled). After a 15-minute warmup, profiles the next 30 minutes of each variant
 #              via async-profiler. After a 3-hour soak: snapshots metrics as a GitHub artifact,
-#              posts a side-by-side summary table (with flamegraph links) to Slack, then
-#              immediately deletes the namespaces to reduce cost.
+#              posts a side-by-side summary table (with flamegraph links) to Slack (the scheduled
+#              run always posts; a manual run only when opted in via the post-to-slack input),
+#              then immediately deletes the namespaces to reduce cost.
 #              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
 #              Each variant's full lifecycle (setup, warmup, profile, soak, collect-metrics,
 #              cleanup) is delegated to the reusable stress-load-test.yml workflow via a
@@ -23,6 +24,11 @@ on:
         description: 'Docker image tag, that should be reused for the load tests. Allows to skip the docker image build step, can be used for recreating previous tests.'
         type: string
         default: ""
+        required: false
+      post-to-slack:
+        description: 'Post the results to the reliability-testing Slack channel (useful for an end-to-end test run). Always posts on the scheduled run regardless of this input.'
+        type: boolean
+        default: false
         required: false
   schedule:
     # Runs at 2 am Monday-Friday https://crontab.guru/#0_2_*_*_1-5
@@ -199,10 +205,13 @@ jobs:
     name: Notify Slack with results
     runs-on: ubuntu-latest
     needs: [ benchmark-data, aggregate-metrics ]
-    # Only gated on aggregate-metrics succeeding here — whether there's actually data to post
-    # is now checked inside the script after downloading the artifact (see below), since we no
-    # longer have a safe job-output to gate on (see the comment in aggregate-metrics above).
-    if: always() && needs.aggregate-metrics.result == 'success'
+    # Data-presence is checked inside the script after the manifest download, not here: the
+    # job output that used to gate it is gone (see the comment in aggregate-metrics above).
+    # Manual runs post only when explicitly asked; the scheduled run always posts.
+    if: >
+      always() &&
+      needs.aggregate-metrics.result == 'success' &&
+      (github.event_name != 'workflow_dispatch' || inputs.post-to-slack == true)
     timeout-minutes: 5
     permissions:
       actions: read
