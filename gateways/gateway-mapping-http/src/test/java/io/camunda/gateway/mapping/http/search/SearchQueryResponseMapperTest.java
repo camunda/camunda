@@ -1476,7 +1476,11 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.USER,
               List.of(new ContentItem(ContentType.TEXT, "Hello", null, null)),
               List.of(),
+<<<<<<< HEAD
               new Metrics(10L, 20L, 30L),
+=======
+              new Metrics(10L, 20L, 30L, 40L, 50L, 60L),
+>>>>>>> 07410f62 (test: cover reasoning and cache token metrics on agent history item search results)
               null,
               null,
               null,
@@ -1500,7 +1504,10 @@ class SearchQueryResponseMapperTest {
       assertThat(result.getCommitStatus().getValue()).isEqualTo("COMMITTED");
       assertThat(result.getMetrics().getInputTokens()).isEqualTo(10);
       assertThat(result.getMetrics().getOutputTokens()).isEqualTo(20);
-      assertThat(result.getMetrics().getDurationMs()).isEqualTo(30);
+      assertThat(result.getMetrics().getReasoningTokenCount()).isEqualTo(30);
+      assertThat(result.getMetrics().getCacheCreationTokenCount()).isEqualTo(40);
+      assertThat(result.getMetrics().getCacheReadTokenCount()).isEqualTo(50);
+      assertThat(result.getMetrics().getDurationMs()).isEqualTo(60);
       assertThat(result.getContent()).hasSize(1);
       assertThat(result.getContent().get(0).getContentType()).isEqualTo("TEXT");
     }
@@ -1728,6 +1735,9 @@ class SearchQueryResponseMapperTest {
       assertThat(result.getMetrics()).isNotNull();
       assertThat(result.getMetrics().getInputTokens()).isEqualTo(100L);
       assertThat(result.getMetrics().getOutputTokens()).isEqualTo(200L);
+      assertThat(result.getMetrics().getReasoningTokenCount()).isNull();
+      assertThat(result.getMetrics().getCacheCreationTokenCount()).isNull();
+      assertThat(result.getMetrics().getCacheReadTokenCount()).isNull();
       assertThat(result.getMetrics().getDurationMs()).isNull();
     }
 
