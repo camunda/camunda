@@ -2271,14 +2271,13 @@ public final class SearchQueryResponseMapper {
     if (m == null) {
       metrics = null;
     } else {
-      // TODO: reasoning/cache token counts are not yet exposed here; wired in a follow-up change.
       metrics =
           AgentInstanceHistoryItemMetrics.Builder.create()
               .inputTokens(m.inputTokens())
               .outputTokens(m.outputTokens())
-              .reasoningTokenCount(null)
-              .cacheCreationTokenCount(null)
-              .cacheReadTokenCount(null)
+              .reasoningTokenCount(m.reasoningTokenCount())
+              .cacheCreationTokenCount(m.cacheCreationTokenCount())
+              .cacheReadTokenCount(m.cacheReadTokenCount())
               .durationMs(m.durationMs())
               .build();
     }
