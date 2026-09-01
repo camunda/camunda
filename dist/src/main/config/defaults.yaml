@@ -1347,6 +1347,11 @@ camunda: # Type: io.camunda.configuration.Camunda
         # declaration order) or COMBINED (legacy combined-FEEL-context behavior restoring the
         # pre-#59087 single-expression evaluation).
         output-mode: COMBINED # Type: OutputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTMODE
+        # When set, also evaluates output mappings with this second resolver and logs a warning
+        # if the results differ from the primary resolver. Intended for migration diagnostics
+        # only: each completion evaluates mappings with both resolvers and compares the
+        # result documents, which adds overhead for large mapping sets.
+        output-comparison-mode: ~ # Type: OutputMappingMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTCOMPARISONMODE
 
     flow-control: # Type: io.camunda.configuration.FlowControl
       request: # Type: io.camunda.configuration.Limit

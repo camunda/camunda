@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
+import io.camunda.zeebe.engine.EngineConfiguration.OutputMappingMode;
 import org.jspecify.annotations.Nullable;
 
 public final class EngineCfg implements ConfigurationEntry {
@@ -30,6 +31,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private @Nullable InputMappingMode inputComparisonMode = null;
   private EngineConfiguration.OutputMappingMode outputMappingMode =
       EngineConfiguration.OutputMappingMode.COMBINED;
+  private @Nullable OutputMappingMode outputComparisonMode = null;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
   private ExpressionCfg expression = new ExpressionCfg();
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
@@ -150,6 +152,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.outputMappingMode = outputMappingMode;
   }
 
+  public @Nullable OutputMappingMode getOutputComparisonMode() {
+    return outputComparisonMode;
+  }
+
+  public void setOutputComparisonMode(final @Nullable OutputMappingMode outputComparisonMode) {
+    this.outputComparisonMode = outputComparisonMode;
+  }
+
   public GlobalListenersCfg getGlobalListeners() {
     return globalListeners;
   }
@@ -237,6 +247,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + inputComparisonMode
         + ", outputMappingMode="
         + outputMappingMode
+        + ", outputComparisonMode="
+        + outputComparisonMode
         + '}';
   }
 
@@ -301,6 +313,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setFixedStorageOrdinalKey(storageOrdinals.getFixedStorageOrdinalKey())
         .setInputMappingMode(inputMappingMode)
         .setInputComparisonMode(inputComparisonMode)
-        .setOutputMappingMode(outputMappingMode);
+        .setOutputMappingMode(outputMappingMode)
+        .setOutputComparisonMode(outputComparisonMode);
   }
 }

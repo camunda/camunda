@@ -301,6 +301,13 @@ public class BrokerBasedPropertiesOverride {
         .getEngine()
         .setOutputMappingMode(
             toEngineOutputMode(camunda.getProcessing().getEngine().getMappings().getOutputMode()));
+
+    override
+        .getExperimental()
+        .getEngine()
+        .setOutputComparisonMode(
+            toEngineOutputMode(
+                camunda.getProcessing().getEngine().getMappings().getOutputComparisonMode()));
   }
 
   private static InputMappingMode toEngineMode(final @Nullable InputMode mode) {
@@ -310,7 +317,11 @@ public class BrokerBasedPropertiesOverride {
     return mode == InputMode.COMBINED ? InputMappingMode.COMBINED : InputMappingMode.ORDERED;
   }
 
-  private static OutputMappingMode toEngineOutputMode(final OutputMode outputMode) {
+  private static @Nullable OutputMappingMode toEngineOutputMode(
+      final @Nullable OutputMode outputMode) {
+    if (outputMode == null) {
+      return null;
+    }
     return outputMode == OutputMode.COMBINED
         ? OutputMappingMode.COMBINED
         : OutputMappingMode.ORDERED;
