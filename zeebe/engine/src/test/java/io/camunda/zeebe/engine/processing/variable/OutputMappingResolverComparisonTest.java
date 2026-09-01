@@ -66,6 +66,94 @@ class OutputMappingResolverComparisonTest {
   private static final OrderedOutputMappingResolver ORDERED = new OrderedOutputMappingResolver();
   private static final CombinedOutputMappingResolver COMBINED = new CombinedOutputMappingResolver();
 
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  // Placed before @Nested classes to satisfy InnerTypeLast checkstyle rule.
+
+  private static ResolverResults resolve(
+      final List<ZeebeMapping> zeebeMappings, final Map<String, Object> jobVars) {
+    return resolve(zeebeMappings, jobVars, Map.of());
+  }
+
+  /**
+   * Resolves the given output mappings through both resolvers.
+   *
+   * @param zeebeMappings raw mapping declarations (source expression string, target path string)
+   * @param jobVars job-completion variables visible as the outer scope during evaluation
+   * @param elementScope existing element-scope variables (used by ORDERED for nested-target
+   *     seeding)
+   */
+  private static ResolverResults resolve(
+      final List<ZeebeMapping> zeebeMappings,
+      final Map<String, Object> jobVars,
+      final Map<String, Object> elementScope) {
+    final var outputMappings =
+        new VariableMappingTransformer()
+            .transformOutputMappings(zeebeMappings, EXPRESSION_LANGUAGE);
+    final var processor = buildProcessor(jobVars, elementScope);
+    return new ResolverResults(
+        ORDERED.resolve(outputMappings, processor), COMBINED.resolve(outputMappings, processor));
+  }
+
+  private static MappingExpressionProcessor buildProcessor(
+      final Map<String, Object> jobVars, final Map<String, Object> elementScope) {
+    final var encodedJob = encode(jobVars);
+    final var encodedElement = encode(elementScope);
+    final ScopedEvaluationContext ctx =
+        name -> {
+          final var fromElement = encodedElement.get(name);
+          if (fromElement != null) {
+            return Either.left(fromElement);
+          }
+          return Either.left(encodedJob.get(name));
+        };
+    final var context =
+        new MappingContext(BufferUtil.wrapString("test-element"), -1L, -1L, -1L, "");
+    return new MappingExpressionProcessor(
+        new ExpressionProcessor(EXPRESSION_LANGUAGE, ctx, DEFAULT_TIMEOUT), context);
+  }
+
+  private static Map<String, DirectBuffer> encode(final Map<String, Object> vars) {
+    return vars.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                e -> new UnsafeBuffer(MsgPackConverter.convertToMsgPack(e.getValue()))));
+  }
+
+  private static void assertSame(final ResolverResults r, final String expected) {
+    assertThat(r.ordered()).isRight();
+    assertThat(r.combined()).isRight();
+    MsgPackUtil.assertEquality(r.ordered().get(), expected);
+    MsgPackUtil.assertEquality(r.combined().get(), expected);
+  }
+
+  private static void assertDiffers(
+      final ResolverResults r, final String expectedOrdered, final String expectedCombined) {
+    assertThat(r.ordered()).isRight();
+    assertThat(r.combined()).isRight();
+    MsgPackUtil.assertEquality(r.ordered().get(), expectedOrdered);
+    MsgPackUtil.assertEquality(r.combined().get(), expectedCombined);
+  }
+
+  private static ZeebeMapping mapping(final String source, final String target) {
+    return new ZeebeMapping() {
+      @Override
+      public String getSource() {
+        return source;
+      }
+
+      @Override
+      public String getTarget() {
+        return target;
+      }
+
+      @Override
+      public String toString() {
+        return source + " → " + target;
+      }
+    };
+  }
+
   // ── Both resolvers agree ──────────────────────────────────────────────────
 
   @Nested
@@ -121,97 +209,7 @@ class OutputMappingResolverComparisonTest {
     }
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
-
-  private static ResolverResults resolve(
-      final List<ZeebeMapping> zeebeMappings, final Map<String, Object> jobVars) {
-    return resolve(zeebeMappings, jobVars, Map.of());
-  }
-
-  /**
-   * Resolves the given output mappings through both resolvers.
-   *
-   * @param zeebeMappings raw mapping declarations (source expression string, target path string)
-   * @param jobVars job-completion variables visible as the outer scope during evaluation
-   * @param elementScope existing element-scope variables (used by ORDERED for nested-target
-   *     seeding)
-   */
-  private static ResolverResults resolve(
-      final List<ZeebeMapping> zeebeMappings,
-      final Map<String, Object> jobVars,
-      final Map<String, Object> elementScope) {
-    final var outputMappings =
-        new VariableMappingTransformer()
-            .transformOutputMappings(zeebeMappings, EXPRESSION_LANGUAGE);
-    final var processor = buildProcessor(jobVars, elementScope);
-    return new ResolverResults(
-        ORDERED.resolve(outputMappings, processor), COMBINED.resolve(outputMappings, processor));
-  }
-
-  private static MappingExpressionProcessor buildProcessor(
-      final Map<String, Object> jobVars, final Map<String, Object> elementScope) {
-    // Job variables are the primary (outermost) scope; element scope is layered on top for
-    // ORDERED's scope-seeding lookup. Both are encoded as MsgPack DirectBuffers.
-    final var encodedJob = encode(jobVars);
-    final var encodedElement = encode(elementScope);
-    final ScopedEvaluationContext ctx =
-        name -> {
-          // check element scope first (nearest), then job vars
-          final var fromElement = encodedElement.get(name);
-          if (fromElement != null) {
-            return Either.left(fromElement);
-          }
-          return Either.left(encodedJob.get(name));
-        };
-    final var context =
-        new MappingContext(BufferUtil.wrapString("test-element"), -1L, -1L, -1L, "");
-    return new MappingExpressionProcessor(
-        new ExpressionProcessor(EXPRESSION_LANGUAGE, ctx, DEFAULT_TIMEOUT), context);
-  }
-
-  private static Map<String, DirectBuffer> encode(final Map<String, Object> vars) {
-    return vars.entrySet().stream()
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey,
-                e -> new UnsafeBuffer(MsgPackConverter.convertToMsgPack(e.getValue()))));
-  }
-
-  private static void assertSame(final ResolverResults r, final String expected) {
-    assertThat(r.ordered()).isRight();
-    assertThat(r.combined()).isRight();
-    MsgPackUtil.assertEquality(r.ordered().get(), expected);
-    MsgPackUtil.assertEquality(r.combined().get(), expected);
-  }
-
-  private static void assertDiffers(
-      final ResolverResults r, final String expectedOrdered, final String expectedCombined) {
-    assertThat(r.ordered()).isRight();
-    assertThat(r.combined()).isRight();
-    MsgPackUtil.assertEquality(r.ordered().get(), expectedOrdered);
-    MsgPackUtil.assertEquality(r.combined().get(), expectedCombined);
-  }
-
-  private static ZeebeMapping mapping(final String source, final String target) {
-    return new ZeebeMapping() {
-      @Override
-      public String getSource() {
-        return source;
-      }
-
-      @Override
-      public String getTarget() {
-        return target;
-      }
-
-      @Override
-      public String toString() {
-        return source + " → " + target;
-      }
-    };
-  }
-
-  // InnerTypeLast: record placed after all methods
+  // InnerTypeLast: record after all @Nested classes
   record ResolverResults(
       Either<Failure, DirectBuffer> ordered, Either<Failure, DirectBuffer> combined) {}
 }
