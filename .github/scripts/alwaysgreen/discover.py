@@ -52,6 +52,18 @@ KEY_LABEL_PREFIX = "alwaysgreen-key:"
 #: dispatching after N consecutive no-fix verdicts on one fingerprint and tell a
 #: human — not a longer blind window.
 NO_FIX_COOLDOWN_HOURS = int(os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_HOURS", "6"))
+
+#: The knob changed unit with the window, so the old name is refused rather than
+#: converted: reading `..._DAYS=7` as 168 hours would restore the very window this
+#: replaced. Refusing it silently would be indistinguishable from it working, so a
+#: leftover setting says so in the run instead.
+if os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS"):
+    print(
+        "::warning::ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS is no longer read. The no-fix "
+        "cooldown is now set in hours via ALWAYSGREEN_NO_FIX_COOLDOWN_HOURS "
+        f"(currently {NO_FIX_COOLDOWN_HOURS}h).",
+        file=sys.stderr,
+    )
 #: How long an open fix PR keeps holding its dispatch key; see
 #: planning.PR_LOCK_TTL_DAYS. Set to 0 to restore the old never-expiring lock.
 PR_LOCK_TTL_DAYS = int(
