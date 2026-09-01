@@ -600,6 +600,9 @@
       <column name="PRODUCED_AT" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="INPUT_TOKENS" type="BIGINT"/>
       <column name="OUTPUT_TOKENS" type="BIGINT"/>
+      <column name="REASONING_TOKEN_COUNT" type="BIGINT"/>
+      <column name="CACHE_CREATION_TOKEN_COUNT" type="BIGINT"/>
+      <column name="CACHE_READ_TOKEN_COUNT" type="BIGINT"/>
       <column name="DURATION_MS" type="BIGINT"/>
       <column name="CONTENT" type="CLOB"/>
       <column name="TOOL_CALLS" type="CLOB"/>
