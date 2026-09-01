@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeEach, describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -67,6 +67,7 @@ describe('<InstancesTable />', () => {
 	});
 
 	afterEach(() => {
+		vi.useRealTimers();
 		sessionStorage.clear();
 	});
 
@@ -268,6 +269,109 @@ describe('<InstancesTable />', () => {
 		await expect.element(screen.getByRole('columnheader', {name: 'Operation State'})).toBeVisible();
 		await expect.element(screen.getByText('COMPLETED')).toBeVisible();
 		await expect.element(screen.getByText('FAILED')).toBeVisible();
+	});
+
+	it('should report all operation item states for the same process instance', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [
+							createBatchOperationItem({itemKey: 'item-1', processInstanceKey: '1', state: 'COMPLETED'}),
+							createBatchOperationItem({itemKey: 'item-2', processInstanceKey: '1', state: 'FAILED'}),
+						],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+
+		await expect.element(screen.getByText('FAILED, COMPLETED')).toBeVisible();
+	});
+
+	it('should refresh active operation item states until they finish', async ({worker}) => {
+		vi.useFakeTimers({shouldAdvanceTime: true});
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1', state: 'ACTIVE'})],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+		await expect.element(screen.getByText('ACTIVE')).toBeVisible();
+
+		worker.use(
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1', state: 'COMPLETED'})],
+					}),
+				),
+			}),
+		);
+		await vi.advanceTimersByTimeAsync(5000);
+
+		await expect.element(screen.getByText('COMPLETED')).toBeVisible();
+	});
+
+	it('should report an operation item request failure instead of an empty state', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json({}, {status: 403}),
+			}),
+		);
+
+		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+
+		await expect.element(screen.getByText('Data could not be fetched')).toBeVisible();
+	});
+
+	it('should announce operation state loading once without assertive cell announcements', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1'}), createProcessInstance({processInstanceKey: '2'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse()),
+				delay: 'infinite',
+			}),
+		);
+
+		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+		await expect.element(screen.getByRole('columnheader', {name: 'Operation State'})).toBeVisible();
+
+		expect(document.querySelectorAll('[aria-live="assertive"]')).toHaveLength(0);
+		await expect.element(screen.getByText('Loading...')).toHaveAttribute('aria-live', 'polite');
 	});
 
 	it('should fall back to a placeholder for an instance with no matching operation item', async ({worker}) => {
