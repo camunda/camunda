@@ -333,7 +333,7 @@ public class RecoveryServicesTest {
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
-    assertThat(future.join().get()).isEqualTo(configuration.toLegacyDefault());
+    assertThat(future.join().get()).isEqualTo(configuration);
     verify(clusterConfigurationRequestSender).getTopology();
   }
 
@@ -348,7 +348,7 @@ public class RecoveryServicesTest {
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
-    assertThat(future.join().get()).isEqualTo(configuration.toLegacyDefault());
+    assertThat(future.join().get()).isEqualTo(configuration);
     verify(clusterConfigurationRequestSender).getTopology();
   }
 
