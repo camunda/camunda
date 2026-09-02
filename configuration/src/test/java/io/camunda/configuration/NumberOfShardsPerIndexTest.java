@@ -14,6 +14,7 @@ import java.beans.Introspector;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.bind.Binder;
@@ -22,8 +23,15 @@ import org.springframework.boot.context.properties.source.ConfigurationPropertyS
 import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.env.SystemEnvironmentPropertySource;
+import org.springframework.mock.env.MockEnvironment;
 
 class NumberOfShardsPerIndexTest {
+
+  private static NumberOfShardsPerIndex shardsWithListView(final int shards) {
+    final var numberOfShardsPerIndex = new NumberOfShardsPerIndex();
+    numberOfShardsPerIndex.setListView(shards);
+    return numberOfShardsPerIndex;
+  }
 
   private static NumberOfShardsPerIndex bind(final Map<String, Object> properties) {
     final ConfigurationPropertySource source = new MapConfigurationPropertySource(properties);
@@ -109,11 +117,11 @@ class NumberOfShardsPerIndexTest {
     void shouldRejectAnIndexConfiguredWithFewerThanOneShard() {
       // given
       final var elasticsearch = new Elasticsearch();
-      elasticsearch.getNumberOfShardsPerIndex().setListView(0);
+      elasticsearch.setNumberOfShardsPerIndex(shardsWithListView(0));
 
       // when / then — the search engine would otherwise reject schema creation with an error
       // naming neither the property nor the index
-      assertThatThrownBy(elasticsearch::resolveNumberOfShardsPerIndex)
+      assertThatThrownBy(elasticsearch::getNumberOfShardsPerIndex)
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessage(
               "camunda.data.secondary-storage.elasticsearch.number-of-shards-per-index.list-view"
@@ -124,11 +132,82 @@ class NumberOfShardsPerIndexTest {
     void shouldAcceptASingleShard() {
       // given
       final var elasticsearch = new Elasticsearch();
-      elasticsearch.getNumberOfShardsPerIndex().setListView(1);
+      elasticsearch.setNumberOfShardsPerIndex(shardsWithListView(1));
 
       // when / then
-      assertThat(elasticsearch.resolveNumberOfShardsPerIndex())
+      assertThat(elasticsearch.getNumberOfShardsPerIndex().toIndexNameMap())
           .containsExactly(Map.entry("list-view", 1));
+    }
+  }
+
+  /**
+   * The legacy properties are map-shaped ({@code shardsByIndexName.list-view=2}) while the property
+   * they map onto is now a POJO. Nothing is set at the bare key, so unless the helper binds the
+   * sub-keys the legacy configuration reads as absent and is dropped without a word.
+   */
+  @Nested
+  class LegacyCompatibility {
+
+    private static final String LEGACY_KEY = "camunda.database.index.shardsByIndexName.list-view";
+
+    @AfterEach
+    void tearDown() {
+      UnifiedConfigurationHelper.setCustomEnvironment(null);
+    }
+
+    private Elasticsearch withEnvironment(final String... keyValuePairs) {
+      final var environment = new MockEnvironment();
+      for (int i = 0; i < keyValuePairs.length; i += 2) {
+        environment.setProperty(keyValuePairs[i], keyValuePairs[i + 1]);
+      }
+      UnifiedConfigurationHelper.setCustomEnvironment(environment);
+      return new Elasticsearch();
+    }
+
+    @Test
+    void shouldSeeLegacyOnlyConfigurationRatherThanSilentlyDroppingIt() {
+      // given — only the legacy property is set, so it disagrees with the unset typed property
+      final var elasticsearch = withEnvironment(LEGACY_KEY, "2");
+
+      // when / then — the conflict is reported; the dangerous outcome would be returning an empty
+      // map as though the operator had configured nothing
+      assertThatThrownBy(elasticsearch::getNumberOfShardsPerIndex)
+          .isInstanceOf(UnifiedConfigurationException.class)
+          .hasMessageContaining("Ambiguous configuration");
+    }
+
+    @Test
+    void shouldAcceptLegacyAndTypedConfigurationThatAgree() {
+      // given
+      final var elasticsearch = withEnvironment(LEGACY_KEY, "2");
+      elasticsearch.setNumberOfShardsPerIndex(shardsWithListView(2));
+
+      // when / then
+      assertThat(elasticsearch.getNumberOfShardsPerIndex().toIndexNameMap())
+          .containsExactly(Map.entry("list-view", 2));
+    }
+
+    @Test
+    void shouldRejectLegacyAndTypedConfigurationThatDisagree() {
+      // given
+      final var elasticsearch = withEnvironment(LEGACY_KEY, "2");
+      elasticsearch.setNumberOfShardsPerIndex(shardsWithListView(5));
+
+      // when / then
+      assertThatThrownBy(elasticsearch::getNumberOfShardsPerIndex)
+          .isInstanceOf(UnifiedConfigurationException.class)
+          .hasMessageContaining("Ambiguous configuration");
+    }
+
+    @Test
+    void shouldIgnoreAnEnvironmentWithNoLegacyShardProperties() {
+      // given
+      final var elasticsearch = withEnvironment("camunda.unrelated.property", "x");
+      elasticsearch.setNumberOfShardsPerIndex(shardsWithListView(3));
+
+      // when / then
+      assertThat(elasticsearch.getNumberOfShardsPerIndex().toIndexNameMap())
+          .containsExactly(Map.entry("list-view", 3));
     }
   }
 

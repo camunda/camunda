@@ -555,6 +555,26 @@ public class NumberOfShardsPerIndex {
     this.waitState = waitState;
   }
 
+  /**
+   * Compared field by field via the projected map, so that a value bound from the legacy {@code
+   * shardsByIndexName} properties can be reconciled against one bound from the typed properties.
+   */
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return toIndexNameMap().equals(((NumberOfShardsPerIndex) o).toIndexNameMap());
+  }
+
+  @Override
+  public int hashCode() {
+    return toIndexNameMap().hashCode();
+  }
+
   @Override
   public String toString() {
     return "NumberOfShardsPerIndex" + toIndexNameMap();

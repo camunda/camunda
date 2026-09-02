@@ -140,7 +140,7 @@ public final class CamundaExporterConfigurationApplier {
     if (!source.getNumberOfReplicasPerIndex().isEmpty()) {
       target.setReplicasByIndexName(source.getNumberOfReplicasPerIndex());
     }
-    final var shardsByIndexName = source.resolveNumberOfShardsPerIndex();
+    final var shardsByIndexName = source.getNumberOfShardsPerIndex().toIndexNameMap();
     if (!shardsByIndexName.isEmpty()) {
       target.setShardsByIndexName(shardsByIndexName);
     }
