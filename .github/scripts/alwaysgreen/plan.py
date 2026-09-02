@@ -310,6 +310,13 @@ def plan_dispatches(
         # setup specs on `main:saas-smoke-e2e`, and run 33605992250's unrelated
         # `smoke-tests.spec.ts` failure was suppressed as `open-fix-pr-for-surface`
         # rather than dispatched.
+        #
+        # Scope note: this gate holds a claim-nothing PR's surface only until
+        # PR_LOCK_TTL_HOURS elapses. Past that its key is released and it contributed no
+        # fingerprints, so the same cause can dispatch again. That is deliberate — the
+        # alternative is the unbounded wedge the TTL exists to remove — but it is a real
+        # residual, bounded by `inflight_keys` and the dispatch caps rather than by this
+        # gate.
         if cand.key in open_pr_keys and cand.key not in pr_keys_with_coverage:
             plan.suppressed.append(Suppression(cand, SUPPRESSED_PR_OPEN, cand.key))
             continue
