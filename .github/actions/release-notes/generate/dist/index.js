@@ -1101,6 +1101,11 @@ class GithubResolver {
     repo;
     repoUrl;
     headers;
+    /** Titles seen while classifying refs, keyed by same-repo number (issues and
+     *  PRs alike — `/issues/N` serves both). `classify` and `fetchIssueTitle` hit
+     *  that same endpoint, and the generator asks for the title of a ref it has
+     *  just classified, so the second call is served from here. */
+    titlesByNumber = new Map();
     constructor(token, owner, repo) {
         this.token = token;
         this.owner = owner;
@@ -1191,15 +1196,22 @@ class GithubResolver {
      * in release notes rather than the delivering PR's dev-facing title.
      */
     async fetchIssueTitle(number) {
+        const cached = this.titlesByNumber.get(number);
+        if (cached !== undefined)
+            return cached;
         const res = await fetch(`${this.repoUrl}/issues/${number}`, {
             headers: this.headers,
         });
-        if (res.status === 404)
+        if (res.status === 404) {
+            this.titlesByNumber.set(number, null);
             return null;
+        }
         if (!res.ok)
             throw new Error(`GitHub API ${res.status} fetching issue #${number}`);
         const data = (await res.json());
-        return data.title ?? null;
+        const title = data.title ?? null;
+        this.titlesByNumber.set(number, title);
+        return title;
     }
     /** A ref points at a different repo than the one being gated (case-insensitive). */
     isCrossRepo(repo) {
@@ -1220,6 +1232,7 @@ class GithubResolver {
         if (!res.ok)
             throw new Error(`GitHub API ${res.status} resolving #${ref.number}`);
         const data = (await res.json());
+        this.titlesByNumber.set(ref.number, data.title ?? null);
         return { target: data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
     }
 }

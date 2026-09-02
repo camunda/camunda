@@ -79,3 +79,32 @@ test('resolve() bounds how many requests are ever in flight at once', async () =
   // while losing the point of the batching.
   assert.equal(maxInFlight, 5, `expected CONCURRENCY in flight, saw ${maxInFlight}`);
 });
+
+test('a ref classified during resolve() does not pay for a second GET when its title is read', async () => {
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls++;
+    return new Response(JSON.stringify({ title: 'Batch delete silently drops rows over 500' }), { status: 200 });
+  }) as typeof fetch;
+
+  const resolver = new GithubResolver('token', 'camunda', 'camunda');
+  const [resolved] = await resolver.resolve([ref(100)]);
+  const title = await resolver.fetchIssueTitle(100);
+
+  assert.equal(resolved!.target, 'issue');
+  assert.equal(title, 'Batch delete silently drops rows over 500');
+  assert.equal(calls, 1, 'classify and fetchIssueTitle share the same /issues/N response');
+});
+
+test('a title never classified is still fetched, and a 404 is remembered as absent', async () => {
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls++;
+    return new Response('', { status: 404 });
+  }) as typeof fetch;
+
+  const resolver = new GithubResolver('token', 'camunda', 'camunda');
+  assert.equal(await resolver.fetchIssueTitle(999999), null);
+  assert.equal(await resolver.fetchIssueTitle(999999), null);
+  assert.equal(calls, 1, 'a known-missing issue is not re-requested');
+});

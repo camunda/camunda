@@ -33,6 +33,11 @@ function priorityOf(ref: ParsedRef): number {
 export class GithubResolver implements Resolver {
   private readonly repoUrl: string;
   private readonly headers: Record<string, string>;
+  /** Titles seen while classifying refs, keyed by same-repo number (issues and
+   *  PRs alike — `/issues/N` serves both). `classify` and `fetchIssueTitle` hit
+   *  that same endpoint, and the generator asks for the title of a ref it has
+   *  just classified, so the second call is served from here. */
+  private readonly titlesByNumber = new Map<number, string | null>();
 
   constructor(
     private readonly token: string,
@@ -132,13 +137,21 @@ export class GithubResolver implements Resolver {
    * in release notes rather than the delivering PR's dev-facing title.
    */
   async fetchIssueTitle(number: number): Promise<string | null> {
+    const cached = this.titlesByNumber.get(number);
+    if (cached !== undefined) return cached;
+
     const res = await fetch(`${this.repoUrl}/issues/${number}`, {
       headers: this.headers,
     });
-    if (res.status === 404) return null;
+    if (res.status === 404) {
+      this.titlesByNumber.set(number, null);
+      return null;
+    }
     if (!res.ok) throw new Error(`GitHub API ${res.status} fetching issue #${number}`);
     const data = (await res.json()) as { title?: string | null };
-    return data.title ?? null;
+    const title = data.title ?? null;
+    this.titlesByNumber.set(number, title);
+    return title;
   }
 
   /** A ref points at a different repo than the one being gated (case-insensitive). */
@@ -159,7 +172,8 @@ export class GithubResolver implements Resolver {
     if (res.status === 404) return { target: 'missing', crossRepo: false };
     if (!res.ok) throw new Error(`GitHub API ${res.status} resolving #${ref.number}`);
 
-    const data = (await res.json()) as { pull_request?: unknown };
+    const data = (await res.json()) as { pull_request?: unknown; title?: string | null };
+    this.titlesByNumber.set(ref.number, data.title ?? null);
     return { target: data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
   }
 }
