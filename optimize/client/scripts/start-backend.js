@@ -52,10 +52,7 @@ const cloudEnv = {
   SPRING_PROFILES_ACTIVE: 'cloud',
   ZEEBE_IMPORT_ENABLED: 'true',
 
-  // Not auth config. Optimize's own SaaS access control reads these and fails startup on a
-  // blank value, and the M2M Accounts client needs the token url and audience.
-  CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID: 'optimize-e2e-cloud',
-  CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION: 'f4e522a8-f642-4293-b5cb-1d14e1730534',
+  // Not auth config. The M2M Accounts client needs the token url and audience.
   CAMUNDA_OPTIMIZE_AUTH0_TOKEN_URL: 'https://login.cloud.dev.ultrawombat.com/oauth/token',
   CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL: 'https://accounts.cloud.dev.ultrawombat.com',
   CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE: 'cloud.dev.ultrawombat.com',
