@@ -116,7 +116,7 @@ public record CurrentClusterConfiguration(
    * mid-migration between the two modes rather than unzoned.
    *
    * <p>Both are global state, so this reads the same fields {@link
-   * ClusterConfiguration#isUnzoned()} does — the projection through {@link #toLegacyDefault()} that
+   * ClusterConfiguration#isUnzoned()} does — the projection through {@link #toLegacy(String)} that
    * method needs is not.
    */
   public boolean isUnzoned() {
@@ -134,7 +134,7 @@ public record CurrentClusterConfiguration(
    *
    * <p>Both are global state, so this reads the same fields {@link
    * ClusterConfiguration#isFullyZoneAware()} does — the projection through {@link
-   * #toLegacyDefault()} that method needs is not.
+   * #toLegacy(String)})} that method needs is not.
    */
   public boolean isFullyZoneAware() {
     return globalConfiguration.members().keySet().stream().allMatch(member -> member.zone() != null)
@@ -150,7 +150,7 @@ public record CurrentClusterConfiguration(
    *
    * <p>Both are global state, so this reads the same fields {@link
    * ClusterConfiguration#isPartiallyZoneAware()} does — the projection through {@link
-   * #toLegacyDefault()} that method needs is not.
+   * #toLegacy(String)})} that method needs is not.
    */
   public boolean isPartiallyZoneAware() {
     final var members = globalConfiguration.members().keySet();
@@ -305,9 +305,7 @@ public record CurrentClusterConfiguration(
   /**
    * Projects this multi-group configuration back to a legacy single-group {@link
    * ClusterConfiguration} representing the named partition group. This is the inverse of {@link
-   * #fromLegacy(ClusterConfiguration)} and backs the {@code getClusterConfiguration()} compat
-   * accessor used by read consumers (e.g. the REST topology API) that have not yet migrated to the
-   * multi-group model.
+   * #fromLegacy(ClusterConfiguration)}.
    *
    * <p>Each member combines its cluster-wide lifecycle state (from {@link #globalConfiguration})
    * with its partition assignment in {@code groupId} (from {@code partitionGroups[groupId]}); a

@@ -14,8 +14,6 @@ import java.util.function.UnaryOperator;
 
 public interface ClusterConfigurationManager {
 
-  ActorFuture<ClusterConfiguration> getClusterConfiguration();
-
   ActorFuture<ClusterConfiguration> updateClusterConfiguration(
       UnaryOperator<ClusterConfiguration> updatedConfiguration);
 

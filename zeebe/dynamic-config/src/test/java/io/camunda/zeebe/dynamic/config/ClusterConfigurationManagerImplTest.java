@@ -1848,8 +1848,7 @@ final class ClusterConfigurationManagerImplTest {
 
   /**
    * A fresh cluster with no configured cluster id must still come up with one, and it must be
-   * visible through the legacy projection: consumers such as the Hub ping read {@code
-   * BrokerTopologyManager#getClusterConfiguration().clusterId()} and block until it is present.
+   * visible through the legacy projection.
    */
   @Test
   void shouldStartFromStaticInitializerWithGeneratedClusterId() {
