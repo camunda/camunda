@@ -9,7 +9,7 @@
 import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {defaultAssertionOptions} from '../utils/constants';
-import { waitForItemInList } from 'utils/waitForItemInList';
+import {waitForItemInList} from 'utils/waitForItemInList';
 
 export class IdentityTenantsPage {
   private page: Page;
@@ -60,7 +60,9 @@ export class IdentityTenantsPage {
     this.editTenantButton = (rowName) =>
       this.tenantsList.getByRole('row', {name: rowName}).getByLabel('Edit');
     this.deleteTenantButton = (rowName) =>
-      this.tenantsList.getByRole('row', {name: rowName}).getByRole('button', {name: 'Delete', exact: true});
+      this.tenantsList
+        .getByRole('row', {name: rowName})
+        .getByRole('button', {name: 'Delete', exact: true});
 
     this.createTenantModal = page.getByRole('dialog', {
       name: 'Create new tenant',
