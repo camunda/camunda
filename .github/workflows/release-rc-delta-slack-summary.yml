@@ -74,7 +74,7 @@ jobs:
 
       - name: Identify previous release version
         id: prev_version
-        uses: camunda/infra-global-github-actions/previous-version@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # previous-version: v1.0.0
+        uses: camunda/infra-global-github-actions/previous-version@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # previous-version-1.0.0
         with:
           version: ${{ inputs.rc_version }}
           verbose: 'false'

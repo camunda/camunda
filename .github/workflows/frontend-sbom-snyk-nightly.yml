@@ -206,7 +206,7 @@ jobs:
         uses: YunaBraska/java-info-action@094dc70cf4050d156dded76d5574c962886c0b0a # 3.0.12
         with:
           work-dir: ./parent
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # setup-yarn-cache: v1.0.0
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # setup-yarn-cache-1.0.0
         with:
           directory: optimize/client
       - name: Import Snyk token from Vault

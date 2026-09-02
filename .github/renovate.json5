@@ -178,6 +178,16 @@
       ],
     },
     {
+      description: "infra-global-github-actions sub-actions come from a custom manager, so the matchManagers rule above does not reach them.",
+      matchDepNames: [
+        "/^camunda\\/infra-global-github-actions\\//",
+      ],
+      addLabels: [
+        "area/build",
+        "component/build-pipeline",
+      ],
+    },
+    {
       description: "Do not let Renovate edit generated agentic-workflow lock files *.lock.yml and managed upstream. Update by upgrading the gh-aw toolchain and recompiling, never via Renovate.",
       matchFileNames: [
         ".github/workflows/*.lock.yml",
@@ -955,18 +965,18 @@
     },
     {
       // Per-family extractVersion keeps each sub-action's tags from matching another family's release line.
-      description: "Track camunda/infra-global-github-actions sub-actions pinned to a per-action release tag (comment format '# <action>: vX.Y.Z'), which the default github-actions manager cannot version-track.",
+      description: "Track camunda/infra-global-github-actions sub-actions pinned to a per-action release tag (comment format '# <action>-X.Y.Z'), which the default github-actions manager cannot version-track because it drops the sub-action path from depName.",
       customType: "regex",
       managerFilePatterns: [
         "/^\\.github/.+\\.ya?ml$/",
       ],
       matchStrings: [
-        "uses:\\s*camunda/infra-global-github-actions/(?<actionPath>[\\w./-]+)@(?<currentDigest>[a-f0-9]{40})\\s*#\\s*(?<actionTag>[\\w-]+):\\s*v(?<currentValue>\\d+\\.\\d+\\.\\d+)\\b",
+        "uses:\\s*camunda/infra-global-github-actions/[\\w./-]+@(?<currentDigest>[a-f0-9]{40})\\s+#\\s*(?<family>[a-z0-9-]+?)-(?<currentValue>\\d+\\.\\d+\\.\\d+)\\b",
       ],
-      depNameTemplate: "camunda/infra-global-github-actions/{{{actionTag}}}",
+      depNameTemplate: "camunda/infra-global-github-actions/{{{family}}}",
       packageNameTemplate: "camunda/infra-global-github-actions",
       datasourceTemplate: "github-tags",
-      extractVersionTemplate: "^{{{actionTag}}}-(?<version>\\d+\\.\\d+\\.\\d+)$",
+      extractVersionTemplate: "^{{{family}}}-(?<version>\\d+\\.\\d+\\.\\d+)$",
     },
   ],
 }
