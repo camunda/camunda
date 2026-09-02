@@ -20,7 +20,6 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.roleGro
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.filter.RoleGroupFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
@@ -75,18 +74,6 @@ public class GroupsByRoleSearchRequestImpl
         SearchResponseMapper::toRoleGroupsResponse,
         result);
     return result;
-  }
-
-  @Override
-  public GroupsByRoleSearchRequest filter(final RoleGroupFilter value) {
-    // this command does not support filtering
-    throw new UnsupportedOperationException("This command does not support filtering");
-  }
-
-  @Override
-  public GroupsByRoleSearchRequest filter(final Consumer<RoleGroupFilter> fn) {
-    // this command does not support filtering
-    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override

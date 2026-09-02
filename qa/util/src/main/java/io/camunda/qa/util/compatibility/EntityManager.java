@@ -15,7 +15,7 @@ import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.page.AnyPage;
-import io.camunda.client.api.search.request.TypedSearchRequest;
+import io.camunda.client.api.search.request.TypedPageableRequest;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.BaseResponse;
 import io.camunda.client.api.search.response.Client;
@@ -457,7 +457,7 @@ public final class EntityManager {
   private <
           T,
           R extends BaseResponse<T>,
-          S extends FinalCommandStep<R> & TypedSearchRequest<?, ?, AnyPage, S>>
+          S extends FinalCommandStep<R> & TypedPageableRequest<AnyPage, S>>
       SearchWithLimit<T> wrap(final S request) {
     return expected -> {
       final var response = request.page(p -> p.limit(expected)).send().join();

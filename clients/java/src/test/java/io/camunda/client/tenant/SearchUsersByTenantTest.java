@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.search.filter.TenantUserFilter;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
@@ -62,26 +61,5 @@ public class SearchUsersByTenantTest extends ClientRestTest {
     assertThatThrownBy(() -> client.newUsersByTenantSearchRequest("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be empty");
-  }
-
-  @Test
-  void shouldRaiseExceptionWhenFilteringFunctionIsPresentWhenSearchingUsersByTenant() {
-    assertThatThrownBy(
-            () -> client.newUsersByTenantSearchRequest(TENANT_ID).filter(fn -> {}).send().join())
-        .isInstanceOf(UnsupportedOperationException.class)
-        .hasMessageContaining("This command does not support filtering");
-  }
-
-  @Test
-  void shouldRaiseExceptionWhenFilteringIsPresentWhenSearchingUsersByTenant() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUsersByTenantSearchRequest(TENANT_ID)
-                    .filter(new TenantUserFilter() {})
-                    .send()
-                    .join())
-        .isInstanceOf(UnsupportedOperationException.class)
-        .hasMessageContaining("This command does not support filtering");
   }
 }

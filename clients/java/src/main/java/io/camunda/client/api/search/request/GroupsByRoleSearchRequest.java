@@ -15,11 +15,11 @@
  */
 package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.filter.RoleGroupFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.RoleGroup;
 import io.camunda.client.api.search.sort.RoleGroupSort;
 
 public interface GroupsByRoleSearchRequest
-    extends TypedSearchRequest<RoleGroupFilter, RoleGroupSort, AnyPage, GroupsByRoleSearchRequest>,
+    extends TypedSortableRequest<RoleGroupSort, GroupsByRoleSearchRequest>,
+        TypedPageableRequest<AnyPage, GroupsByRoleSearchRequest>,
         FinalSearchRequestStep<RoleGroup> {}

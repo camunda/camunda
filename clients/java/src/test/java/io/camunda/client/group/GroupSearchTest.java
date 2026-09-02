@@ -20,8 +20,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.search.filter.ClientFilter;
-import io.camunda.client.api.search.filter.GroupUserFilter;
 import io.camunda.client.api.search.sort.ClientSort;
 import io.camunda.client.api.search.sort.GroupSort;
 import io.camunda.client.api.search.sort.GroupUserSort;
@@ -98,27 +96,6 @@ public class GroupSearchTest extends ClientRestTest {
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo("/v2/groups/groupId/users/search");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
-  }
-
-  @Test
-  void shouldRaiseExceptionWhenFilteringFunctionIsPresentWhenSearchingUsersByGroup() {
-    assertThatThrownBy(
-            () -> client.newUsersByGroupSearchRequest(GROUP_ID).filter(fn -> {}).send().join())
-        .isInstanceOf(UnsupportedOperationException.class)
-        .hasMessageContaining("This command does not support filtering");
-  }
-
-  @Test
-  void shouldRaiseExceptionWhenFilteringIsPresentWhenSearchingUsersByGroup() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUsersByGroupSearchRequest(GROUP_ID)
-                    .filter(new GroupUserFilter() {})
-                    .send()
-                    .join())
-        .isInstanceOf(UnsupportedOperationException.class)
-        .hasMessageContaining("This command does not support filtering");
   }
 
   @Test
@@ -202,26 +179,5 @@ public class GroupSearchTest extends ClientRestTest {
     final String requestBody = lastRequest.getBodyAsString();
 
     assertThat(requestBody).contains("\"sort\":[{\"field\":\"clientId\",\"order\":\"DESC\"}]");
-  }
-
-  @Test
-  void shouldRaiseExceptionWhenFilteringFunctionIsPresentWhenSearchingClientsByGroup() {
-    assertThatThrownBy(
-            () -> client.newClientsByGroupSearchRequest(GROUP_ID).filter(fn -> {}).send().join())
-        .isInstanceOf(UnsupportedOperationException.class)
-        .hasMessageContaining("This command does not support filtering");
-  }
-
-  @Test
-  void shouldRaiseExceptionWhenFilteringIsPresentWhenSearchingClientsByGroup() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newClientsByGroupSearchRequest(GROUP_ID)
-                    .filter(new ClientFilter() {})
-                    .send()
-                    .join())
-        .isInstanceOf(UnsupportedOperationException.class)
-        .hasMessageContaining("This command does not support filtering");
   }
 }
