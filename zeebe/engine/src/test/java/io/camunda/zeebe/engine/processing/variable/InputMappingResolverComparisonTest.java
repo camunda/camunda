@@ -464,10 +464,12 @@ class InputMappingResolverComparisonTest {
   // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
   // @DisplayName(
   //    "Rule 8: types survive across input mappings within one resolver context, but not when"
-  //        + " written through MsgPack (confirmed bug camunda/camunda#60011). OrderedMappingResolver"
+  //        + " written through MsgPack (confirmed bug camunda/camunda#60011).
+  // OrderedMappingResolver"
   //        + " is the broken party here: it loses the FEEL type at every mapping boundary via the"
   //        + " MsgPack round-trip. CombinedMappingResolver evaluates all mappings in one FEEL"
-  //        + " context expression, so the type survives. When input-comparison-mode=ORDERED is used"
+  //        + " context expression, so the type survives. When input-comparison-mode=ORDERED is
+  // used"
   //        + " with the COMBINED default, any mapping that reads a FEEL-typed value set by an"
   //        + " earlier mapping WILL trigger comparison warnings -- that is expected and correct."
   //        + " These tests will need updating once #60011 is fixed.")
