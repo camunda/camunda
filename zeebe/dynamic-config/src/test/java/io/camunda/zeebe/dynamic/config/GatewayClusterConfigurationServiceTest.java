@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
@@ -212,6 +213,12 @@ final class GatewayClusterConfigurationServiceTest {
           public void onClusterConfigurationUpdated(
               final ClusterConfiguration clusterConfiguration) {
             received.set(clusterConfiguration);
+          }
+
+          @Override
+          public void onClusterConfigurationUpdated(
+              final CurrentClusterConfiguration clusterConfiguration) {
+            Assertions.fail("Did not expect update of new configuration model");
           }
         });
 

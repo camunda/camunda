@@ -55,8 +55,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Exercises {@link ClusterConfigurationManagerService} end-to-end against the new
- * multi-partition-group model ({@code USE_NEW_CONFIG = true}). Assertions read the {@link
+ * Exercises {@link ClusterConfigurationManagerService} end-to-end. Assertions read the {@link
  * CurrentClusterConfiguration} directly (via {@link
  * ClusterConfigurationManagerService#getClusterConfiguration()}) rather than the legacy compat
  * projection ({@code toLegacyDefault()}), since that projection cannot distinguish "uninitialized"
