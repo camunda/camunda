@@ -509,6 +509,16 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     }
   }
 
+  public enum ProcessDefinitionKeyNames implements KeyName {
+    /** The BPMN process ID of the process definition */
+    BPMN_PROCESS_ID {
+      @Override
+      public String asString() {
+        return "bpmnProcessId";
+      }
+    }
+  }
+
   public enum JobAction {
     CREATED("created"),
     ACTIVATED("activated"),
