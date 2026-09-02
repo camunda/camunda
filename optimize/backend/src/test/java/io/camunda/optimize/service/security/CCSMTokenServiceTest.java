@@ -386,6 +386,11 @@ public class CCSMTokenServiceTest {
     // cookie must win so a lingering context token can never override the request's own credential
     setCurrentRequestWithAuthCookie("cookie-token");
     SecurityContextHolder.getContext().setAuthentication(jwtAuthentication("bearer-token"));
+    // CSL active, so the bearer token is a live alternative: only the cookie-before-bearer ordering
+    // keeps it from winning. Lenient because that ordering short-circuits before the bearer branch.
+    lenient()
+        .when(camundaAuthenticationProviderProvider.getIfAvailable())
+        .thenReturn(camundaAuthenticationProvider);
 
     // when
     final Optional<String> result = ccsmTokenService.getCurrentUserAuthToken();
