@@ -53,6 +53,22 @@ public interface SecretStore extends AutoCloseable {
     return storeType.isInstance(this);
   }
 
+  /**
+   * How many names one {@link #resolve} call covers, for a store whose cost scales with the number
+   * of sequential backend calls it issues (a one-by-one cloud store issuing one call per name, or a
+   * batched one issuing several sequential calls each covering {@code batchSize} names). {@link
+   * ConcurrentSecretStore} reads this to split a request into chunks of this size and resolve them
+   * concurrently instead of one after another.
+   *
+   * <p>Returns {@link Integer#MAX_VALUE} for a store whose single {@link #resolve} call already
+   * covers the whole request (a container-style store, or one backed by local disk that pays no
+   * round trip at all): fanning such a store out would only add backend calls or a thread hop, not
+   * remove round trips.
+   */
+  default int namesPerCall() {
+    return Integer.MAX_VALUE;
+  }
+
   @Override
   default void close() {}
 }
