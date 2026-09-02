@@ -467,18 +467,30 @@ public final class BpmnStreamProcessor
       final BpmnElementProcessor<ExecutableFlowElement> processor,
       final ExecutableFlowElement element,
       final BpmnElementContext context) {
-    if (context.getBpmnElementType() == BpmnElementType.PROCESS) {
-      cleanUpSuspensionMetricsOnTermination(context.getElementInstanceKey());
-    }
+    final boolean isProcess = context.getBpmnElementType() == BpmnElementType.PROCESS;
+    final long piKey = context.getElementInstanceKey();
+
+    // capture suspension state before finalization — the applier clears it
+    final boolean wasSuspended = isProcess && suspensionState.getSuspensionState(piKey) != null;
+    final int droppedCommands = wasSuspended ? countBufferedCommands(piKey) : 0;
+
     processor.finalizeTermination(element, context);
+
+    if (isProcess) {
+      if (wasSuspended) {
+        suspensionMetrics.instanceTerminatedWhileSuspended();
+        if (droppedCommands > 0) {
+          suspensionMetrics.commandsDropped(droppedCommands);
+        }
+      }
+      suspensionMetrics.cancelResumeDuration(piKey);
+    }
     return BpmnElementProcessor.SUCCESS;
   }
 
-  private void cleanUpSuspensionMetricsOnTermination(final long processInstanceKey) {
-    final var state = suspensionState.getSuspensionState(processInstanceKey);
-    if (state != null) {
-      suspensionMetrics.instanceTerminatedWhileSuspended();
-    }
-    suspensionMetrics.cancelResumeDuration(processInstanceKey);
+  private int countBufferedCommands(final long processInstanceKey) {
+    final int[] count = {0};
+    suspensionState.visitBufferedCommands(processInstanceKey, (key, cmd) -> count[0]++);
+    return count[0];
   }
 }

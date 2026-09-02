@@ -177,7 +177,8 @@ public final class EngineProcessors {
     final var messageCorrelationMetrics =
         new MessageCorrelationMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var suspensionMetrics =
-        new SuspensionMetrics(typedRecordProcessorContext.getMeterRegistry());
+        new SuspensionMetrics(
+            typedRecordProcessorContext.getMeterRegistry(), processingState.getSuspensionState());
     ((TypedRecordProcessorContextImpl) typedRecordProcessorContext)
         .setSuspensionMetrics(suspensionMetrics);
     final var secretResolutionMetrics =

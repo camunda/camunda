@@ -170,6 +170,16 @@ public final class DbSuspensionState implements MutableSuspensionState {
   }
 
   @Override
+  public long countSuspensionMarkers() {
+    return suspensionColumnFamily.count();
+  }
+
+  @Override
+  public long countBufferedCommands() {
+    return bufferedCommandColumnFamily.count();
+  }
+
+  @Override
   public void clearBufferedCommands(final long processInstanceKeyValue) {
     processInstanceKey.wrapLong(processInstanceKeyValue);
     final List<Long> keysToRemove = new ArrayList<>();

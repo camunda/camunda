@@ -61,6 +61,12 @@ public interface SuspensionState {
     void visit(long bufferedCommandKey, BufferedCommandRecordValue command);
   }
 
+  /** Returns the total number of process instances with a suspension marker (any state). */
+  long countSuspensionMarkers();
+
+  /** Returns the total number of buffered commands across all process instances. */
+  long countBufferedCommands();
+
   /** A buffered command together with the key it is stored under. */
   record BufferedCommand(long key, BufferedCommandRecord command) {}
 }

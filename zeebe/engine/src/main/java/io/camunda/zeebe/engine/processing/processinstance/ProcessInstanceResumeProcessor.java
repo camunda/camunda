@@ -158,7 +158,6 @@ public final class ProcessInstanceResumeProcessor
       // switch the marker to RESUMING before the first DRAIN so the buffered commands it writes
       // back are let through by the suspension gate instead of being buffered again
       stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.RESUMING, value);
-      suspensionMetrics.startResumeDuration(command.getKey());
     } else {
       LOG.debug(
           "Resuming process instance '{}': drain was already in progress, restarting it",
@@ -179,6 +178,9 @@ public final class ProcessInstanceResumeProcessor
     // buffer spans several command batches, and RESUMED is written only once it is empty
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.RESUMING, value, command);
+    if (!isRestart) {
+      suspensionMetrics.startResumeDuration(command.getKey());
+    }
   }
 
   /**

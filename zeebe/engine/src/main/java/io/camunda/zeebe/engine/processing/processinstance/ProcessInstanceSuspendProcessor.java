@@ -77,7 +77,7 @@ public final class ProcessInstanceSuspendProcessor
     suspensionState = processingState.getSuspensionState();
     suspensionJobBehavior =
         new ProcessInstanceSuspensionJobBehavior(
-            elementInstanceState, processingState.getJobState(), stateWriter, suspensionMetrics);
+            elementInstanceState, processingState.getJobState(), stateWriter);
     suspensionSubscriptionBehavior =
         new ProcessInstanceSuspensionMessageSubscriptionBehavior(
             elementInstanceState,
@@ -101,12 +101,15 @@ public final class ProcessInstanceSuspendProcessor
     final ProcessInstanceRecord value = elementInstance.getValue();
     // Park jobs before the instance-level SUSPENDED event so suspension is complete when the
     // marker is written. A later SUSPENDING intermediate state can chunk this work first.
-    suspensionJobBehavior.suspendJobs(command.getKey());
+    final int suspendedJobCount = suspensionJobBehavior.suspendJobs(command.getKey());
     suspensionSubscriptionBehavior.closeSubscriptions(command.getKey());
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDED, value);
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.SUSPENDED, value, command);
     suspensionMetrics.instanceSuspended();
+    if (suspendedJobCount > 0) {
+      suspensionMetrics.jobsSuspended(suspendedJobCount);
+    }
   }
 
   private boolean validateCommand(

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.metrics;
 import io.camunda.zeebe.engine.metrics.SuspensionMetricsDoc.BufferedCommandAction;
 import io.camunda.zeebe.engine.metrics.SuspensionMetricsDoc.SuspensionAction;
 import io.camunda.zeebe.engine.metrics.SuspensionMetricsDoc.SuspensionKeyNames;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
@@ -19,9 +20,11 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.util.HashMap;
+import org.jspecify.annotations.Nullable;
 
 public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
   private final MeterRegistry registry;
+  @Nullable private final SuspensionState suspensionState;
 
   private final Counter suspendedCounter;
   private final Counter resumedCounter;
@@ -41,8 +44,14 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
    */
   private final HashMap<Long, Timer.ResourceSample> resumeDurationSamples = new HashMap<>();
 
-  public SuspensionMetrics(final MeterRegistry meterRegistry) {
+  SuspensionMetrics(final MeterRegistry meterRegistry) {
+    this(meterRegistry, null);
+  }
+
+  public SuspensionMetrics(
+      final MeterRegistry meterRegistry, @Nullable final SuspensionState suspensionState) {
     registry = meterRegistry;
+    this.suspensionState = suspensionState;
 
     suspendedCounter =
         registerCounter(
@@ -101,6 +110,10 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
 
   public void jobSuspended() {
     jobSuspendedCounter.increment();
+  }
+
+  public void jobsSuspended(final int count) {
+    jobSuspendedCounter.increment(count);
   }
 
   public void jobResumed() {
@@ -162,6 +175,10 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     resumeDurationSamples.clear();
+    if (suspensionState != null) {
+      setSuspendedInstances(suspensionState.countSuspensionMarkers());
+      setBufferedCommands(suspensionState.countBufferedCommands());
+    }
   }
 
   private static Counter registerCounter(

@@ -10,12 +10,15 @@ package io.camunda.zeebe.engine.metrics;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -251,6 +254,29 @@ final class SuspensionMetricsTest {
     assertThat(bufferedCommandsGauge()).isEqualTo(100.0);
   }
 
+  @Test
+  void shouldRebuildGaugesFromStateOnRecovery() {
+    // given — fresh registry so gauges are not shared with the setUp() instance
+    final var freshRegistry = new SimpleMeterRegistry();
+    final var stateMetrics = new SuspensionMetrics(freshRegistry, stubState(5, 12));
+
+    // when
+    stateMetrics.onRecovered(null);
+
+    // then
+    assertThat(freshRegistry.get(SUSPENDED_INSTANCES_METRIC).gauge().value()).isEqualTo(5.0);
+    assertThat(freshRegistry.get(BUFFERED_COMMANDS_METRIC).gauge().value()).isEqualTo(12.0);
+  }
+
+  @Test
+  void shouldIncrementJobSuspendedCounterByBatch() {
+    // when
+    metrics.jobsSuspended(7);
+
+    // then
+    assertThat(jobSuspensionEventCount("suspended")).isEqualTo(7.0);
+  }
+
   private void advanceClock(final Duration duration) {
     monotonicNanos.addAndGet(duration.toNanos());
   }
@@ -278,5 +304,38 @@ final class SuspensionMetricsTest {
 
   private double bufferedCommandsGauge() {
     return registry.get(BUFFERED_COMMANDS_METRIC).gauge().value();
+  }
+
+  private static SuspensionState stubState(final long suspendedCount, final long bufferedCount) {
+    return new SuspensionState() {
+      @Override
+      public @Nullable State getSuspensionState(final long processInstanceKey) {
+        return null;
+      }
+
+      @Override
+      public boolean isSuspended(final long processInstanceKey) {
+        return false;
+      }
+
+      @Override
+      public void visitBufferedCommands(
+          final long processInstanceKey, final BufferedCommandVisitor visitor) {}
+
+      @Override
+      public Optional<BufferedCommand> getOldestBufferedCommand(final long processInstanceKey) {
+        return Optional.empty();
+      }
+
+      @Override
+      public long countSuspensionMarkers() {
+        return suspendedCount;
+      }
+
+      @Override
+      public long countBufferedCommands() {
+        return bufferedCount;
+      }
+    };
   }
 }

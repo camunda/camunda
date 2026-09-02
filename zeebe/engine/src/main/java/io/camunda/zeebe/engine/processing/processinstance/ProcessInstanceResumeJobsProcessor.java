@@ -102,7 +102,7 @@ public final class ProcessInstanceResumeJobsProcessor
     suspensionState = processingState.getSuspensionState();
     suspensionJobBehavior =
         new ProcessInstanceSuspensionJobBehavior(
-            elementInstanceState, processingState.getJobState(), stateWriter, suspensionMetrics);
+            elementInstanceState, processingState.getJobState(), stateWriter);
     this.jobActivationBehavior = jobActivationBehavior;
     this.suspensionMetrics = suspensionMetrics;
   }
@@ -136,6 +136,9 @@ public final class ProcessInstanceResumeJobsProcessor
       nextIntent = ProcessInstanceIntent.COMPLETE_RESUMING;
     }
     commandWriter.appendFollowUpCommand(processInstanceKey, nextIntent, followUpValue);
+    if (resumedJobKey >= 0) {
+      suspensionMetrics.jobResumed();
+    }
   }
 
   /**
@@ -151,7 +154,6 @@ public final class ProcessInstanceResumeJobsProcessor
         (jobKey, job) -> {
           stateWriter.appendFollowUpEvent(jobKey, JobIntent.RESUMED, job);
           jobActivationBehavior.publishWork(jobKey, job, new HashSet<>());
-          suspensionMetrics.jobResumed();
           resumedJobKey.set(jobKey);
           return false;
         });

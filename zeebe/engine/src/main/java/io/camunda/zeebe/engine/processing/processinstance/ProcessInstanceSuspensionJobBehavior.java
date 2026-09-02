@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -46,25 +45,27 @@ public final class ProcessInstanceSuspensionJobBehavior {
   private final ElementInstanceState elementInstanceState;
   private final JobState jobState;
   private final StateWriter stateWriter;
-  private final SuspensionMetrics suspensionMetrics;
 
   public ProcessInstanceSuspensionJobBehavior(
       final ElementInstanceState elementInstanceState,
       final JobState jobState,
-      final StateWriter stateWriter,
-      final SuspensionMetrics suspensionMetrics) {
+      final StateWriter stateWriter) {
     this.elementInstanceState = elementInstanceState;
     this.jobState = jobState;
     this.stateWriter = stateWriter;
-    this.suspensionMetrics = suspensionMetrics;
   }
 
-  /** Appends {@link JobIntent#SUSPENDED} for every job in {@link #SUSPENDABLE_STATES}. */
-  public void suspendJobs(final long processInstanceKey) {
+  /**
+   * Appends {@link JobIntent#SUSPENDED} for every job in {@link #SUSPENDABLE_STATES}.
+   *
+   * @return the number of jobs suspended; the caller records the metric after all writes complete
+   */
+  public int suspendJobs(final long processInstanceKey) {
     final var processInstance = elementInstanceState.getInstance(processInstanceKey);
     if (processInstance == null) {
-      return;
+      return 0;
     }
+    final int[] count = {0};
     walk(
         processInstance,
         elementInstance ->
@@ -73,9 +74,10 @@ public final class ProcessInstanceSuspensionJobBehavior {
                 SUSPENDABLE_STATES,
                 (jobKey, job) -> {
                   stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job);
-                  suspensionMetrics.jobSuspended();
+                  count[0]++;
                   return true;
                 }));
+    return count[0];
   }
 
   /**
