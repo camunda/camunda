@@ -365,6 +365,6 @@ public class DbVariableState implements MutableVariableState {
 
           return !completionCondition.getAsBoolean();
         });
-    return false;
+    return completionCondition.getAsBoolean();
   }
 }
