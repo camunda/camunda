@@ -352,16 +352,46 @@ public class CCSMTokenServiceTest {
 
   @Test
   void shouldFallBackToValidatedBearerTokenWhenNoSessionOrCookie() {
-    // given — stateless API caller (e.g. the Web Modeler cluster proxy): no OIDC session and no
+    // given — stateless CSL API caller (e.g. the Web Modeler cluster proxy): no OIDC session and no
     // auth cookie, only a validated bearer token in the security context
     setCurrentRequestWithoutAuthCookie();
     SecurityContextHolder.getContext().setAuthentication(jwtAuthentication("bearer-token"));
+    when(camundaAuthenticationProviderProvider.getIfAvailable())
+        .thenReturn(camundaAuthenticationProvider);
 
     // when
     final Optional<String> result = ccsmTokenService.getCurrentUserAuthToken();
 
     // then
     assertThat(result).contains("bearer-token");
+  }
+
+  @Test
+  void shouldNotFallBackToBearerTokenWhenCslInactive() {
+    // given — the legacy public API path also authenticates as a JwtAuthenticationToken, but CSL is
+    // not active; the bearer token must not flow into tenant resolution as it did not before
+    setCurrentRequestWithoutAuthCookie();
+    SecurityContextHolder.getContext().setAuthentication(jwtAuthentication("api-token"));
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserAuthToken();
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldPreferAuthCookieOverBearerTokenWhenBothPresent() {
+    // given — a request carrying both a stale auth cookie and a security-context bearer token; the
+    // cookie must win so a lingering context token can never override the request's own credential
+    setCurrentRequestWithAuthCookie("cookie-token");
+    SecurityContextHolder.getContext().setAuthentication(jwtAuthentication("bearer-token"));
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserAuthToken();
+
+    // then
+    assertThat(result).contains("cookie-token");
   }
 
   @Test
