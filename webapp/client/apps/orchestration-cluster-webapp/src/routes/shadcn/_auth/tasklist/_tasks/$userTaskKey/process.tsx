@@ -7,7 +7,29 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
+import {useSuspenseQuery} from '@tanstack/react-query';
+import {queries} from '#/shared/http/queries';
+import {TaskDetailsProcessPage} from '#/tasklist/pages/shadcn.components/TaskDetailsProcessPage';
+import {TaskDetailsProcessRouteError} from '#/tasklist/pages/shadcn.components/TaskDetailsProcessError';
+import {TaskDetailsProcessSkeleton} from '#/tasklist/pages/shadcn.components/TaskDetailsProcessSkeleton';
+import {EmptyProcessXmlError} from '#/shared/errors';
 
 export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks/$userTaskKey/process')({
-	component: () => null,
+	loader: async ({context: {queryClient}, params: {userTaskKey}}) => {
+		const task = await queryClient.query(queries.getUserTask(userTaskKey));
+		return queryClient.query(queries.getProcessDefinitionXml(task.processDefinitionKey));
+	},
+	pendingComponent: TaskDetailsProcessSkeleton,
+	errorComponent: TaskDetailsProcessRouteError,
+	component: function ProcessTabRoute() {
+		const {userTaskKey} = Route.useParams();
+		const {data: task} = useSuspenseQuery(queries.getUserTask(userTaskKey));
+		const {data: processXml} = useSuspenseQuery(queries.getProcessDefinitionXml(task.processDefinitionKey));
+
+		if (processXml.trim() === '') {
+			throw new EmptyProcessXmlError();
+		}
+
+		return <TaskDetailsProcessPage task={task} processXml={processXml} />;
+	},
 });

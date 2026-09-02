@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
 	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
 	mockQueryVariablesByUserTaskEndpoint,
@@ -21,6 +22,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {createQueryUserTaskAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
 import {createQueryVariablesByUserTaskResponse} from '#/shared-test-modules/api-mocks/variables';
 
@@ -81,5 +83,53 @@ test.describe('Task details page', () => {
 		await expect(shadcnTaskDetailPage.processTab).toBeVisible();
 		await expect(shadcnTaskDetailPage.historyTab).toBeVisible();
 		await expect(shadcnTaskDetailPage.taskTab).toHaveAttribute('aria-selected', 'true');
+	});
+
+	test('should switch tabs and update the URL', async ({network, shadcnTaskDetailPage: taskDetailPage, page}) => {
+		network.use(
+			mockGetProcessDefinitionXmlEndpoint({
+				successResponse: new HttpResponse(BPMN_XML, {headers: {'Content-Type': 'text/xml'}}),
+			}),
+		);
+
+		await taskDetailPage.goto('2251799813685281');
+
+		await taskDetailPage.processTab.click();
+		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/process/);
+		await expect(taskDetailPage.processTabContent).toBeAttached();
+		await expect(taskDetailPage.detailsInfo).toBeVisible();
+		await expect(taskDetailPage.aside).toBeVisible();
+		await expect(taskDetailPage.processName('Invoice process')).toBeVisible();
+		await expect(taskDetailPage.processVersion(1)).toBeVisible();
+		await expect(taskDetailPage.processDiagramZoomReset).toBeVisible();
+		await expect(taskDetailPage.processDiagramZoomIn).toBeVisible();
+		await expect(taskDetailPage.processDiagramZoomOut).toBeVisible();
+
+		await taskDetailPage.historyTab.click();
+		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/history/);
+		await expect(taskDetailPage.historyTabContent).toBeAttached();
+
+		await taskDetailPage.taskTab.click();
+		await expect(page).toHaveURL(/\/tasklist\/2251799813685281$/);
+		await expect(taskDetailPage.taskTabContent).toBeAttached();
+	});
+
+	test('should keep task details visible when process access is forbidden', async ({
+		network,
+		shadcnTaskDetailPage: taskDetailPage,
+	}) => {
+		network.use(
+			mockGetProcessDefinitionXmlEndpoint({
+				successResponse: new HttpResponse(null, {status: 403}),
+			}),
+		);
+
+		await taskDetailPage.gotoProcess('2251799813685281');
+
+		await expect(taskDetailPage.detailsInfo).toBeVisible();
+		await expect(taskDetailPage.aside).toBeVisible();
+		await expect(taskDetailPage.processTab).toHaveAttribute('aria-selected', 'true');
+		await expect(taskDetailPage.processForbiddenError).toBeVisible();
+		await expect(taskDetailPage.processRetryButton).not.toBeVisible();
 	});
 });

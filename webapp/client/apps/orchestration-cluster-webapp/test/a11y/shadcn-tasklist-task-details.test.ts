@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
 	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
 	mockQueryVariablesByUserTaskEndpoint,
@@ -20,6 +21,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 
 const USER_TASK_KEY = '2251799813685281';
@@ -119,6 +121,42 @@ test('should have no accessibility violations on the task tab with read-only var
 	await taskDetailPage.goto(USER_TASK_KEY);
 	await expect(taskDetailPage.variablesTable.getByText('expenseAmount', {exact: true})).toBeVisible();
 	await expect(taskDetailPage.variablesTable.getByText('expenseStatus', {exact: true})).toBeVisible();
+
+	const accessibilityScanResults = await makeAxeBuilder().analyze();
+	expect(accessibilityScanResults.violations).toEqual([]);
+});
+
+test('should have no accessibility violations on the Process tab', async ({
+	network,
+	shadcnTaskDetailPage: taskDetailPage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockGetProcessDefinitionXmlEndpoint({
+			successResponse: new HttpResponse(BPMN_XML, {headers: {'Content-Type': 'text/xml'}}),
+		}),
+	);
+
+	await taskDetailPage.gotoProcess('2251799813685281');
+	await expect(taskDetailPage.processDiagramZoomReset).toBeVisible();
+
+	const accessibilityScanResults = await makeAxeBuilder().analyze();
+	expect(accessibilityScanResults.violations).toEqual([]);
+});
+
+test('should have no accessibility violations when process access is forbidden', async ({
+	network,
+	shadcnTaskDetailPage: taskDetailPage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockGetProcessDefinitionXmlEndpoint({
+			successResponse: new HttpResponse(null, {status: 403}),
+		}),
+	);
+
+	await taskDetailPage.gotoProcess('2251799813685281');
+	await expect(taskDetailPage.processForbiddenError).toBeVisible();
 
 	const accessibilityScanResults = await makeAxeBuilder().analyze();
 	expect(accessibilityScanResults.violations).toEqual([]);
