@@ -62,6 +62,38 @@ export function stripBackportPrefix(title: string): string {
   return title.replace(BACKPORT_TITLE_PREFIX, '');
 }
 
+// dependabot's default title states both sides directly: "Bump X from A to B".
+const DEPENDABOT_BUMP = /Bump (\S+) from (\S+) to (\S+)/i;
+
+// A renovate PR body table row: "| [package](url) ... | `old` → `new` | ...".
+// Column count varies (Package|Change vs Package|Update|Change vs +Age/Confidence),
+// so this only anchors on the leading `[name]` and the trailing backtick-quoted
+// arrow pair, not a fixed column count.
+const RENOVATE_TABLE_ROW = /^\|\s*\[([^\]]+)\].*?`([^`]+)`\s*→\s*`([^`]+)`.*\|\s*$/gm;
+
+/**
+ * For a `deps:`-categorized PR, extract just the dependency name and the
+ * old/new version — Peter's call: the customer wants "name: old → new", not
+ * renovate's/dependabot's verbose title prose. Renovate never puts the old
+ * version in the title itself (only the new one), so this reads its body's
+ * update table; dependabot's default title already has both, read directly.
+ * Returns null when neither shape is recognized (a human-written `deps:`
+ * commit, or a renovate PR whose body table format has changed) — the
+ * caller falls back to the plain title rather than showing a wrong parse.
+ */
+export function parseDependencyUpdate(input: { readonly title: string; readonly body: string }): string | null {
+  const bump = DEPENDABOT_BUMP.exec(input.title);
+  if (bump) {
+    const [, name, from, to] = bump;
+    return `${name}: ${from} → ${to}`;
+  }
+
+  const rows = [...input.body.matchAll(RENOVATE_TABLE_ROW)].map(
+    (match) => `${match[1]}: ${match[2]} → ${match[3]}`,
+  );
+  return rows.length > 0 ? rows.join('; ') : null;
+}
+
 export interface CategorizeInput {
   /** The title to categorize FROM — for an inherit-original bot, the caller
    *  must already have substituted the original PR's title (`resolveCategorizeTitle`). */

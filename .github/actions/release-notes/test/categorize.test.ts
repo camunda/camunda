@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { categorize, resolveCategorizeTitle, stripBackportPrefix } from '../src/categorize';
+import { categorize, parseDependencyUpdate, resolveCategorizeTitle, stripBackportPrefix } from '../src/categorize';
 
 test('conventional type maps to its section: feat -> Features', () => {
   const d = categorize({ title: 'feat: add batch delete API', componentLabels: [], breakingChangeLabel: false });
@@ -113,6 +113,48 @@ test('dependabot[bot] is forced to deps regardless of its own title', () => {
 test('merge type is excluded entirely, not Uncategorized', () => {
   const d = categorize({ title: 'merge: release-8.8.30 back to stable/8.8', componentLabels: [], breakingChangeLabel: false });
   assert.equal(d.section, null);
+});
+
+test('parseDependencyUpdate reads name/old/new from a renovate single-row table', () => {
+  const body = [
+    'This PR contains the following updates:',
+    '',
+    '| Package | Change | [Age](https://x) | [Confidence](https://x) |',
+    '|---|---|---|---|',
+    '| [org.liquibase:liquibase-core](http://www.liquibase.com) ([source](https://x)) | `5.0.3` → `5.0.4` | ![age](x) | ![confidence](x) |',
+  ].join('\n');
+  const result = parseDependencyUpdate({ title: 'deps: Update dependency org.liquibase:liquibase-core to v5.0.4 (stable/8.9)', body });
+  assert.equal(result, 'org.liquibase:liquibase-core: 5.0.3 → 5.0.4');
+});
+
+test('parseDependencyUpdate reads a Docker-tag renovate row with an extra Update column', () => {
+  const body = [
+    '| Package | Update | Change |',
+    '|---|---|---|',
+    '| [camunda/camunda](https://camunda.com/platform/) ([source](https://x)) | patch | `8.8.35` → `8.8.36` |',
+  ].join('\n');
+  const result = parseDependencyUpdate({ title: 'deps: Update camunda/camunda Docker tag to v8.8.36 (stable/8.8)', body });
+  assert.equal(result, 'camunda/camunda: 8.8.35 → 8.8.36');
+});
+
+test('parseDependencyUpdate joins multiple rows from a grouped renovate PR', () => {
+  const body = [
+    '| Package | Change |',
+    '|---|---|',
+    '| [org.springframework.boot:spring-boot](https://x) | `4.1.0` → `4.1.1` |',
+    '| [org.springframework.boot:spring-boot](https://x) | `4.0.7` → `4.0.8` |',
+  ].join('\n');
+  const result = parseDependencyUpdate({ title: 'deps: Update spring boot (stable/8.8) (patch)', body });
+  assert.equal(result, 'org.springframework.boot:spring-boot: 4.1.0 → 4.1.1; org.springframework.boot:spring-boot: 4.0.7 → 4.0.8');
+});
+
+test('parseDependencyUpdate reads a dependabot "Bump X from A to B" title directly, no body needed', () => {
+  const result = parseDependencyUpdate({ title: 'Bump foo from 1.2.2 to 1.2.3', body: 'Bumps foo from 1.2.2 to 1.2.3.' });
+  assert.equal(result, 'foo: 1.2.2 → 1.2.3');
+});
+
+test('parseDependencyUpdate returns null when neither shape matches', () => {
+  assert.equal(parseDependencyUpdate({ title: 'ci: bump runner', body: 'no table here' }), null);
 });
 
 test('internal-only types (build/ci/test/style/refactor) are asset-only, not customer-visible', () => {

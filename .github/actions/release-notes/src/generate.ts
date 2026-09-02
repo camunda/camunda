@@ -69,6 +69,7 @@ async function run(): Promise<void> {
   const pipelineResolver: PipelineResolver = {
     resolveRefs: (refs) => restResolver.resolve(refs),
     fetchOriginalPull: (number) => restResolver.fetchPull(number),
+    fetchIssueTitle: (number) => restResolver.fetchIssueTitle(number),
   };
 
   const strategy = resolveBaselineStrategy(input.targetVersion);

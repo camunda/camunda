@@ -1,6 +1,12 @@
 import { decideAttribution, evaluatePostGateAnomaly, hopToBackportOriginal } from '../attribution';
 import type { AttributionAnomaly, AttributionDecision } from '../attribution/types';
-import { BOT_CATEGORY_OVERRIDES, categorize, resolveCategorizeTitle, stripBackportPrefix } from '../categorize';
+import {
+  BOT_CATEGORY_OVERRIDES,
+  categorize,
+  parseDependencyUpdate,
+  resolveCategorizeTitle,
+  stripBackportPrefix,
+} from '../categorize';
 import type { CategorizeDecision } from '../categorize';
 import { extractSection, isOptOutTicked, parseRefs } from '../parser';
 import { isLinkExemptAuthor } from '../title';
@@ -25,6 +31,7 @@ import type { ParsedRef, ResolvedRef } from '../types';
 export interface PipelineResolver {
   resolveRefs(refs: readonly ParsedRef[]): Promise<ResolvedRef[]>;
   fetchOriginalPull(number: number): Promise<{ readonly body: string; readonly title: string; readonly authorLogin?: string } | null>;
+  fetchIssueTitle(number: number): Promise<string | null>;
 }
 
 export interface PipelinePrInput {
@@ -125,18 +132,52 @@ async function categorizePr(
   return { displayTitle, categorization };
 }
 
+/**
+ * Picks the customer-facing title, in priority order:
+ *  1. A `deps:` PR's own body/title tells us the dependency name and its
+ *     old->new versions directly — the customer wants THAT, not renovate's
+ *     verbose prose or a PR-title reformulation.
+ *  2. Any other attributed PR shows its issue's title, not its own: the
+ *     issue is written for a reader of release notes, the PR is written for
+ *     a reviewer of the diff. Only the FIRST linked issue's title is used
+ *     when a PR touches several — one title per line, same as before.
+ *  3. No issue at all (unattributed, opt-out, bot-exempt) keeps the PR's own
+ *     (backport-prefix-stripped) title — there is nothing else to show.
+ */
+async function resolveDisplayTitle(
+  resolver: PipelineResolver,
+  pr: PipelinePrInput,
+  categorization: CategorizeDecision,
+  attribution: AttributionDecision,
+  fallbackTitle: string,
+): Promise<string> {
+  if (categorization.section === 'Dependency updates') {
+    const dependencyLine = parseDependencyUpdate({ title: pr.title, body: pr.body });
+    if (dependencyLine) return dependencyLine;
+  }
+
+  const [primaryIssue] = attribution.issueNumbers;
+  if (primaryIssue !== undefined) {
+    const issueTitle = await resolver.fetchIssueTitle(primaryIssue);
+    if (issueTitle) return issueTitle;
+  }
+
+  return fallbackTitle;
+}
+
 export async function processPr(
   resolver: PipelineResolver,
   pr: PipelinePrInput,
   options: PipelineOptions,
 ): Promise<PipelinePrOutput> {
   const attribution = await attributePr(resolver, pr);
-  const { displayTitle, categorization } = await categorizePr(resolver, pr);
+  const { displayTitle: fallbackTitle, categorization } = await categorizePr(resolver, pr);
+  const title = await resolveDisplayTitle(resolver, pr, categorization, attribution, fallbackTitle);
   const anomaly = evaluatePostGateAnomaly({
     mergedAt: pr.mergedAt,
     gateRequiredAt: options.gateRequiredAt,
     source: attribution.source,
   });
 
-  return { number: pr.number, title: displayTitle, attribution, categorization, anomaly };
+  return { number: pr.number, title, attribution, categorization, anomaly };
 }

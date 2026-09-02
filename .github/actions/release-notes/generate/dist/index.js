@@ -122,6 +122,7 @@ function evaluatePostGateAnomaly(input) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BOT_CATEGORY_OVERRIDES = void 0;
 exports.stripBackportPrefix = stripBackportPrefix;
+exports.parseDependencyUpdate = parseDependencyUpdate;
 exports.resolveCategorizeTitle = resolveCategorizeTitle;
 exports.categorize = categorize;
 /** D16: known bots whose own title/body can't be trusted as the category source. */
@@ -164,6 +165,32 @@ const BACKPORT_TITLE_PREFIX = /^\[backport\b[^\]]*\]\s*/i;
  */
 function stripBackportPrefix(title) {
     return title.replace(BACKPORT_TITLE_PREFIX, '');
+}
+// dependabot's default title states both sides directly: "Bump X from A to B".
+const DEPENDABOT_BUMP = /Bump (\S+) from (\S+) to (\S+)/i;
+// A renovate PR body table row: "| [package](url) ... | `old` → `new` | ...".
+// Column count varies (Package|Change vs Package|Update|Change vs +Age/Confidence),
+// so this only anchors on the leading `[name]` and the trailing backtick-quoted
+// arrow pair, not a fixed column count.
+const RENOVATE_TABLE_ROW = /^\|\s*\[([^\]]+)\].*?`([^`]+)`\s*→\s*`([^`]+)`.*\|\s*$/gm;
+/**
+ * For a `deps:`-categorized PR, extract just the dependency name and the
+ * old/new version — Peter's call: the customer wants "name: old → new", not
+ * renovate's/dependabot's verbose title prose. Renovate never puts the old
+ * version in the title itself (only the new one), so this reads its body's
+ * update table; dependabot's default title already has both, read directly.
+ * Returns null when neither shape is recognized (a human-written `deps:`
+ * commit, or a renovate PR whose body table format has changed) — the
+ * caller falls back to the plain title rather than showing a wrong parse.
+ */
+function parseDependencyUpdate(input) {
+    const bump = DEPENDABOT_BUMP.exec(input.title);
+    if (bump) {
+        const [, name, from, to] = bump;
+        return `${name}: ${from} → ${to}`;
+    }
+    const rows = [...input.body.matchAll(RENOVATE_TABLE_ROW)].map((match) => `${match[1]}: ${match[2]} → ${match[3]}`);
+    return rows.length > 0 ? rows.join('; ') : null;
 }
 /**
  * Decide which title to feed `categorize()`. Pure composition, same shape as
@@ -273,6 +300,7 @@ async function run() {
     const pipelineResolver = {
         resolveRefs: (refs) => restResolver.resolve(refs),
         fetchOriginalPull: (number) => restResolver.fetchPull(number),
+        fetchIssueTitle: (number) => restResolver.fetchIssueTitle(number),
     };
     const strategy = (0, range_1.resolveBaselineStrategy)(input.targetVersion);
     const baseline = (0, walk_1.resolveBaselineRef)(process.cwd(), strategy, input.targetVersion);
@@ -627,15 +655,42 @@ async function categorizePr(resolver, pr) {
     const categorization = (0, categorize_1.categorize)({ title: displayTitle, authorLogin: pr.authorLogin, componentLabels, breakingChangeLabel });
     return { displayTitle, categorization };
 }
+/**
+ * Picks the customer-facing title, in priority order:
+ *  1. A `deps:` PR's own body/title tells us the dependency name and its
+ *     old->new versions directly — the customer wants THAT, not renovate's
+ *     verbose prose or a PR-title reformulation.
+ *  2. Any other attributed PR shows its issue's title, not its own: the
+ *     issue is written for a reader of release notes, the PR is written for
+ *     a reviewer of the diff. Only the FIRST linked issue's title is used
+ *     when a PR touches several — one title per line, same as before.
+ *  3. No issue at all (unattributed, opt-out, bot-exempt) keeps the PR's own
+ *     (backport-prefix-stripped) title — there is nothing else to show.
+ */
+async function resolveDisplayTitle(resolver, pr, categorization, attribution, fallbackTitle) {
+    if (categorization.section === 'Dependency updates') {
+        const dependencyLine = (0, categorize_1.parseDependencyUpdate)({ title: pr.title, body: pr.body });
+        if (dependencyLine)
+            return dependencyLine;
+    }
+    const [primaryIssue] = attribution.issueNumbers;
+    if (primaryIssue !== undefined) {
+        const issueTitle = await resolver.fetchIssueTitle(primaryIssue);
+        if (issueTitle)
+            return issueTitle;
+    }
+    return fallbackTitle;
+}
 async function processPr(resolver, pr, options) {
     const attribution = await attributePr(resolver, pr);
-    const { displayTitle, categorization } = await categorizePr(resolver, pr);
+    const { displayTitle: fallbackTitle, categorization } = await categorizePr(resolver, pr);
+    const title = await resolveDisplayTitle(resolver, pr, categorization, attribution, fallbackTitle);
     const anomaly = (0, attribution_1.evaluatePostGateAnomaly)({
         mergedAt: pr.mergedAt,
         gateRequiredAt: options.gateRequiredAt,
         source: attribution.source,
     });
-    return { number: pr.number, title: displayTitle, attribution, categorization, anomaly };
+    return { number: pr.number, title, attribution, categorization, anomaly };
 }
 
 
@@ -1170,6 +1225,22 @@ class GithubResolver {
             throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
         const data = (await res.json());
         return { body: data.body ?? '', title: data.title ?? '', authorLogin: data.user?.login };
+    }
+    /**
+     * The live title of a same-repo issue, or null if it doesn't exist. Used by
+     * the generator (#57713) to show the issue's own customer-facing wording
+     * in release notes rather than the delivering PR's dev-facing title.
+     */
+    async fetchIssueTitle(number) {
+        const res = await fetch(`${this.repoUrl}/issues/${number}`, {
+            headers: this.headers,
+        });
+        if (res.status === 404)
+            return null;
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} fetching issue #${number}`);
+        const data = (await res.json());
+        return data.title ?? null;
     }
     /** A ref points at a different repo than the one being gated (case-insensitive). */
     isCrossRepo(repo) {

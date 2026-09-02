@@ -120,6 +120,21 @@ export class GithubResolver implements Resolver {
     return { body: data.body ?? '', title: data.title ?? '', authorLogin: data.user?.login };
   }
 
+  /**
+   * The live title of a same-repo issue, or null if it doesn't exist. Used by
+   * the generator (#57713) to show the issue's own customer-facing wording
+   * in release notes rather than the delivering PR's dev-facing title.
+   */
+  async fetchIssueTitle(number: number): Promise<string | null> {
+    const res = await fetch(`${this.repoUrl}/issues/${number}`, {
+      headers: this.headers,
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`GitHub API ${res.status} fetching issue #${number}`);
+    const data = (await res.json()) as { title?: string | null };
+    return data.title ?? null;
+  }
+
   /** A ref points at a different repo than the one being gated (case-insensitive). */
   private isCrossRepo(repo: string | null): boolean {
     return repo !== null && repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();

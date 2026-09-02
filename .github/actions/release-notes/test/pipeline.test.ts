@@ -5,13 +5,19 @@ import type { PipelinePrInput, PipelineResolver } from '../src/pipeline';
 import type { ParsedRef, ResolvedRef } from '../src/types';
 
 /** A fake resolver: classifies every ref number 100 as a live issue, 999 as missing. */
-function fakeResolver(originals: Record<number, { body: string; title: string; authorLogin?: string }> = {}): PipelineResolver {
+function fakeResolver(
+  originals: Record<number, { body: string; title: string; authorLogin?: string }> = {},
+  issueTitles: Record<number, string> = {},
+): PipelineResolver {
   return {
     async resolveRefs(refs: readonly ParsedRef[]): Promise<ResolvedRef[]> {
       return refs.map((ref) => ({ ...ref, target: ref.number === 999 ? 'missing' : 'issue', crossRepo: false }));
     },
     async fetchOriginalPull(number: number) {
       return originals[number] ?? null;
+    },
+    async fetchIssueTitle(number: number) {
+      return issueTitles[number] ?? null;
     },
   };
 }
@@ -33,6 +39,38 @@ test('a plain direct PR attributes via its section and categorizes by its own ti
   assert.equal(out.attribution.source, 'section');
   assert.deepEqual(out.attribution.issueNumbers, [100]);
   assert.equal(out.categorization.section, 'Features');
+});
+
+test('an attributed PR displays the ISSUE title, not the PR title — the issue is written for a release-notes reader', async () => {
+  const out = await processPr(
+    fakeResolver({}, { 100: 'Batch delete silently drops rows over 500' }),
+    prInput({ title: 'feat: add batch delete API' }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.title, 'Batch delete silently drops rows over 500');
+});
+
+test('a PR with no linked issue keeps its own (backport-stripped) title — nothing else to show', async () => {
+  const out = await processPr(fakeResolver(), prInput({ body: 'no refs here' }), { gateRequiredAt: null });
+  assert.equal(out.title, 'feat: add batch delete API');
+});
+
+test('a renovate dependency-update PR shows "name: old -> new", never its own title or the issue title', async () => {
+  const body = [
+    '| Package | Change |',
+    '|---|---|',
+    '| [org.liquibase:liquibase-core](https://x) | `5.0.3` → `5.0.4` |',
+  ].join('\n');
+  const out = await processPr(
+    fakeResolver({}, { 100: 'should never be shown for a deps PR' }),
+    prInput({
+      title: 'deps: Update dependency org.liquibase:liquibase-core to v5.0.4 (stable/8.9)',
+      body,
+      authorLogin: 'renovate[bot]',
+    }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.title, 'org.liquibase:liquibase-core: 5.0.3 → 5.0.4');
 });
 
 test('a human-opened backport keeps [Backport ...] out of its displayed title', async () => {

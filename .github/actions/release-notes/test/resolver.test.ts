@@ -43,6 +43,23 @@ test('resolve() caps the number of refs it will resolve', async () => {
   assert.ok(resolved.length <= 20, 'refs beyond the cap are not resolved');
 });
 
+test('fetchIssueTitle returns the live issue title', async () => {
+  globalThis.fetch = (async () =>
+    new Response(JSON.stringify({ title: 'Streaming job worker stops polling permanently' }), { status: 200 })) as typeof fetch;
+
+  const resolver = new GithubResolver('token', 'camunda', 'camunda');
+  const title = await resolver.fetchIssueTitle(59633);
+
+  assert.equal(title, 'Streaming job worker stops polling permanently');
+});
+
+test('fetchIssueTitle returns null for a missing issue', async () => {
+  globalThis.fetch = (async () => new Response('', { status: 404 })) as typeof fetch;
+
+  const resolver = new GithubResolver('token', 'camunda', 'camunda');
+  assert.equal(await resolver.fetchIssueTitle(999999), null);
+});
+
 test('resolve() bounds how many requests are ever in flight at once', async () => {
   let inFlight = 0;
   let maxInFlight = 0;
