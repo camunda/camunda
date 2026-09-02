@@ -25,7 +25,6 @@ import io.camunda.client.api.search.response.AgentInstanceHistory;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -43,6 +42,7 @@ public class AgentInstanceHistorySearchIT {
 
   private static final String AGENT_ELEMENT_ID = "agentHistorySearchElement";
   private static final String PROCESS_ID = "agentHistorySearchProcess";
+  private static final String AGENT_JOB_TYPE = "agent-task";
 
   private static CamundaClient camundaClient;
 
@@ -61,7 +61,7 @@ public class AgentInstanceHistorySearchIT {
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .zeebeJobType(AGENT_JOB_TYPE)
             .zeebeAiAgentSubProcessDefinition()
             .endEvent("end")
             .done();
@@ -89,7 +89,7 @@ public class AgentInstanceHistorySearchIT {
     final var activatedJobs =
         camundaClient
             .newActivateJobsCommand()
-            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .jobType(AGENT_JOB_TYPE)
             .maxJobsToActivate(1)
             .withLease(true)
             .timeout(Duration.ofMinutes(5))
@@ -565,7 +565,7 @@ public class AgentInstanceHistorySearchIT {
     final var activatedJobs =
         camundaClient
             .newActivateJobsCommand()
-            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .jobType(AGENT_JOB_TYPE)
             .maxJobsToActivate(1)
             .withLease(true)
             .timeout(Duration.ofMinutes(5))

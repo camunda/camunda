@@ -34,7 +34,6 @@ import io.camunda.client.api.search.response.AgentInstance.Tool;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -47,6 +46,7 @@ import org.junit.jupiter.api.Test;
 public class AgentInstanceFetchIT {
 
   private static final String AGENT_ELEMENT_ID = "agentAhsp";
+  private static final String AGENT_JOB_TYPE = "agent-task";
 
   private static CamundaClient camundaClient;
 
@@ -66,7 +66,7 @@ public class AgentInstanceFetchIT {
         Bpmn.createExecutableProcess("AgentInstanceFetchProcess")
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .zeebeJobType(AGENT_JOB_TYPE)
             .zeebeAiAgentSubProcessDefinition()
             .endEvent("end")
             .done();
@@ -233,7 +233,7 @@ public class AgentInstanceFetchIT {
     final var activatedJobs =
         camundaClient
             .newActivateJobsCommand()
-            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .jobType(AGENT_JOB_TYPE)
             .maxJobsToActivate(1)
             .timeout(Duration.ofMinutes(5))
             .send()

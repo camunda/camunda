@@ -25,7 +25,6 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -41,6 +40,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 public class AgentInstanceTenancyIT {
 
   private static final String AGENT_ELEMENT_ID = "agentTenancyElement";
+  private static final String AGENT_JOB_TYPE = "agent-task";
   private static final String PROCESS_ID = "agentTenancyProcess";
   private static final String ADMIN = "admin";
   private static final String USER1 = "user1";
@@ -85,7 +85,7 @@ public class AgentInstanceTenancyIT {
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .zeebeJobType(AGENT_JOB_TYPE)
             .zeebeAiAgentSubProcessDefinition()
             .endEvent()
             .done();
@@ -400,7 +400,7 @@ public class AgentInstanceTenancyIT {
     final var activatedJobs =
         client
             .newActivateJobsCommand()
-            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .jobType(AGENT_JOB_TYPE)
             .maxJobsToActivate(1)
             .tenantIds(tenantId)
             .timeout(Duration.ofMinutes(5))
