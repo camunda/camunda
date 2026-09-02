@@ -436,7 +436,7 @@ matching conditions:
 
 - **Continuous reference runs** — release, weekly, and daily load tests already cover `main` and
   stable branches with a standard scenario set. See
-  [`load-tests/README.md` → Test Scenarios](https://github.com/camunda/camunda/blob/main/load-tests/README.md#test-scenarios) for what each
+  [`load-tests/README.md` → When Load Tests Run](https://github.com/camunda/camunda/blob/main/load-tests/README.md#when-load-tests-run) for what each
   variant covers (workload, secondary storage, naming pattern, validation dashboard); pick the
   closest match to your branch's scenario / secondary-storage / rate.
 - **Custom baseline run** — if your branch diverges from any continuous reference (different

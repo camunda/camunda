@@ -239,9 +239,9 @@ For the full list of metric names and PromQL queries, see [docs/metrics.md](docs
 The `load-test-ops` skill ([skills/load-test-ops/SKILL.md](skills/load-test-ops/SKILL.md))
 documents known dashboard UIDs for the benchmark cluster.
 
-## Test Scenarios
+## When Load Tests Run
 
-We have different scenarios targeting different use cases and versions. All use the same [setup](#setup) and [endurance test variants](../docs/testing/reliability-testing.md#endurance-test-variants) defined in the reliability testing documentation.
+Load tests are triggered on different occasions (per release, weekly, daily, or ad-hoc), each targeting different use cases and versions. They build on a common [setup](#setup), but differ in details (for example, stress tests use smaller secondary storage disks) and in the [test variants](../docs/testing/reliability-testing.md#endurance-test-variants) defined in the reliability testing documentation.
 
 ### Release load tests
 
