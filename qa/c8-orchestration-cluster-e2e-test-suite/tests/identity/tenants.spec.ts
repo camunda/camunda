@@ -54,8 +54,11 @@ test.describe.serial('tenants CRUD', () => {
       await expect(identityTenantsPage.createTenantModal).toContainText(
         'Please enter a valid Tenant ID',
       );
+      // The Create tenant modal renders on the new design system, whose Input
+      // marks a failed field with `aria-invalid` instead of Carbon's
+      // `data-invalid`.
       await expect(identityTenantsPage.tenantFieldId).toHaveAttribute(
-        'data-invalid',
+        'aria-invalid',
         'true',
       );
     });

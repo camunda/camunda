@@ -21,6 +21,7 @@ import {
   cancelBatchOperation,
   createCancellationBatch,
   createCompletedBatchOperation,
+  createSuspendedCancellationBatch,
   expectBatchState,
   notFoundDetail,
   resumeBatchOperation,
@@ -59,28 +60,20 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
   test('Suspend batch operation twice fails on second request, finally resumes', async ({
     request,
   }) => {
-    // Use a large instance count so the batch stays ACTIVE long enough for the
-    // suspend command to catch it in flight and be observed as SUSPENDED before
-    // it reaches a terminal state. 30 instances can finish first, making
-    // /suspension return a permanent 404 that the retry budget cannot recover
-    // from. Same remedy as the 500-instance tests below.
+    // Creating and suspending a cancellation batch is a race: even a large
+    // instance count cannot guarantee the batch is observed as SUSPENDED
+    // before it finishes cancelling and settles on COMPLETED (a 500-instance
+    // batch still lost this race on a loaded RDBMS cell). Recreate the batch
+    // and retry the suspend until one is caught in the SUSPENDED state, then
+    // assert the double-suspend and resume behaviour against it.
     const key =
-      await test.step('Create cancelable batch operation', async () => {
-        return createCancellationBatch(
+      await test.step('Create and suspend a cancelable batch operation', async () => {
+        return createSuspendedCancellationBatch(
           request,
           500,
           'batch_suspension_process',
         );
       });
-
-    await test.step('Suspend batch operation once', async () => {
-      const res = await suspendBatchOperation(request, key, 204);
-      await assertStatusCode(res, 204);
-    });
-
-    await test.step('Wait for suspended state', async () => {
-      await expectBatchState(request, key, 'SUSPENDED');
-    });
 
     await test.step('Suspend already suspended batch operation', async () => {
       const doubleRes = await suspendBatchOperation(request, key, 409);

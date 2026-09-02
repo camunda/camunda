@@ -253,24 +253,17 @@ test.describe('Processes', () => {
         `${baseUrl}/operate/processes?processDefinitionId=testProcess&processDefinitionVersion=1`,
       );
 
-      await expect(page).toHaveURL(
-        `${baseUrl}/operate/processes?processDefinitionId=testProcess&processDefinitionVersion=1`,
-      );
+      // Navigating to a process definition that does not exist surfaces a
+      // "Process could not be found" notification. The URL and filter-panel
+      // state are deliberately not asserted here: the app both strips the
+      // unknown process params (DiagramPanel) and re-applies them from the
+      // filter form (AutoSubmit), so the resulting query string and the Name
+      // field's enabled state race and are not stable signals. The
+      // notification fires on the no-match either way, so it is the reliable
+      // one to assert.
       await expect(
         operateProcessesPage.processCouldNotBeFoundMessage,
       ).toBeVisible();
-
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateFiltersPanelPage.processNameFilter).toBeDisabled({
-            timeout: 5000,
-          });
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-        maxRetries: 5,
-      });
     });
 
     await test.step('Deploy new process and verify it loads', async () => {

@@ -157,6 +157,93 @@ export const postMigrationAssertionOptions = {
   timeout: 120_000,
 };
 
+// Waits for a just-suspended batch to settle and reports the state it reached,
+// so callers can tell a successful suspend (SUSPENDED) from a lost race in
+// which the batch finished cancelling first (COMPLETED).
+async function settleSuspendedBatchState(
+  request: APIRequestContext,
+  batchOperationKey: string,
+): Promise<'SUSPENDED' | 'COMPLETED'> {
+  const result: {state?: string} = {};
+  await expect(async () => {
+    const res = await request.get(
+      buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/batch-operations/{batchOperationKey}',
+        method: 'GET',
+        status: '200',
+      },
+      res,
+    );
+    const body = await res.json();
+    result.state = body.state;
+    // ACTIVE is still transient here; keep polling until the batch settles.
+    expect(['SUSPENDED', 'COMPLETED']).toContain(body.state);
+  }).toPass({
+    intervals: [2_000, 3_000, 5_000, 5_000, 10_000],
+    timeout: 120_000,
+  });
+  return result.state as 'SUSPENDED' | 'COMPLETED';
+}
+
+/**
+ * Creates a cancellation batch and drives it into the SUSPENDED state,
+ * recreating the batch when the suspend loses the race.
+ *
+ * Suspending a cancellation batch is inherently racy: the batch can finish
+ * cancelling every instance before the accepted suspend command is reflected
+ * as SUSPENDED, settling on COMPLETED instead. No fixed instance count rules
+ * this out — a 500-instance batch still lost the race on a loaded RDBMS cell.
+ * When the batch wins the race (already gone when suspend is sent → 404, or it
+ * reaches COMPLETED before SUSPENDED is observed), this recreates a fresh
+ * batch and retries, so callers reliably receive a key that is currently
+ * SUSPENDED.
+ */
+export async function createSuspendedCancellationBatch(
+  request: APIRequestContext,
+  numberOfInstances = 500,
+  processDefinitionId = 'batch_suspension_process',
+  maxAttempts = 3,
+): Promise<string> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const key = await createCancellationBatch(
+      request,
+      numberOfInstances,
+      processDefinitionId,
+    );
+
+    // Suspend directly rather than via suspendBatchOperation: a batch that has
+    // already finished returns 404, which we treat as a lost race and retry
+    // instead of exhausting that helper's "expect 204" retry budget.
+    const suspendRes = await request.post(
+      buildUrl('/batch-operations/{batchOperationKey}/suspension', {
+        batchOperationKey: key,
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    if (suspendRes.status() === 404) {
+      continue;
+    }
+    await assertStatusCode(suspendRes, 204);
+
+    if ((await settleSuspendedBatchState(request, key)) === 'SUSPENDED') {
+      return key;
+    }
+  }
+
+  throw new Error(
+    `Batch operation reached a terminal state before it could be observed as SUSPENDED after ${maxAttempts} attempts.`,
+  );
+}
+
 export const notFoundDetail = (key: string) =>
   `Command 'SUSPEND' rejected with code 'NOT_FOUND': Expected to suspend a batch operation with key '${key}', but no such batch operation was found`;
 
