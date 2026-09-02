@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +22,8 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class EngineMappingsTest {
 
   @Nested
-  @DisplayName("Default configuration")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("Default configuration")
   @SpringJUnitConfig({
     UnifiedConfiguration.class,
     BrokerBasedPropertiesOverride.class,
@@ -51,7 +51,8 @@ public class EngineMappingsTest {
   }
 
   @Nested
-  @DisplayName("Explicit property overrides")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("Explicit property overrides")
   @SpringJUnitConfig({
     UnifiedConfiguration.class,
     BrokerBasedPropertiesOverride.class,
@@ -77,7 +78,8 @@ public class EngineMappingsTest {
   }
 
   @Nested
-  @DisplayName("Comparison mode")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("Comparison mode")
   @SpringJUnitConfig({
     UnifiedConfiguration.class,
     BrokerBasedPropertiesOverride.class,
@@ -104,7 +106,8 @@ public class EngineMappingsTest {
   }
 
   @Nested
-  @DisplayName("Output mode override (ORDERED)")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("Output mode override (ORDERED)")
   @SpringJUnitConfig({
     UnifiedConfiguration.class,
     BrokerBasedPropertiesOverride.class,

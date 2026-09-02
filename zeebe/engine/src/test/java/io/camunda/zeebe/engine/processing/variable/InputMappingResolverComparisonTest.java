@@ -80,7 +80,8 @@ class InputMappingResolverComparisonTest {
   private static final CombinedInputMappingResolver LEGACY = new CombinedInputMappingResolver();
 
   @Nested
-  @DisplayName("Rule 1: an input mapping creates a local variable")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("Rule 1: an input mapping creates a local variable")
   class Rule1CreatesALocalVariable {
 
     @Test
@@ -98,7 +99,8 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  @DisplayName("Rule 2: a source can reference variables from a higher scope")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("Rule 2: a source can reference variables from a higher scope")
   class Rule2ReadsFromAHigherScope {
 
     @Test
@@ -133,7 +135,8 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  @DisplayName("Rule 3: an unresolvable source yields null, it does not raise an incident")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("Rule 3: an unresolvable source yields null, it does not raise an incident")
   class Rule3UnresolvableSourceYieldsNull {
 
     @Test
@@ -151,7 +154,8 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  @DisplayName("Rule 4: input mappings build the local context")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("Rule 4: input mappings build the local context")
   class Rule4BuildsTheLocalContext {
 
     @Test
@@ -182,7 +186,8 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  @DisplayName("Rule 5: input mappings are evaluated in the order they are defined in")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("Rule 5: input mappings are evaluated in the order they are defined in")
   class Rule5EvaluatedInDeclarationOrder {
 
     @Test
@@ -283,7 +288,8 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  @DisplayName("Rule 6: later input mappings can replace earlier input mappings")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("Rule 6: later input mappings can replace earlier input mappings")
   class Rule6LaterReplacesEarlier {
 
     @Test
@@ -344,11 +350,12 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  @DisplayName(
-      "Rule 7: variables from a higher scope are partially shadowed by input mappings"
-          + " (OrderedInputMappingResolver already implements this correctly; the gap is in"
-          + " CombinedInputMappingResolver/8.9.0's combined-FEEL-context evaluation, which loses an"
-          + " ancestor's untouched sibling once that object's root has been partially mapped)")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName(
+  //    "Rule 7: variables from a higher scope are partially shadowed by input mappings"
+  //        + " (OrderedMappingResolver already implements this correctly; the gap is in"
+  //        + " CombinedMappingResolver/8.9.0's combined-FEEL-context evaluation, which loses an"
+  //        + " ancestor's untouched sibling once that object's root has been partially mapped)")
   class Rule7PartiallyShadowsHigherScope {
 
     @Test
@@ -454,15 +461,16 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  @DisplayName(
-      "Rule 8: types survive across input mappings within one resolver context, but not when"
-          + " written through MsgPack (confirmed bug camunda/camunda#60011). OrderedInputMappingResolver"
-          + " is the broken party here: it loses the FEEL type at every mapping boundary via the"
-          + " MsgPack round-trip. CombinedInputMappingResolver evaluates all mappings in one FEEL"
-          + " context expression, so the type survives. When input-comparison-mode=ORDERED is used"
-          + " with the COMBINED default, any mapping that reads a FEEL-typed value set by an"
-          + " earlier mapping WILL trigger comparison warnings -- that is expected and correct."
-          + " These tests will need updating once #60011 is fixed.")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName(
+  //    "Rule 8: types survive across input mappings within one resolver context, but not when"
+  //        + " written through MsgPack (confirmed bug camunda/camunda#60011). OrderedMappingResolver"
+  //        + " is the broken party here: it loses the FEEL type at every mapping boundary via the"
+  //        + " MsgPack round-trip. CombinedMappingResolver evaluates all mappings in one FEEL"
+  //        + " context expression, so the type survives. When input-comparison-mode=ORDERED is used"
+  //        + " with the COMBINED default, any mapping that reads a FEEL-typed value set by an"
+  //        + " earlier mapping WILL trigger comparison warnings -- that is expected and correct."
+  //        + " These tests will need updating once #60011 is fixed.")
   class Rule8TypesSurviveAcrossMappingsNotVariables {
 
     @Test
@@ -509,7 +517,8 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  @DisplayName("issue #60551 regression coverage (not one of the doc's numbered rules)")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("issue #60551 regression coverage (not one of the doc's numbered rules)")
   class Issue60551RegressionCoverage {
 
     @Test
@@ -559,7 +568,8 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  @DisplayName("additional regression coverage not addressed by the rules doc")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("additional regression coverage not addressed by the rules doc")
   class AdditionalCoverageBeyondTheRulesDoc {
 
     @Test
