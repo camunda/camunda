@@ -10,28 +10,18 @@ import { GithubGraphqlResolver } from './resolve';
 import { GithubResolver } from './resolver';
 
 /**
- * The `generate` entrypoint (release time). Wires steps 1-6 together in
- * order: range walk (git) -> commit->PR resolve (GraphQL phase 1) -> PR
- * metadata (GraphQL phase 2) -> per-PR attribution+categorize (pipeline,
- * REST resolver for ref resolution + the backport hop) -> render.
+ * The `generate` entrypoint (release time). Wires the steps in order: range
+ * walk (git) -> commit->PR mapping (GraphQL) -> PR metadata (GraphQL) -> per-PR
+ * attribution + categorize (pipeline, REST for ref resolution and the backport
+ * hop) -> render.
  *
- * Read-only by design (no write permissions anywhere in this job) — writing
- * labels/comments is the separate cutover work unit (#57714, 3-job split).
+ * Read-only by design; writing labels/comments is the cutover work unit (#57714).
  *
- * ponytail: closesIssueNumbers uses the PR's native `closingIssuesReferences`
- * field as the "this PR actually closed that issue" signal, rather than a
- * separate Issue-state fetch. Validated against a real backport-heavy range
- * (camunda/camunda 8.8.36..8.8.37): `closingIssuesReferences` is empty on
- * every bot backport by construction (confirmed live), which happens to
- * match reality there — the closing event is virtually always the original
- * PR merging to main, never the stable-branch backport, so "Partially
- * delivered" is correct for every backport-delivered issue observed. The
- * theoretical gap this proxy does NOT cover: a PR that is itself the real,
- * global closer of an issue but whose `closingIssuesReferences` was for some
- * other reason empty (e.g. the closing keyword lived in a since-edited body)
- * would be under-reported as "Partially delivered" rather than "Released".
- * Closing that gap needs a per-issue closer lookup (Issue.timelineItems),
- * which is its own I/O step, not something to add speculatively here.
+ * ponytail: `closesIssueNumbers` uses the PR's native `closingIssuesReferences`
+ * as the "actually closed that issue" signal instead of a per-issue closer
+ * lookup. A PR that really closed an issue but has an empty field (e.g. the
+ * keyword was edited out) is under-reported as "Partially delivered" rather
+ * than "Released"; closing that needs Issue.timelineItems, its own I/O step.
  */
 
 interface RunInputs {

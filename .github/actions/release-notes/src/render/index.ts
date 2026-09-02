@@ -1,17 +1,14 @@
 import type { AttributionSource } from '../attribution/types';
 
 /**
- * Turns the attributed-and-categorized PR list into the outputs everyone
- * downstream reads. Pure — no IO, no fetching; every fact it needs (which
- * issues a PR actually closes, per real GitHub issue state) is supplied by
- * the caller, never derived here from a keyword (the AC this generator
- * exists to satisfy: an accidental closing keyword on a non-final PR must
- * not stamp a premature "Released").
+ * Turns the attributed-and-categorized PR list into the outputs downstream
+ * reads. Pure: which issues a PR actually closed is supplied by the caller,
+ * never derived here from a `closes` keyword — an accidental keyword on a
+ * non-final PR must not stamp a premature "Released".
  */
 
-/** V6: every JSON output carries this so a future format change must bump it
- *  deliberately, rather than downstream consumers silently misreading a
- *  shape they weren't built for. */
+/** V6: every JSON output carries this, so a format change has to bump it
+ *  deliberately instead of consumers misreading a shape they weren't built for. */
 export const SCHEMA_VERSION = '1.0.0';
 
 const SECTION_ORDER = [
@@ -22,6 +19,7 @@ const SECTION_ORDER = [
   'Dependency updates',
   'Reverts',
   'Changes without a tracked issue',
+  'Maintenance', // asset-only, so last — never reached in the customer body
   'Uncategorized',
 ];
 
@@ -34,8 +32,7 @@ export interface RenderPrInput {
   readonly component: string | null;
   readonly breaking: boolean;
   readonly issueNumbers: readonly number[];
-  /** The subset of issueNumbers this PR's merge actually closed (per real
-   *  issue state, e.g. GitHub's closedByPullRequestsReferences) — never
+  /** The subset of issueNumbers this PR's merge actually closed — never
    *  derived from a `closes`/`fixes` keyword alone. */
   readonly closesIssueNumbers: readonly number[];
   readonly attributionSource: AttributionSource;
@@ -56,9 +53,7 @@ export interface RenderResult {
   readonly commentsJson: object;
 }
 
-/** D19: an opt-out PR is grouped under its own section for display, never
- *  its type's normal section — but only when its type is customer-visible;
- *  an internal-only opt-out type stays asset-only, same as a linked one. */
+/** D19: an opt-out PR is grouped under its own section, never its type's. */
 function groupNameFor(pr: RenderPrInput): string {
   if (pr.attributionSource === 'optOut') return 'Changes without a tracked issue';
   return pr.section ?? 'Uncategorized';
@@ -92,15 +87,10 @@ function renderLine(pr: RenderPrInput): string {
   return `- ${pr.title} (#${pr.number})${issues}`;
 }
 
-function relationFor(pr: RenderPrInput, issueNumber: number): 'closing' | 'contributor' {
-  return pr.closesIssueNumbers.includes(issueNumber) ? 'closing' : 'contributor';
-}
-
-function commentTextFor(pr: RenderPrInput, issueNumber: number, version: string): string {
-  const relation = relationFor(pr, issueNumber);
-  return relation === 'closing'
-    ? `Released in ${version} (#${pr.number}).`
-    : `Partially delivered in ${version} by #${pr.number}.`;
+function commentFor(pr: RenderPrInput, issueNumber: number, version: string): { relationKind: 'closing' | 'contributor'; text: string } {
+  return pr.closesIssueNumbers.includes(issueNumber)
+    ? { relationKind: 'closing', text: `Released in ${version} (#${pr.number}).` }
+    : { relationKind: 'contributor', text: `Partially delivered in ${version} by #${pr.number}.` };
 }
 
 export function render(
@@ -108,14 +98,14 @@ export function render(
   unattributed: readonly RenderPrInput[],
   options: RenderOptions,
 ): RenderResult {
-  if (unattributed.length > 0) {
-    if (!options.allowUnattributed || !options.unattributedReason) {
-      throw new Error(
-        `Unattributed PRs present, failing by default: ${unattributed.map((pr) => `#${pr.number}`).join(', ')}. ` +
-          'Set allow-unattributed=true with a non-empty unattributed-reason to override.',
-      );
-    }
+  if (unattributed.length > 0 && (!options.allowUnattributed || !options.unattributedReason)) {
+    throw new Error(
+      `Unattributed PRs present, failing by default: ${unattributed.map((pr) => `#${pr.number}`).join(', ')}. ` +
+        'Set allow-unattributed=true with a non-empty unattributed-reason to override.',
+    );
   }
+  // Past the guard, a non-empty reason is proven whenever `unattributed` is.
+  const unattributedReason = options.unattributedReason ?? '';
 
   const all = [...prs, ...unattributed];
   const customerPrs = prs.filter((pr) => pr.visibility === 'customer' && pr.section !== null);
@@ -127,14 +117,13 @@ export function render(
   const commentEntries = all.flatMap((pr) =>
     pr.issueNumbers.map((issueNumber) => ({
       issueNumber,
-      relationKind: relationFor(pr, issueNumber),
       prNumber: pr.number,
-      text: commentTextFor(pr, issueNumber, options.version),
+      ...commentFor(pr, issueNumber, options.version),
       marker: `<!-- release-notes:${options.version}:issue-${issueNumber} -->`,
     })),
   );
 
-  const overrides = unattributed.map((pr) => ({ number: pr.number, reason: options.unattributedReason ?? '' }));
+  const overrides = unattributed.map((pr) => ({ number: pr.number, reason: unattributedReason }));
 
   return {
     customerBody,

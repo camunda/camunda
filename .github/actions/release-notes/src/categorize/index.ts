@@ -1,20 +1,10 @@
 /**
- * Pure title-type -> release-notes-section categorization (D16/D17/D18/D19).
- * No IO — the caller (entrypoint wiring, step 7) supplies the already-resolved
- * title (see `resolveCategorizeTitle` for the backport-inherit composition,
- * mirroring `hopToBackportOriginal` in ../attribution) and the labels already
- * fetched from the API.
- *
- * Type -> section table copied verbatim from the signed design
- * (53605-issue-proposals.html) — do not reinvent it:
- *   feat -> Features · fix -> Bug Fixes · perf -> Performance ·
- *   docs -> Documentation · deps -> Dependency updates · revert -> Reverts ·
- *   refactor/build/ci/test/style -> Maintenance (internal-only, asset-only) ·
- *   merge -> excluded entirely (release-merge PRs, D25) ·
- *   unparseable/unknown type -> Uncategorized (C10 safety net, never drop).
+ * Pure title-type -> release-notes-section categorization (D16-D19, table from
+ * the signed design 53605-issue-proposals.html). No IO: the caller supplies the
+ * already-resolved title and the labels already fetched from the API.
  */
 
-/** D16: known bots whose own title/body can't be trusted as the category source. */
+/** D16: bots whose own title can't be trusted as the category source. */
 export const BOT_CATEGORY_OVERRIDES: Record<string, 'inherit-original' | 'deps'> = {
   'backport-action': 'inherit-original',
   'monorepo-devops-automation[bot]': 'inherit-original',
@@ -22,6 +12,8 @@ export const BOT_CATEGORY_OVERRIDES: Record<string, 'inherit-original' | 'deps'>
   'dependabot[bot]': 'deps',
 };
 
+/** null = excluded from both outputs (release-merge PRs, D25). An unknown or
+ *  unparseable type falls back to Uncategorized — never dropped (C10). */
 const SECTION_BY_TYPE: Record<string, string | null> = {
   feat: 'Features',
   fix: 'Bug Fixes',
@@ -37,8 +29,8 @@ const SECTION_BY_TYPE: Record<string, string | null> = {
   merge: null,
 };
 
-/** Sections hidden from the customer-facing body — still present in the full asset. */
-const INTERNAL_SECTIONS = new Set(['Maintenance']);
+/** The one section hidden from the customer-facing body — still in the full asset. */
+const INTERNAL_SECTION = 'Maintenance';
 
 // `type` + optional `(scope)` + optional `!` + `: ` + subject, tolerating a
 // leading "[Backport ...]" prefix a human-opened backport PR may still carry.
@@ -50,14 +42,8 @@ function parseType(title: string): string | null {
 
 const BACKPORT_TITLE_PREFIX = /^\[backport\b[^\]]*\]\s*/i;
 
-/**
- * Strips a leading `[Backport ...]` marker for display — it's noise for the
- * customer, who cares what changed, not which branch a bot's title-bracket
- * names. Deliberately scoped to that one marker (case-insensitive, "backport"
- * as the first word inside the brackets) so an unrelated bracketed prefix a
- * human title legitimately uses (e.g. "[CPT] ...", "[Doc Handling] ...")
- * is left alone.
- */
+/** Strips a leading `[Backport ...]` marker for display. Scoped to that one
+ *  word so an unrelated bracketed prefix ("[CPT] ...") is left alone. */
 export function stripBackportPrefix(title: string): string {
   return title.replace(BACKPORT_TITLE_PREFIX, '');
 }
@@ -65,21 +51,16 @@ export function stripBackportPrefix(title: string): string {
 // dependabot's default title states both sides directly: "Bump X from A to B".
 const DEPENDABOT_BUMP = /Bump (\S+) from (\S+) to (\S+)/i;
 
-// A renovate PR body table row: "| [package](url) ... | `old` → `new` | ...".
-// Column count varies (Package|Change vs Package|Update|Change vs +Age/Confidence),
-// so this only anchors on the leading `[name]` and the trailing backtick-quoted
-// arrow pair, not a fixed column count.
+// A renovate body table row: "| [package](url) ... | `old` → `new` | ...".
+// Anchored on the leading `[name]` and the backtick-quoted arrow pair only —
+// the column count varies between renovate's table shapes.
 const RENOVATE_TABLE_ROW = /^\|\s*\[([^\]]+)\].*?`([^`]+)`\s*→\s*`([^`]+)`.*\|\s*$/gm;
 
 /**
- * For a `deps:`-categorized PR, extract just the dependency name and the
- * old/new version — Peter's call: the customer wants "name: old → new", not
- * renovate's/dependabot's verbose title prose. Renovate never puts the old
- * version in the title itself (only the new one), so this reads its body's
- * update table; dependabot's default title already has both, read directly.
- * Returns null when neither shape is recognized (a human-written `deps:`
- * commit, or a renovate PR whose body table format has changed) — the
- * caller falls back to the plain title rather than showing a wrong parse.
+ * For a `deps:` PR, the dependency name and its old/new version — the customer
+ * wants "name: old → new", not the bot's verbose prose. Renovate only puts the
+ * new version in its title, so its body table is read instead. null when
+ * neither shape matches; the caller then keeps the plain title.
  */
 export function parseDependencyUpdate(input: { readonly title: string; readonly body: string }): string | null {
   const bump = DEPENDABOT_BUMP.exec(input.title);
@@ -95,8 +76,7 @@ export function parseDependencyUpdate(input: { readonly title: string; readonly 
 }
 
 export interface CategorizeInput {
-  /** The title to categorize FROM — for an inherit-original bot, the caller
-   *  must already have substituted the original PR's title (`resolveCategorizeTitle`). */
+  /** For an inherit-original bot, the caller must already have substituted the original PR's title. */
   readonly title: string;
   readonly authorLogin?: string;
   readonly componentLabels: readonly string[];
@@ -109,26 +89,8 @@ export interface CategorizeDecision {
   readonly visibility: 'customer' | 'internal';
   readonly breaking: boolean;
   readonly component: string | null;
-  /** Audit lines: unparseable bot title (names the login), multi-component grouping. */
+  /** Audit lines: unparseable title, multi-component grouping. */
   readonly reasons: readonly string[];
-}
-
-/**
- * Decide which title to feed `categorize()`. Pure composition, same shape as
- * `hopToBackportOriginal` in ../attribution: `deps`-override bots are handled
- * inside `categorize()` itself (their title is irrelevant either way); only
- * `inherit-original` needs a substitute title, and only once the caller has
- * one to offer (`originalTitle` undefined otherwise degrades to the bot's own
- * title rather than throwing — a missing original is a resolver-layer concern).
- */
-export function resolveCategorizeTitle(input: {
-  readonly title: string;
-  readonly authorLogin?: string;
-  readonly originalTitle?: string;
-}): string {
-  const override = input.authorLogin ? BOT_CATEGORY_OVERRIDES[input.authorLogin] : undefined;
-  if (override === 'inherit-original' && input.originalTitle !== undefined) return input.originalTitle;
-  return input.title;
 }
 
 export function categorize(input: CategorizeInput): CategorizeDecision {
@@ -136,12 +98,14 @@ export function categorize(input: CategorizeInput): CategorizeDecision {
   const override = input.authorLogin ? BOT_CATEGORY_OVERRIDES[input.authorLogin] : undefined;
 
   const type = override === 'deps' ? 'deps' : parseType(input.title);
-  if (type === null && input.authorLogin) {
-    reasons.push(`Unknown bot ${input.authorLogin}'s title does not parse as a conventional commit: "${input.title}".`);
+  if (type === null) {
+    const author = input.authorLogin ? ` (author ${input.authorLogin})` : '';
+    reasons.push(`Title does not parse as a conventional commit${author}: "${input.title}".`);
   }
 
-  const section = type === null ? 'Uncategorized' : (type in SECTION_BY_TYPE ? SECTION_BY_TYPE[type]! : 'Uncategorized');
-  const visibility: 'customer' | 'internal' = section !== null && INTERNAL_SECTIONS.has(section) ? 'internal' : 'customer';
+  const mapped = type === null ? undefined : SECTION_BY_TYPE[type];
+  const section = mapped === undefined ? 'Uncategorized' : mapped;
+  const visibility: 'customer' | 'internal' = section === INTERNAL_SECTION ? 'internal' : 'customer';
 
   let component: string | null;
   if (input.componentLabels.length === 0) {

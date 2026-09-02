@@ -1,12 +1,6 @@
-import { decideAttribution, evaluatePostGateAnomaly, hopToBackportOriginal } from '../attribution';
+import { decideAttribution, evaluatePostGateAnomaly } from '../attribution';
 import type { AttributionAnomaly, AttributionDecision } from '../attribution/types';
-import {
-  BOT_CATEGORY_OVERRIDES,
-  categorize,
-  parseDependencyUpdate,
-  resolveCategorizeTitle,
-  stripBackportPrefix,
-} from '../categorize';
+import { BOT_CATEGORY_OVERRIDES, categorize, parseDependencyUpdate, stripBackportPrefix } from '../categorize';
 import type { CategorizeDecision } from '../categorize';
 import { extractSection, isOptOutTicked, parseRefs } from '../parser';
 import { isLinkExemptAuthor } from '../title';
@@ -14,23 +8,26 @@ import type { ParsedRef, ResolvedRef } from '../types';
 
 /**
  * Composes the pure attribution + categorize modules with ref resolution for
- * ONE PR, including the backport hop. Mirrors gate/index.ts's role: the pure
- * core stays unit-tested against a fake resolver, no network, and this is the
- * only place that knows the two need to run together.
+ * ONE PR, including the backport hop — the only place that knows the two run
+ * together. Mirrors gate/index.ts: the pure core is tested against a fake
+ * resolver, no network.
  *
- * ponytail: the hop's `fetchOriginalPull` does not carry the original's
- * native `closingIssuesReferences` (that field only comes from the batched
- * GraphQL PR-metadata phase, and the original PR is often outside the
- * current release range, so it was never fetched there) — the hop's own
- * attribution chain runs section-scan and legacy-scan only. This only matters
- * when the original ALSO has no section ref and no legacy ref, which is
- * already the rare "no attribution found anywhere" case; revisit if a real
- * release shows this producing a wrong unattributed hop.
+ * ponytail: the hop attributes the original from its body alone (section +
+ * legacy scan), without the original's native `closingIssuesReferences` — that
+ * field comes only from the batched GraphQL metadata phase, and the original is
+ * usually outside the release range. Only matters when the original has no ref
+ * of either kind, i.e. the already-rare "nothing found anywhere" case.
  */
+
+export interface OriginalPull {
+  readonly body: string;
+  readonly title: string;
+  readonly authorLogin?: string;
+}
 
 export interface PipelineResolver {
   resolveRefs(refs: readonly ParsedRef[]): Promise<ResolvedRef[]>;
-  fetchOriginalPull(number: number): Promise<{ readonly body: string; readonly title: string; readonly authorLogin?: string } | null>;
+  fetchOriginalPull(number: number): Promise<OriginalPull | null>;
   fetchIssueTitle(number: number): Promise<string | null>;
 }
 
@@ -45,8 +42,8 @@ export interface PipelinePrInput {
 }
 
 export interface PipelineOptions {
-  /** The branch's recorded gate watermark, or null if it hasn't required the
-   *  gate yet — never affects attribution itself, only anomaly severity (D20). */
+  /** The branch's gate watermark, or null if it isn't gated yet — affects
+   *  anomaly severity only, never attribution itself (D20). */
   readonly gateRequiredAt: string | null;
 }
 
@@ -71,25 +68,22 @@ async function attributeDirectly(
 }
 
 /**
- * Bot link exemption (mirrors the gate's `isLinkExemptAuthor` — currently
- * `renovate[bot]` only): a dependency-bump PR opened from the bot's own
- * template will never carry a section ref or a checkbox tick, and pre-gate
- * there was no opt-out mechanism for it to use even if it wanted to. Applied
- * LAST, only to a still-unattributed decision after the direct scan and the
- * backport hop have both had their chance — an exempt bot that DID link a
- * real issue keeps that real attribution, never overridden by the exemption.
+ * Direct scan, then the backport hop (inheriting the original's decision,
+ * C7/V2), then the bot link exemption LAST — an exempt bot that did link a real
+ * issue keeps that attribution rather than being overridden by the exemption.
  */
-async function attributePr(resolver: PipelineResolver, pr: PipelinePrInput): Promise<AttributionDecision> {
+async function attributePr(
+  resolver: PipelineResolver,
+  pr: PipelinePrInput,
+  original: () => Promise<OriginalPull | null>,
+): Promise<AttributionDecision> {
   let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
 
   if (decision.source === 'unattributed') {
-    const backport = parseRefs(pr.body).find((ref) => ref.kind === 'backport');
-    if (backport) {
-      const original = await resolver.fetchOriginalPull(backport.number);
-      if (original) {
-        const originalDecision = await attributeDirectly(resolver, original.body, []);
-        decision = hopToBackportOriginal(originalDecision);
-      }
+    const originalPull = await original();
+    if (originalPull) {
+      const originalDecision = await attributeDirectly(resolver, originalPull.body, []);
+      decision = { ...originalDecision, deliveryPath: 'backportHop' };
     }
   }
 
@@ -106,43 +100,32 @@ async function attributePr(resolver: PipelineResolver, pr: PipelinePrInput): Pro
 }
 
 /**
- * Resolves both the category-detection title AND the customer-facing display
- * title from the same lookup — an inherit-original bot's own title is
- * garbage for both purposes, so whichever title categorize() uses to decide
- * the section is also the one worth showing the reader, with the
- * `[Backport ...]` marker itself stripped either way (noise, not a fact the
- * customer needs).
+ * The category-detection title and the display title come from the same lookup:
+ * an inherit-original bot's own title is garbage for both purposes. The
+ * `[Backport ...]` marker is stripped either way — noise for the customer.
  */
 async function categorizePr(
   resolver: PipelineResolver,
   pr: PipelinePrInput,
+  original: () => Promise<OriginalPull | null>,
+  override: 'inherit-original' | 'deps' | undefined,
 ): Promise<{ displayTitle: string; categorization: CategorizeDecision }> {
-  const override = pr.authorLogin ? BOT_CATEGORY_OVERRIDES[pr.authorLogin] : undefined;
-  let originalTitle: string | undefined;
-  if (override === 'inherit-original') {
-    const backport = parseRefs(pr.body).find((ref) => ref.kind === 'backport');
-    if (backport) originalTitle = (await resolver.fetchOriginalPull(backport.number))?.title;
-  }
-
-  const resolvedTitle = resolveCategorizeTitle({ title: pr.title, authorLogin: pr.authorLogin, originalTitle });
-  const displayTitle = stripBackportPrefix(resolvedTitle);
+  const inherited = override === 'inherit-original' ? (await original())?.title : undefined;
+  const displayTitle = stripBackportPrefix(inherited ?? pr.title);
   const componentLabels = pr.labels.filter((label) => label.startsWith('component/'));
-  const breakingChangeLabel = pr.labels.includes('BREAKING CHANGE');
-  const categorization = categorize({ title: displayTitle, authorLogin: pr.authorLogin, componentLabels, breakingChangeLabel });
+  const categorization = categorize({
+    title: displayTitle,
+    authorLogin: pr.authorLogin,
+    componentLabels,
+    breakingChangeLabel: pr.labels.includes('BREAKING CHANGE'),
+  });
   return { displayTitle, categorization };
 }
 
 /**
- * Picks the customer-facing title, in priority order:
- *  1. A `deps:` PR's own body/title tells us the dependency name and its
- *     old->new versions directly — the customer wants THAT, not renovate's
- *     verbose prose or a PR-title reformulation.
- *  2. Any other attributed PR shows its issue's title, not its own: the
- *     issue is written for a reader of release notes, the PR is written for
- *     a reviewer of the diff. Only the FIRST linked issue's title is used
- *     when a PR touches several — one title per line, same as before.
- *  3. No issue at all (unattributed, opt-out, bot-exempt) keeps the PR's own
- *     (backport-prefix-stripped) title — there is nothing else to show.
+ * The customer-facing title, in priority order: a `deps:` PR's parsed
+ * "name: old → new"; else the FIRST linked issue's own title (written for a
+ * release-notes reader, unlike the PR title); else the PR's own title.
  */
 async function resolveDisplayTitle(
   resolver: PipelineResolver,
@@ -170,9 +153,17 @@ export async function processPr(
   pr: PipelinePrInput,
   options: PipelineOptions,
 ): Promise<PipelinePrOutput> {
-  const attribution = await attributePr(resolver, pr);
-  const { displayTitle: fallbackTitle, categorization } = await categorizePr(resolver, pr);
-  const title = await resolveDisplayTitle(resolver, pr, categorization, attribution, fallbackTitle);
+  const backport = parseRefs(pr.body).find((ref) => ref.kind === 'backport');
+  const override = pr.authorLogin ? BOT_CATEGORY_OVERRIDES[pr.authorLogin] : undefined;
+  // Both the attribution hop and the inherit-original title want the same
+  // original PR — fetch it at most once per PR, and only if one of them asks.
+  let pending: Promise<OriginalPull | null> | undefined;
+  const original = (): Promise<OriginalPull | null> =>
+    (pending ??= backport ? resolver.fetchOriginalPull(backport.number) : Promise.resolve(null));
+
+  const attribution = await attributePr(resolver, pr, original);
+  const { displayTitle, categorization } = await categorizePr(resolver, pr, original, override);
+  const title = await resolveDisplayTitle(resolver, pr, categorization, attribution, displayTitle);
   const anomaly = evaluatePostGateAnomaly({
     mergedAt: pr.mergedAt,
     gateRequiredAt: options.gateRequiredAt,

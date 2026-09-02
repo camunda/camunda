@@ -1,16 +1,27 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { categorize, parseDependencyUpdate, resolveCategorizeTitle, stripBackportPrefix } from '../src/categorize';
+import { categorize, parseDependencyUpdate, stripBackportPrefix } from '../src/categorize';
 
-test('conventional type maps to its section: feat -> Features', () => {
-  const d = categorize({ title: 'feat: add batch delete API', componentLabels: [], breakingChangeLabel: false });
-  assert.equal(d.section, 'Features');
-  assert.equal(d.visibility, 'customer');
-});
-
-test('fix maps to Bug Fixes', () => {
-  const d = categorize({ title: 'fix: correct retry backoff', componentLabels: [], breakingChangeLabel: false });
-  assert.equal(d.section, 'Bug Fixes');
+test('every conventional type maps to its designed section and visibility', () => {
+  const cases: [string, string | null, 'customer' | 'internal'][] = [
+    ['feat', 'Features', 'customer'],
+    ['fix', 'Bug Fixes', 'customer'],
+    ['perf', 'Performance', 'customer'],
+    ['docs', 'Documentation', 'customer'],
+    ['deps', 'Dependency updates', 'customer'],
+    ['revert', 'Reverts', 'customer'],
+    ['refactor', 'Maintenance', 'internal'],
+    ['build', 'Maintenance', 'internal'],
+    ['ci', 'Maintenance', 'internal'],
+    ['test', 'Maintenance', 'internal'],
+    ['style', 'Maintenance', 'internal'],
+    ['merge', null, 'customer'], // excluded from both outputs, D25
+  ];
+  for (const [type, section, visibility] of cases) {
+    const d = categorize({ title: `${type}: something`, componentLabels: [], breakingChangeLabel: false });
+    assert.equal(d.section, section, `${type} -> section`);
+    assert.equal(d.visibility, visibility, `${type} -> visibility`);
+  }
 });
 
 test('stripBackportPrefix removes a leading [Backport ...] marker — it is noise, not a customer-facing fact', () => {
@@ -28,21 +39,6 @@ test('stripBackportPrefix leaves an unrelated leading bracket untouched', () => 
 
 test('stripBackportPrefix is a no-op on a title with no bracket prefix', () => {
   assert.equal(stripBackportPrefix('feat: add batch delete API'), 'feat: add batch delete API');
-});
-
-test('resolveCategorizeTitle: a backport bot inherits the original PR title, not its own', () => {
-  const title = resolveCategorizeTitle({
-    title: '[Backport 8.8] chore stuff',
-    authorLogin: 'monorepo-devops-automation[bot]',
-    originalTitle: 'fix: correct retry backoff',
-  });
-  const d = categorize({ title, componentLabels: [], breakingChangeLabel: false });
-  assert.equal(d.section, 'Bug Fixes');
-});
-
-test('resolveCategorizeTitle: a non-inherit-original bot keeps its own title', () => {
-  const title = resolveCategorizeTitle({ title: 'feat: something', authorLogin: 'qa-processes[bot]' });
-  assert.equal(title, 'feat: something');
 });
 
 test('D27: unknown bot with a parseable title categorizes via the plain fallback, no map entry needed', () => {
@@ -110,11 +106,6 @@ test('dependabot[bot] is forced to deps regardless of its own title', () => {
   assert.equal(d.section, 'Dependency updates');
 });
 
-test('merge type is excluded entirely, not Uncategorized', () => {
-  const d = categorize({ title: 'merge: release-8.8.30 back to stable/8.8', componentLabels: [], breakingChangeLabel: false });
-  assert.equal(d.section, null);
-});
-
 test('parseDependencyUpdate reads name/old/new from a renovate single-row table', () => {
   const body = [
     'This PR contains the following updates:',
@@ -155,12 +146,4 @@ test('parseDependencyUpdate reads a dependabot "Bump X from A to B" title direct
 
 test('parseDependencyUpdate returns null when neither shape matches', () => {
   assert.equal(parseDependencyUpdate({ title: 'ci: bump runner', body: 'no table here' }), null);
-});
-
-test('internal-only types (build/ci/test/style/refactor) are asset-only, not customer-visible', () => {
-  for (const type of ['build', 'ci', 'test', 'style', 'refactor']) {
-    const d = categorize({ title: `${type}: something`, componentLabels: [], breakingChangeLabel: false });
-    assert.equal(d.section, 'Maintenance', `${type} should map to Maintenance`);
-    assert.equal(d.visibility, 'internal', `${type} should be internal-only`);
-  }
 });

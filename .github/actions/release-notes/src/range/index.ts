@@ -1,9 +1,7 @@
 /**
- * The pure part of the range resolver (#50968): baseline STRATEGY selection
- * (which previous point to diff against — never the actual git call) and the
- * commit-to-PR dedupe/ambiguity rules. The actual `merge-base`/`git log` calls
- * are the I/O part (a later step) — this module only decides what to ask git,
- * and how to turn its answer into a deduped PR list.
+ * The pure part of the range resolver (#50968): which previous point to diff
+ * against, and how to turn git's answer into a deduped PR list. The git calls
+ * themselves live in ./walk.
  */
 
 const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha(\d+))?$/;
@@ -30,19 +28,13 @@ export type BaselineStrategy =
   | { readonly kind: 'previousTag'; readonly ref: string }
   | { readonly kind: 'forkPoint'; readonly otherRef: string };
 
-/**
- * Decide the baseline to diff `target` against, from the version string
- * alone — V5's alpha1-of-cycle rule is deliberately "always the fork point,
- * never a tag lookup", so this needs no tag list to consult; every other
- * case is pure arithmetic on the version number too (previous patch/alpha,
- * or the previous minor's own release tag by construction).
- */
+/** The baseline to diff `target` against, from the version string alone — no
+ *  tag list to consult, every case is arithmetic on the version number. */
 export function resolveBaselineStrategy(target: string): BaselineStrategy {
   const v = parseVersion(target);
 
-  // alpha1-of-cycle: the first alpha of a brand-new minor, no prior tag on
-  // this line exists yet — ALWAYS the fork point off the previous minor's
-  // stable branch, never a tag lookup (V5).
+  // alpha1-of-cycle: no prior tag on this line exists yet, so always the fork
+  // point off the previous minor's stable branch, never a tag lookup (V5).
   if (v.alpha === 1 && v.patch === 0) {
     return { kind: 'forkPoint', otherRef: `origin/stable/${v.major}.${v.minor - 1}` };
   }
@@ -55,15 +47,13 @@ export function resolveBaselineStrategy(target: string): BaselineStrategy {
     return { kind: 'previousTag', ref: format({ ...v, patch: v.patch - 1 }) };
   }
 
-  // Minor release (patch 0, not alpha): fork point between the previous
-  // minor's own release tag and this target — kills the ancestry warning.
+  // Minor release: fork point between the previous minor's release tag and this target.
   const previousMinorTag = format({ major: v.major, minor: v.minor - 1, patch: 0 });
   return { kind: 'forkPoint', otherRef: previousMinorTag };
 }
 
-/** `[maven-release-plugin]` stub-segment commits are the only legitimate
- *  PR-less commits (C12) — everything else on a protected branch without a PR
- *  is a ruleset-bypass anomaly. */
+/** The only legitimate PR-less commits (C12); anything else without a PR on a
+ *  protected branch is a ruleset-bypass anomaly. */
 const AUTOMATION_WHITELIST = /^\[maven-release-plugin\]/;
 
 export interface WalkedCommit {
@@ -78,20 +68,13 @@ export interface RangeResolution {
 }
 
 /**
- * Dedupe a first-parent commit walk down to one entry per PR, applying the
- * ambiguity rule (prefer the PR targeting the release branch; still tied ->
- * audit, never guess) and the PR-less-commit whitelist (C10/C12).
+ * Dedupe a first-parent commit walk to one entry per PR. Ambiguity rule: prefer
+ * the PR targeting the release branch; still tied -> audit, never guess.
  */
 export function resolveCommitsToPrs(commits: readonly WalkedCommit[], releaseBranch: string): RangeResolution {
-  const prNumbers: number[] = [];
   const reasons: string[] = [];
-  const seen = new Set<number>();
-
-  const attribute = (pr: { readonly number: number }): void => {
-    if (seen.has(pr.number)) return;
-    seen.add(pr.number);
-    prNumbers.push(pr.number);
-  };
+  // Insertion-ordered, so this both dedupes and preserves walk order.
+  const prNumbers = new Set<number>();
 
   for (const commit of commits) {
     if (commit.associatedPrs.length === 0) {
@@ -103,13 +86,13 @@ export function resolveCommitsToPrs(commits: readonly WalkedCommit[], releaseBra
     }
 
     if (commit.associatedPrs.length === 1) {
-      attribute(commit.associatedPrs[0]!);
+      prNumbers.add(commit.associatedPrs[0]!.number);
       continue;
     }
 
     const matchingBranch = commit.associatedPrs.filter((pr) => pr.baseRefName === releaseBranch);
     if (matchingBranch.length === 1) {
-      attribute(matchingBranch[0]!);
+      prNumbers.add(matchingBranch[0]!.number);
     } else {
       const list = commit.associatedPrs.map((pr) => `#${pr.number}`).join(', ');
       reasons.push(
@@ -118,5 +101,5 @@ export function resolveCommitsToPrs(commits: readonly WalkedCommit[], releaseBra
     }
   }
 
-  return { prNumbers, reasons };
+  return { prNumbers: [...prNumbers], reasons };
 }

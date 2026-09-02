@@ -8,12 +8,14 @@ import type { ParsedRef, ResolvedRef } from '../src/types';
 function fakeResolver(
   originals: Record<number, { body: string; title: string; authorLogin?: string }> = {},
   issueTitles: Record<number, string> = {},
+  counts: { originalPulls: number } = { originalPulls: 0 },
 ): PipelineResolver {
   return {
     async resolveRefs(refs: readonly ParsedRef[]): Promise<ResolvedRef[]> {
       return refs.map((ref) => ({ ...ref, target: ref.number === 999 ? 'missing' : 'issue', crossRepo: false }));
     },
     async fetchOriginalPull(number: number) {
+      counts.originalPulls++;
       return originals[number] ?? null;
     },
     async fetchIssueTitle(number: number) {
@@ -50,10 +52,6 @@ test('an attributed PR displays the ISSUE title, not the PR title — the issue 
   assert.equal(out.title, 'Batch delete silently drops rows over 500');
 });
 
-test('a PR with no linked issue keeps its own (backport-stripped) title — nothing else to show', async () => {
-  const out = await processPr(fakeResolver(), prInput({ body: 'no refs here' }), { gateRequiredAt: null });
-  assert.equal(out.title, 'feat: add batch delete API');
-});
 
 test('a renovate dependency-update PR shows "name: old -> new", never its own title or the issue title', async () => {
   const body = [
@@ -99,9 +97,10 @@ test('an inherit-original bot backport displays the ORIGINAL title, not its own 
   assert.equal(out.title, 'fix: correct retry backoff');
 });
 
-test('a PR with no linked issue and no backport marker stays unattributed', async () => {
+test('a PR with no linked issue and no backport marker stays unattributed and keeps its own title', async () => {
   const out = await processPr(fakeResolver(), prInput({ body: 'no refs here' }), { gateRequiredAt: null });
   assert.equal(out.attribution.source, 'unattributed');
+  assert.equal(out.title, 'feat: add batch delete API');
 });
 
 test('a backport bot PR with only a marker hops to the original and inherits its section attribution + type', async () => {
@@ -160,4 +159,28 @@ test('a post-gate PR that falls back to the legacy scan is flagged as an anomaly
   );
   assert.equal(out.attribution.source, 'legacyBodyScan');
   assert.equal(out.anomaly, 'post_gate_fallback_attribution');
+});
+
+test('the backport hop and the inherit-original title share ONE fetch of the original PR', async () => {
+  const counts = { originalPulls: 0 };
+  const resolver = fakeResolver(
+    { 200: { body: '## Related issues\ncloses #100', title: 'fix: correct retry backoff' } },
+    {},
+    counts,
+  );
+  const out = await processPr(
+    resolver,
+    prInput({ number: 300, title: 'chore stuff', body: 'Backport of #200', authorLogin: 'monorepo-devops-automation[bot]' }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.deliveryPath, 'backportHop');
+  assert.equal(out.title, 'fix: correct retry backoff');
+  assert.equal(counts.originalPulls, 1, 'attribution and title resolution must reuse the same lookup');
+});
+
+test('a PR with no backport marker never fetches an original PR at all', async () => {
+  const counts = { originalPulls: 0 };
+  const out = await processPr(fakeResolver({}, {}, counts), prInput({ body: 'no refs here' }), { gateRequiredAt: null });
+  assert.equal(out.attribution.source, 'unattributed');
+  assert.equal(counts.originalPulls, 0);
 });

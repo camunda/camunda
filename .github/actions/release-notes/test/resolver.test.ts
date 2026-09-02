@@ -39,8 +39,8 @@ test('resolve() caps the number of refs it will resolve', async () => {
   const refs = Array.from({ length: 500 }, (_, i) => ref(i + 1));
   const resolved = await resolver.resolve(refs);
 
-  assert.ok(calls <= 20, `a body stuffed with 500 distinct refs must not fire 500 API calls (fired ${calls})`);
-  assert.ok(resolved.length <= 20, 'refs beyond the cap are not resolved');
+  assert.equal(calls, 20, 'a body stuffed with 500 distinct refs resolves exactly MAX_REFS of them');
+  assert.equal(resolved.length, 20, 'refs beyond the cap are not resolved');
 });
 
 test('fetchIssueTitle returns the live issue title', async () => {
@@ -75,5 +75,7 @@ test('resolve() bounds how many requests are ever in flight at once', async () =
   const refs = Array.from({ length: 20 }, (_, i) => ref(i + 1));
   await resolver.resolve(refs);
 
-  assert.ok(maxInFlight <= 5, `concurrency must be bounded, saw ${maxInFlight} in flight at once`);
+  // Exact, not `<=`: a serial implementation would also satisfy an upper bound
+  // while losing the point of the batching.
+  assert.equal(maxInFlight, 5, `expected CONCURRENCY in flight, saw ${maxInFlight}`);
 });
