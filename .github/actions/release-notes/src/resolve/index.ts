@@ -60,6 +60,21 @@ function assertField<T>(value: T | null | undefined, description: string): T {
   return value;
 }
 
+/**
+ * GraphQL's `author.login` omits the `[bot]` suffix that REST's `user.login`
+ * always includes for the exact same bot actor — confirmed live against
+ * camunda/camunda (e.g. `monorepo-devops-automation` vs
+ * `monorepo-devops-automation[bot]`), not documented anywhere obvious.
+ * Every bot-identity set in this package (BOT_TITLE_EXEMPT, BOT_LINK_EXEMPT,
+ * BOT_CATEGORY_OVERRIDES) is keyed on the REST convention, so this
+ * normalizes GraphQL's answer to match rather than leaving every bot map
+ * silently unmatched for generator-sourced PRs.
+ */
+function normalizeAuthorLogin(author: { login?: string; __typename?: string } | null): string | undefined {
+  if (!author?.login) return undefined;
+  return author.__typename === 'Bot' && !author.login.endsWith('[bot]') ? `${author.login}[bot]` : author.login;
+}
+
 export class GithubGraphqlResolver implements GraphqlResolver {
   constructor(
     private readonly token: string,
@@ -86,9 +101,9 @@ export class GithubGraphqlResolver implements GraphqlResolver {
   }
 
   private async mapCommitBatch(shas: readonly string[]): Promise<CommitPrMapping[]> {
-    const query = `query($owner: String!, $name: String!, ${shas.map((_, i) => `$sha${i}: String!`).join(', ')}) {
+    const query = `query($owner: String!, $name: String!, ${shas.map((_, i) => `$sha${i}: GitObjectID!`).join(', ')}) {
       repository(owner: $owner, name: $name) {
-        ${shas.map((_, i) => `c${i}: object(oid: $sha${i}) { ... on Commit { associatedPullRequests(first: 10) { nodes { number baseRefName } pageInfo { hasNextPage endCursor } } } } `).join('\n')}
+        ${shas.map((_, i) => `c${i}: object(oid: $sha${i}) { ... on Commit { associatedPullRequests(first: 10) { nodes { number baseRefName state } pageInfo { hasNextPage endCursor } } } } `).join('\n')}
       }
     }`;
     const variables: Record<string, unknown> = { owner: this.owner, name: this.repo };
@@ -105,16 +120,25 @@ export class GithubGraphqlResolver implements GraphqlResolver {
 
   /** Follows `pageInfo.hasNextPage` for one commit's `associatedPullRequests`
    *  connection until exhausted — rare (a commit tied to many PRs), but never
-   *  silently truncated at the first page. */
+   *  silently truncated at the first page.
+   *
+   * Filters to `state === 'MERGED'`: the GraphQL field has no `states` filter
+   * argument (verified against the live API), and it returns EVERY pull
+   * request whose branch history contains the commit — for a commit already
+   * on the base branch, that is every PR opened against that branch
+   * afterward, not just the one that actually merged it. An unfiltered list
+   * routinely runs into the dozens and makes nearly every commit look
+   * "ambiguous" to the range resolver's dedupe rule. */
   private async drainAssociatedPrs(
     sha: string,
     firstPage: Record<string, unknown>,
   ): Promise<{ readonly number: number; readonly baseRefName: string }[]> {
+    type Node = { number: number; baseRefName: string; state: string };
     const connection = assertField(
       firstPage.associatedPullRequests as Record<string, unknown> | undefined,
       `associatedPullRequests on commit ${sha}`,
     );
-    let nodes = assertField(connection.nodes as { number: number; baseRefName: string }[] | undefined, `associatedPullRequests.nodes on commit ${sha}`);
+    let nodes = assertField(connection.nodes as Node[] | undefined, `associatedPullRequests.nodes on commit ${sha}`);
     let pageInfo = assertField(
       connection.pageInfo as { hasNextPage: boolean; endCursor: string | null } | undefined,
       `associatedPullRequests.pageInfo on commit ${sha}`,
@@ -122,9 +146,9 @@ export class GithubGraphqlResolver implements GraphqlResolver {
     const all = [...nodes];
 
     while (pageInfo.hasNextPage) {
-      const query = `query($owner: String!, $name: String!, $sha: String!, $after: String) {
+      const query = `query($owner: String!, $name: String!, $sha: GitObjectID!, $after: String) {
         repository(owner: $owner, name: $name) {
-          c: object(oid: $sha) { ... on Commit { associatedPullRequests(first: 10, after: $after) { nodes { number baseRefName } pageInfo { hasNextPage endCursor } } } }
+          c: object(oid: $sha) { ... on Commit { associatedPullRequests(first: 10, after: $after) { nodes { number baseRefName state } pageInfo { hasNextPage endCursor } } } }
         }
       }`;
       const repository = assertField<Record<string, unknown>>(
@@ -138,7 +162,7 @@ export class GithubGraphqlResolver implements GraphqlResolver {
         commit.associatedPullRequests as Record<string, unknown> | undefined,
         `associatedPullRequests on commit ${sha}`,
       );
-      nodes = assertField(nextConnection.nodes as { number: number; baseRefName: string }[] | undefined, `associatedPullRequests.nodes on commit ${sha}`);
+      nodes = assertField(nextConnection.nodes as Node[] | undefined, `associatedPullRequests.nodes on commit ${sha}`);
       pageInfo = assertField(
         nextConnection.pageInfo as { hasNextPage: boolean; endCursor: string | null } | undefined,
         `associatedPullRequests.pageInfo on commit ${sha}`,
@@ -146,7 +170,7 @@ export class GithubGraphqlResolver implements GraphqlResolver {
       all.push(...nodes);
     }
 
-    return all;
+    return all.filter((node) => node.state === 'MERGED').map((node) => ({ number: node.number, baseRefName: node.baseRefName }));
   }
 
   private async fetchMetadataBatch(numbers: readonly number[]): Promise<PrMetadata[]> {
@@ -155,7 +179,7 @@ export class GithubGraphqlResolver implements GraphqlResolver {
         ${numbers
           .map(
             (_, i) =>
-              `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt author { login } labels(first: 20) { nodes { name } } closingIssuesReferences(first: 20) { nodes { number } } }`,
+              `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt author { login __typename } labels(first: 20) { nodes { name } } closingIssuesReferences(first: 20) { nodes { number } } }`,
           )
           .join('\n')}
       }
@@ -175,7 +199,7 @@ export class GithubGraphqlResolver implements GraphqlResolver {
         number: assertField(pr.number as number | undefined, `number on PR #${number}`),
         title: assertField(pr.title as string | undefined, `title on PR #${number}`),
         body: (pr.body as string | null) ?? '',
-        authorLogin: (pr.author as { login?: string } | null)?.login,
+        authorLogin: normalizeAuthorLogin(pr.author as { login?: string; __typename?: string } | null),
         mergedAt: assertField(pr.mergedAt as string | undefined, `mergedAt on PR #${number}`),
         labels: (assertField(labels.nodes as { name: string }[] | undefined, `labels.nodes on PR #${number}`)).map((l) => l.name),
         closingIssuesReferences: (

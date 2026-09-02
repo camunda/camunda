@@ -28,7 +28,7 @@ test('single commit maps to its single associated PR', async () => {
           repository: {
             c0: {
               associatedPullRequests: {
-                nodes: [{ number: 1, baseRefName: 'main' }],
+                nodes: [{ number: 1, baseRefName: 'main', state: 'MERGED' }],
                 pageInfo: { hasNextPage: false, endCursor: null },
               },
             },
@@ -97,7 +97,7 @@ test('pagination: a commit with more associated-PR pages follows the cursor and 
           repository: {
             c0: {
               associatedPullRequests: {
-                nodes: [{ number: 1, baseRefName: 'main' }],
+                nodes: [{ number: 1, baseRefName: 'main', state: 'MERGED' }],
                 pageInfo: { hasNextPage: true, endCursor: 'CURSOR1' },
               },
             },
@@ -109,7 +109,7 @@ test('pagination: a commit with more associated-PR pages follows the cursor and 
           repository: {
             c: {
               associatedPullRequests: {
-                nodes: [{ number: 2, baseRefName: 'stable/8.8' }],
+                nodes: [{ number: 2, baseRefName: 'stable/8.8', state: 'MERGED' }],
                 pageInfo: { hasNextPage: false, endCursor: null },
               },
             },
@@ -129,6 +129,88 @@ test('pagination: a commit with more associated-PR pages follows the cursor and 
   ]);
 });
 
+test('associatedPullRequests is filtered to MERGED — the field has no states argument and returns every PR whose branch history contains the commit, including unrelated OPEN PRs', async () => {
+  const calls: Call[] = [];
+  const fetchImpl = fakeFetch(
+    [
+      {
+        data: {
+          repository: {
+            c0: {
+              associatedPullRequests: {
+                nodes: [
+                  { number: 39662, baseRefName: 'stable/8.8', state: 'OPEN' },
+                  { number: 61368, baseRefName: 'stable/8.8', state: 'MERGED' },
+                  { number: 61716, baseRefName: 'stable/8.8', state: 'OPEN' },
+                ],
+                pageInfo: { hasNextPage: false, endCursor: null },
+              },
+            },
+          },
+        },
+      },
+    ],
+    calls,
+  );
+  const resolver = new GithubGraphqlResolver('token', 'camunda', 'camunda', fetchImpl, noSleep);
+  const result = await resolver.mapCommitsToPrs(['abc']);
+  assert.deepEqual(result[0]!.associatedPrs, [{ number: 61368, baseRefName: 'stable/8.8' }]);
+});
+
+test('a bot author\'s login is normalized to the REST [bot] suffix — GraphQL omits it for the same actor', async () => {
+  const calls: Call[] = [];
+  const fetchImpl = fakeFetch(
+    [
+      {
+        data: {
+          repository: {
+            pr0: {
+              number: 1,
+              title: 'fix: x',
+              body: '',
+              mergedAt: '2026-01-01T00:00:00Z',
+              author: { login: 'monorepo-devops-automation', __typename: 'Bot' },
+              labels: { nodes: [] },
+              closingIssuesReferences: { nodes: [] },
+            },
+          },
+        },
+      },
+    ],
+    calls,
+  );
+  const resolver = new GithubGraphqlResolver('token', 'camunda', 'camunda', fetchImpl, noSleep);
+  const [pr] = await resolver.fetchPrMetadata([1]);
+  assert.equal(pr!.authorLogin, 'monorepo-devops-automation[bot]');
+});
+
+test('a human author\'s login is left untouched', async () => {
+  const calls: Call[] = [];
+  const fetchImpl = fakeFetch(
+    [
+      {
+        data: {
+          repository: {
+            pr0: {
+              number: 1,
+              title: 'fix: x',
+              body: '',
+              mergedAt: '2026-01-01T00:00:00Z',
+              author: { login: 'someone', __typename: 'User' },
+              labels: { nodes: [] },
+              closingIssuesReferences: { nodes: [] },
+            },
+          },
+        },
+      },
+    ],
+    calls,
+  );
+  const resolver = new GithubGraphqlResolver('token', 'camunda', 'camunda', fetchImpl, noSleep);
+  const [pr] = await resolver.fetchPrMetadata([1]);
+  assert.equal(pr!.authorLogin, 'someone');
+});
+
 test('a secondary rate limit is retried with backoff and eventually succeeds', async () => {
   const calls: Call[] = [];
   const fetchImpl = fakeFetch(
@@ -137,7 +219,7 @@ test('a secondary rate limit is retried with backoff and eventually succeeds', a
       {
         data: {
           repository: {
-            c0: { associatedPullRequests: { nodes: [{ number: 1, baseRefName: 'main' }], pageInfo: { hasNextPage: false, endCursor: null } } },
+            c0: { associatedPullRequests: { nodes: [{ number: 1, baseRefName: 'main', state: 'MERGED' }], pageInfo: { hasNextPage: false, endCursor: null } } },
           },
         },
       },
