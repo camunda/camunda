@@ -26,7 +26,6 @@ import io.camunda.gateway.protocol.model.AgentInstanceUpdateResult;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateStatusEnum;
 import io.camunda.gateway.protocol.model.AgentTool;
 import io.camunda.gateway.protocol.model.DocumentMetadataResponse;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbeddedToolCall;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
@@ -37,11 +36,9 @@ import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.http.ProblemDetail;
 
@@ -245,7 +242,7 @@ public class AgentInstanceMapper {
     } else if (content instanceof final AgentInstanceObjectContent obj) {
       result.setContentType(AgentHistoryContentType.OBJECT);
       if (obj.getObject() != null) {
-        result.setObject(toMsgPackBuffer(obj.getObject()));
+        result.setObject(obj.getObject());
       }
     }
     return result;
@@ -259,13 +256,9 @@ public class AgentInstanceMapper {
       result.setElementId(toolCall.getElementId());
     }
     if (toolCall.getArguments() != null) {
-      result.setArguments(toMsgPackBuffer(toolCall.getArguments()));
+      result.setArguments(toolCall.getArguments());
     }
     return result;
-  }
-
-  private DirectBuffer toMsgPackBuffer(final Object value) {
-    return BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(value));
   }
 
   private void fillDocumentReferenceMetadata(
