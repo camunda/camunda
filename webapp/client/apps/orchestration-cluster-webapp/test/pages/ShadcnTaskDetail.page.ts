@@ -26,8 +26,12 @@ class ShadcnTaskDetailPage extends BasePage {
 		return this.page.goto(`/shadcn/tasklist/${userTaskKey}/process`);
 	}
 
-	async gotoHistory(userTaskKey: string) {
-		return this.page.goto(`/shadcn/tasklist/${userTaskKey}/history`);
+	async gotoHistory(userTaskKey: string, search?: string) {
+		return this.page.goto(`/shadcn/tasklist/${userTaskKey}/history${search ?? ''}`);
+	}
+
+	async gotoHistoryDetails(userTaskKey: string, auditLogKey: string, search?: string) {
+		return this.page.goto(`/shadcn/tasklist/${userTaskKey}/history/${auditLogKey}${search ?? ''}`);
 	}
 
 	get detailsInfo() {
@@ -47,7 +51,7 @@ class ShadcnTaskDetailPage extends BasePage {
 	}
 
 	get detailsNavigation() {
-		return this.page.getByRole('navigation', {name: 'Task Details Navigation'});
+		return this.page.getByRole('navigation', {name: 'Task Details Navigation', includeHidden: true});
 	}
 
 	get taskTab() {
@@ -59,7 +63,7 @@ class ShadcnTaskDetailPage extends BasePage {
 	}
 
 	get historyTab() {
-		return this.detailsNavigation.getByRole('tab', {name: 'Show task history', exact: true});
+		return this.detailsNavigation.getByRole('tab', {name: 'Show task history', exact: true, includeHidden: true});
 	}
 
 	get aside() {
@@ -76,6 +80,34 @@ class ShadcnTaskDetailPage extends BasePage {
 
 	get historyTabContent() {
 		return this.page.getByRole('tabpanel');
+	}
+
+	get historyLoadError() {
+		return this.page.getByText('Something went wrong');
+	}
+
+	get historyForbiddenError() {
+		return this.page.getByText("You don't have permission to view task history");
+	}
+
+	get historyRetryButton() {
+		return this.page.getByRole('button', {name: 'Try again'});
+	}
+
+	historyColumnHeader(name: RegExp | string) {
+		return this.historyTabContent.getByRole('button', {name});
+	}
+
+	get historyDetailsModal() {
+		return this.page.getByRole('dialog');
+	}
+
+	get historyDetailsCloseButton() {
+		return this.historyDetailsModal.getByRole('button', {name: 'Close'});
+	}
+
+	get historyDetailsLink() {
+		return this.historyTabContent.getByRole('link', {name: 'Open details'});
 	}
 
 	get assignButton() {

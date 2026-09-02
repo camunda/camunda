@@ -6,8 +6,55 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
+import {useCallback, useMemo} from 'react';
+import {createFileRoute, Outlet, stripSearchParams} from '@tanstack/react-router';
+import {useSuspenseInfiniteQuery} from '@tanstack/react-query';
+import {queries} from '#/shared/http/queries';
+import {TaskDetailsHistoryErrorPage} from '#/tasklist/pages/shadcn.components/TaskDetailsHistoryErrorPage';
+import {TaskDetailsHistoryPage} from '#/tasklist/pages/shadcn.components/TaskDetailsHistoryPage';
+import {getAuditLogsRequestBody} from '#/tasklist/modules/task-details-history/getAuditLogsRequestBody';
+import {
+	getAuditLogSort,
+	taskDetailsHistorySearchDefaults,
+	taskDetailsHistorySearchSchema,
+} from '#/tasklist/modules/task-details-history/sortUtils';
 
 export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks/$userTaskKey/history')({
-	component: () => null,
+	validateSearch: taskDetailsHistorySearchSchema,
+	search: {
+		middlewares: [stripSearchParams(taskDetailsHistorySearchDefaults)],
+	},
+	loaderDeps: ({search}) => ({...search}),
+	loader: ({context: {queryClient}, params: {userTaskKey}, deps}) =>
+		queryClient.infiniteQuery(
+			queries.queryUserTaskAuditLogs(userTaskKey, getAuditLogsRequestBody(getAuditLogSort(deps))),
+		),
+	errorComponent: TaskDetailsHistoryErrorPage,
+	component: function HistoryRoute() {
+		const {userTaskKey} = Route.useParams();
+		const search = Route.useSearch();
+		const {data, fetchNextPage, hasNextPage, isFetchingNextPage} = useSuspenseInfiniteQuery({
+			...queries.queryUserTaskAuditLogs(userTaskKey, getAuditLogsRequestBody(getAuditLogSort(search))),
+			refetchInterval: 5000,
+		});
+		const auditLogs = useMemo(() => data.pages.flatMap((page) => page.items), [data]);
+
+		const onScrollDown = useCallback(() => {
+			if (hasNextPage && !isFetchingNextPage) {
+				fetchNextPage();
+			}
+		}, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+		return (
+			<>
+				<TaskDetailsHistoryPage
+					userTaskKey={userTaskKey}
+					auditLogs={auditLogs}
+					search={search}
+					onScrollDown={onScrollDown}
+				/>
+				<Outlet />
+			</>
+		);
+	},
 });
