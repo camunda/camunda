@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.repository.os;
 import io.camunda.optimize.service.db.os.MappingMetadataUtilOS;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.MappingMetadataRepository;
+import io.camunda.optimize.service.db.schema.BackupPriority;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Locale;
 import java.util.Set;
@@ -33,9 +34,9 @@ public class MappingMetadataRepositoryOS implements MappingMetadataRepository {
   }
 
   @Override
-  public String[] getIndexAliasesWithImportIndexFlag(final boolean isImportIndex) {
+  public String[] getIndexAliasesWithBackupPriority(final BackupPriority backupPriority) {
     return mappingUtil.getAllMappings(osClient.getIndexNameService().getIndexPrefix()).stream()
-        .filter(mapping -> isImportIndex == mapping.isImportIndex())
+        .filter(mapping -> backupPriority == mapping.getBackupPriority())
         .map(osClient.getIndexNameService()::getOptimizeIndexAliasForIndex)
         .toArray(String[]::new);
   }

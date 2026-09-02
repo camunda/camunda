@@ -168,6 +168,19 @@ zeebe:
     # using the sequence query
     maxEmptyPagesToImport: ${CAMUNDA_OPTIMIZE_ZEEBE_IMPORT_MAX_EMPTY_PAGES_TO_IMPORT:10}
 
+jobRegistry:
+  dispatcher:
+    # Toggles whether this Optimize instance dispatches queued job registry entries. Only one
+    # instance per cluster should have this enabled.
+    enabled: ${CAMUNDA_OPTIMIZE_JOB_REGISTRY_DISPATCHER_ENABLED:false}
+    # Delay, in seconds, before the dispatcher polls again for queued job registry entries,
+    # counted from the completion of the previous poll
+    intervalSeconds: ${CAMUNDA_OPTIMIZE_JOB_REGISTRY_DISPATCHER_INTERVAL_SECONDS:30}
+    # The maximum number of queued entries read and dispatched per poll cycle
+    batchSize: ${CAMUNDA_OPTIMIZE_JOB_REGISTRY_DISPATCHER_BATCH_SIZE:4}
+    # The number of threads used to dispatch entries of a batch to their handlers concurrently
+    threadCount: ${CAMUNDA_OPTIMIZE_JOB_REGISTRY_DISPATCHER_THREAD_COUNT:2}
+
 import:
   data:
     activity-instance:
@@ -714,6 +727,14 @@ caches:
     # This cache is used to hold users in a CCSM environment
     maxSize: ${CAMUNDA_OPTIMIZE_CACHES_USERS_MAX_SIZE:10000}
     defaultTtlMillis: ${CAMUNDA_OPTIMIZE_CACHES_USERS_DEFAULT_TTL_MILLIS:600000}
+  # This cache tracks process definitions that have a pending or completed delete job, so Zeebe
+  # import can suppress writes for them without a database round trip per import batch. maxSize
+  # caps the newest-first job registry fetch used to populate the cache; job registry entries are
+  # never cleaned up, so if the number of deleted process definitions ever exceeds maxSize, the
+  # oldest ones silently drop out of suppression and their data can be reimported.
+  deletedProcessDefinitions:
+    maxSize: ${CAMUNDA_OPTIMIZE_DELETED_PROCESS_DEFINITION_CACHE_MAX_SIZE:10000}
+    defaultTtlMillis: ${CAMUNDA_OPTIMIZE_DELETED_PROCESS_DEFINITION_CACHE_DEFAULT_TTL_MILLIS:300000}
 
 externalVariable:
   import:

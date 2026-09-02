@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.util;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.CONCURRENT_SNAPSHOT_EXECUTION_EXCEPTION_TYPE;
 import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_INDEX_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_NOT_FOUND_EXCEPTION_TYPE;
@@ -18,12 +19,30 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.ErrorCause;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 
 public class ExceptionUtil {
   public static boolean isTooManyBucketsException(final RuntimeException e) {
     return isDbExceptionWithMessage(e, msg -> msg.contains(TOO_MANY_BUCKETS_EXCEPTION_TYPE));
+  }
+
+  public static boolean isConcurrentSnapshotExecutionException(final Throwable t) {
+    final Throwable unwrapped = unwrapCompletionCause(t);
+    return unwrapped instanceof final RuntimeException runtimeException
+        && isDbExceptionWithMessage(
+            runtimeException, msg -> msg.contains(CONCURRENT_SNAPSHOT_EXECUTION_EXCEPTION_TYPE));
+  }
+
+  public static Throwable unwrapCompletionCause(final Throwable t) {
+    Throwable current = t;
+    while ((current instanceof CompletionException || current instanceof ExecutionException)
+        && current.getCause() != null) {
+      current = current.getCause();
+    }
+    return current;
   }
 
   public static boolean isInstanceIndexNotFoundException(final RuntimeException e) {
@@ -37,6 +56,18 @@ public class ExceptionUtil {
         msg ->
             msg.contains(INDEX_NOT_FOUND_EXCEPTION_TYPE)
                 && containsInstanceIndexAliasOrPrefix(type, e.getMessage()));
+  }
+
+  public static boolean isInstanceIndexNotFoundExceptionInCauseChain(
+      final DefinitionType type, final Throwable throwable) {
+    Throwable current = throwable;
+    while (current instanceof final RuntimeException runtimeException) {
+      if (isInstanceIndexNotFoundException(type, runtimeException)) {
+        return true;
+      }
+      current = current.getCause();
+    }
+    return false;
   }
 
   private static boolean isDbExceptionWithMessage(
