@@ -317,6 +317,7 @@ export const AddModal: FC<
                     <Checkbox
                       id={permission}
                       checked={field.value.includes(permission)}
+                      aria-invalid={showError}
                       onCheckedChange={(checked) => {
                         const currentPermissions = field.value;
                         const newPermissions =
