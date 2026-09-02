@@ -1,5 +1,5 @@
 > [!CAUTION]
-> This folder in the branch `stable/8.7` is unused and should not be updated.
+> The `setup` folder in the branch `stable/8.7` does not exist.
 > To deploy a load test for the Camunda Platform 8.7, use the `stable-87` folder from the `main` branch instead.
 
 ---
