@@ -95,9 +95,18 @@ public interface IncidentUpdateRepository extends AutoCloseable {
    * affected indices are refreshed. This ensures you will later read your own writes.
    *
    * @param update the bulk update to execute
-   * @return the number of documents updated
+   * @return the ids of the documents updated
    */
   CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate update);
+
+  /**
+   * Executes the given bulk update against the underlying document store, waiting until the
+   * affected indices are refreshed. This ensures you will later read your own writes.
+   *
+   * @param update the bulk update to execute
+   * @return the ids of the documents updated
+   */
+  CompletionStage<List<String>> bulkUpdate(final NonIncidentBulkUpdate update);
 
   /**
    * Returns the tree path as tokenized by an analyze request to the underlying document store.
@@ -144,26 +153,34 @@ public interface IncidentUpdateRepository extends AutoCloseable {
   record ActiveIncident(String id, String treePath) {}
 
   /**
+   * Gather the updates for documents that are not incidents, such as flow node instances and list
+   * view documents. This allows us to collect all the update queries into one, and pass it down to
+   * the store specific implementation
+   */
+  record NonIncidentBulkUpdate(
+      Collection<DocumentUpdate> listViewRequests,
+      Collection<DocumentUpdate> flowNodeInstanceRequests) {
+    public NonIncidentBulkUpdate() {
+      this(new ConcurrentLinkedQueue<>(), new ConcurrentLinkedQueue<>());
+    }
+
+    public Stream<DocumentUpdate> stream() {
+      return Stream.concat(listViewRequests.stream(), flowNodeInstanceRequests.stream()).distinct();
+    }
+  }
+
+  /**
    * A search store agnostic representation of a bulk update for this task. It allows us to collect
    * all the update queries into one, and pass it down to the store specific implementation to
    * execute.
    */
-  record IncidentBulkUpdate(
-      Collection<DocumentUpdate> listViewRequests,
-      Collection<DocumentUpdate> flowNodeInstanceRequests,
-      Collection<DocumentUpdate> incidentRequests) {
+  record IncidentBulkUpdate(Collection<DocumentUpdate> incidentRequests) {
     public IncidentBulkUpdate() {
-      this(
-          new ConcurrentLinkedQueue<>(),
-          new ConcurrentLinkedQueue<>(),
-          new ConcurrentLinkedQueue<>());
+      this(new ConcurrentLinkedQueue<>());
     }
 
     public Stream<DocumentUpdate> stream() {
-      return Stream.concat(
-              Stream.concat(listViewRequests.stream(), flowNodeInstanceRequests.stream()),
-              incidentRequests.stream())
-          .distinct();
+      return incidentRequests.stream().distinct();
     }
   }
 
@@ -173,6 +190,14 @@ public interface IncidentUpdateRepository extends AutoCloseable {
    * <p>All fields are expected to be non-null, except routing.
    */
   record DocumentUpdate(String id, String index, Map<String, Object> doc, String routing) {}
+
+  /**
+   * A batch of pending incident updates fetched from the post importer queue. The {@code
+   * highestPosition} returns the greatest position of the updates fetched, and the states are keyed
+   * by incident key.
+   */
+  record PendingIncidentUpdateBatch(
+      long highestPosition, Map<Long, IncidentState> newIncidentStates) {}
 
   class NoopIncidentUpdateRepository implements IncidentUpdateRepository {
 
@@ -218,6 +243,11 @@ public interface IncidentUpdateRepository extends AutoCloseable {
     }
 
     @Override
+    public CompletionStage<List<String>> bulkUpdate(final NonIncidentBulkUpdate update) {
+      return CompletableFuture.completedFuture(List.of());
+    }
+
+    @Override
     public CompletionStage<List<String>> analyzeTreePath(final String treePath) {
       return CompletableFuture.completedFuture(List.of());
     }
@@ -231,12 +261,4 @@ public interface IncidentUpdateRepository extends AutoCloseable {
     @Override
     public void close() throws Exception {}
   }
-
-  /**
-   * A batch of pending incident updates fetched from the post importer queue. The {@code
-   * highestPosition} returns the greatest position of the updates fetched, and the states are keyed
-   * by incident key.
-   */
-  record PendingIncidentUpdateBatch(
-      long highestPosition, Map<Long, IncidentState> newIncidentStates) {}
 }

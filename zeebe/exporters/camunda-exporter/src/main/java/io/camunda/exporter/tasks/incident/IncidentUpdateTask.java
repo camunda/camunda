@@ -7,12 +7,14 @@
  */
 package io.camunda.exporter.tasks.incident;
 
+import com.google.common.collect.ImmutableList;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NonIncidentBulkUpdate;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
@@ -134,7 +136,9 @@ public final class IncidentUpdateTask implements BackgroundTask {
    *             <ul>
    *               <li>PARALLEL: createProcessInstanceUpdates
    *             </ul>
-   *         <li>BATCH: BulkUpdate
+   *         <li>BATCH: BulkUpdate flow nodes + process instances
+   *         <li>BATCH: BulkUpdate incidents
+   *         <li>Send notifications for incidents that changed state to ACTIVE
    *       </ul>
    * </ul>
    */
@@ -324,7 +328,8 @@ public final class IncidentUpdateTask implements BackgroundTask {
 
   private int processIncidents(
       final IncidentsState state, final IncidentUpdateRepository.PendingIncidentUpdateBatch batch) {
-    final var bulkUpdate = new IncidentBulkUpdate();
+    final var incidentBulkUpdate = new IncidentBulkUpdate();
+    final var nonIncidentBulkUpdate = new NonIncidentBulkUpdate();
     return mapActiveIncidentsToAffectedInstances(state)
         .thenApplyAsync(
             ignored -> {
@@ -337,15 +342,45 @@ public final class IncidentUpdateTask implements BackgroundTask {
                 // processIncident one at a time, stopping if an error is raised
                 FuturesUtil.traverseIgnoring(
                     state.getIncidentDocuments(),
-                    incident -> processIncidentInBatch(state, incident, batch, bulkUpdate),
+                    incident ->
+                        processIncidentInBatch(
+                            state, incident, batch, incidentBulkUpdate, nonIncidentBulkUpdate),
                     executor),
             executor)
-        .thenCompose(ignored -> repository.bulkUpdate(bulkUpdate))
+        .thenCompose(
+            ignored -> bulkUpdateAndNotify(state, nonIncidentBulkUpdate, incidentBulkUpdate))
+        .join();
+  }
+
+  private CompletionStage<Integer> bulkUpdateAndNotify(
+      final IncidentsState state,
+      final NonIncidentBulkUpdate nonIncidentBulkUpdate,
+      final IncidentBulkUpdate incidentBulkUpdate) {
+    // bulk update in two parts, so any errors with the non-incident updates won't leave us with a
+    // partial update of the incident documents - which might cause us to retry, but skip sending
+    // notifications for those incidents on the retry
+    return repository
+        .bulkUpdate(nonIncidentBulkUpdate)
+        .thenCompose(
+            nonIncidentUpdatedIds ->
+                repository
+                    .bulkUpdate(incidentBulkUpdate)
+                    .thenApply(
+                        incidentUpdatedIds -> mergeIds(nonIncidentUpdatedIds, incidentUpdatedIds)))
         .thenCompose(
             updatedIds ->
                 notifyIncidents(
-                    updatedIds, bulkUpdate.incidentRequests(), state.getIncidentDocuments()))
-        .join();
+                    updatedIds,
+                    incidentBulkUpdate.incidentRequests(),
+                    state.getIncidentDocuments()));
+  }
+
+  private List<String> mergeIds(
+      final List<String> nonIncidentUpdatedIds, final List<String> incidentUpdatedIds) {
+    return ImmutableList.<String>builder()
+        .addAll(nonIncidentUpdatedIds)
+        .addAll(incidentUpdatedIds)
+        .build();
   }
 
   private void seedResolvedIncidentsAsActive(
@@ -375,7 +410,8 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentsState state,
       final IncidentDocument incident,
       final IncidentUpdateRepository.PendingIncidentUpdateBatch batch,
-      final IncidentBulkUpdate bulkUpdate) {
+      final IncidentBulkUpdate incidentBulkUpdate,
+      final NonIncidentBulkUpdate nonIncidentBulkUpdate) {
     final var processInstanceKey = incident.incident().getProcessInstanceKey();
     final var treePath = state.incidentTreePaths().get(incident.id());
     final var newState = batch.newIncidentStates().get(incident.incident().getKey());
@@ -404,16 +440,19 @@ public final class IncidentUpdateTask implements BackgroundTask {
           removeProcessInstanceIds(parsedTreePath.extractFlowNodeInstanceIds(), piIds);
 
       future =
-          createProcessInstanceUpdates(state, incident, newState, piIds, bulkUpdate)
+          createProcessInstanceUpdates(state, incident, newState, piIds, nonIncidentBulkUpdate)
               .thenComposeAsync(
                   unused ->
-                      createFlowNodeInstanceUpdates(state, incident, newState, fniIds, bulkUpdate),
+                      createFlowNodeInstanceUpdates(
+                          state, incident, newState, fniIds, nonIncidentBulkUpdate),
                   executor);
     }
 
     return future.thenApplyAsync(
         unused -> {
-          bulkUpdate.incidentRequests().add(newIncidentUpdate(incident, newState, treePath));
+          incidentBulkUpdate
+              .incidentRequests()
+              .add(newIncidentUpdate(incident, newState, treePath));
           return null;
         },
         executor);
@@ -438,7 +477,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentDocument incident,
       final IncidentState newState,
       final List<String> fniIds,
-      final IncidentBulkUpdate updates) {
+      final NonIncidentBulkUpdate updates) {
     final CompletableFuture<?>[] futures = {
       CompletableFuture.completedFuture(null), CompletableFuture.completedFuture(null)
     };
@@ -513,7 +552,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentState newState,
       final String fniId,
       final Collection<String> flowNodeIndices,
-      final IncidentBulkUpdate updates,
+      final NonIncidentBulkUpdate updates,
       final Collection<String> listViewIndices) {
     final var hasIncident = IncidentState.ACTIVE == newState;
     final boolean changedState;
@@ -547,7 +586,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentDocument incident,
       final IncidentState newState,
       final List<String> piIds,
-      final IncidentBulkUpdate updates) {
+      final NonIncidentBulkUpdate updates) {
     var fetchMissingProcessInstances = CompletableFuture.completedFuture(null);
     if (!state.processInstanceIndices().keySet().containsAll(piIds)) {
       fetchMissingProcessInstances =
@@ -598,7 +637,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final String incidentId,
       final IncidentState newState,
       final String piId,
-      final IncidentBulkUpdate updates,
+      final NonIncidentBulkUpdate updates,
       final Collection<String> indexes) {
     final var hasIncident = IncidentState.ACTIVE == newState;
     final boolean changedState;
