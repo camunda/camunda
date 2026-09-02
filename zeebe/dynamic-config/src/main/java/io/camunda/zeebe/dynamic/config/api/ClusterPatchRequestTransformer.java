@@ -89,7 +89,15 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
           new HashSet<>(clusterConfiguration.globalConfiguration().members().keySet());
       newSetOfMembers.addAll(membersToAdd);
       newSetOfMembers.removeAll(membersToRemove);
-      return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
+      // A tenant-scoped request is rejected above, so a partition count reaching this path grows
+      // the default tenant.
+      return new ScaleRequestTransformer(
+              newSetOfMembers,
+              newReplicationFactor,
+              newPartitionCount.map(
+                  count ->
+                      new TenantPartitionCount(CurrentClusterConfiguration.DEFAULT_GROUP, count)),
+              Optional.empty())
           .phases(clusterConfiguration);
     }
     if (newPartitionCount.isEmpty() && newReplicationFactor.isEmpty()) {
@@ -107,6 +115,8 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
                   .formatted(groupId)));
     }
     return PartitionGroupScalingPhases.phases(
-        groupId, clusterConfiguration, newPartitionCount, newReplicationFactor);
+        clusterConfiguration,
+        newPartitionCount.map(count -> new TenantPartitionCount(groupId, count)),
+        newReplicationFactor);
   }
 }

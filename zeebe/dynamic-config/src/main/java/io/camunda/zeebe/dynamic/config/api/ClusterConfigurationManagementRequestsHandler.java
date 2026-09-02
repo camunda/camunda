@@ -109,7 +109,12 @@ public final class ClusterConfigurationManagementRequestsHandler
       final BrokerScaleRequest scaleRequest) {
     return handleRequest(
         scaleRequest.dryRun(),
-        new ScaleRequestTransformer(scaleRequest.members(), scaleRequest.newReplicationFactor()));
+        // Resizes the cluster only: it carries no partition count, so it scales no physical tenant.
+        new ScaleRequestTransformer(
+            scaleRequest.members(),
+            scaleRequest.newReplicationFactor(),
+            Optional.empty(),
+            Optional.empty()));
   }
 
   @Override

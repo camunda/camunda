@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
+import static io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration.DEFAULT_GROUP;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation;
@@ -80,6 +82,12 @@ class ScaleRequestTransformerTest {
     return IntStream.rangeClosed(1, partitionCount)
         .mapToObj(id -> new PartitionId(CurrentClusterConfiguration.DEFAULT_GROUP, id))
         .toList();
+  }
+
+  /** A request that changes membership only: it scales no physical tenant. */
+  private static ScaleRequestTransformer membershipChange(final Set<MemberId> members) {
+    return new ScaleRequestTransformer(
+        members, Optional.empty(), Optional.empty(), Optional.empty());
   }
 
   @Property(tries = 10)
@@ -190,7 +198,7 @@ class ScaleRequestTransformerTest {
 
     // when
     final var operationsEither =
-        plannedOperations(new ScaleRequestTransformer(newMembers), oldClusterTopology);
+        plannedOperations(membershipChange(newMembers), oldClusterTopology);
 
     // then
     EitherAssert.assertThat(operationsEither)
@@ -236,7 +244,7 @@ class ScaleRequestTransformerTest {
 
     // when
     final var operations =
-        plannedOperations(new ScaleRequestTransformer(newMembers), oldClusterTopology).get();
+        plannedOperations(membershipChange(newMembers), oldClusterTopology).get();
 
     // apply operations to generate new topology
     final ClusterConfiguration newTopology =
@@ -329,7 +337,12 @@ class ScaleRequestTransformerTest {
         ConfigurationUtil.getClusterConfigFrom(distribution, partitionConfig, "clusterId");
     final var transformer =
         new ScaleRequestTransformer(
-            getClusterMembers(clusterSize), Optional.of(3), Optional.of(desiredPartitionCount));
+            getClusterMembers(clusterSize),
+            Optional.of(3),
+            Optional.of(
+                new TenantPartitionCount(
+                    CurrentClusterConfiguration.DEFAULT_GROUP, desiredPartitionCount)),
+            Optional.empty());
     final var operations = plannedOperations(transformer, config);
     if (desiredPartitionCount < currentPartitionCount) {
       EitherAssert.assertThat(operations).isLeft();
@@ -384,8 +397,7 @@ class ScaleRequestTransformerTest {
 
       // when — broker 2 joins
       final var phases =
-          new ScaleRequestTransformer(
-                  Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2")))
+          membershipChange(Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2")))
               .phases(configuration);
 
       // then — the joining broker receives a partition of both tenants
@@ -408,8 +420,7 @@ class ScaleRequestTransformerTest {
 
       // when — broker 2 leaves
       final var phases =
-          new ScaleRequestTransformer(Set.of(MemberId.from("0"), MemberId.from("1")))
-              .phases(configuration);
+          membershipChange(Set.of(MemberId.from("0"), MemberId.from("1"))).phases(configuration);
 
       // then — both tenants give up the partitions broker 2 held, and it receives nothing. The
       // distributor recomputes the whole placement, so partitions also move between the two
@@ -442,8 +453,7 @@ class ScaleRequestTransformerTest {
 
       // when — broker 3 joins as broker 2 leaves
       final var phases =
-          new ScaleRequestTransformer(
-                  Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("3")))
+          membershipChange(Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("3")))
               .phases(configuration);
 
       // then
@@ -471,7 +481,9 @@ class ScaleRequestTransformerTest {
       final var phases =
           new ScaleRequestTransformer(
                   Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2")),
-                  Optional.of(2))
+                  Optional.of(2),
+                  Optional.empty(),
+                  Optional.empty())
               .phases(configuration);
 
       // then — every partition of every tenant gains a replica
@@ -498,8 +510,7 @@ class ScaleRequestTransformerTest {
 
       // when
       final var phases =
-          new ScaleRequestTransformer(
-                  Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2")))
+          membershipChange(Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2")))
               .phases(configuration);
 
       // then — nothing separates the member join from the scaling callbacks, so one uninterrupted
@@ -548,9 +559,86 @@ class ScaleRequestTransformerTest {
     }
 
     @Test
+    void shouldGrowOnlyTheTargetedTenantWhileRedistributingEveryTenant() {
+      // given — both tenants run partitions 1-3 on brokers 0 and 1
+      final var configuration = twoTenantCluster();
+
+      // when — broker 2 joins and tenant-a alone grows to four partitions
+      final var phases =
+          new ScaleRequestTransformer(
+                  Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2")),
+                  Optional.empty(),
+                  Optional.of(new TenantPartitionCount(TENANT_A, 4)),
+                  Optional.empty())
+              .phases(configuration);
+
+      // then — only the named tenant gains a partition, while both tenants are still redistributed
+      // over the joining broker
+      final var partitionPhase = partitionPhase(phases);
+      assertThat(bootstrappedPartitions(partitionPhase, TENANT_A))
+          .describedAs("tenant-a bootstraps its fourth partition")
+          .extracting(PartitionBootstrapOperation::partitionId)
+          .containsExactly(4);
+      assertThat(bootstrappedPartitions(partitionPhase, DEFAULT_GROUP))
+          .describedAs("the default tenant was not asked to grow")
+          .isEmpty();
+      assertThat(joinedPartitions(partitionPhase, DEFAULT_GROUP))
+          .describedAs("the default tenant still places a partition on the joining broker")
+          .isNotEmpty()
+          .allSatisfy(join -> assertThat(join.memberId()).isEqualTo(MemberId.from("2")));
+    }
+
+    @Test
+    void shouldGrowTheDefaultTenantWhenItIsTheTargetedTenant() {
+      // given — the same cluster, targeting the tenant that used to be the only one a scaling
+      // request could grow
+      final var configuration = twoTenantCluster();
+
+      // when — broker 2 joins and the default tenant alone grows to four partitions
+      final var phases =
+          new ScaleRequestTransformer(
+                  Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2")),
+                  Optional.empty(),
+                  Optional.of(new TenantPartitionCount(DEFAULT_GROUP, 4)),
+                  Optional.empty())
+              .phases(configuration);
+
+      // then
+      final var partitionPhase = partitionPhase(phases);
+      assertThat(bootstrappedPartitions(partitionPhase, DEFAULT_GROUP))
+          .extracting(PartitionBootstrapOperation::partitionId)
+          .containsExactly(4);
+      assertThat(bootstrappedPartitions(partitionPhase, TENANT_A))
+          .describedAs("tenant-a was not asked to grow")
+          .isEmpty();
+    }
+
+    @Test
+    void shouldRejectAPartitionCountBelowTheTargetedTenantsCurrentCount() {
+      // given — both tenants have three partitions, and partitions can only be scaled up
+      final var configuration = twoTenantCluster();
+
+      // when
+      final var phases =
+          new ScaleRequestTransformer(
+                  Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2")),
+                  Optional.empty(),
+                  Optional.of(new TenantPartitionCount(TENANT_A, 2)),
+                  Optional.empty())
+              .phases(configuration);
+
+      // then — the rejection names the tenant that was asked to shrink, not the default one
+      EitherAssert.assertThat(phases)
+          .isLeft()
+          .left()
+          .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class);
+      assertThat(phases.getLeft()).hasMessageContaining(TENANT_A);
+    }
+
+    @Test
     void shouldRejectARequestWithoutAnyBroker() {
       // when
-      final var phases = new ScaleRequestTransformer(Set.of()).phases(twoTenantCluster());
+      final var phases = membershipChange(Set.of()).phases(twoTenantCluster());
 
       // then
       EitherAssert.assertThat(phases)
@@ -573,6 +661,14 @@ class ScaleRequestTransformerTest {
       return phase.groupOperations().getOrDefault(groupId, List.of()).stream()
           .filter(PartitionJoinOperation.class::isInstance)
           .map(PartitionJoinOperation.class::cast)
+          .toList();
+    }
+
+    private List<PartitionBootstrapOperation> bootstrappedPartitions(
+        final PartitionGroupPhase phase, final String groupId) {
+      return phase.groupOperations().getOrDefault(groupId, List.of()).stream()
+          .filter(PartitionBootstrapOperation.class::isInstance)
+          .map(PartitionBootstrapOperation.class::cast)
           .toList();
     }
 
@@ -693,7 +789,7 @@ class ScaleRequestTransformerTest {
       newMembers.add(MemberId.from("3"));
 
       // when
-      final var phases = new ScaleRequestTransformer(newMembers).phases(configuration);
+      final var phases = membershipChange(newMembers).phases(configuration);
 
       // then
       EitherAssert.assertThat(phases)

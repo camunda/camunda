@@ -74,12 +74,10 @@ final class PartitionGroupScalingPhases {
    * Plans the placement over the cluster's live members, for a request that does not change
    * membership.
    *
-   * @param targetGroupId the partition group whose partition count changes; must exist in {@code
-   *     clusterConfiguration} whenever {@code newPartitionCount} is present, and is unused
-   *     otherwise — the replication factor has no target group
    * @param clusterConfiguration the current multi-group configuration
-   * @param newPartitionCount the partition count {@code targetGroupId} should reach, or empty to
-   *     leave every group's partition count as it is
+   * @param newPartitionCount the partition count one named physical tenant should reach, or empty
+   *     to leave every group's partition count as it is. The tenant travels with the count because
+   *     it is the count alone that has a tenant dimension; see {@link TenantPartitionCount}.
    * @param newReplicationFactor the replication factor every partition of every group should reach,
    *     or empty to keep the one currently in use
    * @return a single {@link PartitionGroupPhase} covering every group whose partitions have to
@@ -88,15 +86,13 @@ final class PartitionGroupScalingPhases {
    *     the live brokers cannot satisfy the replication factor, or if no valid distribution exists.
    */
   static Either<Exception, List<Phase>> phases(
-      final String targetGroupId,
       final CurrentClusterConfiguration clusterConfiguration,
-      final Optional<Integer> newPartitionCount,
+      final Optional<TenantPartitionCount> newPartitionCount,
       final Optional<Integer> newReplicationFactor) {
     final var distributionByGroup =
         ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(clusterConfiguration);
-    final var currentPartitionCount = currentPartitionCount(distributionByGroup, targetGroupId);
     if (newReplicationFactor.isEmpty()
-        && newPartitionCount.orElse(currentPartitionCount) == currentPartitionCount) {
+        && changesNoPartitionCount(distributionByGroup, newPartitionCount)) {
       // Nothing is asked for that the cluster does not already have. Returning before the
       // distributor runs is what keeps such a request a no-op: a placement that has drifted from
       // what the distributor would compute now — after a manual reassignment through
@@ -110,7 +106,6 @@ final class PartitionGroupScalingPhases {
       return Either.right(List.of());
     }
     return phases(
-        targetGroupId,
         clusterConfiguration,
         distributionByGroup,
         clusterConfiguration.liveMembers(),
@@ -119,21 +114,19 @@ final class PartitionGroupScalingPhases {
   }
 
   /**
-   * As {@link #phases(String, CurrentClusterConfiguration, Optional, Optional)}, but places the
-   * partitions on {@code targetMembers} rather than on whichever members are currently live, and
-   * always runs the distributor.
+   * As {@link #phases(CurrentClusterConfiguration, Optional, Optional)}, but places the partitions
+   * on {@code targetMembers} rather than on whichever members are currently live, and always runs
+   * the distributor.
    *
    * @param targetMembers the members every partition of every group should end up on — the complete
    *     desired member set, so a member being removed from the cluster is simply absent from it
    */
   static Either<Exception, List<Phase>> phases(
-      final String targetGroupId,
       final CurrentClusterConfiguration clusterConfiguration,
       final Set<MemberId> targetMembers,
-      final Optional<Integer> newPartitionCount,
+      final Optional<TenantPartitionCount> newPartitionCount,
       final Optional<Integer> newReplicationFactor) {
     return phases(
-        targetGroupId,
         clusterConfiguration,
         ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(clusterConfiguration),
         targetMembers,
@@ -142,37 +135,40 @@ final class PartitionGroupScalingPhases {
   }
 
   /**
+   * Whether {@code newPartitionCount} asks for a count the named tenant does not already have. A
+   * request that names no tenant changes no count.
+   */
+  private static boolean changesNoPartitionCount(
+      final Map<String, Set<PartitionMetadata>> distributionByGroup,
+      final Optional<TenantPartitionCount> newPartitionCount) {
+    return newPartitionCount
+        .map(
+            target ->
+                target.partitionCount()
+                    == currentPartitionCount(distributionByGroup, target.physicalTenantId()))
+        .orElse(true);
+  }
+
+  /**
    * Takes the current per-tenant distribution rather than scanning it out of {@code
    * clusterConfiguration}: the entry point above needs it to decide whether the request asks for
    * anything at all, and passes on what it already scanned.
    */
   private static Either<Exception, List<Phase>> phases(
-      final String targetGroupId,
       final CurrentClusterConfiguration clusterConfiguration,
       final Map<String, Set<PartitionMetadata>> distributionByGroup,
       final Set<MemberId> targetMembers,
-      final Optional<Integer> newPartitionCount,
+      final Optional<TenantPartitionCount> newPartitionCount,
       final Optional<Integer> newReplicationFactor) {
-    final var currentPartitionCount = currentPartitionCount(distributionByGroup, targetGroupId);
-    final int targetPartitionCount = newPartitionCount.orElse(currentPartitionCount);
-
     final int replicationFactor =
         newReplicationFactor.orElseGet(() -> currentReplicationFactor(distributionByGroup));
     final var rejection =
-        reject(
-            targetGroupId,
-            targetMembers,
-            currentPartitionCount,
-            targetPartitionCount,
-            replicationFactor);
+        reject(distributionByGroup, targetMembers, newPartitionCount, replicationFactor);
     if (rejection.isPresent()) {
       return Either.left(rejection.get());
     }
 
-    final var newPartitionIds =
-        IntStream.rangeClosed(currentPartitionCount + 1, targetPartitionCount)
-            .mapToObj(number -> new PartitionId(targetGroupId, number))
-            .toList();
+    final var newPartitionIds = newPartitionIds(distributionByGroup, newPartitionCount);
     final var targetPartitionIds =
         Stream.concat(
                 distributionByGroup.values().stream()
@@ -197,16 +193,17 @@ final class PartitionGroupScalingPhases {
       return Either.left(new InvalidRequest(e));
     }
 
-    if (!newPartitionIds.isEmpty()) {
+    if (newPartitionCount.isPresent() && !newPartitionIds.isEmpty()) {
+      final var target = newPartitionCount.get();
       final var newPartitionNumbers =
           new TreeSet<>(newPartitionIds.stream().map(PartitionId::number).toList());
       operationsByGroup.put(
-          targetGroupId,
+          target.physicalTenantId(),
           withScaleUpOperations(
-              operationsByGroup.getOrDefault(targetGroupId, List.of()),
+              operationsByGroup.getOrDefault(target.physicalTenantId(), List.of()),
               ClusterConfigurationCoordinatorSupplier.from(() -> clusterConfiguration)
                   .getDefaultCoordinator(),
-              targetPartitionCount,
+              target.partitionCount(),
               newPartitionNumbers));
     }
 
@@ -228,16 +225,23 @@ final class PartitionGroupScalingPhases {
    * @return the rejection to answer with, or empty if the request can be planned
    */
   private static Optional<Exception> reject(
-      final String targetGroupId,
+      final Map<String, Set<PartitionMetadata>> distributionByGroup,
       final Set<MemberId> targetMembers,
-      final int currentPartitionCount,
-      final int targetPartitionCount,
+      final Optional<TenantPartitionCount> newPartitionCount,
       final int replicationFactor) {
-    if (targetPartitionCount < currentPartitionCount) {
-      return Optional.of(
-          new InvalidRequest(
-              "New partition count [%d] of physical tenant '%s' must be greater than or equal to its current partition count [%d]"
-                  .formatted(targetPartitionCount, targetGroupId, currentPartitionCount)));
+    if (newPartitionCount.isPresent()) {
+      final var target = newPartitionCount.get();
+      final var currentPartitionCount =
+          currentPartitionCount(distributionByGroup, target.physicalTenantId());
+      if (target.partitionCount() < currentPartitionCount) {
+        return Optional.of(
+            new InvalidRequest(
+                "New partition count [%d] of physical tenant '%s' must be greater than or equal to its current partition count [%d]"
+                    .formatted(
+                        target.partitionCount(),
+                        target.physicalTenantId(),
+                        currentPartitionCount)));
+      }
     }
     if (replicationFactor <= 0) {
       return Optional.of(
@@ -251,6 +255,24 @@ final class PartitionGroupScalingPhases {
                   .formatted(targetMembers.size(), replicationFactor)));
     }
     return Optional.empty();
+  }
+
+  /**
+   * The ids of the partitions the request adds, in the named tenant's group. Empty when the request
+   * names no tenant, and also when it names one that already has the requested count.
+   */
+  private static List<PartitionId> newPartitionIds(
+      final Map<String, Set<PartitionMetadata>> distributionByGroup,
+      final Optional<TenantPartitionCount> newPartitionCount) {
+    return newPartitionCount
+        .map(
+            target ->
+                IntStream.rangeClosed(
+                        currentPartitionCount(distributionByGroup, target.physicalTenantId()) + 1,
+                        target.partitionCount())
+                    .mapToObj(number -> new PartitionId(target.physicalTenantId(), number))
+                    .toList())
+        .orElseGet(List::of);
   }
 
   private static int currentPartitionCount(

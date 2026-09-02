@@ -87,10 +87,14 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
       // brokerCount has no tenant dimension, but the partitions it moves do: every tenant's
       // partitions have to be redistributed over the new member set, not just the default
       // tenant's, which is what ScaleRequestTransformer plans.
+      // A tenant-scoped request is rejected above, so a partition count reaching this path grows
+      // the default tenant.
       return new ScaleRequestTransformer(
               newSetOfMembers(clusterConfiguration.getMembers()),
               newReplicationFactor,
-              newPartitionCount,
+              newPartitionCount.map(
+                  count ->
+                      new TenantPartitionCount(CurrentClusterConfiguration.DEFAULT_GROUP, count)),
               zone)
           .phases(clusterConfiguration);
     }
@@ -106,7 +110,9 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
                   .formatted(groupId)));
     }
     return PartitionGroupScalingPhases.phases(
-        groupId, clusterConfiguration, newPartitionCount, newReplicationFactor);
+        clusterConfiguration,
+        newPartitionCount.map(count -> new TenantPartitionCount(groupId, count)),
+        newReplicationFactor);
   }
 
   /**
