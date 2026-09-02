@@ -44,7 +44,10 @@ const TaskDetailsLayout: React.FC<Props> = ({task, currentUser, assignButton, ch
 				key: 'history',
 				title: t('tasklist.taskDetailsHistoryTabLabel'),
 				label: t('tasklist.taskDetailsShowHistoryLabel'),
-				selected: hasRouteMatch('/shadcn/tasklist/$userTaskKey/history'),
+				selected: hasRouteMatch(
+					'/shadcn/tasklist/$userTaskKey/history',
+					'/shadcn/tasklist/$userTaskKey/history/$auditLogKey',
+				),
 				to: '/shadcn/tasklist/$userTaskKey/history',
 			},
 		],
