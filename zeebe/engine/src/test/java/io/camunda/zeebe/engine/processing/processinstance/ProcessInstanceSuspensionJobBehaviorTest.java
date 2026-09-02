@@ -15,7 +15,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -47,7 +46,6 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
   private MutableElementInstanceState elementInstanceState;
   private MutableJobState jobState;
   private StateWriter stateWriter;
-  private SuspensionMetrics suspensionMetrics;
   private ProcessInstanceSuspensionJobBehavior behavior;
 
   @BeforeEach
@@ -55,10 +53,8 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
     elementInstanceState = processingState.getElementInstanceState();
     jobState = processingState.getJobState();
     stateWriter = mock(StateWriter.class);
-    suspensionMetrics = mock(SuspensionMetrics.class);
     behavior =
-        new ProcessInstanceSuspensionJobBehavior(
-            elementInstanceState, jobState, stateWriter, suspensionMetrics);
+        new ProcessInstanceSuspensionJobBehavior(elementInstanceState, jobState, stateWriter);
   }
 
   @Test
