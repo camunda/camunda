@@ -7,7 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.usertask;
 
-/** Default action values used when no explicit action is provided on user task commands. */
+/**
+ * Standard action values for user task lifecycle transitions. Used by both explicit command
+ * processors (assign, claim, update, complete) and broker-internal transitions (create, cancel,
+ * variable-triggered update, migration) where no caller-supplied action is present.
+ */
 public final class UserTaskActions {
 
   public static final String CREATE = "create";
