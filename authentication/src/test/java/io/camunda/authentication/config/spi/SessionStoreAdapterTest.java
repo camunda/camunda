@@ -261,6 +261,29 @@ class SessionStoreAdapterTest {
   }
 
   @Test
+  void shouldWrapABackendFailureThatIsNotASearchException() {
+    // given — the RDBMS-backed client calls MyBatis with no exception translation, so its failures
+    // arrive here as whatever the persistence layer threw
+    final var attempts = new AtomicInteger();
+    final PersistentWebSessionClient failing =
+        new PersistentWebSessionClientStub() {
+          @Override
+          public void deletePersistentWebSession(final String sessionId) {
+            attempts.incrementAndGet();
+            throw new IllegalStateException("connection pool exhausted");
+          }
+        };
+    final var adapter = new SessionStoreAdapter(failing);
+
+    // when / then — wrapped like a search failure, so no backend's exception type crosses the port,
+    // and not retried, since nothing outside the search layer can be classified as transient
+    assertThatThrownBy(() -> adapter.delete("s1"))
+        .isInstanceOf(CamundaAuthenticationException.class)
+        .hasCauseInstanceOf(IllegalStateException.class);
+    assertThat(attempts.get()).isEqualTo(1);
+  }
+
+  @Test
   void shouldRetryTransientGetAllFailureThenReturnEmptyList() {
     // given — a client that always fails transiently on getAll
     final var attempts = new AtomicInteger();
