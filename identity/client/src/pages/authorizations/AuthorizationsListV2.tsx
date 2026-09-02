@@ -25,7 +25,7 @@ import type {
 type AuthorizationWithId = Authorization & { id: string };
 
 type AuthorizationListProps = {
-  tab: ResourceType;
+  resourceType: ResourceType;
   data: SearchResponse<AuthorizationWithId> | null | undefined;
   loading: boolean;
   reload: () => unknown;
@@ -41,7 +41,7 @@ type AuthorizationListProps = {
 };
 
 const AuthorizationList: FC<AuthorizationListProps> = ({
-  tab,
+  resourceType,
   data,
   reload,
   paginationProps,
@@ -83,7 +83,7 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
   const headers: DataTableHeader<AuthorizationWithId>[] = [
     { header: t("ownerType"), key: "ownerType", isSortable: true },
     { header: t("ownerId"), key: "ownerId", isSortable: true },
-    tab === "USER_TASK" ? propertyNameHeader : resourceIdHeader,
+    resourceType === "USER_TASK" ? propertyNameHeader : resourceIdHeader,
     { header: t("permissionTypes"), key: "permissionTypes" },
   ];
 
@@ -91,12 +91,11 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
     <>
       {data?.items?.length || paginationProps.search ? (
         <EntityList
-          title={t(tab)}
           data={data?.items}
           headers={headers}
           addEntityLabel={t("createAuthorization")}
           onAddEntity={() => {
-            addAuthorization(tab);
+            addAuthorization(resourceType);
           }}
           menuItems={[
             {
@@ -115,14 +114,12 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
         />
       ) : (
         <EmptyState
-          heading={t("noAuthorizationsYet", {
-            tab: t(tab),
-          })}
+          heading={t("noAuthorizationsYet")}
           description={t("authorizationDescription")}
           action={
             <Button
               onClick={() => {
-                addAuthorization(tab);
+                addAuthorization(resourceType);
               }}
             >
               <Plus data-icon="inline-start" aria-hidden="true" />
