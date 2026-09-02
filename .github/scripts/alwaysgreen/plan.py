@@ -311,6 +311,14 @@ def plan_dispatches(
         # `smoke-tests.spec.ts` failure was suppressed as `open-fix-pr-for-surface`
         # rather than dispatched.
         #
+        # Assumed here: a PR that claims anything claims EVERYTHING it fixed. The gate
+        # only distinguishes "claims nothing" from "claims something", so a partially
+        # written block — three specs fixed, one `fp=` listed — reads as authoritative
+        # and the two unlisted specs can dispatch a second, overlapping agent. The fix
+        # workflow hands the agent `/tmp/fingerprints.json` and requires the body to
+        # claim them, but stamps only the label; it never validates the block. Making it
+        # verify the block against that file is the fix for this, not a wider lock.
+        #
         # Scope note: this gate holds a claim-nothing PR's surface only until
         # PR_LOCK_TTL_HOURS elapses. Past that its key is released and it contributed no
         # fingerprints, so the same cause can dispatch again. That is deliberate — the
