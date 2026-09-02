@@ -552,6 +552,7 @@ exports.processPr = processPr;
 const attribution_1 = __nccwpck_require__(233);
 const categorize_1 = __nccwpck_require__(493);
 const parser_1 = __nccwpck_require__(883);
+const title_1 = __nccwpck_require__(150);
 async function attributeDirectly(resolver, body, closingIssuesReferences) {
     const section = (0, parser_1.extractSection)(body);
     const optOut = section ? (0, parser_1.isOptOutTicked)(section) : false;
@@ -559,18 +560,36 @@ async function attributeDirectly(resolver, body, closingIssuesReferences) {
     const legacyRefs = await resolver.resolveRefs((0, parser_1.parseRefs)(body));
     return (0, attribution_1.decideAttribution)({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
 }
+/**
+ * Bot link exemption (mirrors the gate's `isLinkExemptAuthor` — currently
+ * `renovate[bot]` only): a dependency-bump PR opened from the bot's own
+ * template will never carry a section ref or a checkbox tick, and pre-gate
+ * there was no opt-out mechanism for it to use even if it wanted to. Applied
+ * LAST, only to a still-unattributed decision after the direct scan and the
+ * backport hop have both had their chance — an exempt bot that DID link a
+ * real issue keeps that real attribution, never overridden by the exemption.
+ */
 async function attributePr(resolver, pr) {
-    const direct = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
-    if (direct.source !== 'unattributed')
-        return direct;
-    const backport = (0, parser_1.parseRefs)(pr.body).find((ref) => ref.kind === 'backport');
-    if (!backport)
-        return direct;
-    const original = await resolver.fetchOriginalPull(backport.number);
-    if (!original)
-        return direct;
-    const originalDecision = await attributeDirectly(resolver, original.body, []);
-    return (0, attribution_1.hopToBackportOriginal)(originalDecision);
+    let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
+    if (decision.source === 'unattributed') {
+        const backport = (0, parser_1.parseRefs)(pr.body).find((ref) => ref.kind === 'backport');
+        if (backport) {
+            const original = await resolver.fetchOriginalPull(backport.number);
+            if (original) {
+                const originalDecision = await attributeDirectly(resolver, original.body, []);
+                decision = (0, attribution_1.hopToBackportOriginal)(originalDecision);
+            }
+        }
+    }
+    if (decision.source === 'unattributed' && (0, title_1.isLinkExemptAuthor)(pr.authorLogin)) {
+        return {
+            source: 'optOut',
+            issueNumbers: [],
+            deliveryPath: 'direct',
+            reasons: [`Author ${pr.authorLogin} is exempt from the PR-issue link requirement.`],
+        };
+    }
+    return decision;
 }
 async function categorizePr(resolver, pr) {
     const override = pr.authorLogin ? categorize_1.BOT_CATEGORY_OVERRIDES[pr.authorLogin] : undefined;
@@ -861,6 +880,21 @@ function assertField(value, description) {
         throw new Error(`Malformed GraphQL response: missing ${description}`);
     return value;
 }
+/**
+ * GraphQL's `author.login` omits the `[bot]` suffix that REST's `user.login`
+ * always includes for the exact same bot actor — confirmed live against
+ * camunda/camunda (e.g. `monorepo-devops-automation` vs
+ * `monorepo-devops-automation[bot]`), not documented anywhere obvious.
+ * Every bot-identity set in this package (BOT_TITLE_EXEMPT, BOT_LINK_EXEMPT,
+ * BOT_CATEGORY_OVERRIDES) is keyed on the REST convention, so this
+ * normalizes GraphQL's answer to match rather than leaving every bot map
+ * silently unmatched for generator-sourced PRs.
+ */
+function normalizeAuthorLogin(author) {
+    if (!author?.login)
+        return undefined;
+    return author.__typename === 'Bot' && !author.login.endsWith('[bot]') ? `${author.login}[bot]` : author.login;
+}
 class GithubGraphqlResolver {
     token;
     owner;
@@ -889,9 +923,9 @@ class GithubGraphqlResolver {
         return results;
     }
     async mapCommitBatch(shas) {
-        const query = `query($owner: String!, $name: String!, ${shas.map((_, i) => `$sha${i}: String!`).join(', ')}) {
+        const query = `query($owner: String!, $name: String!, ${shas.map((_, i) => `$sha${i}: GitObjectID!`).join(', ')}) {
       repository(owner: $owner, name: $name) {
-        ${shas.map((_, i) => `c${i}: object(oid: $sha${i}) { ... on Commit { associatedPullRequests(first: 10) { nodes { number baseRefName } pageInfo { hasNextPage endCursor } } } } `).join('\n')}
+        ${shas.map((_, i) => `c${i}: object(oid: $sha${i}) { ... on Commit { associatedPullRequests(first: 10) { nodes { number baseRefName state } pageInfo { hasNextPage endCursor } } } } `).join('\n')}
       }
     }`;
         const variables = { owner: this.owner, name: this.repo };
@@ -906,16 +940,24 @@ class GithubGraphqlResolver {
     }
     /** Follows `pageInfo.hasNextPage` for one commit's `associatedPullRequests`
      *  connection until exhausted — rare (a commit tied to many PRs), but never
-     *  silently truncated at the first page. */
+     *  silently truncated at the first page.
+     *
+     * Filters to `state === 'MERGED'`: the GraphQL field has no `states` filter
+     * argument (verified against the live API), and it returns EVERY pull
+     * request whose branch history contains the commit — for a commit already
+     * on the base branch, that is every PR opened against that branch
+     * afterward, not just the one that actually merged it. An unfiltered list
+     * routinely runs into the dozens and makes nearly every commit look
+     * "ambiguous" to the range resolver's dedupe rule. */
     async drainAssociatedPrs(sha, firstPage) {
         const connection = assertField(firstPage.associatedPullRequests, `associatedPullRequests on commit ${sha}`);
         let nodes = assertField(connection.nodes, `associatedPullRequests.nodes on commit ${sha}`);
         let pageInfo = assertField(connection.pageInfo, `associatedPullRequests.pageInfo on commit ${sha}`);
         const all = [...nodes];
         while (pageInfo.hasNextPage) {
-            const query = `query($owner: String!, $name: String!, $sha: String!, $after: String) {
+            const query = `query($owner: String!, $name: String!, $sha: GitObjectID!, $after: String) {
         repository(owner: $owner, name: $name) {
-          c: object(oid: $sha) { ... on Commit { associatedPullRequests(first: 10, after: $after) { nodes { number baseRefName } pageInfo { hasNextPage endCursor } } } }
+          c: object(oid: $sha) { ... on Commit { associatedPullRequests(first: 10, after: $after) { nodes { number baseRefName state } pageInfo { hasNextPage endCursor } } } }
         }
       }`;
             const repository = assertField((await this.request(query, { owner: this.owner, name: this.repo, sha, after: pageInfo.endCursor })).repository, 'repository');
@@ -925,13 +967,13 @@ class GithubGraphqlResolver {
             pageInfo = assertField(nextConnection.pageInfo, `associatedPullRequests.pageInfo on commit ${sha}`);
             all.push(...nodes);
         }
-        return all;
+        return all.filter((node) => node.state === 'MERGED').map((node) => ({ number: node.number, baseRefName: node.baseRefName }));
     }
     async fetchMetadataBatch(numbers) {
         const query = `query($owner: String!, $name: String!, ${numbers.map((_, i) => `$n${i}: Int!`).join(', ')}) {
       repository(owner: $owner, name: $name) {
         ${numbers
-            .map((_, i) => `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt author { login } labels(first: 20) { nodes { name } } closingIssuesReferences(first: 20) { nodes { number } } }`)
+            .map((_, i) => `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt author { login __typename } labels(first: 20) { nodes { name } } closingIssuesReferences(first: 20) { nodes { number } } }`)
             .join('\n')}
       }
     }`;
@@ -946,7 +988,7 @@ class GithubGraphqlResolver {
                 number: assertField(pr.number, `number on PR #${number}`),
                 title: assertField(pr.title, `title on PR #${number}`),
                 body: pr.body ?? '',
-                authorLogin: pr.author?.login,
+                authorLogin: normalizeAuthorLogin(pr.author),
                 mergedAt: assertField(pr.mergedAt, `mergedAt on PR #${number}`),
                 labels: (assertField(labels.nodes, `labels.nodes on PR #${number}`)).map((l) => l.name),
                 closingIssuesReferences: (assertField(closingIssuesReferences.nodes, `closingIssuesReferences.nodes on PR #${number}`)).map((n) => n.number),
@@ -1129,6 +1171,133 @@ class GithubResolver {
     }
 }
 exports.GithubResolver = GithubResolver;
+
+
+/***/ }),
+
+/***/ 150:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BOT_LINK_EXEMPT = exports.BOT_TITLE_EXEMPT = exports.HEADER_MAX = exports.TITLE_TYPES = void 0;
+exports.lintTitle = lintTitle;
+exports.isTitleExemptAuthor = isTitleExemptAuthor;
+exports.isLinkExemptAuthor = isLinkExemptAuthor;
+/**
+ * PR-title lint — the active rules of `commitlint.config.cjs`, reimplemented as
+ * a pure check so the action keeps zero runtime deps (pulling @commitlint +
+ * config-conventional would vendor hundreds of kB into the committed bundle for
+ * a handful of trivial rules). The config's other rules are disabled ([0,...]).
+ *
+ * DRIFT GUARD: TITLE_TYPES and HEADER_MAX are the single source of truth here,
+ * and the action CI greps commitlint.config.cjs to assert they still match —
+ * so a change to the repo's commit rules fails CI until this is updated.
+ *
+ * Active rules mirrored (see commitlint.config.cjs):
+ *   type-empty:never · type-case:lower-case · type-enum · scope-empty:always ·
+ *   header-max-length:120. Subject/body/footer rules are disabled there.
+ */
+/** commitlint.config.cjs `type-enum`. Keep in sync — CI enforces it. */
+exports.TITLE_TYPES = [
+    'build',
+    'ci',
+    'deps',
+    'docs',
+    'feat',
+    'fix',
+    'merge',
+    'perf',
+    'refactor',
+    'revert',
+    'style',
+    'test',
+];
+/** commitlint.config.cjs `header-max-length`. Keep in sync — CI enforces it. */
+exports.HEADER_MAX = 120;
+// `type` + optional `(scope)` + optional `!` + `: ` + subject. Mirrors the
+// conventional-commit header shape config-conventional parses.
+const HEADER = /^(?<type>[^\s():!]+)(?<scope>\([^)]*\))?!?:[ ](?<subject>.+)$/;
+/**
+ * Wrap user-controlled title fragments before interpolating them into the
+ * sticky comment / job summary. The gate posts the comment with a write token,
+ * so a raw `@mention` in a malicious title would notify (spam) via the bot.
+ * Inline code neutralises mentions; stripping backticks stops the value
+ * breaking out of the span.
+ */
+function code(value) {
+    return `\`${(value ?? '').replace(/`/g, '')}\``;
+}
+/** Lint a PR title. Pure — no IO, no bot logic (the caller decides bot skips). */
+function lintTitle(title) {
+    if (title.length > exports.HEADER_MAX) {
+        return {
+            outcome: 'fail',
+            code: 'title-length',
+            reasons: [`The title is ${title.length} characters; keep it within ${exports.HEADER_MAX}.`],
+        };
+    }
+    const match = HEADER.exec(title);
+    if (!match?.groups) {
+        return {
+            outcome: 'fail',
+            code: 'title-format',
+            reasons: [
+                'The title must follow Conventional Commits: `type: summary` (e.g. "fix: correct retry backoff").',
+                `Allowed types: ${exports.TITLE_TYPES.join(', ')}.`,
+            ],
+        };
+    }
+    const { type, scope } = match.groups;
+    if (scope) {
+        return {
+            outcome: 'fail',
+            code: 'title-scope',
+            reasons: [`Scopes are not used in this repo — drop ${code(scope)} and write "${code(type)}: …".`],
+        };
+    }
+    if (type !== type?.toLowerCase()) {
+        return { outcome: 'fail', code: 'title-type', reasons: [`The type ${code(type)} must be lower-case.`] };
+    }
+    if (!exports.TITLE_TYPES.includes(type)) {
+        return {
+            outcome: 'fail',
+            code: 'title-type',
+            reasons: [`${code(type)} is not an allowed type. Use one of: ${exports.TITLE_TYPES.join(', ')}.`],
+        };
+    }
+    return { outcome: 'pass', code: 'title-ok', reasons: [`Title type "${type}" is valid.`] };
+}
+/**
+ * Bot authors whose titles are machine-generated and exempt from title lint
+ * (D16). Their PR-issue link / backport marker is still validated — only the
+ * title check is skipped.
+ */
+exports.BOT_TITLE_EXEMPT = new Set([
+    'backport-action',
+    'monorepo-devops-automation[bot]',
+    'renovate[bot]',
+    'dependabot[bot]',
+]);
+function isTitleExemptAuthor(login) {
+    return login !== undefined && exports.BOT_TITLE_EXEMPT.has(login);
+}
+/**
+ * Bot authors exempt from the PR-issue-LINK check, because they open PRs from
+ * their own template and will never tick the opt-out checkbox. Dependency bumps
+ * are not release-notes material, so an exemption is the agreed answer rather
+ * than teaching each bot to write the section.
+ *
+ * DELIBERATELY SEPARATE from BOT_TITLE_EXEMPT, which must never be reused here:
+ * that set contains `monorepo-devops-automation[bot]`, the author of every
+ * backport PR. Exempting it from the link check would skip the backport hop, so
+ * backports would stop inheriting the original PR's issue — silently dropping
+ * them from the release notes, which is the failure this gate exists to prevent.
+ */
+exports.BOT_LINK_EXEMPT = new Set(['renovate[bot]']);
+function isLinkExemptAuthor(login) {
+    return login !== undefined && exports.BOT_LINK_EXEMPT.has(login);
+}
 
 
 /***/ }),

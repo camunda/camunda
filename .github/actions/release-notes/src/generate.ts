@@ -20,9 +20,18 @@ import { GithubResolver } from './resolver';
  *
  * ponytail: closesIssueNumbers uses the PR's native `closingIssuesReferences`
  * field as the "this PR actually closed that issue" signal, rather than a
- * separate Issue-state fetch. This is the best signal available without an
- * additional GraphQL round-trip per issue; revisit if the step 7 real-release
- * comparison shows it misattributing "Released" vs "Partially delivered".
+ * separate Issue-state fetch. Validated against a real backport-heavy range
+ * (camunda/camunda 8.8.36..8.8.37): `closingIssuesReferences` is empty on
+ * every bot backport by construction (confirmed live), which happens to
+ * match reality there — the closing event is virtually always the original
+ * PR merging to main, never the stable-branch backport, so "Partially
+ * delivered" is correct for every backport-delivered issue observed. The
+ * theoretical gap this proxy does NOT cover: a PR that is itself the real,
+ * global closer of an issue but whose `closingIssuesReferences` was for some
+ * other reason empty (e.g. the closing keyword lived in a since-edited body)
+ * would be under-reported as "Partially delivered" rather than "Released".
+ * Closing that gap needs a per-issue closer lookup (Issue.timelineItems),
+ * which is its own I/O step, not something to add speculatively here.
  */
 
 interface RunInputs {
