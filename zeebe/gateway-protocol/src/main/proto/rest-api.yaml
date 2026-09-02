@@ -5220,6 +5220,9 @@ paths:
         Once a resource has been deleted it cannot be recovered. If the resource needs to be
         available again, a new deployment of the resource is required.
 
+        A process definition with running instances first transitions into a draining state
+        and is marked as deleted only once it is fully removed cluster-wide.
+
         Only the resource itself is deleted from the runtime state. Deleting historic data
         associated with a resource is not supported.
       parameters:
