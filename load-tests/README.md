@@ -243,23 +243,24 @@ documents known dashboard UIDs for the benchmark cluster.
 
 Load tests are triggered on different occasions (per release, weekly, daily, or ad-hoc), each targeting different use cases and versions. They build on a common [setup](#setup), but differ in details (for example, stress tests use smaller secondary storage disks) and in the [test variants](../docs/testing/reliability-testing.md#endurance-test-variants) defined in the reliability testing documentation.
 
-### Release load tests
+### Release load tests (endurance test)
 
-For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous load test with a realistic workload. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn), which triggers the [Camunda release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-release-load-test.yaml).
+For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous endurance test with a realistic workload. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn), which triggers the [Camunda release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-release-load-test.yaml).
 
-**Goal:** Validating the reliability of our releases and detecting earlier issues, especially with alpha versions and updates.
+**Goal:** Validating the long-term reliability of our releases and detecting earlier issues, especially with alpha versions and updates.
 
-**Validation:** The tailored [Zeebe Medic Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m) can be used to observe and validate the performance of the different load tests.
+**Validation:** The tailored [Camunda Performance Dashboard](https://dashboard.benchmark.camunda.cloud/d/camunda-performance-dashboard/camunda-performance) can be used to observe and validate the performance of the different load tests. In addition alerts have been configured to notify the team of any performance regressions or anomalies.
 
-#### Architecture
+#### Release load test and process integration
 
-The release load test workflow acts as an abstraction layer between the release process and the underlying load test infrastructure, with a simple public API accepting `name` and `tag` as required inputs, plus optional per-component image tag overrides (`optimize-tag`, `identity-tag`, `connectors-tag`).
+The [release load test GitHub workflow](https://github.com/camunda/camunda/blob/a78705f4b709733a7c05d400932bad2cee3cdc35/.github/workflows/camunda-release-load-test.yaml) acts as an abstraction layer between the [monorepo BPMN release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn) and the underlying load test infrastructure, with a simple public API accepting `name` and `tag` as required inputs, plus optional per-component image tag overrides (`optimize-tag`, `identity-tag`, `connectors-tag`).
 
 ```mermaid
+%%{init: {'flowchart': {'nodeSpacing': 150, 'rankSpacing': 90}}}%%
 graph TD
     subgraph "Callers"
         BPMN["Release Process<br/>(BPMN)"]
-        SCHEDULE["Scheduled Smoke Tests<br/>(weekdays 02:00 UTC)"]
+        SCHEDULE["Daily Smoke Tests<br/>(weekdays 02:00 UTC)"]
     end
 
     subgraph "Abstraction Layer — camunda-release-load-test.yaml"
@@ -329,9 +330,14 @@ Example values from a past release:
 | `release_tag`       | `8.7.17`        | The release tag to use for the test |
 | `benchmark_name`    | `release-8-7-x` | The name of the load test           |
 
-#### Scheduled smoke tests
 
-The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) runs on weekdays at 02:00 UTC to validate that release load tests can be created for the currently active stable branches (`stable/8.7`, `stable/8.8`, `stable/8.9`) and `main`. Each branch's load test is created by calling the release load test workflow on that branch (`@stable/8.x`), ensuring the correct infrastructure files are used.
+> [!NOTE]
+>
+> Since 8.8+ Optimize is build together with the main Camunda OC release, the `optimize-tag` input needs to be filled with the corresponding value.
+
+#### Daily smoke tests
+
+The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) runs on weekdays to validate that release load tests can be created for the currently active stable branches and `main`. Each branch's load test is created by calling the release load test workflow on that branch (`@stable/8.x`), ensuring the correct infrastructure files are used.
 
 After deployment, each load test is verified by the [verify-and-cleanup workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-verify-and-cleanup-load-test.yml), which:
 
@@ -343,7 +349,7 @@ Results are posted to the `#reliability-testing-alerts` Slack channel.
 
 > [!Note]
 >
-> The scheduled workflow uses hardcoded release tags per stable branch. Patch releases do not require updates — only new minor versions (e.g., 8.10) or deprecated branches need the workflow to be updated.
+> The scheduled workflow uses hardcoded release tags per stable branch, and are updated by renovate.
 
 ### Weekly load tests
 
