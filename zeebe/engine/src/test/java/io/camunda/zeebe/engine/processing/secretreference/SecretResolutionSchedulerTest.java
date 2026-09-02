@@ -21,6 +21,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.secretstore.ConcurrentSecretStore;
 import io.camunda.secretstore.InMemorySecretCache;
 import io.camunda.secretstore.SecretCache;
 import io.camunda.secretstore.SecretErrorCode;
@@ -48,11 +49,17 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1267,6 +1274,40 @@ final class SecretResolutionSchedulerTest {
                     .doesNotContain("db-password", "s3cr3t"));
   }
 
+  @Test
+  void shouldResolveAOneByOneStoreConcurrentlyThroughTheRealScheduler() throws Exception {
+    // given a store that pays a fixed delay per name inside one resolve() call, the shape a real
+    // one-by-one cloud store's cost takes, wrapped for concurrent resolution as the registry does
+    // in production once max-concurrency is above 1
+    final var perNameDelay = Duration.ofMillis(20);
+    final var refs = IntStream.range(0, 16).mapToObj(i -> "secret-" + i).toArray(String[]::new);
+    final var sleepingStore = new SleepingOneByOneStore(perNameDelay);
+    final ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor();
+    try {
+      final var wrappedStore =
+          new ConcurrentSecretStore(sleepingStore, pool, new Semaphore(8, true));
+      final var registry =
+          new SecretStoreRegistry(
+              Map.of(STORE_ID, wrappedStore), Map.of(STORE_ID, new InMemorySecretCache()));
+      final var localScheduler =
+          new SecretResolutionScheduler(
+              () -> scheduledTaskState, registry, new EngineConfiguration(), metrics);
+      localScheduler.onRecovered(context);
+      stubPending(STORE_ID, refs);
+
+      // when
+      localScheduler.resolveSecrets(resultBuilder);
+
+      // then more than one chunk was in flight at once through the real scheduler path: a serial
+      // (unwrapped) resolution could never observe more than 1, regardless of how long each chunk
+      // takes — this is what collapses the recorded resolution duration in production, without
+      // asserting on a wall-clock threshold here
+      assertThat(sleepingStore.maxObserved.get()).isGreaterThan(1);
+    } finally {
+      pool.shutdownNow();
+    }
+  }
+
   private double outcomeCount(final String storeId, final SecretResolutionOutcome outcome) {
     final var counter =
         meterRegistry
@@ -1336,5 +1377,51 @@ final class SecretResolutionSchedulerTest {
             })
         .when(secretReferenceState)
         .visitPendingSecretReferences(any(), any());
+  }
+
+  /**
+   * Pays {@code perNameDelay} per name inside one {@link #resolve} call, exactly as a real
+   * one-by-one cloud store's serialized cost does.
+   */
+  private static final class SleepingOneByOneStore implements SecretStore {
+
+    private final Duration perNameDelay;
+
+    // tracks how many resolve() calls are in flight at once, so the concurrency test can assert
+    // on observed concurrency directly instead of on wall-clock duration
+    private final AtomicInteger inFlight = new AtomicInteger();
+    private final AtomicInteger maxObserved = new AtomicInteger();
+
+    SleepingOneByOneStore(final Duration perNameDelay) {
+      this.perNameDelay = perNameDelay;
+    }
+
+    @Override
+    public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
+      final var now = inFlight.incrementAndGet();
+      maxObserved.accumulateAndGet(now, Math::max);
+      try {
+        Thread.sleep(perNameDelay.multipliedBy(names.size()).toMillis());
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new SecretStoreUnavailableException("interrupted", e);
+      } finally {
+        inFlight.decrementAndGet();
+      }
+      final Map<String, SecretResolutionResult> results = new LinkedHashMap<>();
+      names.forEach(
+          name -> results.put(name, new SecretResolutionResult.Resolved(name + "-value")));
+      return results;
+    }
+
+    @Override
+    public List<String> list() {
+      return List.of();
+    }
+
+    @Override
+    public int namesPerCall() {
+      return 1;
+    }
   }
 }
