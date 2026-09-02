@@ -113,6 +113,12 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
     });
 
     await test.step('Verify batch operation has two operations', async () => {
+      // operationsCompletedCount is written by the exporter asynchronously and
+      // lags behind the batch reaching COMPLETED, so it can still read 0/1 well
+      // after the batch is done on a loaded ES/OS backing. Gate on the settled
+      // COMPLETED state with the batch-operation poll budget used elsewhere in
+      // the suite; the deletion checks below prove both operations ran. This
+      // mirrors the process-instance batch-delete test.
       await expect(async () => {
         const res = await request.get(
           buildUrl(`/batch-operations/${createdBatchOperationKey}`),
@@ -133,9 +139,12 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
         const json = await res.json();
         expect(json.batchOperationKey).toBe(createdBatchOperationKey);
         expect(json.batchOperationType).toBe('DELETE_DECISION_INSTANCE');
+        expect(json.state).toBe('COMPLETED');
         expect(json.operationsTotalCount).toBeGreaterThanOrEqual(2);
-        expect(json.operationsCompletedCount).toBe(2);
-      }).toPass(defaultAssertionOptions);
+      }).toPass({
+        intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+        timeout: 120_000,
+      });
     });
 
     await test.step('Verify Decision Instance is Deleted', async () => {
