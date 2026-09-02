@@ -9,49 +9,73 @@ package io.atomix.cluster.messaging.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.ManagedUnicastService;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
 final class NettyNetworkServiceTest {
+
+  private final AtomicBoolean messagingStarted = new AtomicBoolean();
+  private final AtomicBoolean messagingStopped = new AtomicBoolean();
+  private final AtomicBoolean unicastStarted = new AtomicBoolean();
+  private final AtomicBoolean unicastStopped = new AtomicBoolean();
 
   private final ManagedMessagingService messagingService = mock(ManagedMessagingService.class);
   private final ManagedUnicastService unicastService = mock(ManagedUnicastService.class);
   private final NettyNetworkService networkService =
       new NettyNetworkService(messagingService, unicastService, Runnable::run);
 
+  NettyNetworkServiceTest() {
+    when(messagingService.start())
+        .thenAnswer(
+            invocation -> {
+              messagingStarted.set(true);
+              return CompletableFuture.completedFuture(messagingService);
+            });
+    when(messagingService.stop())
+        .thenAnswer(
+            invocation -> {
+              messagingStopped.set(true);
+              return CompletableFuture.completedFuture(null);
+            });
+    when(unicastService.start())
+        .thenAnswer(
+            invocation -> {
+              unicastStarted.set(true);
+              return CompletableFuture.completedFuture(unicastService);
+            });
+    when(unicastService.stop())
+        .thenAnswer(
+            invocation -> {
+              unicastStopped.set(true);
+              return CompletableFuture.completedFuture(null);
+            });
+  }
+
   @Test
   void shouldStartBothTransports() {
-    // given
-    when(messagingService.start()).thenReturn(CompletableFuture.completedFuture(messagingService));
-    when(unicastService.start()).thenReturn(CompletableFuture.completedFuture(unicastService));
-
     // when
     final var started = networkService.start().join();
 
     // then
-    verify(messagingService).start();
-    verify(unicastService).start();
+    assertThat(messagingStarted).isTrue();
+    assertThat(unicastStarted).isTrue();
     assertThat(started).isSameAs(networkService);
   }
 
   @Test
   void shouldStopBothTransports() {
-    // given
-    when(unicastService.stop()).thenReturn(CompletableFuture.completedFuture(null));
-    when(messagingService.stop()).thenReturn(CompletableFuture.completedFuture(null));
-
     // when
     networkService.stop().join();
 
     // then
-    verify(unicastService).stop();
-    verify(messagingService).stop();
+    assertThat(messagingStopped).isTrue();
+    assertThat(unicastStopped).isTrue();
   }
 
   @Test
@@ -59,14 +83,13 @@ final class NettyNetworkServiceTest {
     // given
     when(unicastService.stop())
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("unicast stop failed")));
-    when(messagingService.stop()).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     final var stopped = networkService.stop();
 
     // then - leaving the messaging transport running would keep the node reachable after shutdown
     assertThat(stopped).succeedsWithin(Duration.ofSeconds(5));
-    verify(messagingService).stop();
+    assertThat(messagingStopped).isTrue();
   }
 
   @Test
