@@ -55,6 +55,11 @@ SUPPORTED_BASE_REFS = frozenset(
 #: nothing. Past the TTL this coarse per-surface lock lifts and the per-spec coverage
 #: block takes over: a repeat of the same failure is still suppressed as
 #: `open-pr-covers-all-specs`, while a genuinely new one gets an agent.
+#:
+#: The TTL alone still leaves the surface shut for two days against failures the
+#: holding PR never claimed, so `open_pr_keys_with_coverage` narrows the lock further:
+#: a PR that published a coverage block is read at spec granularity immediately, and
+#: only a PR that published none falls back to locking its whole surface.
 PR_LOCK_TTL_DAYS = 2
 
 
@@ -240,6 +245,7 @@ def plan_dispatches(
     inflight_keys: set[str],
     open_pr_keys: set[str],
     product_bug_fingerprints: set[str],
+    open_pr_keys_with_coverage: set[str] | None = None,
     recent_no_fix_fingerprints: set[str] | None = None,
     fixed_upstream_fingerprints: set[str] | None = None,
     supported_base_refs: frozenset[str] = SUPPORTED_BASE_REFS,
@@ -258,10 +264,15 @@ def plan_dispatches(
 
     `fixed_upstream_fingerprints` are those whose test code changed in the e2e repo
     after the failing run started, so the run executed source that is already superseded.
+
+    `open_pr_keys_with_coverage` are the keys of `open_pr_keys` whose every holding PR
+    published a coverage block. Those PRs state which specs they claim, so the coarse
+    per-surface lock is skipped for them and the per-spec accounting below decides.
     """
     plan = Plan()
     no_fix = recent_no_fix_fingerprints or set()
     fixed_upstream = fixed_upstream_fingerprints or set()
+    pr_keys_with_coverage = open_pr_keys_with_coverage or set()
 
     for cand in merge_by_key(candidates):
         # Before anything reads .specs or derives fingerprints from them.
@@ -283,10 +294,16 @@ def plan_dispatches(
             plan.suppressed.append(Suppression(cand, SUPPRESSED_IN_FLIGHT, cand.key))
             continue
 
-        # An open fix PR for this surface stops a second agent regardless of what the
-        # PR body claims. The coverage block is written by the agent, so a PR that
-        # omitted it would otherwise be invisible here and the failure re-dispatched.
-        if cand.key in open_pr_keys:
+        # An open fix PR that published no coverage block stops a second agent on its
+        # surface: the block is written by the agent, so a PR that omitted it states
+        # nothing about which specs it claims and the whole surface has to be assumed.
+        # A PR that did publish one is authoritative per spec through
+        # `covered_fingerprints`, so locking its surface only hides its neighbours: on
+        # 2026-09-02 c8-cross-component-e2e-tests#3267 claimed three cluster-creation
+        # setup specs on `main:saas-smoke-e2e`, and run 33605992250's unrelated
+        # `smoke-tests.spec.ts` failure was suppressed as `open-fix-pr-for-surface`
+        # rather than dispatched.
+        if cand.key in open_pr_keys and cand.key not in pr_keys_with_coverage:
             plan.suppressed.append(Suppression(cand, SUPPRESSED_PR_OPEN, cand.key))
             continue
 

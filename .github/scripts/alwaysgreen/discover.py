@@ -373,7 +373,7 @@ def covered_fingerprints() -> set[str]:
     return out
 
 
-def open_fix_pr_keys() -> tuple[set[str], bool]:
+def open_fix_pr_keys() -> tuple[set[str], set[str], bool]:
     """Dispatch keys that already have an open fix PR, in any repo a fix can land in.
 
     Read from the `alwaysgreen-key:<base_ref>:<surface>` label the fix workflow
@@ -384,10 +384,14 @@ def open_fix_pr_keys() -> tuple[set[str], bool]:
     cannot wedge its surface shut for good; `covered_fingerprints` still suppresses a
     repeat of the specs it already claims.
 
-    Returns (keys, ok). As with `inflight_keys`, a failed lookup makes the caller
-    suppress rather than risk a duplicate PR.
+    Returns (keys, keys_with_coverage, ok). `keys_with_coverage` is the subset whose
+    every holding PR published a coverage block, so `plan` can decide those keys per
+    spec instead of locking the surface; a key any of whose holders published none
+    stays out of it and keeps the coarse lock. As with `inflight_keys`, a failed
+    lookup makes the caller suppress rather than risk a duplicate PR.
     """
     out: set[str] = set()
+    uncovered: set[str] = set()
     ok = True
     now = datetime.now(timezone.utc)
     for repo in FIX_PR_REPOS:
@@ -395,7 +399,7 @@ def open_fix_pr_keys() -> tuple[set[str], bool]:
             [
                 "pr", "list", "--repo", repo,
                 "--search", f"label:{FIX_LABEL} is:open",
-                "--limit", "100", "--json", "labels,number,createdAt",
+                "--limit", "100", "--json", "labels,number,createdAt,body",
             ],
             None,
         )
@@ -422,7 +426,21 @@ def open_fix_pr_keys() -> tuple[set[str], bool]:
                 )
                 continue
             out |= keys
-    return out, ok
+            covered = planning.parse_coverage_block(pr.get("body"))
+            if not covered:
+                uncovered |= keys
+            # Named in the log so a suppressed run says which PR held it shut without
+            # anyone cross-listing open fix PRs by hand.
+            log(
+                f"open fix PR {repo}#{pr.get('number')} holds "
+                f"{', '.join(sorted(keys))}: "
+                + (
+                    f"{len(covered)} spec(s) claimed, others dispatchable"
+                    if covered
+                    else "no coverage block, whole surface locked"
+                )
+            )
+    return out, out - uncovered, ok
 
 
 def inflight_keys() -> tuple[set[str], bool]:
@@ -737,9 +755,10 @@ def main() -> int:
             keys = {c.key for c in candidates}
             log("::warning::in-flight lookup failed; suppressing dispatch this run")
 
-        pr_keys, pr_keys_ok = open_fix_pr_keys()
+        pr_keys, pr_keys_covered, pr_keys_ok = open_fix_pr_keys()
         if not pr_keys_ok:
             pr_keys = {c.key for c in candidates}
+            pr_keys_covered = set()
             log("::warning::open fix PR lookup failed; suppressing dispatch this run")
 
         run = gh_json(["api", f"repos/{REPO}/actions/runs/{args.run_id}"], {})
@@ -750,6 +769,7 @@ def main() -> int:
             covered_fingerprints=covered_fingerprints(),
             inflight_keys=keys,
             open_pr_keys=pr_keys,
+            open_pr_keys_with_coverage=pr_keys_covered,
             product_bug_fingerprints=product_bug_fingerprints(),
             recent_no_fix_fingerprints=recent_no_fix_fingerprints(workdir),
             fixed_upstream_fingerprints=fixed_upstream_fingerprints(candidates, started),
