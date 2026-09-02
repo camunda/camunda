@@ -121,6 +121,7 @@ function evaluatePostGateAnomaly(input) {
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BOT_CATEGORY_OVERRIDES = void 0;
+exports.stripBackportPrefix = stripBackportPrefix;
 exports.resolveCategorizeTitle = resolveCategorizeTitle;
 exports.categorize = categorize;
 /** D16: known bots whose own title/body can't be trusted as the category source. */
@@ -151,6 +152,18 @@ const INTERNAL_SECTIONS = new Set(['Maintenance']);
 const HEADER = /^(?:\[[^\]]*\]\s*)?(?<type>[^\s():!]+)(?:\([^)]*\))?!?:\s*(?<subject>.+)$/;
 function parseType(title) {
     return HEADER.exec(title)?.groups?.type?.toLowerCase() ?? null;
+}
+const BACKPORT_TITLE_PREFIX = /^\[backport\b[^\]]*\]\s*/i;
+/**
+ * Strips a leading `[Backport ...]` marker for display — it's noise for the
+ * customer, who cares what changed, not which branch a bot's title-bracket
+ * names. Deliberately scoped to that one marker (case-insensitive, "backport"
+ * as the first word inside the brackets) so an unrelated bracketed prefix a
+ * human title legitimately uses (e.g. "[CPT] ...", "[Doc Handling] ...")
+ * is left alone.
+ */
+function stripBackportPrefix(title) {
+    return title.replace(BACKPORT_TITLE_PREFIX, '');
 }
 /**
  * Decide which title to feed `categorize()`. Pure composition, same shape as
@@ -591,6 +604,14 @@ async function attributePr(resolver, pr) {
     }
     return decision;
 }
+/**
+ * Resolves both the category-detection title AND the customer-facing display
+ * title from the same lookup — an inherit-original bot's own title is
+ * garbage for both purposes, so whichever title categorize() uses to decide
+ * the section is also the one worth showing the reader, with the
+ * `[Backport ...]` marker itself stripped either way (noise, not a fact the
+ * customer needs).
+ */
 async function categorizePr(resolver, pr) {
     const override = pr.authorLogin ? categorize_1.BOT_CATEGORY_OVERRIDES[pr.authorLogin] : undefined;
     let originalTitle;
@@ -599,20 +620,22 @@ async function categorizePr(resolver, pr) {
         if (backport)
             originalTitle = (await resolver.fetchOriginalPull(backport.number))?.title;
     }
-    const title = (0, categorize_1.resolveCategorizeTitle)({ title: pr.title, authorLogin: pr.authorLogin, originalTitle });
+    const resolvedTitle = (0, categorize_1.resolveCategorizeTitle)({ title: pr.title, authorLogin: pr.authorLogin, originalTitle });
+    const displayTitle = (0, categorize_1.stripBackportPrefix)(resolvedTitle);
     const componentLabels = pr.labels.filter((label) => label.startsWith('component/'));
     const breakingChangeLabel = pr.labels.includes('BREAKING CHANGE');
-    return (0, categorize_1.categorize)({ title, authorLogin: pr.authorLogin, componentLabels, breakingChangeLabel });
+    const categorization = (0, categorize_1.categorize)({ title: displayTitle, authorLogin: pr.authorLogin, componentLabels, breakingChangeLabel });
+    return { displayTitle, categorization };
 }
 async function processPr(resolver, pr, options) {
     const attribution = await attributePr(resolver, pr);
-    const categorization = await categorizePr(resolver, pr);
+    const { displayTitle, categorization } = await categorizePr(resolver, pr);
     const anomaly = (0, attribution_1.evaluatePostGateAnomaly)({
         mergedAt: pr.mergedAt,
         gateRequiredAt: options.gateRequiredAt,
         source: attribution.source,
     });
-    return { number: pr.number, title: pr.title, attribution, categorization, anomaly };
+    return { number: pr.number, title: displayTitle, attribution, categorization, anomaly };
 }
 
 

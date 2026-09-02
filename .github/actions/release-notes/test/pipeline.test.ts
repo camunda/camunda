@@ -35,6 +35,32 @@ test('a plain direct PR attributes via its section and categorizes by its own ti
   assert.equal(out.categorization.section, 'Features');
 });
 
+test('a human-opened backport keeps [Backport ...] out of its displayed title', async () => {
+  const out = await processPr(
+    fakeResolver(),
+    prInput({ title: '[Backport stable/8.8] fix: correct retry backoff', body: '## Related issues\ncloses #100' }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.title, 'fix: correct retry backoff');
+});
+
+test('an inherit-original bot backport displays the ORIGINAL title, not its own placeholder', async () => {
+  const resolver = fakeResolver({
+    200: { body: '## Related issues\ncloses #100', title: '[Backport stable/8.8] fix: correct retry backoff' },
+  });
+  const out = await processPr(
+    resolver,
+    prInput({
+      number: 300,
+      title: 'chore stuff', // the bot's own title doesn't parse — inherit-original must rescue display too
+      body: 'Backport of #200',
+      authorLogin: 'monorepo-devops-automation[bot]',
+    }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.title, 'fix: correct retry backoff');
+});
+
 test('a PR with no linked issue and no backport marker stays unattributed', async () => {
   const out = await processPr(fakeResolver(), prInput({ body: 'no refs here' }), { gateRequiredAt: null });
   assert.equal(out.attribution.source, 'unattributed');

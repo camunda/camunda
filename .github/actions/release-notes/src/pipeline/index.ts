@@ -1,6 +1,6 @@
 import { decideAttribution, evaluatePostGateAnomaly, hopToBackportOriginal } from '../attribution';
 import type { AttributionAnomaly, AttributionDecision } from '../attribution/types';
-import { BOT_CATEGORY_OVERRIDES, categorize, resolveCategorizeTitle } from '../categorize';
+import { BOT_CATEGORY_OVERRIDES, categorize, resolveCategorizeTitle, stripBackportPrefix } from '../categorize';
 import type { CategorizeDecision } from '../categorize';
 import { extractSection, isOptOutTicked, parseRefs } from '../parser';
 import { isLinkExemptAuthor } from '../title';
@@ -98,7 +98,18 @@ async function attributePr(resolver: PipelineResolver, pr: PipelinePrInput): Pro
   return decision;
 }
 
-async function categorizePr(resolver: PipelineResolver, pr: PipelinePrInput): Promise<CategorizeDecision> {
+/**
+ * Resolves both the category-detection title AND the customer-facing display
+ * title from the same lookup — an inherit-original bot's own title is
+ * garbage for both purposes, so whichever title categorize() uses to decide
+ * the section is also the one worth showing the reader, with the
+ * `[Backport ...]` marker itself stripped either way (noise, not a fact the
+ * customer needs).
+ */
+async function categorizePr(
+  resolver: PipelineResolver,
+  pr: PipelinePrInput,
+): Promise<{ displayTitle: string; categorization: CategorizeDecision }> {
   const override = pr.authorLogin ? BOT_CATEGORY_OVERRIDES[pr.authorLogin] : undefined;
   let originalTitle: string | undefined;
   if (override === 'inherit-original') {
@@ -106,10 +117,12 @@ async function categorizePr(resolver: PipelineResolver, pr: PipelinePrInput): Pr
     if (backport) originalTitle = (await resolver.fetchOriginalPull(backport.number))?.title;
   }
 
-  const title = resolveCategorizeTitle({ title: pr.title, authorLogin: pr.authorLogin, originalTitle });
+  const resolvedTitle = resolveCategorizeTitle({ title: pr.title, authorLogin: pr.authorLogin, originalTitle });
+  const displayTitle = stripBackportPrefix(resolvedTitle);
   const componentLabels = pr.labels.filter((label) => label.startsWith('component/'));
   const breakingChangeLabel = pr.labels.includes('BREAKING CHANGE');
-  return categorize({ title, authorLogin: pr.authorLogin, componentLabels, breakingChangeLabel });
+  const categorization = categorize({ title: displayTitle, authorLogin: pr.authorLogin, componentLabels, breakingChangeLabel });
+  return { displayTitle, categorization };
 }
 
 export async function processPr(
@@ -118,12 +131,12 @@ export async function processPr(
   options: PipelineOptions,
 ): Promise<PipelinePrOutput> {
   const attribution = await attributePr(resolver, pr);
-  const categorization = await categorizePr(resolver, pr);
+  const { displayTitle, categorization } = await categorizePr(resolver, pr);
   const anomaly = evaluatePostGateAnomaly({
     mergedAt: pr.mergedAt,
     gateRequiredAt: options.gateRequiredAt,
     source: attribution.source,
   });
 
-  return { number: pr.number, title: pr.title, attribution, categorization, anomaly };
+  return { number: pr.number, title: displayTitle, attribution, categorization, anomaly };
 }

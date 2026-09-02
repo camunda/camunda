@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { categorize, resolveCategorizeTitle } from '../src/categorize';
+import { categorize, resolveCategorizeTitle, stripBackportPrefix } from '../src/categorize';
 
 test('conventional type maps to its section: feat -> Features', () => {
   const d = categorize({ title: 'feat: add batch delete API', componentLabels: [], breakingChangeLabel: false });
@@ -11,6 +11,23 @@ test('conventional type maps to its section: feat -> Features', () => {
 test('fix maps to Bug Fixes', () => {
   const d = categorize({ title: 'fix: correct retry backoff', componentLabels: [], breakingChangeLabel: false });
   assert.equal(d.section, 'Bug Fixes');
+});
+
+test('stripBackportPrefix removes a leading [Backport ...] marker — it is noise, not a customer-facing fact', () => {
+  assert.equal(
+    stripBackportPrefix('[Backport stable/8.9] fix: keep job dispatch from blocking the client\'s transport thread'),
+    'fix: keep job dispatch from blocking the client\'s transport thread',
+  );
+  assert.equal(stripBackportPrefix('[Backport 8.8] chore stuff'), 'chore stuff');
+});
+
+test('stripBackportPrefix leaves an unrelated leading bracket untouched', () => {
+  assert.equal(stripBackportPrefix('[CPT] isCompleted() fails when asserted seconds later'), '[CPT] isCompleted() fails when asserted seconds later');
+  assert.equal(stripBackportPrefix('[Doc Handling] Azure Blob Storage document store implementation'), '[Doc Handling] Azure Blob Storage document store implementation');
+});
+
+test('stripBackportPrefix is a no-op on a title with no bracket prefix', () => {
+  assert.equal(stripBackportPrefix('feat: add batch delete API'), 'feat: add batch delete API');
 });
 
 test('resolveCategorizeTitle: a backport bot inherits the original PR title, not its own', () => {

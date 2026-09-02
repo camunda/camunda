@@ -48,6 +48,20 @@ function parseType(title: string): string | null {
   return HEADER.exec(title)?.groups?.type?.toLowerCase() ?? null;
 }
 
+const BACKPORT_TITLE_PREFIX = /^\[backport\b[^\]]*\]\s*/i;
+
+/**
+ * Strips a leading `[Backport ...]` marker for display — it's noise for the
+ * customer, who cares what changed, not which branch a bot's title-bracket
+ * names. Deliberately scoped to that one marker (case-insensitive, "backport"
+ * as the first word inside the brackets) so an unrelated bracketed prefix a
+ * human title legitimately uses (e.g. "[CPT] ...", "[Doc Handling] ...")
+ * is left alone.
+ */
+export function stripBackportPrefix(title: string): string {
+  return title.replace(BACKPORT_TITLE_PREFIX, '');
+}
+
 export interface CategorizeInput {
   /** The title to categorize FROM — for an inherit-original bot, the caller
    *  must already have substituted the original PR's title (`resolveCategorizeTitle`). */
