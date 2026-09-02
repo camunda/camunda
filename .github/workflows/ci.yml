@@ -44,6 +44,7 @@ jobs:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
       commitlint: ${{ steps.filter.outputs.commitlint }}
+      release-notes-action: ${{ steps.filter.outputs.release-notes-action }}
       maven-spotless-linter: ${{ steps.filter.outputs.maven-spotless-linter }}
       validate-pom-metadata: ${{ steps.filter.outputs.validate-pom-metadata }}
       java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
@@ -255,6 +256,15 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  release-notes-action:
+    if: needs.detect-changes.outputs.release-notes-action == 'true'
+    name: "Lint / Release-notes action"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/release-notes-action-ci.yml
+    secrets: inherit
+    permissions:
+      contents: read
 
   java-checks:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -2108,6 +2118,7 @@ jobs:
       - pr-vuln-check
       - protobuf-checks
       - rdbms-integration-tests
+      - release-notes-action
       - renovatelint
       - setup-tests
       - shell-script-tests
