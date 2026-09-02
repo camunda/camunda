@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
+import org.jspecify.annotations.Nullable;
 import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.DBOptions;
+import org.rocksdb.Statistics;
 
 /**
  * RocksDB has separate options for the database and the column families. Zeebe configuration can
@@ -21,5 +23,9 @@ import org.rocksdb.DBOptions;
  *
  * @param dbOptions The database options used to open the RocksDB database
  * @param cfOptions The column family options used to open the RocksDB database
+ * @param statistics The statistics object attached to {@code dbOptions}, or null when RocksDB
+ *     statistics are disabled. Carried here so the metric exporter can read tickers and histograms
+ *     off it without reaching back into the options.
  */
-public record RocksDbOptions(DBOptions dbOptions, ColumnFamilyOptions cfOptions) {}
+public record RocksDbOptions(
+    DBOptions dbOptions, ColumnFamilyOptions cfOptions, @Nullable Statistics statistics) {}
