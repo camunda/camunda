@@ -117,9 +117,12 @@ const SECTION_BY_TYPE = {
 };
 /** The one section hidden from the customer-facing body — still in the full asset. */
 const INTERNAL_SECTION = 'Maintenance';
-// `type` + optional `(scope)` + optional `!` + `: ` + subject, tolerating a
-// leading "[Backport ...]" prefix a human-opened backport PR may still carry.
-const HEADER = /^(?:\[[^\]]*\]\s*)?(?<type>[^\s():!]+)(?:\([^)]*\))?!?:\s*(?<subject>.+)$/;
+// `type` + optional `(scope)` + optional `!` + `: ` + subject. The caller
+// (pipeline/index.ts) already runs stripBackportPrefix on the title before
+// this ever sees it, so no bracket tolerance is needed here — a leading
+// bracket this regex still had to tolerate would only ever be a title that
+// never should have passed the PR-gate's stricter lint in the first place.
+const HEADER = /^(?<type>[^\s():!]+)(?:\([^)]*\))?!?:\s*(?<subject>.+)$/;
 function parseType(title) {
     return HEADER.exec(title)?.groups?.type?.toLowerCase() ?? null;
 }
@@ -236,6 +239,9 @@ function readRepository() {
 function readInputs() {
     const { owner, repo } = readRepository();
     const gateRequiredAt = core.getInput('gate-required-at').trim();
+    if (gateRequiredAt.length > 0 && Number.isNaN(Date.parse(gateRequiredAt))) {
+        throw new Error(`gate-required-at must be a parseable date, got "${gateRequiredAt}".`);
+    }
     return {
         token: core.getInput('token', { required: true }),
         owner,
@@ -254,7 +260,7 @@ async function run() {
     const restResolver = new resolver_1.GithubResolver(input.token, input.owner, input.repo);
     const pipelineResolver = {
         resolveRefs: (refs) => restResolver.resolve(refs),
-        fetchOriginalPull: (number) => restResolver.fetchPull(number),
+        fetchOriginalPull: (number, repo) => restResolver.fetchOriginalPull(number, repo),
         fetchIssueTitle: (number) => restResolver.fetchIssueTitle(number),
     };
     const strategy = (0, range_1.resolveBaselineStrategy)(input.targetVersion);
@@ -274,6 +280,9 @@ async function run() {
     const attributed = [];
     const unattributed = [];
     for (const pr of metadata) {
+        for (const field of pr.truncatedFields ?? []) {
+            core.warning(`PR #${pr.number}: ${field} exceeded the 20-entry query cap — some entries were not read.`);
+        }
         const output = await (0, pipeline_1.processPr)(pipelineResolver, {
             number: pr.number,
             title: pr.title,
@@ -297,10 +306,18 @@ async function run() {
             component: output.categorization.component,
             breaking: output.categorization.breaking,
             issueNumbers: output.attribution.issueNumbers,
-            closesIssueNumbers: output.attribution.issueNumbers.filter((n) => pr.closingIssuesReferences.includes(n)),
+            // A backport hop delivers via THIS PR's merge, but the backport bot never
+            // writes a closing keyword — closingIssuesReferences is always empty for
+            // it, so the general signal below would under-report every single one.
+            closesIssueNumbers: output.attribution.deliveryPath === 'backportHop'
+                ? output.attribution.issueNumbers
+                : output.attribution.issueNumbers.filter((n) => pr.closingIssuesReferences.includes(n)),
             attributionSource: output.attribution.source,
         };
-        const bucketed = output.attribution.source === 'unattributed' || output.attribution.source === 'resolutionFailed';
+        // A `merge`-type PR (section: null) is excluded from every render() output
+        // regardless of attribution, so it must never trip the unattributed guard.
+        const bucketed = output.categorization.section !== null &&
+            (output.attribution.source === 'unattributed' || output.attribution.source === 'resolutionFailed');
         (bucketed ? unattributed : attributed).push(renderPr);
     }
     const result = (0, render_1.render)(attributed, unattributed, {
@@ -314,6 +331,11 @@ async function run() {
     (0, node_fs_1.writeFileSync)(`${input.outputDir}/audit.json`, JSON.stringify(result.auditJson, null, 2));
     (0, node_fs_1.writeFileSync)(`${input.outputDir}/comments.json`, JSON.stringify(result.commentsJson, null, 2));
     core.setOutput('customer-body', result.customerBody);
+    // Every output above is written even when the unattributed guard trips —
+    // audit.json's whole purpose is explaining which PRs and why — so the job
+    // fails only AFTER the diagnostic outputs exist on disk.
+    if (result.failureReason)
+        throw new Error(result.failureReason);
     core.info(`Generated release notes for ${input.targetVersion}: ${attributed.length} attributed PR(s).`);
 }
 run().catch((err) => core.setFailed(err instanceof Error ? err.message : String(err)));
@@ -401,11 +423,51 @@ exports.summary = new Summary();
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GITHUB_API = void 0;
+exports.fetchWithRetry = fetchWithRetry;
 exports.githubHeaders = githubHeaders;
 exports.repoApiUrl = repoApiUrl;
 exports.GITHUB_API = 'https://api.github.com';
 const USER_AGENT = 'camunda-release-notes-gate';
 const GITHUB_API_VERSION = '2022-11-28';
+/** A real secondary rate limit clears within minutes; past this, something else is wrong and must surface. */
+const MAX_RETRIES = 5;
+/** Longest `retry-after` this honours; beyond it the job should fail rather
+ *  than hold a runner. GitHub's own secondary-limit hints stay well under. */
+const MAX_RETRY_AFTER_MS = 60_000;
+/** GitHub reports a throttled REST request as HTTP 429, or HTTP 403 carrying a
+ *  `retry-after` (a 403 without one is a real permission failure and must not
+ *  be retried). 5xx is a transient backend failure. Mirrors resolve/index.ts's
+ *  GraphQL-side retryableStatus — same throttle shapes, REST transport. */
+function retryableStatus(res) {
+    if (res.status === 429 || res.status >= 500)
+        return true;
+    return res.status === 403 && res.headers.get('retry-after') !== null;
+}
+/** The server's own wait, when it names one, else exponential backoff. */
+function backoffMs(res, attempt) {
+    const header = res.headers.get('retry-after');
+    const seconds = header === null ? NaN : Number(header);
+    if (Number.isFinite(seconds) && seconds >= 0)
+        return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
+    return 2 ** attempt * 1000;
+}
+/**
+ * `fetch`, retrying a throttled or transiently failed REST request with
+ * backoff instead of aborting the whole generation job on one bad response.
+ * Never retries a non-throttle failure (e.g. a bare 403, a 404) — the caller
+ * sees those immediately.
+ */
+async function fetchWithRetry(url, init, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
+    for (let attempt = 0;; attempt++) {
+        const res = await fetch(url, init);
+        if (res.ok || !retryableStatus(res))
+            return res;
+        if (attempt >= MAX_RETRIES - 1) {
+            throw new Error(`GitHub API kept returning HTTP ${res.status} past ${MAX_RETRIES} attempts (${url}).`);
+        }
+        await sleepImpl(backoffMs(res, attempt));
+    }
+}
 /** Auth + content-negotiation headers for the plain `GITHUB_TOKEN` every
  *  caller passes in. This action resolves from the PR head on `pull_request`
  *  (see the gate workflow's security-model header), so it must never be
@@ -564,6 +626,10 @@ async function attributeDirectly(resolver, body, closingIssuesReferences) {
     const legacyRefs = needsLegacyScan ? await resolver.resolveRefs((0, parser_1.parseRefs)(body)) : [];
     return (0, attribution_1.decideAttribution)({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
 }
+/** Attribution outcomes with nothing further to try directly — eligible for
+ *  the backport hop and the bot-link exemption. Mirrors the gate's own
+ *  hop trigger (any failing link outcome, not just "nothing found"). */
+const HOPPABLE_SOURCES = new Set(['unattributed', 'resolutionFailed']);
 /**
  * Direct scan, then the backport hop (inheriting the original's decision,
  * C7/V2), then the bot link exemption LAST — an exempt bot that did link a real
@@ -572,7 +638,7 @@ async function attributeDirectly(resolver, body, closingIssuesReferences) {
 async function attributePr(resolver, pr, original) {
     let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
     let mergedAt = pr.mergedAt;
-    if (decision.source === 'unattributed') {
+    if (HOPPABLE_SOURCES.has(decision.source)) {
         const originalPull = await original();
         if (originalPull) {
             const originalDecision = await attributeDirectly(resolver, originalPull.body, []);
@@ -580,7 +646,7 @@ async function attributePr(resolver, pr, original) {
             mergedAt = originalPull.mergedAt ?? pr.mergedAt;
         }
     }
-    if (decision.source === 'unattributed' && (0, title_1.isLinkExemptAuthor)(pr.authorLogin)) {
+    if (HOPPABLE_SOURCES.has(decision.source) && (0, title_1.isLinkExemptAuthor)(pr.authorLogin)) {
         return {
             decision: {
                 source: 'botExempt',
@@ -635,7 +701,7 @@ async function processPr(resolver, pr, options) {
     // Both the attribution hop and the inherit-original title want the same
     // original PR — fetch it at most once per PR, and only if one of them asks.
     let pending;
-    const original = () => (pending ??= backport ? resolver.fetchOriginalPull(backport.number) : Promise.resolve(null));
+    const original = () => (pending ??= backport ? resolver.fetchOriginalPull(backport.number, backport.repo) : Promise.resolve(null));
     const { decision: attribution, mergedAt } = await attributePr(resolver, pr, original);
     const { displayTitle, categorization } = await categorizePr(resolver, pr, original, override);
     const title = await resolveDisplayTitle(resolver, pr, categorization, attribution, displayTitle);
@@ -826,11 +892,12 @@ function commentFor(pr, issueNumber, version) {
         : { relationKind: 'contributor', text: `Partially delivered in ${version} by #${pr.number}.` };
 }
 function render(prs, unattributed, options) {
-    if (unattributed.length > 0 && (!options.allowUnattributed || !options.unattributedReason)) {
-        throw new Error(`Unattributed PRs present, failing by default: ${unattributed.map((pr) => `#${pr.number}`).join(', ')}. ` +
-            'Set allow-unattributed=true with a non-empty unattributed-reason to override.');
-    }
-    // Past the guard, a non-empty reason is proven whenever `unattributed` is.
+    const guardFailed = unattributed.length > 0 && (!options.allowUnattributed || !options.unattributedReason);
+    const failureReason = guardFailed
+        ? `Unattributed PRs present, failing by default: ${unattributed.map((pr) => `#${pr.number}`).join(', ')}. ` +
+            'Set allow-unattributed=true with a non-empty unattributed-reason to override.'
+        : undefined;
+    // A non-empty reason is proven whenever the guard passed with `unattributed` present.
     const unattributedReason = options.unattributedReason ?? '';
     const all = [...prs, ...unattributed];
     const customerPrs = prs.filter((pr) => pr.visibility === 'customer' && pr.section !== null);
@@ -856,6 +923,7 @@ function render(prs, unattributed, options) {
         },
         auditJson: { schemaVersion: exports.SCHEMA_VERSION, version: options.version, overrides },
         commentsJson: { schemaVersion: exports.SCHEMA_VERSION, version: options.version, entries: commentEntries },
+        failureReason,
     };
 }
 
@@ -996,7 +1064,7 @@ class GithubGraphqlResolver {
         const query = `query($owner: String!, $name: String!, ${numbers.map((_, i) => `$n${i}: Int!`).join(', ')}) {
       repository(owner: $owner, name: $name) {
         ${numbers
-            .map((_, i) => `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt author { login __typename } labels(first: 20) { nodes { name } } closingIssuesReferences(first: 20) { nodes { number } } }`)
+            .map((_, i) => `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt author { login __typename } labels(first: 20) { nodes { name } pageInfo { hasNextPage } } closingIssuesReferences(first: 20) { nodes { number } pageInfo { hasNextPage } } }`)
             .join('\n')}
       }
     }`;
@@ -1005,6 +1073,11 @@ class GithubGraphqlResolver {
         const repository = await this.requestRepository(query, variables);
         return numbers.map((number, i) => {
             const pr = assertField(repository[`pr${i}`], `repository.pr${i} (PR #${number})`);
+            const truncatedFields = [];
+            if (pr.labels?.pageInfo?.hasNextPage)
+                truncatedFields.push('labels');
+            if (pr.closingIssuesReferences?.pageInfo?.hasNextPage)
+                truncatedFields.push('closingIssuesReferences');
             return {
                 number: assertField(pr.number, `number on PR #${number}`),
                 title: assertField(pr.title, `title on PR #${number}`),
@@ -1013,6 +1086,7 @@ class GithubGraphqlResolver {
                 mergedAt: assertField(pr.mergedAt, `mergedAt on PR #${number}`),
                 labels: assertField(pr.labels?.nodes, `labels.nodes on PR #${number}`).map((label) => label.name),
                 closingIssuesReferences: assertField(pr.closingIssuesReferences?.nodes, `closingIssuesReferences.nodes on PR #${number}`).map((issue) => issue.number),
+                ...(truncatedFields.length > 0 ? { truncatedFields } : {}),
             };
         });
     }
@@ -1094,11 +1168,15 @@ function priorityOf(ref) {
  *
  * ponytail: plain fetch (Node 24 global) over octokit — we hit exactly one
  * endpoint; octokit would inline the whole REST client into the bundle.
+ * Throttled/transient responses are retried via fetchWithRetry (../github) —
+ * the generator processes PRs serially, so one un-retried 5xx or secondary
+ * rate limit anywhere in that chain would otherwise abort the whole job.
  */
 class GithubResolver {
     token;
     owner;
     repo;
+    sleepImpl;
     repoUrl;
     headers;
     /** Titles seen while classifying refs, keyed by same-repo number (issues and
@@ -1106,10 +1184,11 @@ class GithubResolver {
      *  that same endpoint, and the generator asks for the title of a ref it has
      *  just classified, so the second call is served from here. */
     titlesByNumber = new Map();
-    constructor(token, owner, repo) {
+    constructor(token, owner, repo, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
         this.token = token;
         this.owner = owner;
         this.repo = repo;
+        this.sleepImpl = sleepImpl;
         this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
         this.headers = (0, github_1.githubHeaders)(token);
     }
@@ -1166,6 +1245,18 @@ class GithubResolver {
         return pull?.body ?? null;
     }
     /**
+     * Fetch a same-repo pull request's full fields for the generator's backport
+     * hop (attribution + inherit-original title/mergedAt), or null if it does
+     * not exist. A cross-repo marker (`Backport of owner/other#N`) resolves to
+     * null for the same reason as {@link fetchPullBody}: #N there would name an
+     * unrelated PR in THIS repo.
+     */
+    async fetchOriginalPull(number, repo) {
+        if (this.isCrossRepo(repo))
+            return null;
+        return this.fetchPull(number);
+    }
+    /**
      * Fetch the fields the gate evaluates for one same-repo pull request, or null
      * if it does not exist.
      *
@@ -1175,9 +1266,9 @@ class GithubResolver {
      * can never evaluate an out-of-date body.
      */
     async fetchPull(number) {
-        const res = await fetch(`${this.repoUrl}/pulls/${number}`, {
+        const res = await (0, github_1.fetchWithRetry)(`${this.repoUrl}/pulls/${number}`, {
             headers: this.headers,
-        });
+        }, this.sleepImpl);
         if (res.status === 404)
             return null;
         if (!res.ok)
@@ -1199,9 +1290,9 @@ class GithubResolver {
         const cached = this.titlesByNumber.get(number);
         if (cached !== undefined)
             return cached;
-        const res = await fetch(`${this.repoUrl}/issues/${number}`, {
+        const res = await (0, github_1.fetchWithRetry)(`${this.repoUrl}/issues/${number}`, {
             headers: this.headers,
-        });
+        }, this.sleepImpl);
         if (res.status === 404) {
             this.titlesByNumber.set(number, null);
             return null;
@@ -1224,9 +1315,9 @@ class GithubResolver {
     async classify(ref) {
         if (this.isCrossRepo(ref.repo))
             return { target: 'missing', crossRepo: true };
-        const res = await fetch(`${this.repoUrl}/issues/${ref.number}`, {
+        const res = await (0, github_1.fetchWithRetry)(`${this.repoUrl}/issues/${ref.number}`, {
             headers: this.headers,
-        });
+        }, this.sleepImpl);
         if (res.status === 404)
             return { target: 'missing', crossRepo: false };
         if (!res.ok)
