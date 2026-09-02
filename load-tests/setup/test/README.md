@@ -33,11 +33,12 @@ pulls a values file from the `camunda-load-tests-helm` repo at render time — t
 same live-latest policy as the load-tester chart, so regenerate its golden when
 that file changes.
 
-The `<storage>-physical-tenants` scenarios all use `physical_tenant_count=1` —
-this covers per-storage-type rendering (prefix/index-prefix keys, authorizations,
-credentials secret, starter/worker renaming) but **not** the `pt1..ptN` loop at
-N>1 (resource-name/prefix uniqueness across tenants). Run a manual load test with
-`physical-tenant-count=3` (or higher) before relying on a change to that loop —
+The `<storage>-physical-tenants` scenarios all scaffold with
+`newLoadTest.sh --physical-tenants-count=1` — this covers per-storage-type
+rendering (prefix/index-prefix keys, authorizations, credentials secret,
+starter/worker renaming) but **not** the `pt1..ptN` loop at N>1
+(resource-name/prefix uniqueness across tenants). Run a manual load test with
+`--physical-tenants-count=3` (or higher) before relying on a change to that loop —
 see "Optional physical tenants (pt1..ptN)" in `../README.md`.
 
 ## About the credentials in these files

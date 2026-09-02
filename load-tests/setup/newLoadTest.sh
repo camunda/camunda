@@ -38,6 +38,8 @@ VERSION_DIR="$SCRIPT_DIR/$target_version"
 ### Version-specific configuration
 # Defaults match the main version; stable versions override only what differs.
 elasticsearch_version=""
+# Mirrors physical_tenants_supported in common.mk / the version Makefiles.
+physical_tenants_supported=true
 
 case "$target_version" in
   main)
@@ -50,18 +52,21 @@ case "$target_version" in
     camunda_platform_helm_chart_version="12.14.1"
     allowed_storage=(elasticsearch)
     elasticsearch_version="8.17.4"
+    physical_tenants_supported=false
     ;;
   stable-88)
     # renovate: version=camunda-platform-8.8
     camunda_platform_helm_chart_version="13.14.0"
     allowed_storage=(elasticsearch opensearch none)
     elasticsearch_version="8.18.0"
+    physical_tenants_supported=false
     ;;
   stable-89)
     # renovate: version=camunda-platform-8.9
     camunda_platform_helm_chart_version="14.11.1"
     allowed_storage=(elasticsearch opensearch postgresql mysql mariadb mssql oracle none)
     elasticsearch_version="8.18.0"
+    physical_tenants_supported=false
     ;;
   stable-810)
     # renovate: version=camunda-platform-8.10
@@ -85,19 +90,28 @@ Arguments:
   enable_optimize     Optional. true|false to enable Optimize. Default: true.
 
 Options:
-  --target-version|-t <version>    Version-specific setup to use. Default: main.
-                                    Available versions: ${AVAILABLE_VERSIONS[*]}
-  --use-pgbouncer                  Route Postgres traffic through a CNPG Pooler (PgBouncer,
-                                    transaction-pooling mode) instead of connecting straight
-                                    to the Cluster's \`-rw\` Service. Requires
-                                    secondary_storage=postgresql. See "Connection pooling
-                                    (PgBouncer)" in charts/load-test-setup/README.md.
-  -h, --help                       Show this help message.
+  --target-version|-t <version>            Version-specific setup to use. Default: main.
+                                            Available versions: ${AVAILABLE_VERSIONS[*]}
+  --physical-tenants-count=<count>         Non-negative integer for extra physical tenants
+                                            (pt1..ptN) to configure alongside the default
+                                            tenant. Default: 0.
+                                            $(if [[ "$physical_tenants_supported" == "true" ]]; then
+                                              echo "Supported for $target_version."
+                                            else
+                                              echo "Not supported for $target_version."
+                                            fi)
+  --use-pgbouncer                          Route Postgres traffic through a CNPG Pooler (PgBouncer,
+                                            transaction-pooling mode) instead of connecting straight
+                                            to the Cluster's \`-rw\` Service. Requires
+                                            secondary_storage=postgresql. See "Connection pooling
+                                            (PgBouncer)" in charts/load-test-setup/README.md.
+  -h, --help                               Show this help message.
 
 Examples:
   ./newLoadTest.sh ${prefix}demo
   ./newLoadTest.sh ${prefix}perf elasticsearch 3 true
   ./newLoadTest.sh ${prefix}perf postgresql 3 true --use-pgbouncer
+  ./newLoadTest.sh ${prefix}perf elasticsearch 3 true --physical-tenants-count=2
 
 This script scaffolds the per-namespace folder (Makefile, values files). The
 cluster itself is unchanged by this script — the namespace and the
@@ -110,6 +124,7 @@ EOF
 }
 
 use_pgbouncer=false
+physical_tenant_count=0
 remaining_args=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -119,6 +134,14 @@ while [[ $# -gt 0 ]]; do
     --use-pgbouncer)
       use_pgbouncer=true
       shift
+      ;;
+    --physical-tenants-count=*)
+      physical_tenant_count="$(parse_physical_tenant_count "${1#*=}")"
+      shift
+      ;;
+    --physical-tenants-count)
+      physical_tenant_count="$(parse_physical_tenant_count "${2:-}")"
+      shift 2
       ;;
     -h|--help)
       usage
@@ -167,6 +190,11 @@ enable_optimize="$(parse_bool "${remaining_args[3]:-true}")"
 
 if [[ "$use_pgbouncer" == "true" && "$secondary_storage" != "postgresql" ]]; then
   echo "Error: --use-pgbouncer requires secondary_storage=postgresql (got: $secondary_storage)." >&2
+  exit 1
+fi
+
+if [[ "$physical_tenant_count" -gt 0 && "$physical_tenants_supported" != "true" ]]; then
+  echo "Error: physical_tenant_count > 0 is not supported for version '$target_version'." >&2
   exit 1
 fi
 
@@ -395,6 +423,15 @@ EOF
     enabled: true
 EOF
   fi
+
+  cat <<EOF
+
+secondaryStorage:
+  name: $secondary_storage
+
+physicalTenants:
+  count: $physical_tenant_count
+EOF
 } > load-test-setup-values.yaml
 
 # Add/update helm repositories. Skippable via LOAD_TEST_SKIP_REPO_UPDATE for

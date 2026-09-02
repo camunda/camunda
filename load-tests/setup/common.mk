@@ -59,8 +59,9 @@ chaos ?= false
 # secondary storage (rdbms/elasticsearch/opensearch/none) as the default tenant,
 # isolated by RDBMS table prefix / ES-OS index prefix (or, for secondary_storage=none,
 # by REST-routing/authorization only).
-# Pass directly: make install physical_tenant_count=3 secondary_storage=postgresql
-physical_tenant_count ?= 0
+# Defaults to the `physicalTenants.count` scaffolded in load-test-setup-values.yaml by
+# `newLoadTest.sh --physical-tenants-count`; can be overridden: make install physical_tenant_count=3
+physical_tenant_count ?= $(or $(shell awk '/^physicalTenants:/ {f=1; next} f && /^[[:space:]]+count:/ {print $$2; exit}' load-test-setup-values.yaml 2>/dev/null),0)
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
 #   make install additional_platform_configuration="--set zeebeGateway.env[0].name=FOO --set zeebeGateway.env[0].value=bar"
@@ -151,6 +152,12 @@ $(error physical_tenant_count > 0 is not supported for this Camunda version)
 endif
 endif
 
+# Chart 15.x requires the exact "iss" claim once physical tenants are declared. Keycloak's
+# hostname is pinned to localhost:18080 in charts/load-test-setup/templates/keycloak/keycloak.yaml.
+ifneq ($(physical_tenant_count),0)
+	platform_values += --set-string global.identity.auth.issuer=http://localhost:18080/auth/realms/camunda-platform
+endif
+
 # Add secondary storage values
 ifneq ($(filter $(secondary_storage),$(rdbms_storages)),)
 	platform_values += -f camunda-platform-values-rdbms.yaml
@@ -160,14 +167,6 @@ else ifeq ($(secondary_storage),none)
 	_load_test_setup_flags += --set k6.tests.data-read.enabled=false
 endif
 platform_values += -f camunda-platform-values-$(secondary_storage).yaml
-
-# Layer the pt1..ptN physical-tenant overlay on top, generated at install/template time
-# (not scaffold time) so re-running `make install` with a different physical_tenant_count
-# on an existing namespace doesn't require re-scaffolding via newLoadTest.sh. See the
-# generate-physical-tenant-values target below and generate-physical-tenant-values.sh.
-ifneq ($(physical_tenant_count),0)
-platform_values += -f camunda-platform-physical-tenants.yaml
-endif
 
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
@@ -231,10 +230,10 @@ install-stable: check-deadline install-load-test-setup $(install_storage_target)
 ifneq ($(physical_tenant_count),0)
 install: install-load-test-physical-tenants
 install-stable: install-load-test-physical-tenants
-install-platform: generate-physical-tenant-values
-install-platform-stable: generate-physical-tenant-values
-template: generate-physical-tenant-values
-template-stable: generate-physical-tenant-values
+install-platform:
+install-platform-stable:
+template:
+template-stable:
 endif
 
 # Fail fast if the namespace TTL deadline (read from load-test-setup-values.yaml,
@@ -297,12 +296,6 @@ endif
 endif
 
 ifeq ($(physical_tenants_supported),true)
-# Generates camunda-platform-physical-tenants.yaml (see generate-physical-tenant-values.sh)
-# when physical_tenant_count > 0. A no-op (the script removes any stale file) otherwise, so
-# this can be an unconditional prerequisite of install-platform(-stable)/template(-stable).
-.PHONY: generate-physical-tenant-values
-generate-physical-tenant-values:
-	../generate-physical-tenant-values.sh "$(secondary_storage)" "$(physical_tenant_count)" "$(rdbms_storages)"
 
 # Deploy pt1..ptN's own load testers, sharing the default tenant's secondary storage. The
 # camunda-load-tests subchart hardcodes the starter/worker resource names, so a second Helm

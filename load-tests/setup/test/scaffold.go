@@ -2,6 +2,7 @@
 package golden
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,22 +26,26 @@ func (ns *ScaffoldedNamespace) Cleanup() {
 	_ = os.RemoveAll(ns.Dir)
 }
 
-// Scaffold runs newLoadTest.sh -t <version> <namespace> <storage> 1 <optimize> [extraArgs...]
-// with GIT_AUTHOR=golden-test in the environment and returns a ScaffoldedNamespace.
+// Scaffold runs newLoadTest.sh -t <version> <namespace> <storage> 1 <optimize>
+// --physical-tenants-count=<physicalTenantCount> [extraArgs...] with
+// GIT_AUTHOR=golden-test in the environment and returns a ScaffoldedNamespace.
 //
 // newLoadTest.sh reads the author label from the GIT_AUTHOR env var
 // (git_author=${GIT_AUTHOR:-$(compute_git_author)}); pinning it to a constant
 // makes the camunda.io/created-by label deterministic across machines. The
-// storage and optimize arguments are baked into the generated Makefile, which
-// drives the values composition for the template targets used by Render.
+// storage, optimize, and physical tenant count arguments are baked into the
+// generated Makefile/values files, which drive the values composition for the
+// template targets used by Render.
 //
 // setupDirName is the versioned setup directory name: "main", "stable-89", etc.
 // namespace must be unique per (version, scenario) pair to allow parallel execution.
 // storage is one of: elasticsearch, opensearch, postgresql, none.
 // optimize is "true" or "false".
+// physicalTenantCount is the number of pt1..ptN physical tenants to configure
+// alongside the default tenant; 0 disables the feature.
 // extraArgs are additional newLoadTest.sh flags (e.g. "--use-pgbouncer") for
 // scaffold-time opt-in features baked into the generated values files.
-func Scaffold(t *testing.T, setupDirName, namespace, storage, optimize string, extraArgs ...string) *ScaffoldedNamespace {
+func Scaffold(t *testing.T, setupDirName, namespace, storage, optimize string, physicalTenantCount int, extraArgs ...string) *ScaffoldedNamespace {
 	t.Helper()
 
 	scriptDir := filepath.Join(repoRoot(t), "load-tests", "setup")
@@ -53,7 +58,8 @@ func Scaffold(t *testing.T, setupDirName, namespace, storage, optimize string, e
 	// Clean up any leftover from a previous interrupted run.
 	_ = os.RemoveAll(namespaceDir)
 
-	args := append([]string{"-t", setupDirName, namespace, storage, "1", optimize}, extraArgs...)
+	args := append([]string{"-t", setupDirName, namespace, storage, "1", optimize,
+		fmt.Sprintf("--physical-tenants-count=%d", physicalTenantCount)}, extraArgs...)
 	cmd := exec.Command(script, args...)
 	// newLoadTest.sh copies sibling files (Makefile, values/) with relative
 	// paths, so it must run from its own directory.
@@ -70,7 +76,7 @@ func Scaffold(t *testing.T, setupDirName, namespace, storage, optimize string, e
 // per chart template, mirroring the chart structure). When workload is non-empty
 // it is passed as `scenario=<workload>` (e.g. max, realistic), selecting the
 // Makefile's workload profile flags — exactly as `make install scenario=<workload>`.
-// extraVars are additional make variable assignments (e.g. "physical_tenants=true").
+// extraVars are additional make variable assignments (e.g. "chaos=true").
 //
 // The template targets pin --namespace $(namespace), so .Release.Namespace matches
 // what `make install` produces and is deterministic across machines.
