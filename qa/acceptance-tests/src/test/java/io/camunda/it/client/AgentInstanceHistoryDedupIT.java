@@ -20,7 +20,6 @@ import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -40,7 +39,7 @@ public class AgentInstanceHistoryDedupIT {
 
   private static final String AGENT_ELEMENT_ID = "agentDedupElement";
   private static final String PROCESS_ID = "agentHistoryDedupProcess";
-  private static final String JOB_TYPE = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
+  private static final String JOB_TYPE = "agent-task";
 
   private static CamundaClient camundaClient;
 
