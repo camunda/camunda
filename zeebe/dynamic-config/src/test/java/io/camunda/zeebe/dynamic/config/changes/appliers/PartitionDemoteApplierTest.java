@@ -146,6 +146,27 @@ final class PartitionDemoteApplierTest {
   }
 
   @Test
+  void shouldAllowDemoteWhenOtherReplicaIsRecovering() {
+    // given — a recovering member has only paused its own stream processing; it is still a full
+    // raft voter, so it satisfies "another active replica exists"
+    final var initialGroup =
+        groupWithMembers(
+            Map.of(
+                localMemberId,
+                brokerWith(Map.of(1, PartitionState.active(1, partitionConfig))),
+                otherMemberId,
+                brokerWith(Map.of(1, PartitionState.active(1, partitionConfig).toRecovering()))));
+
+    // when
+    final var result =
+        new PartitionDemoteApplier(localMemberId, 1, partitionChangeExecutor)
+            .init(globalConfigurationWithLocalMemberActive, initialGroup);
+
+    // then
+    assertThat(result).isRight();
+  }
+
+  @Test
   void shouldNotFailOnInitIfPartitionIsAlreadyLeaving() {
     // given — restart-safe retry
     final var initialGroup =

@@ -418,11 +418,15 @@ public record ClusterConfiguration(
   }
 
   /**
-   * Returns the member with the highest priority for a given partition.
+   * Returns the highest-priority member currently eligible to lead a given partition: one whose
+   * member lifecycle is neither {@link State#LEFT} nor {@link State#UNINITIALIZED}, and whose
+   * partition state durably participates in the Raft quorum right now (see {@link
+   * PartitionState.State#isActiveReplica()}) - a learner catching up, or a member on its way out,
+   * cannot become leader and must not be returned as the primary.
    *
    * @param partitionId the partition ID
-   * @return Optional containing the MemberId of the member with highest priority, or empty if
-   *     partition not found
+   * @return Optional containing the MemberId of the member with highest priority, or empty if no
+   *     eligible member replicates the partition
    */
   public Optional<MemberId> getPrimaryMemberForPartition(final int partitionId) {
     return members.entrySet().stream()
@@ -430,6 +434,7 @@ public record ClusterConfiguration(
         .filter(entry -> entry.getValue().state() != State.LEFT)
         .filter(entry -> entry.getValue().state() != State.UNINITIALIZED)
         .filter(entry -> entry.getValue().getPartition(partitionId) != null)
+        .filter(entry -> entry.getValue().getPartition(partitionId).state().isActiveReplica())
         .max(
             (e1, e2) ->
                 Integer.compare(

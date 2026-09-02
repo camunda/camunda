@@ -85,6 +85,28 @@ public record PartitionState(State state, int priority, DynamicPartitionConfig c
      * history, which such a broker cannot decode - it rejects the whole gossiped configuration
      * before ever re-gossiping the UNKNOWN state.
      */
-    LEARNER
+    LEARNER;
+
+    /**
+     * True for a member that currently, durably participates in this partition's Raft quorum: a
+     * full voting member that is not on its way out. Use this wherever "how many replicas would
+     * remain" or "who is a valid leader/primary candidate" matters.
+     *
+     * <p>{@link #LEARNER} and {@link #JOINING}/{@link #BOOTSTRAPPING} have not (yet) joined the
+     * quorum as a voter; {@link #LEAVING} is in the process of leaving it and must not be counted
+     * as durable redundancy or picked as a future leader. {@link #RECOVERING} is a fully-voting
+     * member that has merely paused its own stream processing - an engine-layer concern, entirely
+     * orthogonal to Raft membership - so it counts.
+     *
+     * <p>Deliberately an exhaustive switch: a new state forces its author to decide whether it
+     * belongs here, rather than silently inheriting an unsafe default the way {@link #LEARNER} once
+     * did at every one of this method's call sites before it existed.
+     */
+    public boolean isActiveReplica() {
+      return switch (this) {
+        case ACTIVE, RECOVERING -> true;
+        case JOINING, LEAVING, BOOTSTRAPPING, LEARNER, UNKNOWN -> false;
+      };
+    }
   }
 }
