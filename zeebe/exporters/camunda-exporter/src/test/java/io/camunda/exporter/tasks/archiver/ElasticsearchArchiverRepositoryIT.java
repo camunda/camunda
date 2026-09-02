@@ -724,7 +724,9 @@ final class ElasticsearchArchiverRepositoryIT {
     }
     final var expectedBucketStart =
         DateOfArchivedDocumentsUtil.getBucketStart(
-            twoHoursAgo, config.getUsageMetricsRolloverInterval(), "date");
+            LocalDate.ofInstant(now.minus(Duration.ofHours(2)), ZoneId.of("UTC")).toString(),
+            config.getUsageMetricsRolloverInterval(),
+            "date");
     assertThat(batch.finishDate()).isEqualTo(expectedBucketStart);
   }
 
@@ -765,7 +767,9 @@ final class ElasticsearchArchiverRepositoryIT {
     }
     final var expectedBucketStart =
         DateOfArchivedDocumentsUtil.getBucketStart(
-            twoHoursAgo, config.getUsageMetricsRolloverInterval(), "date");
+            LocalDate.ofInstant(now.minus(Duration.ofHours(2)), ZoneId.of("UTC")).toString(),
+            config.getUsageMetricsRolloverInterval(),
+            "date");
     assertThat(batch.finishDate()).isEqualTo(expectedBucketStart); // rollover interval is 1 month
   }
 
