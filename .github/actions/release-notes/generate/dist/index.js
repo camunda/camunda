@@ -224,13 +224,22 @@ const walk_1 = __nccwpck_require__(600);
 const render_1 = __nccwpck_require__(624);
 const resolve_1 = __nccwpck_require__(940);
 const resolver_1 = __nccwpck_require__(306);
+/** `owner/repo` from the runner's own environment. Empty halves would reach
+ *  GraphQL and come back as an opaque schema error, so they fail here instead. */
+function readRepository() {
+    const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '').split('/');
+    if (!owner || !repo) {
+        throw new Error(`GITHUB_REPOSITORY must be set to "owner/repo", got "${process.env.GITHUB_REPOSITORY ?? ''}".`);
+    }
+    return { owner, repo };
+}
 function readInputs() {
-    const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '/').split('/');
+    const { owner, repo } = readRepository();
     const gateRequiredAt = core.getInput('gate-required-at').trim();
     return {
         token: core.getInput('token', { required: true }),
-        owner: owner ?? '',
-        repo: repo ?? '',
+        owner,
+        repo,
         targetVersion: core.getInput('target-version', { required: true }),
         releaseBranch: core.getInput('release-branch', { required: true }),
         gateRequiredAt: gateRequiredAt.length > 0 ? gateRequiredAt : null,
@@ -653,7 +662,9 @@ async function processPr(resolver, pr, options) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.resolveBaselineStrategy = resolveBaselineStrategy;
 exports.resolveCommitsToPrs = resolveCommitsToPrs;
-const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha(\d+))?$/;
+// Alphas are 1-based: an `-alpha0` would make the previous-alpha baseline
+// `-alpha-1`, a ref that cannot exist, so it is rejected as unrecognized.
+const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha([1-9]\d*))?$/;
 function parseVersion(version) {
     const match = VERSION.exec(version);
     if (!match)

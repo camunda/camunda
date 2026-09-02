@@ -4,7 +4,9 @@
  * themselves live in ./walk.
  */
 
-const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha(\d+))?$/;
+// Alphas are 1-based: an `-alpha0` would make the previous-alpha baseline
+// `-alpha-1`, a ref that cannot exist, so it is rejected as unrecognized.
+const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha([1-9]\d*))?$/;
 
 interface ParsedVersion {
   readonly major: number;

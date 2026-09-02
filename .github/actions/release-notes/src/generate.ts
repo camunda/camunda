@@ -36,13 +36,23 @@ interface RunInputs {
   readonly outputDir: string;
 }
 
+/** `owner/repo` from the runner's own environment. Empty halves would reach
+ *  GraphQL and come back as an opaque schema error, so they fail here instead. */
+function readRepository(): { owner: string; repo: string } {
+  const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '').split('/');
+  if (!owner || !repo) {
+    throw new Error(`GITHUB_REPOSITORY must be set to "owner/repo", got "${process.env.GITHUB_REPOSITORY ?? ''}".`);
+  }
+  return { owner, repo };
+}
+
 function readInputs(): RunInputs {
-  const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '/').split('/');
+  const { owner, repo } = readRepository();
   const gateRequiredAt = core.getInput('gate-required-at').trim();
   return {
     token: core.getInput('token', { required: true }),
-    owner: owner ?? '',
-    repo: repo ?? '',
+    owner,
+    repo,
     targetVersion: core.getInput('target-version', { required: true }),
     releaseBranch: core.getInput('release-branch', { required: true }),
     gateRequiredAt: gateRequiredAt.length > 0 ? gateRequiredAt : null,
