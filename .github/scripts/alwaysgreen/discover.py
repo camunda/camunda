@@ -66,9 +66,21 @@ if os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS"):
     )
 #: How long an open fix PR keeps holding its dispatch key; see
 #: planning.PR_LOCK_TTL_HOURS. Set to 0 to restore the old never-expiring lock.
-PR_LOCK_TTL_HOURS = int(
-    os.environ.get("ALWAYSGREEN_PR_LOCK_TTL_HOURS", str(planning.PR_LOCK_TTL_HOURS))
-)
+#: Read defensively, matching the degrade-don't-crash bias of everything else here: an
+#: unreadable `createdAt` keeps the lock and a failed lookup suppresses, so a malformed
+#: dial must not raise at import and take down every entry point in this module.
+try:
+    PR_LOCK_TTL_HOURS = int(
+        os.environ.get("ALWAYSGREEN_PR_LOCK_TTL_HOURS", "").strip()
+        or planning.PR_LOCK_TTL_HOURS
+    )
+except ValueError:
+    print(
+        "::warning::unparseable ALWAYSGREEN_PR_LOCK_TTL_HOURS; using the default "
+        f"({planning.PR_LOCK_TTL_HOURS}h).",
+        file=sys.stderr,
+    )
+    PR_LOCK_TTL_HOURS = planning.PR_LOCK_TTL_HOURS
 #: Refused rather than converted, for the same reason as the no-fix knob above: reading
 #: `..._DAYS=2` as 48 hours would restore the window this replaced.
 if os.environ.get("ALWAYSGREEN_PR_LOCK_TTL_DAYS"):

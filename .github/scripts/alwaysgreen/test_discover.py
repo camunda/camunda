@@ -34,12 +34,15 @@ def _pr(number, keys, *, claims=(), age_hours=0):
 
 
 def _stub(monkeypatch, prs, *, ok=True):
-    """Serve `prs` from the first fix repo and nothing from the rest."""
-    seen = {"n": 0}
+    """Serve `prs` from the first fix repo and nothing from the rest.
+
+    Keyed on the repo, not on a call counter: a counter is consumed by the first
+    `dedupe_inputs` pass over FIX_PR_REPOS, so a second call in the same test would be
+    served empty lists and any assertion about it would pass vacuously.
+    """
 
     def fake(repo):
-        seen["n"] += 1
-        return (list(prs), ok) if seen["n"] == 1 else ([], ok)
+        return (list(prs), ok) if repo == discover.FIX_PR_REPOS[0] else ([], ok)
 
     monkeypatch.setattr(discover, "open_fix_prs", fake)
 

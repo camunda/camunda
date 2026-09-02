@@ -311,20 +311,11 @@ def plan_dispatches(
         # `smoke-tests.spec.ts` failure was suppressed as `open-fix-pr-for-surface`
         # rather than dispatched.
         #
-        # Assumed here: a PR that claims anything claims EVERYTHING it fixed. The gate
-        # only distinguishes "claims nothing" from "claims something", so a partially
-        # written block — three specs fixed, one `fp=` listed — reads as authoritative
-        # and the two unlisted specs can dispatch a second, overlapping agent. The fix
-        # workflow hands the agent `/tmp/fingerprints.json` and requires the body to
-        # claim them, but stamps only the label; it never validates the block. Making it
-        # verify the block against that file is the fix for this, not a wider lock.
-        #
-        # Scope note: this gate holds a claim-nothing PR's surface only until
-        # PR_LOCK_TTL_HOURS elapses. Past that its key is released and it contributed no
-        # fingerprints, so the same cause can dispatch again. That is deliberate — the
-        # alternative is the unbounded wedge the TTL exists to remove — but it is a real
-        # residual, bounded by `inflight_keys` and the dispatch caps rather than by this
-        # gate.
+        # Two residuals it does not cover. A partially written block reads as
+        # authoritative, since the gate only asks "claims anything?"; validating it
+        # against `/tmp/fingerprints.json` in alwaysgreen-fix.yml is the fix. And a
+        # claim-nothing PR holds its surface only until PR_LOCK_TTL_HOURS, past which
+        # `inflight_keys` and the dispatch caps are the only bound.
         if cand.key in open_pr_keys and cand.key not in pr_keys_with_coverage:
             plan.suppressed.append(Suppression(cand, SUPPRESSED_PR_OPEN, cand.key))
             continue
