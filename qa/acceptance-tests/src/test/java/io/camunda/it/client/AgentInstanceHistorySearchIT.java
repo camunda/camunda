@@ -553,7 +553,7 @@ public class AgentInstanceHistorySearchIT {
     final var activatedJobs =
         camundaClient
             .newActivateJobsCommand()
-            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .jobType(AGENT_JOB_TYPE)
             .maxJobsToActivate(1)
             .withLease(true)
             .timeout(Duration.ofMinutes(5))

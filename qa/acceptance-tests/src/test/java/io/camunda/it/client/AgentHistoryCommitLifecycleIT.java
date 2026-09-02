@@ -305,7 +305,7 @@ public class AgentHistoryCommitLifecycleIT {
             .serviceTask(
                 SERVICE_TASK_ID,
                 t ->
-                    t.zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+                    t.zeebeJobType(AGENT_JOB_TYPE)
                         .zeebeAiAgentTaskDefinition()
                         .multiInstance(
                             m ->
