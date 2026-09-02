@@ -420,7 +420,10 @@ components:
           allOf:
             - $ref: '#/components/schemas/AgentInstanceDefinitionResult'
         metrics:
-          description: Aggregated metrics across all loopIterations of this agent instance.
+          description: |
+            Aggregated metrics across all loopIterations of this agent instance. Includes
+            history items later discarded: metrics are counted when an item is accepted,
+            not when it's committed.
           allOf:
             - $ref: '#/components/schemas/AgentInstanceMetrics'
         limits:
@@ -997,7 +1000,12 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/AgentHistoryItemKey'
         historyItemId:
-          description: The historyItemId of this history item.
+          description: |
+            The client-supplied identifier this item was created with. Empty for items that don't
+            carry one. Not unique: a job can be re-activated under a superseded lease any number
+            of times before it completes, so one historyItemId can have zero or more DISCARDED
+            records and at most one COMMITTED record, since only historyItemKey is guaranteed
+            unique. Filter by commitStatus rather than assuming one record per historyItemId.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/HistoryItemId'
         agentInstanceKey:
