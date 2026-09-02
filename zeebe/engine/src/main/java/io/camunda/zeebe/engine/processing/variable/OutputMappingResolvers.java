@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.variable;
 import io.camunda.zeebe.engine.EngineConfiguration.OutputMappingMode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMappings;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /** Utility methods for working with {@link MappingResolver} instances for output mappings. */
 @NullMarked
@@ -17,9 +18,22 @@ public final class OutputMappingResolvers {
 
   private OutputMappingResolvers() {}
 
-  /** Returns a resolver for the given output mapping mode. */
-  public static MappingResolver<OutputMappings> forMode(final OutputMappingMode outputMappingMode) {
-    return switch (outputMappingMode) {
+  /**
+   * Returns a resolver for the given output mode. If {@code comparisonMode} is non-null and
+   * different from {@code outputMode}, wraps both in a {@link ComparingMappingResolver} that logs a
+   * warning when results differ.
+   */
+  public static MappingResolver<OutputMappings> forMode(
+      final OutputMappingMode outputMode, final @Nullable OutputMappingMode comparisonMode) {
+    final var primary = singleResolver(outputMode);
+    if (comparisonMode == null || comparisonMode == outputMode) {
+      return primary;
+    }
+    return new ComparingMappingResolver<>(primary, singleResolver(comparisonMode));
+  }
+
+  private static MappingResolver<OutputMappings> singleResolver(final OutputMappingMode mode) {
+    return switch (mode) {
       case COMBINED -> new CombinedOutputMappingResolver();
       case ORDERED -> new OrderedOutputMappingResolver();
     };

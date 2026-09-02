@@ -177,6 +177,7 @@ public final class EngineConfiguration {
   private InputMappingMode inputMappingMode = InputMappingMode.COMBINED;
   private @Nullable InputMappingMode inputComparisonMode = null;
   private OutputMappingMode outputMappingMode = OutputMappingMode.COMBINED;
+  private @Nullable OutputMappingMode outputComparisonMode = null;
 
   /**
    * Controls uniqueness enforcement of business IDs across active process instances.
@@ -805,6 +806,16 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setOutputMappingMode(final OutputMappingMode outputMappingMode) {
     this.outputMappingMode = outputMappingMode;
+    return this;
+  }
+
+  public @Nullable OutputMappingMode getOutputComparisonMode() {
+    return outputComparisonMode;
+  }
+
+  public EngineConfiguration setOutputComparisonMode(
+      final @Nullable OutputMappingMode outputComparisonMode) {
+    this.outputComparisonMode = outputComparisonMode;
     return this;
   }
 }
