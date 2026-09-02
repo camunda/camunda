@@ -486,46 +486,38 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.numberOfReplicasPerIndex = numberOfReplicasPerIndex;
   }
 
-  public NumberOfShardsPerIndex getNumberOfShardsPerIndex() {
-    return numberOfShardsPerIndex;
-  }
-
-  public void setNumberOfShardsPerIndex(final NumberOfShardsPerIndex numberOfShardsPerIndex) {
-    this.numberOfShardsPerIndex = numberOfShardsPerIndex;
-  }
-
   /**
-   * Resolves the per-index shard overrides to the index-name keyed map the schema manager consumes,
-   * reconciling them with the legacy {@code shardsByIndexName} map properties.
-   *
-   * <p>The legacy properties are still a raw map, so the reconciliation happens on the projected
-   * map shape rather than on the typed fields.
-   *
    * @throws IllegalArgumentException if any index is configured with fewer than one shard
    */
-  public Map<String, Integer> resolveNumberOfShardsPerIndex() {
-    final var shardsByIndexName =
+  public NumberOfShardsPerIndex getNumberOfShardsPerIndex() {
+    final var shardsPerIndex =
         UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             prefix() + ".number-of-shards-per-index",
-            numberOfShardsPerIndex.toIndexNameMap(),
-            ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
+            numberOfShardsPerIndex,
+            NumberOfShardsPerIndex.class,
             BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
             legacyShardsByIndexNameProperties());
 
     // An index cannot be created with zero shards, and shards are immutable afterwards, so the
     // search engine would reject the whole schema creation on startup with an error that names
     // neither the property nor the index.
-    shardsByIndexName.forEach(
-        (indexName, shards) -> {
-          if (shards < 1) {
-            throw new IllegalArgumentException(
-                String.format(
-                    "%s.number-of-shards-per-index.%s must be at least 1, but was %d",
-                    prefix(), indexName, shards));
-          }
-        });
+    shardsPerIndex
+        .toIndexNameMap()
+        .forEach(
+            (indexName, shards) -> {
+              if (shards < 1) {
+                throw new IllegalArgumentException(
+                    String.format(
+                        "%s.number-of-shards-per-index.%s must be at least 1, but was %d",
+                        prefix(), indexName, shards));
+              }
+            });
 
-    return shardsByIndexName;
+    return shardsPerIndex;
+  }
+
+  public void setNumberOfShardsPerIndex(final NumberOfShardsPerIndex numberOfShardsPerIndex) {
+    this.numberOfShardsPerIndex = numberOfShardsPerIndex;
   }
 
   public Map<String, String> getRefreshIntervalByIndexName() {
