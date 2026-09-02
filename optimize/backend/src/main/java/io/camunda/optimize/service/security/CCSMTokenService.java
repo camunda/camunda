@@ -333,18 +333,11 @@ public class CCSMTokenService {
     if (provider == null) {
       return Optional.empty();
     }
-    if (!isCslAuthenticatedRequest()) {
+    if (!CslAuthentication.isCslAuthenticatedRequest()) {
       return Optional.empty();
     }
     return Optional.ofNullable(provider.getCamundaAuthentication())
         .map(CamundaAuthentication::authenticatedUsername);
-  }
-
-  // CSL authenticates both the webapp (OAuth2) and bearer API (JWT) chains.
-  private static boolean isCslAuthenticatedRequest() {
-    final var authentication = SecurityContextHolder.getContext().getAuthentication();
-    return authentication instanceof OAuth2AuthenticationToken
-        || authentication instanceof JwtAuthenticationToken;
   }
 
   public Optional<String> getCurrentUserAuthToken() {

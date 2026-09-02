@@ -35,7 +35,6 @@ import org.slf4j.Logger;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
@@ -119,7 +118,7 @@ public class SessionService implements ConfigurationReloadable {
    */
   public String getRequestUserOrFailNotAuthorized(final HttpServletRequest request) {
     final CamundaAuthenticationProvider cslProvider = cslAuthenticationProvider();
-    if (cslProvider != null && isCslAuthenticatedRequest()) {
+    if (cslProvider != null && CslAuthentication.isCslAuthenticatedRequest()) {
       return cslAuthenticatedUsername(cslProvider)
           .orElseThrow(
               () ->
@@ -139,18 +138,6 @@ public class SessionService implements ConfigurationReloadable {
     return camundaAuthenticationProviderProvider == null
         ? null
         : camundaAuthenticationProviderProvider.getIfAvailable();
-  }
-
-  /**
-   * True when CSL authenticated the current request: an {@link OAuth2AuthenticationToken} from the
-   * {@code oauth2Login} webapp chain, or a {@link JwtAuthenticationToken} from the bearer API
-   * chain. CSL supplies a converter for both, so its authenticated username is authoritative for
-   * either and the legacy branches below are not consulted.
-   */
-  private static boolean isCslAuthenticatedRequest() {
-    final var authentication = SecurityContextHolder.getContext().getAuthentication();
-    return authentication instanceof OAuth2AuthenticationToken
-        || authentication instanceof JwtAuthenticationToken;
   }
 
   /**
