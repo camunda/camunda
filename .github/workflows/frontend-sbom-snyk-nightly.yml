@@ -55,7 +55,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           ref: ${{ inputs.branch }}
       - name: Print metadata
@@ -101,7 +101,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           ref: ${{ inputs.branch }}
       - name: Print metadata
@@ -148,7 +148,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           ref: ${{ inputs.branch }}
       - name: Print metadata
@@ -196,7 +196,7 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           ref: ${{ inputs.branch }}
       - name: Print metadata
@@ -255,7 +255,7 @@ jobs:
     if: always() && inputs['notify-on-failure'] && github.event_name != 'workflow_dispatch' && contains(needs.*.result, 'failure')
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           ref: ${{ inputs.branch }}
       - name: Print metadata
