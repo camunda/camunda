@@ -390,21 +390,27 @@ Before any metrics or profiles are taken the stress tests get a warmup period.
 
 ### Ad-hoc load tests
 
-On top of the previous scenarios, we support running ad-hoc load tests. They can be either set up by labeling an existing pull-request (PR) at the mono repository with the **benchmark** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Charts [manually](setup/README.md).
+On top of the previous automated occasions, when load tests run, we support running ad-hoc load tests. They can be either set up by labeling an existing pull-request (PR) at the mono repository with the **benchmark** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Charts [manually](setup/README.md).
 
 **Goal:** The goal of these ad-hoc load tests is to have a quick way to validate certain changes (reducing the feedback loop). The intentions can be manifold, may it be stability/reliability, performance, or something else.
 
-**Validation:** The more general [Zeebe Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?orgId=1) should be used to observe and validate the performance of the different load tests. If performance is the motivator of such a test, it might be helpful to use the [Camunda Performance](https://dashboard.benchmark.camunda.cloud/d/camunda-performance/camunda-performance?orgId=1) Dashboard.
+**Validation:** The tailored [Camunda Performance Dashboard](https://dashboard.benchmark.camunda.cloud/d/camunda-performance-dashboard/camunda-performance) can be used to observe and validate the performance of the different load tests. For more in-depth analysis, the more general [Zeebe Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?orgId=1) can be used as well.
 
 **Requirement:** Please make sure that load test namespaces are always prefixed with your initials, to allow us to identify who created the tests and reach out if necessary. Note that the `c8-` namespace prefix is added implicitly by the tooling (due to cluster access policies). For example, a name like `pp-stable-vms-october` will result in the Kubernetes namespace `c8-pp-stable-vms-october`.
+
+> [!NOTE]
+>
+> Ad-hoc load tests get by default a TTL of one day - if you need to run load tests for a longer time, you will need to adjust the TTL accordingly.
 
 #### Labeling a PR
 
 It is as easy as it sounds; we can label an existing PR with the [**benchmark**](https://github.com/camunda/camunda/labels/benchmark) label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-pr-load-test.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
 
-This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
+> [!NOTE]
+>
+> This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
 
-Alongside the flamegraph comment, the `benchmark` label also posts a **metrics-comparison comment** on the PR. Both paths share a 15-minute warmup, after which the metrics path opens a 30-minute collection window:
+Load tests started by labeling a PR will always run a stress test (no endurance test). Running Camunda applications will be profiled after a warm up period, and metrics will be collected during the subsequent steady-state period. Afterwards the results will be shared via a comment on the PR. 
 
 - **Profile path:** after the 15-minute warmup, async-profiler samples each pod and the flamegraph comment is posted as soon as artifacts upload. No dependency on the metrics path.
 - **Metrics path:**
@@ -515,7 +521,7 @@ Use the following values directly in the workflow form:
 
 ##### Creating load test for old versions
 
-With the Camunda load test GitHub workflow, it is also possible to create load tests for older versions (until 8.6).
+With the Camunda load test GitHub workflow, it is also possible to create load tests for older versions (until 8.7).
 
 ![1-main](docs/assets/1-main.png)
 
@@ -523,7 +529,7 @@ As part of the workflow dispatch form (UI), select the respective workflow revis
 
 ![2-choosing](docs/assets/2-choosing.png)
 
-This will make sure that the right Camunda Platform Helm Chart version and values file are used for the load test set up. Respective values files can be found in the stable branches and will be picked up by the GitHub Workflow on the different stable branches.
+This will make sure that the right Camunda Platform Helm Chart version and values file are used for the load test set up. Respective values files can be found in the stable-8x folders in `load-tests/setup` folder. The right target version will be picked up by the GitHub Workflow on the different stable branches.
 
 We can reference tags, branches or commit SHAs as ref. It must not necessarily correspond to the stable branch, but should be compatible with the version. This will be used to build the Docker image for the respective cluster under test and load test applications.
 
