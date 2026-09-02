@@ -127,6 +127,11 @@ export class IdentityTenantsPage {
       name: 'Search by username',
     });
     this.assignUserSearchboxResult = page.getByRole('listbox');
+    this.assignUserOption = (username) =>
+      this.assignUserSearchboxResult
+        .getByRole('option')
+        .filter({hasText: username})
+        .first();
     this.confirmAssignmentButton = this.assignUserModal.getByRole('button', {
       name: 'Assign user',
     });
@@ -134,7 +139,9 @@ export class IdentityTenantsPage {
       'No users assigned to this tenant yet',
     );
     this.removeUserButton = (rowName) =>
-      page.getByRole('row', {name: rowName}).getByRole('button');
+      page
+        .getByRole('row', {name: rowName})
+        .getByRole('button', {name: 'Remove'});
     this.userRow = (userName) =>
       this.tenantsList.getByRole('row', {name: userName});
     this.tenantCell = (tenantName) =>
@@ -186,7 +193,7 @@ export class IdentityTenantsPage {
     // The assign-user search is debounced + server-driven, so the option can
     // outlast the 10s default actionTimeout on a loaded cluster.
     await this.confirmAssignmentButton.click();
-    await expect(this.assignUserModal).toBeHidden({timeout: 5000});
+    await expect(this.assignUserModal).toBeHidden();
     await waitForItemInList(
       this.page,
       this.assignedUsersList.getByRole('cell', {name: user.id, exact: true}),
