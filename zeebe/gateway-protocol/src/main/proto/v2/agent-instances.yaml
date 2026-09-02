@@ -735,7 +735,8 @@ components:
           description: |
             The historyItemId of the corresponding item in the request, echoed back
             so callers can correlate response entries with request items by id.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/HistoryItemId'
         historyItemKey:
           description: |
             The system-generated key for the history item. When isDuplicate is true,
@@ -804,7 +805,8 @@ components:
             item. For example, when a retried job activation resubmits history items
             it already sent in an earlier attempt, those items are not rejected; they
             are flagged via isDuplicate in the response instead. Must be non-blank.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/HistoryItemId'
         loopIteration:
           description: The loop iteration this item belongs to.
           allOf:
@@ -980,10 +982,9 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/AgentHistoryItemKey'
         historyItemId:
-          description: |
-            The client-supplied identifier this item was created with. Empty for items that don't
-            carry one.
-          type: string
+          description: The historyItemId of this history item.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/HistoryItemId'
         agentInstanceKey:
           description: The key of the agent instance this item belongs to.
           allOf:
