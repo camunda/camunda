@@ -76,7 +76,7 @@ public class FilterTypeSafetyTest {
           RolesByTenantSearchRequest.class);
 
   @Test
-  void nonFilterableRequestsShouldNotExtendTypedFilterableRequest() {
+  void shouldNotExtendTypedFilterableRequestForNonFilterableRequests() {
     for (final Class<?> request : NON_FILTERABLE_REQUESTS) {
       assertThat(TypedFilterableRequest.class.isAssignableFrom(request))
           .as("%s must not extend TypedFilterableRequest", request.getSimpleName())
@@ -85,7 +85,7 @@ public class FilterTypeSafetyTest {
   }
 
   @Test
-  void nonFilterableRequestsShouldNotExposeAFilterMethod() {
+  void shouldNotExposeFilterMethodForNonFilterableRequests() {
     for (final Class<?> request : NON_FILTERABLE_REQUESTS) {
       assertThat(hasFilterMethod(request))
           .as("%s must not expose a filter(...) method", request.getSimpleName())
@@ -94,7 +94,7 @@ public class FilterTypeSafetyTest {
   }
 
   @Test
-  void nonFilterableRequestsShouldStillSupportSortingAndPagination() {
+  void shouldSupportSortingAndPaginationForNonFilterableRequests() {
     for (final Class<?> request : NON_FILTERABLE_REQUESTS) {
       assertThat(TypedSortableRequest.class.isAssignableFrom(request))
           .as("%s must still support sorting", request.getSimpleName())
@@ -106,7 +106,7 @@ public class FilterTypeSafetyTest {
   }
 
   @Test
-  void filterableRequestsShouldStillExposeFiltering() {
+  void shouldExposeFilteringForFilterableRequests() {
     for (final Class<?> request : FILTERABLE_REQUESTS) {
       assertThat(TypedFilterableRequest.class.isAssignableFrom(request))
           .as("%s must keep extending TypedFilterableRequest", request.getSimpleName())
