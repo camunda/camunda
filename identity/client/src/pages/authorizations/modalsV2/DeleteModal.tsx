@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { Stack, UnorderedList, ListItem } from "@carbon/react";
+import { Text } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
@@ -62,31 +62,29 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
       onClose={onClose}
       confirmLabel={t("deleteAuthorization")}
     >
-      <Stack gap="4">
-        {t("deleteConfirmation")}
-        <UnorderedList>
-          <ListItem>
-            <strong>{t("ownerId")}</strong>: {ownerId}
-          </ListItem>
-          <ListItem>
-            <strong>{t("ownerType")}</strong>: {ownerType}
-          </ListItem>
-          {resourceData.resourceType === "USER_TASK" ? (
-            <ListItem>
-              <strong>{t("resourcePropertyName")}</strong>:{" "}
-              {resourceData.resourcePropertyName}
-            </ListItem>
-          ) : (
-            <ListItem>
-              <strong>{t("resourceId")}</strong>: {resourceData.resourceId}
-            </ListItem>
-          )}
-          <ListItem>
-            <strong>{t("permission")}</strong>: {permissionTypes.join(", ")}
-          </ListItem>
-        </UnorderedList>
-        {t("irreversibleAction")}
-      </Stack>
+      <Text>{t("deleteConfirmation")}</Text>
+      <ul className="list-disc pl-5">
+        <li>
+          <strong>{t("ownerId")}</strong>: {ownerId}
+        </li>
+        <li>
+          <strong>{t("ownerType")}</strong>: {ownerType}
+        </li>
+        {resourceData.resourceType === "USER_TASK" ? (
+          <li>
+            <strong>{t("resourcePropertyName")}</strong>:{" "}
+            {resourceData.resourcePropertyName}
+          </li>
+        ) : (
+          <li>
+            <strong>{t("resourceId")}</strong>: {resourceData.resourceId}
+          </li>
+        )}
+        <li>
+          <strong>{t("permission")}</strong>: {permissionTypes.join(", ")}
+        </li>
+      </ul>
+      <Text>{t("irreversibleAction")}</Text>
     </Modal>
   );
 };

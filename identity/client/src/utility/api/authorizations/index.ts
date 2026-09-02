@@ -31,7 +31,7 @@ export const RESOURCE_TYPES_WITHOUT_TENANT: ResourceType[] =
 export const OWNER_TYPES: OwnerType[] = [...ownerTypeSchema.options];
 
 export type ResourcePropertyName =
-  "assignee" | "candidateGroups" | "candidateUsers" | null;
+  "assignee" | "candidateGroups" | "candidateUsers";
 
 export const RESOURCE_PROPERTY_NAMES: ResourcePropertyName[] = [
   "assignee",

@@ -13,8 +13,6 @@ import { UserSingleSelect } from "src/components/formV2/entitySelection/UserSele
 import { GroupSingleSelect } from "src/components/formV2/entitySelection/GroupSelection";
 import { RoleSingleSelect } from "src/components/formV2/entitySelection/RoleSelection";
 import { MappingRuleSingleSelect } from "src/components/formV2/entitySelection/MappingRuleSelection";
-// TODO: Replace with Tailwind or remove if obsolete with design-system migration.
-import { Caption } from "src/pages/authorizations/modalsV2/components.tsx";
 import { DocumentationLink } from "src/components/documentationV2";
 import { getIdPattern } from "src/utility/validate";
 import type { Authorization } from "@camunda/camunda-api-zod-schemas/8.10";
@@ -59,18 +57,16 @@ const Selection: FC<SelectionProps> = ({
             onBlur={onBlur}
             placeholder={t("enterUsername")}
             helperText={
-              <Caption>
-                <Translate i18nKey="usernameDescription">
-                  Check the documentation for{" "}
-                  <DocumentationLink
-                    path="/components/admin/authorization/#about-authorizations"
-                    withIcon
-                  >
-                    how to reference users
-                  </DocumentationLink>{" "}
-                  .
-                </Translate>
-              </Caption>
+              <Translate i18nKey="usernameDescription">
+                Check the documentation for{" "}
+                <DocumentationLink
+                  path="/components/admin/authorization/#about-authorizations"
+                  withIcon
+                >
+                  how to reference users
+                </DocumentationLink>{" "}
+                .
+              </Translate>
             }
             type="text"
             errors={
