@@ -149,6 +149,7 @@ public class IncidentIT {
   private void assertIncidentState(
       final CamundaClient client, final long key, final IncidentState expected) {
     Awaitility.await("until incident %d state is = %s".formatted(key, expected))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -166,6 +167,7 @@ public class IncidentIT {
   private void assertProcessInstanceIncidentState(
       final CamundaClient client, final long key, final boolean expected) {
     Awaitility.await("until process instance %d incident state = %s".formatted(key, expected))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -184,6 +186,7 @@ public class IncidentIT {
     Awaitility.await(
             "until element %s in process instance %d incident state = %s"
                 .formatted(elementId, processInstanceKey, expected))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
