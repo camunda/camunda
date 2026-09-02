@@ -69,7 +69,7 @@ if os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS"):
 PR_LOCK_TTL_HOURS = int(
     os.environ.get("ALWAYSGREEN_PR_LOCK_TTL_HOURS", str(planning.PR_LOCK_TTL_HOURS))
 )
-#: Refused rather than converted, for the reason given above the no-fix knob: reading
+#: Refused rather than converted, for the same reason as the no-fix knob above: reading
 #: `..._DAYS=2` as 48 hours would restore the window this replaced.
 if os.environ.get("ALWAYSGREEN_PR_LOCK_TTL_DAYS"):
     print(
