@@ -6,9 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useEffect } from "react";
+import { FC, useEffect, useId } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Checkbox, CheckboxGroup, Dropdown } from "@carbon/react";
+import {
+  Checkbox,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Separator,
+  Text,
+} from "@camunda/design-system";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { authorizationMutations } from "src/utility/api/authorizations/mutations";
 import useTranslate from "src/utility/localization";
@@ -23,13 +33,9 @@ import {
 } from "src/utility/api/authorizations";
 import { useNotifications } from "src/components/notifications";
 import TextField from "src/components/formV2/TextField";
-// TODO: Replace with `Separator` from design system.
-import Divider from "src/components/form/Divider";
+import FormField from "src/components/formV2/FormField";
 import { DocumentationLink } from "src/components/documentationV2";
-// TODO: Replace with Tailwind or remove if obsolete with design-system migration.
-import { Caption, Row, TextFieldContainer } from "../components";
 import OwnerSelection from "../owner-selection";
-import { useDropdownAutoFocus } from "./useDropdownAutoFocus";
 import {
   isValidId,
   isValidResourceId,
@@ -61,6 +67,7 @@ export const AddModal: FC<
   resourcePermissions,
 }) => {
   const { t, Translate } = useTranslate("authorizations");
+  const permissionsLegendId = useId();
   const { enqueueNotification } = useNotifications();
   const qc = useQueryClient();
   const {
@@ -69,11 +76,17 @@ export const AddModal: FC<
     error,
   } = useMutation(authorizationMutations.create(qc));
 
-  const { DropdownAutoFocus } = useDropdownAutoFocus(open);
-
   const resourceTypeItems: ResourceType[] = isTenantsApiEnabled
     ? ALL_RESOURCE_TYPES
     : RESOURCE_TYPES_WITHOUT_TENANT;
+
+  const ownerTypeItems: OwnerType[] = OWNER_TYPES.filter((ownerType) => {
+    const excludedType = isOIDC
+      ? ["UNSPECIFIED"]
+      : ["MAPPING_RULE", "CLIENT", "UNSPECIFIED"];
+
+    return !excludedType.includes(ownerType);
+  });
 
   const { control, handleSubmit, watch, setValue } = useForm<NewAuthorization>({
     defaultValues: createEmptyAuthorization(defaultResourceType),
@@ -120,7 +133,7 @@ export const AddModal: FC<
       confirmLabel={t("createAuthorization")}
       onSubmit={handleSubmit(onSubmit)}
     >
-      <div>
+      <Text as="p">
         <Translate i18nKey="createAuthorizationIntroduction">
           Grant an owner access to a resource with specific permissions.{" "}
           <DocumentationLink path="/components/admin/authorization/" withIcon>
@@ -128,34 +141,36 @@ export const AddModal: FC<
           </DocumentationLink>{" "}
           .
         </Translate>
-      </div>
-      <Row>
-        <DropdownAutoFocus>
-          <Controller
-            name="ownerType"
-            control={control}
-            render={({ field }) => (
-              <Dropdown<OwnerType>
-                id="owner-type-dropdown"
-                label={t("selectOwnerType")}
-                titleText={t("ownerType")}
-                items={OWNER_TYPES.filter((ownerType) => {
-                  const excludedType = isOIDC
-                    ? ["UNSPECIFIED"]
-                    : ["MAPPING_RULE", "CLIENT", "UNSPECIFIED"];
-
-                  return !excludedType.includes(ownerType);
-                })}
-                onChange={(item) => {
-                  setValue("ownerId", "");
-                  field.onChange(item.selectedItem);
-                }}
-                itemToString={(item) => (item ? t(item) : "")}
-                selectedItem={field.value}
-              />
-            )}
-          />
-        </DropdownAutoFocus>
+      </Text>
+      <div className="grid w-full grid-cols-[1fr_2fr] items-start justify-center gap-4 gap-y-6">
+        <Controller
+          name="ownerType"
+          control={control}
+          render={({ field }) => (
+            <FormField label={t("ownerType")}>
+              {({ id }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(value) => {
+                    setValue("ownerId", "");
+                    field.onChange(value as OwnerType);
+                  }}
+                >
+                  <SelectTrigger id={id} className="w-full" autoFocus>
+                    <SelectValue placeholder={t("selectOwnerType")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ownerTypeItems.map((ownerType) => (
+                      <SelectItem key={ownerType} value={ownerType}>
+                        {t(ownerType)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </FormField>
+          )}
+        />
         <Controller
           name="ownerId"
           control={control}
@@ -176,89 +191,114 @@ export const AddModal: FC<
             />
           )}
         />
-      </Row>
-      <Divider />
-      <Row>
+
+        <Separator className="col-span-full" />
+
         <Controller
           name="resourceType"
           control={control}
           render={({ field }) => (
-            <Dropdown<ResourceType>
-              id="resource-type-dropdown"
-              disabled
-              label={t("selectResourceType")}
-              titleText={t("resourceType")}
-              items={resourceTypeItems}
-              onChange={(item) => {
-                field.onChange(item.selectedItem);
-              }}
-              itemToString={(item) => (item ? t(item) : "")}
-              selectedItem={
-                resourceTypeItems.find((item) => item === field.value) ||
-                resourceTypeItems[0]
-              }
-            />
+            <FormField label={t("resourceType")}>
+              {({ id }) => (
+                <Select
+                  disabled
+                  value={
+                    resourceTypeItems.find((item) => item === field.value) ||
+                    resourceTypeItems[0]
+                  }
+                  onValueChange={(value) =>
+                    field.onChange(value as ResourceType)
+                  }
+                >
+                  <SelectTrigger id={id} className="w-full">
+                    <SelectValue placeholder={t("selectResourceType")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {resourceTypeItems.map((resourceType) => (
+                      <SelectItem key={resourceType} value={resourceType}>
+                        {t(resourceType)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </FormField>
           )}
         />
-        <TextFieldContainer>
-          {watchedResourceType === "USER_TASK" ? (
-            <Controller
-              name="resourcePropertyName"
-              control={control}
-              render={({ field, fieldState }) => {
-                return (
-                  <Dropdown<ResourcePropertyName>
-                    id="property-name-dropdown"
-                    label={t("selectResourcePropertyName")}
-                    titleText={t("resourcePropertyName")}
-                    items={RESOURCE_PROPERTY_NAMES}
-                    onChange={(item) => {
-                      field.onChange(item.selectedItem);
-                    }}
-                    itemToString={(item) => item || ""}
-                    selectedItem={field.value}
-                    invalid={!!fieldState.error}
-                    invalidText={fieldState.error?.message}
-                  />
-                );
-              }}
-            />
-          ) : (
-            <Controller
-              name="resourceId"
-              control={control}
-              rules={{
-                required: t("resourceIdRequired"),
-                validate: (value) =>
-                  isValidResourceId(value ?? "") ||
-                  t("pleaseEnterValidResourceId", {
-                    pattern: getIdPattern(),
-                  }),
-              }}
-              render={({ field, fieldState }) => (
-                <TextField
-                  {...field}
-                  value={field.value ?? ""}
-                  label={t("resourceId")}
-                  placeholder={t("enterId")}
-                  errors={fieldState.error?.message}
-                />
-              )}
-            />
-          )}
-        </TextFieldContainer>
-      </Row>
-      <Divider />
+        {watchedResourceType === "USER_TASK" ? (
+          <Controller
+            name="resourcePropertyName"
+            control={control}
+            render={({ field, fieldState }) => (
+              <FormField
+                label={t("resourcePropertyName")}
+                error={fieldState.error?.message}
+              >
+                {({ id, ...controlProps }) => (
+                  <Select
+                    value={field.value ?? ""}
+                    onValueChange={(value) =>
+                      field.onChange(value as ResourcePropertyName)
+                    }
+                  >
+                    <SelectTrigger id={id} className="w-full" {...controlProps}>
+                      <SelectValue
+                        placeholder={t("selectResourcePropertyName")}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RESOURCE_PROPERTY_NAMES.map((name) => (
+                        <SelectItem key={name} value={name}>
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </FormField>
+            )}
+          />
+        ) : (
+          <Controller
+            name="resourceId"
+            control={control}
+            rules={{
+              required: t("resourceIdRequired"),
+              validate: (value) =>
+                isValidResourceId(value ?? "") ||
+                t("pleaseEnterValidResourceId", {
+                  pattern: getIdPattern(),
+                }),
+            }}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ""}
+                label={t("resourceId")}
+                placeholder={t("enterId")}
+                errors={fieldState.error?.message}
+              />
+            )}
+          />
+        )}
+      </div>
+      <Separator />
       <Controller
         name="permissionTypes"
         control={control}
         rules={{
           required: t("permissionRequired"),
         }}
-        render={({ field, fieldState }) => (
-          <CheckboxGroup
-            legendText={
-              <Caption>
+        render={({ field, fieldState }) => {
+          const showError = !hasPermissions || !!fieldState.error;
+
+          return (
+            <div
+              role="group"
+              aria-labelledby={permissionsLegendId}
+              className="flex flex-col gap-1.5 pb-2"
+            >
+              <Text as="span" id={permissionsLegendId} variant="helper">
                 <Translate i18nKey="selectPermission">
                   Select at least one permission. All available resource
                   permissions can be found{" "}
@@ -270,33 +310,44 @@ export const AddModal: FC<
                   </DocumentationLink>{" "}
                   .
                 </Translate>
-              </Caption>
-            }
-            invalid={!hasPermissions || !!fieldState.error}
-            invalidText={
-              !hasPermissions
-                ? t("permissionsUnavailable")
-                : fieldState.error?.message
-            }
-          >
-            {permissionsForType.map((permission) => (
-              <Checkbox
-                key={permission}
-                labelText={permission}
-                id={permission}
-                checked={field.value.includes(permission)}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const currentPermissions = field.value;
-                  const newPermissions = e.target.checked
-                    ? [...currentPermissions, permission]
-                    : currentPermissions.filter((p) => p !== permission);
-                  field.onChange(newPermissions);
-                }}
-                onBlur={field.onBlur}
-              />
-            ))}
-          </CheckboxGroup>
-        )}
+              </Text>
+              <div className="flex flex-col gap-2">
+                {permissionsForType.map((permission) => (
+                  <div key={permission} className="flex items-center gap-2">
+                    <Checkbox
+                      id={permission}
+                      checked={field.value.includes(permission)}
+                      onCheckedChange={(checked) => {
+                        const currentPermissions = field.value;
+                        const newPermissions =
+                          checked === true
+                            ? [...currentPermissions, permission]
+                            : currentPermissions.filter(
+                                (p) => p !== permission,
+                              );
+                        field.onChange(newPermissions);
+                      }}
+                      onBlur={field.onBlur}
+                    />
+                    <Label htmlFor={permission}>{permission}</Label>
+                  </div>
+                ))}
+              </div>
+              {showError ? (
+                <Text
+                  as="p"
+                  variant="helper"
+                  role="alert"
+                  className="text-danger-action-default"
+                >
+                  {!hasPermissions
+                    ? t("permissionsUnavailable")
+                    : fieldState.error?.message}
+                </Text>
+              ) : null}
+            </div>
+          );
+        }}
       />
     </FormModal>
   );
