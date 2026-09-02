@@ -99,15 +99,20 @@ final class SecretCacheMetricsDocTest {
   }
 
   @Test
-  void shouldStateTheBoundsTheCacheActuallyRunsWith() {
-    // given/when/then — neither bound is configurable, and neither is published on a meter of
-    // its own, so these descriptions are the only place an operator can read them. Asserting
-    // the live constants rather than literals keeps a changed default from making them lie
+  void shouldStateTheBoundsAndNameThePropertiesThatTuneThem() {
+    // given/when/then — neither bound is published on a meter of its own, so these descriptions
+    // are the only place an operator reads them, and both are configurable: without the property
+    // path, a reader watching a sustained SIZE or EXPIRED rate has nothing to act on. Asserting
+    // the live constants rather than literals keeps a changed default from making the stated
+    // values lie
     assertThat(SecretCacheMetricsDoc.CACHE_SIZE.getDescription())
-        .contains(String.valueOf(CaffeineSecretCache.DEFAULT_MAX_SIZE));
+        .contains(String.valueOf(CaffeineSecretCache.DEFAULT_MAX_SIZE))
+        .contains("camunda.secrets.cache.max-size");
     assertThat(SecretCacheMetricsDoc.CACHE_EVICTIONS.getDescription())
         .contains(String.valueOf(CaffeineSecretCache.DEFAULT_MAX_SIZE))
-        .contains(String.valueOf(CaffeineSecretCache.DEFAULT_TTL.toMinutes()));
+        .contains(String.valueOf(CaffeineSecretCache.DEFAULT_TTL.toMinutes()))
+        .contains("camunda.secrets.cache.max-size")
+        .contains("camunda.secrets.cache.ttl");
   }
 
   @Test
