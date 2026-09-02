@@ -51,17 +51,33 @@ const commonEnv = {
 const cloudEnv = {
   SPRING_PROFILES_ACTIVE: 'cloud',
   ZEEBE_IMPORT_ENABLED: 'true',
-  CAMUNDA_OPTIMIZE_AUTH0_BACKENDDOMAIN: 'camunda-excitingdev.eu.auth0.com',
-  CAMUNDA_OPTIMIZE_AUTH0_CLIENTID: '4ySAuc47zUsrQVHzQGTTPSDCiecSoqnp',
-  CAMUNDA_OPTIMIZE_AUTH0_CLIENTSECRET: process.env.AUTH0_CLIENTSECRET,
-  CAMUNDA_OPTIMIZE_AUTH0_DOMAIN: 'weblogin.cloud.dev.ultrawombat.com',
+
+  // Not auth config. Optimize's own SaaS access control reads these and fails startup on a
+  // blank value, and the M2M Accounts client needs the token url and audience.
+  CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID: 'optimize-e2e-cloud',
   CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION: 'f4e522a8-f642-4293-b5cb-1d14e1730534',
   CAMUNDA_OPTIMIZE_AUTH0_TOKEN_URL: 'https://login.cloud.dev.ultrawombat.com/oauth/token',
-  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:
-    'https://camunda-excitingdev.eu.auth0.com/.well-known/jwks.json',
-  CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE: 'optimize.dev.ultrawombat.com',
   CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL: 'https://accounts.cloud.dev.ultrawombat.com',
   CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE: 'cloud.dev.ultrawombat.com',
+
+  CAMUNDA_SECURITY_AUTHENTICATION_METHOD: 'OIDC',
+  CAMUNDA_SECURITY_SAAS_CLUSTERID: 'optimize-e2e-cloud',
+  CAMUNDA_SECURITY_SAAS_ORGANIZATIONID: 'f4e522a8-f642-4293-b5cb-1d14e1730534',
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENTID: '4ySAuc47zUsrQVHzQGTTPSDCiecSoqnp',
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENTSECRET: process.env.AUTH0_CLIENTSECRET,
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_ISSUERURI: 'https://weblogin.cloud.dev.ultrawombat.com/',
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_JWKSETURI:
+    'https://camunda-excitingdev.eu.auth0.com/.well-known/jwks.json',
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_ORGANIZATIONID: 'f4e522a8-f642-4293-b5cb-1d14e1730534',
+  // Placeholder form on purpose, this is byte for byte what the bridge derives today.
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_REDIRECTURI:
+    '{baseScheme}://{baseHost}{basePort}/sso-callback?uuid=optimize-e2e-cloud',
+  // Login id_token carries the client id as its only aud, bearer tokens carry the resource one.
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_AUDIENCES:
+    'optimize.dev.ultrawombat.com,4ySAuc47zUsrQVHzQGTTPSDCiecSoqnp',
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_AUTHORIZEREQUEST_ADDITIONALPARAMETERS_AUDIENCE:
+    'cloud.dev.ultrawombat.com',
+
   CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN: 'true',
   CAMUNDA_OPTIMIZE_NOTIFICATIONS_URL: 'https://notifications.cloud.dev.ultrawombat.com',
 };
