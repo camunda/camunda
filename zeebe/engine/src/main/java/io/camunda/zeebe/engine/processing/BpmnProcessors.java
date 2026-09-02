@@ -111,7 +111,12 @@ public final class BpmnProcessors {
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(
-            bpmnBehaviors, processingState, writers, processEngineMetrics, config);
+            bpmnBehaviors,
+            processingState,
+            writers,
+            processEngineMetrics,
+            config,
+            suspensionMetrics);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
     addMessageStreamProcessors(

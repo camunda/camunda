@@ -135,6 +135,22 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
     }
   }
 
+  /**
+   * Adjusts metrics when a process instance terminates while suspended or mid-resume, without going
+   * through the normal resume path. Decrements the gauge so it does not inflate over time.
+   */
+  public void instanceTerminatedWhileSuspended() {
+    suspendedInstances.decrement();
+  }
+
+  /**
+   * Discards the in-flight resume-duration sample for the given key without recording it. Called
+   * when a resuming instance terminates before the resume completes, so the sample does not leak.
+   */
+  public void cancelResumeDuration(final long processInstanceKey) {
+    resumeDurationSamples.remove(processInstanceKey);
+  }
+
   public void setSuspendedInstances(final long count) {
     suspendedInstances.set(count);
   }

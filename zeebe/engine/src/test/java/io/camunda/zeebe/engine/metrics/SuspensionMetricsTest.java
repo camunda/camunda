@@ -207,6 +207,36 @@ final class SuspensionMetricsTest {
   }
 
   @Test
+  void shouldDecrementGaugeOnTerminationWhileSuspended() {
+    // given
+    metrics.instanceSuspended();
+    metrics.instanceSuspended();
+    metrics.instanceSuspended();
+
+    // when — one instance terminates without going through resume
+    metrics.instanceTerminatedWhileSuspended();
+
+    // then — gauge decremented but no "resumed" counter increment
+    assertThat(suspendedInstancesGauge()).isEqualTo(2.0);
+    assertThat(suspensionEventCount("resumed")).isZero();
+  }
+
+  @Test
+  void shouldDiscardResumeDurationSampleOnCancel() {
+    // given
+    metrics.startResumeDuration(42L);
+    advanceClock(Duration.ofMillis(100));
+
+    // when — instance terminates mid-resume; sample discarded without recording
+    metrics.cancelResumeDuration(42L);
+
+    // then — timer exists (eager registration) but has no recordings
+    final var timer = registry.find(RESUME_DURATION_METRIC).timer();
+    assertThat(timer).isNotNull();
+    assertThat(timer.count()).isZero();
+  }
+
+  @Test
   void shouldSetGaugesAbsoluteOnRecovery() {
     // when
     metrics.setSuspendedInstances(42);

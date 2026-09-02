@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor.TransitionOutcome;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -66,13 +68,16 @@ public final class BpmnStreamProcessor
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableBehavior variableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final SuspensionMetrics suspensionMetrics;
+  private final SuspensionState suspensionState;
 
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final MutableProcessingState processingState,
       final Writers writers,
       final ProcessEngineMetrics processEngineMetrics,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final SuspensionMetrics suspensionMetrics) {
     processState = processingState.getProcessState();
 
     rejectionWriter = writers.rejection();
@@ -97,6 +102,8 @@ public final class BpmnStreamProcessor
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+    this.suspensionMetrics = suspensionMetrics;
+    suspensionState = processingState.getSuspensionState();
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -460,7 +467,18 @@ public final class BpmnStreamProcessor
       final BpmnElementProcessor<ExecutableFlowElement> processor,
       final ExecutableFlowElement element,
       final BpmnElementContext context) {
+    if (context.getBpmnElementType() == BpmnElementType.PROCESS) {
+      cleanUpSuspensionMetricsOnTermination(context.getElementInstanceKey());
+    }
     processor.finalizeTermination(element, context);
     return BpmnElementProcessor.SUCCESS;
+  }
+
+  private void cleanUpSuspensionMetricsOnTermination(final long processInstanceKey) {
+    final var state = suspensionState.getSuspensionState(processInstanceKey);
+    if (state != null) {
+      suspensionMetrics.instanceTerminatedWhileSuspended();
+    }
+    suspensionMetrics.cancelResumeDuration(processInstanceKey);
   }
 }
