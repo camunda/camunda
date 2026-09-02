@@ -102,7 +102,6 @@ graph TD
 
 |       Time        |                       Workflow                       | Frequency |
 |-------------------|------------------------------------------------------|-----------|
-| 00:00 UTC Monday  | `zeebe-update-long-running-migrating-benchmark.yaml` | Weekly    |
 | 01:00 UTC Monday  | `camunda-weekly-load-tests.yml`                      | Weekly    |
 | 02:00 UTC Mon-Fri | `camunda-scheduled-release-load-tests.yml`           | Weekdays  |
 | 02:00 UTC Mon-Fri | `camunda-daily-load-tests.yml`                       | Weekdays  |
