@@ -67,7 +67,8 @@ test.describe('Process Instance', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Resolve an incident', async ({page, operateProcessInstancePage}) => {
+  // Skipped due to bug 60856: https://github.com/camunda/camunda/issues/60856
+  test.skip('Resolve an incident', async ({page, operateProcessInstancePage}) => {
     await test.step('Navigate to process instance with incident', async () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: instanceWithIncidentToResolve.processInstanceKey,
