@@ -32,6 +32,7 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -403,7 +404,7 @@ class AgentInstanceAuthorizationIT {
   private static void waitForHistoryItemsToBeIndexed(
       final CamundaClient client, final long agentInstanceKey, final int expectedCount) {
     Awaitility.await("agent history indexed for key " + agentInstanceKey)
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {

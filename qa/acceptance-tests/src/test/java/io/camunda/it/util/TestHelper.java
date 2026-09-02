@@ -716,7 +716,7 @@ public final class TestHelper {
   public static void waitForProcessInstanceToBeTerminated(
       final CamundaClient camundaClient, final Long processInstanceKey) {
     Awaitility.await("should wait until process is terminated")
-        .atMost(Duration.ofSeconds(60))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -1489,7 +1489,7 @@ public final class TestHelper {
       final long processInstanceKey,
       final int expectedDecisionInstances) {
     Awaitility.await("should deploy decision definitions and wait for import")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
