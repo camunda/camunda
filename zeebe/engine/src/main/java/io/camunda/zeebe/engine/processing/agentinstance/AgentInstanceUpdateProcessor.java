@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.agentinstance;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchBehavior.LeaseMismatchHandling;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
@@ -221,7 +222,7 @@ public final class AgentInstanceUpdateProcessor
             commandValue.getJobLease(),
             commandValue.getElementInstanceKey(),
             commandValue.getHistory(),
-            false);
+            LeaseMismatchHandling.ALLOW_STALE);
     if (validJob.isLeft()) {
       final var rejection = validJob.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());
