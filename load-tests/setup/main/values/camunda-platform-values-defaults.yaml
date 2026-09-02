@@ -243,10 +243,17 @@ orchestration:
   extraVolumes:
     - name: logs
       emptyDir: {}
+    - name: physical-tenants-config
+      configMap:
+        name: physical-tenants
+        optional: true
   ## @param core.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
   extraVolumeMounts:
     - name: logs
       mountPath: /usr/local/camunda/logs
+    - name: physical-tenants-config
+      mountPath: /usr/local/camunda/config/physical-tenants.yml
+      subPath: physical-tenants.yml
   # Retention for the ES Exporter indices - legacy Zeebe indices
   retention:
     enabled: true
@@ -279,7 +286,8 @@ orchestration:
     - name: SPRING_CONFIG_ADDITIONALLOCATION
       # application-override.yml is listed second so it has higher priority and can override application.yml.
       # Marked optional so Spring does not fail if this file is not mounted in a given deployment configuration.
-      value: "/usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml"
+      # The physical-tenants.yml is configured by the load-test-setup Helm Chart and may be empty, if no physical tenants are configured.
+      value: "/usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml,optional:/usr/local/camunda/config/physical-tenants.yml"
 
 # Change these settings to configure a different way to collect metrics
 prometheusServiceMonitor:

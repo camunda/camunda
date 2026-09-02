@@ -100,7 +100,7 @@ spec:
             - name: ZEEBE_LOG_LEVEL
               value: DEBUG
             - name: SPRING_CONFIG_ADDITIONALLOCATION
-              value: /usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml
+              value: /usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml,optional:/usr/local/camunda/config/physical-tenants.yml
             
             
             - name: VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD
@@ -159,6 +159,9 @@ spec:
             
             - mountPath: /usr/local/camunda/logs
               name: logs
+            - mountPath: /usr/local/camunda/config/physical-tenants.yml
+              name: physical-tenants-config
+              subPath: physical-tenants.yml
       volumes:
         - name: config
           configMap:
@@ -171,6 +174,10 @@ spec:
           
         - emptyDir: {}
           name: logs
+        - configMap:
+            name: physical-tenants
+            optional: true
+          name: physical-tenants-config
       serviceAccountName: camunda
       securityContext:
         fsGroup: 1001

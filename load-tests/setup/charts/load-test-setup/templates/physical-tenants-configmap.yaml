@@ -1,0 +1,76 @@
+{{- if gt ($.Values.physicalTenants.count | int) 0 }}
+---
+kind: ConfigMap
+metadata:
+  name: physical-tenants
+  labels:
+apiVersion: v1
+data:
+  physical-tenants.yml: |
+    # Configuration for the Camunda "physical tenants" feature.
+    {{- if le ($.Values.physicalTenants.count | int) 0 }}
+    # No physical tenants configured, this file is expected to be empty.
+    {{- else }}
+    {{- $secondaryStorage := $.Values.secondaryStorage.name }}
+
+    {{- $storagePrefixKey := "" }}
+    {{- $storagePrefixValue := "default-" }}
+    {{- $documentStoreKey := "" }}
+
+    {{- if eq $secondaryStorage "elasticsearch" }}
+      {{- $storagePrefixKey = "elasticsearch.index-prefix" }}
+      {{- $documentStoreKey = "elasticsearch" }}
+    {{- else if eq $secondaryStorage "opensearch" }}
+      {{- $storagePrefixKey = "opensearch.index-prefix" }}
+      {{- $documentStoreKey = "opensearch" }}
+    {{- else if ne $secondaryStorage "none" }}
+      {{- /* Not ES, OS, nor none, so must be an RDBMS */}}
+      {{- $storagePrefixKey = "rdbms.prefix" }}
+      {{- $storagePrefixValue = "DEFAULT_" }}
+    {{- end }}
+
+    {{- if ne $storagePrefixKey "" }}
+    camunda.data.secondary-storage.{{ $storagePrefixKey }}: {{ $storagePrefixValue }}
+    {{- end }}
+
+    {{- range $i := until ($.Values.physicalTenants.count | int) }}
+    {{- $tenantIndex := add $i 1 }}
+    {{- $tenant := printf "pt%d" $tenantIndex }}
+
+    {{- $tenantPrefix := printf "pt%d-" $tenantIndex }}
+    {{- if eq $storagePrefixKey "rdbms.prefix" }}
+    {{- $tenantPrefix = printf "PT%d_" $tenantIndex }}
+    {{- end }}
+
+    ## Configuration for physical tenant: {{ $tenant }}
+    {{- if ne $documentStoreKey "" }}
+    camunda.physical-tenants.{{ $tenant }}.data.secondary-storage.{{ $documentStoreKey }}.history.policy-name: {{ $tenant }}-camunda-retention-policy
+    camunda.physical-tenants.{{ $tenant }}.data.secondary-storage.{{ $documentStoreKey }}.history.usage-metrics-policy-name: {{ $tenant }}-camunda-usage-metrics-retention-policy
+    {{- end }}
+    {{- if ne $storagePrefixKey "" }}
+    camunda.physical-tenants.{{ $tenant }}.data.secondary-storage.{{ $storagePrefixKey }}: {{ $tenantPrefix }}
+    {{- end }}
+    # {{ $tenant }}: grant the orchestration client the same permissions as the default tenant
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[0].ownerType: CLIENT
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[0].ownerId: orchestration
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[0].resourceType: RESOURCE
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[0].resourceId: "*"
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[0].permissions[0]: CREATE
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[1].ownerType: CLIENT
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[1].ownerId: orchestration
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[1].resourceType: PROCESS_DEFINITION
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[1].resourceId: "*"
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[1].permissions[0]: CREATE_PROCESS_INSTANCE
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[1].permissions[1]: UPDATE_PROCESS_INSTANCE
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[1].permissions[2]: READ_PROCESS_INSTANCE
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[1].permissions[3]: READ_PROCESS_DEFINITION
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[2].ownerType: CLIENT
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[2].ownerId: orchestration
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[2].resourceType: MESSAGE
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[2].resourceId: "*"
+    camunda.physical-tenants.{{ $tenant }}.security.initialization.authorizations[2].permissions[0]: CREATE
+    # {{ $tenant }}: assign the default OIDC provider (Keycloak) so this tenant can authenticate
+    camunda.physical-tenants.{{ $tenant }}.security.authentication.providers.assigned[0]: oidc
+    {{- end }}
+    {{- end }}
+{{- end }}

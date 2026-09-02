@@ -30,6 +30,11 @@ topologyZone: ""
 # `POST {{ camundaManagementUrl }}/actuator/rebalance`.
 camundaManagementUrl: http://camunda:9600
 
+# -- The configuration for the secondary storage used by Camunda.
+secondaryStorage:
+  # -- The type of secondary storage used by Camunda.
+  name: elasticsearch
+
 # -- The configuration for the load test metrics exporter
 metricsExporter:
   image:
@@ -461,3 +466,9 @@ postgresql:
       operator: Equal
       value: n2-standard-4
       effect: NoSchedule
+
+# -- Configure the physical tenants.
+physicalTenants:
+  # -- The number of physical tenants to deploy.
+  # "0 physical tenants" only provides the default tenant.
+  count: 0
