@@ -33,6 +33,9 @@
       PRODUCED_AT,
       INPUT_TOKENS,
       OUTPUT_TOKENS,
+      REASONING_TOKEN_COUNT,
+      CACHE_CREATION_TOKEN_COUNT,
+      CACHE_READ_TOKEN_COUNT,
       DURATION_MS,
       CONTENT,
       TOOL_CALLS,
@@ -63,6 +66,9 @@
       #{producedAt, jdbcType=TIMESTAMP},
       #{inputTokens},
       #{outputTokens},
+      #{reasoningTokenCount},
+      #{cacheCreationTokenCount},
+      #{cacheReadTokenCount},
       #{durationMs},
       #{content, jdbcType=CLOB},
       #{toolCalls, jdbcType=CLOB},
@@ -127,6 +133,9 @@
       <arg column="PRODUCED_AT" javaType="java.time.OffsetDateTime" name="producedAt"/>
       <arg column="INPUT_TOKENS" javaType="java.lang.Long" name="inputTokens"/>
       <arg column="OUTPUT_TOKENS" javaType="java.lang.Long" name="outputTokens"/>
+      <arg column="REASONING_TOKEN_COUNT" javaType="java.lang.Long" name="reasoningTokenCount"/>
+      <arg column="CACHE_CREATION_TOKEN_COUNT" javaType="java.lang.Long" name="cacheCreationTokenCount"/>
+      <arg column="CACHE_READ_TOKEN_COUNT" javaType="java.lang.Long" name="cacheReadTokenCount"/>
       <arg column="DURATION_MS" javaType="java.lang.Long" name="durationMs"/>
       <arg column="CONTENT" javaType="java.lang.String" name="content"/>
       <arg column="TOOL_CALLS" javaType="java.lang.String" name="toolCalls"/>
@@ -164,6 +173,9 @@
           ah.PRODUCED_AT,
           ah.INPUT_TOKENS,
           ah.OUTPUT_TOKENS,
+          ah.REASONING_TOKEN_COUNT,
+          ah.CACHE_CREATION_TOKEN_COUNT,
+          ah.CACHE_READ_TOKEN_COUNT,
           ah.DURATION_MS,
           ah.CONTENT,
           ah.TOOL_CALLS,

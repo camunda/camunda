@@ -91,6 +91,15 @@ public final class AgentInstanceEntity
   private long outputTokens;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
+  private long reasoningTokenCount;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private long cacheCreationTokenCount;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private long cacheReadTokenCount;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
   private int modelCalls;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
@@ -307,6 +316,33 @@ public final class AgentInstanceEntity
     return this;
   }
 
+  public long getReasoningTokenCount() {
+    return reasoningTokenCount;
+  }
+
+  public AgentInstanceEntity setReasoningTokenCount(final long reasoningTokenCount) {
+    this.reasoningTokenCount = reasoningTokenCount;
+    return this;
+  }
+
+  public long getCacheCreationTokenCount() {
+    return cacheCreationTokenCount;
+  }
+
+  public AgentInstanceEntity setCacheCreationTokenCount(final long cacheCreationTokenCount) {
+    this.cacheCreationTokenCount = cacheCreationTokenCount;
+    return this;
+  }
+
+  public long getCacheReadTokenCount() {
+    return cacheReadTokenCount;
+  }
+
+  public AgentInstanceEntity setCacheReadTokenCount(final long cacheReadTokenCount) {
+    this.cacheReadTokenCount = cacheReadTokenCount;
+    return this;
+  }
+
   public int getModelCalls() {
     return modelCalls;
   }
@@ -402,6 +438,9 @@ public final class AgentInstanceEntity
         maxToolCalls,
         inputTokens,
         outputTokens,
+        reasoningTokenCount,
+        cacheCreationTokenCount,
+        cacheReadTokenCount,
         modelCalls,
         toolCalls,
         tools,
@@ -441,6 +480,9 @@ public final class AgentInstanceEntity
         && maxToolCalls == that.maxToolCalls
         && inputTokens == that.inputTokens
         && outputTokens == that.outputTokens
+        && reasoningTokenCount == that.reasoningTokenCount
+        && cacheCreationTokenCount == that.cacheCreationTokenCount
+        && cacheReadTokenCount == that.cacheReadTokenCount
         && modelCalls == that.modelCalls
         && toolCalls == that.toolCalls
         && Objects.equals(tools, that.tools)
@@ -504,6 +546,12 @@ public final class AgentInstanceEntity
         + inputTokens
         + ", outputTokens="
         + outputTokens
+        + ", reasoningTokenCount="
+        + reasoningTokenCount
+        + ", cacheCreationTokenCount="
+        + cacheCreationTokenCount
+        + ", cacheReadTokenCount="
+        + cacheReadTokenCount
         + ", modelCalls="
         + modelCalls
         + ", toolCalls="
