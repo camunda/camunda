@@ -100,12 +100,12 @@ graph TD
 
 ### Schedule
 
-|       Time        |                       Workflow                       | Frequency |
-|-------------------|------------------------------------------------------|-----------|
-| 01:00 UTC Monday  | `camunda-weekly-load-tests.yml`                      | Weekly    |
-| 02:00 UTC Mon-Fri | `camunda-scheduled-release-load-tests.yml`           | Weekdays  |
-| 02:00 UTC Mon-Fri | `camunda-daily-load-tests.yml`                       | Weekdays  |
-| 04:00 UTC         | `camunda-load-test-ttl-cleanup.yml`                  | Daily     |
+|       Time        |                  Workflow                  | Frequency |
+|-------------------|--------------------------------------------|-----------|
+| 01:00 UTC Monday  | `camunda-weekly-load-tests.yml`            | Weekly    |
+| 02:00 UTC Mon-Fri | `camunda-scheduled-release-load-tests.yml` | Weekdays  |
+| 02:00 UTC Mon-Fri | `camunda-daily-load-tests.yml`             | Weekdays  |
+| 04:00 UTC         | `camunda-load-test-ttl-cleanup.yml`        | Daily     |
 
 For detailed inputs, triggers, and job definitions, see each workflow's header comments in [`.github/workflows/`](../.github/workflows/).
 
