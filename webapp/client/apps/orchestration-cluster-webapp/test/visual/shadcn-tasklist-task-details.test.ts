@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
 	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
 	mockQueryVariablesByUserTaskEndpoint,
@@ -20,6 +21,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 
 const USER_TASK_KEY = '2251799813685281';
@@ -182,6 +184,76 @@ test('should match the JSON editor modal snapshot', async ({network, shadcnTaskD
 	await taskDetailPage.jsonEditorInput('Edit Variable').evaluate((element) => element.blur());
 
 	await expect(page).toHaveScreenshot({caret: 'hide'});
+});
+
+test('should match the task details process tab snapshot', async ({
+	network,
+	shadcnTaskDetailPage: taskDetailPage,
+	page,
+}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createUserTask({
+					state: 'CREATED',
+					name: 'Review purchase order',
+					processName: 'Procurement process',
+					processDefinitionVersion: 3,
+					elementId: 'task-1',
+					assignee: 'demo',
+					candidateUsers: ['alice', 'bob'],
+					candidateGroups: ['managers'],
+					priority: 60,
+					businessId: 'ORDER-2024-0042',
+					creationDate: '2024-01-10T09:30:00.000Z',
+				}),
+			),
+		}),
+		mockGetProcessDefinitionXmlEndpoint({
+			successResponse: new HttpResponse(BPMN_XML, {headers: {'Content-Type': 'text/xml'}}),
+		}),
+	);
+
+	await taskDetailPage.seedHideNotificationBanner();
+	await taskDetailPage.gotoProcess('2251799813685281');
+	await expect(taskDetailPage.processName('Procurement process')).toBeVisible();
+	await expect(taskDetailPage.processVersion(3)).toBeVisible();
+	await expect(taskDetailPage.processDiagramZoomReset).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the task details process forbidden snapshot', async ({
+	network,
+	shadcnTaskDetailPage: taskDetailPage,
+	page,
+}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createUserTask({
+					state: 'CREATED',
+					name: 'Review purchase order',
+					processName: 'Procurement process',
+					assignee: 'demo',
+					candidateUsers: ['alice', 'bob'],
+					candidateGroups: ['managers'],
+					priority: 60,
+					businessId: 'ORDER-2024-0042',
+					creationDate: '2024-01-10T09:30:00.000Z',
+				}),
+			),
+		}),
+		mockGetProcessDefinitionXmlEndpoint({
+			successResponse: new HttpResponse(null, {status: 403}),
+		}),
+	);
+
+	await taskDetailPage.seedHideNotificationBanner();
+	await taskDetailPage.gotoProcess('2251799813685281');
+	await expect(taskDetailPage.processForbiddenError).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
 });
 
 test('should match the unassigned task details snapshot', async ({network, shadcnTaskDetailPage, page}) => {

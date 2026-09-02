@@ -7,6 +7,9 @@
  */
 
 import 'bpmn-js/dist/assets/bpmn-js.css';
+import '@bpmn-io/shadcn-theme/assets/tokens.css';
+import '@bpmn-io/shadcn-theme/assets/diagram.css';
+import '@bpmn-io/shadcn-theme/assets/c4.css';
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
 import OutlineModule from 'bpmn-js/lib/features/outline';
 // @ts-expect-error no type declarations for this package
@@ -14,14 +17,15 @@ import ElementTemplatesIconsRenderer from '@bpmn-io/element-template-icon-render
 
 const bpmnRendererColors = {
 	outline: {
-		fill: 'var(--cds-highlight)',
+		fill: 'color-mix(in srgb, var(--info-action-default) 30%, transparent)',
 	},
-	defaultFillColor: 'var(--cds-layer)',
-	defaultStrokeColor: 'var(--cds-icon-secondary)',
+
+	defaultFillColor: 'var(--neutral-background-subtle)',
+	defaultStrokeColor: 'var(--neutral-foreground-subtle)',
 	element: {
-		text: 'var(--cds-text-primary)',
+		text: 'var(--neutral-foreground-strong)',
 		background: {
-			default: 'var(--cds-layer)',
+			default: 'var(--neutral-background-subtle)',
 		},
 	},
 };
