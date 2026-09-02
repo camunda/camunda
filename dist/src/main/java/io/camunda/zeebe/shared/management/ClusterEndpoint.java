@@ -715,7 +715,13 @@ public class ClusterEndpoint {
         if (numberOfBrokers.get() < 1) {
           return invalidRequest("numberOfBrokers must be at least 1.");
         }
-        return sendAddZone(zoneId, request, zonedBrokers(zoneId, numberOfBrokers.get()), dryRun);
+        final List<MemberId> members;
+        try {
+          members = zonedBrokers(zoneId, numberOfBrokers.get());
+        } catch (final IllegalArgumentException invalidZoneId) {
+          return invalidRequest(invalidZoneId.getMessage());
+        }
+        return sendAddZone(zoneId, request, members, dryRun);
       }
       final var brokerIds = brokers.stream().map(BrokerId::toString).toList();
       return withValidMembers(brokerIds, members -> sendAddZone(zoneId, request, members, dryRun));
