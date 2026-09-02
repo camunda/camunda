@@ -1,3 +1,9 @@
+> [!CAUTION]
+> This folder in the branch `stable/8.7` is unused and should not be updated.
+> To deploy a load test for the Camunda Platform 8.7, use the `stable-87` folder from the `main` branch instead.
+
+---
+
 # Camunda Load Tests
 
 Load tests validate the reliability and performance of Camunda 8 across releases and development branches. They can be created via automated GitHub Actions workflows or manually (via Makefiles) on a GKE cluster (`camunda-benchmark-prod`), deploying the [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm) and a custom [load test Helm chart](https://github.com/camunda/camunda-load-tests-helm).
