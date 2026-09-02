@@ -84,6 +84,12 @@ public class AgentHistoryExportHandler implements RdbmsExportHandler<AgentHistor
             .producedAt(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(producedAtMillis)))
             .inputTokens(ExportUtil.nullIfNegative(value.getMetrics().getInputTokens()))
             .outputTokens(ExportUtil.nullIfNegative(value.getMetrics().getOutputTokens()))
+            .reasoningTokenCount(
+                ExportUtil.nullIfNegative(value.getMetrics().getReasoningTokenCount()))
+            .cacheCreationTokenCount(
+                ExportUtil.nullIfNegative(value.getMetrics().getCacheCreationTokenCount()))
+            .cacheReadTokenCount(
+                ExportUtil.nullIfNegative(value.getMetrics().getCacheReadTokenCount()))
             .durationMs(ExportUtil.nullIfNegative(value.getMetrics().getDurationMs()))
             .contentItems(AgentContentMapper.mapContent(value.getContent()))
             .toolCallValues(mapToolCalls(value.getToolCalls()))
