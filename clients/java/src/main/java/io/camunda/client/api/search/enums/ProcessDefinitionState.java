@@ -17,6 +17,7 @@ package io.camunda.client.api.search.enums;
 
 public enum ProcessDefinitionState {
   ACTIVE,
+  DRAINING,
   DELETED,
   UNKNOWN_ENUM_VALUE;
 }

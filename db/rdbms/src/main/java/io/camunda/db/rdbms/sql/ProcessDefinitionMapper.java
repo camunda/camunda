@@ -26,4 +26,6 @@ public interface ProcessDefinitionMapper {
       ProcessDefinitionStatisticsFilter filter);
 
   void markDeleted(Long processDefinitionKey);
+
+  void markDraining(Long processDefinitionKey);
 }

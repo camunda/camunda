@@ -40,4 +40,14 @@ public class ProcessDefinitionWriter {
             "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.markDeleted",
             processDefinitionKey));
   }
+
+  public void markDraining(final Long processDefinitionKey) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_DEFINITION,
+            WriteStatementType.UPDATE,
+            processDefinitionKey,
+            "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.markDraining",
+            processDefinitionKey));
+  }
 }

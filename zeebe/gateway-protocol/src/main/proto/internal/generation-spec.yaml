@@ -6192,12 +6192,15 @@ components:
           description: >
             Filter by the process definition's state.
             When not set, process definitions in any state are returned.
-            Set to `ACTIVE` to exclude deleted definitions (recommended for most use cases).
+            Set to `ACTIVE` to exclude draining and deleted definitions (recommended for most use cases).
+            Set to `DRAINING` to return only definitions that are being deleted but still have
+            active process instances draining.
             Set to `DELETED` to return only definitions that have been deleted but are still
             retained in secondary storage.
           type: string
           enum:
             - ACTIVE
+            - DRAINING
             - DELETED
     ProcessDefinitionSearchQueryResult:
       type: object
@@ -6238,10 +6241,14 @@ components:
           description: Indicates whether the start event of the process has an associated Form Key.
           type: boolean
         state:
-          description: The state of this process definition.
+          description: |
+            The state of this process definition.
+            `DRAINING` indicates the definition is being deleted but still has active process
+            instances draining before it is removed.
           type: string
           enum:
             - ACTIVE
+            - DRAINING
             - DELETED
     ProcessInstanceSearchQuerySortRequest:
       type: object
