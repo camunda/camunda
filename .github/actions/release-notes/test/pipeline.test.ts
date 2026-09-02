@@ -60,6 +60,34 @@ test('a backport bot PR with only a marker hops to the original and inherits its
   assert.equal(out.categorization.section, 'Bug Fixes');
 });
 
+test('renovate[bot] with no linked issue is exempt, not unattributed — mirrors the gate\'s BOT_LINK_EXEMPT', async () => {
+  const out = await processPr(
+    fakeResolver(),
+    prInput({ number: 500, title: 'deps: bump foo to 1.2.3', body: 'Bumps foo from 1.2.2 to 1.2.3.', authorLogin: 'renovate[bot]' }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.source, 'optOut');
+});
+
+test('an exempt bot author with a REAL linked issue keeps that real attribution, exemption never overrides an actual link', async () => {
+  const out = await processPr(
+    fakeResolver(),
+    prInput({ number: 501, title: 'deps: bump foo', body: '## Related issues\ncloses #100', authorLogin: 'renovate[bot]' }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.source, 'section');
+  assert.deepEqual(out.attribution.issueNumbers, [100]);
+});
+
+test('a non-exempt author with no linked issue still lands in the unattributed bucket', async () => {
+  const out = await processPr(
+    fakeResolver(),
+    prInput({ number: 502, title: 'ci: bump runner', body: 'no refs here', authorLogin: 'dependabot[bot]' }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.source, 'unattributed');
+});
+
 test('a post-gate PR that falls back to the legacy scan is flagged as an anomaly', async () => {
   const out = await processPr(
     fakeResolver(),

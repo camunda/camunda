@@ -3,6 +3,7 @@ import type { AttributionAnomaly, AttributionDecision } from '../attribution/typ
 import { BOT_CATEGORY_OVERRIDES, categorize, resolveCategorizeTitle } from '../categorize';
 import type { CategorizeDecision } from '../categorize';
 import { extractSection, isOptOutTicked, parseRefs } from '../parser';
+import { isLinkExemptAuthor } from '../title';
 import type { ParsedRef, ResolvedRef } from '../types';
 
 /**
@@ -62,18 +63,39 @@ async function attributeDirectly(
   return decideAttribution({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
 }
 
+/**
+ * Bot link exemption (mirrors the gate's `isLinkExemptAuthor` — currently
+ * `renovate[bot]` only): a dependency-bump PR opened from the bot's own
+ * template will never carry a section ref or a checkbox tick, and pre-gate
+ * there was no opt-out mechanism for it to use even if it wanted to. Applied
+ * LAST, only to a still-unattributed decision after the direct scan and the
+ * backport hop have both had their chance — an exempt bot that DID link a
+ * real issue keeps that real attribution, never overridden by the exemption.
+ */
 async function attributePr(resolver: PipelineResolver, pr: PipelinePrInput): Promise<AttributionDecision> {
-  const direct = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
-  if (direct.source !== 'unattributed') return direct;
+  let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
 
-  const backport = parseRefs(pr.body).find((ref) => ref.kind === 'backport');
-  if (!backport) return direct;
+  if (decision.source === 'unattributed') {
+    const backport = parseRefs(pr.body).find((ref) => ref.kind === 'backport');
+    if (backport) {
+      const original = await resolver.fetchOriginalPull(backport.number);
+      if (original) {
+        const originalDecision = await attributeDirectly(resolver, original.body, []);
+        decision = hopToBackportOriginal(originalDecision);
+      }
+    }
+  }
 
-  const original = await resolver.fetchOriginalPull(backport.number);
-  if (!original) return direct;
+  if (decision.source === 'unattributed' && isLinkExemptAuthor(pr.authorLogin)) {
+    return {
+      source: 'optOut',
+      issueNumbers: [],
+      deliveryPath: 'direct',
+      reasons: [`Author ${pr.authorLogin} is exempt from the PR-issue link requirement.`],
+    };
+  }
 
-  const originalDecision = await attributeDirectly(resolver, original.body, []);
-  return hopToBackportOriginal(originalDecision);
+  return decision;
 }
 
 async function categorizePr(resolver: PipelineResolver, pr: PipelinePrInput): Promise<CategorizeDecision> {
