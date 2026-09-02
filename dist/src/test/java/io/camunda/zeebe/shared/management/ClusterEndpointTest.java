@@ -38,6 +38,7 @@ import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.ConfigurationChange;
+import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.GetConfigurationChangesResponse;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
@@ -665,6 +666,28 @@ final class ClusterEndpointTest {
 
       // then
       assertThat(response.getStatusCode().value()).isEqualTo(400);
+      verifyNoInteractions(sender);
+    }
+
+    @Test
+    void shouldRejectInvalidZoneIdWhenDerivingFromNumberOfBrokers() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      // underscore is reserved as the zone/nodeIdx separator, so it's not a valid zone character
+      final var response =
+          endpoint.addZone(
+              "zone_a",
+              new AddZoneRequest().numberOfReplicas(1).priority(100).numberOfBrokers(1),
+              false);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(400);
+      assertThat(((Error) response.getBody()).getMessage())
+          .contains("alphanumeric")
+          .contains("hyphens");
       verifyNoInteractions(sender);
     }
 
