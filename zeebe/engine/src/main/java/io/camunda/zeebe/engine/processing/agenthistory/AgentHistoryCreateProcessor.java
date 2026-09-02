@@ -104,7 +104,8 @@ public final class AgentHistoryCreateProcessor
             commandValue.getJobKey(),
             commandValue.getJobLease(),
             commandValue.getElementInstanceKey(),
-            List.of(commandValue));
+            List.of(commandValue),
+            true);
     if (validJob.isLeft()) {
       final var rejection = validJob.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());
