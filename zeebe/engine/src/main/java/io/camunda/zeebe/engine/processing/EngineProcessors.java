@@ -89,7 +89,6 @@ import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContextImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.tenant.TenantProcessors;
@@ -176,11 +175,7 @@ public final class EngineProcessors {
     final var tenantMetrics = new TenantMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var messageCorrelationMetrics =
         new MessageCorrelationMetrics(typedRecordProcessorContext.getMeterRegistry());
-    final var suspensionMetrics =
-        new SuspensionMetrics(
-            typedRecordProcessorContext.getMeterRegistry(), processingState.getSuspensionState());
-    ((TypedRecordProcessorContextImpl) typedRecordProcessorContext)
-        .setSuspensionMetrics(suspensionMetrics);
+    final var suspensionMetrics = typedRecordProcessorContext.getSuspensionMetrics();
     final var secretResolutionMetrics =
         new SecretResolutionMetrics(typedRecordProcessorContext.getMeterRegistry());
     // built here rather than with the other secret reference processors because the job activation

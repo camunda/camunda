@@ -98,6 +98,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
     }
 
     final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
+    final boolean bufferedReopen;
     if (subscription.getRecord().isClosedForSuspend()) {
       // Restore the PI-side row to OPENED as the durable resume manifest and buffer a REOPEN so the
       // drain re-subscribes it one row per batch on resume. Snapshot before CREATED, whose applier
@@ -109,6 +110,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
           subscription.getRecord());
       bufferReopenCommand(subscription.getKey(), reopenScratch);
       retriggerDrainIfResuming(processInstanceKey, reopenScratch);
+      bufferedReopen = true;
     } else {
       stateWriter.appendFollowUpEvent(
           subscription.getKey(),
@@ -119,6 +121,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
       // Re-wake the drain here too, otherwise the instance stays RESUMING forever. Self-gates on
       // RESUMING, so it is a no-op for the common unsuspended close.
       retriggerDrainIfResuming(processInstanceKey, subscription.getRecord());
+      bufferedReopen = false;
     }
 
     // update transient state in a side-effect to ensure that these changes only take effect after
@@ -128,6 +131,11 @@ public final class ProcessMessageSubscriptionDeleteProcessor
           transientProcessMessageSubscriptionState.remove(
               new PendingSubscription(elementInstanceKey, messageName, tenantId));
         });
+
+    // metrics after all writes
+    if (bufferedReopen) {
+      suspensionMetrics.commandBuffered();
+    }
   }
 
   /**
@@ -149,7 +157,6 @@ public final class ProcessMessageSubscriptionDeleteProcessor
             .setCommandValue(manifest);
     stateWriter.appendFollowUpEvent(
         keyGenerator.nextKey(), BufferedCommandIntent.BUFFERED, bufferedCommandRecord);
-    suspensionMetrics.commandBuffered();
   }
 
   /**
