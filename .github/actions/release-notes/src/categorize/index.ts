@@ -32,9 +32,12 @@ const SECTION_BY_TYPE: Record<string, string | null> = {
 /** The one section hidden from the customer-facing body — still in the full asset. */
 const INTERNAL_SECTION = 'Maintenance';
 
-// `type` + optional `(scope)` + optional `!` + `: ` + subject, tolerating a
-// leading "[Backport ...]" prefix a human-opened backport PR may still carry.
-const HEADER = /^(?:\[[^\]]*\]\s*)?(?<type>[^\s():!]+)(?:\([^)]*\))?!?:\s*(?<subject>.+)$/;
+// `type` + optional `(scope)` + optional `!` + `: ` + subject. The caller
+// (pipeline/index.ts) already runs stripBackportPrefix on the title before
+// this ever sees it, so no bracket tolerance is needed here — a leading
+// bracket this regex still had to tolerate would only ever be a title that
+// never should have passed the PR-gate's stricter lint in the first place.
+const HEADER = /^(?<type>[^\s():!]+)(?:\([^)]*\))?!?:\s*(?<subject>.+)$/;
 
 function parseType(title: string): string | null {
   return HEADER.exec(title)?.groups?.type?.toLowerCase() ?? null;
