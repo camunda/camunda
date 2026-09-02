@@ -536,7 +536,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
-  public void shouldRejectWhenJobLeaseMismatch() {
+  public void shouldAcceptUpdateWithSupersededJobLeaseAndAccumulateItsMetrics() {
     // given
     ENGINE
         .deployment()
@@ -564,42 +564,95 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .create()
             .getKey();
+
+    final var batch1 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
+    final var jobIndex1 = batch1.getValue().getJobKeys().indexOf(jobKey);
+    final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getLeaseToken();
 
-    // when — carries no lease even though the job has one
-    final var rejection =
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(helper.getJobType())
+        .withLeaseToken(lease1)
+        .withRetries(1)
+        .fail();
+
+    final var batch2 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
+    final var jobIndex2 = batch2.getValue().getJobKeys().indexOf(jobKey);
+    final var lease2 = batch2.getValue().getJobs().get(jobIndex2).getLeaseToken();
+    assertThat(lease2).as("re-activation must advance the lease token").isNotEqualTo(lease1);
+
+    final var assistantItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-stale-lease")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("hi"));
+    assistantItem.getMetrics().setInputTokens(100L).setOutputTokens(40L);
+    assistantItem.addToolCall(
+        new AgentHistoryEmbeddedToolCall().setToolCallId("call-1").setToolName("lookup"));
+
+    final var configItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-config-stale-lease")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    configItem.setModel("gpt-4o-mini").setProvider("azure-openai");
+    configItem.setChangedAttributes(List.of("model", "provider"));
+
+    // when — the update is sent under lease1, which the job no longer holds
+    final var updated =
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withHistory(
-                List.of(
-                    new AgentHistoryRecord()
-                        .setHistoryItemId("item-1")
-                        .setRole(AgentHistoryRole.USER)
-                        .setLoopIteration(1)
-                        .addContent(
-                            new AgentHistoryMessageContent()
-                                .setContentType(AgentHistoryContentType.TEXT)
-                                .setText("hi"))))
-            .expectRejection()
+            .withJobLease(lease1)
+            .withHistory(List.of(assistantItem, configItem))
             .update();
 
     // then
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
-    assertThat(rejection.getRejectionReason())
-        .isEqualTo(
-            "Expected to update agent instance related to job with key '"
-                + jobKey
-                + "', but job did not hold the supplied lease. The job may have been "
-                + "re-activated.");
+    assertThat(updated.getIntent()).isEqualTo(AgentInstanceIntent.UPDATED);
+    assertThat(updated.getValue().getElementInstanceKey()).isEqualTo(elementInstanceKey);
+
+    // and — its metrics are accumulated immediately onto the live agent instance, regardless of
+    // which lease the item arrived under.
+    assertThat(updated.getValue().getMetrics().getInputTokens()).isEqualTo(100L);
+    assertThat(updated.getValue().getMetrics().getOutputTokens()).isEqualTo(40L);
+    assertThat(updated.getValue().getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(updated.getValue().getMetrics().getToolCalls()).isEqualTo(1);
+
+    // and — the CONFIGURATION item is queued, not applied.
+    assertThat(updated.getValue().getDefinition().getModel()).isEqualTo("gpt-4o");
+    assertThat(updated.getValue().getDefinition().getProvider()).isEqualTo("openai");
+    assertThat(updated.getValue().getChangedAttributes()).doesNotContain("model", "provider");
+
+    // and — the history item itself is only recorded PENDING under its own (stale) lease: it is
+    // not committed as part of this update, since committing is reserved for the job's current
+    // (winning) lease.
+    final var clockResetKey = ENGINE.clock().reset().getKey();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_HISTORY)
+                .withIntent(AgentHistoryIntent.COMMITTED)
+                .filter(
+                    r ->
+                        ((AgentHistoryRecordValue) r.getValue())
+                            .getHistoryItemId()
+                            .equals("item-stale-lease"))
+                .exists())
+        .as("an item pending under a stale lease is never committed by that same update")
+        .isFalse();
   }
 
   @Test
