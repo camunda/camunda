@@ -564,18 +564,19 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
-            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
+            secret/data/products/camunda/ci/github-actions REGISTRY_WIZ_USR | wizos-username;
+            secret/data/products/camunda/ci/github-actions REGISTRY_WIZ_PSW | wizos-token
       - name: Login to DockerHub
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Logs on to Minimus
+      - name: Logs on to WizOS
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
-          registry: reg.mini.dev
-          username: minimus
-          password: ${{ steps.secrets.outputs.minimus-token }}
+          registry: registry.os.wiz.io
+          username: ${{ steps.secrets.outputs.wizos-username }}
+          password: ${{ steps.secrets.outputs.wizos-token }}
       - name: Download Release Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:

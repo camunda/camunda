@@ -185,7 +185,7 @@ runs:
         # Check if current workflow run is related to a fork PR
         if [[ "${{ steps.is-fork.outputs.is-fork }}" == "true" ]]; then
           echo "The current workflow run is related to a fork PR."
-          echo "As a result, private Minimus hardened base images will be replaced with public images."
+          echo "As a result, private hardened base images will be replaced with public images."
 
           {
             echo 'result<<EOF'

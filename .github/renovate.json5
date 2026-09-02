@@ -43,6 +43,12 @@
       password: "{{ secrets.INFRA_MINIMUS_REGISTRY_TOKEN }}",
     },
     {
+      hostType: "docker",
+      matchHost: "https://registry.os.wiz.io",
+      username: "{{ secrets.INFRA_WIZOS_REGISTRY_USERNAME }}",
+      password: "{{ secrets.INFRA_WIZOS_REGISTRY_TOKEN }}",
+    },
+    {
       hostType: "maven",
       matchHost: "https://artifacts.camunda.com",
       username: "{{ secrets.ARTIFACTORY_USERNAME }}",
@@ -289,6 +295,7 @@
         "opensearchproject/opensearch",
         "eclipse-temurin",
         "reg.mini.dev/1212/openjre-base",
+        "registry.os.wiz.io/openjdk-jre",
       ],
       matchUpdateTypes: [
         "major",

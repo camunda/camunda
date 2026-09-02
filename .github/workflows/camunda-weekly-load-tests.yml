@@ -98,6 +98,7 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
+          wizos: true
       - uses: ./.github/actions/build-frontend
         name: Build Operate Frontend
         with:

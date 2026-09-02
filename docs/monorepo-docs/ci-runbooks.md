@@ -19,7 +19,8 @@ incidents affecting the monorepo CI.
 - [GitHub status](https://www.githubstatus.com/) (Actions, PRs, API, Git, etc.)
 - [DockerHub status](https://www.dockerstatus.com/) (Docker image push/pull)
 - [Maven Central status](https://status.maven.org/) (Maven artifact up-/downloads)
-- [Minimus status](https://docs.minimus.io/status) (Minimus Docker registry)
+- [Minimus status](https://docs.minimus.io/status) (Minimus Docker registry, Optimize base image)
+- [WizOS status](https://status.wiz.io/) (WizOS Docker registry, Camunda base image)
 
 ### Temporarily Disable Tests To Lessen Impact
 

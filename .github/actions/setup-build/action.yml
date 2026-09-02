@@ -37,6 +37,12 @@ inputs:
       Minimus login is automatically disabled for fork PRs.
     required: false
     default: "false"
+  wizos:
+    description: |
+      If enabled, logs into WizOS with a CI account.
+      WizOS login is automatically disabled for fork PRs.
+    required: false
+    default: "false"
   java-distribution:
     description: Java distribution to use
     required: false
@@ -152,6 +158,8 @@ runs:
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | dockerhub-token;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
         secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token;
+        secret/data/products/camunda/ci/github-actions REGISTRY_WIZ_USR | wizos-username;
+        secret/data/products/camunda/ci/github-actions REGISTRY_WIZ_PSW | wizos-token;
         secret/data/products/camunda/ci/harbor username | harbor-username;
         secret/data/products/camunda/ci/harbor password | harbor-password
   - name: Setup Java
@@ -327,3 +335,20 @@ runs:
       command: |
         printf '%s' "${DOCKER_PASSWORD}" | docker login reg.mini.dev \
           --username minimus --password-stdin
+  - name: Logs on to WizOS
+    # WizOS login is disabled for fork PRs
+    if: >-
+      steps.is-fork.outputs.is-fork != 'true' &&
+      inputs.wizos == 'true'
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    env:
+      DOCKER_USERNAME: ${{ steps.secrets.outputs.wizos-username }}
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.wizos-token }}
+    with:
+      max_attempts: 3
+      retry_wait_seconds: 10
+      timeout_seconds: 60
+      shell: bash
+      command: |
+        printf '%s' "${DOCKER_PASSWORD}" | docker login registry.os.wiz.io \
+          --username "${DOCKER_USERNAME}" --password-stdin

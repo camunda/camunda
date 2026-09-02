@@ -167,7 +167,7 @@ dist/target/camunda-zeebe-X.Y.Z-SNAPSHOT.tar.gz
 dist/target/camunda-zeebe-X.Y.Z-SNAPSHOT.zip
 ```
 
-This distribution can be containerized with Docker (i.e. build a Docker image) with access to Minimus hardened base images](https://minimus.io/) by running:
+This distribution can be containerized with Docker (i.e. build a Docker image) with access to [WizOS hardened base images](https://www.wiz.io/solutions/wizos) by running:
 
 ```
 docker build \
@@ -178,7 +178,7 @@ docker build \
   .
 ```
 
-If you don't have access to [Minimus hardened base images](https://minimus.io/), you can use public base images instead at your own risk by running:
+If you don't have access to [WizOS hardened base images](https://www.wiz.io/solutions/wizos), you can use public base images instead at your own risk by running:
 
 ```
 docker build \

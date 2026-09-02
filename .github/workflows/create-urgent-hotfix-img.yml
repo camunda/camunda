@@ -182,6 +182,7 @@ jobs:
         with:
           harbor: true
           minimus: true
+          wizos: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
