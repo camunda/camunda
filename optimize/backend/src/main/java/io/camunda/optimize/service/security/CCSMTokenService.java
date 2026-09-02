@@ -360,7 +360,13 @@ public class CCSMTokenService {
         .or(this::cslBearerAccessToken);
   }
 
+  // Only under CSL: the legacy public API path (api.jwtAuthForApiEnabled) also authenticates as a
+  // JwtAuthenticationToken, which must keep resolving no token here to avoid per-tenant Identity
+  // calls for API requests that previously resolved none.
   private Optional<String> cslBearerAccessToken() {
+    if (!isCslActive()) {
+      return Optional.empty();
+    }
     if (SecurityContextHolder.getContext().getAuthentication()
         instanceof final JwtAuthenticationToken jwtToken) {
       return Optional.ofNullable(jwtToken.getToken())
@@ -368,6 +374,11 @@ public class CCSMTokenService {
           .filter(StringUtils::isNotBlank);
     }
     return Optional.empty();
+  }
+
+  private boolean isCslActive() {
+    return camundaAuthenticationProviderProvider != null
+        && camundaAuthenticationProviderProvider.getIfAvailable() != null;
   }
 
   private Optional<HttpServletRequest> currentRequest() {
@@ -397,15 +408,12 @@ public class CCSMTokenService {
         .map(token -> token.getTokenValue());
   }
 
+  // Propagates Identity failures so callers can distinguish a failed lookup (worth retrying) from a
+  // user who genuinely has no tenants (a valid, cacheable result).
   public List<TenantDto> getAuthorizedTenantsFromToken(final String accessToken) {
-    try {
-      return identity.tenants().forToken(accessToken).stream()
-          .map(tenant -> new TenantDto(tenant.getTenantId(), tenant.getName(), ZEEBE_DATA_SOURCE))
-          .toList();
-    } catch (final Exception e) {
-      LOG.error("Could not retrieve authorized tenants from identity.", e);
-      return Collections.emptyList();
-    }
+    return identity.tenants().forToken(accessToken).stream()
+        .map(tenant -> new TenantDto(tenant.getTenantId(), tenant.getName(), ZEEBE_DATA_SOURCE))
+        .toList();
   }
 
   private String extractTokenFromAuthorizationValue(final String cookieValue) {
