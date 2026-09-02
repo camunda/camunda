@@ -31,11 +31,13 @@ export type BaselineStrategy =
   | { readonly kind: 'forkPoint'; readonly otherRef: string };
 
 /**
- * Decide the baseline to diff `target` against. Never looks anything up in
- * `existingTags` beyond checking membership — the actual tag/branch state
- * comes from the caller (git, fetched once).
+ * Decide the baseline to diff `target` against, from the version string
+ * alone — V5's alpha1-of-cycle rule is deliberately "always the fork point,
+ * never a tag lookup", so this needs no tag list to consult; every other
+ * case is pure arithmetic on the version number too (previous patch/alpha,
+ * or the previous minor's own release tag by construction).
  */
-export function resolveBaselineStrategy(target: string, existingTags: readonly string[]): BaselineStrategy {
+export function resolveBaselineStrategy(target: string): BaselineStrategy {
   const v = parseVersion(target);
 
   // alpha1-of-cycle: the first alpha of a brand-new minor, no prior tag on

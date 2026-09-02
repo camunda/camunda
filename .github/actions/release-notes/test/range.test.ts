@@ -3,27 +3,27 @@ import { test } from 'node:test';
 import { resolveBaselineStrategy, resolveCommitsToPrs } from '../src/range';
 
 test('patch release: baseline is the previous tag on the same branch', () => {
-  const s = resolveBaselineStrategy('8.8.31', ['8.8.30', '8.8.29', '8.9.0-alpha2']);
+  const s = resolveBaselineStrategy('8.8.31');
   assert.deepEqual(s, { kind: 'previousTag', ref: '8.8.30' });
 });
 
 test('later alpha: baseline is the previous alpha tag', () => {
-  const s = resolveBaselineStrategy('8.9.0-alpha3', ['8.9.0-alpha2', '8.9.0-alpha1', '8.8.30']);
+  const s = resolveBaselineStrategy('8.9.0-alpha3');
   assert.deepEqual(s, { kind: 'previousTag', ref: '8.9.0-alpha2' });
 });
 
 test('first alpha of a new cycle: baseline is ALWAYS the fork point, never a tag lookup', () => {
-  const s = resolveBaselineStrategy('8.10.0-alpha1', ['8.9.0-alpha3', '8.9.0', '8.8.30']);
+  const s = resolveBaselineStrategy('8.10.0-alpha1');
   assert.deepEqual(s, { kind: 'forkPoint', otherRef: 'origin/stable/8.9' });
 });
 
 test('minor release: baseline is the fork point between the previous minor tag and the target', () => {
-  const s = resolveBaselineStrategy('8.9.0', ['8.8.0', '8.8.30', '8.7.0']);
+  const s = resolveBaselineStrategy('8.9.0');
   assert.deepEqual(s, { kind: 'forkPoint', otherRef: '8.8.0' });
 });
 
 test('unrecognized version string throws rather than silently guessing a baseline', () => {
-  assert.throws(() => resolveBaselineStrategy('not-a-version', []));
+  assert.throws(() => resolveBaselineStrategy('not-a-version'));
 });
 
 test('rebase-merged multi-commit PR dedupes to exactly one entry', () => {
