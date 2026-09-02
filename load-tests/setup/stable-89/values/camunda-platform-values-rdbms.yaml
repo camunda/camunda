@@ -19,9 +19,9 @@ orchestration:
 
         queueSize: 2001
         history:
-          defaultHistoryTTL: PT1H
-          minHistoryCleanupInterval: PT1S
-          maxHistoryCleanupInterval: PT1M
+          defaultHistoryTTL: PT1D
+          minHistoryCleanupInterval: PT1H
+          maxHistoryCleanupInterval: PT3H
 
   # Overriding the extraConfiguration for the Platform chart
   # to disable Camunda Exporter usage and make use of the RDBMS exporter instead, as well as to set some additional configuration for Camunda application
