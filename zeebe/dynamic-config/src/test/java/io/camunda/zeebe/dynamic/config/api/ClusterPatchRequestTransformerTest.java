@@ -23,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
@@ -470,8 +471,76 @@ final class ClusterPatchRequestTransformerTest {
   }
 
   @Test
-  void shouldRejectAddingMembersCombinedWithPhysicalTenant() {
-    // given — membersToAdd changes cluster membership, which has no tenant dimension
+  void shouldGrowOnlyTheRequestedTenantWhileAddingABroker() {
+    // given — tenant-b has 1 partition and the default tenant 2. The request adds a broker and
+    // grows tenant-b alone: membership has no tenant dimension, but the partition count does.
+    final var transformer =
+        new ClusterPatchRequestTransformer(
+            Set.of(id3), Set.of(), Optional.of(2), Optional.empty(), Optional.of(TENANT_B));
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then — the named tenant gains the partition, the default tenant keeps its count, and the
+    // broker joins before the partition work
+    assertThat(result).isRight();
+    final var partitionPhase =
+        (PartitionGroupPhase)
+            result.get().stream().filter(PartitionGroupPhase.class::isInstance).findFirst().get();
+    Assertions.assertThat(bootstraps(partitionPhase, TENANT_B))
+        .singleElement()
+        .satisfies(op -> Assertions.assertThat(op.partitionId()).isEqualTo(2));
+    Assertions.assertThat(bootstraps(partitionPhase, DEFAULT_GROUP)).isEmpty();
+    Assertions.assertThat(((GlobalPhase) result.get().getFirst()).operations())
+        .contains(new MemberJoinOperation(id3));
+  }
+
+  @Test
+  void shouldGrowOnlyTheRequestedTenantWhileRemovingABroker() {
+    // given — id1 holds the default tenant's partition 2, so removing it moves partitions of a
+    // tenant the request does not grow
+    final var transformer =
+        new ClusterPatchRequestTransformer(
+            Set.of(), Set.of(id1), Optional.of(2), Optional.empty(), Optional.of(TENANT_B));
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then
+    assertThat(result).isRight();
+    final var partitionPhase =
+        (PartitionGroupPhase)
+            result.get().stream().filter(PartitionGroupPhase.class::isInstance).findFirst().get();
+    Assertions.assertThat(bootstraps(partitionPhase, TENANT_B))
+        .singleElement()
+        .satisfies(op -> Assertions.assertThat(op.partitionId()).isEqualTo(2));
+    Assertions.assertThat(bootstraps(partitionPhase, DEFAULT_GROUP)).isEmpty();
+    Assertions.assertThat(((GlobalPhase) result.get().getLast()).operations())
+        .describedAs("the broker leaves only after the partition work")
+        .contains(new MemberLeaveOperation(id1));
+  }
+
+  @Test
+  void shouldRejectUnknownPhysicalTenantWhileChangingMembership() {
+    // given — the tenant is resolved on the membership path too, not only when the request plans
+    // the partition count on its own
+    final var transformer =
+        new ClusterPatchRequestTransformer(
+            Set.of(id3), Set.of(), Optional.of(2), Optional.empty(), Optional.of("unknown"));
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(NotFound.class)
+        .hasMessageContaining("unknown");
+  }
+
+  @Test
+  void shouldRejectPhysicalTenantWithoutAPartitionCountToScope() {
+    // given — membership is cluster-wide, so a tenant named alongside it scopes nothing
     final var transformer =
         new ClusterPatchRequestTransformer(
             Set.of(id3), Set.of(), Optional.empty(), Optional.empty(), Optional.of(TENANT_B));
@@ -480,21 +549,10 @@ final class ClusterPatchRequestTransformerTest {
     final var result = transformer.phases(twoTenantCluster());
 
     // then
-    assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
-  }
-
-  @Test
-  void shouldRejectRemovingMembersCombinedWithPhysicalTenant() {
-    // given — membersToRemove changes cluster membership, which has no tenant dimension
-    final var transformer =
-        new ClusterPatchRequestTransformer(
-            Set.of(), Set.of(id1), Optional.empty(), Optional.empty(), Optional.of(TENANT_B));
-
-    // when
-    final var result = transformer.phases(twoTenantCluster());
-
-    // then
-    assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessageContaining("physicalTenant scopes newPartitionCount alone");
   }
 
   @Test

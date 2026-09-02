@@ -103,8 +103,8 @@ public sealed interface ClusterConfigurationManagementRequest {
    * @param brokerCount the target number of brokers. On a plain (non-zone-aware) cluster this is
    *     the total cluster size; when {@code zone} is set it is the target broker count <em>within
    *     that zone</em>, leaving the other zones untouched. Empty leaves the broker count unchanged.
-   *     Targets cluster membership, which has no tenant dimension, so it must not be combined with
-   *     {@code physicalTenantId}.
+   *     Targets cluster membership, which has no tenant dimension, so it is applied to every
+   *     physical tenant's partitions whatever {@code physicalTenantId} names.
    * @param newPartitionCount the target number of partitions of a single physical tenant — the one
    *     named by {@code physicalTenantId}, or the default tenant when none is named — or empty to
    *     leave it unchanged. Partitions can only be scaled up.
@@ -115,8 +115,10 @@ public sealed interface ClusterConfigurationManagementRequest {
    * @param zone the zone to scale, or empty to scale a plain cluster. Required when scaling a
    *     zone-aware cluster and rejected on a plain one.
    * @param physicalTenantId the physical tenant whose partition group {@code newPartitionCount}
-   *     applies to, or empty for the default physical tenant. Must not be combined with {@code
-   *     brokerCount} or {@code newReplicationFactor}.
+   *     applies to, or empty for the default physical tenant. Scopes {@code newPartitionCount}
+   *     alone, so it may accompany {@code brokerCount} but is rejected without a {@code
+   *     newPartitionCount} to scope, and rejected with {@code newReplicationFactor}, which is a
+   *     cluster-wide setting.
    * @param dryRun when true, the resulting plan is computed and returned without being applied.
    */
   record ClusterScaleRequest(
@@ -147,9 +149,11 @@ public sealed interface ClusterConfigurationManagementRequest {
 
   /**
    * @param physicalTenantId the physical tenant whose partition group {@code newPartitionCount}
-   *     applies to, or empty for the default physical tenant. Must not be combined with a non-empty
-   *     {@code membersToAdd}/{@code membersToRemove}, which change cluster membership and have no
-   *     tenant dimension, nor with {@code newReplicationFactor}, which is a cluster-wide setting.
+   *     applies to, or empty for the default physical tenant. Scopes {@code newPartitionCount}
+   *     alone, so it may accompany a non-empty {@code membersToAdd}/{@code membersToRemove} — those
+   *     change cluster membership, which has no tenant dimension — but is rejected without a {@code
+   *     newPartitionCount} to scope, and rejected with {@code newReplicationFactor}, which is a
+   *     cluster-wide setting.
    */
   record ClusterPatchRequest(
       Set<MemberId> membersToAdd,
