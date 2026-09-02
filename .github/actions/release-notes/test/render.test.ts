@@ -119,6 +119,17 @@ test('a no-issue (opt-out) customer-visible PR renders under "Changes without a 
   assert.match(result.customerBody, /#40/);
 });
 
+test('a bot-exempt PR (e.g. renovate) renders under its normal type section, NOT "Changes without a tracked issue" — the exemption is structural, not a declaration', () => {
+  const result = render(
+    [pr({ number: 41, title: 'deps: bump foo', section: 'Dependency updates', attributionSource: 'botExempt', issueNumbers: [] })],
+    [],
+    { version: '8.8.30', allowUnattributed: false },
+  );
+  assert.doesNotMatch(result.customerBody, /Changes without a tracked issue/);
+  assert.match(result.customerBody, /## Dependency updates/);
+  assert.match(result.customerBody, /#41/);
+});
+
 test('BREAKING CHANGE is cross-listed at the top of the customer body in addition to its normal section', () => {
   const result = render([pr({ number: 50, breaking: true })], [], { version: '8.8.30', allowUnattributed: false });
   assert.match(result.customerBody, /## Breaking changes/);

@@ -10,7 +10,9 @@ export type AttributionSource =
   | 'section' // found in the "Related issues" section
   | 'closingIssuesReferences' // GitHub's own native field
   | 'legacyBodyScan' // old-style ref found outside the section
-  | 'optOut' // opt-out checkbox ticked
+  | 'optOut' // opt-out checkbox ticked — an author's deliberate declaration
+  | 'botExempt' // structural bot exemption (e.g. renovate[bot]) — not a declaration, must not
+  // render under "Changes without a tracked issue" the way a real opt-out does
   | 'resolutionFailed' // every ref found was dead — a real problem
   | 'unattributed'; // nothing found at all — a real problem
 

@@ -66,7 +66,7 @@ test('renovate[bot] with no linked issue is exempt, not unattributed — mirrors
     prInput({ number: 500, title: 'deps: bump foo to 1.2.3', body: 'Bumps foo from 1.2.2 to 1.2.3.', authorLogin: 'renovate[bot]' }),
     { gateRequiredAt: null },
   );
-  assert.equal(out.attribution.source, 'optOut');
+  assert.equal(out.attribution.source, 'botExempt');
 });
 
 test('an exempt bot author with a REAL linked issue keeps that real attribution, exemption never overrides an actual link', async () => {

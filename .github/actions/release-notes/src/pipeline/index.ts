@@ -88,7 +88,7 @@ async function attributePr(resolver: PipelineResolver, pr: PipelinePrInput): Pro
 
   if (decision.source === 'unattributed' && isLinkExemptAuthor(pr.authorLogin)) {
     return {
-      source: 'optOut',
+      source: 'botExempt',
       issueNumbers: [],
       deliveryPath: 'direct',
       reasons: [`Author ${pr.authorLogin} is exempt from the PR-issue link requirement.`],

@@ -583,7 +583,7 @@ async function attributePr(resolver, pr) {
     }
     if (decision.source === 'unattributed' && (0, title_1.isLinkExemptAuthor)(pr.authorLogin)) {
         return {
-            source: 'optOut',
+            source: 'botExempt',
             issueNumbers: [],
             deliveryPath: 'direct',
             reasons: [`Author ${pr.authorLogin} is exempt from the PR-issue link requirement.`],
