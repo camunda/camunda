@@ -22,6 +22,7 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -411,7 +412,7 @@ class GlobalTaskListenerAuthorizationIT {
   public static void waitForCreatedGlobalListener(
       final CamundaClient camundaClient, final String globalListenerId) {
     Awaitility.await("should wait for global listener to be available in search layer")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .pollInterval(Duration.ofMillis(100))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .until(
