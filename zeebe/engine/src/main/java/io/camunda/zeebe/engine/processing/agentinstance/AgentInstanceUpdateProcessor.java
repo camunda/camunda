@@ -255,8 +255,7 @@ public final class AgentInstanceUpdateProcessor
               commandValue.getJobKey(),
               commandValue.getJobLease(),
               commandValue.getElementInstanceKey(),
-              commandValue.getHistory(),
-              false);
+              commandValue.getHistory());
 
       current.getHistory().stream()
           .filter(Predicate.not(AgentHistoryRecordValue::isDuplicate))
