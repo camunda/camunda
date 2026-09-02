@@ -70,11 +70,11 @@ final class ComparingMappingResolverTest {
   @Test
   void shouldReturnPrimaryResultWhenBothSucceedWithEqualBytes() {
     final var buf = bufferOf("same");
-    final MappingResolver primary = (m, p) -> Either.right(buf);
-    final MappingResolver comparison = (m, p) -> Either.right(buf);
-    final var resolver = new ComparingMappingResolver(primary, comparison);
+    final MappingResolver<InputMappings> primary = (m, p) -> Either.right(buf);
+    final MappingResolver<InputMappings> comparison = (m, p) -> Either.right(buf);
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
 
-    final var result = resolver.resolveInputMappings(INPUT_MAPPINGS, PROCESSOR);
+    final var result = resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
 
     assertThat(result.isRight()).isTrue();
     assertThat(result.get()).isEqualTo(buf);
@@ -84,11 +84,12 @@ final class ComparingMappingResolverTest {
   @Test
   void shouldLogWarnWhenPrimarySucceedsButComparisonFails() {
     final var buf = bufferOf("value");
-    final MappingResolver primary = (m, p) -> Either.right(buf);
-    final MappingResolver comparison = (m, p) -> Either.left(new Failure("comparison failed"));
-    final var resolver = new ComparingMappingResolver(primary, comparison);
+    final MappingResolver<InputMappings> primary = (m, p) -> Either.right(buf);
+    final MappingResolver<InputMappings> comparison =
+        (m, p) -> Either.left(new Failure("comparison failed"));
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
 
-    final var result = resolver.resolveInputMappings(INPUT_MAPPINGS, PROCESSOR);
+    final var result = resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
 
     assertThat(result.isRight()).isTrue();
     assertThat(result.get()).isEqualTo(buf);
@@ -99,19 +100,19 @@ final class ComparingMappingResolverTest {
         .satisfies(
             e -> {
               assertThat(e.getLevel()).isEqualTo(Level.WARN);
-              assertThat(e.getMessage().getFormattedMessage())
-                  .contains("Input mapping results differ");
+              assertThat(e.getMessage().getFormattedMessage()).contains("Mapping results differ");
             });
   }
 
   @Test
   void shouldLogWarnWhenPrimaryFailsAndComparisonSucceeds() {
     final var buf = bufferOf("value");
-    final MappingResolver primary = (m, p) -> Either.left(new Failure("primary failed"));
-    final MappingResolver comparison = (m, p) -> Either.right(buf);
-    final var resolver = new ComparingMappingResolver(primary, comparison);
+    final MappingResolver<InputMappings> primary =
+        (m, p) -> Either.left(new Failure("primary failed"));
+    final MappingResolver<InputMappings> comparison = (m, p) -> Either.right(buf);
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
 
-    final var result = resolver.resolveInputMappings(INPUT_MAPPINGS, PROCESSOR);
+    final var result = resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
 
     assertThat(result.isLeft()).isTrue();
     assertThat(result.getLeft().getMessage()).isEqualTo("primary failed");
@@ -122,18 +123,18 @@ final class ComparingMappingResolverTest {
         .satisfies(
             e -> {
               assertThat(e.getLevel()).isEqualTo(Level.WARN);
-              assertThat(e.getMessage().getFormattedMessage())
-                  .contains("Input mapping results differ");
+              assertThat(e.getMessage().getFormattedMessage()).contains("Mapping results differ");
             });
   }
 
   @Test
   void shouldNotLogWarnWhenBothFailWithSameFailure() {
-    final MappingResolver primary = (m, p) -> Either.left(new Failure("same error"));
-    final MappingResolver comparison = (m, p) -> Either.left(new Failure("same error"));
-    final var resolver = new ComparingMappingResolver(primary, comparison);
+    final MappingResolver<InputMappings> primary = (m, p) -> Either.left(new Failure("same error"));
+    final MappingResolver<InputMappings> comparison =
+        (m, p) -> Either.left(new Failure("same error"));
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
 
-    final var result = resolver.resolveInputMappings(INPUT_MAPPINGS, PROCESSOR);
+    final var result = resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
 
     assertThat(result.isLeft()).isTrue();
     assertThat(result.getLeft().getMessage()).isEqualTo("same error");
@@ -143,11 +144,11 @@ final class ComparingMappingResolverTest {
 
   @Test
   void shouldLogWarnWhenBothFailWithDifferentMessages() {
-    final MappingResolver primary = (m, p) -> Either.left(new Failure("error A"));
-    final MappingResolver comparison = (m, p) -> Either.left(new Failure("error B"));
-    final var resolver = new ComparingMappingResolver(primary, comparison);
+    final MappingResolver<InputMappings> primary = (m, p) -> Either.left(new Failure("error A"));
+    final MappingResolver<InputMappings> comparison = (m, p) -> Either.left(new Failure("error B"));
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
 
-    final var result = resolver.resolveInputMappings(INPUT_MAPPINGS, PROCESSOR);
+    final var result = resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
 
     assertThat(result.isLeft()).isTrue();
     assertThat(result.getLeft().getMessage()).isEqualTo("error A");
@@ -160,11 +161,12 @@ final class ComparingMappingResolverTest {
 
   @Test
   void shouldLogWarnWhenBothSucceedWithDifferentDocuments() {
-    final MappingResolver primary = (m, p) -> Either.right(msgPackOf("{\"a\":1}"));
-    final MappingResolver comparison = (m, p) -> Either.right(msgPackOf("{\"a\":2}"));
-    final var resolver = new ComparingMappingResolver(primary, comparison);
+    final MappingResolver<InputMappings> primary = (m, p) -> Either.right(msgPackOf("{\"a\":1}"));
+    final MappingResolver<InputMappings> comparison =
+        (m, p) -> Either.right(msgPackOf("{\"a\":2}"));
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
 
-    final var result = resolver.resolveInputMappings(INPUT_MAPPINGS, PROCESSOR);
+    final var result = resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
 
     assertThat(result.isRight()).isTrue();
     assertThat(recorder.getAppendedEvents()).hasSize(1);
@@ -173,11 +175,11 @@ final class ComparingMappingResolverTest {
   @Test
   void shouldNotLogWarnWhenBothSucceedWithEqualNestedDocuments() {
     final var buf = msgPackOf("{\"a\":{\"b\":1,\"c\":2},\"d\":3}");
-    final MappingResolver primary = (m, p) -> Either.right(buf);
-    final MappingResolver comparison = (m, p) -> Either.right(buf);
-    final var resolver = new ComparingMappingResolver(primary, comparison);
+    final MappingResolver<InputMappings> primary = (m, p) -> Either.right(buf);
+    final MappingResolver<InputMappings> comparison = (m, p) -> Either.right(buf);
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
 
-    final var result = resolver.resolveInputMappings(INPUT_MAPPINGS, PROCESSOR);
+    final var result = resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
 
     assertThat(result.isRight()).isTrue();
     assertThat(recorder.getAppendedEvents()).isEmpty();
@@ -185,11 +187,13 @@ final class ComparingMappingResolverTest {
 
   @Test
   void shouldLogWarnWhenBothSucceedWithDifferentNestedValues() {
-    final MappingResolver primary = (m, p) -> Either.right(msgPackOf("{\"a\":{\"b\":1}}"));
-    final MappingResolver comparison = (m, p) -> Either.right(msgPackOf("{\"a\":{\"b\":99}}"));
-    final var resolver = new ComparingMappingResolver(primary, comparison);
+    final MappingResolver<InputMappings> primary =
+        (m, p) -> Either.right(msgPackOf("{\"a\":{\"b\":1}}"));
+    final MappingResolver<InputMappings> comparison =
+        (m, p) -> Either.right(msgPackOf("{\"a\":{\"b\":99}}"));
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
 
-    final var result = resolver.resolveInputMappings(INPUT_MAPPINGS, PROCESSOR);
+    final var result = resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
 
     assertThat(result.isRight()).isTrue();
     assertThat(recorder.getAppendedEvents()).hasSize(1);
@@ -199,11 +203,13 @@ final class ComparingMappingResolverTest {
   void shouldNotLogWarnWhenDocumentsHaveSameContentButDifferentKeyOrder() {
     // Tests the deep (order-insensitive) comparison path — same key-value pairs,
     // different insertion order → different bytes but semantically equal
-    final MappingResolver primary = (m, p) -> Either.right(msgPackOf("{\"a\":1,\"b\":2}"));
-    final MappingResolver comparison = (m, p) -> Either.right(msgPackOf("{\"b\":2,\"a\":1}"));
-    final var resolver = new ComparingMappingResolver(primary, comparison);
+    final MappingResolver<InputMappings> primary =
+        (m, p) -> Either.right(msgPackOf("{\"a\":1,\"b\":2}"));
+    final MappingResolver<InputMappings> comparison =
+        (m, p) -> Either.right(msgPackOf("{\"b\":2,\"a\":1}"));
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
 
-    final var result = resolver.resolveInputMappings(INPUT_MAPPINGS, PROCESSOR);
+    final var result = resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
 
     assertThat(result.isRight()).isTrue();
     assertThat(recorder.getAppendedEvents()).isEmpty();
@@ -220,16 +226,16 @@ final class ComparingMappingResolverTest {
     // Use a mutable UnsafeBuffer wrapping original's bytes
     final var sharedView = new UnsafeBuffer(BufferUtil.cloneBuffer(original));
 
-    final MappingResolver primary = (m, p) -> Either.right(sharedView);
-    final MappingResolver comparison =
+    final MappingResolver<InputMappings> primary = (m, p) -> Either.right(sharedView);
+    final MappingResolver<InputMappings> comparison =
         (m, p) -> {
           // Overwrite the shared buffer's backing bytes in-place, as the FEEL engine does
           sharedView.putBytes(0, BufferUtil.bufferAsArray(different), 0, different.capacity());
           return Either.right(different);
         };
-    final var resolver = new ComparingMappingResolver(primary, comparison);
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
 
-    final var result = resolver.resolveInputMappings(INPUT_MAPPINGS, PROCESSOR);
+    final var result = resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
 
     assertThat(result.isRight()).isTrue();
     // The returned buffer must contain the snapshot (original), not the overwritten bytes
@@ -243,14 +249,14 @@ final class ComparingMappingResolverTest {
   @Test
   void shouldReturnPrimaryResultAndLogWarnWhenComparisonThrows() {
     final var buf = bufferOf("value");
-    final MappingResolver primary = (m, p) -> Either.right(buf);
-    final MappingResolver comparison =
+    final MappingResolver<InputMappings> primary = (m, p) -> Either.right(buf);
+    final MappingResolver<InputMappings> comparison =
         (m, p) -> {
           throw new RuntimeException("unexpected comparison failure");
         };
-    final var resolver = new ComparingMappingResolver(primary, comparison);
+    final var resolver = new ComparingMappingResolver<>(primary, comparison);
 
-    final var result = resolver.resolveInputMappings(INPUT_MAPPINGS, PROCESSOR);
+    final var result = resolver.resolve(INPUT_MAPPINGS, PROCESSOR);
 
     assertThat(result.isRight()).isTrue();
     assertThat(recorder.getAppendedEvents())
