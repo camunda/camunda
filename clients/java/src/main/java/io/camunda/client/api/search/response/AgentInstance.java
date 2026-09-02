@@ -111,6 +111,18 @@ public interface AgentInstance {
     /** Returns the total number of output tokens produced across all model calls. */
     long getOutputTokens();
 
+    /** Returns the total number of reasoning tokens consumed across all model calls. */
+    long getReasoningTokenCount();
+
+    /**
+     * Returns the total number of tokens used to create prompt cache entries across all model
+     * calls.
+     */
+    long getCacheCreationTokenCount();
+
+    /** Returns the total number of tokens read from prompt cache across all model calls. */
+    long getCacheReadTokenCount();
+
     /** Returns the total number of LLM calls made. */
     int getModelCalls();
 
