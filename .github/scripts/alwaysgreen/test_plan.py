@@ -446,6 +446,13 @@ def test_parse_returns_empty_when_absent():
     assert plan.parse_coverage_block(None) == set()
 
 
+def test_parse_returns_empty_for_a_block_that_claims_nothing():
+    # The marker alone is not a statement of remit: discover reads an empty result as
+    # "claims no specs" and keeps the coarse surface lock, same as a missing block.
+    assert plan.parse_coverage_block("Body\n\n<!-- alwaysgreen-fixed\n-->\n") == set()
+    assert plan.parse_coverage_block("Body\n\n<!-- alwaysgreen-fixed\nfp=\n-->\n") == set()
+
+
 def test_merge_appends_block_when_missing():
     merged = plan.merge_coverage_block("Body text", {"aaaaaaaa"})
     assert "fp=aaaaaaaa" in merged

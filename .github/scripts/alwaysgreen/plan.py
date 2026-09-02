@@ -58,8 +58,8 @@ SUPPORTED_BASE_REFS = frozenset(
 #:
 #: The TTL alone still leaves the surface shut for two days against failures the
 #: holding PR never claimed, so `open_pr_keys_with_coverage` narrows the lock further:
-#: a PR that published a coverage block is read at spec granularity immediately, and
-#: only a PR that published none falls back to locking its whole surface.
+#: a PR that claims at least one fingerprint is read at spec granularity immediately,
+#: and only a PR that claims none falls back to locking its whole surface.
 PR_LOCK_TTL_DAYS = 2
 
 
@@ -266,8 +266,10 @@ def plan_dispatches(
     after the failing run started, so the run executed source that is already superseded.
 
     `open_pr_keys_with_coverage` are the keys of `open_pr_keys` whose every holding PR
-    published a coverage block. Those PRs state which specs they claim, so the coarse
-    per-surface lock is skipped for them and the per-spec accounting below decides.
+    claims at least one fingerprint in its coverage block. Those PRs state which specs
+    they claim, so the coarse per-surface lock is skipped for them and the per-spec
+    accounting below decides. A PR whose block claims nothing — absent, or present but
+    empty — is not one of them and keeps its surface locked.
     """
     plan = Plan()
     no_fix = recent_no_fix_fingerprints or set()
@@ -294,10 +296,10 @@ def plan_dispatches(
             plan.suppressed.append(Suppression(cand, SUPPRESSED_IN_FLIGHT, cand.key))
             continue
 
-        # An open fix PR that published no coverage block stops a second agent on its
-        # surface: the block is written by the agent, so a PR that omitted it states
-        # nothing about which specs it claims and the whole surface has to be assumed.
-        # A PR that did publish one is authoritative per spec through
+        # An open fix PR that claims no specs stops a second agent on its surface: the
+        # coverage block is written by the agent, so one that is missing or empty
+        # states nothing about its remit and the whole surface has to be assumed.
+        # A PR that claims at least one spec is authoritative per spec through
         # `covered_fingerprints`, so locking its surface only hides its neighbours: on
         # 2026-09-02 c8-cross-component-e2e-tests#3267 claimed three cluster-creation
         # setup specs on `main:saas-smoke-e2e`, and run 33605992250's unrelated

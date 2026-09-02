@@ -385,9 +385,11 @@ def open_fix_pr_keys() -> tuple[set[str], set[str], bool]:
     repeat of the specs it already claims.
 
     Returns (keys, keys_with_coverage, ok). `keys_with_coverage` is the subset whose
-    every holding PR published a coverage block, so `plan` can decide those keys per
-    spec instead of locking the surface; a key any of whose holders published none
-    stays out of it and keeps the coarse lock. As with `inflight_keys`, a failed
+    every holding PR claims at least one fingerprint, so `plan` can decide those keys
+    per spec instead of locking the surface. A block that parses to nothing — absent,
+    or present with no `fp=` line — claims nothing, and a key any of whose holders
+    claims nothing stays out of the subset and keeps the coarse lock: the marker
+    comment alone is not a statement of remit. As with `inflight_keys`, a failed
     lookup makes the caller suppress rather than risk a duplicate PR.
     """
     out: set[str] = set()
@@ -437,7 +439,7 @@ def open_fix_pr_keys() -> tuple[set[str], set[str], bool]:
                 + (
                     f"{len(covered)} spec(s) claimed, others dispatchable"
                     if covered
-                    else "no coverage block, whole surface locked"
+                    else "claims no specs, whole surface locked"
                 )
             )
     return out, out - uncovered, ok
