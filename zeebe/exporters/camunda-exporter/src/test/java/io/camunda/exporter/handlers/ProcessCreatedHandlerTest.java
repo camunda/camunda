@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -29,11 +30,12 @@ import java.nio.file.Path;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ProcessHandlerTest {
+public class ProcessCreatedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-process";
   private final TestProcessCache processCache = new TestProcessCache();
-  private final ProcessHandler underTest = new ProcessHandler(indexName, processCache);
+  private final ProcessCreatedHandler underTest =
+      new ProcessCreatedHandler(indexName, processCache);
 
   @Test
   void testGetHandledValueType() {
@@ -100,6 +102,20 @@ public class ProcessHandlerTest {
 
     // then
     verify(mockRequest, times(1)).add(indexName, inputEntity);
+  }
+
+  @Test
+  void shouldNotIndexDocumentWhenExportDocumentIsDisabled() {
+    // given
+    final var handler = new ProcessCreatedHandler(indexName, processCache, false);
+    final ProcessEntity inputEntity = new ProcessEntity().setId("111");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when
+    handler.flush(inputEntity, mockRequest);
+
+    // then
+    verify(mockRequest, never()).add(indexName, inputEntity);
   }
 
   @Test
