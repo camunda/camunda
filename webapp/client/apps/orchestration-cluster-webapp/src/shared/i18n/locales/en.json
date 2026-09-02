@@ -679,7 +679,7 @@
 				"title": "Batch Operations"
 			},
 			"batchOperation": {
-				"title": "Batch operations",
+				"title": "Batch Operations",
 				"pageTitle": "Operate: Batch Operation {{name}}",
 				"notFoundNotificationTitle": "Batch operation {{batchOperationKey}} could not be found",
 				"loadErrorTitle": "Failed to load batch operation details",
