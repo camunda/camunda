@@ -329,8 +329,10 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
             new AddZoneRequest().numberOfReplicas(1).priority(100).brokers(List.of(brokerId(0)));
         final var addZoneResponse = actuator.addZone(ZONE_A, addZoneRequest, false);
 
-        // then - the cluster recovers: zoneA is back in the distribution and hosts partitions
+        // then - the cluster recovers: zoneA is back in the distribution and hosts partitions.
+        // wait more than 10s to allow for partition join to be retried
         Awaitility.await()
+            .atMost(Duration.ofMinutes(1))
             .untilAsserted(
                 () ->
                     ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(addZoneResponse));
