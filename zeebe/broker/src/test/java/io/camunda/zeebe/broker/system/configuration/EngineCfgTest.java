@@ -91,6 +91,8 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL_KEY);
     assertThat(configuration.getInputMappingMode())
         .isEqualTo(EngineConfiguration.InputMappingMode.COMBINED);
+    assertThat(configuration.getOutputMappingMode())
+        .isEqualTo(EngineConfiguration.OutputMappingMode.COMBINED);
   }
 
   @Test

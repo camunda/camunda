@@ -116,6 +116,11 @@ public final class EngineConfiguration {
     COMBINED
   }
 
+  public enum OutputMappingMode {
+    ORDERED,
+    COMBINED
+  }
+
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
   private int maxWorkerTypeLength = DEFAULT_MAX_WORKER_TYPE_LENGTH;
@@ -171,6 +176,7 @@ public final class EngineConfiguration {
   private boolean enableRpaReexportMigration = DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION;
   private InputMappingMode inputMappingMode = InputMappingMode.COMBINED;
   private @Nullable InputMappingMode inputComparisonMode = null;
+  private OutputMappingMode outputMappingMode = OutputMappingMode.COMBINED;
 
   /**
    * Controls uniqueness enforcement of business IDs across active process instances.
@@ -790,6 +796,15 @@ public final class EngineConfiguration {
   public EngineConfiguration setInputComparisonMode(
       final @Nullable InputMappingMode inputComparisonMode) {
     this.inputComparisonMode = inputComparisonMode;
+    return this;
+  }
+
+  public OutputMappingMode getOutputMappingMode() {
+    return outputMappingMode;
+  }
+
+  public EngineConfiguration setOutputMappingMode(final OutputMappingMode outputMappingMode) {
+    this.outputMappingMode = outputMappingMode;
     return this;
   }
 }
