@@ -200,7 +200,8 @@ class MetricsExporterTest {
 
   //
   @Nested
-  @DisplayName("MetricsExporter should configure a Filter")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("MetricsExporter should configure a Filter")
   class FilterTest {
 
     static Stream<TypeCombination> acceptedCombinations() {
@@ -271,7 +272,8 @@ class MetricsExporterTest {
   }
 
   @Nested
-  @DisplayName("MetricsExporter records variable metrics")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("MetricsExporter records variable metrics")
   class VariableMetricsTest {
 
     private static final String BPMN_PROCESS_ID = "process";

@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.impl.StaticExpression;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -21,7 +20,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 class ZeebeExpressionValidatorTest {
 
   @Nested
-  @DisplayName("ZeebeExpressionValidator.isListOfCsv(Expression)")
+  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName("ZeebeExpressionValidator.isListOfCsv(Expression)")
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   class IsListOfValues {
 
