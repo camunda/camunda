@@ -265,6 +265,9 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                   new AgentInstanceHistoryMetrics()
                       .inputTokens(100L)
                       .outputTokens(50L)
+                      .reasoningTokenCount(30L)
+                      .cacheCreationTokenCount(40L)
+                      .cacheReadTokenCount(60L)
                       .durationMs(200L));
 
       // when
@@ -293,6 +296,9 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
               });
       assertThat(mappedItem.getMetrics().getInputTokens()).isEqualTo(100L);
       assertThat(mappedItem.getMetrics().getOutputTokens()).isEqualTo(50L);
+      assertThat(mappedItem.getMetrics().getReasoningTokenCount()).isEqualTo(30L);
+      assertThat(mappedItem.getMetrics().getCacheCreationTokenCount()).isEqualTo(40L);
+      assertThat(mappedItem.getMetrics().getCacheReadTokenCount()).isEqualTo(60L);
       assertThat(mappedItem.getMetrics().getDurationMs()).isEqualTo(200L);
     }
 
