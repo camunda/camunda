@@ -64,6 +64,8 @@ public final class ClusterUpgradeStatusServices {
           case MIGRATED -> {
             // keep scanning; MIGRATED only wins if nothing worse is found
           }
+          default ->
+              throw new IllegalStateException("Unexpected migration state: " + status.state());
         }
       }
     }
