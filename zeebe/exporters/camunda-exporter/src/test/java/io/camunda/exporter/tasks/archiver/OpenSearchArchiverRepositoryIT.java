@@ -998,9 +998,12 @@ final class OpenSearchArchiverRepositoryIT {
     } else {
       assertThat(batch.ids()).containsExactly("21");
     }
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    final String endDate = dateFormatter.format(now.minus(Duration.ofHours(2)));
     final var expectedBucketStart =
         DateOfArchivedDocumentsUtil.getBucketStart(
-            twoHoursAgo, config.getUsageMetricsRolloverInterval(), "date");
+            endDate, config.getUsageMetricsRolloverInterval(), "date");
     assertThat(batch.finishDate()).isEqualTo(expectedBucketStart); // rollover interval is 1 month
   }
 
