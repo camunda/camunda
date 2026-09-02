@@ -116,8 +116,14 @@ export class GithubResolver implements Resolver {
       body?: string | null;
       title?: string | null;
       user?: { login?: string } | null;
+      merged_at?: string | null;
     };
-    return { body: data.body ?? '', title: data.title ?? '', authorLogin: data.user?.login };
+    return {
+      body: data.body ?? '',
+      title: data.title ?? '',
+      authorLogin: data.user?.login,
+      mergedAt: data.merged_at ?? undefined,
+    };
   }
 
   /**

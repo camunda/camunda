@@ -23,6 +23,7 @@ export interface OriginalPull {
   readonly body: string;
   readonly title: string;
   readonly authorLogin?: string;
+  readonly mergedAt?: string;
 }
 
 export interface PipelineResolver {
@@ -67,6 +68,15 @@ async function attributeDirectly(
   return decideAttribution({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
 }
 
+interface Attributed {
+  readonly decision: AttributionDecision;
+  /** The merge timestamp the anomaly rule keys on: the ORIGINAL's when the
+   *  decision came from a backport hop, because a post-gate backport of a
+   *  pre-gate original is not a gate violation (D20). Falls back to the
+   *  backport's own timestamp if the original's is unavailable. */
+  readonly mergedAt: string;
+}
+
 /**
  * Direct scan, then the backport hop (inheriting the original's decision,
  * C7/V2), then the bot link exemption LAST — an exempt bot that did link a real
@@ -76,27 +86,32 @@ async function attributePr(
   resolver: PipelineResolver,
   pr: PipelinePrInput,
   original: () => Promise<OriginalPull | null>,
-): Promise<AttributionDecision> {
+): Promise<Attributed> {
   let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
+  let mergedAt = pr.mergedAt;
 
   if (decision.source === 'unattributed') {
     const originalPull = await original();
     if (originalPull) {
       const originalDecision = await attributeDirectly(resolver, originalPull.body, []);
       decision = { ...originalDecision, deliveryPath: 'backportHop' };
+      mergedAt = originalPull.mergedAt ?? pr.mergedAt;
     }
   }
 
   if (decision.source === 'unattributed' && isLinkExemptAuthor(pr.authorLogin)) {
     return {
-      source: 'botExempt',
-      issueNumbers: [],
-      deliveryPath: 'direct',
-      reasons: [`Author ${pr.authorLogin} is exempt from the PR-issue link requirement.`],
+      decision: {
+        source: 'botExempt',
+        issueNumbers: [],
+        deliveryPath: 'direct',
+        reasons: [`Author ${pr.authorLogin} is exempt from the PR-issue link requirement.`],
+      },
+      mergedAt,
     };
   }
 
-  return decision;
+  return { decision, mergedAt };
 }
 
 /**
@@ -161,11 +176,11 @@ export async function processPr(
   const original = (): Promise<OriginalPull | null> =>
     (pending ??= backport ? resolver.fetchOriginalPull(backport.number) : Promise.resolve(null));
 
-  const attribution = await attributePr(resolver, pr, original);
+  const { decision: attribution, mergedAt } = await attributePr(resolver, pr, original);
   const { displayTitle, categorization } = await categorizePr(resolver, pr, original, override);
   const title = await resolveDisplayTitle(resolver, pr, categorization, attribution, displayTitle);
   const anomaly = evaluatePostGateAnomaly({
-    mergedAt: pr.mergedAt,
+    mergedAt,
     gateRequiredAt: options.gateRequiredAt,
     source: attribution.source,
   });

@@ -548,22 +548,27 @@ async function attributeDirectly(resolver, body, closingIssuesReferences) {
  */
 async function attributePr(resolver, pr, original) {
     let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
+    let mergedAt = pr.mergedAt;
     if (decision.source === 'unattributed') {
         const originalPull = await original();
         if (originalPull) {
             const originalDecision = await attributeDirectly(resolver, originalPull.body, []);
             decision = { ...originalDecision, deliveryPath: 'backportHop' };
+            mergedAt = originalPull.mergedAt ?? pr.mergedAt;
         }
     }
     if (decision.source === 'unattributed' && (0, title_1.isLinkExemptAuthor)(pr.authorLogin)) {
         return {
-            source: 'botExempt',
-            issueNumbers: [],
-            deliveryPath: 'direct',
-            reasons: [`Author ${pr.authorLogin} is exempt from the PR-issue link requirement.`],
+            decision: {
+                source: 'botExempt',
+                issueNumbers: [],
+                deliveryPath: 'direct',
+                reasons: [`Author ${pr.authorLogin} is exempt from the PR-issue link requirement.`],
+            },
+            mergedAt,
         };
     }
-    return decision;
+    return { decision, mergedAt };
 }
 /**
  * The category-detection title and the display title come from the same lookup:
@@ -608,11 +613,11 @@ async function processPr(resolver, pr, options) {
     // original PR — fetch it at most once per PR, and only if one of them asks.
     let pending;
     const original = () => (pending ??= backport ? resolver.fetchOriginalPull(backport.number) : Promise.resolve(null));
-    const attribution = await attributePr(resolver, pr, original);
+    const { decision: attribution, mergedAt } = await attributePr(resolver, pr, original);
     const { displayTitle, categorization } = await categorizePr(resolver, pr, original, override);
     const title = await resolveDisplayTitle(resolver, pr, categorization, attribution, displayTitle);
     const anomaly = (0, attribution_1.evaluatePostGateAnomaly)({
-        mergedAt: pr.mergedAt,
+        mergedAt,
         gateRequiredAt: options.gateRequiredAt,
         source: attribution.source,
     });
@@ -1116,7 +1121,12 @@ class GithubResolver {
         if (!res.ok)
             throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
         const data = (await res.json());
-        return { body: data.body ?? '', title: data.title ?? '', authorLogin: data.user?.login };
+        return {
+            body: data.body ?? '',
+            title: data.title ?? '',
+            authorLogin: data.user?.login,
+            mergedAt: data.merged_at ?? undefined,
+        };
     }
     /**
      * The live title of a same-repo issue, or null if it doesn't exist. Used by

@@ -6,7 +6,7 @@ import type { ParsedRef, ResolvedRef } from '../src/types';
 
 /** A fake resolver: classifies every ref number 100 as a live issue, 999 as missing. */
 function fakeResolver(
-  originals: Record<number, { body: string; title: string; authorLogin?: string }> = {},
+  originals: Record<number, { body: string; title: string; authorLogin?: string; mergedAt?: string }> = {},
   issueTitles: Record<number, string> = {},
   counts: { originalPulls: number } = { originalPulls: 0 },
 ): PipelineResolver {
@@ -183,4 +183,36 @@ test('a PR with no backport marker never fetches an original PR at all', async (
   const out = await processPr(fakeResolver({}, {}, counts), prInput({ body: 'no refs here' }), { gateRequiredAt: null });
   assert.equal(out.attribution.source, 'unattributed');
   assert.equal(counts.originalPulls, 0);
+});
+
+test('a post-gate backport of a PRE-gate original is not an anomaly — the rule keys on the original\'s merge', async () => {
+  const resolver = fakeResolver({ 200: { body: 'fixes #100', title: 'fix: correct retry backoff', mergedAt: '2026-06-01T00:00:00Z' } });
+  const out = await processPr(
+    resolver,
+    prInput({ number: 300, body: 'Backport of #200', mergedAt: '2026-08-01T00:00:00Z' }),
+    { gateRequiredAt: '2026-07-01T00:00:00Z' },
+  );
+  assert.equal(out.attribution.source, 'legacyBodyScan');
+  assert.equal(out.attribution.deliveryPath, 'backportHop');
+  assert.equal(out.anomaly, undefined);
+});
+
+test('a post-gate backport of a POST-gate original still flags the anomaly', async () => {
+  const resolver = fakeResolver({ 200: { body: 'fixes #100', title: 'fix: correct retry backoff', mergedAt: '2026-07-15T00:00:00Z' } });
+  const out = await processPr(
+    resolver,
+    prInput({ number: 301, body: 'Backport of #200', mergedAt: '2026-08-01T00:00:00Z' }),
+    { gateRequiredAt: '2026-07-01T00:00:00Z' },
+  );
+  assert.equal(out.anomaly, 'post_gate_fallback_attribution');
+});
+
+test('an original with no merge timestamp falls back to the backport\'s own, never skipping the check', async () => {
+  const resolver = fakeResolver({ 200: { body: 'fixes #100', title: 'fix: correct retry backoff' } });
+  const out = await processPr(
+    resolver,
+    prInput({ number: 302, body: 'Backport of #200', mergedAt: '2026-08-01T00:00:00Z' }),
+    { gateRequiredAt: '2026-07-01T00:00:00Z' },
+  );
+  assert.equal(out.anomaly, 'post_gate_fallback_attribution');
 });
