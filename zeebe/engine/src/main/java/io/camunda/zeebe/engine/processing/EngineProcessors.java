@@ -388,7 +388,8 @@ public final class EngineProcessors {
         tenantCheck,
         incidentMetrics,
         secretStoreRegistry,
-        secretResolutionScheduler);
+        secretResolutionScheduler,
+        suspensionMetrics);
 
     final var userTaskProcessor =
         createUserTaskProcessor(

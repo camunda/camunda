@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
@@ -38,6 +39,7 @@ public final class JobTimeOutProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
+  private final SuspensionMetrics suspensionMetrics;
   private final InstantSource clock;
 
   public JobTimeOutProcessor(
@@ -45,6 +47,7 @@ public final class JobTimeOutProcessor
       final Writers writers,
       final JobProcessingMetrics jobMetrics,
       final BpmnJobActivationBehavior jobActivationBehavior,
+      final SuspensionMetrics suspensionMetrics,
       final InstantSource clock) {
     jobState = state.getJobState();
     suspensionState = state.getSuspensionState();
@@ -52,6 +55,7 @@ public final class JobTimeOutProcessor
     rejectionWriter = writers.rejection();
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
+    this.suspensionMetrics = suspensionMetrics;
     this.clock = clock;
   }
 
@@ -71,6 +75,7 @@ public final class JobTimeOutProcessor
       if (suspensionState.getSuspensionState(job.getProcessInstanceKey())
           == SuspensionState.State.SUSPENDED) {
         stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job);
+        suspensionMetrics.jobSuspended();
       } else {
         jobActivationBehavior.notifyJobAvailableAsSideEffect(job);
       }

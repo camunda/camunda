@@ -116,6 +116,7 @@ public final class BpmnProcessors {
             writers,
             processEngineMetrics,
             config,
+            processingState.getSuspensionState(),
             suspensionMetrics);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
@@ -128,7 +129,8 @@ public final class BpmnProcessors {
         scheduledTaskState,
         writers,
         clock,
-        transientProcessMessageSubscriptionState);
+        transientProcessMessageSubscriptionState,
+        suspensionMetrics);
     addTimerStreamProcessors(
         typedRecordProcessors, timerChecker, processingState, bpmnBehaviors, writers);
     addConditionalStreamProcessors(typedRecordProcessors, processingState, bpmnBehaviors, writers);
@@ -261,7 +263,8 @@ public final class BpmnProcessors {
       final Supplier<ScheduledTaskState> scheduledTaskState,
       final Writers writers,
       final InstantSource clock,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final SuspensionMetrics suspensionMetrics) {
     // One CreateProcessor instance handles both CREATE (the create acknowledgement) and REOPEN (a
     // manifest re-subscribe drained from the suspend/resume buffer); it branches on the intent.
     final var createProcessor =
@@ -299,7 +302,8 @@ public final class BpmnProcessors {
                 processingState.getSuspensionState(),
                 writers,
                 transientProcessMessageSubscriptionState,
-                processingState.getKeyGenerator()))
+                processingState.getKeyGenerator(),
+                suspensionMetrics))
         .withListener(
             new PendingProcessMessageSubscriptionCheckScheduler(
                 subscriptionCommandSender,

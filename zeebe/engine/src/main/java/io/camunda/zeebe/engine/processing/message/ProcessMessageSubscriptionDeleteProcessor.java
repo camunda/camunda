@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -47,6 +48,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
   private final SuspensionState suspensionState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final KeyGenerator keyGenerator;
+  private final SuspensionMetrics suspensionMetrics;
 
   // Scratch copy of the manifest, taken before CREATED (whose applier re-reads the shared record),
   // so the REOPEN command we buffer keeps the right field values.
@@ -58,11 +60,13 @@ public final class ProcessMessageSubscriptionDeleteProcessor
       final SuspensionState suspensionState,
       final Writers writers,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final SuspensionMetrics suspensionMetrics) {
     this.subscriptionState = subscriptionState;
     this.suspensionState = suspensionState;
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     this.keyGenerator = keyGenerator;
+    this.suspensionMetrics = suspensionMetrics;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
@@ -145,6 +149,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
             .setCommandValue(manifest);
     stateWriter.appendFollowUpEvent(
         keyGenerator.nextKey(), BufferedCommandIntent.BUFFERED, bufferedCommandRecord);
+    suspensionMetrics.commandBuffered();
   }
 
   /**

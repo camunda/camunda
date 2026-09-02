@@ -68,8 +68,6 @@ public final class BpmnStreamProcessor
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableBehavior variableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
-  private final SuspensionMetrics suspensionMetrics;
-  private final SuspensionState suspensionState;
 
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -77,6 +75,7 @@ public final class BpmnStreamProcessor
       final Writers writers,
       final ProcessEngineMetrics processEngineMetrics,
       final EngineConfiguration config,
+      final SuspensionState suspensionState,
       final SuspensionMetrics suspensionMetrics) {
     processState = processingState.getProcessState();
 
@@ -96,14 +95,17 @@ public final class BpmnStreamProcessor
             writers);
     processors =
         new BpmnElementProcessors(
-            bpmnBehaviors, stateTransitionBehavior, processingState.getAsyncRequestState(), config);
+            bpmnBehaviors,
+            stateTransitionBehavior,
+            processingState.getAsyncRequestState(),
+            config,
+            suspensionState,
+            suspensionMetrics);
     stateBehavior = bpmnBehaviors.stateBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
-    this.suspensionMetrics = suspensionMetrics;
-    suspensionState = processingState.getSuspensionState();
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -467,30 +469,7 @@ public final class BpmnStreamProcessor
       final BpmnElementProcessor<ExecutableFlowElement> processor,
       final ExecutableFlowElement element,
       final BpmnElementContext context) {
-    final boolean isProcess = context.getBpmnElementType() == BpmnElementType.PROCESS;
-    final long piKey = context.getElementInstanceKey();
-
-    // capture suspension state before finalization — the applier clears it
-    final boolean wasSuspended = isProcess && suspensionState.getSuspensionState(piKey) != null;
-    final int droppedCommands = wasSuspended ? countBufferedCommands(piKey) : 0;
-
     processor.finalizeTermination(element, context);
-
-    if (isProcess) {
-      if (wasSuspended) {
-        suspensionMetrics.instanceTerminatedWhileSuspended();
-        if (droppedCommands > 0) {
-          suspensionMetrics.commandsDropped(droppedCommands);
-        }
-      }
-      suspensionMetrics.cancelResumeDuration(piKey);
-    }
     return BpmnElementProcessor.SUCCESS;
-  }
-
-  private int countBufferedCommands(final long processInstanceKey) {
-    final int[] count = {0};
-    suspensionState.visitBufferedCommands(processInstanceKey, (key, cmd) -> count[0]++);
-    return count[0];
   }
 }
