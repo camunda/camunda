@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -999,8 +998,10 @@ final class OpenSearchArchiverRepositoryIT {
     } else {
       assertThat(batch.ids()).containsExactly("21");
     }
-    assertThat(batch.finishDate())
-        .isEqualTo(YearMonth.now(ZoneId.systemDefault()).atDay(1).toString()); // rollover is 1M
+    final var expectedBucketStart =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            twoHoursAgo, config.getUsageMetricsRolloverInterval(), "date");
+    assertThat(batch.finishDate()).isEqualTo(expectedBucketStart); // rollover interval is 1 month
   }
 
   @Test
