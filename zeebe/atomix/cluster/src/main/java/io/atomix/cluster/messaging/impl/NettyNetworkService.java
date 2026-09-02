@@ -15,6 +15,7 @@ import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.NetworkService;
 import io.atomix.cluster.messaging.UnicastService;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -54,11 +55,20 @@ public final class NettyNetworkService implements ManagedNetworkService {
       final String actorSchedulerName,
       final MeterRegistry registry,
       final Executor executor) {
-    messagingService =
+    this(
         new NettyMessagingService(
-            clusterId, advertisedAddress, config, actorSchedulerName, registry);
-    unicastService =
-        new NettyUnicastService(clusterId, advertisedAddress, config, actorSchedulerName, registry);
+            clusterId, advertisedAddress, config, actorSchedulerName, registry),
+        new NettyUnicastService(clusterId, advertisedAddress, config, actorSchedulerName, registry),
+        executor);
+  }
+
+  @VisibleForTesting
+  NettyNetworkService(
+      final ManagedMessagingService messagingService,
+      final ManagedUnicastService unicastService,
+      final Executor executor) {
+    this.messagingService = messagingService;
+    this.unicastService = unicastService;
     this.executor = executor;
   }
 
