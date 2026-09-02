@@ -864,6 +864,29 @@ const BATCH_SIZE = 100;
 /** A real secondary rate limit clears within minutes; past this, something else is wrong and must surface. */
 const MAX_RETRIES = 5;
 exports.RATE_LIMITED_ERROR_TYPE = 'RATE_LIMITED';
+/** Longest `retry-after` this honours; beyond it the job should fail rather
+ *  than hold a runner. GitHub's own secondary-limit hints stay well under. */
+const MAX_RETRY_AFTER_MS = 60_000;
+/**
+ * GitHub reports a throttled GraphQL request three different ways: a
+ * `RATE_LIMITED` error type inside a 200, HTTP 429, or HTTP 403 carrying a
+ * `retry-after` (a 403 without one is a real permission failure and must not
+ * be retried). 5xx is separate — a transient GraphQL backend failure, routine
+ * on the multi-alias batch queries this client sends.
+ */
+function retryableStatus(res) {
+    if (res.status === 429 || res.status >= 500)
+        return true;
+    return res.status === 403 && res.headers.get('retry-after') !== null;
+}
+/** The server's own wait, when it names one, else exponential backoff. */
+function backoffMs(res, attempt) {
+    const header = res?.headers.get('retry-after');
+    const seconds = header === null || header === undefined ? NaN : Number(header);
+    if (Number.isFinite(seconds) && seconds >= 0)
+        return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
+    return 2 ** attempt * 1000;
+}
 /** The one `associatedPullRequests` selection both query shapes share. */
 const prConnection = (afterArg = '') => `associatedPullRequests(first: 10${afterArg}) { nodes { number baseRefName state } pageInfo { hasNextPage endCursor } }`;
 function assertField(value, description) {
@@ -986,7 +1009,7 @@ class GithubGraphqlResolver {
         const data = await this.request(query, variables);
         return assertField(data.repository, 'repository');
     }
-    /** One GraphQL request, retrying a secondary rate limit with exponential
+    /** One GraphQL request, retrying a throttled or transiently failed one with
      *  backoff. Never logs the token, headers, or the raw response. */
     async request(query, variables) {
         for (let attempt = 0;; attempt++) {
@@ -995,14 +1018,15 @@ class GithubGraphqlResolver {
                 headers: (0, github_1.githubHeaders)(this.token, { json: true }),
                 body: JSON.stringify({ query, variables }),
             });
-            if (!res.ok)
-                throw new Error(`GitHub GraphQL API returned HTTP ${res.status}`);
+            if (!res.ok) {
+                if (!retryableStatus(res))
+                    throw new Error(`GitHub GraphQL API returned HTTP ${res.status}`);
+                await this.waitForRetry(res, attempt, `HTTP ${res.status}`);
+                continue;
+            }
             const payload = (await res.json());
             if (payload.errors?.some((error) => error.type === exports.RATE_LIMITED_ERROR_TYPE)) {
-                if (attempt >= MAX_RETRIES - 1) {
-                    throw new Error(`GitHub GraphQL secondary rate limit persisted past ${MAX_RETRIES} attempts.`);
-                }
-                await this.sleepImpl(2 ** attempt * 1000);
+                await this.waitForRetry(null, attempt, 'secondary rate limit');
                 continue;
             }
             if (payload.errors?.length) {
@@ -1010,6 +1034,14 @@ class GithubGraphqlResolver {
             }
             return assertField(payload.data, 'data');
         }
+    }
+    /** Sleeps before the next attempt, or throws once the cap is reached — the
+     *  one place that decides a retry loop is over. */
+    async waitForRetry(res, attempt, cause) {
+        if (attempt >= MAX_RETRIES - 1) {
+            throw new Error(`GitHub GraphQL request kept failing (${cause}) past ${MAX_RETRIES} attempts.`);
+        }
+        await this.sleepImpl(backoffMs(res, attempt));
     }
 }
 exports.GithubGraphqlResolver = GithubGraphqlResolver;

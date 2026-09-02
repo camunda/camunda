@@ -59,9 +59,31 @@ function metadataPage(nodes: Record<string, unknown>): unknown {
 
 const noSleep = async (): Promise<void> => {};
 
-function resolver(fetchImpl: typeof fetch): GithubGraphqlResolver {
-  return new GithubGraphqlResolver('token', 'camunda', 'camunda', fetchImpl, noSleep);
+function resolver(fetchImpl: typeof fetch, sleep: (ms: number) => Promise<void> = noSleep): GithubGraphqlResolver {
+  return new GithubGraphqlResolver('token', 'camunda', 'camunda', fetchImpl, sleep);
 }
+
+interface HttpReply {
+  readonly status: number;
+  readonly headers?: Record<string, string>;
+  readonly payload?: unknown;
+}
+
+/** Like `fakeFetch`, but for the HTTP status/header layer. Repeats the last reply. */
+function fakeHttp(replies: readonly HttpReply[], calls: { count: number } = { count: 0 }): typeof fetch {
+  let i = 0;
+  return (async () => {
+    const reply = replies[Math.min(i, replies.length - 1)]!;
+    i++;
+    calls.count++;
+    return new Response(reply.payload === undefined ? '' : JSON.stringify(reply.payload), {
+      status: reply.status,
+      headers: reply.headers,
+    });
+  }) as typeof fetch;
+}
+
+const mergedPage = commitPage([{ number: 1, baseRefName: 'main', state: 'MERGED' }]);
 
 test('single commit maps to its single associated PR', async () => {
   const result = await resolver(fakeFetch([commitPage([{ number: 1, baseRefName: 'main', state: 'MERGED' }])])).mapCommitsToPrs(['abc123']);
@@ -174,7 +196,7 @@ test('a secondary rate limit is retried with backoff and eventually succeeds', a
 test('a rate limit that never clears throws at exactly MAX_RETRIES attempts, never loops forever', async () => {
   const calls: Call[] = [];
   const fetchImpl = fakeFetch([{ errors: [{ type: RATE_LIMITED_ERROR_TYPE, message: 'API rate limit exceeded' }] }], calls);
-  await assert.rejects(() => resolver(fetchImpl).mapCommitsToPrs(['abc']), /rate limit persisted past 5 attempts/);
+  await assert.rejects(() => resolver(fetchImpl).mapCommitsToPrs(['abc']), /past 5 attempts/);
   assert.equal(calls.length, 5);
 });
 
@@ -190,7 +212,55 @@ test('a malformed response (missing expected field) throws naming the field, nev
   await assert.rejects(() => resolver(fetchImpl).mapCommitsToPrs(['abc']), /associatedPullRequests/);
 });
 
-test('an HTTP-level failure throws with its status, never a partial mapping', async () => {
-  const fetchImpl = (async () => new Response('', { status: 502 })) as typeof fetch;
-  await assert.rejects(() => resolver(fetchImpl).mapCommitsToPrs(['abc']), /HTTP 502/);
+test('a non-retryable HTTP failure throws with its status, never a partial mapping', async () => {
+  const fetchImpl = fakeHttp([{ status: 404 }]);
+  await assert.rejects(() => resolver(fetchImpl).mapCommitsToPrs(['abc']), /HTTP 404/);
+});
+
+test('a transient 502 is retried rather than failing the whole release job', async () => {
+  const calls = { count: 0 };
+  const fetchImpl = fakeHttp([{ status: 502 }, { status: 200, payload: mergedPage }], calls);
+  const result = await resolver(fetchImpl).mapCommitsToPrs(['abc']);
+  assert.equal(calls.count, 2);
+  assert.deepEqual(result[0]!.associatedPrs, [{ number: 1, baseRefName: 'main' }]);
+});
+
+test('HTTP 429 is retried and the server\'s retry-after is honoured over the backoff', async () => {
+  const slept: number[] = [];
+  const fetchImpl = fakeHttp([
+    { status: 429, headers: { 'retry-after': '7' } },
+    { status: 200, payload: mergedPage },
+  ]);
+  const result = await resolver(fetchImpl, async (ms) => void slept.push(ms)).mapCommitsToPrs(['abc']);
+  assert.deepEqual(slept, [7000]);
+  assert.deepEqual(result[0]!.associatedPrs, [{ number: 1, baseRefName: 'main' }]);
+});
+
+test('a 403 carrying retry-after is a throttle and is retried', async () => {
+  const calls = { count: 0 };
+  const fetchImpl = fakeHttp([{ status: 403, headers: { 'retry-after': '1' } }, { status: 200, payload: mergedPage }], calls);
+  const result = await resolver(fetchImpl).mapCommitsToPrs(['abc']);
+  assert.equal(calls.count, 2);
+  assert.deepEqual(result[0]!.associatedPrs, [{ number: 1, baseRefName: 'main' }]);
+});
+
+test('a bare 403 is a permission failure and fails immediately, never retried', async () => {
+  const calls = { count: 0 };
+  const fetchImpl = fakeHttp([{ status: 403 }], calls);
+  await assert.rejects(() => resolver(fetchImpl).mapCommitsToPrs(['abc']), /HTTP 403/);
+  assert.equal(calls.count, 1);
+});
+
+test('an absurd retry-after is clamped rather than holding the runner', async () => {
+  const slept: number[] = [];
+  const fetchImpl = fakeHttp([{ status: 429, headers: { 'retry-after': '86400' } }, { status: 200, payload: mergedPage }]);
+  await resolver(fetchImpl, async (ms) => void slept.push(ms)).mapCommitsToPrs(['abc']);
+  assert.deepEqual(slept, [60_000]);
+});
+
+test('a status that never clears throws at the retry cap, naming the cause', async () => {
+  const calls = { count: 0 };
+  const fetchImpl = fakeHttp([{ status: 502 }], calls);
+  await assert.rejects(() => resolver(fetchImpl).mapCommitsToPrs(['abc']), /HTTP 502.*past 5 attempts/);
+  assert.equal(calls.count, 5);
 });
