@@ -60,24 +60,6 @@ public interface ClusterConfigurationManager {
      * @param oldConfiguration the local configuration before receiving the new one
      */
     void onInconsistentConfiguration(
-        ClusterConfiguration newConfiguration, ClusterConfiguration oldConfiguration);
-
-    /**
-     * New-model counterpart of {@link #onInconsistentConfiguration(ClusterConfiguration,
-     * ClusterConfiguration)}, invoked when the local member's state differs, in any partition
-     * group, between the old and newly-merged {@link CurrentClusterConfiguration}. Defaults to
-     * projecting both configurations to their legacy default-group view so that listeners written
-     * against the legacy model keep working unchanged; override this directly to react to
-     * inconsistencies in a specific, non-default partition group.
-     *
-     * @param newConfiguration new configuration after merging
-     * @param oldConfiguration the local configuration before merging
-     */
-    default void onInconsistentConfiguration(
-        final CurrentClusterConfiguration newConfiguration,
-        final CurrentClusterConfiguration oldConfiguration) {
-      onInconsistentConfiguration(
-          newConfiguration.toLegacyDefault(), oldConfiguration.toLegacyDefault());
-    }
+        CurrentClusterConfiguration newConfiguration, CurrentClusterConfiguration oldConfiguration);
   }
 }

@@ -19,7 +19,6 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticInitializer;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeAppliersImpl;
@@ -36,7 +35,6 @@ import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState.State;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -897,22 +895,9 @@ final class ClusterConfigurationManagerImplTest {
     final var newConfigSeen = new AtomicReference<CurrentClusterConfiguration>();
     final var oldConfigSeen = new AtomicReference<CurrentClusterConfiguration>();
     manager.registerTopologyChangedListener(
-        new InconsistentConfigurationListener() {
-          @Override
-          public void onInconsistentConfiguration(
-              final ClusterConfiguration newConfiguration,
-              final ClusterConfiguration oldConfiguration) {
-            org.assertj.core.api.Assertions.fail(
-                "Expected CurrentClusterConfiguration overload to be used for inconsistency detection");
-          }
-
-          @Override
-          public void onInconsistentConfiguration(
-              final CurrentClusterConfiguration newConfiguration,
-              final CurrentClusterConfiguration oldConfiguration) {
-            newConfigSeen.set(newConfiguration);
-            oldConfigSeen.set(oldConfiguration);
-          }
+        (newConfiguration, oldConfiguration) -> {
+          newConfigSeen.set(newConfiguration);
+          oldConfigSeen.set(oldConfiguration);
         });
 
     // when — a force-scale-down is received via gossip: member 0 is stripped out of the "tenanta"
