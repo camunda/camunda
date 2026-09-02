@@ -6,14 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useMemo, useCallback, useEffect, useState } from "react";
+import { FC, useId, useMemo, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  Text,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Combobox,
+  Label,
+  PageContentLayout,
 } from "@camunda/design-system";
 import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
@@ -50,26 +52,41 @@ const List: FC<ListProps> = ({
   const { t } = useTranslate("authorizations");
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
-  const authorizationTabs = isTenantsApiEnabled
+  const comboboxId = useId();
+  const availableResourceTypes = isTenantsApiEnabled
     ? ALL_RESOURCE_TYPES
     : RESOURCE_TYPES_WITHOUT_TENANT;
+  const authorizationTypeOptions = useMemo(
+    () =>
+      availableResourceTypes.map((resourceType) => ({
+        label: t(resourceType),
+        value: resourceType,
+      })),
+    [availableResourceTypes, t],
+  );
 
-  const [activeTab, setActiveTab] = useState<ResourceType>(() => {
-    return authorizationTabs.find((tab) => tab === id) ?? authorizationTabs[0];
-  });
+  const [selectedResourceType, setSelectedResourceType] =
+    useState<ResourceType>(() => {
+      return (
+        availableResourceTypes.find((resourceType) => resourceType === id) ??
+        availableResourceTypes[0]
+      );
+    });
 
   useEffect(() => {
-    const routeTab = authorizationTabs.find((tab) => tab === id);
-    const nextActiveTab = routeTab ?? authorizationTabs[0];
+    const routeResourceType = availableResourceTypes.find(
+      (resourceType) => resourceType === id,
+    );
+    const nextResourceType = routeResourceType ?? availableResourceTypes[0];
 
-    setActiveTab(nextActiveTab);
+    setSelectedResourceType(nextResourceType);
 
-    if (!routeTab) {
-      void navigate(`${Paths.authorizations()}/${nextActiveTab}`, {
+    if (!routeResourceType) {
+      void navigate(`${Paths.authorizations()}/${nextResourceType}`, {
         replace: true,
       });
     }
-  }, [authorizationTabs, id, navigate]);
+  }, [availableResourceTypes, id, navigate]);
 
   const { pageParams, page, resetPagination, ...paginationCallbacks } =
     usePagination();
@@ -81,7 +98,7 @@ const List: FC<ListProps> = ({
   } = useQuery({
     ...authorizationQueries.search({
       ...pageParams,
-      filter: { resourceType: activeTab },
+      filter: { resourceType: selectedResourceType },
     }),
     select: (data) => ({
       ...data,
@@ -123,57 +140,60 @@ const List: FC<ListProps> = ({
         linkText={t("authorizations").toLowerCase()}
         docsLinkPath="/components/concepts/access-control/authorizations/"
       />
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => {
-          const newTab = value as ResourceType;
-          resetPagination();
-          setActiveTab(newTab);
-          void navigate(`${Paths.authorizations()}/${newTab}`);
-        }}
-        orientation="vertical"
-        className="gap-8"
+      <PageContentLayout
+        sidebarPosition="left"
+        sidebarWidth={240}
+        sidebar={
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("filters")}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-1.5">
+              <Label htmlFor={comboboxId}>{t("authorizationType")}</Label>
+              <Combobox
+                id={comboboxId}
+                className="w-full"
+                options={authorizationTypeOptions}
+                value={selectedResourceType}
+                onValueChange={(value) => {
+                  if (!value) {
+                    return;
+                  }
+
+                  const newResourceType = value as ResourceType;
+                  resetPagination();
+                  setSelectedResourceType(newResourceType);
+                  void navigate(`${Paths.authorizations()}/${newResourceType}`);
+                }}
+              />
+            </CardContent>
+          </Card>
+        }
       >
-        <div className="flex flex-col gap-2">
-          <Text as="p" variant="label-md" className="text-muted-foreground">
-            {t("resourceType")}
-          </Text>
-          <TabsList aria-label={t("authorizationType")}>
-            {authorizationTabs.map((tab) => (
-              <TabsTrigger key={tab} value={tab}>
-                {t(tab)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-        {authorizationTabs.map((tab) => (
-          <TabsContent key={tab} value={tab}>
-            <AuthorizationList
-              tab={tab}
-              data={transformedData}
-              loading={loading}
-              reload={reload}
-              paginationProps={paginationProps}
-              isOIDC={isOIDC}
-              isCamundaGroupsEnabled={isCamundaGroupsEnabled}
-              isTenantsApiEnabled={isTenantsApiEnabled}
-              resourcePermissions={resourcePermissions}
-              defaultRoleIds={defaultRoleIds}
-            />
-          </TabsContent>
-        ))}
-      </Tabs>
-      {!loading && !success && (
-        <TranslatedErrorInlineNotification
-          title={t("authorizationLoadError")}
-          actionButton={{
-            label: t("retry"),
-            onClick: () => {
-              void reload();
-            },
-          }}
+        <AuthorizationList
+          resourceType={selectedResourceType}
+          data={transformedData}
+          loading={loading}
+          reload={reload}
+          paginationProps={paginationProps}
+          isOIDC={isOIDC}
+          isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+          isTenantsApiEnabled={isTenantsApiEnabled}
+          resourcePermissions={resourcePermissions}
+          defaultRoleIds={defaultRoleIds}
         />
-      )}
+        {!loading && !success && (
+          <TranslatedErrorInlineNotification
+            title={t("authorizationLoadError")}
+            actionButton={{
+              label: t("retry"),
+              onClick: () => {
+                void reload();
+              },
+            }}
+          />
+        )}
+      </PageContentLayout>
     </Page>
   );
 };
