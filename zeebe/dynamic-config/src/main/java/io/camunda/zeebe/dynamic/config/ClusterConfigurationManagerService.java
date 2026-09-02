@@ -37,7 +37,6 @@ import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
@@ -302,10 +301,6 @@ public final class ClusterConfigurationManagerService
                   .onComplete(result);
             });
     return result;
-  }
-
-  public ActorFuture<ClusterConfiguration> getClusterTopology() {
-    return clusterConfigurationManager.getClusterConfiguration();
   }
 
   public ActorFuture<CurrentClusterConfiguration> getClusterConfiguration() {
