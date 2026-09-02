@@ -579,7 +579,7 @@ def _ago(**kw):
 
 
 def test_fresh_fix_pr_keeps_holding_its_key():
-    assert plan.pr_lock_expired(_ago(hours=6), NOW, 2) is False
+    assert plan.pr_lock_expired(_ago(minutes=30), NOW, 2) is False
 
 
 def test_fix_pr_past_the_ttl_releases_its_key():
@@ -588,9 +588,15 @@ def test_fix_pr_past_the_ttl_releases_its_key():
     assert plan.pr_lock_expired("2026-08-20T14:56:44Z", NOW, 2) is True
 
 
+def test_ttl_is_read_in_hours_not_days():
+    # The knob changed unit; a PR from this morning must not still hold its key.
+    assert plan.pr_lock_expired(_ago(hours=6), NOW, 2) is True
+    assert plan.pr_lock_expired(_ago(hours=6), NOW, plan.PR_LOCK_TTL_HOURS) is True
+
+
 def test_ttl_boundary_is_inclusive_of_the_lock():
-    assert plan.pr_lock_expired(_ago(days=2), NOW, 2) is False
-    assert plan.pr_lock_expired(_ago(days=2, minutes=1), NOW, 2) is True
+    assert plan.pr_lock_expired(_ago(hours=2), NOW, 2) is False
+    assert plan.pr_lock_expired(_ago(hours=2, minutes=1), NOW, 2) is True
 
 
 def test_unreadable_timestamp_keeps_the_lock():
@@ -605,7 +611,7 @@ def test_naive_created_at_is_read_as_utc():
 def test_naive_now_does_not_raise_against_an_offset_aware_created_at():
     naive_now = NOW.replace(tzinfo=None)
     assert plan.pr_lock_expired("2026-08-20T14:56:44Z", naive_now, 2) is True
-    assert plan.pr_lock_expired(_ago(hours=6), naive_now, 2) is False
+    assert plan.pr_lock_expired(_ago(minutes=30), naive_now, 2) is False
 
 
 def test_zero_ttl_restores_the_never_expiring_lock():

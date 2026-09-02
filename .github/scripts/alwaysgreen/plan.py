@@ -56,26 +56,31 @@ SUPPORTED_BASE_REFS = frozenset(
 #: block takes over: a repeat of the same failure is still suppressed as
 #: `open-pr-covers-all-specs`, while a genuinely new one gets an agent.
 #:
-#: The TTL alone still leaves the surface shut for two days against failures the
-#: holding PR never claimed, so `open_pr_keys_with_coverage` narrows the lock further:
-#: a PR that claims at least one fingerprint is read at spec granularity immediately,
-#: and only a PR that claims none falls back to locking its whole surface.
-PR_LOCK_TTL_DAYS = 2
+#: Two things bound how long one PR can hold a surface, and both matter. The lock is
+#: skipped outright for a PR that claims at least one fingerprint (see
+#: `open_pr_keys_with_coverage`), so a claim-nothing PR is the only case the TTL still
+#: governs — and for that case the window is what decides how long an unrelated
+#: failure waits. A surface carries many independent causes, so a two-day window meant
+#: one silent PR parked every other failure on its surface until a human merged it.
+#: Two hours is roughly three failing runs at the 20-40 minute pipeline cadence: long
+#: enough that the same cause is not re-dispatched while an agent's PR is still being
+#: read, short enough that a different cause waits hours rather than days.
+PR_LOCK_TTL_HOURS = 2
 
 
 def pr_lock_expired(
-    created_at: str | None, now: datetime, ttl_days: int = PR_LOCK_TTL_DAYS
+    created_at: str | None, now: datetime, ttl_hours: int = PR_LOCK_TTL_HOURS
 ) -> bool:
     """Whether an open fix PR is too old to keep holding its dispatch key.
 
-    A missing or unparseable timestamp keeps the lock, and `ttl_days <= 0` disables
+    A missing or unparseable timestamp keeps the lock, and `ttl_hours <= 0` disables
     expiry altogether: the bias matches the `ok` flags in discover's key lookups,
     where an unproven state suppresses rather than risks a duplicate PR.
 
     Either timestamp is read as UTC when it carries no offset, so a naive `now` does
     not raise against GitHub's offset-aware `createdAt`.
     """
-    if ttl_days <= 0:
+    if ttl_hours <= 0:
         return False
     text = (created_at or "").strip()
     if not text:
@@ -88,7 +93,7 @@ def pr_lock_expired(
         created = created.replace(tzinfo=timezone.utc)
     if now.tzinfo is None:
         now = now.replace(tzinfo=timezone.utc)
-    return now - created > timedelta(days=ttl_days)
+    return now - created > timedelta(hours=ttl_hours)
 
 
 def spec_suite(spec_file: str) -> str | None:

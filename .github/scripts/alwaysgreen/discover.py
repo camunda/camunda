@@ -65,10 +65,19 @@ if os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS"):
         file=sys.stderr,
     )
 #: How long an open fix PR keeps holding its dispatch key; see
-#: planning.PR_LOCK_TTL_DAYS. Set to 0 to restore the old never-expiring lock.
-PR_LOCK_TTL_DAYS = int(
-    os.environ.get("ALWAYSGREEN_PR_LOCK_TTL_DAYS", str(planning.PR_LOCK_TTL_DAYS))
+#: planning.PR_LOCK_TTL_HOURS. Set to 0 to restore the old never-expiring lock.
+PR_LOCK_TTL_HOURS = int(
+    os.environ.get("ALWAYSGREEN_PR_LOCK_TTL_HOURS", str(planning.PR_LOCK_TTL_HOURS))
 )
+#: Refused rather than converted, for the reason given above the no-fix knob: reading
+#: `..._DAYS=2` as 48 hours would restore the window this replaced.
+if os.environ.get("ALWAYSGREEN_PR_LOCK_TTL_DAYS"):
+    print(
+        "::warning::ALWAYSGREEN_PR_LOCK_TTL_DAYS is no longer read. The open fix PR "
+        "lock is now set in hours via ALWAYSGREEN_PR_LOCK_TTL_HOURS "
+        f"(currently {PR_LOCK_TTL_HOURS}h).",
+        file=sys.stderr,
+    )
 #: Cap on artifact downloads while reading past verdicts, so a burst of agent runs
 #: cannot make triage slow.
 NO_FIX_MAX_RUNS = 20
@@ -380,7 +389,7 @@ def open_fix_pr_keys() -> tuple[set[str], set[str], bool]:
     stamps, not from the PR body: the body's coverage block is written by the agent
     and cannot be relied on to exist.
 
-    A PR past PR_LOCK_TTL_DAYS stops holding its key, so a fix PR left unreviewed
+    A PR past PR_LOCK_TTL_HOURS stops holding its key, so a fix PR left unreviewed
     cannot wedge its surface shut for good; `covered_fingerprints` still suppresses a
     repeat of the specs it already claims.
 
@@ -420,10 +429,10 @@ def open_fix_pr_keys() -> tuple[set[str], set[str], bool]:
             if not keys:
                 continue
             if planning.pr_lock_expired(
-                pr.get("createdAt") or "", now, PR_LOCK_TTL_DAYS
+                pr.get("createdAt") or "", now, PR_LOCK_TTL_HOURS
             ):
                 log(
-                    f"lock expired after {PR_LOCK_TTL_DAYS}d: {repo}#{pr.get('number')} "
+                    f"lock expired after {PR_LOCK_TTL_HOURS}h: {repo}#{pr.get('number')} "
                     f"no longer holds {', '.join(sorted(keys))}"
                 )
                 continue
