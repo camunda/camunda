@@ -17,7 +17,7 @@ import java.util.concurrent.CompletionStage;
 
 class ErrorInjectingIncidentUpdateRepository implements IncidentUpdateRepository {
   private IncidentUpdateRepository realUpdateRepository;
-  private boolean failFlowNodeBulkUpdates;
+  private volatile boolean failFlowNodeBulkUpdates;
 
   void setRealUpdateRepository(final IncidentUpdateRepository realUpdateRepository) {
     this.realUpdateRepository = realUpdateRepository;
