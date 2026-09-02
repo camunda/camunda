@@ -240,13 +240,23 @@ public abstract class OpenSearchUtil {
 
   public static void refreshIndicesFor(final OpenSearchClient osClient, final String indexPattern) {
     final var refreshRequest = new RefreshRequest.Builder().index(List.of(indexPattern)).build();
+    final RefreshResponse refresh;
     try {
-      final RefreshResponse refresh = osClient.indices().refresh(refreshRequest);
-      if (refresh.shards().failures().size() > 0) {
-        LOGGER.warn("Unable to refresh indices: {}", indexPattern);
-      }
+      refresh = osClient.indices().refresh(refreshRequest);
     } catch (final Exception ex) {
-      LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
+      throw new TasklistRuntimeException(
+          String.format("Unable to refresh indices matching pattern %s", indexPattern), ex);
+    }
+    if (refresh.shards().total().intValue() == 0) {
+      throw new TasklistRuntimeException("Refresh matched no indices for pattern " + indexPattern);
+    }
+    if (!refresh.shards().failures().isEmpty()) {
+      throw new TasklistRuntimeException(
+          String.format(
+              "Unable to refresh indices matching pattern %s: %d of %d shards failed",
+              indexPattern,
+              refresh.shards().failures().size(),
+              refresh.shards().total().intValue()));
     }
   }
 

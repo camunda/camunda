@@ -41,7 +41,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockito.ArgumentCaptor;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.ShardStatistics;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.indices.OpenSearchIndicesClient;
+import org.opensearch.client.opensearch.indices.RefreshRequest;
+import org.opensearch.client.opensearch.indices.RefreshResponse;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -82,6 +86,40 @@ public class ImportListenerOpenSearchTest extends NoBeansTest {
   @BeforeEach
   public void before() {
     importListener.cancel();
+  }
+
+  @Test
+  public void refreshZeebeIndicesUsesOpenSearchPrefixNotElasticsearchPrefix() throws Exception {
+    // given - the Zeebe-record prefix is customised for OpenSearch and left at the (different)
+    // Elasticsearch default, as happens on a real OpenSearch deployment
+    tasklistProperties.getZeebeElasticsearch().setPrefix("wrong-es-prefix");
+    tasklistProperties.getZeebeOpenSearch().setPrefix("correct-os-prefix");
+
+    final OpenSearchIndicesClient indicesClient = mock(OpenSearchIndicesClient.class);
+    final RefreshResponse refreshResponse = mock(RefreshResponse.class);
+    final ShardStatistics shards = mock(ShardStatistics.class);
+    when(shards.total()).thenReturn(1);
+    when(shards.failures()).thenReturn(List.of());
+    when(refreshResponse.shards()).thenReturn(shards);
+    when(zeebeOsClient.indices()).thenReturn(indicesClient);
+    final ArgumentCaptor<RefreshRequest> refreshCaptor =
+        ArgumentCaptor.forClass(RefreshRequest.class);
+    when(indicesClient.refresh(refreshCaptor.capture())).thenReturn(refreshResponse);
+
+    final ImportBatch importBatchOpenSearch =
+        new ImportBatchOpenSearch(
+            1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), "some_name");
+    final ImportPositionEntity previousPosition =
+        new ImportPositionEntity().setAliasName("alias").setPartitionId(1).setPosition(0);
+    final ImportJob importJob =
+        beanFactory.getBean(ImportJobOpenSearch.class, importBatchOpenSearch, previousPosition);
+
+    // when
+    importJob.refreshZeebeIndices();
+
+    // then - the refreshed pattern must be built from the OpenSearch prefix, not the
+    // Elasticsearch one (https://github.com/camunda/camunda/issues/61614)
+    assertEquals(List.of("correct-os-prefix*process-instance*"), refreshCaptor.getValue().index());
   }
 
   @Test

@@ -654,14 +654,21 @@ public abstract class ElasticsearchUtil {
   public static void refreshIndicesFor(
       final RestHighLevelClient esClient, final String indexPattern) {
     final var refreshRequest = new RefreshRequest(indexPattern);
+    final RefreshResponse refresh;
     try {
-      final RefreshResponse refresh =
-          esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-      if (refresh.getFailedShards() > 0) {
-        LOGGER.warn("Unable to refresh indices: {}", indexPattern);
-      }
+      refresh = esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (final Exception ex) {
-      LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
+      throw new TasklistRuntimeException(
+          String.format("Unable to refresh indices matching pattern %s", indexPattern), ex);
+    }
+    if (refresh.getTotalShards() == 0) {
+      throw new TasklistRuntimeException("Refresh matched no indices for pattern " + indexPattern);
+    }
+    if (refresh.getFailedShards() > 0) {
+      throw new TasklistRuntimeException(
+          String.format(
+              "Unable to refresh indices matching pattern %s: %d of %d shards failed",
+              indexPattern, refresh.getFailedShards(), refresh.getTotalShards()));
     }
   }
 
