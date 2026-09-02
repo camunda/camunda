@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 import org.rocksdb.Checkpoint;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
@@ -41,6 +42,7 @@ import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksObject;
+import org.rocksdb.Statistics;
 import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 
@@ -70,7 +72,8 @@ public class ZeebeTransactionDb<
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
       final AccessMetricsConfiguration accessMetricsConfiguration,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final @Nullable Statistics statistics) {
     this.defaultHandle = defaultHandle;
     defaultNativeHandle = getNativeHandle(defaultHandle);
     this.rocksDB = rocksDB;
@@ -78,7 +81,7 @@ public class ZeebeTransactionDb<
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.accessMetricsConfiguration = accessMetricsConfiguration;
     this.meterRegistry = meterRegistry;
-    metricExporter = new RocksDBMetricExporter(meterRegistry);
+    metricExporter = new RocksDBMetricExporter(meterRegistry, statistics);
 
     prefixReadOptions = PrefixReadOptions.readOptions();
     closables.add(prefixReadOptions);
@@ -125,7 +128,8 @@ public class ZeebeTransactionDb<
         rocksDbConfiguration,
         consistencyChecksSettings,
         metrics,
-        meterRegistry);
+        meterRegistry,
+        options.statistics());
   }
 
   static long getNativeHandle(final RocksObject object) {
