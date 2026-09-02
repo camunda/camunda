@@ -84,7 +84,7 @@
     "@vitest/coverage-v8": "4.0.18",
     "@vitest/eslint-plugin": "1.6.15",
     "@vitest/ui": "4.0.18",
-    "browserslist": "4.28.2",
+    "browserslist": "4.28.7",
     "browserslist-to-esbuild": "2.1.1",
     "cross-env": "10.1.0",
     "eslint": "9.39.4",
