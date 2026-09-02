@@ -78,7 +78,7 @@ jobs:
       pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - name: Check GitHub API rate limit
@@ -107,7 +107,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: camunda/infra-global-github-actions/actionlint@0077d059bb0d698e1086a4b46517cb7917fa8300 # actionlint-1.0.2
@@ -162,7 +162,7 @@ jobs:
         run: |
           echo "depth=$((${{ github.event.pull_request.commits }} + 1))" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: ${{ steps.depth.outputs.depth }}
@@ -194,7 +194,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -224,7 +224,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - name: Check for missing junit-vintage-engine
@@ -249,7 +249,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -292,7 +292,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: ./.github/actions/codeowners-setup-cli
@@ -326,7 +326,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -376,7 +376,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -452,7 +452,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: ./.github/actions/build-frontend
@@ -823,7 +823,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -928,7 +928,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - name: Print metadata
@@ -1012,7 +1012,7 @@ jobs:
       opensearch-3: ${{ steps.db-versions.outputs.opensearch-3 }}
     steps:
       - uses: actions/checkout@v7
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - name: Read DB versions
@@ -1247,7 +1247,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - name: Check for fork
@@ -1342,7 +1342,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - name: Check for fork
@@ -1471,7 +1471,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - name: Check for fork
@@ -1624,7 +1624,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - name: Print metadata
@@ -1703,7 +1703,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: hadolint/hadolint-action@2a66e89f53d0771bb131a7fa31f3136336094aa6 # v3.4.0
@@ -2088,7 +2088,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -2321,7 +2321,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -2360,7 +2360,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - id: pr-body
@@ -2408,7 +2408,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - name: Setup Node.js for Spectral
@@ -2476,7 +2476,7 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - name: Checkout PR
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - name: Setup Node.js
@@ -2537,7 +2537,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -2574,7 +2574,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: ./.github/actions/apt-fast-mirror-failover
@@ -2616,7 +2616,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - name: Install test dependencies
@@ -2696,7 +2696,7 @@ jobs:
       SHOULD_CLEANUP_GCS: ${{ needs.build-distball.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && github.event.pull_request.head.repo.fork != true }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - name: Check for aborted jobs
@@ -2775,7 +2775,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -2866,7 +2866,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -2941,7 +2941,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 3
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
