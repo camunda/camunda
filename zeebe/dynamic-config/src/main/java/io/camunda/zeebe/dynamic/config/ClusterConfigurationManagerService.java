@@ -65,15 +65,6 @@ public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
   public static final String TOPOLOGY_FILE_NAME = ".topology.meta";
 
-  /**
-   * Static feature flag indicating that the manager operates on the multi-partition-group model.
-   * Kept as a named constant for callers outside this class that still branch on it explicitly
-   * (e.g. {@code BrokerTopologyManagerImpl}, {@code GatewayClusterConfigurationService}); within
-   * this class and {@link ClusterConfigurationManagerImpl}, the legacy single-group code path has
-   * been removed and the new model always runs.
-   */
-  public static final boolean USE_NEW_CONFIG = true;
-
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
   private final PersistedCurrentClusterConfiguration persistedCurrentClusterConfiguration;

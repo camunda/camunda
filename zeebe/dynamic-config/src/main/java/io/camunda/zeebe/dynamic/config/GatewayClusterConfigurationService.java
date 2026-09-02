@@ -30,13 +30,13 @@ import org.slf4j.LoggerFactory;
  * configuration. So the service does not run ClusterConfigurationManager, but only contains the
  * ClusterConfigurationGossiper.
  *
- * <p>When {@link ClusterConfigurationManagerService#USE_NEW_CONFIG} is enabled, this service tracks
- * and gossips the multi-partition-group {@link CurrentClusterConfiguration} instead of the legacy
- * single-group {@link ClusterConfiguration}, mirroring what {@link ClusterConfigurationManagerImpl}
- * does for brokers. This matters beyond the gateway's own view: before this, the gateway only ever
- * gossiped the legacy field, so any real broker that fell back to {@code
- * CurrentClusterConfiguration#fromLegacy} for a message relayed by the gateway could construct a
- * lossy reconstruction of an in-progress plan that conflicted with its own, natively-tracked one.
+ * <p>This service tracks and gossips the multi-partition-group {@link CurrentClusterConfiguration}
+ * instead of the legacy single-group {@link ClusterConfiguration}, mirroring what {@link
+ * ClusterConfigurationManagerImpl} does for brokers. This matters beyond the gateway's own view:
+ * before this, the gateway only ever gossiped the legacy field, so any real broker that fell back
+ * to {@code CurrentClusterConfiguration#fromLegacy} for a message relayed by the gateway could
+ * construct a lossy reconstruction of an in-progress plan that conflicted with its own,
+ * natively-tracked one.
  */
 public class GatewayClusterConfigurationService extends Actor
     implements ClusterConfigurationUpdateNotifier {
@@ -57,18 +57,11 @@ public class GatewayClusterConfigurationService extends Actor
       final ClusterMembershipService memberShipService,
       final ClusterConfigurationGossiperConfig config,
       final MeterRegistry meterRegistry) {
-    this(
-        communicationService,
-        memberShipService,
-        config,
-        meterRegistry,
-        ClusterConfigurationManagerService.USE_NEW_CONFIG);
+    this(communicationService, memberShipService, config, meterRegistry, true);
   }
 
   /**
-   * @param useNewConfig overrides {@link ClusterConfigurationManagerService#USE_NEW_CONFIG} for
-   *     testing; production code always goes through the constructor above, which uses the
-   *     compile-time flag.
+   * @param useNewConfig allows overriding for testing; production code always enables this.
    */
   @VisibleForTesting
   GatewayClusterConfigurationService(
