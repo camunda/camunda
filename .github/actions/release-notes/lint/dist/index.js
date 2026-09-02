@@ -307,6 +307,13 @@ class Summary {
         this.buf += `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>\n`;
         return this;
     }
+    /** Appends already-formatted Markdown verbatim — GITHUB_STEP_SUMMARY renders
+     *  as GitHub-flavored Markdown, so a pre-rendered document (e.g. the
+     *  generated changelog) is written as-is rather than escaped as HTML. */
+    addRaw(markdown) {
+        this.buf += `${markdown}\n`;
+        return this;
+    }
     async write() {
         appendEnvFile('GITHUB_STEP_SUMMARY', this.buf);
         this.buf = '';
