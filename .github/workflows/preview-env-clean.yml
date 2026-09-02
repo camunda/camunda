@@ -70,7 +70,7 @@ jobs:
           secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
 
     # Clean up any (remaining) smoke-test preview environments older than 12 hours
-    - uses: camunda/infra-global-github-actions/argocd-delete-applications@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # argocd-delete-applications: v1.0.0
+    - uses: camunda/infra-global-github-actions/argocd-delete-applications@67d00e9260887361a31f6446252fffbecae4a02e # argocd-delete-applications: v1.0.1
       with:
         argocd-token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
         github-token: ${{ github.token }}
