@@ -569,4 +569,76 @@ class ClusterConfigurationTest {
       assertThat(merged.partitionDistributorConfig()).hasValue(newConfig);
     }
   }
+
+  @Nested
+  class PrimaryMemberForPartition {
+
+    @Test
+    void shouldReturnHighestPriorityActiveMember() {
+      // given
+      final var topology =
+          ClusterConfiguration.init()
+              .addMember(
+                  member(1),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.active(1, emptyPartitionConfig))))
+              .addMember(
+                  member(2),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.active(3, emptyPartitionConfig))));
+
+      // when / then
+      assertThat(topology.getPrimaryMemberForPartition(1)).contains(member(2));
+    }
+
+    @Test
+    void shouldSkipALearnerEvenWithTheHighestPriority() {
+      // given — a learner cannot vote and can therefore never actually lead
+      final var topology =
+          ClusterConfiguration.init()
+              .addMember(
+                  member(1),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.active(1, emptyPartitionConfig))))
+              .addMember(
+                  member(2),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.joining(9, emptyPartitionConfig).toLearner())));
+
+      // when / then
+      assertThat(topology.getPrimaryMemberForPartition(1)).contains(member(1));
+    }
+
+    @Test
+    void shouldTreatARecoveringMemberAsAValidCandidate() {
+      // given — recovery only pauses stream processing, it does not affect raft voting rights
+      final var topology =
+          ClusterConfiguration.init()
+              .addMember(
+                  member(1),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.active(1, emptyPartitionConfig))))
+              .addMember(
+                  member(2),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.active(9, emptyPartitionConfig).toRecovering())));
+
+      // when / then
+      assertThat(topology.getPrimaryMemberForPartition(1)).contains(member(2));
+    }
+
+    @Test
+    void shouldReturnEmptyWhenOnlyALearnerReplicatesPartition() {
+      // given
+      final var topology =
+          ClusterConfiguration.init()
+              .addMember(
+                  member(1),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.joining(1, emptyPartitionConfig).toLearner())));
+
+      // when / then
+      assertThat(topology.getPrimaryMemberForPartition(1)).isEmpty();
+    }
+  }
 }

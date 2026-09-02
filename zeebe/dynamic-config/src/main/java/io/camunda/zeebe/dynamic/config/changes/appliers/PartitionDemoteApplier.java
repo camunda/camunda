@@ -72,13 +72,14 @@ public final class PartitionDemoteApplier implements PartitionGroupConfiguration
     // A non-empty replication group without any voting member could neither elect a leader nor
     // commit, and the leader rejects such a configuration - the demotion could never succeed and
     // the change would be stuck. Transformers only emit a demotion when another active member
-    // remains; this guards against plans that violate that.
+    // remains; this guards against plans that violate that. isActiveReplica() (rather than a bare
+    // ACTIVE check) also accepts a RECOVERING member: recovery only pauses that member's own
+    // stream processing and does not affect its Raft voting rights.
     final var otherActiveReplicaExists =
         currentPartitionGroupConfiguration.members().entrySet().stream()
             .filter(entry -> !entry.getKey().equals(localMemberId))
             .map(entry -> entry.getValue().getPartition(partitionId))
-            .anyMatch(
-                partition -> partition != null && partition.state() == PartitionState.State.ACTIVE);
+            .anyMatch(partition -> partition != null && partition.state().isActiveReplica());
     if (!otherActiveReplicaExists) {
       return Either.left(
           new IllegalStateException(
