@@ -23,6 +23,12 @@ export interface PrMetadata {
   readonly mergedAt: string;
   readonly labels: readonly string[];
   readonly closingIssuesReferences: readonly number[];
+  /** Set when `labels` and/or `closingIssuesReferences` above hit the query's
+   *  first-20 cap and more exist on GitHub's side — never silently dropped,
+   *  the caller must warn. Rare enough (>20 labels or >20 native closing
+   *  refs on one PR) that full pagination for this nested, per-alias
+   *  connection isn't worth the extra follow-up query machinery. */
+  readonly truncatedFields?: readonly ('labels' | 'closingIssuesReferences')[];
 }
 
 export interface GraphqlResolver {
@@ -93,8 +99,8 @@ interface PrMetadataNode {
   readonly body?: string | null;
   readonly mergedAt?: string;
   readonly author?: { login?: string; __typename?: string } | null;
-  readonly labels?: { nodes?: readonly { name: string }[] };
-  readonly closingIssuesReferences?: { nodes?: readonly { number: number }[] };
+  readonly labels?: { nodes?: readonly { name: string }[]; pageInfo?: { hasNextPage?: boolean } };
+  readonly closingIssuesReferences?: { nodes?: readonly { number: number }[]; pageInfo?: { hasNextPage?: boolean } };
 }
 
 /** The one `associatedPullRequests` selection both query shapes share. */
@@ -203,7 +209,7 @@ export class GithubGraphqlResolver implements GraphqlResolver {
         ${numbers
           .map(
             (_, i) =>
-              `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt author { login __typename } labels(first: 20) { nodes { name } } closingIssuesReferences(first: 20) { nodes { number } } }`,
+              `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt author { login __typename } labels(first: 20) { nodes { name } pageInfo { hasNextPage } } closingIssuesReferences(first: 20) { nodes { number } pageInfo { hasNextPage } } }`,
           )
           .join('\n')}
       }
@@ -214,6 +220,9 @@ export class GithubGraphqlResolver implements GraphqlResolver {
     const repository = await this.requestRepository(query, variables);
     return numbers.map((number, i) => {
       const pr = assertField(repository[`pr${i}`] as PrMetadataNode | undefined, `repository.pr${i} (PR #${number})`);
+      const truncatedFields: ('labels' | 'closingIssuesReferences')[] = [];
+      if (pr.labels?.pageInfo?.hasNextPage) truncatedFields.push('labels');
+      if (pr.closingIssuesReferences?.pageInfo?.hasNextPage) truncatedFields.push('closingIssuesReferences');
       return {
         number: assertField(pr.number, `number on PR #${number}`),
         title: assertField(pr.title, `title on PR #${number}`),
@@ -224,6 +233,7 @@ export class GithubGraphqlResolver implements GraphqlResolver {
         closingIssuesReferences: assertField(pr.closingIssuesReferences?.nodes, `closingIssuesReferences.nodes on PR #${number}`).map(
           (issue) => issue.number,
         ),
+        ...(truncatedFields.length > 0 ? { truncatedFields } : {}),
       };
     });
   }

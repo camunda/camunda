@@ -1,4 +1,4 @@
-import { githubHeaders, repoApiUrl } from '../github';
+import { fetchWithRetry, githubHeaders, repoApiUrl } from '../github';
 import type { ParsedRef, PullMeta, ResolvedRef, Resolver } from '../types';
 
 /** A PR body can carry at most this many refs to the API. A legitimate PR never
@@ -29,6 +29,9 @@ function priorityOf(ref: ParsedRef): number {
  *
  * ponytail: plain fetch (Node 24 global) over octokit — we hit exactly one
  * endpoint; octokit would inline the whole REST client into the bundle.
+ * Throttled/transient responses are retried via fetchWithRetry (../github) —
+ * the generator processes PRs serially, so one un-retried 5xx or secondary
+ * rate limit anywhere in that chain would otherwise abort the whole job.
  */
 export class GithubResolver implements Resolver {
   private readonly repoUrl: string;
@@ -43,6 +46,7 @@ export class GithubResolver implements Resolver {
     private readonly token: string,
     private readonly owner: string,
     private readonly repo: string,
+    private readonly sleepImpl: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   ) {
     this.repoUrl = repoApiUrl(owner, repo);
     this.headers = githubHeaders(token);
@@ -103,6 +107,18 @@ export class GithubResolver implements Resolver {
   }
 
   /**
+   * Fetch a same-repo pull request's full fields for the generator's backport
+   * hop (attribution + inherit-original title/mergedAt), or null if it does
+   * not exist. A cross-repo marker (`Backport of owner/other#N`) resolves to
+   * null for the same reason as {@link fetchPullBody}: #N there would name an
+   * unrelated PR in THIS repo.
+   */
+  async fetchOriginalPull(number: number, repo: string | null): Promise<PullMeta | null> {
+    if (this.isCrossRepo(repo)) return null;
+    return this.fetchPull(number);
+  }
+
+  /**
    * Fetch the fields the gate evaluates for one same-repo pull request, or null
    * if it does not exist.
    *
@@ -112,9 +128,9 @@ export class GithubResolver implements Resolver {
    * can never evaluate an out-of-date body.
    */
   async fetchPull(number: number): Promise<PullMeta | null> {
-    const res = await fetch(`${this.repoUrl}/pulls/${number}`, {
+    const res = await fetchWithRetry(`${this.repoUrl}/pulls/${number}`, {
       headers: this.headers,
-    });
+    }, this.sleepImpl);
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
     const data = (await res.json()) as {
@@ -140,9 +156,9 @@ export class GithubResolver implements Resolver {
     const cached = this.titlesByNumber.get(number);
     if (cached !== undefined) return cached;
 
-    const res = await fetch(`${this.repoUrl}/issues/${number}`, {
+    const res = await fetchWithRetry(`${this.repoUrl}/issues/${number}`, {
       headers: this.headers,
-    });
+    }, this.sleepImpl);
     if (res.status === 404) {
       this.titlesByNumber.set(number, null);
       return null;
@@ -166,9 +182,9 @@ export class GithubResolver implements Resolver {
   private async classify(ref: ParsedRef): Promise<Pick<ResolvedRef, 'target' | 'crossRepo'>> {
     if (this.isCrossRepo(ref.repo)) return { target: 'missing', crossRepo: true };
 
-    const res = await fetch(`${this.repoUrl}/issues/${ref.number}`, {
+    const res = await fetchWithRetry(`${this.repoUrl}/issues/${ref.number}`, {
       headers: this.headers,
-    });
+    }, this.sleepImpl);
     if (res.status === 404) return { target: 'missing', crossRepo: false };
     if (!res.ok) throw new Error(`GitHub API ${res.status} resolving #${ref.number}`);
 

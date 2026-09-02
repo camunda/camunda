@@ -51,6 +51,10 @@ export interface RenderResult {
   readonly labelsJson: object;
   readonly auditJson: object;
   readonly commentsJson: object;
+  /** Set when unattributed PRs are present and not overridden — the caller
+   *  must still write every output above (audit.json explains exactly why),
+   *  then fail the job with this message. */
+  readonly failureReason?: string;
 }
 
 /** D19: an opt-out PR is grouped under its own section, never its type's. */
@@ -98,13 +102,12 @@ export function render(
   unattributed: readonly RenderPrInput[],
   options: RenderOptions,
 ): RenderResult {
-  if (unattributed.length > 0 && (!options.allowUnattributed || !options.unattributedReason)) {
-    throw new Error(
-      `Unattributed PRs present, failing by default: ${unattributed.map((pr) => `#${pr.number}`).join(', ')}. ` +
-        'Set allow-unattributed=true with a non-empty unattributed-reason to override.',
-    );
-  }
-  // Past the guard, a non-empty reason is proven whenever `unattributed` is.
+  const guardFailed = unattributed.length > 0 && (!options.allowUnattributed || !options.unattributedReason);
+  const failureReason = guardFailed
+    ? `Unattributed PRs present, failing by default: ${unattributed.map((pr) => `#${pr.number}`).join(', ')}. ` +
+      'Set allow-unattributed=true with a non-empty unattributed-reason to override.'
+    : undefined;
+  // A non-empty reason is proven whenever the guard passed with `unattributed` present.
   const unattributedReason = options.unattributedReason ?? '';
 
   const all = [...prs, ...unattributed];
@@ -137,5 +140,6 @@ export function render(
     },
     auditJson: { schemaVersion: SCHEMA_VERSION, version: options.version, overrides },
     commentsJson: { schemaVersion: SCHEMA_VERSION, version: options.version, entries: commentEntries },
+    failureReason,
   };
 }

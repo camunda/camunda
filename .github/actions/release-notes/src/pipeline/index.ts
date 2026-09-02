@@ -1,5 +1,5 @@
 import { decideAttribution, evaluatePostGateAnomaly, hasEligibleRefs } from '../attribution';
-import type { AttributionAnomaly, AttributionDecision } from '../attribution/types';
+import type { AttributionAnomaly, AttributionDecision, AttributionSource } from '../attribution/types';
 import { BOT_CATEGORY_OVERRIDES, categorize, parseDependencyUpdate, stripBackportPrefix } from '../categorize';
 import type { CategorizeDecision } from '../categorize';
 import { extractSection, isOptOutTicked, parseRefs } from '../parser';
@@ -28,7 +28,10 @@ export interface OriginalPull {
 
 export interface PipelineResolver {
   resolveRefs(refs: readonly ParsedRef[]): Promise<ResolvedRef[]>;
-  fetchOriginalPull(number: number): Promise<OriginalPull | null>;
+  /** `repo` is the backport marker's explicit `owner/repo` prefix, or null for
+   *  a same-repo marker. A cross-repo marker must resolve to null — a same-
+   *  numbered PR in THIS repo would otherwise be inherited by mistake. */
+  fetchOriginalPull(number: number, repo: string | null): Promise<OriginalPull | null>;
   fetchIssueTitle(number: number): Promise<string | null>;
 }
 
@@ -78,6 +81,11 @@ async function attributeDirectly(
   return decideAttribution({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
 }
 
+/** Attribution outcomes with nothing further to try directly — eligible for
+ *  the backport hop and the bot-link exemption. Mirrors the gate's own
+ *  hop trigger (any failing link outcome, not just "nothing found"). */
+const HOPPABLE_SOURCES: ReadonlySet<AttributionSource> = new Set(['unattributed', 'resolutionFailed']);
+
 interface Attributed {
   readonly decision: AttributionDecision;
   /** The merge timestamp the anomaly rule keys on: the ORIGINAL's when the
@@ -100,7 +108,7 @@ async function attributePr(
   let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
   let mergedAt = pr.mergedAt;
 
-  if (decision.source === 'unattributed') {
+  if (HOPPABLE_SOURCES.has(decision.source)) {
     const originalPull = await original();
     if (originalPull) {
       const originalDecision = await attributeDirectly(resolver, originalPull.body, []);
@@ -109,7 +117,7 @@ async function attributePr(
     }
   }
 
-  if (decision.source === 'unattributed' && isLinkExemptAuthor(pr.authorLogin)) {
+  if (HOPPABLE_SOURCES.has(decision.source) && isLinkExemptAuthor(pr.authorLogin)) {
     return {
       decision: {
         source: 'botExempt',
@@ -184,7 +192,7 @@ export async function processPr(
   // original PR — fetch it at most once per PR, and only if one of them asks.
   let pending: Promise<OriginalPull | null> | undefined;
   const original = (): Promise<OriginalPull | null> =>
-    (pending ??= backport ? resolver.fetchOriginalPull(backport.number) : Promise.resolve(null));
+    (pending ??= backport ? resolver.fetchOriginalPull(backport.number, backport.repo) : Promise.resolve(null));
 
   const { decision: attribution, mergedAt } = await attributePr(resolver, pr, original);
   const { displayTitle, categorization } = await categorizePr(resolver, pr, original, override);

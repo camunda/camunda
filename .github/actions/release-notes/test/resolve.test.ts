@@ -177,6 +177,20 @@ test('labels and closingIssuesReferences are flattened to plain arrays', async (
   const [pr] = await resolver(fetchImpl).fetchPrMetadata([1]);
   assert.deepEqual(pr!.labels, ['component/zeebe', 'BREAKING CHANGE']);
   assert.deepEqual(pr!.closingIssuesReferences, [100, 101]);
+  assert.equal(pr!.truncatedFields, undefined);
+});
+
+test('a PR with more than 20 labels or closing refs is flagged truncated, never silently dropped', async () => {
+  const fetchImpl = fakeFetch([
+    metadataPage({
+      pr0: prNode({
+        labels: { nodes: [{ name: 'component/zeebe' }], pageInfo: { hasNextPage: true } },
+        closingIssuesReferences: { nodes: [{ number: 100 }], pageInfo: { hasNextPage: true } },
+      }),
+    }),
+  ]);
+  const [pr] = await resolver(fetchImpl).fetchPrMetadata([1]);
+  assert.deepEqual(pr!.truncatedFields, ['labels', 'closingIssuesReferences']);
 });
 
 test('a secondary rate limit is retried with backoff and eventually succeeds', async () => {

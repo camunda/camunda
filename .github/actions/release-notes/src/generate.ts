@@ -22,6 +22,9 @@ import { GithubResolver } from './resolver';
  * lookup. A PR that really closed an issue but has an empty field (e.g. the
  * keyword was edited out) is under-reported as "Partially delivered" rather
  * than "Released"; closing that needs Issue.timelineItems, its own I/O step.
+ * Exception: a backport-hop delivery is trusted wholesale (see below) — the
+ * backport bot never writes closing keywords, so the field is always empty
+ * for it and the general signal would under-report every single one.
  */
 
 interface RunInputs {
@@ -49,6 +52,9 @@ function readRepository(): { owner: string; repo: string } {
 function readInputs(): RunInputs {
   const { owner, repo } = readRepository();
   const gateRequiredAt = core.getInput('gate-required-at').trim();
+  if (gateRequiredAt.length > 0 && Number.isNaN(Date.parse(gateRequiredAt))) {
+    throw new Error(`gate-required-at must be a parseable date, got "${gateRequiredAt}".`);
+  }
   return {
     token: core.getInput('token', { required: true }),
     owner,
@@ -68,7 +74,7 @@ async function run(): Promise<void> {
   const restResolver = new GithubResolver(input.token, input.owner, input.repo);
   const pipelineResolver: PipelineResolver = {
     resolveRefs: (refs) => restResolver.resolve(refs),
-    fetchOriginalPull: (number) => restResolver.fetchPull(number),
+    fetchOriginalPull: (number, repo) => restResolver.fetchOriginalPull(number, repo),
     fetchIssueTitle: (number) => restResolver.fetchIssueTitle(number),
   };
 
@@ -91,6 +97,9 @@ async function run(): Promise<void> {
   const attributed: RenderPrInput[] = [];
   const unattributed: RenderPrInput[] = [];
   for (const pr of metadata) {
+    for (const field of pr.truncatedFields ?? []) {
+      core.warning(`PR #${pr.number}: ${field} exceeded the 20-entry query cap — some entries were not read.`);
+    }
     const output = await processPr(
       pipelineResolver,
       {
@@ -117,11 +126,21 @@ async function run(): Promise<void> {
       component: output.categorization.component,
       breaking: output.categorization.breaking,
       issueNumbers: output.attribution.issueNumbers,
-      closesIssueNumbers: output.attribution.issueNumbers.filter((n) => pr.closingIssuesReferences.includes(n)),
+      // A backport hop delivers via THIS PR's merge, but the backport bot never
+      // writes a closing keyword — closingIssuesReferences is always empty for
+      // it, so the general signal below would under-report every single one.
+      closesIssueNumbers:
+        output.attribution.deliveryPath === 'backportHop'
+          ? output.attribution.issueNumbers
+          : output.attribution.issueNumbers.filter((n) => pr.closingIssuesReferences.includes(n)),
       attributionSource: output.attribution.source,
     };
 
-    const bucketed = output.attribution.source === 'unattributed' || output.attribution.source === 'resolutionFailed';
+    // A `merge`-type PR (section: null) is excluded from every render() output
+    // regardless of attribution, so it must never trip the unattributed guard.
+    const bucketed =
+      output.categorization.section !== null &&
+      (output.attribution.source === 'unattributed' || output.attribution.source === 'resolutionFailed');
     (bucketed ? unattributed : attributed).push(renderPr);
   }
 
@@ -137,6 +156,11 @@ async function run(): Promise<void> {
   writeFileSync(`${input.outputDir}/audit.json`, JSON.stringify(result.auditJson, null, 2));
   writeFileSync(`${input.outputDir}/comments.json`, JSON.stringify(result.commentsJson, null, 2));
   core.setOutput('customer-body', result.customerBody);
+
+  // Every output above is written even when the unattributed guard trips —
+  // audit.json's whole purpose is explaining which PRs and why — so the job
+  // fails only AFTER the diagnostic outputs exist on disk.
+  if (result.failureReason) throw new Error(result.failureReason);
 
   core.info(`Generated release notes for ${input.targetVersion}: ${attributed.length} attributed PR(s).`);
 }

@@ -15,8 +15,11 @@ function fakeResolver(
       counts.resolveCalls++;
       return refs.map((ref) => ({ ...ref, target: ref.number === 999 ? 'missing' : 'issue', crossRepo: false }));
     },
-    async fetchOriginalPull(number: number) {
+    async fetchOriginalPull(number: number, repo: string | null) {
       counts.originalPulls++;
+      // Mirrors GithubResolver.fetchOriginalPull: a cross-repo marker never
+      // resolves to a same-numbered PR in this repo.
+      if (repo !== null) return null;
       return originals[number] ?? null;
     },
     async fetchIssueTitle(number: number) {
@@ -255,6 +258,39 @@ test('a PR whose only ref is outside the section still reaches the legacy scan',
     { gateRequiredAt: null },
   );
   assert.equal(out.attribution.source, 'legacyBodyScan');
+  assert.deepEqual(out.attribution.issueNumbers, [100]);
+});
+
+test('a cross-repo backport marker never inherits a same-numbered PR from this repo', async () => {
+  const resolver = fakeResolver({
+    // Same number as the cross-repo marker below — must NOT be picked up.
+    200: { body: '## Related issues\ncloses #100', title: 'fix: unrelated local PR' },
+  });
+  const out = await processPr(
+    resolver,
+    prInput({ number: 300, title: 'chore stuff', body: 'Backport of camunda/other-repo#200', authorLogin: 'monorepo-devops-automation[bot]' }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.source, 'unattributed');
+  assert.equal(out.title, 'chore stuff');
+});
+
+test('a resolutionFailed direct attribution still hops to the backport original, same as unattributed', async () => {
+  const resolver = fakeResolver({
+    200: { body: '## Related issues\ncloses #100', title: 'fix: correct retry backoff' },
+  });
+  const out = await processPr(
+    resolver,
+    prInput({
+      number: 300,
+      title: 'chore stuff',
+      body: '## Related issues\ncloses #999\n\nBackport of #200',
+      authorLogin: 'monorepo-devops-automation[bot]',
+    }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.source, 'section');
+  assert.equal(out.attribution.deliveryPath, 'backportHop');
   assert.deepEqual(out.attribution.issueNumbers, [100]);
 });
 

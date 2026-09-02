@@ -96,6 +96,33 @@ test('a ref classified during resolve() does not pay for a second GET when its t
   assert.equal(calls, 1, 'classify and fetchIssueTitle share the same /issues/N response');
 });
 
+test('a transient 502 is retried rather than failing the whole release job', async () => {
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls++;
+    if (calls === 1) return new Response('', { status: 502 });
+    return new Response(JSON.stringify({ title: 'Streaming job worker stops polling permanently' }), { status: 200 });
+  }) as typeof fetch;
+
+  const resolver = new GithubResolver('token', 'camunda', 'camunda', async () => {});
+  const title = await resolver.fetchIssueTitle(59633);
+
+  assert.equal(calls, 2);
+  assert.equal(title, 'Streaming job worker stops polling permanently');
+});
+
+test('a bare 403 is a permission failure and fails immediately, never retried', async () => {
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls++;
+    return new Response('', { status: 403 });
+  }) as typeof fetch;
+
+  const resolver = new GithubResolver('token', 'camunda', 'camunda');
+  await assert.rejects(() => resolver.fetchPull(1), /403/);
+  assert.equal(calls, 1);
+});
+
 test('a title never classified is still fetched, and a 404 is remembered as absent', async () => {
   let calls = 0;
   globalThis.fetch = (async () => {
