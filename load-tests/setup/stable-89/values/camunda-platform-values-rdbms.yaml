@@ -19,7 +19,7 @@ orchestration:
 
         queueSize: 2001
         history:
-          defaultHistoryTTL: PT1D
+          defaultHistoryTTL: P1D
           minHistoryCleanupInterval: PT1H
           maxHistoryCleanupInterval: PT3H
 
