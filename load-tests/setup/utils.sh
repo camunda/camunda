@@ -146,6 +146,17 @@ parse_ttl() {
   echo "$ttl"
 }
 
+# Parse and validate a non-negative integer count of extra physical tenants
+# (pt1..ptN). Echoes the value on success. Exits on error.
+parse_physical_tenant_count() {
+  local count="$1"
+  if ! [[ $count =~ ^[0-9]+$ ]]; then
+    echo "Error: physical tenant count '$count' is not a number" >&2
+    exit 1
+  fi
+  echo "$count"
+}
+
 # Parse and validate a secondary storage type against the allowed list.
 # Usage: storage="$(parse_secondary_storage "$storage" "${allowed_storage[@]}")"
 # Echoes the storage value on success. Exits with an error if not in the allowed list.
