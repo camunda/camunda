@@ -351,22 +351,24 @@ Results are posted to the `#reliability-testing-alerts` Slack channel.
 >
 > The scheduled workflow uses hardcoded release tags per stable branch, and are updated by renovate.
 
-### Weekly load tests
+### Weekly load tests (endurance test)
 
-Weekly load tests run against the state of the **main** branch via the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). They are automatically created every Monday and run for 4 weeks, then cleaned up by the [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-ttl-cleanup.yml). This results in several concurrent weekly tests (multiple variants × four weeks).
+Weekly load tests run against the state of the **main** branch via the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). They are automatically created every Monday and run for four weeks, then cleaned up by the [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-ttl-cleanup.yml). This results in several concurrent weekly tests (multiple variants × four weeks).
 
-The weekly tests cover, for example, the [realistic load](../docs/testing/reliability-testing.md#realistic-load) variants (one with Elasticsearch, one with OpenSearch, and one with PostgreSQL).
+The weekly tests cover endurance testing with the [realistic workload](../docs/testing/reliability-testing.md#realistic-load). It exists different variants covering different storage backends, such as Elasticsearch, OpenSearch, and PostgreSQL.
 
-**Goal:** Validating the reliability of the current main, detecting newly introduced instabilities, memory leaks, and performance degradation.
+**Goal:** Validating the long-term reliability of the current main, detecting newly introduced instabilities, memory leaks, and performance degradation.
 
-**Validation:** The tailored [Zeebe Medic Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m) can be used to observe and validate the performance of the different load tests.
+**Validation:** The tailored [Camunda Performance Dashboard](https://dashboard.benchmark.camunda.cloud/d/camunda-performance-dashboard/camunda-performance) can be used to observe and validate the performance of the different load tests. In addition alerts have been configured to notify the team of any performance regressions or anomalies.
 
-Example running tests (naming pattern: `medic-y-<year>-cw-<week>-<sha>-<variant>`):
+Example running tests (naming pattern: `medic-y-<year>-<week>-<sha>-<variant>-realistic`):
 
-- `medic-y-2025-cw-22-a60d64da-test-realistic`
-- `medic-y-2025-cw-22-a60d64da-test-rdbms-realistic`
+- `medic-y-2025-22-a60d64da-realistic`
+- `medic-y-2025-22-a60d64da-rdbms-realistic`
 
-**Expectations:** If an issue prevents a test from working properly and no workaround is available, the test can be deleted to save resources.
+> ![IMPORTANT]
+>
+> **Expectations:** If an issue prevents a test from working properly and no workaround is available, the test can be deleted to save resources.
 
 ### Daily load tests
 
