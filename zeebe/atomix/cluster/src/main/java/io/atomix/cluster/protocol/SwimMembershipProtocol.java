@@ -174,6 +174,33 @@ public class SwimMembershipProtocol
             namedThreads("atomix-cluster-events", LOGGER, actorSchedulerName));
   }
 
+  private boolean reactOnStatusChange(
+      final ImmutableMember member, final SwimMember swimMember, boolean updated) {
+    if (member.state().ordinal() > swimMember.getState().ordinal()) {
+      swimMember.setState(member.state());
+
+      // If the updated state is SUSPECT, post a REACHABILITY_CHANGED event and record an update.
+      if (member.state() == State.SUSPECT) {
+        LOGGER.info("{} - Member unreachable {}", localMember.id(), swimMember);
+        post(
+            new GroupMembershipEvent(
+                GroupMembershipEvent.Type.REACHABILITY_CHANGED, swimMember.copy()));
+        if (config.isNotifySuspect()) {
+          gossip(swimMember, Lists.newArrayList(swimMember.copy()));
+        }
+      }
+      // If the updated state is DEAD, post a REACHABILITY_CHANGED event if necessary, then post a
+      // MEMBER_REMOVED
+      // event and record an update.
+      else if (member.state() == State.DEAD) {
+        tryRemoveMember(swimMember);
+      }
+      recordUpdate(swimMember.copy());
+      updated = true;
+    }
+    return updated;
+  }
+
   /**
    * Creates a new bootstrap provider builder.
    *
@@ -379,28 +406,7 @@ public class SwimMembershipProtocol
         updated = true;
       }
 
-      if (member.state().ordinal() > swimMember.getState().ordinal()) {
-        swimMember.setState(member.state());
-
-        // If the updated state is SUSPECT, post a REACHABILITY_CHANGED event and record an update.
-        if (member.state() == State.SUSPECT) {
-          LOGGER.info("{} - Member unreachable {}", localMember.id(), swimMember);
-          post(
-              new GroupMembershipEvent(
-                  GroupMembershipEvent.Type.REACHABILITY_CHANGED, swimMember.copy()));
-          if (config.isNotifySuspect()) {
-            gossip(swimMember, Lists.newArrayList(swimMember.copy()));
-          }
-        }
-        // If the updated state is DEAD, post a REACHABILITY_CHANGED event if necessary, then post a
-        // MEMBER_REMOVED
-        // event and record an update.
-        else if (member.state() == State.DEAD) {
-          tryRemoveMember(swimMember);
-        }
-        recordUpdate(swimMember.copy());
-        updated = true;
-      }
+      updated = reactOnStatusChange(member, swimMember, updated);
 
       return updated;
     }
