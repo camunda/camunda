@@ -97,6 +97,17 @@ class FileBasedSecretStoreTest {
   }
 
   @Test
+  void shouldNotBeConcurrencyEligible() {
+    // given a resolve() call reads one file per name, but pays no network round trip doing it: a
+    // local disk read has nothing to overlap, so wrapping it for concurrency would only add a
+    // thread hop
+    final var store = new FileBasedSecretStore(secretsDir);
+
+    // then the default (uneligible) namesPerCall stands
+    assertThat(store.namesPerCall()).isEqualTo(Integer.MAX_VALUE);
+  }
+
+  @Test
   void shouldListAllSecrets() throws IOException {
     // given
     writeSecret("a", "1");
