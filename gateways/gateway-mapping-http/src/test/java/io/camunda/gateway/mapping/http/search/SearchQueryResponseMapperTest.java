@@ -1075,6 +1075,48 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
+  void shouldMapAllMetricsForAgentInstance() {
+    // given
+    final var entity =
+        new AgentInstanceEntity(
+            123L, // agentInstanceKey
+            654L, // agentDefinitionKey
+            List.of(456L), // elementInstanceKeys
+            AgentInstanceEntity.AgentInstanceStatus.IDLE,
+            new AgentInstanceEntity.AgentInstanceDefinition(
+                "gpt-4o",
+                "openai",
+                List.of(new ContentItem(ContentType.TEXT, "You are helpful", null, null))),
+            new AgentInstanceEntity.AgentInstanceMetrics(10L, 20L, 30L, 40L, 50L, 1, 2),
+            new AgentInstanceEntity.AgentInstanceLimits(1000L, 5, 6),
+            List.of(
+                new AgentInstanceEntity.AgentInstanceTool("search", "Web search", "searchTask")),
+            "agentElement", // elementId
+            789L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            321L, // processDefinitionKey
+            "processId", // processDefinitionId
+            1, // processDefinitionVersion
+            "v1", // versionTag
+            "tenant", // tenantId
+            OffsetDateTime.now(), // creationDate
+            OffsetDateTime.now(), // lastUpdatedDate
+            null); // completionDate
+
+    // when
+    final var response = SearchQueryResponseMapper.toAgentInstanceResult(entity);
+
+    // then
+    assertThat(response.getMetrics().getInputTokens()).isEqualTo(10);
+    assertThat(response.getMetrics().getOutputTokens()).isEqualTo(20);
+    assertThat(response.getMetrics().getReasoningTokenCount()).isEqualTo(30);
+    assertThat(response.getMetrics().getCacheCreationTokenCount()).isEqualTo(40);
+    assertThat(response.getMetrics().getCacheReadTokenCount()).isEqualTo(50);
+    assertThat(response.getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(response.getMetrics().getToolCalls()).isEqualTo(2);
+  }
+
+  @Test
   void shouldMapNullRootProcessInstanceKeyForVariableItem() {
     // given
     final var entity =
@@ -1476,7 +1518,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.USER,
               List.of(new ContentItem(ContentType.TEXT, "Hello", null, null)),
               List.of(),
-              new Metrics(10L, 20L, null, null, null, 30L),
+              new Metrics(10L, 20L, 30L, 40L, 50L, 60L),
               null,
               null,
               null,
@@ -1500,7 +1542,10 @@ class SearchQueryResponseMapperTest {
       assertThat(result.getCommitStatus().getValue()).isEqualTo("COMMITTED");
       assertThat(result.getMetrics().getInputTokens()).isEqualTo(10);
       assertThat(result.getMetrics().getOutputTokens()).isEqualTo(20);
-      assertThat(result.getMetrics().getDurationMs()).isEqualTo(30);
+      assertThat(result.getMetrics().getReasoningTokenCount()).isEqualTo(30);
+      assertThat(result.getMetrics().getCacheCreationTokenCount()).isEqualTo(40);
+      assertThat(result.getMetrics().getCacheReadTokenCount()).isEqualTo(50);
+      assertThat(result.getMetrics().getDurationMs()).isEqualTo(60);
       assertThat(result.getContent()).hasSize(1);
       assertThat(result.getContent().get(0).getContentType()).isEqualTo("TEXT");
     }
@@ -1728,6 +1773,9 @@ class SearchQueryResponseMapperTest {
       assertThat(result.getMetrics()).isNotNull();
       assertThat(result.getMetrics().getInputTokens()).isEqualTo(100L);
       assertThat(result.getMetrics().getOutputTokens()).isEqualTo(200L);
+      assertThat(result.getMetrics().getReasoningTokenCount()).isNull();
+      assertThat(result.getMetrics().getCacheCreationTokenCount()).isNull();
+      assertThat(result.getMetrics().getCacheReadTokenCount()).isNull();
       assertThat(result.getMetrics().getDurationMs()).isNull();
     }
 
