@@ -12,11 +12,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
+import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -150,6 +152,60 @@ final class ZeebePartitionAdminAccessTest {
 
     private void writeMigratedByVersion(final String version) {
       new DbMigrationState(zeebeDb, zeebeDb.createContext()).setMigratedByVersion(version);
+    }
+  }
+
+  /**
+   * The actual algorithm lives on {@link ExporterDirector} itself (it needs the partition's {@code
+   * LogStream}, not the {@code ZeebeDb}), so {@code ZeebePartitionAdminAccess}'s own responsibility
+   * here is pure delegation -- a mocked {@link ExporterDirector} is enough to verify it.
+   */
+  @Nested
+  final class ExportingMigrationStatus {
+
+    @Test
+    void shouldDelegateToTheExporterDirector() {
+      // given
+      final var exporterDirector = mock(ExporterDirector.class);
+      final var expectedStatus =
+          new PartitionMigrationStatus(MigrationStatusCode.MIGRATED, "caught up");
+      when(adminControl.getExporterDirector()).thenReturn(exporterDirector);
+      when(exporterDirector.getExportingMigrationStatus())
+          .thenReturn(CompletableActorFuture.completed(expectedStatus));
+
+      // when
+      final var status = sut.getExportingMigrationStatus().join();
+
+      // then
+      assertThat(status).isEqualTo(expectedStatus);
+    }
+
+    @Test
+    void shouldReportUnknownWhenNoExporterDirectorRunningYet() {
+      // given
+      when(adminControl.getExporterDirector()).thenReturn(null);
+
+      // when
+      final var status = sut.getExportingMigrationStatus().join();
+
+      // then
+      assertThat(status.code()).isEqualTo(MigrationStatusCode.UNKNOWN);
+      assertThat(status.detail()).contains("no exporter director running");
+    }
+
+    @Test
+    void shouldReportUnknownRatherThanHangWhenReadingTheStatusThrows() {
+      // given - a synchronous failure, e.g. before the exporter director's own future is even
+      // returned, must still complete this method's future rather than leave it hanging forever
+      when(adminControl.getExporterDirector())
+          .thenThrow(new RuntimeException("Exporter director lookup fails"));
+
+      // when
+      final var status = sut.getExportingMigrationStatus().join();
+
+      // then
+      assertThat(status.code()).isEqualTo(MigrationStatusCode.UNKNOWN);
+      assertThat(status.detail()).contains("Exporter director lookup fails");
     }
   }
 }

@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
@@ -189,6 +190,18 @@ public final class ExporterRule implements TestRule {
         .recordType(recordType)
         .intent(intent)
         .event(value)
+        .write();
+  }
+
+  /** Writes an event as though it had been written by a broker running {@code brokerVersion}. */
+  public long writeEventWithBrokerVersion(
+      final Intent intent, final UnifiedRecordValue value, final VersionInfo brokerVersion) {
+    return streams
+        .newRecord(STREAM_NAME)
+        .recordType(RecordType.EVENT)
+        .intent(intent)
+        .event(value)
+        .brokerVersion(brokerVersion)
         .write();
   }
 
