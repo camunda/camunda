@@ -54,6 +54,50 @@ class BusinessValueTargetIT extends AbstractBrokerlessZeebeCCSMIT {
     assertThat(read).contains(target);
   }
 
+  /**
+   * {@code readByTenants} backs the overview read path, so its terms filter is a tenant-isolation
+   * boundary rather than a convenience. Exercised against the real store because the filter is
+   * built per backend — a unit test can only reach the empty-collection short circuit, and would
+   * pass while either engine's query was wrong.
+   */
+  @Test
+  void shouldReadOnlyTheRequestedTenantsTargets() {
+    // given the same process key targeted on two tenants
+    writer.upsertTarget(target(PROCESS_KEY, DEFAULT_TENANT, 28_800_000L, 85));
+    writer.upsertTarget(target(PROCESS_KEY, OTHER_TENANT, 7_200_000L, 40));
+
+    // when reading one tenant
+    final List<BusinessValueTargetDto> defaultTenantTargets =
+        repository.readByTenants(List.of(DEFAULT_TENANT));
+
+    // then only that tenant's target comes back, with its own values
+    assertThat(defaultTenantTargets)
+        .singleElement()
+        .satisfies(
+            t -> {
+              assertThat(t.getTenantId()).isEqualTo(DEFAULT_TENANT);
+              assertThat(t.getCycleTimeTargetMillis()).isEqualTo(28_800_000L);
+            });
+
+    // and asking for both returns both, so the filter is narrowing rather than the fixture being
+    // half-written
+    assertThat(repository.readByTenants(List.of(DEFAULT_TENANT, OTHER_TENANT)))
+        .hasSize(2)
+        .extracting(BusinessValueTargetDto::getTenantId)
+        .containsExactlyInAnyOrder(DEFAULT_TENANT, OTHER_TENANT);
+  }
+
+  /** A caller authorized for no tenants must see nothing, not everything. */
+  @Test
+  void shouldReadNothingForAnEmptyTenantList() {
+    // given targets exist
+    writer.upsertTarget(target(PROCESS_KEY, DEFAULT_TENANT, 28_800_000L, 85));
+
+    // when the caller is authorized for no tenants
+    // then the read is empty rather than falling through to an unfiltered scan
+    assertThat(repository.readByTenants(List.of())).isEmpty();
+  }
+
   @Test
   void shouldOverwriteExistingTargetOnSameTenantAndKey() {
     // given
