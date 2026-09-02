@@ -370,11 +370,11 @@ Example running tests (naming pattern: `medic-y-<year>-<week>-<sha>-<variant>-re
 >
 > **Expectations:** If an issue prevents a test from working properly and no workaround is available, the test can be deleted to save resources.
 
-### Daily load tests
+### Daily load tests (stress test)
 
-Daily stress tests run against the state of the **main** branch via the [Daily load tests GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-daily-load-tests.yml), in three variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage (exporters disabled).
+Daily stress tests run against the state of the **main** branch via the [Daily load tests GitHub workflow](../.github/workflows/camunda-daily-load-tests.yml), in three variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage (exporters disabled). All use the same [stress-load-test.yml](../.github/workflows/stress-load-test.yml) workflow and run for 3 hours.
 
-**Goal:** Validating the reliability of the current main under stress, and detecting newly introduced instabilities with a short feedback loop. The no-secondary-storage variant only runs this daily `max` leg — it does not get its own multi-week weekly endurance rotation, since that long-horizon engine coverage is not storage-specific and is already provided by the ES/OS/RDBMS weekly runs (see [Weekly load tests](#weekly-load-tests) above).
+**Goal:** Validating the reliability and performance of the current main under stress, and detecting newly introduced instabilities with a short feedback loop.
 
 **Benefits:**
 
@@ -382,9 +382,11 @@ Daily stress tests run against the state of the **main** branch via the [Daily l
 - Earlier regression detection — shorter feedback loop when something breaks
 - Daily sanity check that load tests work with current Helm charts and application
 
-**Validation:** TBD — explicit dashboard with KPIs is tracked in [#42274](https://github.com/camunda/camunda/issues/42274).
+**Validation:** Every day stress test results are posted to slack - in #reliability-testing-alerts channel. Based on the results a seven day trend is calculated. The results are extracted based on prometheus metrics which are collected via the [camunda-load-test-metrics.yaml](../.github/workflows/camunda-load-test-metrics.yaml).
 
-**Profiling:** unlike the PR-label flow, profiling here is unconditional — after each run's setup job succeeds, the reusable [`profile-load-test.yml`](../.github/workflows/profile-load-test.yml) workflow waits out the same 15-minute warmup as the metrics path, then captures a 30-minute async-profiler flamegraph for each of the gRPC, REST, and no-secondary-storage runs, in parallel with the 3-hour soak. Flamegraph artifacts upload the same way as the PR path.
+**Profiling:** Every stress test variant is profiled by [`profile-load-test.yml`](../.github/workflows/profile-load-test.yml).
+
+Before any metrics or profiles are taken the stress tests get a warmup period.
 
 ### Ad-hoc load tests
 
