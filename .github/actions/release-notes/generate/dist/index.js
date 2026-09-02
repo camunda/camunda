@@ -7,6 +7,7 @@
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.hasEligibleRefs = hasEligibleRefs;
 exports.decideAttribution = decideAttribution;
 exports.evaluatePostGateAnomaly = evaluatePostGateAnomaly;
 /** Sources only reachable when the section contract wasn't observed (gate bypass, outage, post-merge body edit). */
@@ -14,6 +15,11 @@ const FALLBACK_SOURCES = new Set(['closingIssuesReferences', 'legacyBodyScan']);
 /** A `Backport of #N` marker is a delivery-hop signal, not an attribution ref; cross-repo refs never attribute. */
 function eligible(refs) {
     return refs.filter((ref) => !ref.crossRepo && ref.kind !== 'backport');
+}
+/** Whether the section carries anything the chain can terminate on, so a
+ *  caller can tell in advance that the later steps will not be consulted. */
+function hasEligibleRefs(refs) {
+    return eligible(refs).length > 0;
 }
 function uniqueNumbers(refs) {
     return [...new Set(refs.map((ref) => ref.number))];
@@ -534,11 +540,19 @@ const attribution_1 = __nccwpck_require__(233);
 const categorize_1 = __nccwpck_require__(493);
 const parser_1 = __nccwpck_require__(883);
 const title_1 = __nccwpck_require__(150);
+/**
+ * The legacy body-wide scan is the chain's last step, so its refs are only
+ * resolved when the earlier steps cannot terminate — an opt-out, an eligible
+ * section ref, or a native reference all decide the outcome without it. Every
+ * ref costs an API call, and the section refs would otherwise be resolved a
+ * second time as part of the body they live in.
+ */
 async function attributeDirectly(resolver, body, closingIssuesReferences) {
     const section = (0, parser_1.extractSection)(body);
     const optOut = section ? (0, parser_1.isOptOutTicked)(section) : false;
     const sectionRefs = section ? await resolver.resolveRefs((0, parser_1.parseRefs)(section)) : [];
-    const legacyRefs = await resolver.resolveRefs((0, parser_1.parseRefs)(body));
+    const needsLegacyScan = !optOut && !(0, attribution_1.hasEligibleRefs)(sectionRefs) && closingIssuesReferences.length === 0;
+    const legacyRefs = needsLegacyScan ? await resolver.resolveRefs((0, parser_1.parseRefs)(body)) : [];
     return (0, attribution_1.decideAttribution)({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
 }
 /**

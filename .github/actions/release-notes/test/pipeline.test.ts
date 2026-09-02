@@ -8,10 +8,11 @@ import type { ParsedRef, ResolvedRef } from '../src/types';
 function fakeResolver(
   originals: Record<number, { body: string; title: string; authorLogin?: string; mergedAt?: string }> = {},
   issueTitles: Record<number, string> = {},
-  counts: { originalPulls: number } = { originalPulls: 0 },
+  counts: { originalPulls: number; resolveCalls: number } = { originalPulls: 0, resolveCalls: 0 },
 ): PipelineResolver {
   return {
     async resolveRefs(refs: readonly ParsedRef[]): Promise<ResolvedRef[]> {
+      counts.resolveCalls++;
       return refs.map((ref) => ({ ...ref, target: ref.number === 999 ? 'missing' : 'issue', crossRepo: false }));
     },
     async fetchOriginalPull(number: number) {
@@ -162,7 +163,7 @@ test('a post-gate PR that falls back to the legacy scan is flagged as an anomaly
 });
 
 test('the backport hop and the inherit-original title share ONE fetch of the original PR', async () => {
-  const counts = { originalPulls: 0 };
+  const counts = { originalPulls: 0, resolveCalls: 0 };
   const resolver = fakeResolver(
     { 200: { body: '## Related issues\ncloses #100', title: 'fix: correct retry backoff' } },
     {},
@@ -179,7 +180,7 @@ test('the backport hop and the inherit-original title share ONE fetch of the ori
 });
 
 test('a PR with no backport marker never fetches an original PR at all', async () => {
-  const counts = { originalPulls: 0 };
+  const counts = { originalPulls: 0, resolveCalls: 0 };
   const out = await processPr(fakeResolver({}, {}, counts), prInput({ body: 'no refs here' }), { gateRequiredAt: null });
   assert.equal(out.attribution.source, 'unattributed');
   assert.equal(counts.originalPulls, 0);
@@ -215,4 +216,55 @@ test('an original with no merge timestamp falls back to the backport\'s own, nev
     { gateRequiredAt: '2026-07-01T00:00:00Z' },
   );
   assert.equal(out.anomaly, 'post_gate_fallback_attribution');
+});
+
+test('a section-attributed PR never resolves the body-wide legacy scan — its refs would be resolved twice', async () => {
+  const counts = { originalPulls: 0, resolveCalls: 0 };
+  const out = await processPr(fakeResolver({}, {}, counts), prInput(), { gateRequiredAt: null });
+  assert.equal(out.attribution.source, 'section');
+  assert.equal(counts.resolveCalls, 1, 'only the section scan should reach the resolver');
+});
+
+test('a natively-attributed PR (no section) never resolves the legacy scan either', async () => {
+  const counts = { originalPulls: 0, resolveCalls: 0 };
+  const out = await processPr(
+    fakeResolver({}, {}, counts),
+    prInput({ body: 'no refs in the body at all', closingIssuesReferences: [100] }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.source, 'closingIssuesReferences');
+  assert.equal(counts.resolveCalls, 0);
+});
+
+test('an opt-out PR never resolves the legacy scan', async () => {
+  const counts = { originalPulls: 0, resolveCalls: 0 };
+  const out = await processPr(
+    fakeResolver({}, {}, counts),
+    prInput({ body: '## Related issues\n- [x] This PR does not need a linked issue\n\nsee also #100' }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.source, 'optOut');
+  assert.equal(counts.resolveCalls, 1, 'the section is still scanned, the body is not');
+});
+
+test('a PR whose only ref is outside the section still reaches the legacy scan', async () => {
+  const counts = { originalPulls: 0, resolveCalls: 0 };
+  const out = await processPr(
+    fakeResolver({}, {}, counts),
+    prInput({ body: 'the prose says fixes #100' }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.source, 'legacyBodyScan');
+  assert.deepEqual(out.attribution.issueNumbers, [100]);
+});
+
+test('a section holding only a dead ref reports resolutionFailed and does NOT fall through to the legacy scan', async () => {
+  const counts = { originalPulls: 0, resolveCalls: 0 };
+  const out = await processPr(
+    fakeResolver({}, {}, counts),
+    prInput({ body: '## Related issues\ncloses #999\n\n## Notes\nalso mentions #100' }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.source, 'resolutionFailed');
+  assert.equal(counts.resolveCalls, 1);
 });

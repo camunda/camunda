@@ -1,4 +1,4 @@
-import { decideAttribution, evaluatePostGateAnomaly } from '../attribution';
+import { decideAttribution, evaluatePostGateAnomaly, hasEligibleRefs } from '../attribution';
 import type { AttributionAnomaly, AttributionDecision } from '../attribution/types';
 import { BOT_CATEGORY_OVERRIDES, categorize, parseDependencyUpdate, stripBackportPrefix } from '../categorize';
 import type { CategorizeDecision } from '../categorize';
@@ -56,6 +56,13 @@ export interface PipelinePrOutput {
   readonly anomaly?: AttributionAnomaly;
 }
 
+/**
+ * The legacy body-wide scan is the chain's last step, so its refs are only
+ * resolved when the earlier steps cannot terminate — an opt-out, an eligible
+ * section ref, or a native reference all decide the outcome without it. Every
+ * ref costs an API call, and the section refs would otherwise be resolved a
+ * second time as part of the body they live in.
+ */
 async function attributeDirectly(
   resolver: PipelineResolver,
   body: string,
@@ -64,7 +71,10 @@ async function attributeDirectly(
   const section = extractSection(body);
   const optOut = section ? isOptOutTicked(section) : false;
   const sectionRefs = section ? await resolver.resolveRefs(parseRefs(section)) : [];
-  const legacyRefs = await resolver.resolveRefs(parseRefs(body));
+
+  const needsLegacyScan = !optOut && !hasEligibleRefs(sectionRefs) && closingIssuesReferences.length === 0;
+  const legacyRefs = needsLegacyScan ? await resolver.resolveRefs(parseRefs(body)) : [];
+
   return decideAttribution({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
 }
 

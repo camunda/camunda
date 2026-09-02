@@ -9,6 +9,12 @@ function eligible(refs: readonly ResolvedRef[]): ResolvedRef[] {
   return refs.filter((ref) => !ref.crossRepo && ref.kind !== 'backport');
 }
 
+/** Whether the section carries anything the chain can terminate on, so a
+ *  caller can tell in advance that the later steps will not be consulted. */
+export function hasEligibleRefs(refs: readonly ResolvedRef[]): boolean {
+  return eligible(refs).length > 0;
+}
+
 function uniqueNumbers(refs: readonly ResolvedRef[]): number[] {
   return [...new Set(refs.map((ref) => ref.number))];
 }
