@@ -15,6 +15,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
@@ -48,6 +49,7 @@ public class ClientsByGroupIT {
 
     // then
     Awaitility.await("Client is assigned to the group")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -86,6 +88,7 @@ public class ClientsByGroupIT {
         .join();
 
     Awaitility.await("Client is assigned to the group")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -104,6 +107,7 @@ public class ClientsByGroupIT {
 
     // then
     Awaitility.await("Client is unassigned from the group")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -182,6 +186,7 @@ public class ClientsByGroupIT {
 
     // then
     Awaitility.await("Clients are assigned to the group and can be searched")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -218,6 +223,7 @@ public class ClientsByGroupIT {
 
     // then
     Awaitility.await("Clients are assigned to the group and can be searched")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {

@@ -528,6 +528,7 @@ class BatchOperationAuthorizationIT {
       final String batchOperationKey,
       final Consumer<List<BatchOperationItem>> assertions) {
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 camundaClient

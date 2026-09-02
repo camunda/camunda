@@ -27,6 +27,7 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -282,6 +283,7 @@ class RoleAuthorizationIT {
         .join();
 
     Awaitility.await("Mapping rule is assigned to the role")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
@@ -373,6 +375,7 @@ class RoleAuthorizationIT {
 
     // then
     Awaitility.await("Role is unassigned from the client")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -408,6 +411,7 @@ class RoleAuthorizationIT {
         .join();
 
     Awaitility.await("Role is unassigned from the tenant")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
@@ -456,6 +460,7 @@ class RoleAuthorizationIT {
     adminClient.newAssignRoleToGroupCommand().roleId(roleId).groupId(groupId).send().join();
 
     Awaitility.await("Group is assigned to the role")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
@@ -479,6 +484,7 @@ class RoleAuthorizationIT {
     adminClient.newAssignRoleToTenantCommand().roleId(ROLE_ID_1).tenantId(tenantId).send().join();
 
     Awaitility.await("Role is assigned to the tenant")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
@@ -531,6 +537,7 @@ class RoleAuthorizationIT {
         .join();
 
     Awaitility.await("Mapping rule is unassigned from the role")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
@@ -583,6 +590,7 @@ class RoleAuthorizationIT {
     adminClient.newUnassignRoleFromGroupCommand().roleId(ROLE_ID_1).groupId(groupId).send().join();
 
     Awaitility.await("Group is unassigned from the role")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
@@ -617,6 +625,7 @@ class RoleAuthorizationIT {
 
     // then
     Awaitility.await("Role is assigned to the client")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -657,6 +666,7 @@ class RoleAuthorizationIT {
 
     // when/then
     Awaitility.await("Search returns correct client ID")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -696,6 +706,7 @@ class RoleAuthorizationIT {
 
     // when/then
     Awaitility.await("Group is searchable by role")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -734,6 +745,7 @@ class RoleAuthorizationIT {
 
     // verify
     Awaitility.await("Authorization is searchable")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -773,6 +785,7 @@ class RoleAuthorizationIT {
 
     // verify
     Awaitility.await("Authorization is searchable")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {

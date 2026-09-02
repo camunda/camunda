@@ -117,6 +117,7 @@ class GlobalTaskListenerAuthorizationIT {
 
     // then the global listener is correctly created
     Awaitility.await("global listener should become available in search layer")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .until(() -> adminClient.newGlobalTaskListenerGetRequest(listenerId).send().join() != null);
   }
@@ -169,6 +170,7 @@ class GlobalTaskListenerAuthorizationIT {
 
     // then the global listener is correctly updated
     Awaitility.await("global listener should have data updated in search layer")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .until(
             () -> {
@@ -198,6 +200,7 @@ class GlobalTaskListenerAuthorizationIT {
 
     // then the global listener is correctly deleted
     Awaitility.await("global listener should become unavailable in search layer")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
