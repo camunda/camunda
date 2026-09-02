@@ -91,8 +91,8 @@ public interface IncidentUpdateRepository extends AutoCloseable {
   CompletionStage<Set<Long>> deletedProcessInstances(final Set<Long> processInstanceKeys);
 
   /**
-   * Executes the given bulk update against the underlying document store, waiting until the
-   * affected indices are refreshed. This ensures you will later read your own writes.
+   * Executes the given incident bulk update against the underlying document store, waiting until
+   * the affected indices are refreshed. This ensures you will later read your own writes.
    *
    * @param update the bulk update to execute
    * @return the ids of the documents updated
@@ -100,8 +100,7 @@ public interface IncidentUpdateRepository extends AutoCloseable {
   CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate update);
 
   /**
-   * Executes the given bulk update against the underlying document store, waiting until the
-   * affected indices are refreshed. This ensures you will later read your own writes.
+   * Executes the given non-incident bulk update against the underlying document store.
    *
    * @param update the bulk update to execute
    * @return the ids of the documents updated
