@@ -10,7 +10,9 @@ package io.camunda.optimize.service.businessvalue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -21,11 +23,13 @@ import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.MetricRange;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import io.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import io.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionKeyGroupByDto;
@@ -38,11 +42,19 @@ import io.camunda.optimize.service.dashboard.BusinessValueDashboardService;
 import io.camunda.optimize.service.db.report.PlainReportEvaluationHandler;
 import io.camunda.optimize.service.db.report.ReportEvaluationInfo;
 import io.camunda.optimize.service.db.report.result.MapCommandResult;
+import io.camunda.optimize.service.db.repository.BusinessValueOverviewRepository;
 import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
 import io.camunda.optimize.service.db.repository.MappingMetadataRepository;
 import io.camunda.optimize.service.db.repository.SearchLimitsRepository;
 import io.camunda.optimize.service.db.writer.BusinessValueOverviewWriter;
 import io.camunda.optimize.service.report.ReportService;
+<<<<<<< HEAD
+=======
+import io.camunda.optimize.service.util.configuration.BusinessValueConfiguration;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+>>>>>>> 9076f22e (perf: measure only the process definitions that have a target)
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,13 +63,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 /**
  * Guards the property the fan-in exists for: report evaluations per sweep scale with the number of
@@ -70,6 +85,7 @@ class BusinessValueOverviewComputeServiceTest {
   private static final String DEFAULT_TENANT = "<default>";
 
   private BusinessValueTargetRepository targetRepository;
+  private BusinessValueOverviewRepository overviewRepository;
   private BusinessValueOverviewWriter overviewWriter;
   private DefinitionService definitionService;
   private ReportService reportService;
@@ -98,6 +114,7 @@ class BusinessValueOverviewComputeServiceTest {
   @BeforeEach
   void setUp() {
     targetRepository = mock(BusinessValueTargetRepository.class);
+    overviewRepository = mock(BusinessValueOverviewRepository.class);
     overviewWriter = mock(BusinessValueOverviewWriter.class);
     definitionService = mock(DefinitionService.class);
     reportService = mock(ReportService.class);
@@ -112,6 +129,7 @@ class BusinessValueOverviewComputeServiceTest {
     computeService =
         new BusinessValueOverviewComputeService(
             targetRepository,
+            overviewRepository,
             overviewWriter,
             definitionService,
             reportService,
@@ -129,6 +147,394 @@ class BusinessValueOverviewComputeServiceTest {
               final ProcessReportDataDto reportData =
                   (ProcessReportDataDto) info.getReport().getData();
               return evaluationResultFor(reportData);
+            });
+  }
+
+  /**
+   * The sweep must take its target snapshot after the last evaluation returns, not before the
+   * first. Evaluating a whole catalog takes long enough for a user to save a target in the middle
+   * of it, and the upsert has no version precondition — so a snapshot read up front means the sweep
+   * writes back the target as it was before the save, silently reverting it until the next tick.
+   *
+   * <p>Asserted as an ordering rather than a value because a test that only checked the written row
+   * would pass on a sweep that read early and got lucky on timing.
+   */
+  @Test
+  void shouldReadTargetsAfterEvaluatingAndImmediatelyBeforeWriting() {
+    // given a catalog to sweep
+    givenDefinitions(DEFAULT_TENANT, 2);
+
+    // when a sweep runs
+    computeService.computeOverviewRows(allRanges());
+
+    // then targets are read only once every evaluation has returned, and the write follows
+    final InOrder inOrder = inOrder(reportEvaluationHandler, targetRepository, overviewWriter);
+    inOrder.verify(reportEvaluationHandler, atLeastOnce()).evaluateReport(any());
+    inOrder.verify(targetRepository).scanAll();
+    inOrder.verify(overviewWriter).bulkUpsertFromScheduler(any());
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  /**
+   * The measured value belongs to the row that was just evaluated; the target is applied on top of
+   * it afterwards. This pins that the late target read still lands on the right row rather than
+   * being dropped by the reordering.
+   */
+  @Test
+  void shouldApplyTheTargetItReadToTheRowItEvaluated() {
+    // given one definition measured at 5s against a 1s cycle-time target, and no automation target
+    givenDefinitions(DEFAULT_TENANT, 1);
+    final String key = "process-0";
+    stubbedValuesByKey.put(key, 5_000d);
+    when(targetRepository.scanAll())
+        .thenReturn(List.of(cycleTimeTarget(DEFAULT_TENANT, key, 1_000L)));
+
+    // when a sweep runs for a single range
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then the written row pairs the evaluated value with the target and the verdict it implies
+    final BusinessValueOverviewDto row = capturedRows().getFirst();
+    assertThat(row.getCycleTime().getValue()).isEqualTo(5_000L);
+    assertThat(row.getCycleTime().getTarget()).isEqualTo(1_000L);
+    assertThat(row.getCycleTime().getMet()).isFalse();
+    assertThat(row.getAutomationRate().getTarget()).isNull();
+    assertThat(row.getTargetsSet()).isEqualTo(1);
+    assertThat(row.getTargetsMet()).isZero();
+    assertThat(row.isHasAnyTarget()).isTrue();
+  }
+
+  /**
+   * A sweep that began before a target write and finished after it would otherwise stamp the row
+   * with its own start time, moving the row's freshness backwards — and the stale-read backstop
+   * keys off exactly that field. Stamping at write time makes the last writer's stamp the latest.
+   *
+   * <p>Asserted against the moment evaluation actually ran, because a stamp taken at the start of
+   * the sweep would sit before it and one taken at the end after it. Comparing to "now" instead
+   * would pass either way.
+   */
+  @Test
+  void shouldStampFreshnessWhenWritingRatherThanWhenTheSweepStarted() {
+    // given a definition, recording when its evaluation ran
+    givenDefinitions(DEFAULT_TENANT, 1);
+    final AtomicReference<OffsetDateTime> evaluatedAt = new AtomicReference<>();
+    when(reportEvaluationHandler.evaluateReport(any(ReportEvaluationInfo.class)))
+        .thenAnswer(
+            invocation -> {
+              evaluationCount.incrementAndGet();
+              evaluatedAt.set(OffsetDateTime.now(ZoneOffset.UTC));
+              return evaluationResultFor(
+                  (ProcessReportDataDto)
+                      ((ReportEvaluationInfo) invocation.getArgument(0)).getReport().getData());
+            });
+
+    // when a sweep runs
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then the row was stamped after the measurement, not before it
+    assertThat(evaluatedAt.get()).isNotNull();
+    assertThat(capturedRows())
+        .isNotEmpty()
+        .allSatisfy(row -> assertThat(row.getLastComputedAt()).isAfterOrEqualTo(evaluatedAt.get()));
+  }
+
+  // --- the sweep measures only what someone asked for ---
+
+  /**
+   * Measuring the whole catalogue costs one instance-index scan per definition per range, and most
+   * of that is thrown away: without a target there is no verdict to compute, and L0 shows nothing
+   * about the definition beyond its presence in the coverage denominator.
+   */
+  @Test
+  void shouldMeasureOnlyDefinitionsThatHaveATarget() {
+    // given ten definitions, two of which carry a target
+    givenDefinitions(DEFAULT_TENANT, 10);
+    when(targetRepository.scanAll())
+        .thenReturn(
+            List.of(
+                cycleTimeTarget(DEFAULT_TENANT, "process-2", 1_000L),
+                cycleTimeTarget(DEFAULT_TENANT, "process-7", 1_000L)));
+
+    // when a sweep runs for one range
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then only those two are pinned onto the evaluation
+    assertThat(capturedChunkKeys())
+        .allSatisfy(keys -> assertThat(keys).containsExactlyInAnyOrder("process-2", "process-7"));
+  }
+
+  /**
+   * Every definition still gets a row, measured or not. The overview's coverage denominator is the
+   * row count, so dropping untargeted rows would make coverage read "n of n" — always 100%.
+   */
+  @Test
+  void shouldStillWriteARowForEveryDefinitionItDidNotMeasure() {
+    // given ten definitions, one targeted
+    givenDefinitions(DEFAULT_TENANT, 10);
+    when(targetRepository.scanAll())
+        .thenReturn(List.of(cycleTimeTarget(DEFAULT_TENANT, "process-2", 1_000L)));
+
+    // when a sweep runs for one range
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then all ten rows are written, and only the targeted one carries a target
+    final List<BusinessValueOverviewDto> rows = capturedRows();
+    assertThat(rows).hasSize(10);
+    assertThat(rows.stream().filter(BusinessValueOverviewDto::isHasAnyTarget).toList())
+        .singleElement()
+        .satisfies(row -> assertThat(row.getProcessDefinitionKey()).isEqualTo("process-2"));
+  }
+
+  /**
+   * The same BPMN process id can be deployed on several tenants and targeted on only one of them —
+   * the Hub's target modal lets a user pick the tenant. Filtering on the definition key alone would
+   * measure it for tenants nobody asked about and blend one tenant's answer into another's row.
+   */
+  @Test
+  void shouldMeasureAKeyOnlyForTheTenantItIsTargetedOn() {
+    // given one process key deployed on two tenants, targeted on one
+    final String sharedKey = "shared-process";
+    final DefinitionWithTenantIdsDto definition =
+        new DefinitionWithTenantIdsDto(
+            sharedKey,
+            sharedKey,
+            DefinitionType.PROCESS,
+            new ArrayList<>(List.of(DEFAULT_TENANT, "tenant-b")),
+            Collections.emptySet());
+    when(definitionService.getAllDefinitionsWithTenants(DefinitionType.PROCESS))
+        .thenReturn(List.of(definition));
+    when(mappingMetadataRepository.getProcessDefinitionKeysWithInstanceIndex())
+        .thenReturn(Set.of(sharedKey));
+    when(targetRepository.scanAll())
+        .thenReturn(List.of(cycleTimeTarget("tenant-b", sharedKey, 1_000L)));
+    // both tenants have a value to return, so an untargeted tenant that got measured anyway would
+    // show it rather than staying null — without this the assertion below passes with no filter
+    valuesByTenant.put("tenant-b", 4_000d);
+    valuesByTenant.put(DEFAULT_TENANT, 9_000d);
+
+    // when a sweep runs for one range
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then only the targeted tenant's row is measured; the other keeps a null value
+    assertThat(capturedRows())
+        .filteredOn(row -> "tenant-b".equals(row.getTenantId()))
+        .singleElement()
+        .satisfies(row -> assertThat(row.getCycleTime().getValue()).isEqualTo(4_000L));
+    assertThat(capturedRows())
+        .filteredOn(row -> DEFAULT_TENANT.equals(row.getTenantId()))
+        .singleElement()
+        .satisfies(
+            row -> {
+              assertThat(row.getCycleTime().getValue()).isNull();
+              assertThat(row.isHasAnyTarget()).isFalse();
+            });
+  }
+
+  /**
+   * Clearing a target leaves its document behind with null fields rather than deleting it, so
+   * presence in the target index is not the same as being targeted.
+   */
+  @Test
+  void shouldStopMeasuringADefinitionWhoseTargetHasBeenCleared() {
+    // given a definition whose target document exists but holds no target values
+    givenDefinitions(DEFAULT_TENANT, 1);
+    when(targetRepository.scanAll())
+        .thenReturn(
+            List.of(
+                new BusinessValueTargetDto(
+                    "process-0",
+                    DEFAULT_TENANT,
+                    null,
+                    null,
+                    null,
+                    OffsetDateTime.now(),
+                    "someone")));
+
+    // when a sweep runs
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then nothing is measured, though the row is still written
+    assertThat(evaluationCount.get()).isZero();
+    assertThat(capturedRows()).hasSize(1);
+  }
+
+  /**
+   * A target saved while a sweep is running was not in the sweep's selection snapshot, so the sweep
+   * never measured it and the row it built carries null values. The save has already measured the
+   * definition and written real ones. Writing the sweep's row anyway would replace them with nulls
+   * and stamp it fresh, so the backstop would not heal it either — the user would see "target set,
+   * no data" until the next tick, which is what this whole change exists to prevent.
+   */
+  @Test
+  void shouldNotOverwriteAFreshlyMeasuredRowForADefinitionTargetedMidSweep() {
+    // given two definitions, only one targeted when the sweep selects its work
+    givenDefinitions(DEFAULT_TENANT, 2);
+    final BusinessValueTargetDto alreadyTargeted =
+        cycleTimeTarget(DEFAULT_TENANT, "process-0", 1_000L);
+    final BusinessValueTargetDto targetedMidSweep =
+        cycleTimeTarget(DEFAULT_TENANT, "process-1", 1_000L);
+    // the selection read sees one target; the read before the write sees both, as it would if the
+    // second were saved while the evaluations were still running
+    when(targetRepository.scanAll())
+        .thenReturn(List.of(alreadyTargeted))
+        .thenReturn(List.of(alreadyTargeted, targetedMidSweep));
+
+    // when a sweep runs
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then the mid-sweep definition's row is left alone rather than written back with null values
+    assertThat(capturedRows())
+        .extracting(BusinessValueOverviewDto::getProcessDefinitionKey)
+        .containsExactly("process-0")
+        .doesNotContain("process-1");
+  }
+
+  /**
+   * A target cleared mid-sweep still has its verdict cleared — only the reverse case is skipped.
+   */
+  @Test
+  void shouldStillWriteARowForADefinitionWhoseTargetWasClearedMidSweep() {
+    // given a targeted definition whose target is cleared while the sweep runs
+    givenDefinitions(DEFAULT_TENANT, 1);
+    when(targetRepository.scanAll())
+        .thenReturn(List.of(cycleTimeTarget(DEFAULT_TENANT, "process-0", 1_000L)))
+        .thenReturn(
+            List.of(
+                new BusinessValueTargetDto(
+                    "process-0",
+                    DEFAULT_TENANT,
+                    null,
+                    null,
+                    null,
+                    OffsetDateTime.now(),
+                    "someone")));
+
+    // when a sweep runs
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then the row is written with the target and verdict cleared
+    assertThat(capturedRows())
+        .singleElement()
+        .satisfies(
+            row -> {
+              assertThat(row.getProcessDefinitionKey()).isEqualTo("process-0");
+              assertThat(row.isHasAnyTarget()).isFalse();
+              assertThat(row.getCycleTime().getTarget()).isNull();
+            });
+  }
+
+  // --- computeRowsForTarget: the target-write path ---
+
+  /**
+   * Without this the saved target does not reach L0 until the next sweep: the row carries the
+   * target it was last computed with, and the stale-read backstop keys off the age of the
+   * measurement, so a freshly measured row holding a stale target looks perfectly fresh to it.
+   */
+  @Test
+  void shouldMeasureAndWriteEveryRangeWhenATargetIsSaved() {
+    // given a definition with instances, measured at 5s, and a 1s cycle-time target
+    givenDefinitions(DEFAULT_TENANT, 1);
+    stubbedValuesByKey.put("process-0", 5_000d);
+
+    // when the target is saved
+    computeService.computeRowsForTarget(cycleTimeTarget(DEFAULT_TENANT, "process-0", 1_000L));
+
+    // then one row per range is written, each pairing a fresh measurement with the new target
+    final List<BusinessValueOverviewDto> written = capturedTargetWriteRows();
+    assertThat(written)
+        .extracting(BusinessValueOverviewDto::getMetricRange)
+        .containsExactlyInAnyOrder(MetricRange.values());
+    assertThat(written)
+        .allSatisfy(
+            row -> {
+              assertThat(row.getCycleTime().getValue()).isEqualTo(5_000L);
+              assertThat(row.getCycleTime().getTarget()).isEqualTo(1_000L);
+              assertThat(row.getCycleTime().getMet()).isFalse();
+              assertThat(row.isHasAnyTarget()).isTrue();
+              assertThat(row.getTargetsSet()).isEqualTo(1);
+            });
+  }
+
+  /**
+   * Only the definition whose target changed is measured. Sweeping the catalogue on every modal
+   * save is the cost this path exists to avoid.
+   */
+  @Test
+  void shouldMeasureOnlyTheDefinitionWhoseTargetWasSaved() {
+    // given a catalogue of ten definitions
+    givenDefinitions(DEFAULT_TENANT, 10);
+
+    // when a target is saved on one of them
+    computeService.computeRowsForTarget(cycleTimeTarget(DEFAULT_TENANT, "process-3", 1_000L));
+
+    // then only that definition is pinned, and the cost is two reports x four ranges x one chunk
+    assertThat(capturedChunkKeys())
+        .allSatisfy(keys -> assertThat(keys).containsExactly("process-3"));
+    assertThat(evaluationCount.get()).isEqualTo(2 * 4 * 1);
+    assertThat(capturedTargetWriteRows())
+        .extracting(BusinessValueOverviewDto::getProcessDefinitionKey)
+        .containsOnly("process-3");
+  }
+
+  /**
+   * A definition imported since the last sweep has no rows at all. Measuring on save is what
+   * creates them — otherwise setting a target on a fresh import shows nothing until the next tick.
+   */
+  @Test
+  void shouldCreateRowsForADefinitionThatHasNoneYet() {
+    // given a definition the sweep has never written a row for
+    givenDefinitions(DEFAULT_TENANT, 1);
+    when(overviewRepository.getByKey(anyString(), anyString(), any())).thenReturn(Optional.empty());
+
+    // when a target is saved
+    computeService.computeRowsForTarget(cycleTimeTarget(DEFAULT_TENANT, "process-0", 1_000L));
+
+    // then the rows are created rather than skipped
+    assertThat(capturedTargetWriteRows()).hasSize(MetricRange.values().length);
+  }
+
+  /**
+   * Re-deriving from stored values would be cheaper and is the tempting optimization. It is also
+   * the bug: a target cleared and re-set later would be judged against whatever measurement the row
+   * still held, which could be months old.
+   */
+  @Test
+  void shouldMeasureAgainEvenWhenTheRowAlreadyHasValues() {
+    // given a definition whose rows already carry measurements
+    givenDefinitions(DEFAULT_TENANT, 1);
+    stubbedValuesByKey.put("process-0", 5_000d);
+    givenExistingRowsForAllRanges(DEFAULT_TENANT, "process-0", 999_999L, 1d);
+
+    // when a target is saved
+    computeService.computeRowsForTarget(cycleTimeTarget(DEFAULT_TENANT, "process-0", 1_000L));
+
+    // then the value written is freshly measured, not the one already on the row
+    assertThat(evaluationCount.get()).isPositive();
+    assertThat(capturedTargetWriteRows())
+        .allSatisfy(row -> assertThat(row.getCycleTime().getValue()).isEqualTo(5_000L));
+  }
+
+  /** Clearing a target has to clear the verdict with it, not leave the last one standing. */
+  @Test
+  void shouldClearTheVerdictWhenTheTargetIsCleared() {
+    // given a measured definition
+    givenDefinitions(DEFAULT_TENANT, 1);
+    stubbedValuesByKey.put("process-0", 5_000d);
+
+    // when the target is cleared
+    computeService.computeRowsForTarget(
+        new BusinessValueTargetDto(
+            "process-0", DEFAULT_TENANT, null, null, null, OffsetDateTime.now(), "someone"));
+
+    // then the rows keep their measurements but carry no target, verdict or counters
+    assertThat(capturedTargetWriteRows())
+        .allSatisfy(
+            row -> {
+              assertThat(row.getCycleTime().getValue()).isEqualTo(5_000L);
+              assertThat(row.getCycleTime().getTarget()).isNull();
+              assertThat(row.getCycleTime().getMet()).isNull();
+              assertThat(row.isHasAnyTarget()).isFalse();
+              assertThat(row.getTargetsSet()).isZero();
+              assertThat(row.getTargetsMet()).isZero();
             });
   }
 
@@ -462,6 +868,7 @@ class BusinessValueOverviewComputeServiceTest {
         .thenReturn(List.of(definition));
     when(mappingMetadataRepository.getProcessDefinitionKeysWithInstanceIndex())
         .thenReturn(Set.of("process_1"));
+    givenTargetsFor(List.of(definition));
     stubbedValuesByKey.put("Process_1", 7_000.0);
 
     // when computing a single range
@@ -537,6 +944,7 @@ class BusinessValueOverviewComputeServiceTest {
       final SearchLimitsRepository searchLimits) {
     return new BusinessValueOverviewComputeService(
         targetRepository,
+        overviewRepository,
         overviewWriter,
         definitionService,
         reportService,
@@ -577,6 +985,7 @@ class BusinessValueOverviewComputeServiceTest {
     when(mappingMetadataRepository.getProcessDefinitionKeysWithInstanceIndex())
         .thenReturn(
             keys.stream().map(k -> k.toLowerCase(Locale.ENGLISH)).collect(Collectors.toSet()));
+    givenTargetsFor(definitions);
   }
 
   private void givenDefinitionsAcrossTenants(final Map<String, Integer> countsByTenant) {
@@ -601,6 +1010,63 @@ class BusinessValueOverviewComputeServiceTest {
     when(definitionService.getAllDefinitionsWithTenants(DefinitionType.PROCESS))
         .thenReturn(definitions);
     when(mappingMetadataRepository.getProcessDefinitionKeysWithInstanceIndex()).thenReturn(keys);
+    givenTargetsFor(definitions);
+  }
+
+  /**
+   * Targets every definition the fixture created. The sweep only measures targeted definitions, so
+   * without this the chunking and fan-in tests would all be asserting on an empty evaluation set.
+   * Tests that care about the target filter itself override {@code targetRepository.scanAll()}.
+   */
+  private void givenTargetsFor(final List<DefinitionWithTenantIdsDto> definitions) {
+    final List<BusinessValueTargetDto> targets = new ArrayList<>();
+    for (final DefinitionWithTenantIdsDto def : definitions) {
+      for (final String tenantId : def.getTenantIds()) {
+        targets.add(cycleTimeTarget(tenantId, def.getKey(), 1_000L));
+      }
+    }
+    when(targetRepository.scanAll()).thenReturn(targets);
+  }
+
+  private static BusinessValueTargetDto cycleTimeTarget(
+      final String tenantId, final String processDefinitionKey, final long cycleTimeMillis) {
+    return new BusinessValueTargetDto(
+        processDefinitionKey,
+        tenantId,
+        cycleTimeMillis,
+        TargetValueUnit.MILLIS,
+        null,
+        OffsetDateTime.now(),
+        "someone");
+  }
+
+  private void givenExistingRowsForAllRanges(
+      final String tenantId,
+      final String processDefinitionKey,
+      final Long cycleMillis,
+      final Double automationPct) {
+    when(overviewRepository.getByKey(eq(tenantId), eq(processDefinitionKey), any()))
+        .thenAnswer(
+            invocation ->
+                Optional.of(
+                    new BusinessValueOverviewDto(
+                        tenantId,
+                        processDefinitionKey,
+                        processDefinitionKey,
+                        invocation.getArgument(2),
+                        OffsetDateTime.now(),
+                        new BusinessValueOverviewDto.CycleTimeBlock(cycleMillis, null, null),
+                        new BusinessValueOverviewDto.AutomationRateBlock(automationPct, null, null),
+                        false,
+                        0,
+                        0)));
+  }
+
+  private List<BusinessValueOverviewDto> capturedTargetWriteRows() {
+    final ArgumentCaptor<List<BusinessValueOverviewDto>> captor =
+        ArgumentCaptor.forClass(List.class);
+    verify(overviewWriter).bulkUpsertFromTargetWrite(captor.capture());
+    return captor.getValue();
   }
 
   private List<BusinessValueOverviewDto> capturedRows() {
