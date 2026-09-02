@@ -8,25 +8,28 @@
 package io.camunda.zeebe.engine.processing.variable;
 
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.util.Either;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * A swappable strategy for resolving an element's input mappings into a single MsgPack result
- * document. Implementations differ in how (and whether) earlier mappings' results are visible to
- * later ones, but never apply the result to variable scope themselves — the caller keeps ownership
- * of doing that, so a future shadow/comparison mode can run multiple resolvers and diff their
- * documents without touching this interface again.
+ * A swappable strategy for resolving an element's mappings into a single MsgPack result document.
+ * Implementations differ in how (and whether) earlier mappings' results are visible to later ones,
+ * but never apply the result to variable scope themselves — the caller keeps ownership of doing
+ * that, so a future shadow/comparison mode can run multiple resolvers and diff their documents
+ * without touching this interface again.
+ *
+ * @param <M> the type of mappings record to resolve (e.g. {@link
+ *     io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings} or {@link
+ *     io.camunda.zeebe.engine.processing.deployment.model.element.OutputMappings})
  */
 @NullMarked
-public interface MappingResolver {
+public interface MappingResolver<M> {
 
   /**
-   * Resolves the given input mappings into a single MsgPack result document.
+   * Resolves the given mappings into a single MsgPack result document.
    *
-   * @param inputMappings the element's input mappings, in modeling order
+   * @param mappings the element's mappings, in modeling order
    * @param processor the pre-scoped expression processor; its evaluation context is already scoped
    *     to the element instance, and carries {@link MappingExpressionProcessor#getMappingContext()}
    *     with element identity (element ID, scope key, process instance key, process definition key,
@@ -34,6 +37,5 @@ public interface MappingResolver {
    * @return either the resolved result document, or the failure of the first mapping that failed to
    *     evaluate
    */
-  Either<Failure, DirectBuffer> resolveInputMappings(
-      InputMappings inputMappings, MappingExpressionProcessor processor);
+  Either<Failure, DirectBuffer> resolve(M mappings, MappingExpressionProcessor processor);
 }
