@@ -62,23 +62,16 @@ final class PhysicalTenantEncodedPathOidcRoutingIT {
   @Container
   static final KeycloakContainer KEYCLOAK = DefaultTestContainers.createDefaultKeycloak();
 
-  private static final String TENANT_A = "tenanta";
-
-  /** {@code tenanta} with its last character written as {@code %61}. */
-  private static final String ENCODED_TENANT_ID = "tenant%61";
-
   private static final String REALM = "realm-a";
   private static final String CLIENT_ID = "client-a";
   private static final String CLIENT_SECRET = "secret-a";
-  private static final String AUDIENCE = "zeebe";
-  private static final String ME_ENDPOINT = "/v2/authentication/me";
   private static final Pattern ACCESS_TOKEN =
       Pattern.compile("\"access_token\"\\s*:\\s*\"([^\"]+)\"");
 
   private static final PhysicalTenantsITHelper TENANTS =
       PhysicalTenantsITHelper.builder()
           .withTenant(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, Storage.rdbmsH2("default"))
-          .withTenant(TENANT_A, Storage.rdbmsH2(TENANT_A))
+          .withTenant(EncodedTenantPaths.TENANT_ID, Storage.rdbmsH2(EncodedTenantPaths.TENANT_ID))
           .build();
 
   @TestZeebe(autoStart = false, purgeAfterEach = false)
@@ -102,7 +95,7 @@ final class PhysicalTenantEncodedPathOidcRoutingIT {
           c.getAuthentication().getOidc().setRedirectUri("{baseUrl}/login/oauth2/code/oidc");
         });
     BROKER.withPtConfig(
-        TENANT_A,
+        EncodedTenantPaths.TENANT_ID,
         c -> {
           final var oidc = c.getSecurity().getAuthentication().getOidc();
           oidc.setIssuerUri(issuer);
@@ -110,7 +103,9 @@ final class PhysicalTenantEncodedPathOidcRoutingIT {
           oidc.setRedirectUri("{baseUrl}/login/oauth2/code/oidc");
         });
     BROKER.withProperty(
-        "camunda.physical-tenants." + TENANT_A + ".security.authentication.providers.assigned[0]",
+        "camunda.physical-tenants."
+            + EncodedTenantPaths.TENANT_ID
+            + ".security.authentication.providers.assigned[0]",
         "oidc");
 
     BROKER.start();
@@ -121,7 +116,9 @@ final class PhysicalTenantEncodedPathOidcRoutingIT {
         .ignoreExceptions()
         .untilAsserted(
             () ->
-                assertThat(get("/physical-tenants/" + TENANT_A + ME_ENDPOINT).statusCode())
+                assertThat(
+                        get(EncodedTenantPaths.meEndpointFor(EncodedTenantPaths.TENANT_ID))
+                            .statusCode())
                     .isEqualTo(200));
   }
 
@@ -130,8 +127,8 @@ final class PhysicalTenantEncodedPathOidcRoutingIT {
     // given — a token the configured tenant's chain accepts, proven by the baseline above
 
     // when — the same endpoint and the same token, with the tenant spelled two ways
-    final var plain = get("/physical-tenants/" + TENANT_A + ME_ENDPOINT);
-    final var encoded = get("/physical-tenants/" + ENCODED_TENANT_ID + ME_ENDPOINT);
+    final var plain = get(EncodedTenantPaths.meEndpointFor(EncodedTenantPaths.TENANT_ID));
+    final var encoded = get(EncodedTenantPaths.meEndpointFor(EncodedTenantPaths.ENCODED_TENANT_ID));
 
     // then
     assertThat(plain.statusCode())
@@ -151,17 +148,8 @@ final class PhysicalTenantEncodedPathOidcRoutingIT {
   }
 
   private static HttpResponse<String> get(final String rawPath) throws Exception {
-    final var base = BROKER.restAddress().toString().replaceAll("/+$", "");
-    // A raw request: a CamundaClient builds the tenant prefix itself and would normalize away the
-    // encoding under test.
-    try (final var client = HttpClient.newHttpClient()) {
-      return client.send(
-          HttpRequest.newBuilder(URI.create(base + rawPath))
-              .header("Authorization", "Bearer " + bearerToken)
-              .GET()
-              .build(),
-          BodyHandlers.ofString());
-    }
+    return EncodedTenantPaths.get(
+        BROKER.restAddress().toString(), rawPath, "Bearer " + bearerToken);
   }
 
   private static String fetchToken() throws Exception {
@@ -169,9 +157,7 @@ final class PhysicalTenantEncodedPathOidcRoutingIT {
         "grant_type=client_credentials&client_id="
             + URLEncoder.encode(CLIENT_ID, StandardCharsets.UTF_8)
             + "&client_secret="
-            + URLEncoder.encode(CLIENT_SECRET, StandardCharsets.UTF_8)
-            + "&audience="
-            + URLEncoder.encode(AUDIENCE, StandardCharsets.UTF_8);
+            + URLEncoder.encode(CLIENT_SECRET, StandardCharsets.UTF_8);
     try (final var client = HttpClient.newHttpClient()) {
       final var response =
           client.send(
