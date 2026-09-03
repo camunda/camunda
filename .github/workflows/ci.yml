@@ -33,6 +33,10 @@ env:
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
   GHA_BEST_PRACTICES_LINTER: enabled
   FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
+  # Bounds a hung `actions/checkout`; only for shallow ones, a `fetch-depth: 0` clone needs more.
+  # A shallow clone of this repo normally lands in well under a minute, but GitHub-side slowness
+  # occasionally needs more headroom.
+  SHALLOW_CHECKOUT_TIMEOUT_MIN: 3
 
 jobs:
   detect-changes:
@@ -60,7 +64,8 @@ jobs:
     permissions:
       pull-requests: read
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       # Detect changes against the base branch
@@ -80,9 +85,9 @@ jobs:
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
       CONFTEST_VERSION: '0.56.0'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        timeout-minutes: 1
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: camunda/infra-global-github-actions/actionlint@0077d059bb0d698e1086a4b46517cb7917fa8300 # actionlint-1.0.2
@@ -131,8 +136,9 @@ jobs:
       - name: Determine fetch depth for checkout
         id: depth
         run: |
-          echo "depth=$(expr ${{ github.event.pull_request.commits }} + 1)" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+          echo "depth=$((${{ github.event.pull_request.commits }} + 1))" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: ${{ steps.depth.outputs.depth }}
@@ -161,8 +167,9 @@ jobs:
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -190,8 +197,9 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Check for missing junit-vintage-engine
@@ -214,8 +222,9 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 5
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -257,8 +266,9 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -286,8 +296,9 @@ jobs:
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/build-frontend
@@ -319,8 +330,9 @@ jobs:
     timeout-minutes: 30
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -440,8 +452,9 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -528,8 +541,9 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Log Test Details
@@ -619,8 +633,9 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.generate-db-versions.outputs.elasticsearch-8 }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
@@ -918,8 +933,9 @@ jobs:
       run:
         working-directory: identity/client
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
@@ -1092,9 +1108,9 @@ jobs:
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - name: Checkout repository
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -1148,8 +1164,9 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
     if: needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - id: pr-body
@@ -1212,8 +1229,9 @@ jobs:
             # Spring Boot pin, rather than against a starter recompiled under the profile.
             consumer-modules: "testing/camunda-process-test-spring-4"
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -1284,8 +1302,9 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/apt-fast-mirror-failover
@@ -1352,7 +1371,8 @@ jobs:
       - validate-pom-metadata
       - zeebe-ci
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Check for aborted jobs
@@ -1395,8 +1415,9 @@ jobs:
       cancel-in-progress: false
       queue: max
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -1477,8 +1498,9 @@ jobs:
       cancel-in-progress: false
       queue: max
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
