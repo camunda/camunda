@@ -69,7 +69,7 @@ export class IdentityAuthorizationsPage {
     // The clickable label and the underlying input are separate nodes; use this
     // one to assert checked state, and the label above to toggle it.
     this.accessPermissionCheckbox = (name) =>
-      this.page.locator(`input#${name.toUpperCase()}`);
+      this.page.getByRole('checkbox', {name: name.toUpperCase()});
     this.createAuthorizationOwnerTypeComboBox =
       this.createAuthorizationModal.getByRole('combobox', {name: 'Owner type'});
     // The Select's popover renders in a portal outside the dialog's DOM
