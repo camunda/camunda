@@ -56,16 +56,16 @@ public final class UsageMetricsServices
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.system().readUsageMetric())));
 
+    final var executor = executorProvider.getExecutor();
     final CompletableFuture<UsageMetricStatisticsEntity> statsFuture =
         CompletableFuture.supplyAsync(
-            () -> authUsageMetricsSearchClient.usageMetricStatistics(query),
-            executorProvider.getExecutor());
+            () -> authUsageMetricsSearchClient.usageMetricStatistics(query), executor);
     final CompletableFuture<UsageMetricTUStatisticsEntity> tuStatsFuture =
         CompletableFuture.supplyAsync(
             () ->
                 authUsageMetricsSearchClient.usageMetricTUStatistics(
                     mapToUsageMetricsTUQuery(query)),
-            executorProvider.getExecutor());
+            executor);
 
     return SearchQueryResult.of(Tuple.of(statsFuture.join(), tuStatsFuture.join()));
   }
