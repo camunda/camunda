@@ -190,6 +190,68 @@ class AgentInstanceRequestValidatorTest {
     }
 
     @Test
+    @DisplayName("Should reject a batch item with a historyItemId over 256 characters")
+    void shouldRejectHistoryItemWithTooLongHistoryItemId() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
+              .build();
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("a".repeat(257))
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.USER)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("hello")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail())
+          .isEqualTo("The provided history[0].historyItemId exceeds the limit of 256 characters.");
+    }
+
+    @Test
+    @DisplayName("Should accept a batch item with a historyItemId of exactly 256 characters")
+    void shouldAcceptHistoryItemWithMaxLengthHistoryItemId() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
+              .build();
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("a".repeat(256))
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.USER)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("hello")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isEmpty();
+    }
+
+    @Test
     @DisplayName("Should report the correct index for a batch item beyond the first")
     void shouldReportCorrectIndexForSecondHistoryItem() {
       final var request =
