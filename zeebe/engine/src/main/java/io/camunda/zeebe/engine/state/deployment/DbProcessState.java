@@ -493,6 +493,13 @@ public final class DbProcessState implements MutableProcessState {
     return cachedProcess;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>When the highest version is {@code ACTIVE}, it is returned immediately without loading known
+   * versions. The reverse scan only runs when that version is not {@code ACTIVE}, and it skips
+   * {@code version >= latestVersion} because that version was already checked.
+   */
   @Override
   public DeployedProcess getLatestActiveProcessVersionByProcessId(
       final DirectBuffer processIdBuffer, final String tenantId) {
@@ -504,15 +511,17 @@ public final class DbProcessState implements MutableProcessState {
       return process;
     }
 
-    final String processId = bufferAsString(processIdBuffer);
-    var candidate = findProcessVersionBefore(processId, process.getVersion(), tenantId);
-    while (candidate.isPresent()) {
-      final int candidateVersion = candidate.get();
-      process = getProcessByProcessIdAndVersion(processIdBuffer, candidateVersion, tenantId);
+    final int latestVersion = process.getVersion();
+    final var knownVersions = getKnownProcessVersions(bufferAsString(processIdBuffer), tenantId);
+    for (int i = knownVersions.size() - 1; i >= 0; i--) {
+      final int version = knownVersions.get(i).intValue();
+      if (version >= latestVersion) {
+        continue;
+      }
+      process = getProcessByProcessIdAndVersion(processIdBuffer, version, tenantId);
       if (process != null && process.getState() == PersistedProcessState.ACTIVE) {
         return process;
       }
-      candidate = findProcessVersionBefore(processId, candidateVersion, tenantId);
     }
     return null;
   }
