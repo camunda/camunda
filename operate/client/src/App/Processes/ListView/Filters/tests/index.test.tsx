@@ -73,6 +73,38 @@ describe('Filters', () => {
     );
   });
 
+  it('should mark deleted process definitions in the name filter', async () => {
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition(),
+        createProcessDefinition({
+          processDefinitionId: 'deletedProcess',
+          processDefinitionKey: 'deletedProcess1',
+          name: 'Deleted process',
+          state: 'DELETED',
+        }),
+      ]),
+    );
+
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', {
+          name: 'Name',
+        }),
+      ).toBeEnabled(),
+    );
+
+    await user.click(screen.getByRole('combobox', {name: 'Name'}));
+
+    expect(
+      screen.getByRole('option', {name: 'Deleted process (Deleted)'}),
+    ).toBeInTheDocument();
+  });
+
   it.todo('should load values from the URL', async () => {
     const MOCK_PARAMS = {
       processDefinitionId: 'bigVarProcess',

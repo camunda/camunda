@@ -57,12 +57,15 @@ const ProcessField: React.FC = observer(() => {
             }
           }}
           items={definitions.map((definition) => {
+            const label =
+              isMultiTenancyEnabled && !specificTenantId
+                ? `${definition.label} - ${tenantsById[definition.tenantId]}`
+                : definition.label;
+
             return {
               id: definition.identifier,
               label:
-                isMultiTenancyEnabled && !specificTenantId
-                  ? `${definition.label} - ${tenantsById[definition.tenantId]}`
-                  : definition.label,
+                definition.state === 'DELETED' ? `${label} (Deleted)` : label,
             };
           })}
           value={input.value}
