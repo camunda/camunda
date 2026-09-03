@@ -11,6 +11,8 @@ import {SessionWatcher} from '#/shared/auth/shadcn.components/SessionWatcher';
 import {queries} from '#/shared/http/queries';
 import {storeSessionState} from '#/shared/browser-storage/session-storage';
 import {Header} from '#/shared/header/shadcn.components/Header';
+import {NotFoundPage} from '#/shared/pages/shadcn.components/NotFoundPage';
+import {PageLayout} from '@camunda/design-system';
 
 export const Route = createFileRoute('/shadcn/_auth')({
 	beforeLoad: async ({location, context: {queryClient}}) => {
@@ -33,6 +35,11 @@ export const Route = createFileRoute('/shadcn/_auth')({
 			});
 		}
 	},
+	notFoundComponent: () => (
+		<PageLayout>
+			<NotFoundPage />
+		</PageLayout>
+	),
 	component() {
 		return (
 			<>

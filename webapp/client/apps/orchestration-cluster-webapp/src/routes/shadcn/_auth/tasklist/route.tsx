@@ -10,8 +10,9 @@ import {createFileRoute} from '@tanstack/react-router';
 import {assertComponentAccessible} from '#/shared/componentAccess';
 import {ComponentAccessDeniedError, ComponentNotAvailableError, ForbiddenError} from '#/shared/errors';
 import {queries} from '#/shared/http/queries';
-import {ComponentAccessDeniedPage} from '#/shared/pages/ComponentAccessDeniedPage';
-import {ForbiddenPage} from '#/shared/pages/ForbiddenPage';
+import {ComponentAccessDeniedPage} from '#/shared/pages/shadcn.components/ComponentAccessDeniedPage';
+import {ForbiddenPage} from '#/shared/pages/shadcn.components/ForbiddenPage';
+import {NotFoundPage} from '#/shared/pages/shadcn.components/NotFoundPage';
 import {PageLayout} from '@camunda/design-system';
 
 export const Route = createFileRoute('/shadcn/_auth/tasklist')({
@@ -21,7 +22,11 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist')({
 	},
 	errorComponent: ({error}) => {
 		if (error instanceof ComponentAccessDeniedError) {
-			return <ComponentAccessDeniedPage />;
+			return (
+				<PageLayout>
+					<ComponentAccessDeniedPage />
+				</PageLayout>
+			);
 		}
 
 		if (error instanceof ComponentNotAvailableError || error instanceof ForbiddenError) {
@@ -34,6 +39,11 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist')({
 
 		throw error;
 	},
+	notFoundComponent: () => (
+		<PageLayout>
+			<NotFoundPage />
+		</PageLayout>
+	),
 	head: () => ({
 		meta: [
 			{
