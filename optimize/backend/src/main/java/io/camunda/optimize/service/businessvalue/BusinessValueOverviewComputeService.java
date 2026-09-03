@@ -89,9 +89,10 @@ import org.springframework.stereotype.Component;
  * <ul>
  *   <li><b>A target cleared while a sweep runs.</b> The definition was selected for measurement, so
  *       the sweep writes its row with the target and verdict cleared — correct, but carrying the
- *       measurements this sweep took rather than the fresher ones the save itself wrote. Only the
- *       newly-targeted direction is skipped before the write, because there the sweep has no
- *       measurements at all and would replace good values with nulls.
+ *       measurements this sweep took rather than the fresher ones the save itself wrote. The
+ *       opposite transition — a definition that became targeted mid-sweep — is the one skipped
+ *       before the write, because there the sweep has no measurements at all and would replace good
+ *       values with nulls.
  *   <li><b>Two saves for the same definition at once.</b> Each applies the target it persisted, so
  *       neither can blend the other's values, but the writes are not ordered. If the later save's
  *       measurement finishes first, the earlier one lands last and the rows end up describing a

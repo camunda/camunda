@@ -580,6 +580,30 @@ class BusinessValueOverviewReadServiceTest {
     Awaitility.await().untilAsserted(() -> verify(computeService).computeOverviewRows(any()));
   }
 
+  /**
+   * A null lastComputedAt means the row was written but never measured, which is a distinct state
+   * from "measured a long time ago" and decides whether the backstop fires. Pinned because the
+   * branch is easy to lose: a future refactor that defaulted the timestamp instead of treating null
+   * as stale would leave such a row permanently unmeasured, with nothing to trigger a recompute.
+   */
+  @Test
+  void shouldTreatARowWithNoTimestampAsStale() {
+    // given a targeted row that has never been stamped
+    when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any()))
+        .thenReturn(
+            List.of(
+                stamp(
+                    row(TENANT_A, "never-stamped", cyc(5_000L, 1_000L, false), autoNull(), 1, 0),
+                    null)));
+    stubCurrentDefinitions(new DefKey(TENANT_A, "never-stamped"));
+
+    // when
+    readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then the backstop fires, rather than the row sitting unmeasured forever
+    Awaitility.await().untilAsserted(() -> verify(computeService).computeOverviewRows(any()));
+  }
+
   // --- target-only definitions: imported since the last sweep, so no computed row yet ---
 
   /**

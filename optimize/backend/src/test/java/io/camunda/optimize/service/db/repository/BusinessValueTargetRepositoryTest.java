@@ -9,16 +9,33 @@ package io.camunda.optimize.service.db.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import co.elastic.clients.util.ObjectBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
+import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.es.BusinessValueTargetRepositoryES;
+import io.camunda.optimize.service.db.repository.os.BusinessValueTargetRepositoryOS;
+import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.importing.ZeebeConstants;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class BusinessValueTargetRepositoryTest {
 
@@ -41,6 +58,76 @@ class BusinessValueTargetRepositoryTest {
     // then
     assertThat(targets).isEmpty();
     verifyNoInteractions(esClient);
+  }
+
+  /**
+   * The cap must fail loudly rather than truncate. readByTenants backs the overview read, and a
+   * silently short result would drop a tenant's targets from the response with no signal — the
+   * caller would see fewer targeted processes than they have and have no way to tell.
+   *
+   * <p>Covered per engine because the two implementations build and bound the query separately, so
+   * one could regress while the other stayed correct.
+   */
+  @Test
+  void shouldFailRatherThanTruncateWhenElasticsearchReturnsTheFetchLimit() throws Exception {
+    // given a backend returning exactly the fetch cap
+    final OptimizeElasticsearchClient esClient = mock(OptimizeElasticsearchClient.class);
+    // The request builder resolves the index alias through the client's own indexNameService field
+    // rather than a method, so a bare mock leaves it null and the builder trips before the cap
+    // check is ever reached.
+    final OptimizeIndexNameService nameService = mock(OptimizeIndexNameService.class);
+    when(nameService.getOptimizeIndexAliasForIndex(anyString())).thenReturn("optimize-target");
+    ReflectionTestUtils.setField(esClient, "indexNameService", nameService);
+    final SearchResponse<BusinessValueTargetDto> response = mock(SearchResponse.class);
+    final HitsMetadata<BusinessValueTargetDto> hits = mock(HitsMetadata.class);
+    when(hits.hits()).thenReturn(cappedHits());
+    when(response.hits()).thenReturn(hits);
+    when(esClient.search(any(SearchRequest.class), eq(BusinessValueTargetDto.class)))
+        .thenReturn(response);
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                new BusinessValueTargetRepositoryES(esClient, new ObjectMapper())
+                    .readByTenants(List.of("tenant-a")))
+        .isInstanceOf(OptimizeRuntimeException.class)
+        .hasMessageContaining("LIST_FETCH_LIMIT");
+  }
+
+  @Test
+  void shouldFailRatherThanTruncateWhenOpenSearchReturnsTheFetchLimit() {
+    // given a backend returning exactly the fetch cap
+    final OptimizeOpenSearchClient osClient = mock(OptimizeOpenSearchClient.class);
+    when(osClient.searchValues(any(), eq(BusinessValueTargetDto.class)))
+        .thenReturn(
+            IntStream.range(0, DatabaseConstants.LIST_FETCH_LIMIT)
+                .mapToObj(i -> targetFor("process-" + i))
+                .toList());
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                new BusinessValueTargetRepositoryOS(osClient, mock(OptimizeIndexNameService.class))
+                    .readByTenants(List.of("tenant-a")))
+        .isInstanceOf(OptimizeRuntimeException.class)
+        .hasMessageContaining("LIST_FETCH_LIMIT");
+  }
+
+  private static List<Hit<BusinessValueTargetDto>> cappedHits() {
+    return IntStream.range(0, DatabaseConstants.LIST_FETCH_LIMIT)
+        .mapToObj(
+            i ->
+                Hit.of(
+                    (Function<
+                            Hit.Builder<BusinessValueTargetDto>,
+                            ObjectBuilder<Hit<BusinessValueTargetDto>>>)
+                        b -> b.index("i").id(String.valueOf(i)).source(targetFor("process-" + i))))
+        .toList();
+  }
+
+  private static BusinessValueTargetDto targetFor(final String processDefinitionKey) {
+    return new BusinessValueTargetDto(
+        processDefinitionKey, "tenant-a", 1_000L, null, null, null, "someone");
   }
 
   @Test
