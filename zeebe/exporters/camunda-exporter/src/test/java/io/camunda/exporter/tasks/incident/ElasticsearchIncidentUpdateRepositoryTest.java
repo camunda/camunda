@@ -8,8 +8,10 @@
 package io.camunda.exporter.tasks.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
 import co.elastic.clients.elasticsearch.core.ClearScrollResponse;
@@ -86,7 +88,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofSeconds(5));
-    Mockito.verify(client, Mockito.never()).clearScroll(Mockito.any(ClearScrollRequest.class));
+    verify(client, Mockito.never()).clearScroll(Mockito.any(ClearScrollRequest.class));
   }
 
   @ParameterizedTest
@@ -125,7 +127,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
     // then - client.bulk() must not be invoked; previously this sent an empty body and ES threw
     // "[es/bulk] failed: [parse_exception] request body is required"
     assertThat(result).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(List.of());
-    Mockito.verify(client, Mockito.never()).bulk(Mockito.any(BulkRequest.class));
+    verify(client, Mockito.never()).bulk(Mockito.any(BulkRequest.class));
   }
 
   @Test
@@ -188,7 +190,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
     // then - a failed refresh must abort the batch (and let it retry) rather than search a
     // potentially stale, partially-refreshed index and advance the cursor past unseen entries
     assertThat(result).failsWithin(Duration.ofSeconds(5));
-    Mockito.verify(client, Mockito.never())
+    verify(client, Mockito.never())
         .search(Mockito.any(SearchRequest.class), Mockito.any(Class.class));
   }
 
@@ -210,6 +212,45 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
     // then - an unavailable shard must fail the search (triggering a retry) instead of silently
     // returning partial hits and letting the cursor skip the entries on the missing shard
     assertThat(searchCaptor.getValue().allowPartialSearchResults()).isFalse();
+  }
+
+  @Test
+  void shouldUseExactLongBoundsWhenReadingBatch() {
+    // given
+    final var repository = createRepository();
+    final var indicesClient = Mockito.mock(ElasticsearchIndicesAsyncClient.class);
+    Mockito.when(client.indices()).thenReturn(indicesClient);
+    Mockito.when(indicesClient.refresh(Mockito.any(Function.class)))
+        .thenReturn(CompletableFuture.completedFuture(buildMinimalRefreshResponse()));
+    Mockito.when(client.search(Mockito.any(SearchRequest.class), Mockito.any(Class.class)))
+        .thenReturn(CompletableFuture.completedFuture(buildMinimalSearchResponse()));
+
+    // larger than double can accurately represent, so the repository must use exact long bounds in
+    // the search query to avoid skipping entries
+    final long fromPosition = (2L << 54) + 1;
+
+    // when
+    final var result = repository.getPendingIncidentsBatch(fromPosition, 100);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(5));
+
+    final var searchCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+    verify(client).search(searchCaptor.capture(), Mockito.any(Class.class));
+
+    final var searchRequest = searchCaptor.getValue();
+
+    final var positionRange =
+        searchRequest.query().bool().must().stream()
+            .filter(Query::isRange)
+            .map(q -> q.range().longNumber())
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(positionRange.gt()).isEqualTo(fromPosition);
+    assertThat(positionRange.lt()).isNull();
+    assertThat(positionRange.lte()).isNull();
+    assertThat(positionRange.gte()).isNull();
   }
 
   private RefreshResponse buildMinimalRefreshResponse() {
