@@ -211,18 +211,6 @@ public final class AgentInstanceCreateProcessor
             .setTenantId(elementInstanceValue.getTenantId())
             .setStatus(AgentInstanceStatus.INITIALIZING);
 
-    event
-        .getDefinition()
-        .setModel(commandValue.getDefinition().getModel())
-        .setProvider(commandValue.getDefinition().getProvider())
-        .setSystemPrompt(commandValue.getDefinition().getSystemPrompt());
-
-    event
-        .getLimits()
-        .setMaxTokens(commandValue.getLimits().getMaxTokens())
-        .setMaxModelCalls(commandValue.getLimits().getMaxModelCalls())
-        .setMaxToolCalls(commandValue.getLimits().getMaxToolCalls());
-
     if (!commandValue.getHistory().isEmpty()) {
       historyBatchHelper.applyInstanceChangesFromHistory(
           event,
