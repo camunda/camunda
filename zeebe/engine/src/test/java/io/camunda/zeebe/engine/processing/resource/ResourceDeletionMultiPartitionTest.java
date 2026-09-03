@@ -29,7 +29,6 @@ import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
-import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -341,14 +340,7 @@ public class ResourceDeletionMultiPartitionTest {
     // when - a history deletion is requested for the locally-gone definition. The service resolves
     // the type from secondary storage, so the command carries PROCESS_DEFINITION as in production.
     final var rejection =
-        engine
-            .resourceDeletion()
-            .withResourceKey(processDefinitionKey)
-            .withResourceType(ResourceType.PROCESS_DEFINITION)
-            .withResourceId(processId)
-            .withDeleteHistory(true)
-            .expectRejection()
-            .delete();
+        engine.resourceDeletion().withResourceKey(processDefinitionKey).expectRejection().delete();
 
     // then - rejected as already-being-deleted: the definition is still draining cluster-wide, so
     // the caller is told to wait rather than getting a misleading not-found

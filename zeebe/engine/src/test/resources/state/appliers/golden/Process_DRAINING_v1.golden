@@ -25,7 +25,7 @@ public class ProcessDrainingApplier implements TypedEventApplier<ProcessIntent, 
 
   @Override
   public void applyState(final long key, final ProcessRecord value) {
-    processState.markDraining(value);
+    processState.updateProcessState(value, PersistedProcessState.DRAINING);
 
     // Only the deployment partition aggregates; the event key is minted locally so it encodes the
     // applying partition. Seed one pending entry per frozen partition; each DELETE_COMPLETE clears

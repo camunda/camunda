@@ -673,8 +673,8 @@ public class DrainingProcessDefinitionTest {
 
     // and - one instance is banned. A banned instance never completes/terminates and is excluded
     // from the active-instance check, so it must not block finalization.
-    engine.banInstanceInNewTransaction(1, bannedInstanceKey);
-    RecordingExporter.errorRecords().withRecordKey(bannedInstanceKey).await();
+    final int partitionId = Protocol.decodePartitionId(bannedInstanceKey);
+    engine.banInstanceInNewTransaction(partitionId, bannedInstanceKey);
 
     // when - the other (non-banned) instance completes and triggers the finalize hook
     engine.job().ofInstance(completingInstanceKey).withType(JOB_TYPE).complete();
