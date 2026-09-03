@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Rerun failed jobs on runner shutdown
-        uses: camunda/infra-global-github-actions/rerun-failed-run@475528365f4010480dccff71ccac554cc3352e7c # rerun-failed-run: v1.1.2
+        uses: camunda/infra-global-github-actions/rerun-failed-run@475528365f4010480dccff71ccac554cc3352e7c # rerun-failed-run-1.1.2
         with:
           error-messages: |
             The runner has received a shutdown signal

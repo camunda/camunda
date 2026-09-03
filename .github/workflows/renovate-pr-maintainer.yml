@@ -52,7 +52,7 @@ jobs:
     # failed required jobs.
     - name: Maintain Renovate PRs
       id: run-maintainer
-      uses: camunda/infra-global-github-actions/renovate-pr-maintainer@d17726003bd01bcc7513556cc48005e8c6850938
+      uses: camunda/infra-global-github-actions/renovate-pr-maintainer@e5e6668cef06b3ab76e94a8eb0045b9b16b33bd1 # renovate-pr-maintainer-1.1.0
       with:
         dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
         github-token: ${{ secrets.GITHUB_TOKEN }}

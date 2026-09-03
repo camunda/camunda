@@ -49,7 +49,7 @@ jobs:
     # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
     - id: sanitize
       if: inputs.app-name == ''
-      uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name: v1.0.0
+      uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name-1.0.0
       with:
         branch: ${{ github.head_ref }} # head_ref = branch on PR
         max_length: '15'
@@ -71,7 +71,7 @@ jobs:
     # Setup: Generate Github Token for the Github App
     - name: Generate a GitHub token
       id: github-token
-      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@67d00e9260887361a31f6446252fffbecae4a02e # generate-github-app-token-from-vault-secrets: v1.1.1
+      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@67d00e9260887361a31f6446252fffbecae4a02e # generate-github-app-token-from-vault-secrets-1.1.1
       with:
         github-app-id-vault-key: GITHUB_PREVIEW_ENVIRONMENTS_APP_ID
         github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -85,7 +85,7 @@ jobs:
     #########################################################################
     # Tear down preview environment
     - name: Tear down Preview Environment
-      uses: camunda/infra-global-github-actions/preview-env/destroy@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env: v1.0.8
+      uses: camunda/infra-global-github-actions/preview-env/destroy@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env-1.0.8
       with:
         revision: ${{ inputs.ref || github.head_ref || github.ref_name }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
@@ -125,7 +125,7 @@ jobs:
     timeout-minutes: 5
     needs: [teardown-preview]
     steps:
-    - uses: camunda/infra-global-github-actions/preview-env/comment@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env: v1.0.8
+    - uses: camunda/infra-global-github-actions/preview-env/comment@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env-1.0.8
 
     - name: Checkout
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
