@@ -31,5 +31,6 @@ public final class AgentInstanceCompletedApplier
     agentInstanceState.delete(key, value);
     // Only removal path for an agent instance; any new one needs this same cleanup call.
     agentHistoryState.deleteCommittedHistoryItemKeys(key);
+    agentHistoryState.deleteMetricsAccumulatedIds(key);
   }
 }
