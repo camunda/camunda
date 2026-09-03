@@ -39,7 +39,10 @@ const importRichTextEditor = async () => {
 let richTextEditorPromise: ReturnType<typeof importRichTextEditor> | undefined;
 
 const loadRichTextEditor = () => {
-  richTextEditorPromise ??= importRichTextEditor();
+  richTextEditorPromise ??= importRichTextEditor().catch((error: unknown) => {
+    richTextEditorPromise = undefined;
+    throw error;
+  });
   return richTextEditorPromise;
 };
 
