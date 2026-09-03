@@ -21,10 +21,6 @@ import org.slf4j.LoggerFactory;
 /**
  * Collects every registered {@link MigrationStatusProvider} and combines their per-physical-tenant
  * statuses into one {@code Map<physicalTenantId, Map<conditionName, MigrationConditionStatus>>}.
- * Different consumers derive their own reduction over this shared, cache-smoothed map — the
- * actuator's upgrade-readiness endpoint computes a boolean, the public {@code GET
- * /cluster/v2/status/upgrade} endpoint ({@link ClusterUpgradeStatusServices}) computes one overall
- * {@link MigrationState} — so both read from the same instance and can never disagree.
  *
  * <p>Keeps the last confirmed {@code MIGRATED} status per (physical tenant, condition) pair.
  */

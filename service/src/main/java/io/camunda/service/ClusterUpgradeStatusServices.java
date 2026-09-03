@@ -18,17 +18,6 @@ import org.jspecify.annotations.NullMarked;
  * tenant and condition tracked by the shared {@link MigrationStatusAggregator} — the same instance
  * backing the {@code GET /actuator/upgradeReadiness} endpoint, so both can never disagree due to
  * independent caching.
- *
- * <p>Precedence: {@link MigrationState#MIGRATION_IN_PROGRESS} beats {@link MigrationState#UNKNOWN}
- * beats {@link MigrationState#MIGRATED} — any confidently-not-yet-migrated tenant/condition wins
- * over an inconclusive one, and only every known tenant/condition confirming {@code MIGRATED}
- * yields {@code MIGRATED}. An empty result (nothing known yet, e.g. before the first poll) folds
- * conservatively to {@link MigrationState#UNKNOWN}, never {@code MIGRATED}.
- *
- * <p>This service is cluster-wide, so it deliberately <b>exposes no physical tenant ids or
- * condition names</b>: it backs the unauthenticated {@code GET /cluster/v2/status/upgrade}, the
- * same concern {@link ClusterStatusServices} documents for {@code GET /cluster/v2/status} (see
- * {@code docs/adr/management/001-physical-tenant-health-status-topology.md}).
  */
 @NullMarked
 public final class ClusterUpgradeStatusServices {
