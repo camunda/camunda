@@ -25,6 +25,8 @@ import java.util.stream.Stream;
  */
 public interface IncidentUpdateRepository extends AutoCloseable {
 
+  CompletionStage<Integer> getCountOfPendingIncidentUpdates(final long fromPosition);
+
   /**
    * Returns the next batch of sorted pending incident updates.
    *
@@ -202,6 +204,11 @@ public interface IncidentUpdateRepository extends AutoCloseable {
       long highestPosition, Map<Long, IncidentState> newIncidentStates) {}
 
   class NoopIncidentUpdateRepository implements IncidentUpdateRepository {
+
+    @Override
+    public CompletionStage<Integer> getCountOfPendingIncidentUpdates(final long fromPosition) {
+      return CompletableFuture.completedFuture(0);
+    }
 
     @Override
     public CompletionStage<PendingIncidentUpdateBatch> getPendingIncidentsBatch(
