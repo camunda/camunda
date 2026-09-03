@@ -11,19 +11,17 @@ import {createFileRoute, Outlet} from '@tanstack/react-router';
 import {ThemeProvider} from '#/shared/theme/shadcn.components/ThemeProvider';
 
 const Route = createFileRoute('/shadcn')({
-	component: RouteComponent,
+	component: function RouteComponent() {
+		return (
+			<ThemeProvider>
+				<Outlet />
+			</ThemeProvider>
+		);
+	},
 	head: () => ({
 		meta: [],
 		links: [{rel: 'stylesheet', href: appCss}],
 	}),
 });
-
-function RouteComponent() {
-	return (
-		<ThemeProvider>
-			<Outlet />
-		</ThemeProvider>
-	);
-}
 
 export {Route};
