@@ -229,11 +229,6 @@ test.describe('AI agent details', () => {
       modal.getByTestId('tool-call-output').getByText('"trackingNumber"'),
     ).toBeVisible();
     await processInstancePage.previewEditor.hideCaret();
-    await page.addStyleTag({
-      content:
-        '.monaco-editor :is(.scrollbar, .decorationsOverviewRuler) {opacity: 0 !important;}',
-    });
-    await page.mouse.move(0, 0);
 
     await expect(page).toHaveScreenshot();
   });
