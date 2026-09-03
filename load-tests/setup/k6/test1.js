@@ -2,10 +2,7 @@ import http from 'k6/http';
 import { sleep } from 'k6';
 import { Counter } from 'k6/metrics';
 
-// Metric in Prometheus will be: k6_topology_total
-const topology_requests = new Counter('topology');
-// Metric in Prometheus will be: k6_token_request_total
-const token_request = new Counter('token_request');
+const http_response = new Counter('http_response');
 
 export const options = {
   vus: 2,
@@ -31,7 +28,6 @@ export function setup() {
     client_secret: client_secret,
   };
 
-
   const response = http.post(token_url, payload, params);
     const result = response.body;
     if (response.status != 200) {
@@ -39,7 +35,7 @@ export function setup() {
     }
   const token = response.json('access_token');
   console.log("Authentication token fetched.");
-  token_request.add(1, { status: response.status });
+  http_response.add(1, { status: response.status, endpoint: 'token-request' });
 
   return token;
 }
@@ -61,7 +57,6 @@ export default (token) => {
 
   const response = http.get(url, params);
 
-  var status = response.status;
-  topology_requests.add(1, { status: response.status });
+  http_response.add(1, { status: response.status, endpoint: 'topology' });
   sleep(1);
 };
