@@ -9,6 +9,7 @@
 import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {defaultAssertionOptions} from '../utils/constants';
+import {waitForItemInList} from 'utils/waitForItemInList';
 
 export class IdentityTenantsPage {
   private page: Page;
@@ -34,7 +35,8 @@ export class IdentityTenantsPage {
   readonly assignUserButton: Locator;
   readonly assignUserModal: Locator;
   readonly assignUserSearchbox: Locator;
-  readonly assignUserNameOption: (name: string) => Locator;
+  readonly assignUserSearchboxResult: Locator;
+  readonly assignUserOption: (username: string) => Locator;
   readonly confirmAssignmentButton: Locator;
   readonly openTenantDetails: (rowName: string) => Locator;
   readonly removeUserButton: (rowName?: string) => Locator;
@@ -56,7 +58,9 @@ export class IdentityTenantsPage {
     this.editTenantButton = (rowName) =>
       this.tenantsList.getByRole('row', {name: rowName}).getByLabel('Edit');
     this.deleteTenantButton = (rowName) =>
-      this.tenantsList.getByRole('row', {name: rowName}).getByLabel('Delete');
+      this.tenantsList
+        .getByRole('row', {name: rowName})
+        .getByRole('button', {name: 'Delete', exact: true});
 
     this.createTenantModal = page.getByRole('dialog', {
       name: 'Create new tenant',
@@ -117,15 +121,17 @@ export class IdentityTenantsPage {
       name: 'Assign user',
     });
     this.assignUserModal = page.getByRole('dialog', {
-      name: 'assign user',
+      name: 'Assign user',
     });
-    this.assignUserSearchbox = this.assignUserModal.getByRole('searchbox', {
-      name: 'Search by full name',
+    this.assignUserSearchbox = this.assignUserModal.getByRole('combobox', {
+      name: 'Search by username',
     });
-    this.assignUserNameOption = (name) =>
-      this.assignUserModal.locator('.cds--list-box__menu-item', {
-        hasText: name,
-      });
+    this.assignUserSearchboxResult = page.getByRole('listbox');
+    this.assignUserOption = (username) =>
+      this.assignUserSearchboxResult
+        .getByRole('option')
+        .filter({hasText: username})
+        .first();
     this.confirmAssignmentButton = this.assignUserModal.getByRole('button', {
       name: 'Assign user',
     });
@@ -133,7 +139,9 @@ export class IdentityTenantsPage {
       'No users assigned to this tenant yet',
     );
     this.removeUserButton = (rowName) =>
-      page.getByRole('row', {name: rowName}).getByLabel('Remove');
+      page
+        .getByRole('row', {name: rowName})
+        .getByRole('button', {name: 'Remove'});
     this.userRow = (userName) =>
       this.tenantsList.getByRole('row', {name: userName});
     this.tenantCell = (tenantName) =>
@@ -173,10 +181,17 @@ export class IdentityTenantsPage {
   async assignUserToTenant(user: {id: string; name: string}) {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
-    await this.fillAssignUserName(user.name);
-    await this.assignUserNameOption(user.id).click();
+    await this.fillAssignUserName(user.id);
+    const option = this.assignUserOption(user.id);
+    await expect(option).toBeVisible({timeout: 30000});
+    await option.click({timeout: 20000});
     await this.confirmAssignmentButton.click();
     await expect(this.assignUserModal).toBeHidden();
+    await waitForItemInList(
+      this.page,
+      this.tenantsList.getByRole('cell', {name: user.id, exact: true}),
+      {timeout: 30000},
+    );
   }
 
   async removeUserFromTenant(userName: string) {
