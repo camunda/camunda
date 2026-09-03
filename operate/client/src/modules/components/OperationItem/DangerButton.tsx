@@ -34,7 +34,7 @@ const DangerButton: React.FC<ItemProps> = ({
   return (
     <li>
       <Button
-        kind="ghost"
+        kind="danger--ghost"
         renderIcon={icon}
         tooltipPosition="left"
         iconDescription={title}
