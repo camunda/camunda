@@ -368,7 +368,7 @@ public class SwimMembershipProtocol
     } else if (member.incarnationNumber() >= swimMember.getIncarnationNumber()
         && hasRebooted(member, swimMember)) {
       replaceMember(member, swimMember);
-      return false;
+      return true;
     }
     // If the term has been increased, update the member and record a gossip event.
     else if (member.incarnationNumber() > swimMember.getIncarnationNumber()
