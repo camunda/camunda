@@ -40,6 +40,8 @@ public class UserTaskCreatedV3Applier implements TypedEventApplier<UserTaskInten
     // (e.g. ASSIGNMENT_DENIED, UPDATE_DENIED, COMPLETION_DENIED) do not inherit
     // it. The CREATED event itself still carries the action; the reset only
     // affects what is stored in state (mirrors UserTaskAssignedV4Applier).
+    // Safe to change V3 in place: pre-fix CREATING records carry action="", so
+    // the reset is a no-op when replaying old events.
     final UserTaskRecord userTask = userTaskState.getUserTask(key);
     userTask.wrapChangedAttributes(value, false);
     userTaskState.update(userTask.setAction(""));
