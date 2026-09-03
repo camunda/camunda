@@ -73,7 +73,8 @@ final class RestoreStatusTest {
     final var configuration =
         PartitionGroupConfiguration.empty(0)
             .startGraphConfigurationChange(
-                OperationGraph.sequential(List.of(new PartitionJoinOperation(BROKER_1, 1, 1, true))));
+                OperationGraph.sequential(
+                    List.of(new PartitionJoinOperation(BROKER_1, 1, 1, true))));
 
     // when / then
     assertThat(RestoreStatus.of(configuration)).isEmpty();

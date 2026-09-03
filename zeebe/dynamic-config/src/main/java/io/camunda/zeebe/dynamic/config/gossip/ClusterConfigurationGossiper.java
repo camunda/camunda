@@ -202,7 +202,8 @@ public final class ClusterConfigurationGossiper
     LOGGER.trace("Updated local gossipState to {}", updatedConfiguration);
     gossip();
     notifyListeners(updatedConfiguration);
-    topologyMetrics.updateFromTopology(updatedConfiguration);
+    topologyMetrics.updateFromTopology(
+        CurrentClusterConfiguration.fromLegacy(updatedConfiguration));
   }
 
   private void onCurrentConfigurationUpdated(
@@ -214,7 +215,7 @@ public final class ClusterConfigurationGossiper
     LOGGER.trace("Updated local gossipState to {}", updatedConfiguration);
     gossip();
     notifyListeners(updatedConfiguration);
-    topologyMetrics.updateFromTopology(legacyView);
+    topologyMetrics.updateFromTopology(updatedConfiguration);
   }
 
   private void notifyListeners(final CurrentClusterConfiguration updatedConfiguration) {
