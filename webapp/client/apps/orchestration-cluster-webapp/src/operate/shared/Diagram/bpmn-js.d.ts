@@ -144,13 +144,19 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
 		get(module: 'zoomScroll'): {
 			stepZoom(step: number): void;
 		};
+		get(module: 'selection'): {
+			select(element: BpmnElement | BpmnElement[] | null, add?: boolean): void;
+		};
+		get(module: 'outline'): {
+			createOutline(element: BpmnElement): SVGElement;
+		};
 		get(module: 'minimap'): {
 			open(): void;
 			close(): void;
 			isOpen(): boolean;
 		};
 
-		on: EventCallback;
+		on: EventCallback & PriorityEventCallback;
 		off: EventCallback;
 	}
 
