@@ -5,7 +5,7 @@ import { Counter } from 'k6/metrics';
 const http_response = new Counter('http_response');
 
 export const options = {
-  vus: 2,
+  vus: 100,
   duration: '15m',
 };
 
