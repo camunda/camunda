@@ -260,17 +260,17 @@ public final class RecordToWrite implements LogAppendEntry {
     return this;
   }
 
-  public RecordToWrite agentInstance(
-      final AgentInstanceIntent intent, final AgentInstanceRecordValue value) {
-    recordMetadata.valueType(ValueType.AGENT_INSTANCE).intent(intent);
-    unifiedRecordValue = (AgentInstanceRecord) value;
-    return this;
-  }
-
   public RecordToWrite agentHistory(
       final AgentHistoryIntent intent, final AgentHistoryRecordValue value) {
     recordMetadata.valueType(ValueType.AGENT_HISTORY).intent(intent);
     unifiedRecordValue = (AgentHistoryRecord) value;
+    return this;
+  }
+
+  public RecordToWrite agentInstance(
+      final AgentInstanceIntent intent, final AgentInstanceRecordValue value) {
+    recordMetadata.valueType(ValueType.AGENT_INSTANCE).intent(intent);
+    unifiedRecordValue = (AgentInstanceRecord) value;
     return this;
   }
 
