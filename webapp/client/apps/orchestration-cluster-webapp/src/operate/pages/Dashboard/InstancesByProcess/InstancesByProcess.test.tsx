@@ -14,9 +14,13 @@ import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
 import {
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
+	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {
+	createProcessDefinitionInstanceStatistics,
+	createProcessDefinitionInstanceVersionStatistics,
+} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {
 	createProcessDefinition,
@@ -208,6 +212,79 @@ describe('<InstancesByProcess />', () => {
 		const alphaRow = screen.getByText('Alpha Process').element().closest('a') as HTMLElement;
 		await expect
 			.element(alphaRow.querySelector('[data-testid="draining-indicator"]') as HTMLElement | null)
+			.not.toBeInTheDocument();
+	});
+
+	it('should show a draining indicator for a specific draining version when expanded', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createProcessDefinitionInstanceStatistics({
+								processDefinitionId: 'p1',
+								latestProcessDefinitionName: 'Alpha Process',
+								hasMultipleVersions: true,
+								activeInstancesWithoutIncidentCount: 4,
+							}),
+						],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [
+							createProcessDefinition({processDefinitionId: 'p1', processDefinitionKey: 'v2', state: 'DRAINING'}),
+						],
+					}),
+				),
+			}),
+			mockGetProcessDefinitionInstanceVersionStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createProcessDefinitionInstanceVersionStatistics({
+								processDefinitionId: 'p1',
+								processDefinitionKey: 'v2',
+								processDefinitionVersion: 2,
+								activeInstancesWithoutIncidentCount: 3,
+							}),
+							createProcessDefinitionInstanceVersionStatistics({
+								processDefinitionId: 'p1',
+								processDefinitionKey: 'v1',
+								processDefinitionVersion: 1,
+								activeInstancesWithoutIncidentCount: 1,
+							}),
+						],
+						page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
+
+		await expect.element(screen.getByText(/Alpha Process/)).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}));
+
+		await expect.element(screen.getByText(/Version 2/)).toBeVisible();
+
+		const version2Row = screen
+			.getByText(/Version 2/)
+			.element()
+			.closest('a') as HTMLElement;
+		await expect.element(version2Row.querySelector('[data-testid="draining-indicator"]') as HTMLElement).toBeVisible();
+
+		const version1Row = screen
+			.getByText(/Version 1/)
+			.element()
+			.closest('a') as HTMLElement;
+		await expect
+			.element(version1Row.querySelector('[data-testid="draining-indicator"]') as HTMLElement | null)
 			.not.toBeInTheDocument();
 	});
 });
