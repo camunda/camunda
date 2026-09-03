@@ -1,0 +1,56 @@
+---
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: k6-sample
+spec:
+  parallelism: 2
+  script:
+    configMap:
+      name: k6-scripts
+      file: test1.js
+
+  arguments: --out experimental-prometheus-rw
+
+  runner:
+    image: europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/grafana/k6:latest
+    env:
+      - name: K6_PROMETHEUS_RW_SERVER_URL
+        value: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
+
+      # Credentials
+      - name: ZEEBE_REST_ADDRESS
+        valueFrom:
+          secretKeyRef:
+            key: zeebeRestAddress
+            name: load-test-credentials
+      - name: ZEEBE_CLIENT_ID
+        valueFrom:
+          secretKeyRef:
+            key: clientId
+            name: load-test-credentials
+      - name: ZEEBE_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            key: clientSecret
+            name: load-test-credentials
+      - name: ZEEBE_AUTHORIZATION_SERVER_URL
+        valueFrom:
+          secretKeyRef:
+            key: authServer
+            name: load-test-credentials
+      - name: ZEEBE_TOKEN_AUDIENCE
+        valueFrom:
+          secretKeyRef:
+            key: authorizationAudience
+            name: load-test-credentials
+      - name: ZEEBE_AUTH_TYPE
+        valueFrom:
+          secretKeyRef:
+            key: authType
+            name: load-test-credentials
+      - name: ZEEBE_GRPC_ADDRESS
+        valueFrom:
+          secretKeyRef:
+            key: zeebeGrpcAddress
+            name: load-test-credentials
