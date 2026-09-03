@@ -424,7 +424,8 @@ test.describe('Process Instance Modifications', () => {
       await expect(operateProcessInstancePage.addVariableButton).toBeHidden();
     });
 
-    test.describe('after adding a token to CollectMoney', () => {
+    // Skipped due to bug 61848: https://github.com/camunda/camunda/issues/61848
+    test.describe.skip('after adding a token to CollectMoney', () => {
       test.beforeEach(
         async ({
           page,

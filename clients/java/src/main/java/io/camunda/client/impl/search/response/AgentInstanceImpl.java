@@ -211,12 +211,18 @@ public class AgentInstanceImpl implements AgentInstance {
 
     private final long inputTokens;
     private final long outputTokens;
+    private final long reasoningTokenCount;
+    private final long cacheCreationTokenCount;
+    private final long cacheReadTokenCount;
     private final int modelCalls;
     private final int toolCalls;
 
     MetricsImpl(final io.camunda.client.protocol.rest.AgentInstanceMetrics proto) {
       inputTokens = proto.getInputTokens();
       outputTokens = proto.getOutputTokens();
+      reasoningTokenCount = proto.getReasoningTokenCount();
+      cacheCreationTokenCount = proto.getCacheCreationTokenCount();
+      cacheReadTokenCount = proto.getCacheReadTokenCount();
       modelCalls = proto.getModelCalls();
       toolCalls = proto.getToolCalls();
     }
@@ -229,6 +235,21 @@ public class AgentInstanceImpl implements AgentInstance {
     @Override
     public long getOutputTokens() {
       return outputTokens;
+    }
+
+    @Override
+    public long getReasoningTokenCount() {
+      return reasoningTokenCount;
+    }
+
+    @Override
+    public long getCacheCreationTokenCount() {
+      return cacheCreationTokenCount;
+    }
+
+    @Override
+    public long getCacheReadTokenCount() {
+      return cacheReadTokenCount;
     }
 
     @Override

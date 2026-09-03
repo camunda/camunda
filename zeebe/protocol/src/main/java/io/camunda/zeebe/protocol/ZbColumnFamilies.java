@@ -391,7 +391,15 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // this, since a committed item is deleted from it. Retained for the agent instance's whole
   // lifetime and deleted in one pass when the instance completes (see
   // AgentInstanceCompletedApplier).
-  AGENT_HISTORY_COMMITTED_IDS(164, PARTITION_LOCAL);
+  AGENT_HISTORY_COMMITTED_IDS(164, PARTITION_LOCAL),
+
+  // (agentInstanceKey, historyItemId) -> ∅. Records every history item whose metrics were ever
+  // accumulated for an agent instance, independent of AGENT_HISTORY_COMMITTED_IDS: a discarded
+  // item leaves no trace in that store, so a later job resending the same id would otherwise
+  // re-accumulate its metrics. Written when an item is first created (see
+  // AgentHistoryCreatedApplier), survives commit/discard, and is deleted in one pass when the
+  // instance completes (see AgentInstanceCompletedApplier).
+  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

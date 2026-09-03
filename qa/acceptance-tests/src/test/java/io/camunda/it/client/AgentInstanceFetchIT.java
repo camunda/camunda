@@ -34,7 +34,6 @@ import io.camunda.client.api.search.response.AgentInstance.Tool;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -47,6 +46,7 @@ import org.junit.jupiter.api.Test;
 public class AgentInstanceFetchIT {
 
   private static final String AGENT_ELEMENT_ID = "agentAhsp";
+  private static final String AGENT_JOB_TYPE = "agent-task";
 
   private static CamundaClient camundaClient;
 
@@ -66,7 +66,7 @@ public class AgentInstanceFetchIT {
         Bpmn.createExecutableProcess("AgentInstanceFetchProcess")
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .zeebeJobType(AGENT_JOB_TYPE)
             .zeebeAiAgentSubProcessDefinition()
             .endEvent("end")
             .done();
@@ -181,7 +181,13 @@ public class AgentInstanceFetchIT {
                                 .toolCallId(UUID.randomUUID().toString())
                                 .toolName("search")
                                 .elementId("searchTask")))
-                    .metrics(new AgentInstanceHistoryMetrics().inputTokens(50L).outputTokens(100L)),
+                    .metrics(
+                        new AgentInstanceHistoryMetrics()
+                            .inputTokens(50L)
+                            .outputTokens(100L)
+                            .reasoningTokenCount(10L)
+                            .cacheCreationTokenCount(5L)
+                            .cacheReadTokenCount(2L)),
                 new AgentInstanceHistoryItem()
                     .historyItemId(UUID.randomUUID().toString())
                     .loopIteration(2)
@@ -193,7 +199,13 @@ public class AgentInstanceFetchIT {
                             new AgentInstanceHistoryToolCall()
                                 .toolCallId(UUID.randomUUID().toString())
                                 .toolName("summarize")))
-                    .metrics(new AgentInstanceHistoryMetrics().inputTokens(50L).outputTokens(100L)),
+                    .metrics(
+                        new AgentInstanceHistoryMetrics()
+                            .inputTokens(50L)
+                            .outputTokens(100L)
+                            .reasoningTokenCount(10L)
+                            .cacheCreationTokenCount(5L)
+                            .cacheReadTokenCount(2L)),
                 new AgentInstanceHistoryItem()
                     .historyItemId(UUID.randomUUID().toString())
                     .loopIteration(3)
@@ -201,7 +213,12 @@ public class AgentInstanceFetchIT {
                     .content(List.of(AgentInstanceHistoryContent.text("Done.")))
                     .producedAt(OffsetDateTime.now())
                     .metrics(
-                        new AgentInstanceHistoryMetrics().inputTokens(50L).outputTokens(100L))))
+                        new AgentInstanceHistoryMetrics()
+                            .inputTokens(50L)
+                            .outputTokens(100L)
+                            .reasoningTokenCount(10L)
+                            .cacheCreationTokenCount(5L)
+                            .cacheReadTokenCount(2L))))
         .send()
         .join();
     camundaClient.newCompleteCommand(activatedJob2).execute();
@@ -216,7 +233,7 @@ public class AgentInstanceFetchIT {
     final var activatedJobs =
         camundaClient
             .newActivateJobsCommand()
-            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .jobType(AGENT_JOB_TYPE)
             .maxJobsToActivate(1)
             .timeout(Duration.ofMinutes(5))
             .send()
@@ -286,6 +303,18 @@ public class AgentInstanceFetchIT {
           softly.assertThat(metrics).as("metrics").isNotNull();
           softly.assertThat(metrics.getInputTokens()).as("metrics.inputTokens").isEqualTo(0L);
           softly.assertThat(metrics.getOutputTokens()).as("metrics.outputTokens").isEqualTo(0L);
+          softly
+              .assertThat(metrics.getReasoningTokenCount())
+              .as("metrics.reasoningTokenCount")
+              .isEqualTo(0L);
+          softly
+              .assertThat(metrics.getCacheCreationTokenCount())
+              .as("metrics.cacheCreationTokenCount")
+              .isEqualTo(0L);
+          softly
+              .assertThat(metrics.getCacheReadTokenCount())
+              .as("metrics.cacheReadTokenCount")
+              .isEqualTo(0L);
           softly.assertThat(metrics.getModelCalls()).as("metrics.modelCalls").isEqualTo(0);
           softly.assertThat(metrics.getToolCalls()).as("metrics.toolCalls").isEqualTo(0);
 
@@ -349,6 +378,18 @@ public class AgentInstanceFetchIT {
           final var metrics = response.getMetrics();
           softly.assertThat(metrics.getInputTokens()).as("metrics.inputTokens").isEqualTo(150L);
           softly.assertThat(metrics.getOutputTokens()).as("metrics.outputTokens").isEqualTo(300L);
+          softly
+              .assertThat(metrics.getReasoningTokenCount())
+              .as("metrics.reasoningTokenCount")
+              .isEqualTo(30L);
+          softly
+              .assertThat(metrics.getCacheCreationTokenCount())
+              .as("metrics.cacheCreationTokenCount")
+              .isEqualTo(15L);
+          softly
+              .assertThat(metrics.getCacheReadTokenCount())
+              .as("metrics.cacheReadTokenCount")
+              .isEqualTo(6L);
           softly.assertThat(metrics.getModelCalls()).as("metrics.modelCalls").isEqualTo(3);
           softly.assertThat(metrics.getToolCalls()).as("metrics.toolCalls").isEqualTo(2);
 

@@ -45,6 +45,9 @@ public record AgentInstanceDbModel(
     int maxToolCalls,
     long inputTokens,
     long outputTokens,
+    long reasoningTokenCount,
+    long cacheCreationTokenCount,
+    long cacheReadTokenCount,
     int modelCalls,
     int toolCalls,
     String tools,
@@ -86,6 +89,9 @@ public record AgentInstanceDbModel(
       final int maxToolCalls,
       final long inputTokens,
       final long outputTokens,
+      final long reasoningTokenCount,
+      final long cacheCreationTokenCount,
+      final long cacheReadTokenCount,
       final int modelCalls,
       final int toolCalls,
       final String tools,
@@ -113,6 +119,9 @@ public record AgentInstanceDbModel(
         maxToolCalls,
         inputTokens,
         outputTokens,
+        reasoningTokenCount,
+        cacheCreationTokenCount,
+        cacheReadTokenCount,
         modelCalls,
         toolCalls,
         tools,
@@ -158,6 +167,9 @@ public record AgentInstanceDbModel(
         maxToolCalls,
         inputTokens,
         outputTokens,
+        reasoningTokenCount,
+        cacheCreationTokenCount,
+        cacheReadTokenCount,
         modelCalls,
         toolCalls,
         tools,
@@ -259,6 +271,9 @@ public record AgentInstanceDbModel(
         .maxToolCalls(maxToolCalls)
         .inputTokens(inputTokens)
         .outputTokens(outputTokens)
+        .reasoningTokenCount(reasoningTokenCount)
+        .cacheCreationTokenCount(cacheCreationTokenCount)
+        .cacheReadTokenCount(cacheReadTokenCount)
         .modelCalls(modelCalls)
         .toolCalls(toolCalls)
         .creationDate(creationDate)
@@ -289,6 +304,9 @@ public record AgentInstanceDbModel(
     private int maxToolCalls;
     private long inputTokens;
     private long outputTokens;
+    private long reasoningTokenCount;
+    private long cacheCreationTokenCount;
+    private long cacheReadTokenCount;
     private int modelCalls;
     private int toolCalls;
     private String tools;
@@ -419,6 +437,21 @@ public record AgentInstanceDbModel(
       return this;
     }
 
+    public Builder reasoningTokenCount(final long reasoningTokenCount) {
+      this.reasoningTokenCount = reasoningTokenCount;
+      return this;
+    }
+
+    public Builder cacheCreationTokenCount(final long cacheCreationTokenCount) {
+      this.cacheCreationTokenCount = cacheCreationTokenCount;
+      return this;
+    }
+
+    public Builder cacheReadTokenCount(final long cacheReadTokenCount) {
+      this.cacheReadTokenCount = cacheReadTokenCount;
+      return this;
+    }
+
     public Builder modelCalls(final int modelCalls) {
       this.modelCalls = modelCalls;
       return this;
@@ -477,6 +510,9 @@ public record AgentInstanceDbModel(
           maxToolCalls,
           inputTokens,
           outputTokens,
+          reasoningTokenCount,
+          cacheCreationTokenCount,
+          cacheReadTokenCount,
           modelCalls,
           toolCalls,
           tools,

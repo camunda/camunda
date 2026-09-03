@@ -121,6 +121,75 @@ final class PartitionLeaveApplierTest {
   }
 
   @Test
+  void shouldRejectLeaveIfOnlyOtherReplicaIsALearner() {
+    // given — a learner does not participate in the quorum, so it must not be counted toward the
+    // minimum: leaving the sole active replica here would strand the partition with only a
+    // non-voting member, which raft then permanently rejects (no active member in a non-empty
+    // configuration)
+    final var initialGroup =
+        groupWithMembers(
+            Map.of(
+                localMemberId,
+                brokerWith(Map.of(1, PartitionState.active(1, partitionConfig))),
+                MemberId.from("2"),
+                brokerWith(Map.of(1, PartitionState.joining(1, partitionConfig).toLearner()))));
+
+    // when
+    final var result =
+        new PartitionLeaveApplier(localMemberId, 1, 1, partitionChangeExecutor)
+            .init(globalConfigurationWithLocalMemberActive, initialGroup);
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("minimum allowed replicas");
+  }
+
+  @Test
+  void shouldAllowLeaveWhenOtherReplicaIsRecovering() {
+    // given — a recovering member has only paused its own stream processing; it is still a full
+    // raft voter and counts toward the minimum
+    final var initialGroup =
+        groupWithMembers(
+            Map.of(
+                localMemberId,
+                brokerWith(Map.of(1, PartitionState.active(1, partitionConfig))),
+                MemberId.from("2"),
+                brokerWith(Map.of(1, PartitionState.active(1, partitionConfig).toRecovering()))));
+
+    // when
+    final var result =
+        new PartitionLeaveApplier(localMemberId, 1, 1, partitionChangeExecutor)
+            .init(globalConfigurationWithLocalMemberActive, initialGroup);
+
+    // then
+    assertThat(result).isRight();
+  }
+
+  @Test
+  void shouldAllowALearnerToLeaveEvenAtTheMinimum() {
+    // given — the local member itself is the stuck learner being removed directly; removing a
+    // non-voting member never changes how many voting replicas remain, so this must always be
+    // allowed regardless of the minimum
+    final var initialGroup =
+        groupWithMembers(
+            Map.of(
+                localMemberId,
+                brokerWith(Map.of(1, PartitionState.joining(1, partitionConfig).toLearner())),
+                MemberId.from("2"),
+                brokerWith(Map.of(1, PartitionState.active(1, partitionConfig)))));
+
+    // when
+    final var result =
+        new PartitionLeaveApplier(localMemberId, 1, 1, partitionChangeExecutor)
+            .init(globalConfigurationWithLocalMemberActive, initialGroup);
+
+    // then
+    assertThat(result).isRight();
+  }
+
+  @Test
   void shouldNotFailOnInitIfPartitionIsAlreadyLeaving() {
     // given — restart-safe retry
     final var initialGroup =

@@ -168,9 +168,9 @@ class CurrentClusterConfigurationTest {
       // given — a legacy view carrying a graph change, which is what projecting a partition group
       // in-process produces: one operation waits for the first, the third for nothing
       final var builder = OperationGraph.builder();
-      final var first = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
+      final var first = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1, true));
       builder.add(new PartitionLeaveOperation(MEMBER_0, 2, 1), Set.of(first));
-      builder.add(new PartitionJoinOperation(MEMBER_1, 1, 1));
+      builder.add(new PartitionJoinOperation(MEMBER_1, 1, 1, true));
       final var graph = builder.build();
       final var legacy =
           ClusterConfiguration.builder()
@@ -223,7 +223,7 @@ class CurrentClusterConfigurationTest {
       // configuration holds only cluster-wide operations and a group only its own.
       final var builder = OperationGraph.builder();
       builder.add(new MemberJoinOperation(MEMBER_0));
-      builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
+      builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1, true));
       final var legacy =
           ClusterConfiguration.builder()
               .version(2)
@@ -242,7 +242,7 @@ class CurrentClusterConfigurationTest {
     void shouldMigrateOnlyWhatIsLeftOfAGraphChange() {
       // given — a graph change whose first operation has already completed
       final var builder = OperationGraph.builder();
-      final var first = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
+      final var first = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1, true));
       final var second = builder.add(new PartitionLeaveOperation(MEMBER_0, 2, 1), Set.of(first));
       final var plan =
           new DependencyChangePlan(
@@ -285,10 +285,12 @@ class CurrentClusterConfigurationTest {
       final var builder = OperationGraph.builder();
       final var first =
           builder.add(
-              new PartitionJoinOperation(MEMBER_0, 1, 1), Set.of(), Optional.of("tenant-a"));
+              new PartitionJoinOperation(MEMBER_0, 1, 1, true), Set.of(), Optional.of("tenant-a"));
       final var second =
           builder.add(
-              new PartitionJoinOperation(MEMBER_0, 2, 1), Set.of(first), Optional.of("tenant-b"));
+              new PartitionJoinOperation(MEMBER_0, 2, 1, true),
+              Set.of(first),
+              Optional.of("tenant-b"));
       final var plan =
           new DependencyChangePlan(
               4,
@@ -324,7 +326,7 @@ class CurrentClusterConfigurationTest {
     void shouldMigrateNoPlanWhenAGraphChangeHasFullyDrained() {
       // given — a graph change with every operation completed but the plan not yet cleared
       final var builder = OperationGraph.builder();
-      final var only = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
+      final var only = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1, true));
       final var plan =
           new DependencyChangePlan(
               4,
@@ -373,7 +375,7 @@ class CurrentClusterConfigurationTest {
     void shouldConvertMixedPendingOperationsIntoOrderedPhases() {
       // given — a legacy pending plan mixing global and partition ops in one flat list
       final var memberJoin = new MemberJoinOperation(MEMBER_0);
-      final var partitionJoin = new PartitionJoinOperation(MEMBER_0, 1, 1);
+      final var partitionJoin = new PartitionJoinOperation(MEMBER_0, 1, 1, true);
       final var partitionLeave = new PartitionLeaveOperation(MEMBER_0, 1, 1);
       final var memberLeave = new MemberLeaveOperation(MEMBER_0);
       final var pending =
@@ -416,7 +418,7 @@ class CurrentClusterConfigurationTest {
     @Test
     void shouldActivateFirstPhaseOnDefaultGroupWhenItIsAPartitionPhase() {
       // given — a legacy pending plan whose first (and only) run of operations is partition-scoped
-      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1);
+      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1, true);
       final var leave = new PartitionLeaveOperation(MEMBER_0, 1, 1);
       final var legacy =
           ClusterConfiguration.builder()
@@ -441,7 +443,7 @@ class CurrentClusterConfigurationTest {
     void shouldAllowActivatingNextPhaseAfterMigration() {
       // given — a migrated multi-phase plan whose phase 0 is already activated
       final var memberJoin = new MemberJoinOperation(MEMBER_0);
-      final var partitionJoin = new PartitionJoinOperation(MEMBER_0, 1, 1);
+      final var partitionJoin = new PartitionJoinOperation(MEMBER_0, 1, 1, true);
       final var legacy =
           ClusterConfiguration.builder()
               .version(5)
@@ -487,7 +489,7 @@ class CurrentClusterConfigurationTest {
     @Test
     void shouldNotActivateThePendingPlanOnItsOwn() {
       // given — a legacy pending plan whose first run of operations is partition-scoped
-      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1);
+      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1, true);
       final var legacy =
           ClusterConfiguration.builder()
               .version(5)
@@ -712,7 +714,7 @@ class CurrentClusterConfigurationTest {
     @Test
     void shouldGroupConsecutivePartitionOpsIntoSinglePhase() {
       // given — a pending plan with only partition operations
-      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1);
+      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1, true);
       final var leave = new PartitionLeaveOperation(MEMBER_0, 1, 1);
       final var legacy =
           ClusterConfiguration.builder()
@@ -1544,8 +1546,8 @@ class CurrentClusterConfigurationTest {
       // given — the default group is running a change whose two operations have no edge between
       // them, so they may run at the same time
       final var graph = OperationGraph.builder();
-      graph.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
-      graph.add(new PartitionJoinOperation(MEMBER_1, 1, 1));
+      graph.add(new PartitionJoinOperation(MEMBER_0, 1, 1, true));
+      graph.add(new PartitionJoinOperation(MEMBER_1, 1, 1, true));
       final var groupId = CurrentClusterConfiguration.DEFAULT_GROUP;
       final var config =
           config(

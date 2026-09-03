@@ -28,6 +28,16 @@ public class EngineMappings {
    */
   @Nullable private InputMode inputComparisonMode = null;
 
+  /**
+   * When set, evaluates output mappings with both the primary resolver ({@code outputMode}) and
+   * this comparison resolver, then logs a warning if their results differ. Intended for diagnostic
+   * use only: each completion evaluates mappings with both resolvers and compares the result
+   * documents, which adds overhead for large mapping sets.
+   *
+   * <p>Has no effect when null (default) or when set to the same value as {@code outputMode}.
+   */
+  @Nullable private OutputMode outputComparisonMode = null;
+
   public enum InputMode {
     ORDERED,
     COMBINED
@@ -73,6 +83,14 @@ public class EngineMappings {
     this.outputMode = outputMode;
   }
 
+  public @Nullable OutputMode getOutputComparisonMode() {
+    return outputComparisonMode;
+  }
+
+  public void setOutputComparisonMode(final @Nullable OutputMode outputComparisonMode) {
+    this.outputComparisonMode = outputComparisonMode;
+  }
+
   @Override
   public String toString() {
     return "EngineMappings{inputMode="
@@ -81,6 +99,8 @@ public class EngineMappings {
         + inputComparisonMode
         + ", outputMode="
         + outputMode
+        + ", outputComparisonMode="
+        + outputComparisonMode
         + '}';
   }
 }

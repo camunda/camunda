@@ -128,4 +128,31 @@ public class EngineMappingsTest {
           .isEqualTo(EngineConfiguration.OutputMappingMode.ORDERED);
     }
   }
+
+  @Nested
+  @DisplayName("Output comparison mode")
+  @SpringJUnitConfig({
+    UnifiedConfiguration.class,
+    BrokerBasedPropertiesOverride.class,
+    UnifiedConfigurationHelper.class
+  })
+  @ActiveProfiles("broker")
+  @TestPropertySource(
+      properties = {
+        "camunda.processing.engine.mappings.output-mode=COMBINED",
+        "camunda.processing.engine.mappings.output-comparison-mode=ORDERED",
+      })
+  class OutputComparisonMode {
+    final BrokerBasedProperties brokerCfg;
+
+    OutputComparisonMode(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetOutputComparisonMode() {
+      assertThat(brokerCfg.getExperimental().getEngine().getOutputComparisonMode())
+          .isEqualTo(EngineConfiguration.OutputMappingMode.ORDERED);
+    }
+  }
 }

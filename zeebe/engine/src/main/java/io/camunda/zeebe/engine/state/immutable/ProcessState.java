@@ -18,6 +18,16 @@ public interface ProcessState {
 
   DeployedProcess getLatestProcessVersionByProcessId(DirectBuffer processId, final String tenantId);
 
+  /**
+   * Latest {@code ACTIVE} version of this process id. Skips draining and pending-deletion versions.
+   *
+   * <p>If the highest version in state is already {@code ACTIVE}, that process is returned and
+   * older versions are not inspected. {@link #getLatestProcessVersionByProcessId} still returns the
+   * highest version in state regardless of lifecycle.
+   */
+  DeployedProcess getLatestActiveProcessVersionByProcessId(
+      DirectBuffer processId, final String tenantId);
+
   DeployedProcess getProcessByProcessIdAndVersion(
       DirectBuffer processId, int version, final String tenantId);
 

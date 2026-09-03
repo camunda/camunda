@@ -18,9 +18,19 @@ import type { Group, Role } from "@camunda/camunda-api-zod-schemas/8.10";
 const AssignGroupsModal: FC<
   UseEntityModalCustomProps<
     { roleId: Role["roleId"] },
-    { assignedGroups: Group[] }
+    {
+      assignedGroups: Group[];
+      onItemsAssigned: (count: number) => void;
+    }
   >
-> = ({ entity: { roleId }, assignedGroups, onSuccess, open, onClose }) => {
+> = ({
+  entity: { roleId },
+  assignedGroups,
+  onSuccess,
+  onItemsAssigned,
+  open,
+  onClose,
+}) => {
   const { t } = useTranslate("roles");
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([]);
   const [loadingAssignGroup, setLoadingAssignGroup] = useState(false);
@@ -42,6 +52,7 @@ const AssignGroupsModal: FC<
           callAssignGroup({ groupId, roleId }),
         ),
       );
+      onItemsAssigned(selectedGroups.length);
       onSuccess();
     } catch {
       // error handled globally

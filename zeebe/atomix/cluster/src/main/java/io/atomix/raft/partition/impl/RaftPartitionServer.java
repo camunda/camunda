@@ -128,12 +128,12 @@ public class RaftPartitionServer implements HealthMonitorable {
         .thenApply(v -> this);
   }
 
-  public CompletableFuture<RaftPartitionServer> join() {
+  public CompletableFuture<RaftPartitionServer> join(final Type type) {
     final var metrics = new RaftStartupMetrics(partition.name(), meterRegistry);
     final long joinStartTime = System.currentTimeMillis();
-    LOGGER.info("Server joining partition {}", partition.id());
+    LOGGER.info("Server joining partition {} as {}", partition.id(), type);
     return server
-        .join(partitionMetadata.members())
+        .join(type, partitionMetadata.members())
         .whenComplete(
             (r, e) -> {
               if (e == null) {

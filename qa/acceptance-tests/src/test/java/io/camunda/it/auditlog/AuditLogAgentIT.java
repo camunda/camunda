@@ -24,7 +24,6 @@ import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.util.List;
 import org.awaitility.Awaitility;
@@ -43,6 +42,7 @@ public class AuditLogAgentIT {
           .withAuthenticatedAccess();
 
   private static final String AGENT_ELEMENT_ID = "test_agent_ahsp";
+  private static final String AGENT_JOB_TYPE = "agent-job";
   private static final String EXTERNAL_AGENT_ELEMENT_ID = "external_agent_service_task";
   private static final String EXTERNAL_AGENT_JOB_TYPE = "external-agent-job";
   private static CamundaClient adminClient;
@@ -54,7 +54,8 @@ public class AuditLogAgentIT {
         Bpmn.createExecutableProcess("AGENT_PROCESS")
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("A1"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .zeebeJobType(AGENT_JOB_TYPE)
+            .zeebeAiAgentSubProcessDefinition()
             .endEvent("error")
             .moveToActivity(AGENT_ELEMENT_ID)
             .endEvent("end")
@@ -129,8 +130,7 @@ public class AuditLogAgentIT {
             auditLog -> {
               assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
               assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
-              assertThat(auditLog.getEntityDescription())
-                  .isEqualTo(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX);
+              assertThat(auditLog.getEntityDescription()).isEqualTo(AGENT_JOB_TYPE);
               assertThat(auditLog.getAgentElementId()).isEqualTo(AGENT_ELEMENT_ID);
             });
   }

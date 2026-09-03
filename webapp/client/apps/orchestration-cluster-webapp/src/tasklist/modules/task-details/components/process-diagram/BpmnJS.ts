@@ -63,7 +63,6 @@ class BpmnJS {
 		const element = elementRegistry?.get(elementId);
 
 		if (element !== undefined) {
-			// @ts-expect-error wrong bpmn-js types
 			this.#navigatedViewer?.get('outline')?.createOutline(element);
 			canvas?.addMarker(elementId, className);
 		}

@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.partitioning.startup;
 
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
@@ -46,6 +47,7 @@ public class PartitionStartupContext {
   private final AtomixServerTransport gatewayBrokerTransport;
 
   private Path partitionDirectory;
+  private RaftMember.Type joinMemberType = RaftMember.Type.ACTIVE;
 
   private CompositeMeterRegistry partitionMeterRegistry;
   private FileBasedSnapshotStore snapshotStore;
@@ -134,6 +136,16 @@ public class PartitionStartupContext {
 
   public Path partitionDirectory() {
     return partitionDirectory;
+  }
+
+  /** The member type the local member joins the raft replication group as. Read by RaftJoinStep. */
+  public RaftMember.Type joinMemberType() {
+    return joinMemberType;
+  }
+
+  public PartitionStartupContext joinMemberType(final RaftMember.Type joinMemberType) {
+    this.joinMemberType = joinMemberType;
+    return this;
   }
 
   public FileBasedSnapshotStore snapshotStore() {

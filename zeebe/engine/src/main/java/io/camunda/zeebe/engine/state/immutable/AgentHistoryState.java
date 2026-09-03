@@ -40,6 +40,13 @@ public interface AgentHistoryState {
    */
   Long getCommittedHistoryItemKey(long agentInstanceKey, String historyItemId);
 
+  /**
+   * @return whether metrics were already accumulated for {@code historyItemId} on {@code
+   *     agentInstanceKey}, whether or not that item's copy is still pending, committed, or was
+   *     discarded
+   */
+  boolean hasAccumulatedMetrics(long agentInstanceKey, String historyItemId);
+
   @FunctionalInterface
   interface AgentHistoryVisitor {
     void visit(AgentHistoryRecord record);
