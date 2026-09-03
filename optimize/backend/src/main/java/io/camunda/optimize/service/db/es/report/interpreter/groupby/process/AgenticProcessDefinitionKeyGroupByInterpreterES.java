@@ -22,7 +22,7 @@ import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
-import io.camunda.optimize.service.db.report.interpreter.util.AgenticProcessDefinitionNameResolver;
+import io.camunda.optimize.service.db.report.interpreter.util.ProcessDefinitionNameResolver;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
@@ -111,7 +111,7 @@ public class AgenticProcessDefinitionKeyGroupByInterpreterES
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     super.addQueryResult(compositeCommandResult, response, context);
     // Label each bar with the definition's latest-version name instead of the raw BPMN process id.
-    AgenticProcessDefinitionNameResolver.applyLatestVersionNameLabels(
+    ProcessDefinitionNameResolver.applyLatestVersionNameLabels(
         compositeCommandResult, definitionService);
     topNPagination(context)
         .ifPresent(
