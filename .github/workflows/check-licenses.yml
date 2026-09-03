@@ -18,6 +18,10 @@ on:
 env:
   TEST_OWNER: '@camunda/engineering-operations'
   GHA_BEST_PRACTICES_LINTER: enabled
+  # Bounds a hung `actions/checkout`; only for shallow ones, a `fetch-depth: 0` clone needs more.
+  # A shallow clone of this repo normally lands in well under a minute, but GitHub-side slowness
+  # occasionally needs more headroom.
+  SHALLOW_CHECKOUT_TIMEOUT_MIN: 3
 
 jobs:
   analyze:
