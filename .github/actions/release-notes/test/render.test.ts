@@ -36,6 +36,30 @@ test('an unattributed bucket reports a failure reason by default, but still rend
   );
 });
 
+test('the two failures sharing the gate bucket are named apart, each with its own remedy', () => {
+  // A PR that declared nothing and one whose refs were all dead need opposite
+  // fixes, so the message must not report both as merely "unattributed".
+  const bucket = [
+    pr({ number: 2, attributionSource: 'unattributed', issueNumbers: [] }),
+    pr({ number: 3, attributionSource: 'resolutionFailed', issueNumbers: [] }),
+  ];
+  const reason = render([], bucket, { version: '8.8.30', allowUnattributed: false }).failureReason ?? '';
+
+  assert.match(reason, /No issue reference found: #2/);
+  assert.match(reason, /Every referenced issue was unresolvable: #3/);
+  // #3 must not be described as having no reference — that is the misread.
+  assert.doesNotMatch(reason, /No issue reference found: [^.]*#3/);
+  assert.match(reason, /allow-unattributed=true/);
+});
+
+test('the gate message names only the failure kinds actually present', () => {
+  const onlyDead = [pr({ number: 7, attributionSource: 'resolutionFailed', issueNumbers: [] })];
+  const reason = render([], onlyDead, { version: '8.8.30', allowUnattributed: false }).failureReason ?? '';
+
+  assert.match(reason, /Every referenced issue was unresolvable: #7/);
+  assert.doesNotMatch(reason, /No issue reference found/);
+});
+
 test('allow-unattributed with a reason overrides the failure and records the reason in audit.json', () => {
   const unattributed = [pr({ number: 2, attributionSource: 'unattributed', issueNumbers: [] })];
   const result = render([], unattributed, {

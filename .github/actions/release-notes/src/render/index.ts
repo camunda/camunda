@@ -97,16 +97,39 @@ function commentFor(pr: RenderPrInput, issueNumber: number, version: string): { 
     : { relationKind: 'contributor', text: `Partially delivered in ${version} by #${pr.number}.` };
 }
 
+/**
+ * The gate bucket holds two different failures — a PR that declared no issue at
+ * all, and one whose every declared ref turned out to be dead. They need
+ * opposite fixes (add a link vs. repair the target), so name them apart: a
+ * release operator reading "unattributed" against a PR that visibly *has* a
+ * `closes` line has no way to tell that the referenced issue is what is gone.
+ */
+function describeGuardFailure(bucket: readonly RenderPrInput[]): string {
+  const list = (prs: readonly RenderPrInput[]) => prs.map((pr) => `#${pr.number}`).join(', ');
+  const noRefs = bucket.filter((pr) => pr.attributionSource === 'unattributed');
+  const deadRefs = bucket.filter((pr) => pr.attributionSource === 'resolutionFailed');
+
+  const parts = [`Release-notes attribution gate failed for ${bucket.length} pull request(s).`];
+  if (noRefs.length > 0) {
+    parts.push(`No issue reference found: ${list(noRefs)} — add a linked issue to the PR's "Related issues" section.`);
+  }
+  if (deadRefs.length > 0) {
+    parts.push(
+      `Every referenced issue was unresolvable: ${list(deadRefs)} — the reference exists but its target is deleted, ` +
+        'transferred, or unreadable with this token; repair the reference rather than the PR body.',
+    );
+  }
+  parts.push('Set allow-unattributed=true with a non-empty unattributed-reason to override.');
+  return parts.join(' ');
+}
+
 export function render(
   prs: readonly RenderPrInput[],
   unattributed: readonly RenderPrInput[],
   options: RenderOptions,
 ): RenderResult {
   const guardFailed = unattributed.length > 0 && (!options.allowUnattributed || !options.unattributedReason);
-  const failureReason = guardFailed
-    ? `Unattributed PRs present, failing by default: ${unattributed.map((pr) => `#${pr.number}`).join(', ')}. ` +
-      'Set allow-unattributed=true with a non-empty unattributed-reason to override.'
-    : undefined;
+  const failureReason = guardFailed ? describeGuardFailure(unattributed) : undefined;
   // A non-empty reason is proven whenever the guard passed with `unattributed` present.
   const unattributedReason = options.unattributedReason ?? '';
 
