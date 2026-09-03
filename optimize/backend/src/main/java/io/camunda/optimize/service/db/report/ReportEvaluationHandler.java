@@ -269,10 +269,10 @@ public abstract class ReportEvaluationHandler {
         def.getTenants().stream().map(TenantDto::getId).toList();
     // An unscoped definition deserializes tenantIds to DEFAULT_TENANT_IDS ([null]); treat that (and
     // any all-null list) as "no scope" so unscoped/agentic reports keep all available tenants.
-    final List<String> scopedTenantIds =
+    final Set<String> scopedTenantIds =
         requestedTenantIds == null
-            ? List.of()
-            : requestedTenantIds.stream().filter(Objects::nonNull).toList();
+            ? Set.of()
+            : requestedTenantIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
     final List<String> resolvedTenantIds =
         scopedTenantIds.isEmpty()
             ? availableTenantIds
