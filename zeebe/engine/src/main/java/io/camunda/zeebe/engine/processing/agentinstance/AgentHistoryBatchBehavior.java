@@ -116,9 +116,19 @@ public final class AgentHistoryBatchBehavior {
    * a mismatch is fatal depends on {@code leaseMismatchHandling}, see {@link
    * LeaseMismatchHandling}.
    *
+   * <p>For {@link LeaseMismatchHandling#ALLOW_STALE} callers carrying a history batch, a job that
+   * is not {@code ACTIVATED} is likewise never rejected: the caller stores the batch as PENDING, or
+   * — if the job record no longer exists at all ({@code NOT_FOUND}) — discards it immediately,
+   * since nothing will ever resolve it. This relaxation applies only when a batch is present — a
+   * bare metrics/status update naming a job with no batch attached keeps today's rejection, since
+   * nothing here dedups its metrics the way a history item's {@code historyItemId} does. {@link
+   * LeaseMismatchHandling#REJECT} callers keep today's behavior in every case and still reject
+   * outright.
+   *
    * @return the active {@link JobRecord} if a job was supplied and is valid, {@code null} wrapped
-   *     in {@link Either#right} if no job was supplied and none was required, otherwise the {@link
-   *     Rejection} to surface
+   *     in {@link Either#right} if no job was supplied and none was required, or — for {@code
+   *     ALLOW_STALE} with a history batch only — if the supplied {@code jobKey}'s job record no
+   *     longer exists, otherwise the {@link Rejection} to surface
    */
   public Either<Rejection, JobRecord> validateJobContext(
       final long jobKey,
@@ -127,8 +137,10 @@ public final class AgentHistoryBatchBehavior {
       final List<? extends AgentHistoryRecordValue> history,
       final LeaseMismatchHandling leaseMismatchHandling) {
 
+    final var hasHistoryBatch = history != null && !history.isEmpty();
+
     if (jobKey == -1L) {
-      if (history != null && !history.isEmpty()) {
+      if (hasHistoryBatch) {
         return Either.left(
             new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MSG_JOB_REQUIRED_FOR_HISTORY));
       } else {
@@ -137,9 +149,20 @@ public final class AgentHistoryBatchBehavior {
     }
 
     final var jobState = processingState.getJobState();
-    if (jobState.getState(jobKey) != JobState.State.ACTIVATED) {
+    final var jobStateValue = jobState.getState(jobKey);
+    final var allowNonActivated =
+        leaseMismatchHandling == LeaseMismatchHandling.ALLOW_STALE && hasHistoryBatch;
+    if (!allowNonActivated && jobStateValue != JobState.State.ACTIVATED) {
       return Either.left(
           new Rejection(RejectionType.NOT_FOUND, ERROR_MSG_JOB_NOT_ACTIVE.formatted(jobKey)));
+    }
+
+    if (jobStateValue == JobState.State.NOT_FOUND) {
+      // Only reachable when allowNonActivated: no job record exists at all — the job completed,
+      // was cancelled, had a caught error, or this jobKey never belonged to any job. There is no
+      // element instance to validate against, so the caller must treat this as "no job", exactly
+      // like an omitted jobKey.
+      return Either.right(null);
     }
 
     final var job = jobState.getJob(jobKey);

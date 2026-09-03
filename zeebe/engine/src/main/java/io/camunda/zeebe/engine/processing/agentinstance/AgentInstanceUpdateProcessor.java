@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.AgentHistoryState;
 import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -94,6 +95,7 @@ public final class AgentInstanceUpdateProcessor
   private final AgentInstanceState agentInstanceState;
   private final ElementInstanceState elementInstanceState;
   private final JobState jobState;
+  private final AgentHistoryState agentHistoryState;
   private final CslAuthorizationCheck cslCheck;
   private final AgentHistoryBatchBehavior historyBatchHelper;
 
@@ -108,6 +110,7 @@ public final class AgentInstanceUpdateProcessor
     agentInstanceState = processingState.getAgentInstanceState();
     elementInstanceState = processingState.getElementInstanceState();
     jobState = processingState.getJobState();
+    agentHistoryState = processingState.getAgentHistoryState();
     this.cslCheck = cslCheck;
     historyBatchHelper = new AgentHistoryBatchBehavior(keyGenerator, processingState);
   }
@@ -251,6 +254,7 @@ public final class AgentInstanceUpdateProcessor
     final var changedAttributes = new HashSet<String>();
 
     if (!commandValue.getHistory().isEmpty()) {
+      final boolean jobRecordExists = validJob.get() != null;
       final var historyChanges =
           historyBatchHelper.applyInstanceChangesFromHistory(
               current,
@@ -262,9 +266,19 @@ public final class AgentInstanceUpdateProcessor
       current.getHistory().stream()
           .filter(Predicate.not(AgentHistoryRecordValue::isDuplicate))
           .forEach(
-              item ->
+              item -> {
+                stateWriter.appendFollowUpEvent(
+                    item.getAgentHistoryKey(), AgentHistoryIntent.CREATED, item);
+                if (!jobRecordExists) {
+                  // Re-read the item from state, trimmed to identity fields by
+                  // AgentHistoryCreatedApplier, instead of reusing the in-memory item, so this
+                  // DISCARDED event carries the same trimmed shape as every other discard path
+                  // (AgentHistoryDiscardProcessor, AgentHistoryCommitProcessor).
+                  final var storedItem = agentHistoryState.get(item.getAgentHistoryKey());
                   stateWriter.appendFollowUpEvent(
-                      item.getAgentHistoryKey(), AgentHistoryIntent.CREATED, item));
+                      item.getAgentHistoryKey(), AgentHistoryIntent.DISCARDED, storedItem);
+                }
+              });
 
       changedAttributes.addAll(historyChanges);
     }
