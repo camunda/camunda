@@ -46,7 +46,8 @@ async function fetchAllDrainingProcessDefinitions(): Promise<ProcessDefinition[]
 		}
 		const page: QueryProcessDefinitionsResponseBody = await response.json();
 		items.push(...page.items);
-		after = page.page.hasMoreTotalItems && page.page.endCursor !== null ? page.page.endCursor : undefined;
+		const nextCursor = page.page.hasMoreTotalItems ? page.page.endCursor : null;
+		after = nextCursor !== null && nextCursor !== after ? nextCursor : undefined;
 	} while (after !== undefined);
 
 	return items;
