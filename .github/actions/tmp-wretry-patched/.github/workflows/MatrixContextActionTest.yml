@@ -1,0 +1,19 @@
+
+name : matrix_context
+
+on : [ workflow_call ]
+
+jobs :
+
+  fast :
+    strategy :
+      matrix :
+        os : [ ubuntu-latest, windows-latest, macos-latest ]
+    runs-on : ${{ matrix.os }}
+    steps :
+    - name : Run action with job status
+      uses : Wandalen/wretry.action@master
+      with :
+        action : dmvict/test.action@defaults_from_matrix_context
+        attempt_limit : 3
+        attempt_delay: 1000

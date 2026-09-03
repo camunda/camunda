@@ -1,0 +1,11 @@
+----
+get().then(function () {
+  return a();
+}).then(function () {
+  return b();
+});
+----
+get().then(->
+  a()
+).then ->
+  b()

@@ -1,0 +1,13 @@
+notes: """
+  Doing `var a` in JavaScript will declare that the current
+  function scope has a variable `a` in it, preventing things like `alert(a)`
+  from getting the global `a`.
+
+  CoffeeScript has no such construct as `var`. However, since JavaScript
+  initializes all variables as `undefined`, doing an assignment to undefined
+  (`a = undefined`) will yield the same result.
+"""
+----
+var a;
+----
+a = undefined

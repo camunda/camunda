@@ -1,0 +1,50 @@
+{
+  "name": "wretry.action",
+  "version": "3.8.0",
+  "description": "Retries an Github Action step on failure",
+  "enabled": 0,
+  "author": "Kostiantyn Wandalen <wandalen@obox.systems>",
+  "contributors": [
+    "Kostiantyn Wandalen <wandalen@obox.systems>",
+    "Dmytro Kryvoruchko <dm.vict.kr@gmail.com>"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "will .build compile",
+    "test": "wtest .run \"test/**\""
+  },
+  "homepage": "https://github.com/Wandalen/wretry.action#action::wretry.action",
+  "keywords": [
+    "action",
+    "retry",
+    "github",
+    "workflow"
+  ],
+  "npm.engines": {
+    "node": ">= 10.0.0"
+  },
+  "engine": "node >= 10.0.0",
+  "repository": "https://github.com/Wandalen/wretry.action",
+  "bugs": "https://github.com/Wandalen/wretry.action/issues",
+  "main": "src/Main.js",
+  "proto.entry": [
+    "src/Main.js"
+  ],
+  "dependencies": {
+    "wgittools": "alpha",
+    "github-actions-parser": "dmvict/github-actions-parser",
+    "@actions/core": "1.10.0"
+  },
+  "devDependencies": {
+    "wTesting": ""
+  },
+  "files": [
+    "src/Common.js",
+    "src/Docker.js",
+    "src/Main.js",
+    "src/Post.js",
+    "src/Pre.js",
+    "src/Retry.js",
+    "src/Runner.mjs"
+  ]
+}

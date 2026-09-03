@@ -1,0 +1,82 @@
+# THROWAWAY — proves the patched wretry fetches authenticated AND that its retry actually fires.
+---
+name: "tmp wretry patch proof"
+
+on:
+  push:
+    branches:
+      - tmp/wretry-patch-proof
+
+jobs:
+  happy-path:
+    name: "P1 authenticated fetch + wrapped action works"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Java via PATCHED wretry
+        uses: ./.github/actions/tmp-wretry-patched
+        with:
+          action: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+          attempt_limit: 3
+          attempt_delay: 2000
+          github_token: ${{ github.token }}
+          github_context: '{}'
+          env_context: '{}'
+          job_context: '{}'
+          matrix_context: '{}'
+          with: |
+            distribution: temurin
+            java-version: 21
+            token: ${{ github.token }}
+      - name: Assert the wrapped action really took effect
+        shell: bash
+        run: |
+          echo "  JAVA_HOME=$JAVA_HOME"
+          java -version 2>&1 | head -1 | sed 's/^/    /'
+          java -version 2>&1 | head -1 | grep -q '21\.' \
+            && echo "  P1 PASS - java 21 active via patched wretry" \
+            || { echo "  P1 FAIL"; exit 1; }
+
+  forced-failure:
+    name: "P2 retry actually fires on a failing wrapped action"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Deliberately invalid java-version: the wrapped action must fail every attempt, so the
+      # attempt loop is observable. Anything less than 3 attempts means the retry is not firing.
+      - name: Failing action via PATCHED wretry
+        id: boom
+        continue-on-error: true
+        uses: ./.github/actions/tmp-wretry-patched
+        with:
+          action: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+          attempt_limit: 3
+          attempt_delay: 2000
+          github_token: ${{ github.token }}
+          github_context: '{}'
+          env_context: '{}'
+          job_context: '{}'
+          matrix_context: '{}'
+          with: |
+            distribution: temurin
+            java-version: definitely-not-a-version
+            token: ${{ github.token }}
+      - name: Report
+        shell: bash
+        run: |
+          echo "  wretry step outcome=${{ steps.boom.outcome }} (expected: failure)"
+          if [[ "${{ steps.boom.outcome }}" == "failure" ]]; then
+            echo "  P2 step failed as designed - attempt count is verified from the log"
+          else
+            echo "  P2 UNEXPECTED: step did not fail"; exit 1
+          fi

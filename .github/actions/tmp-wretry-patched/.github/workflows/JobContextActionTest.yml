@@ -1,0 +1,28 @@
+
+name : job_context
+
+on : [ workflow_call ]
+
+jobs :
+
+  Fast :
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        ports:
+          - 5432
+    strategy :
+      fail-fast : false
+      matrix :
+        os : [ ubuntu-latest ]
+    runs-on : ${{ matrix.os }}
+    steps :
+    - name : Run action with job status
+      uses : Wandalen/wretry.action@master
+      with :
+        action : dmvict/test.action@defaults_from_job_context
+        attempt_limit : 3
+        attempt_delay: 1000

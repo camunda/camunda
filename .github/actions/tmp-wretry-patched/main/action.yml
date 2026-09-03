@@ -1,0 +1,71 @@
+name: 'js retry action'
+author : |
+  Wandalen <wandalen@obox.systems>
+  dmvict <dm.vict.kr@gmail.com>
+branding:
+  icon: 'activity'
+  color: 'white'
+description: 'Retries an Github Action step on failure'
+inputs:
+  action:
+    description: 'Github action name. Should be defined action or command, not both.'
+    required: false
+  command:
+    description: 'Command to run. Should be defined action or command, not both.'
+    required: false
+  pre_retry_command:
+    description: 'Command to run between retries.'
+    required: false
+  with:
+    description: 'An options map for Github action'
+    required: false
+  current_path:
+    description: 'Setup working directory for the action. Works with only commands. Default is `github.workspace` path.'
+    required: false
+  env_context:
+    description: 'Pass context `env` into an external action. Action cannot resolve separate environments of workflow at the startup and provide all environments. If you need valid context `env`, then add option `env_context` with environments.'
+    required: false
+    default: '{}'
+  github_context:
+    description: 'Pass context `github` into an external action. Default is global context `github`.'
+    required: false
+    default: ${{ toJSON( github ) }}
+  inputs_context:
+    description: 'Pass context `inputs` into an external action. The action cannot resolve context `inputs` and resolves all inputs from passed options and action description.'
+    required: false
+    default: '{}'
+  job_context:
+    description: 'Pass context `job` into an external action. Default is context `job` of a job.'
+    required: false
+    default: ${{ toJSON( job ) }}
+  matrix_context:
+    description: 'Pass context `matrix` into an external action. Default is context `matrix` of a job.'
+    required: false
+    default: ${{ toJSON( matrix ) }}
+  steps_context:
+    description: 'Pass context `steps` into an external action. If you need valid context `steps`, then add option as described in `Readme.md`.'
+    required: false
+    default: '{}'
+  attempt_limit:
+    description: 'Number of attempts'
+    required: false
+    default: 2
+  attempt_delay:
+    description: 'A delay between attempts in ms'
+    required: false
+    default: 0
+  time_out:
+    description: 'Set time out in ms for entire step including all retries. By default actions sets no time out.'
+    required: false
+    default: false
+  retry_condition:
+    description: 'Use any valid expression to decide the continuation of retries. Default value is true.'
+    required: false
+    default: true
+  github_token:
+    description: 'A token to access private actions. Does not required for public actions.'
+    required: false
+    default: ${{ github.token }}
+runs:
+  using: 'node20'
+  main: '../src/Main.js'

@@ -1,0 +1,14 @@
+----
+for (;;c++) {
+  if (true) continue;
+  if (false) continue;
+}
+----
+loop
+  if true
+    c++
+    continue
+  if false
+    c++
+    continue
+  c++

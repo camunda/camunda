@@ -1,0 +1,17 @@
+
+name : publish
+
+on :
+  push :
+    branches : [ master ]
+    tags: 'v*'
+
+jobs :
+
+  job_context_test :
+    if : "startsWith( github.event.head_commit.message, 'version' ) && startsWith( github.ref, 'refs/tags/v' )"
+    uses : Wandalen/wretry.action/.github/workflows/JobContextActionTest.yml@master
+
+  matrix_context_test :
+    if : "startsWith( github.event.head_commit.message, 'version' ) && startsWith( github.ref, 'refs/tags/v' )"
+    uses : Wandalen/wretry.action/.github/workflows/MatrixContextActionTest.yml@master

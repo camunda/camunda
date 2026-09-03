@@ -1,0 +1,66 @@
+
+name : js_action_publish
+
+on :
+  push :
+    branches : [ js_action ]
+    tags: 'v*'
+
+jobs :
+
+  full :
+    env :
+      PRIVATE_WTOOLS_BOT_TOKEN : ${{ secrets.PRIVATE_WTOOLS_BOT_TOKEN }}
+      PRIVATE_WTOOLS_BOT_SSH_KEY : ${{ secrets.PRIVATE_WTOOLS_BOT_SSH_KEY }}
+      PRIVATE_WTOOLS_BOT_NPM_PASS : ${{ secrets.PRIVATE_WTOOLS_BOT_NPM_PASS }}
+      PRIVATE_WTOOLS_BOT_EMAIL : ${{ secrets.PRIVATE_WTOOLS_BOT_EMAIL }}
+      NODE_PRE_GYP_GITHUB_TOKEN : ${{ secrets.NODE_PRE_GYP_GITHUB_TOKEN }}
+    strategy :
+      fail-fast : false
+      matrix :
+        os : [ ubuntu-latest, windows-latest, macos-latest ]
+        node-version : [ 18.x, 20.x ]
+    if : "startsWith( github.event.head_commit.message, 'version' ) && startsWith( github.ref, 'refs/tags/v' )"
+    runs-on : ${{ matrix.os }}
+    steps :
+    - name : Setup git
+      run : |
+        git config --global core.autocrlf input
+        git config --global user.email "testing@testing.com"
+        git config --global user.name "Testing"
+        git config --global pull.rebase false
+        git config --global init.defaultBranch master
+    - name : Setup git for windows
+      if : ${{ matrix.os == 'windows-latest' }}
+      run : git config --system core.longpaths true
+    - uses : actions/checkout@v4
+      with :
+        ref: js_action
+    - name : ${{ matrix.node-version }}
+      uses : Wandalen/wretry.action@master
+      with :
+        action : actions/setup-node@v4
+        with : |
+          node-version : ${{ matrix.node-version }}
+        attempt_limit : 3
+        attempt_delay: 1000
+    - name : Install willbe
+      uses : Wandalen/wretry.action@master
+      with :
+        command : npm i -g willbe@latest
+        attempt_limit : 3
+        attempt_delay: 1000
+    - name : Install submodules
+      uses : Wandalen/wretry.action@master
+      with :
+        command : will .npm.install
+        attempt_limit : 3
+        attempt_delay: 1000
+    - name : Environment
+      run : env
+    - run : npm list
+      continue-on-error : true
+    - if : startsWith( matrix.os, 'ubuntu' )
+      run : xvfb-run --auto-servernum npm test
+    - if : "!startsWith( matrix.os, 'ubuntu' )"
+      run : npm test

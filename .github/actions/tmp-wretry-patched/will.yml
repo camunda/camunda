@@ -1,0 +1,485 @@
+about:
+  name: wretry.action
+  version: 3.8.0
+  description: Retries an Github Action step on failure
+  enabled: 0
+  author: Kostiantyn Wandalen <wandalen@obox.systems>
+  contributors:
+    - Kostiantyn Wandalen <wandalen@obox.systems>
+    - Dmytro Kryvoruchko <dm.vict.kr@gmail.com>
+  license: MIT
+  npm.scripts:
+    postinstall: will .build compile
+    test: wtest .run "test/**"
+  npm.homepage: 'https://github.com/Wandalen/wretry.action#action::wretry.action'
+  keywords:
+    - action
+    - retry
+    - github
+    - workflow
+  interpreters:
+    - njs >= 10.0.0
+path:
+  origins:
+    - 'git+https:///github.com/Wandalen/wretry.action'
+  entry: src/Main.js
+  repository: 'git+https:///github.com/Wandalen/wretry.action'
+  bugtracker: 'https:///github.com/Wandalen/wretry.action/issues'
+  in: .
+  out: out
+  temp:
+    - 'path::out'
+    - package-lock.json
+    - package.json
+    - node_modules
+  proto: ./src
+  tests: ./test
+  export: '{path::proto}/**'
+  doc: ./doc
+  step: ./step
+  out.raw.debug:
+    path: '{path::out}/debug'
+    criterion:
+      debug: debug
+      raw: raw
+      content: prime
+  out.compiled.debug:
+    path: '{path::out}/compiled.debug'
+    criterion:
+      debug: debug
+      raw: compiled
+      content: prime
+  out.raw.release:
+    path: '{path::out}/raw.release'
+    criterion:
+      debug: release
+      raw: raw
+      content: prime
+  out.compiled.release:
+    path: '{path::out}/release'
+    criterion:
+      debug: release
+      raw: compiled
+      content: prime
+  entry.proto.no.tests:
+    path: '{path::proto}/Main.js'
+    criterion:
+      tests: no.tests
+      content: proto
+  entry.proto.only.tests:
+    path: '{path::tests}/**/*.test.*'
+    criterion:
+      tests: only.tests
+  entry.out.raw:
+    path: '{path::out.*=1}/source/{path::entry}'
+    criterion:
+      debug:
+        - debug
+        - release
+      raw: raw
+      content: prime
+  entry.out.compiled:
+    path: '{path::out.*=}/source/Index.s'
+    criterion:
+      debug:
+        - debug
+        - release
+      raw: compiled
+      content: prime
+  npm.proto.entry:
+    - src/Main.js
+submodule:
+  '@actions/core':
+    path: 'npm:///@actions/core!1.10.0'
+    enabled: 0
+  github-actions-parser:
+    path: 'npm:///github-actions-parser!dmvict/github-actions-parser'
+    enabled: 0
+  wgittools:
+    path: 'npm:///wgittools!alpha'
+    enabled: 0
+  wTesting:
+    path: 'npm:///wTesting'
+    enabled: 0
+    criterion:
+      development: 1
+reflector:
+  reflect.proto:
+    inherit: predefined.*
+    criterion:
+      tests: no.tests
+      debug:
+        - debug
+        - release
+      raw:
+        - raw
+        - compiled
+      content: prime
+    filePath:
+      'path::proto': '{path::out.*=1}/source'
+  transpile.proto.raw:
+    inherit: predefined.*
+    step:
+      inherit: files.transpile
+      entry: 'path::entry.proto.no.tests'
+    criterion:
+      raw: raw
+      debug: release
+      content: prime
+    filePath:
+      'path::proto': '{path::out.raw.release}'
+  transpile.proto.no.tests.compiled:
+    inherit: predefined.*
+    step:
+      inherit: files.transpile
+      entry: 'path::entry.proto.*=1'
+    criterion:
+      tests: no.tests
+      raw: compiled
+      debug:
+        - debug
+        - release
+      content: prime
+    filePath:
+      '**.test*': 0
+      '**.test/**': 0
+      'path::proto': '{path::out.*=1}/Main.s'
+  transpile.proto.only.tests.compiled:
+    inherit: predefined.*
+    step:
+      inherit: files.transpile
+      entry: 'path::entry.proto.*=1'
+      external.before: '{path::out.*=1}/Main.s'
+    criterion:
+      tests: only.tests
+      raw: compiled
+      debug:
+        - debug
+        - release
+      content: prime
+    filePath:
+      '**.test*': 1
+      'path::proto': '{path::out.*=1}/Tests.test.s'
+  clean.npm:
+    inherit: predefined.debug.v2
+    src:
+      filePath:
+        - ./node_modules
+        - ./package-lock.json
+    mandatory: 0
+  clean.modules:
+    inherit: predefined.debug.v2
+    src:
+      filePath: ./node_modules
+      maskAll:
+        excludeAny:
+          - !<tag:yaml.org,2002:js/regexp> /@actions/
+          - !<tag:yaml.org,2002:js/regexp> /@fastify/
+          - !<tag:yaml.org,2002:js/regexp> /argparse/
+          - !<tag:yaml.org,2002:js/regexp> /bindings/
+          - !<tag:yaml.org,2002:js/regexp> /chevrotain/
+          - !<tag:yaml.org,2002:js/regexp> /file-uri-to-path/
+          - !<tag:yaml.org,2002:js/regexp> /github-actions-parser/
+          - !<tag:yaml.org,2002:js/regexp> /graceful-fs/
+          - !<tag:yaml.org,2002:js/regexp> /ini/
+          - !<tag:yaml.org,2002:js/regexp> /js-yaml/
+          - !<tag:yaml.org,2002:js/regexp> /lodash/
+          - !<tag:yaml.org,2002:js/regexp> /proper-lockfile/
+          - !<tag:yaml.org,2002:js/regexp> /regexp-to-ast/
+          - !<tag:yaml.org,2002:js/regexp> /retry/
+          - !<tag:yaml.org,2002:js/regexp> /signal-exit/
+          - !<tag:yaml.org,2002:js/regexp> /tunnel/
+          - !<tag:yaml.org,2002:js/regexp> /uuid/
+          - !<tag:yaml.org,2002:js/regexp> /undici/
+          - !<tag:yaml.org,2002:js/regexp> /yaml-ast-parser/
+          - !<tag:yaml.org,2002:js/regexp> /Joined.s/
+step:
+  join.sources:
+    inherit: sources.join
+    entryPath: node_modules/wgittools/proto/wtools/amid/l3/git/entry/GitTools.ss
+    inPath:
+      filePath:
+        - node_modules/wgittools/proto/wtools/amid/l3/git/entry/GitTools.ss
+        - node_modules/wgittools/proto/wtools/amid/**/*.(s|ss)
+        - node_modules/wgittools/proto/node_modules/*
+    modulesList:
+      - wTools
+      - wBlueprint
+      - wProto
+      - wCopyable
+      - wCloner
+      - wTraverser
+      - wStringer
+      - wStringsExtra
+      - wLooker
+      - wEqualer
+      - wSelector
+      - wPathBasic
+      - wUriBasic
+      - wPathTools
+      - wWebUriBasic
+      - wReplicator
+      - wArraySorted
+      - wArraySparse
+      - wIntrospectorBasic
+      - wIntrospectorExtra
+      - wConsequence
+      - wProcedure
+      - wFilesBasic
+      - wRegexpObject
+      - wFieldsStack
+      - wVerbal
+      - wLogger
+      - wEventHandler
+      - wColor256
+      - wColor
+      - wProcess
+      - wRemote
+      - wRepoBasic
+      - wGitPath
+      - wGdf
+      - wUnit
+    outPath: node_modules/Joined.s
+    interpreter: njs
+  proto.export:
+    inherit: module.export
+    export: 'path::export'
+    tar: 0
+    criterion:
+      content: proto
+  doc.export:
+    inherit: module.export
+    export: 'path::doc'
+    tar: 0
+    criterion:
+      content: doc
+  npm.export:
+    inherit: module.export
+    export: out.npm
+    tar: 0
+    criterion:
+      content: npm
+  npm.generate:
+    inherit: npm.generate
+    entryPath: 'path::entry.out.*=1'
+    packagePath: '{path::out.*=1}/package.json'
+    filesPath: '{path::out.*=1}/source/**'
+    withDisabledSubmodules: 1
+    criterion:
+      debug:
+        - debug
+        - release
+      raw:
+        - raw
+        - compiled
+      content:
+        - prime
+  npm.generate.proto:
+    inherit: npm.generate
+    entryPath: 'path::entry.proto.no.tests'
+    packagePath: package.json
+    filesPath: '{path::proto}/**'
+    withDisabledSubmodules: 1
+    criterion:
+      content:
+        - proto
+  npm.install:
+    shell: npm install --production
+  clean.out:
+    inherit: files.delete
+    filePath: '{path::out.*=1}/source'
+    criterion:
+      debug:
+        - debug
+        - release
+      raw:
+        - raw
+        - compiled
+      tests:
+        - no.tests
+        - only.tests
+      content:
+        - prime
+        - npm
+  clean.out.npm:
+    inherit: files.delete
+    filePath: 'path::out.*=1'
+    criterion:
+      debug: debug
+      raw: compiled
+      tests: no.tests
+      content: npm
+  clean.modules:
+    inherit: files.delete
+    filePath: 'reflector::clean.modules'
+  clean.npm:
+    inherit: files.delete
+    filePath: 'reflector::clean.npm'
+  tst.proto:
+    shell: 'tst {path::proto}'
+    criterion:
+      content: proto
+  tst.debug:
+    shell: 'tst {path::out.*=1}'
+    criterion:
+      content: prime
+      debug: debug
+  tst.release:
+    shell: 'tst {path::out.*=1}'
+    criterion:
+      content: prime
+      debug: release
+  bump:
+    inherit: version.bump
+    criterion:
+      bump:
+        - major
+        - minor
+        - patch
+  sync:
+    inherit: git.sync
+    dirPath: .
+  switch.js_action:
+    inherit: git
+    command: switch js_action
+  switch.master:
+    inherit: git
+    command: switch master
+  add:
+    inherit: git
+    command:
+      - add .
+  add.all:
+    inherit: git
+    command:
+      - add .
+      - add -f node_modules
+  commit:
+    inherit: git
+    command: 'commit -am "version {about::version}"'
+  tag:
+    inherit: git.tag
+    tag: 'v{about::version}'
+  tag.js_action:
+    inherit: git.tag
+    tag: 'v{about::version}_js_action'
+  tag.major:
+    inherit: js.run
+    js: '{path::step}/TagMajorStep.s'
+  push:
+    inherit: git.push
+    dirPath: .
+  action.write:
+    inherit: js.run
+    js: '{path::step}/ActionWrite.s'
+  release:
+    inherit: repo.release
+    tag: 'v{about::version}'
+build:
+  release.patch:
+    criterion:
+      publish: 1
+      default: 1
+      bump: patch
+    steps:
+      - switch.master
+      - sync
+      - switch.js_action
+      - sync
+      - clean.npm
+      - 'build::build.compiled'
+      - bump.*=1
+      - npm.generate.proto
+      - add.all
+      - commit
+      - tag.js_action
+      - push
+      - switch.master
+      - action.write
+      - add
+      - commit
+      - tag
+      - tag.major
+      - push
+      - release
+  action.release:
+    criterion:
+      publish: 1
+      bump:
+        - major
+        - minor
+        - patch
+    steps:
+      - switch.master
+      - sync
+      - switch.js_action
+      - sync
+      - clean.npm
+      - 'build::build.compiled'
+      - bump.*=1
+      - npm.generate.proto
+      - add.all
+      - commit
+      - tag.js_action
+      - push
+      - switch.master
+      - action.write
+      - add
+      - commit
+      - tag
+      - tag.major
+      - push
+      - release
+  doc.export:
+    criterion:
+      content: doc
+      export: 1
+    steps:
+      - 'step::doc.export'
+  export:
+    criterion:
+      default: 1
+      export: 1
+    steps:
+      - 'build::proto.export'
+  debug:
+    criterion:
+      default: 1
+      debug: debug
+      raw: raw
+      content: prime
+    steps:
+      - 'step::clean.out*=2'
+      - reflect.proto.*=1
+  npm:
+    criterion:
+      debug:
+        - debug
+        - release
+      raw:
+        - raw
+        - compiled
+      content: prime
+    steps:
+      - npm.generate.*=1
+  npm.proto:
+    criterion:
+      content: proto
+    steps:
+      - npm.generate.proto
+  all:
+    criterion:
+      content: prime
+      debug: debug
+      raw: raw
+    steps:
+      - 'build::debug'
+      - 'build::npm.*=1'
+  compile:
+    steps:
+      - join.sources
+  build.compiled:
+    steps:
+      - npm.install
+      - 'build::compile'
+      - clean.modules

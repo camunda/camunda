@@ -1,0 +1,2 @@
+export declare type IssueActivities = "opened" | "edited" | "deleted" | "transferred" | "pinned" | "unpinned" | "closed" | "reopened" | "assigned" | "unassigned" | "labeled" | "unlabeled" | "locked" | "unlocked" | "milestoned" | "demilestoned";
+export declare type PullRequestActivities = "assigned" | "unassigned" | "labeled" | "unlabeled" | "opened" | "edited" | "closed" | "reopened" | "synchronize" | "ready_for_review" | "locked" | "unlocked" | "review_requested" | "review_request_removed";
