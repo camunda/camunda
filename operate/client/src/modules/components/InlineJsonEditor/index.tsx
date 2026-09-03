@@ -170,12 +170,12 @@ const InlineJsonEditor: React.FC<Props> = observer(
 
     useEffect(() => {
       if (autoFocus) {
-        startEditing();
+        handleFocus();
       }
       return () => {
         shouldStartEditingRef.current = false;
       };
-    }, [autoFocus, startEditing]);
+    }, [autoFocus, handleFocus]);
 
     if (editorLoadError !== undefined) {
       throw editorLoadError;

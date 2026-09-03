@@ -510,7 +510,7 @@ test.describe('process instance page', () => {
     page,
     processInstancePage,
   }) => {
-    let notifyEditorChunkRequested: () => void;
+    let notifyEditorChunkRequested: (() => void) | undefined;
     const editorChunkRequested = new Promise<void>((resolve) => {
       notifyEditorChunkRequested = resolve;
     });
@@ -520,6 +520,9 @@ test.describe('process instance page', () => {
     });
 
     await page.route('**/assets/RichTextEditor-*.js', async (route) => {
+      if (notifyEditorChunkRequested === undefined) {
+        throw new Error('Rich text editor chunk request is not initialized');
+      }
       notifyEditorChunkRequested();
       await editorChunkReleased;
       await route.continue();
