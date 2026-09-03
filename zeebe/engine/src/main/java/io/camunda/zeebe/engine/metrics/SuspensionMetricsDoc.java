@@ -100,52 +100,6 @@ public enum SuspensionMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** Number of currently suspended process instances */
-  SUSPENDED_INSTANCES {
-    @Override
-    public String getName() {
-      return "zeebe.suspended.instances.count";
-    }
-
-    @Override
-    public Type getType() {
-      return Type.GAUGE;
-    }
-
-    @Override
-    public String getDescription() {
-      return "Number of currently suspended process instances";
-    }
-
-    @Override
-    public KeyName[] getAdditionalKeyNames() {
-      return PartitionKeyNames.values();
-    }
-  },
-
-  /** Number of currently buffered commands across all suspended process instances */
-  BUFFERED_COMMANDS {
-    @Override
-    public String getName() {
-      return "zeebe.buffered.commands.count";
-    }
-
-    @Override
-    public Type getType() {
-      return Type.GAUGE;
-    }
-
-    @Override
-    public String getDescription() {
-      return "Number of currently buffered commands across all suspended process instances";
-    }
-
-    @Override
-    public KeyName[] getAdditionalKeyNames() {
-      return PartitionKeyNames.values();
-    }
-  },
-
   /** Wall-clock time from RESUME command to RESUMED event per process instance */
   RESUME_DURATION {
     private static final Duration[] BUCKETS =

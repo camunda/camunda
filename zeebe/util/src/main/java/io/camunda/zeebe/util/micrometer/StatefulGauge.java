@@ -88,25 +88,11 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
         value -> Double.doubleToLongBits(Double.longBitsToDouble(value) + 1.0));
   }
 
-  /** Atomically increments by the given amount and returns the new value. */
-  @SuppressWarnings("UnusedReturnValue")
-  public long increment(final long amount) {
-    return state.updateAndGet(
-        value -> Double.doubleToLongBits(Double.longBitsToDouble(value) + amount));
-  }
-
   /** Atomically decrements and returns the new value. */
   @SuppressWarnings("UnusedReturnValue")
   public long decrement() {
     return state.updateAndGet(
         value -> Double.doubleToLongBits(Double.longBitsToDouble(value) - 1.0));
-  }
-
-  /** Atomically decrements by the given amount and returns the new value. */
-  @SuppressWarnings("UnusedReturnValue")
-  public long decrement(final long amount) {
-    return state.updateAndGet(
-        value -> Double.doubleToLongBits(Double.longBitsToDouble(value) - amount));
   }
 
   @Override

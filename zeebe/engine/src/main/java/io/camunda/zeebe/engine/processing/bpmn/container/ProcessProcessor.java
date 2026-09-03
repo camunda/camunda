@@ -30,6 +30,7 @@ import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.Either;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -142,11 +143,8 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
                     context, element.getEventType(), getAsyncRequest(context))));
 
     // metrics after all writes
-    if (wasSuspended) {
-      suspensionMetrics.instanceTerminatedWhileSuspended();
-      if (droppedCommands > 0) {
-        suspensionMetrics.commandsDropped(droppedCommands);
-      }
+    if (droppedCommands > 0) {
+      suspensionMetrics.commandsDropped(droppedCommands);
     }
     suspensionMetrics.cancelResumeDuration(piKey);
   }
@@ -161,9 +159,10 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
   }
 
   private int countBufferedCommands(final long processInstanceKey) {
-    final int[] count = {0};
-    suspensionState.visitBufferedCommands(processInstanceKey, (key, cmd) -> count[0]++);
-    return count[0];
+    final var count = new AtomicInteger();
+    suspensionState.visitBufferedCommands(
+        processInstanceKey, (key, cmd) -> count.incrementAndGet());
+    return count.get();
   }
 
   private void activateStartEvent(

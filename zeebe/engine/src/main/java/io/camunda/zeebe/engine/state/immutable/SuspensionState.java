@@ -56,12 +56,6 @@ public interface SuspensionState {
    */
   Optional<BufferedCommand> getOldestBufferedCommand(long processInstanceKey);
 
-  /** Returns the total number of process instances with a suspension marker (any state). */
-  long countSuspensionMarkers();
-
-  /** Returns the total number of buffered commands across all process instances. */
-  long countBufferedCommands();
-
   @FunctionalInterface
   interface BufferedCommandVisitor {
     void visit(long bufferedCommandKey, BufferedCommandRecordValue command);

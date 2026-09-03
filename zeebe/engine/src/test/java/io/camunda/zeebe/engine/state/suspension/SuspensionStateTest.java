@@ -322,57 +322,6 @@ public final class SuspensionStateTest {
     assertThat(visitedKeys).isEmpty();
   }
 
-  @Test
-  public void shouldCountSuspensionMarkersAcrossInsertAndRemove() {
-    // given
-    assertThat(suspensionState.countSuspensionMarkers()).isZero();
-
-    // when
-    suspensionState.setSuspensionState(1L, State.SUSPENDED);
-    suspensionState.setSuspensionState(2L, State.RESUMING);
-
-    // then
-    assertThat(suspensionState.countSuspensionMarkers()).isEqualTo(2);
-
-    // when — overwriting a state does not create a second row
-    suspensionState.setSuspensionState(1L, State.RESUMING);
-
-    // then
-    assertThat(suspensionState.countSuspensionMarkers()).isEqualTo(2);
-
-    // when — removing one marker
-    suspensionState.removeSuspensionState(1L);
-
-    // then
-    assertThat(suspensionState.countSuspensionMarkers()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldCountBufferedCommandsAcrossInsertRemoveAndClear() {
-    // given
-    assertThat(suspensionState.countBufferedCommands()).isZero();
-
-    // when
-    suspensionState.bufferCommand(10L, bufferedCommandRecord(1L, 1L));
-    suspensionState.bufferCommand(20L, bufferedCommandRecord(1L, 2L));
-    suspensionState.bufferCommand(30L, bufferedCommandRecord(2L, 3L));
-
-    // then
-    assertThat(suspensionState.countBufferedCommands()).isEqualTo(3);
-
-    // when — removing one command
-    suspensionState.removeBufferedCommand(10L);
-
-    // then
-    assertThat(suspensionState.countBufferedCommands()).isEqualTo(2);
-
-    // when — clearing all commands for PI 1 (one remaining)
-    suspensionState.clearBufferedCommands(1L);
-
-    // then — only PI 2's command remains
-    assertThat(suspensionState.countBufferedCommands()).isEqualTo(1);
-  }
-
   private BufferedCommandRecord bufferedCommandRecord(
       final long processInstanceKey, final long commandKey) {
     return new BufferedCommandRecord()

@@ -45,7 +45,6 @@ public class SuspensionMetricsIntegrationTest {
 
     // then
     assertThat(suspensionCounter("suspended")).isOne();
-    assertThat(suspendedInstancesGauge()).isOne();
 
     // when — resume
     engine.processInstance().withInstanceKey(piKey).resume();
@@ -55,7 +54,6 @@ public class SuspensionMetricsIntegrationTest {
 
     // then
     assertThat(suspensionCounter("resumed")).isOne();
-    assertThat(suspendedInstancesGauge()).isZero();
   }
 
   @Test
@@ -82,31 +80,6 @@ public class SuspensionMetricsIntegrationTest {
     assertThat(jobSuspensionCounter("suspended"))
         .describedAs("job suspended count")
         .isGreaterThanOrEqualTo(1);
-  }
-
-  @Test
-  public void shouldRecordTerminationWhileSuspendedMetrics() {
-    // given — a suspended instance with buffered commands
-    final String processId = Strings.newRandomValidBpmnId();
-    engine
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId).startEvent().userTask().endEvent().done())
-        .deploy();
-    final long piKey = engine.processInstance().ofBpmnProcessId(processId).create();
-    engine.processInstance().withInstanceKey(piKey).suspend();
-
-    // when — cancel while suspended
-    engine.processInstance().withInstanceKey(piKey).cancel();
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
-        .withProcessInstanceKey(piKey)
-        .withElementType(BpmnElementType.PROCESS)
-        .await();
-
-    // then — suspension gauge should be back to zero
-    assertThat(suspendedInstancesGauge())
-        .describedAs("suspended instances after termination")
-        .isZero();
   }
 
   @Test
@@ -143,31 +116,47 @@ public class SuspensionMetricsIntegrationTest {
     assertThat(bufferedCommandCounter("buffered"))
         .describedAs("buffered command count")
         .isGreaterThanOrEqualTo(1);
-    assertThat(bufferedCommandsGauge())
-        .describedAs("buffered commands gauge")
-        .isGreaterThanOrEqualTo(1);
   }
 
   @Test
-  public void shouldRebuildGaugesOnRecovery() {
-    // given — a suspended instance
+  public void shouldRecordDroppedCommandsOnTerminationWhileSuspended() {
+    // given — a suspended instance with a buffered REOPEN command
     final String processId = Strings.newRandomValidBpmnId();
+    final String messageName = Strings.newRandomValidBpmnId();
+    final String correlationKey = Strings.newRandomValidBpmnId();
     engine
         .deployment()
         .withXmlResource(
-            Bpmn.createExecutableProcess(processId).startEvent().userTask().endEvent().done())
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent(
+                    "msg",
+                    e ->
+                        e.message(
+                            m ->
+                                m.name(messageName)
+                                    .zeebeCorrelationKey("=\"%s\"".formatted(correlationKey))))
+                .endEvent()
+                .done())
         .deploy();
     final long piKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(piKey)
+        .await();
     engine.processInstance().withInstanceKey(piKey).suspend();
-    assertThat(suspendedInstancesGauge()).isOne();
+    RecordingExporter.records().withIntent(BufferedCommandIntent.BUFFERED).await();
 
-    // when — restart
-    engine.snapshot();
-    engine.stop();
-    engine.start();
+    // when — cancel while suspended, dropping the buffered command
+    engine.processInstance().withInstanceKey(piKey).cancel();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+        .withProcessInstanceKey(piKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
 
-    // then — gauge rebuilt from persisted state
-    assertThat(suspendedInstancesGauge()).describedAs("suspended instances after recovery").isOne();
+    // then
+    assertThat(bufferedCommandCounter("dropped"))
+        .describedAs("dropped command count")
+        .isGreaterThanOrEqualTo(1);
   }
 
   private MeterRegistry registry() {
@@ -196,13 +185,5 @@ public class SuspensionMetricsIntegrationTest {
         .tag("action", action)
         .counter()
         .count();
-  }
-
-  private double suspendedInstancesGauge() {
-    return registry().get("zeebe.suspended.instances.count").gauge().value();
-  }
-
-  private double bufferedCommandsGauge() {
-    return registry().get("zeebe.buffered.commands.count").gauge().value();
   }
 }

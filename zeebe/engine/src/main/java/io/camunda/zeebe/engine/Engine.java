@@ -140,9 +140,7 @@ public class Engine implements RecordProcessor {
     writers.setKeyValidator(processingState.getKeyGenerator());
     suspensionCheck = new SuspensionCheck(processingState);
 
-    final var suspensionMetrics =
-        new SuspensionMetrics(
-            typedProcessorContext.getMeterRegistry(), processingState.getSuspensionState());
+    final var suspensionMetrics = new SuspensionMetrics(typedProcessorContext.getMeterRegistry());
     typedProcessorContext.setSuspensionMetrics(suspensionMetrics);
 
     ((EventAppliers) eventApplier).registerEventAppliers(processingState);
