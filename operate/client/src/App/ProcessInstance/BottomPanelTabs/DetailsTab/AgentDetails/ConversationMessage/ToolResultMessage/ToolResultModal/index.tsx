@@ -34,8 +34,8 @@ const RichTextEditor = lazy(async () => {
   return {default: RichTextEditor};
 });
 
-// A read-only preview has nothing to mark up, and the ruler's decorations are
-// drawn only once the editor has focus, which makes screenshots unstable.
+// The ruler paints its decorations only once the editor is focused, so a
+// read-only preview renders inconsistently with it enabled.
 const PREVIEW_OPTIONS = {overviewRulerLanes: 0};
 
 type ToolResultModalProps = {
