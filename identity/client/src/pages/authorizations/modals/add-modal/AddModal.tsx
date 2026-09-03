@@ -205,7 +205,7 @@ export const AddModal: FC<
               control={control}
               render={({ field, fieldState }) => {
                 return (
-                  <Dropdown<ResourcePropertyName>
+                  <Dropdown<ResourcePropertyName | null>
                     id="property-name-dropdown"
                     label={t("selectResourcePropertyName")}
                     titleText={t("resourcePropertyName")}
