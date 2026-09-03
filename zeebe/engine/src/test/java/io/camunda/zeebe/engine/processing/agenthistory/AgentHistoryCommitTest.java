@@ -559,6 +559,83 @@ public class AgentHistoryCommitTest {
         .isEqualTo(2);
   }
 
+  @Test
+  public void shouldNotApplyConfigurationChangeFromDiscardedItemAfterJobCompletion() {
+    final var serviceTaskInstance = deployAndCreateProcessInstance();
+    final var elementInstanceKey = serviceTaskInstance.getKey();
+    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
+    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
+
+    // Activation 1 (superseded): an AGENT_INSTANCE:UPDATE queues a CONFIGURATION item that
+    // changes model/provider, but the job fails before the item is ever committed.
+    final var job1 = activateJobForProcessInstanceWithLease(processInstanceKey);
+    final var supersededConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-config-superseded")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    supersededConfigItem.setModel("gpt-4o-mini").setProvider("azure-openai");
+    supersededConfigItem.setChangedAttributes(List.of("model", "provider"));
+    final var firstUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(job1.key())
+            .withJobLease(job1.leaseToken())
+            .withHistory(List.of(supersededConfigItem))
+            .update();
+    final long supersededItemKey = firstUpdate.getValue().getHistory().get(0).getAgentHistoryKey();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withLeaseToken(job1.leaseToken())
+        .withRetries(1)
+        .fail();
+
+    // Activation 2 (winning): re-activate and complete the job, without queuing any further item.
+    final var job2 = activateJobForProcessInstanceWithLease(processInstanceKey);
+
+    // when — the job completes under the winning lease
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withLeaseToken(job2.leaseToken())
+        .complete();
+
+    // then — the superseded CONFIGURATION item is discarded, never committed
+    final var discarded =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.DISCARDED)
+            .withRecordKey(supersededItemKey)
+            .getFirst();
+    assertThat(discarded.getKey())
+        .as("the superseded activation's CONFIGURATION item should be discarded")
+        .isEqualTo(supersededItemKey);
+
+    // and — applyConfigurationChanges only runs for COMMITTED items, so the discarded item's
+    // model/provider change must never reach the live agent instance, even after its job
+    // completed and the discard was applied. The position check proves this is not a snapshot
+    // taken before the discard: without it, COMPLETED could simply have been written first.
+    final var agentInstanceCompleted =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETED)
+            .withAgentInstanceKey(agentInstanceKey)
+            .getFirst();
+    assertThat(discarded.getPosition())
+        .as("the discard must already be applied when the agent instance completes")
+        .isLessThan(agentInstanceCompleted.getPosition());
+    assertThat(agentInstanceCompleted.getValue().getDefinition().getModel())
+        .as("the discarded item's model change must never be applied to the live agent instance")
+        .isEqualTo("gpt-4o");
+    assertThat(agentInstanceCompleted.getValue().getDefinition().getProvider())
+        .as(
+            "the discarded item's provider change must never be applied to the live agent"
+                + " instance")
+        .isEqualTo("openai");
+  }
+
   // --- helpers ---
 
   private static Record<ProcessInstanceRecordValue> deployAndCreateProcessInstance() {
