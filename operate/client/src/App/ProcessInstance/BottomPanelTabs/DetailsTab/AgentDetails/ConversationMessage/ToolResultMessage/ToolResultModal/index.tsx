@@ -34,8 +34,6 @@ const RichTextEditor = lazy(async () => {
   return {default: RichTextEditor};
 });
 
-// The ruler paints its decorations only once the editor is focused, so a
-// read-only preview renders inconsistently with it enabled.
 const PREVIEW_OPTIONS = {overviewRulerLanes: 0};
 
 type ToolResultModalProps = {
