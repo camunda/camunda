@@ -789,6 +789,7 @@ jobs:
             maven_module: 'qa/migration-tests'
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+      TEST_OWNER: '@camunda/data-layer'
     services:
       # Set up an elastic search service container
       # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
@@ -920,6 +921,7 @@ jobs:
             maven_module: 'qa/migration-tests'
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+      TEST_OWNER: '@camunda/data-layer'
     services:
       # Set up an OpenSearch service container
       # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
@@ -1037,6 +1039,7 @@ jobs:
     runs-on: gcp-perf-core-8-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+      TEST_OWNER: '@camunda/data-layer'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@v4
