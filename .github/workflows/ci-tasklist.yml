@@ -91,7 +91,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
@@ -131,7 +131,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
@@ -170,7 +170,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
@@ -209,7 +209,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
@@ -249,7 +249,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - name: Check out repository code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -301,7 +301,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - name: Check out repository code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -428,7 +428,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f8345269e8c056befbef81adbf8abeb0683d0136 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
