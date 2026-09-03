@@ -40,7 +40,7 @@ spec:
                 -Dconfig.override_with_env_vars=true
                 -Dapp.tls=true
                 -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
+                -Dapp.performReadBenchmarks=true
                 -Dapp.starter.rate=1
                 -Dzeebe.client.requestTimeout=62000
                 -Dapp.starter.processId="bankDisputeHandling"
@@ -106,7 +106,7 @@ spec:
             - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
               value: "false"
             - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
-              value: "false"
+              value: "true"
             - name: CAMUNDA_CLIENT_MODE
               value: "saas"
             - name: CAMUNDA_CLIENT_AUTH_METHOD

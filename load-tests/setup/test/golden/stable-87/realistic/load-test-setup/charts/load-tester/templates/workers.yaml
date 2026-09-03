@@ -24,7 +24,6 @@ spec:
         - name: harbor-registry
       nodeSelector:
         component: benchmark-n2-standard-4
-        topology.kubernetes.io/zone: europe-west1-d
       tolerations:
         - effect: NoSchedule
           key: nodepool
@@ -167,7 +166,6 @@ spec:
         - name: harbor-registry
       nodeSelector:
         component: benchmark-n2-standard-4
-        topology.kubernetes.io/zone: europe-west1-d
       tolerations:
         - effect: NoSchedule
           key: nodepool
@@ -301,7 +299,6 @@ spec:
         - name: harbor-registry
       nodeSelector:
         component: benchmark-n2-standard-4
-        topology.kubernetes.io/zone: europe-west1-d
       tolerations:
         - effect: NoSchedule
           key: nodepool
@@ -447,7 +444,6 @@ spec:
         - name: harbor-registry
       nodeSelector:
         component: benchmark-n2-standard-4
-        topology.kubernetes.io/zone: europe-west1-d
       tolerations:
         - effect: NoSchedule
           key: nodepool
@@ -581,7 +577,6 @@ spec:
         - name: harbor-registry
       nodeSelector:
         component: benchmark-n2-standard-4
-        topology.kubernetes.io/zone: europe-west1-d
       tolerations:
         - effect: NoSchedule
           key: nodepool
@@ -715,7 +710,6 @@ spec:
         - name: harbor-registry
       nodeSelector:
         component: benchmark-n2-standard-4
-        topology.kubernetes.io/zone: europe-west1-d
       tolerations:
         - effect: NoSchedule
           key: nodepool
