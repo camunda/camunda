@@ -33,6 +33,7 @@ const Delete: React.FC<Props> = ({
         onClick={() => setIsDeleteModalVisible(true)}
         title={title}
         disabled={disabled}
+        isIconOnly
         size="sm"
       />
       {isDeleteModalVisible &&
