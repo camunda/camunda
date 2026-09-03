@@ -454,7 +454,10 @@
 				"instancesInVersion_other": "{{count}} Instancias en la Versión {{version}}",
 				"version": "Versión {{version}}",
 				"fetchErrorHeading": "No se pudieron recuperar los datos",
-				"fetchErrorDescription": "Actualice la página para intentarlo de nuevo"
+				"fetchErrorDescription": "Actualice la página para intentarlo de nuevo",
+				"draining": "Vaciando",
+				"drainingDescriptionAllVersions": "Una o más versiones de esta definición de proceso están programadas para su eliminación. Permanecerán hasta que sus instancias en ejecución finalicen, y luego se eliminarán automáticamente.",
+				"drainingDescriptionVersion": "Esta versión de la definición de proceso está programada para su eliminación y se eliminará automáticamente una vez que todas sus instancias en ejecución hayan finalizado."
 			},
 			"processes": {
 				"title": "Procesos",

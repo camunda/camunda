@@ -21,6 +21,7 @@ import {endpoints} from '#/shared/http/endpoints';
 const PAGE_SIZE = 50;
 const MAX_PAGES = 5;
 const DRAINING_REFETCH_INTERVAL = 5000;
+const DRAINING_PAGE_LIMIT = 1000;
 
 type DrainingLookup = {
 	byId: Set<string>;
@@ -28,31 +29,25 @@ type DrainingLookup = {
 };
 
 async function fetchAllDrainingProcessDefinitions(): Promise<ProcessDefinition[]> {
-	const {response, error} = await request(endpoints.queryProcessDefinitions({filter: {state: 'DRAINING'}}));
-	if (error !== null) {
-		throw mapQueryError(error);
-	}
-	const firstPage: QueryProcessDefinitionsResponseBody = await response.json();
+	const items: ProcessDefinition[] = [];
+	let after: string | undefined;
 
-	if (firstPage.page.totalItems <= firstPage.items.length || firstPage.page.endCursor === null) {
-		return firstPage.items;
-	}
+	do {
+		const {response, error} = await request(
+			endpoints.queryProcessDefinitions({
+				filter: {state: 'DRAINING'},
+				page: {limit: DRAINING_PAGE_LIMIT, after},
+			}),
+		);
+		if (error !== null) {
+			throw mapQueryError(error);
+		}
+		const page: QueryProcessDefinitionsResponseBody = await response.json();
+		items.push(...page.items);
+		after = page.page.hasMoreTotalItems && page.page.endCursor !== null ? page.page.endCursor : undefined;
+	} while (after !== undefined);
 
-	const {response: remainingResponse, error: remainingError} = await request(
-		endpoints.queryProcessDefinitions({
-			filter: {state: 'DRAINING'},
-			page: {
-				after: firstPage.page.endCursor,
-				limit: firstPage.page.totalItems - firstPage.items.length,
-			},
-		}),
-	);
-	if (remainingError !== null) {
-		throw mapQueryError(remainingError);
-	}
-	const remainingPage: QueryProcessDefinitionsResponseBody = await remainingResponse.json();
-
-	return firstPage.items.concat(remainingPage.items);
+	return items;
 }
 
 const drainingProcessDefinitionsQuery = () =>
