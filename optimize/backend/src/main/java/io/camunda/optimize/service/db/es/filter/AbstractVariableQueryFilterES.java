@@ -9,11 +9,16 @@ package io.camunda.optimize.service.db.es.filter;
 
 import static io.camunda.optimize.service.db.filter.util.OperatorMultipleValuesVariableFilterDataDtoUtil.validateMultipleValuesFilterDataDto;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.NumberRangeQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.UntypedRangeQuery;
+import co.elastic.clients.json.JsonData;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.time.ZoneId;
 import java.util.List;
@@ -60,5 +65,51 @@ public abstract class AbstractVariableQueryFilterES {
       LOG.debug(message);
       throw new OptimizeRuntimeException(message);
     }
+  }
+
+  /**
+   * Builds the range query for a relative ({@code <}, {@code <=}, {@code >}, {@code >=}) numeric
+   * variable filter.
+   *
+   * <p>SHORT, INTEGER and LONG variables are indexed in a {@code long}-mapped value sub-field, so
+   * their bounds are serialized straight from the {@code long} via {@code untyped()}. Do not
+   * simplify this to the {@code number()} variant: it only accepts {@code double}, which cannot
+   * represent integers beyond 2^53 exactly, so the bound would silently round and the filter would
+   * match the wrong instances. The {@code longNumber()} variant would express this more directly,
+   * but the Elasticsearch client on this branch (8.16.6) does not have it yet.
+   */
+  protected static Query createNumericRangeQuery(
+      final String field,
+      final VariableType type,
+      final FilterOperator operator,
+      final Object value) {
+    final Number bound = (Number) value;
+
+    if (VariableType.DOUBLE == type) {
+      final NumberRangeQuery.Builder range = new NumberRangeQuery.Builder().field(field);
+      switch (operator) {
+        case LESS_THAN -> range.lt(bound.doubleValue());
+        case LESS_THAN_EQUALS -> range.lte(bound.doubleValue());
+        case GREATER_THAN -> range.gt(bound.doubleValue());
+        case GREATER_THAN_EQUALS -> range.gte(bound.doubleValue());
+        default -> throw new OptimizeRuntimeException(unsupportedRangeOperatorMessage(operator));
+      }
+      return Query.of(q -> q.range(r -> r.number(range.build())));
+    }
+
+    final JsonData exactBound = JsonData.of(bound.longValue());
+    final UntypedRangeQuery.Builder range = new UntypedRangeQuery.Builder().field(field);
+    switch (operator) {
+      case LESS_THAN -> range.lt(exactBound);
+      case LESS_THAN_EQUALS -> range.lte(exactBound);
+      case GREATER_THAN -> range.gt(exactBound);
+      case GREATER_THAN_EQUALS -> range.gte(exactBound);
+      default -> throw new OptimizeRuntimeException(unsupportedRangeOperatorMessage(operator));
+    }
+    return Query.of(q -> q.range(r -> r.untyped(range.build())));
+  }
+
+  private static String unsupportedRangeOperatorMessage(final FilterOperator operator) {
+    return String.format("Numeric variable range operator [%s] is not supported!", operator);
   }
 }
