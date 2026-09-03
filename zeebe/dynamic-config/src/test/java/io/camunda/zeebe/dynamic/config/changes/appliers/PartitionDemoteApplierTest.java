@@ -31,11 +31,12 @@ import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-final class PartitionLeaveApplierTest {
+final class PartitionDemoteApplierTest {
 
   private final PartitionChangeExecutor partitionChangeExecutor =
       mock(PartitionChangeExecutor.class);
   private final MemberId localMemberId = MemberId.from("1");
+  private final MemberId otherMemberId = MemberId.from("2");
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
   private final GlobalConfiguration globalConfigurationWithLocalMemberActive =
@@ -63,7 +64,7 @@ final class PartitionLeaveApplierTest {
   }
 
   @Test
-  void shouldRejectLeaveIfLocalMemberIsNotInCluster() {
+  void shouldRejectDemoteIfLocalMemberIsNotInCluster() {
     // given
     final var globalConfigurationWithoutLocalMember = globalConfigurationWith(Map.of());
     final var initialGroup =
@@ -73,7 +74,7 @@ final class PartitionLeaveApplierTest {
 
     // when
     final var result =
-        new PartitionLeaveApplier(localMemberId, 1, 0, partitionChangeExecutor)
+        new PartitionDemoteApplier(localMemberId, 1, partitionChangeExecutor)
             .init(globalConfigurationWithoutLocalMember, initialGroup);
 
     // then
@@ -84,13 +85,13 @@ final class PartitionLeaveApplierTest {
   }
 
   @Test
-  void shouldRejectLeaveIfLocalMemberDoesNotHavePartition() {
+  void shouldRejectDemoteIfLocalMemberDoesNotHavePartition() {
     // given
     final var initialGroup = groupWithMembers(Map.of(localMemberId, brokerWith(Map.of())));
 
     // when
     final var result =
-        new PartitionLeaveApplier(localMemberId, 1, 0, partitionChangeExecutor)
+        new PartitionDemoteApplier(localMemberId, 1, partitionChangeExecutor)
             .init(globalConfigurationWithLocalMemberActive, initialGroup);
 
     // then
@@ -101,8 +102,9 @@ final class PartitionLeaveApplierTest {
   }
 
   @Test
-  void shouldRejectLeaveIfReplicaCountAtMinimum() {
-    // given — only one replica of the partition, minimum allowed is 1
+  void shouldRejectDemoteIfNoOtherReplicaExists() {
+    // given — demoting the only replica would leave a non-empty replication group without any
+    // voting member, which can neither elect a leader nor commit
     final var initialGroup =
         groupWithMembers(
             Map.of(
@@ -110,79 +112,54 @@ final class PartitionLeaveApplierTest {
 
     // when
     final var result =
-        new PartitionLeaveApplier(localMemberId, 1, 1, partitionChangeExecutor)
+        new PartitionDemoteApplier(localMemberId, 1, partitionChangeExecutor)
             .init(globalConfigurationWithLocalMemberActive, initialGroup);
 
     // then
     assertThat(result).isLeft();
     Assertions.assertThat(result.getLeft())
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("minimum allowed replicas");
+        .hasMessageContaining("no other member has the partition in active state");
   }
 
   @Test
-  void shouldRejectLeaveIfOnlyOtherReplicaIsALearner() {
-    // given — a learner does not participate in the quorum, so it must not be counted toward the
-    // minimum: leaving the sole active replica here would strand the partition with only a
-    // non-voting member, which raft then permanently rejects (no active member in a non-empty
-    // configuration)
+  void shouldRejectDemoteIfOtherReplicasAreNotActive() {
+    // given — the other replica is still a learner, so it cannot vote either
     final var initialGroup =
         groupWithMembers(
             Map.of(
                 localMemberId,
                 brokerWith(Map.of(1, PartitionState.active(1, partitionConfig))),
-                MemberId.from("2"),
+                otherMemberId,
                 brokerWith(Map.of(1, PartitionState.joining(1, partitionConfig).toLearner()))));
 
     // when
     final var result =
-        new PartitionLeaveApplier(localMemberId, 1, 1, partitionChangeExecutor)
+        new PartitionDemoteApplier(localMemberId, 1, partitionChangeExecutor)
             .init(globalConfigurationWithLocalMemberActive, initialGroup);
 
     // then
     assertThat(result).isLeft();
     Assertions.assertThat(result.getLeft())
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("minimum allowed replicas");
+        .hasMessageContaining("no other member has the partition in active state");
   }
 
   @Test
-  void shouldAllowLeaveWhenOtherReplicaIsRecovering() {
+  void shouldAllowDemoteWhenOtherReplicaIsRecovering() {
     // given — a recovering member has only paused its own stream processing; it is still a full
-    // raft voter and counts toward the minimum
+    // raft voter, so it satisfies "another active replica exists"
     final var initialGroup =
         groupWithMembers(
             Map.of(
                 localMemberId,
                 brokerWith(Map.of(1, PartitionState.active(1, partitionConfig))),
-                MemberId.from("2"),
+                otherMemberId,
                 brokerWith(Map.of(1, PartitionState.active(1, partitionConfig).toRecovering()))));
 
     // when
     final var result =
-        new PartitionLeaveApplier(localMemberId, 1, 1, partitionChangeExecutor)
-            .init(globalConfigurationWithLocalMemberActive, initialGroup);
-
-    // then
-    assertThat(result).isRight();
-  }
-
-  @Test
-  void shouldAllowALearnerToLeaveEvenAtTheMinimum() {
-    // given — the local member itself is the stuck learner being removed directly; removing a
-    // non-voting member never changes how many voting replicas remain, so this must always be
-    // allowed regardless of the minimum
-    final var initialGroup =
-        groupWithMembers(
-            Map.of(
-                localMemberId,
-                brokerWith(Map.of(1, PartitionState.joining(1, partitionConfig).toLearner())),
-                MemberId.from("2"),
-                brokerWith(Map.of(1, PartitionState.active(1, partitionConfig)))));
-
-    // when
-    final var result =
-        new PartitionLeaveApplier(localMemberId, 1, 1, partitionChangeExecutor)
+        new PartitionDemoteApplier(localMemberId, 1, partitionChangeExecutor)
             .init(globalConfigurationWithLocalMemberActive, initialGroup);
 
     // then
@@ -200,7 +177,7 @@ final class PartitionLeaveApplierTest {
 
     // when
     final var result =
-        new PartitionLeaveApplier(localMemberId, 1, 0, partitionChangeExecutor)
+        new PartitionDemoteApplier(localMemberId, 1, partitionChangeExecutor)
             .init(globalConfigurationWithLocalMemberActive, initialGroup);
 
     // then
@@ -209,18 +186,18 @@ final class PartitionLeaveApplierTest {
 
   @Test
   void shouldMarkPartitionAsLeaving() {
-    // given — two replicas, minimum allowed is 1, so leaving is allowed
+    // given
     final var initialGroup =
         groupWithMembers(
             Map.of(
                 localMemberId,
                 brokerWith(Map.of(1, PartitionState.active(1, partitionConfig))),
-                MemberId.from("2"),
+                otherMemberId,
                 brokerWith(Map.of(1, PartitionState.active(1, partitionConfig)))));
 
     // when
     final var updater =
-        new PartitionLeaveApplier(localMemberId, 1, 1, partitionChangeExecutor)
+        new PartitionDemoteApplier(localMemberId, 1, partitionChangeExecutor)
             .init(globalConfigurationWithLocalMemberActive, initialGroup)
             .get();
     final var resultingGroup = updater.apply(initialGroup);
@@ -231,29 +208,30 @@ final class PartitionLeaveApplierTest {
   }
 
   @Test
-  void shouldExecuteLeaveCallbackAndRemovePartition() {
-    // given
+  void shouldExecuteDemoteCallbackAndKeepPartitionLeaving() {
+    // given — the demotion does not remove the partition; the subsequent leave operation does
     final var initialGroup =
         groupWithMembers(
             Map.of(
                 localMemberId,
                 brokerWith(Map.of(1, PartitionState.active(1, partitionConfig))),
-                MemberId.from("2"),
+                otherMemberId,
                 brokerWith(Map.of(1, PartitionState.active(1, partitionConfig)))));
-    final var applier = new PartitionLeaveApplier(localMemberId, 1, 1, partitionChangeExecutor);
+    final var applier = new PartitionDemoteApplier(localMemberId, 1, partitionChangeExecutor);
     final var groupWithLeaving =
         applier
             .init(globalConfigurationWithLocalMemberActive, initialGroup)
             .get()
             .apply(initialGroup);
-    when(partitionChangeExecutor.leave(anyInt()))
+    when(partitionChangeExecutor.demote(anyInt()))
         .thenReturn(CompletableActorFuture.completed(null));
 
     // when
     final var resultingGroup = applier.apply().join().apply(groupWithLeaving);
 
     // then
-    verify(partitionChangeExecutor, times(1)).leave(1);
-    Assertions.assertThat(resultingGroup.getMember(localMemberId).hasPartition(1)).isFalse();
+    verify(partitionChangeExecutor, times(1)).demote(1);
+    Assertions.assertThat(resultingGroup.getMember(localMemberId).getPartition(1).state())
+        .isEqualTo(State.LEAVING);
   }
 }

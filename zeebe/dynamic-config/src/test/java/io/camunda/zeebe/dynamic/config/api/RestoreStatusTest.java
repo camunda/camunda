@@ -75,7 +75,7 @@ final class RestoreStatusTest {
             STARTED_AT,
             List.of(),
             List.<ClusterConfigurationChangeOperation>of(
-                new PartitionJoinOperation(BROKER_1, 1, 1)));
+                new PartitionJoinOperation(BROKER_1, 1, 1, true)));
     final var configuration = configurationWith(Optional.empty(), Optional.of(plan));
 
     // when / then

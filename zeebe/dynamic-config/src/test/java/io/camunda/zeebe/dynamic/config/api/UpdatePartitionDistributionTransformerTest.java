@@ -24,8 +24,10 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
@@ -87,11 +89,14 @@ class UpdatePartitionDistributionTransformerTest {
     assertThat(result.get())
         .containsExactly(
             new UpdatePartitionDistributorConfigOperation(COORDINATOR, newConfig),
-            new PartitionJoinOperation(ZONE_A_1, 1, 2),
+            new PartitionJoinOperation(ZONE_A_1, 1, 2, true),
+            new PartitionPromoteOperation(ZONE_A_1, 1),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 1, 3),
-            new PartitionJoinOperation(ZONE_A_0, 2, 2),
+            new PartitionJoinOperation(ZONE_A_0, 2, 2, true),
+            new PartitionPromoteOperation(ZONE_A_0, 2),
             new PartitionReconfigurePriorityOperation(ZONE_A_1, 2, 3),
-            new PartitionJoinOperation(ZONE_A_1, 3, 2),
+            new PartitionJoinOperation(ZONE_A_1, 3, 2, true),
+            new PartitionPromoteOperation(ZONE_A_1, 3),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 3, 3));
   }
 
@@ -117,10 +122,13 @@ class UpdatePartitionDistributionTransformerTest {
     assertThat(result.get())
         .containsExactly(
             new UpdatePartitionDistributorConfigOperation(COORDINATOR, newConfig),
+            new PartitionDemoteOperation(ZONE_A_1, 1),
             new PartitionLeaveOperation(ZONE_A_1, 1, 1),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 1, 2),
+            new PartitionDemoteOperation(ZONE_A_0, 2),
             new PartitionLeaveOperation(ZONE_A_0, 2, 1),
             new PartitionReconfigurePriorityOperation(ZONE_A_1, 2, 2),
+            new PartitionDemoteOperation(ZONE_A_1, 3),
             new PartitionLeaveOperation(ZONE_A_1, 3, 1),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 3, 2));
   }

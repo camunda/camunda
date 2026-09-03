@@ -626,7 +626,8 @@ public final class RecoveryPartitionManager
   public ActorFuture<Void> join(
       final int partitionId,
       final Map<MemberId, Integer> membersWithPriority,
-      final DynamicPartitionConfig partitionConfig) {
+      final DynamicPartitionConfig partitionConfig,
+      final boolean asLearner) {
     return CompletableActorFuture.completedExceptionally(
         new IllegalStateException("Cannot perform join on a recovering partition"));
   }
@@ -635,6 +636,18 @@ public final class RecoveryPartitionManager
   public ActorFuture<Void> leave(final int partitionId) {
     return CompletableActorFuture.completedExceptionally(
         new IllegalStateException("Cannot perform leave on a recovering partition"));
+  }
+
+  @Override
+  public ActorFuture<Void> promote(final int partitionId) {
+    return CompletableActorFuture.completedExceptionally(
+        new IllegalStateException("Cannot perform promote on a recovering partition"));
+  }
+
+  @Override
+  public ActorFuture<Void> demote(final int partitionId) {
+    return CompletableActorFuture.completedExceptionally(
+        new IllegalStateException("Cannot perform demote on a recovering partition"));
   }
 
   @Override

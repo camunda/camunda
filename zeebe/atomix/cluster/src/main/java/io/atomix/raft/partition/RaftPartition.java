@@ -104,11 +104,16 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     return CompletableFuture.completedFuture(this);
   }
 
+  /**
+   * Joins the partition's replication group as a member of the given type. See {@link
+   * io.atomix.raft.RaftServer#join(RaftMember.Type, java.util.Collection)} for the type semantics.
+   */
   public CompletableFuture<RaftPartition> join(
+      final RaftMember.Type type,
       final PartitionManagementService managementService,
       final ReceivableSnapshotStore snapshotStore) {
     initServer(managementService, snapshotStore);
-    return server.join().thenApply(v -> this);
+    return server.join(type).thenApply(v -> this);
   }
 
   public CompletableFuture<RaftPartition> leave() {
