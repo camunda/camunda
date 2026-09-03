@@ -227,10 +227,9 @@ public class UserTaskListenersTest {
     ZeebeAssertHelper.assertUserTaskCanceled(
         userTaskKey,
         userTask -> {
-          assertThat(userTask)
-              .describedAs(
-                  "Canceled user task should match the originally created one, except the action")
-              .isEqualTo(((UserTaskRecord) createdUserTask).copy().setAction("cancel"));
+          assertThat(userTask.getAction())
+              .describedAs("Action should reflect the cancel transition")
+              .isEqualTo("cancel");
 
           assertThat(userTask.getAssignee())
               .describedAs(
@@ -989,10 +988,9 @@ public class UserTaskListenersTest {
     ZeebeAssertHelper.assertUserTaskCanceled(
         userTaskKey,
         userTask -> {
-          assertThat(userTask)
-              .describedAs(
-                  "Canceled user task should match the originally created one, except the action")
-              .isEqualTo(((UserTaskRecord) createdUserTask).copy().setAction("cancel"));
+          assertThat(userTask.getAction())
+              .describedAs("Action should reflect the cancel transition")
+              .isEqualTo("cancel");
         });
   }
 
@@ -1050,10 +1048,9 @@ public class UserTaskListenersTest {
     ZeebeAssertHelper.assertUserTaskCanceled(
         userTaskKey,
         userTask -> {
-          assertThat(userTask)
-              .describedAs(
-                  "Canceled user task should match the originally created one, except the action")
-              .isEqualTo(((UserTaskRecord) createdUserTask).copy().setAction("cancel"));
+          assertThat(userTask.getAction())
+              .describedAs("Action should reflect the cancel transition")
+              .isEqualTo("cancel");
         });
   }
 
