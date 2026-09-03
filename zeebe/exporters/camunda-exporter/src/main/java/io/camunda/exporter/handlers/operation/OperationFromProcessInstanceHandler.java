@@ -10,6 +10,8 @@ package io.camunda.exporter.handlers.operation;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_MIGRATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -46,5 +48,11 @@ public class OperationFromProcessInstanceHandler
       return false;
     }
     return bpmnElementType.equals(type);
+  }
+
+  @Override
+  TargetIndex locateTargetIndex(
+      final TargetIndexLocator indexLocator, final Record<ProcessInstanceRecordValue> record) {
+    return indexLocator.locateOrdinalIndex(getIndexName(), record.getValue());
   }
 }

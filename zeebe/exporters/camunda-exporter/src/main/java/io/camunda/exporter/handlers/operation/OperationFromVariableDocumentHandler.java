@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers.operation;
 
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -27,5 +29,13 @@ public class OperationFromVariableDocumentHandler
   @Override
   public boolean handlesRecord(final Record<VariableDocumentRecordValue> record) {
     return VariableDocumentIntent.UPDATED.equals(record.getIntent());
+  }
+
+  @Override
+  TargetIndex locateTargetIndex(
+      final TargetIndexLocator indexLocator, final Record<VariableDocumentRecordValue> record) {
+    // TODO: This is a temporary solution until we decide how to handle ordinals for variable
+    // document records with operations
+    return indexLocator.locateMainIndex(getIndexName());
   }
 }

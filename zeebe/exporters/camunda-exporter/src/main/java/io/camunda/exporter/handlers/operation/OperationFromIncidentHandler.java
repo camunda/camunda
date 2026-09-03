@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers.operation;
 
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -26,5 +28,11 @@ public class OperationFromIncidentHandler extends AbstractOperationHandler<Incid
   @Override
   public boolean handlesRecord(final Record<IncidentRecordValue> record) {
     return IncidentIntent.RESOLVED.equals(record.getIntent());
+  }
+
+  @Override
+  TargetIndex locateTargetIndex(
+      final TargetIndexLocator indexLocator, final Record<IncidentRecordValue> record) {
+    return indexLocator.locateOrdinalIndex(getIndexName(), record.getValue());
   }
 }

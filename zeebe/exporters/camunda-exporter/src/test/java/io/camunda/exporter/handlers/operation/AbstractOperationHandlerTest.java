@@ -12,7 +12,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
@@ -57,29 +59,35 @@ abstract class AbstractOperationHandlerTest<R extends RecordValue> {
     assertThat(entity.getId()).isEqualTo(id);
   }
 
+  abstract TargetIndexLocator setupMockIndexLocator(TargetIndex index);
+
   @Test
-  void testGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    final TargetIndexLocator indexLocator = setupMockIndexLocator(index);
+
     final long operationReference = 123L;
     final Record<R> record =
         factory.generateRecord(valueType, r -> r.withOperationReference(operationReference));
     // when
-    final List<String> ids = underTest.generateIds(record);
-
+    final List<IdAndIndex> idAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
     // then
-    assertThat(ids).containsExactly(String.valueOf(operationReference));
+    assertThat(idAndIndexes)
+        .containsExactly(new IdAndIndex(String.valueOf(operationReference), index));
   }
 
   @Test
-  void shouldNotGenerateId() {
+  void shouldNotExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
     final long operationReference = -1;
     final Record<R> record =
         factory.generateRecord(valueType, r -> r.withOperationReference(operationReference));
     // when
-    final List<String> ids = underTest.generateIds(record);
+    final List<IdAndIndex> idAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
     // then
-    assertThat(ids).isEmpty();
+    assertThat(idAndIndexes).isEmpty();
   }
 
   @Test
