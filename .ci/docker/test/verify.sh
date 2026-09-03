@@ -86,12 +86,16 @@ if [ "$actualArchitecture" != "$arch" ]; then
 fi
 
 imageManifestMediaType="$(docker buildx imagetools inspect "${imageName}" --raw | jq -r '.mediaType')"
-# newer manifest types application/vnd.oci.image.index.v1+json (used when provenance is enabled when building
-# a docker image) are not always compatible with older customer Docker registries:
-imageManifestMediaTypeExpected="application/vnd.docker.distribution.manifest.list.v2+json"
+# Accept both multi-arch index formats. Newer Docker Engine/BuildKit releases that use the containerd
+# image store emit an OCI image index (application/vnd.oci.image.index.v1+json) for multi-platform
+# builds even when Docker media types are requested (provenance=false, oci-mediatypes=false), so the
+# build option is no longer sufficient to keep the legacy Docker manifest list. Both are valid
+# multi-arch indexes; only very old customer Docker registries reject the OCI index.
+imageManifestMediaTypeDocker="application/vnd.docker.distribution.manifest.list.v2+json"
+imageManifestMediaTypeOci="application/vnd.oci.image.index.v1+json"
 
-if [ "$imageManifestMediaType" != "$imageManifestMediaTypeExpected" ]; then
-  echo >&2 "The local Docker image ${imageName} has the wrong manifest media type ${imageManifestMediaType}, expected ${imageManifestMediaTypeExpected}."
+if [ "$imageManifestMediaType" != "$imageManifestMediaTypeDocker" ] && [ "$imageManifestMediaType" != "$imageManifestMediaTypeOci" ]; then
+  echo >&2 "The local Docker image ${imageName} has an unexpected manifest media type ${imageManifestMediaType}, expected ${imageManifestMediaTypeDocker} or ${imageManifestMediaTypeOci}."
   echo "Full manifest:"
   docker buildx imagetools inspect "${imageName}"
   exit 1
