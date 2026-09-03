@@ -418,9 +418,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   private Query createPendingIncidentsBatchQuery(final long fromPosition) {
     final var positionQ =
         QueryBuilders.range(
-            r ->
-                r.number(
-                    n -> n.field(PostImporterQueueTemplate.POSITION).gt((double) fromPosition)));
+            r -> r.longNumber(n -> n.field(PostImporterQueueTemplate.POSITION).gt(fromPosition)));
     final var typeQ =
         QueryBuilders.term(
             t ->
