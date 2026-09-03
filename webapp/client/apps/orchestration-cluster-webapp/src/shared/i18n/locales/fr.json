@@ -457,7 +457,10 @@
 				"instancesInVersion_other": "{{count}} Instances dans la Version {{version}}",
 				"version": "Version {{version}}",
 				"fetchErrorHeading": "Les données n'ont pas pu être récupérées",
-				"fetchErrorDescription": "Actualisez la page pour réessayer"
+				"fetchErrorDescription": "Actualisez la page pour réessayer",
+				"draining": "Purge en cours",
+				"drainingDescriptionAllVersions": "Une ou plusieurs versions de cette définition de processus sont programmées pour suppression. Elles restent jusqu'à ce que leurs instances en cours se terminent, puis sont supprimées automatiquement.",
+				"drainingDescriptionVersion": "Cette version de la définition de processus est programmée pour suppression et sera automatiquement supprimée une fois que toutes ses instances en cours seront terminées."
 			},
 			"processes": {
 				"title": "Processus",

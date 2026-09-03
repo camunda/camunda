@@ -468,7 +468,10 @@
 				"fetchErrorHeading": "Data could not be fetched",
 				"fetchErrorDescription": "Refresh the page to try again",
 				"versionDetailsFetchError": "Failed to load version details",
-				"incidentDetailsFetchError": "Failed to load incident details"
+				"incidentDetailsFetchError": "Failed to load incident details",
+				"draining": "Draining",
+				"drainingDescriptionAllVersions": "One or more versions of this process definition are scheduled for deletion. They stay until their running instances finish, then are removed automatically.",
+				"drainingDescriptionVersion": "This process definition version is scheduled for deletion and will be removed automatically once all of its running instances finish."
 			},
 			"processes": {
 				"title": "Processes",

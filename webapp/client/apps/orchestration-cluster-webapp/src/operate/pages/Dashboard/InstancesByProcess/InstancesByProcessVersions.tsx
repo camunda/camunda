@@ -10,7 +10,6 @@ import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
-import {DRAINING_MESSAGES} from '#/operate/shared/utils/draining';
 import {instancesByProcessVersionsQuery, type DrainingLookup} from './instancesByProcess.queries';
 import {runningOrAllInstancesFilter} from '../processesLinkFilters';
 import {Li, LinkWrapper} from '../styled';
@@ -55,7 +54,7 @@ const InstancesByProcessVersions: React.FC<Props> = ({
 								activeInstancesCount={version.activeInstancesWithoutIncidentCount}
 								incidentsCount={version.activeInstancesWithIncidentCount}
 								isDraining={!!drainingDefinitionKeys?.has(version.processDefinitionKey)}
-								drainingDescription={DRAINING_MESSAGES.version}
+								drainingDescription={t('operate.dashboard.drainingDescriptionVersion')}
 								size="small"
 							/>
 						</LinkWrapper>

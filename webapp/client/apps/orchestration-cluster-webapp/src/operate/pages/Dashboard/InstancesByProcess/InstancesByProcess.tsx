@@ -13,7 +13,6 @@ import {useTranslation} from 'react-i18next';
 import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {ErrorBoundary} from 'react-error-boundary';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
-import {DRAINING_MESSAGES} from '#/operate/shared/utils/draining';
 import {ExpandableList} from '../ExpandableList';
 import {ExpandedRowErrorFallback} from '../ExpandedRowErrorFallback';
 import {useDashboardScrollPagination} from '../useDashboardScrollPagination';
@@ -76,7 +75,7 @@ const InstancesByProcess: React.FC = () => {
 								activeInstancesCount={item.activeInstancesWithoutIncidentCount}
 								incidentsCount={item.activeInstancesWithIncidentCount}
 								isDraining={!!draining?.byId.has(item.processDefinitionId)}
-								drainingDescription={DRAINING_MESSAGES.allVersions}
+								drainingDescription={t('operate.dashboard.drainingDescriptionAllVersions')}
 								size="medium"
 							/>
 						</LinkWrapper>
