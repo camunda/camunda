@@ -29,6 +29,9 @@ public final class UserFilterMapper {
     if (filter == null) {
       return null;
     }
+    if (filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      throw new IllegalArgumentException("Nesting $or filters is not supported");
+    }
 
     final UserFilterFields target = new UserFilterFields();
     target.setUsername(filter.getUsername());

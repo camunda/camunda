@@ -29,6 +29,9 @@ public final class MappingRuleFilterMapper {
     if (filter == null) {
       return null;
     }
+    if (filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      throw new IllegalArgumentException("Nesting $or filters is not supported");
+    }
 
     final MappingRuleFilterFields target = new MappingRuleFilterFields();
     target.setMappingRuleId(filter.getMappingRuleId());

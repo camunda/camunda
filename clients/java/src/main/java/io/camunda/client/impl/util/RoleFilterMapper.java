@@ -29,6 +29,9 @@ public final class RoleFilterMapper {
     if (filter == null) {
       return null;
     }
+    if (filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      throw new IllegalArgumentException("Nesting $or filters is not supported");
+    }
 
     final RoleFilterFields target = new RoleFilterFields();
     target.setRoleId(filter.getRoleId());
