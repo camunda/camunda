@@ -748,10 +748,14 @@ exports.resolveCommitsToPrs = resolveCommitsToPrs;
 // Alphas are 1-based: an `-alpha0` would make the previous-alpha baseline
 // `-alpha-1`, a ref that cannot exist, so it is rejected as unrecognized.
 const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha([1-9]\d*))?$/;
-function parseVersion(version) {
+// Release candidates are 1-based too, and appear at every level: `8.9.0-rc1`,
+// `8.7.6-rc2`, `8.10.0-alpha1-rc3`. Only the suffix is matched here — what it
+// is attached to still has to satisfy VERSION.
+const RC_SUFFIX = /-rc[1-9]\d*$/;
+function parseVersion(version, reportAs = version) {
     const match = VERSION.exec(version);
     if (!match)
-        throw new Error(`Not a recognized release version: "${version}"`);
+        throw new Error(`Not a recognized release version: "${reportAs}"`);
     return { major: Number(match[1]), minor: Number(match[2]), patch: Number(match[3]), alpha: match[4] ? Number(match[4]) : null };
 }
 function format(v) {
@@ -772,7 +776,14 @@ function previousMinor(v, target) {
 /** The baseline to diff `target` against, from the version string alone — no
  *  tag list to consult, every case is arithmetic on the version number. */
 function resolveBaselineStrategy(target) {
-    const v = parseVersion(target);
+    // A candidate is a candidate *for* a version, so its notes cover that
+    // version's whole range: drop `-rcN` and resolve the version it stands for.
+    // Deliberately unlike zcl, which walks rcN back to rc(N-1) — that suits its
+    // incremental issue labelling, but would reduce a candidate's changelog to
+    // the delta since the last candidate rather than the release's contents.
+    // Only the baseline is computed from the stripped string; callers keep
+    // walking and labelling with the real `-rcN` tag.
+    const v = parseVersion(target.replace(RC_SUFFIX, ''), target);
     // An alpha is a pre-release of a minor, so it only ever carries patch 0.
     // Without this, `X.Y.1-alpha1` falls through to the previous-alpha branch and
     // resolves to `X.Y.1` — the target's own base version, a tag never cut.

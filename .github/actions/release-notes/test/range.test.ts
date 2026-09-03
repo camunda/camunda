@@ -53,6 +53,29 @@ test('a later alpha on the first minor of a major still resolves to its previous
   assert.deepEqual(s, { kind: 'previousTag', ref: '8.0.0-alpha1' });
 });
 
+test('a candidate inherits the baseline of the version it is a candidate for, at every level', () => {
+  // Not the previous candidate (which is what zcl chains to): a changelog
+  // covers the release's contents, not the delta since the last candidate.
+  assert.deepEqual(resolveBaselineStrategy('8.9.0-rc1'), resolveBaselineStrategy('8.9.0'));
+  assert.deepEqual(resolveBaselineStrategy('8.7.6-rc2'), resolveBaselineStrategy('8.7.6'));
+  assert.deepEqual(resolveBaselineStrategy('8.10.0-alpha1-rc3'), resolveBaselineStrategy('8.10.0-alpha1'));
+  assert.deepEqual(resolveBaselineStrategy('8.10.0-alpha2-rc1'), resolveBaselineStrategy('8.10.0-alpha2'));
+});
+
+test('every candidate of one version shares a baseline, so rc2 is not diffed against rc1', () => {
+  const rc1 = resolveBaselineStrategy('8.9.0-rc1');
+  assert.deepEqual(resolveBaselineStrategy('8.9.0-rc4'), rc1);
+  assert.deepEqual(rc1, { kind: 'forkPoint', otherRef: '8.8.0' });
+});
+
+test('a candidate of an unsupported version is rejected, and names the version as given', () => {
+  assert.throws(() => resolveBaselineStrategy('9.0.0-rc1'), /cannot be derived from the version number alone/);
+  assert.throws(() => resolveBaselineStrategy('8.10.1-alpha1-rc1'), /must carry patch 0/);
+  // rc is 1-based, and a bare `-rc` carries no candidate number at all.
+  assert.throws(() => resolveBaselineStrategy('8.9.0-rc0'), /Not a recognized release version: "8\.9\.0-rc0"/);
+  assert.throws(() => resolveBaselineStrategy('8.9.0-rc'), /Not a recognized release version: "8\.9\.0-rc"/);
+});
+
 test('rebase-merged multi-commit PR dedupes to exactly one entry', () => {
   const commits = [
     { sha: 'a', message: 'x', associatedPrs: [{ number: 500, baseRefName: 'stable/8.8' }] },
