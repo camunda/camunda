@@ -22,6 +22,10 @@ on:
 env:
   TEST_OWNER: '@camunda/engineering-operations'
   GHA_BEST_PRACTICES_LINTER: enabled
+  # Bounds a hung `actions/checkout`; only for shallow ones, a `fetch-depth: 0` clone needs more.
+  # A shallow clone of this repo normally lands in well under a minute, but GitHub-side slowness
+  # occasionally needs more headroom.
+  SHALLOW_CHECKOUT_TIMEOUT_MIN: 3
 
 jobs:
   detect-changes:
@@ -33,8 +37,8 @@ jobs:
     outputs:
       fossa-changes: ${{ steps.filter.outputs.fossa-changes }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-      timeout-minutes: 1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
       with:
         persist-credentials: false
     - name: Detect changes
