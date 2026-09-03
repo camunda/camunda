@@ -35,10 +35,14 @@ public class UserTaskCreatedV3Applier implements TypedEventApplier<UserTaskInten
       unpinGlobalListenersConfig(intermediateStateRecord);
     }
 
-    // Ensure we store any corrections
+    // Ensure we store any corrections. Reset the transient action set by the
+    // CREATING transition so subsequent events that read from persisted state
+    // (e.g. ASSIGNMENT_DENIED, UPDATE_DENIED, COMPLETION_DENIED) do not inherit
+    // it. The CREATED event itself still carries the action; the reset only
+    // affects what is stored in state (mirrors UserTaskAssignedV4Applier).
     final UserTaskRecord userTask = userTaskState.getUserTask(key);
     userTask.wrapChangedAttributes(value, false);
-    userTaskState.update(userTask);
+    userTaskState.update(userTask.setAction(""));
 
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);
 

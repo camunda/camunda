@@ -88,6 +88,41 @@ public class TaskListenerDenialsTest {
   }
 
   @Test
+  public void shouldNotLeakCreateActionIntoDeniedEvents() {
+    // Regression: broker-internal CREATING sets action="create" on the user task record. Before
+    // the fix in UserTaskCreatedV3Applier, that action was persisted into state and read back by
+    // UserTaskProcessor.processDenyTaskListener, so ASSIGNMENT_DENIED / UPDATE_DENIED /
+    // COMPLETION_DENIED emitted with action="create" (visible via TaskEntity.action in
+    // secondary storage). The applier now resets action in state so denials preserve pre-fix
+    // behavior (empty action for the broker-internal path).
+
+    // given: a user task with denying listeners for assign, update, and complete
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.assigning, listenerType));
+
+    // when: assignment triggers the listener which denies the transition
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // then: ASSIGNMENT_DENIED must not carry the CREATING transition's action
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNMENT_DENIED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getAction())
+        .describedAs("ASSIGNMENT_DENIED must not inherit the broker-internal CREATING action")
+        .isNotEqualTo("create");
+  }
+
+  @Test
   public void
       shouldCompleteAllAssignmentTaskListenersWhenFirstTaskListenerAcceptTransitionAfterDenial() {
     // given
