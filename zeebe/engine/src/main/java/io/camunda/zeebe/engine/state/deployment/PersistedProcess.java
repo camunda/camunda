@@ -49,6 +49,7 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
   }
 
   public void wrap(final ProcessRecord processRecord, final long processDefinitionKey) {
+    reset();
     bpmnProcessIdProp.setValue(processRecord.getBpmnProcessIdBuffer());
     resourceNameProp.setValue(processRecord.getResourceNameBuffer());
     resourceProp.setValue(processRecord.getResourceBuffer());

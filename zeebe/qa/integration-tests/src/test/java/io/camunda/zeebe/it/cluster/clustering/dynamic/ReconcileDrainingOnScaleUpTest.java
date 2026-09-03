@@ -12,7 +12,8 @@ import static io.camunda.zeebe.it.cluster.clustering.dynamic.Utils.createInstanc
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
@@ -67,20 +68,23 @@ class ReconcileDrainingOnScaleUpTest {
             .withReplicationFactor(3)
             .withBrokerConfig(
                 b ->
-                    b.withUnifiedConfig(
+                    b.withBrokerConfig(
                         cfg -> {
                           // Scale-up bootstraps the new partition from a backup store; without it
                           // the bootstrap snapshot cannot be shared and scaling never completes.
-                          final var backup = cfg.getData().getPrimaryStorage().getBackup();
+                          final var backup = cfg.getData().getBackup();
                           backup.setStore(BackupStoreType.FILESYSTEM);
-                          backup.getFilesystem().setBasePath(backupPath.toString());
+                          final var fs = new FilesystemBackupStoreConfig();
+                          fs.setBasePath(backupPath.toString());
+                          backup.setFilesystem(fs);
 
-                          final var membership = cfg.getCluster().getMembership();
-                          membership.setSyncInterval(Duration.ofSeconds(1));
-                          membership.setGossipInterval(Duration.ofMillis(500));
+                          cfg.getCluster()
+                              .getMembership()
+                              .setSyncInterval(Duration.ofSeconds(1))
+                              .setGossipInterval(Duration.ofMillis(500));
 
                           final var distribution =
-                              cfg.getProcessing().getEngine().getDistribution();
+                              cfg.getExperimental().getEngine().getDistribution();
                           distribution.setMaxBackoffDuration(Duration.ofSeconds(1));
                           distribution.setRedistributionInterval(Duration.ofMillis(200));
                         }))
@@ -123,7 +127,8 @@ class ReconcileDrainingOnScaleUpTest {
     camundaClient.newDeleteResourceCommand(processDefinitionKey).send().join();
 
     // the deletion has to land as DRAINING on the bootstrap source partition before we scale
-    RecordingExporter.await(Duration.ofMinutes(1))
+    Awaitility.await("definition is DRAINING on the bootstrap source partition")
+        .atMost(Duration.ofMinutes(1))
         .untilAsserted(
             () ->
                 assertThat(
