@@ -88,11 +88,33 @@ public final class AgentHistoryBatchBehavior {
   }
 
   /**
+   * Whether {@link #validateJobContext} rejects a command whose {@code jobLease} does not match the
+   * job's current lease, or accepts it as stale.
+   */
+  public enum LeaseMismatchHandling {
+    /**
+     * Reject on a lease mismatch. For callers whose effects apply immediately and can't be deferred
+     * to a later commit step (e.g. {@code AGENT_INSTANCE:CREATE}, which applies a CONFIGURATION
+     * item's changes and commits it right away).
+     */
+    REJECT,
+    /**
+     * Accept a stale lease. For callers that store the batch as PENDING under its own lease —
+     * resolved later by the commit/discard machinery.
+     */
+    ALLOW_STALE
+  }
+
+  /**
    * Validates the job context a command carries. {@code jobKey} may be omitted only when no history
    * batch is present; once a batch is attached to the command, {@code jobKey} becomes required — a
    * batch must always be attributed to the active job that produced it. When a job is supplied
-   * (with or without a batch), it must refer to a currently-active job, that job's lease token (if
-   * any) must match {@code jobLease}, and the job must belong to {@code elementInstanceKey}.
+   * (with or without a batch), it must refer to a currently-active job, and the job must belong to
+   * {@code elementInstanceKey}.
+   *
+   * <p>{@code jobLease} is a fencing token, not an authorization check (see ADR 0005-810): whether
+   * a mismatch is fatal depends on {@code leaseMismatchHandling}, see {@link
+   * LeaseMismatchHandling}.
    *
    * @return the active {@link JobRecord} if a job was supplied and is valid, {@code null} wrapped
    *     in {@link Either#right} if no job was supplied and none was required, otherwise the {@link
@@ -102,7 +124,8 @@ public final class AgentHistoryBatchBehavior {
       final long jobKey,
       final String jobLease,
       final long elementInstanceKey,
-      final List<? extends AgentHistoryRecordValue> history) {
+      final List<? extends AgentHistoryRecordValue> history,
+      final LeaseMismatchHandling leaseMismatchHandling) {
 
     if (jobKey == -1L) {
       if (history != null && !history.isEmpty()) {
@@ -120,7 +143,9 @@ public final class AgentHistoryBatchBehavior {
     }
 
     final var job = jobState.getJob(jobKey);
-    if (job.hasLeaseToken() && !Objects.equals(jobLease, job.getLeaseToken())) {
+    if (leaseMismatchHandling == LeaseMismatchHandling.REJECT
+        && job.hasLeaseToken()
+        && !Objects.equals(jobLease, job.getLeaseToken())) {
       return Either.left(
           new Rejection(RejectionType.NOT_FOUND, ERROR_MSG_JOB_LEASE_MISMATCH.formatted(jobKey)));
     }
