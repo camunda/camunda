@@ -27,6 +27,7 @@ import io.camunda.service.TenantServices;
 import jakarta.json.Json;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -77,6 +78,15 @@ public class OidcCamundaUserServiceTest {
             tenantServices,
             authorizedClientRepository,
             null);
+  }
+
+  // SecurityContextHolder is a thread-local shared by every test in the surefire fork, and the
+  // contexts set here are Mockito mocks whose getAuthentication() is permanently stubbed. Leaving
+  // one behind makes a later test's SecurityContextHolder.getContext().setAuthentication(...) a
+  // silent no-op, so it authenticates as this class's token instead of its own.
+  @AfterEach
+  void clearSecurityContext() {
+    SecurityContextHolder.clearContext();
   }
 
   @Test
