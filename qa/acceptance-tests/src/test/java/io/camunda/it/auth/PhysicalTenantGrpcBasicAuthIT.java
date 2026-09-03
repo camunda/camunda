@@ -26,7 +26,6 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.net.URI;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 /**
  * Verifies BASIC-auth isolation across physical tenants over gRPC.
@@ -42,10 +41,6 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
  */
 @MultiDbTest
 @MultiDbPhysicalTenants({"tenanta", "tenantb"})
-@EnabledIfSystemProperty(
-    named = "test.integration.camunda.database.type",
-    matches = "rdbms.*$",
-    disabledReason = "Physical-tenant secondary storage is RDBMS-only")
 final class PhysicalTenantGrpcBasicAuthIT {
 
   @MultiDbTestApplication
