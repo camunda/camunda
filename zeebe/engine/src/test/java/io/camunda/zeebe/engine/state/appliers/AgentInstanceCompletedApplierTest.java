@@ -198,4 +198,61 @@ public class AgentInstanceCompletedApplierTest {
             agentHistoryState.getCommittedHistoryItemKey(secondAgentInstanceKey, "history-item-1"))
         .isEqualTo(201L);
   }
+
+  @Test
+  void shouldDeleteMetricsAccumulatedIdsOnCompletion() {
+    // given — a completed agent instance with metrics-accumulated ids recorded against it.
+    final long agentInstanceKey = 31L;
+    final long processInstanceKey = 5L;
+    createdApplier.applyState(
+        agentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
+    agentHistoryState.markMetricsAccumulated(agentInstanceKey, "history-item-1");
+    agentHistoryState.markMetricsAccumulated(agentInstanceKey, "history-item-2");
+
+    // when — the agent instance completes.
+    completedApplier.applyState(
+        agentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.COMPLETED));
+
+    // then — every metrics-accumulated id recorded for this agent instance is gone.
+    assertThat(agentHistoryState.hasAccumulatedMetrics(agentInstanceKey, "history-item-1"))
+        .isFalse();
+    assertThat(agentHistoryState.hasAccumulatedMetrics(agentInstanceKey, "history-item-2"))
+        .isFalse();
+  }
+
+  @Test
+  void shouldNotAffectMetricsAccumulatedIdsOfOtherAgentInstances() {
+    // given — metrics-accumulated ids for two different agent instances.
+    final long processInstanceKey = 5L;
+    final long firstAgentInstanceKey = 32L;
+    final long secondAgentInstanceKey = 33L;
+    createdApplier.applyState(
+        firstAgentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(firstAgentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
+    agentHistoryState.markMetricsAccumulated(firstAgentInstanceKey, "history-item-1");
+    agentHistoryState.markMetricsAccumulated(secondAgentInstanceKey, "history-item-1");
+
+    // when — only the first agent instance completes.
+    completedApplier.applyState(
+        firstAgentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(firstAgentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.COMPLETED));
+
+    // then — the second agent instance's metrics-accumulated id is untouched.
+    assertThat(agentHistoryState.hasAccumulatedMetrics(secondAgentInstanceKey, "history-item-1"))
+        .isTrue();
+  }
 }
