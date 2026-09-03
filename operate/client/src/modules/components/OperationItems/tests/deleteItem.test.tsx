@@ -12,7 +12,7 @@ import {OperationItems} from '../';
 import {DangerButton} from '../../OperationItem/DangerButton';
 
 describe('Delete Item', () => {
-  it('should show the correct icon based on the type', () => {
+  it('should render a trash can icon for delete operations', () => {
     render(
       <OperationItems>
         <DangerButton
@@ -23,18 +23,27 @@ describe('Delete Item', () => {
       </OperationItems>,
     );
 
-    expect(screen.getByTestId('delete-operation')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('delete-operation').querySelector('svg'),
+    ).toBeInTheDocument();
   });
 
-  it('should render delete button', () => {
+  it('should render an icon-only delete button with a tooltip', async () => {
     const BUTTON_TITLE = 'Delete Instance 1';
-    render(
+    const {user} = render(
       <OperationItems>
         <DangerButton type="DELETE" onClick={noop} title={BUTTON_TITLE} />
       </OperationItems>,
     );
 
-    expect(screen.getByRole('button', {name: /delete/i})).toBeInTheDocument();
+    const deleteButton = screen.getByRole('button', {name: BUTTON_TITLE});
+
+    expect(deleteButton).toHaveClass('cds--btn--icon-only');
+    expect(deleteButton).not.toHaveTextContent('Delete');
+
+    await user.hover(deleteButton);
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(BUTTON_TITLE);
   });
 
   it('should execute callback function', async () => {
