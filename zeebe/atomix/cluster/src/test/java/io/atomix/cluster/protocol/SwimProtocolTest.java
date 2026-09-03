@@ -57,10 +57,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.awaitility.Awaitility;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /** SWIM membership protocol test. */
 public class SwimProtocolTest extends ConcurrentTestCase {
@@ -101,7 +104,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
         SwimMembershipProtocol.UNKNOWN_INSTANCE_ID);
   }
 
-  @Before
+  @BeforeEach
   @SuppressWarnings("unchecked")
   public void reset() {
     messagingServiceFactory = new TestMessagingServiceFactory();
@@ -115,7 +118,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     listeners = Maps.newConcurrentMap();
   }
 
-  @After
+  @AfterEach
   public void cleanup() {
     members.forEach(this::stopProtocol);
   }
@@ -334,196 +337,6 @@ public class SwimProtocolTest extends ConcurrentTestCase {
         .atMost(Duration.ofSeconds(2))
         .untilAsserted(() -> checkEvent(member1, MEMBER_REMOVED, member2));
     checkEvent(member1, MEMBER_ADDED, member);
-  }
-
-  @Test
-  public void shouldRemovePreviousRunOfRestartedMember() throws InterruptedException {
-    // given
-    startProtocol(member1, member1.id().toString());
-    startProtocol(member2, member2.id().toString());
-
-    awaitMembers(member2, member1, member2);
-    awaitMembers(member1, member1, member2);
-
-    clearEvents(member1, member2);
-
-    // when - member 2 restarts with every property unchanged, and fast enough that member 1 never
-    // reports it as failed. startProtocol stops the previous run without gossiping anything, which
-    // is what a non-graceful kill looks like to the rest of the cluster.
-    startProtocol(member2, "member2-restarted");
-
-    // then - member 1 sees the previous run leave and the new one join, so that anything it holds
-    // per member is rebuilt for the new run
-    Awaitility.await("Previous run of member 2 removed")
-        .atMost(Duration.ofSeconds(2))
-        .untilAsserted(() -> checkEvent(member1, MEMBER_REMOVED, member2));
-    checkEvent(member1, MEMBER_ADDED, member2);
-  }
-
-  @Test
-  public void shouldKeepRestartedMemberWhichReportsNoInstanceId() throws InterruptedException {
-    // given - a member on a version predating the instance ID
-
-    startProtocol(member1, member1.id().toString());
-    startProtocolWithoutInstanceId(member2, member2.id().toString());
-
-    awaitMembers(member2, member1, member2);
-    awaitMembers(member1, member1, member2);
-
-    clearEvents(member1, member2);
-
-    // when - it restarts, still reporting no instance ID
-    startProtocolWithoutInstanceId(member2, "member2-restarted");
-
-    // then - member 1 cannot tell the two runs apart, so it keeps the member it has rather than
-    // churning through a removal for every update it receives
-    checkNoEvent(member1, Duration.ofSeconds(2));
-  }
-
-  @Test
-  public void shouldKeepMemberWhenAnUpdateStopsReportingItsInstanceId()
-      throws InterruptedException {
-    // given - a member which reports a instance ID
-
-    startProtocol(member1, member1.id().toString());
-    startProtocol(member2, member2.id().toString());
-
-    awaitMembers(member2, member1, member2);
-    awaitMembers(member1, member1, member2);
-
-    clearEvents(member1, member2);
-
-    // when - the same member is next heard of without one, as happens while a rolling update is in
-    // progress and its updates are relayed through a member that drops the field
-    startProtocolWithoutInstanceId(member2, "member2-without-boot-id");
-
-    // then - the missing instance ID is read as no information rather than as a different run
-    checkNoEvent(member1, Duration.ofSeconds(2));
-  }
-
-  /**
-   * A member which relays an update it received re-encodes it, and one running a version predating
-   * the instance ID drops the field while doing so. The stripped update and the authoritative one
-   * describe the same run of the member, so they carry the same incarnation number: the restart has
-   * to be recognised then, not only once a later update raises that number, or the streams held for
-   * the previous run outlive it for as long as the member's incarnation number does not change.
-   */
-  @Test
-  public void shouldDetectRestartRevealedAfterRelayedUpdateStrippedTheInstanceId()
-      throws InterruptedException {
-    // given - a member known to be running the instance it last reported
-    final var protocol = startIsolatedProtocol(member1);
-    final var incarnationNumber = System.currentTimeMillis();
-    protocol.updateState(aliveUpdate(member2, incarnationNumber - 1, PREVIOUS_INSTANCE_ID));
-    // events are posted asynchronously, so wait for the ones the setup produces instead of
-    // clearing the queue underneath them
-    checkEvent(member1, MEMBER_ADDED, member1);
-    checkEvent(member1, MEMBER_ADDED, member2);
-
-    // when - it restarts, and the news reaches us first through a member which drops the instance
-    // ID, and only then from the member itself
-    protocol.updateState(aliveUpdate(member2, incarnationNumber, UNKNOWN_INSTANCE_ID));
-    checkNoEvent(member1, Duration.ofMillis(500));
-    protocol.updateState(aliveUpdate(member2, incarnationNumber, CURRENT_INSTANCE_ID));
-
-    // then - the previous run is removed and the new one added, without waiting for the member's
-    // incarnation number to change again
-    checkEvent(member1, MEMBER_REMOVED, member2);
-    checkEvent(member1, MEMBER_ADDED, member2);
-    assertThat(trackedInstanceId(protocol, member2)).isEqualTo(CURRENT_INSTANCE_ID);
-  }
-
-  @Test
-  public void shouldDetectRestartWhenTheStrippedUpdateArrivesLast() throws InterruptedException {
-    // given - a member known to be running the instance it last reported
-    final var protocol = startIsolatedProtocol(member1);
-    final var incarnationNumber = System.currentTimeMillis();
-    protocol.updateState(aliveUpdate(member2, incarnationNumber - 1, PREVIOUS_INSTANCE_ID));
-    // events are posted asynchronously, so wait for the ones the setup produces instead of
-    // clearing the queue underneath them
-    checkEvent(member1, MEMBER_ADDED, member1);
-    checkEvent(member1, MEMBER_ADDED, member2);
-
-    // when - the member itself reports the restart before the relayed update reaches us
-    protocol.updateState(aliveUpdate(member2, incarnationNumber, CURRENT_INSTANCE_ID));
-    checkEvent(member1, MEMBER_REMOVED, member2);
-    checkEvent(member1, MEMBER_ADDED, member2);
-    protocol.updateState(aliveUpdate(member2, incarnationNumber, UNKNOWN_INSTANCE_ID));
-
-    // then - the update which lost the instance ID does not undo what we already know
-    checkNoEvent(member1, Duration.ofMillis(500));
-    assertThat(trackedInstanceId(protocol, member2)).isEqualTo(CURRENT_INSTANCE_ID);
-  }
-
-  /**
-   * Passing on the previous run's instance ID alongside an incarnation number we never saw it with
-   * would make every member which receives that gossip attribute that number to the previous run,
-   * and none of them would recognise the restart afterwards.
-   */
-  @Test
-  public void shouldNotGossipPreviousRunsInstanceIdAfterRelayedUpdateDroppedIt()
-      throws InterruptedException {
-    // given - a member known to be running the instance it last reported
-    final var protocol = startIsolatedProtocol(member1);
-    final var incarnationNumber = System.currentTimeMillis();
-    protocol.updateState(aliveUpdate(member2, incarnationNumber - 1, PREVIOUS_INSTANCE_ID));
-    // events are posted asynchronously, so wait for the ones the setup produces instead of
-    // clearing the queue underneath them
-    checkEvent(member1, MEMBER_ADDED, member1);
-    checkEvent(member1, MEMBER_ADDED, member2);
-
-    // when - the next update we receive about it lost the instance ID in relaying
-    protocol.updateState(aliveUpdate(member2, incarnationNumber, UNKNOWN_INSTANCE_ID));
-
-    // then - we report the member as one whose instance ID we do not know
-    assertThat(trackedInstanceId(protocol, member2)).isEqualTo(UNKNOWN_INSTANCE_ID);
-  }
-
-  @Test
-  public void shouldKeepMemberWhenTheStrippedUpdateIsFollowedByTheSameInstanceId()
-      throws InterruptedException {
-    // given - a member known to be running the instance it last reported
-    final var protocol = startIsolatedProtocol(member1);
-    final var incarnationNumber = System.currentTimeMillis();
-    protocol.updateState(aliveUpdate(member2, incarnationNumber - 1, PREVIOUS_INSTANCE_ID));
-    // events are posted asynchronously, so wait for the ones the setup produces instead of
-    // clearing the queue underneath them
-    checkEvent(member1, MEMBER_ADDED, member1);
-    checkEvent(member1, MEMBER_ADDED, member2);
-
-    // when - the member did not restart, and its instance ID was only lost in relaying
-    protocol.updateState(aliveUpdate(member2, incarnationNumber, UNKNOWN_INSTANCE_ID));
-    protocol.updateState(aliveUpdate(member2, incarnationNumber, PREVIOUS_INSTANCE_ID));
-
-    // then - the member is kept, and the update confirms it is still the run we already knew
-    checkNoEvent(member1, Duration.ofMillis(500));
-    assertThat(trackedInstanceId(protocol, member2)).isEqualTo(PREVIOUS_INSTANCE_ID);
-  }
-
-  @Test
-  public void shouldStillReportUnreachableWhenTheSameUpdateConfirmsTheInstanceId()
-      throws InterruptedException {
-    // given - a member whose most recent update lost its instance ID in relaying
-    final var protocol = startIsolatedProtocol(member1);
-    final var incarnationNumber = System.currentTimeMillis();
-    protocol.updateState(aliveUpdate(member2, incarnationNumber - 1, PREVIOUS_INSTANCE_ID));
-    // events are posted asynchronously, so wait for the ones the setup produces instead of
-    // clearing the queue underneath them
-    checkEvent(member1, MEMBER_ADDED, member1);
-    checkEvent(member1, MEMBER_ADDED, member2);
-    protocol.updateState(aliveUpdate(member2, incarnationNumber, UNKNOWN_INSTANCE_ID));
-
-    // when - a single update carries both the missing instance ID and a progressed state
-    protocol.updateState(
-        update(
-            member2,
-            incarnationNumber,
-            PREVIOUS_INSTANCE_ID,
-            SwimMembershipProtocol.State.SUSPECT));
-
-    // then - confirming the instance ID does not swallow the state the update reports
-    checkEvent(member1, REACHABILITY_CHANGED, member2);
-    assertThat(trackedInstanceId(protocol, member2)).isEqualTo(PREVIOUS_INSTANCE_ID);
   }
 
   @Test
@@ -819,6 +632,249 @@ public class SwimProtocolTest extends ConcurrentTestCase {
 
     public void clear() {
       queue.clear();
+    }
+  }
+
+  @Nested
+  class MemberReboots {
+    @Test
+    public void shouldRemovePreviousRunOfRestartedMember() throws InterruptedException {
+      // given
+      startProtocol(member1, member1.id().toString());
+      startProtocol(member2, member2.id().toString());
+
+      awaitMembers(member2, member1, member2);
+      awaitMembers(member1, member1, member2);
+
+      clearEvents(member1, member2);
+
+      // when - member 2 restarts with every property unchanged, and fast enough that member 1 never
+      // reports it as failed. startProtocol stops the previous run without gossiping anything,
+      // which
+      // is what a non-graceful kill looks like to the rest of the cluster.
+      startProtocol(member2, "member2-restarted");
+
+      // then - member 1 sees the previous run leave and the new one join, so that anything it holds
+      // per member is rebuilt for the new run
+      Awaitility.await("Previous run of member 2 removed")
+          .atMost(Duration.ofSeconds(2))
+          .untilAsserted(() -> checkEvent(member1, MEMBER_REMOVED, member2));
+      checkEvent(member1, MEMBER_ADDED, member2);
+    }
+
+    @Test
+    public void shouldKeepRestartedMemberWhichReportsNoInstanceId() throws InterruptedException {
+      // given - a member on a version predating the instance ID
+      startProtocol(member1, member1.id().toString());
+      startProtocolWithoutInstanceId(member2, member2.id().toString());
+
+      awaitMembers(member2, member1, member2);
+      awaitMembers(member1, member1, member2);
+
+      clearEvents(member1, member2);
+
+      // when - it restarts, still reporting no instance ID
+      startProtocolWithoutInstanceId(member2, "member2-restarted");
+
+      // then - member 1 cannot tell the two runs apart, so it keeps the member it has rather than
+      // churning through a removal for every update it receives
+      checkNoEvent(member1, Duration.ofSeconds(2));
+    }
+
+    @Test
+    public void shouldKeepMemberWhenAnUpdateStopsReportingItsInstanceId()
+        throws InterruptedException {
+      // given - a member which reports a instance ID
+      startProtocol(member1, member1.id().toString());
+      startProtocol(member2, member2.id().toString());
+
+      awaitMembers(member2, member1, member2);
+      awaitMembers(member1, member1, member2);
+
+      clearEvents(member1, member2);
+
+      // when - the same member is next heard of without one, as happens while a rolling update is
+      // in
+      // progress and its updates are relayed through a member that drops the field
+      startProtocolWithoutInstanceId(member2, "member2-without-boot-id");
+
+      // then - the missing instance ID is read as no information rather than as a different run
+      checkNoEvent(member1, Duration.ofSeconds(2));
+    }
+
+    /**
+     * A member which relays an update it received re-encodes it, and one running a version
+     * predating the instance ID drops the field while doing so. The stripped update and the
+     * authoritative one describe the same run of the member, so they carry the same incarnation
+     * number: the restart has to be recognised then, not only once a later update raises that
+     * number, or the streams held for the previous run outlive it for as long as the member's
+     * incarnation number does not change.
+     */
+    @Test
+    public void shouldDetectRestartRevealedAfterRelayedUpdateStrippedTheInstanceId()
+        throws InterruptedException {
+      // given - a member known to be running the instance it last reported
+      final var protocol = startIsolatedProtocol(member1);
+      final var incarnationNumber = System.currentTimeMillis();
+      protocol.updateState(aliveUpdate(member2, incarnationNumber - 1, PREVIOUS_INSTANCE_ID));
+      // events are posted asynchronously, so wait for the ones the setup produces instead of
+      // clearing the queue underneath them
+      checkEvent(member1, MEMBER_ADDED, member1);
+      checkEvent(member1, MEMBER_ADDED, member2);
+
+      // when - it restarts, and the news reaches us first through a member which drops the instance
+      // ID, and only then from the member itself
+      protocol.updateState(aliveUpdate(member2, incarnationNumber, UNKNOWN_INSTANCE_ID));
+      checkNoEvent(member1, Duration.ofMillis(500));
+      protocol.updateState(aliveUpdate(member2, incarnationNumber, CURRENT_INSTANCE_ID));
+
+      // then - the previous run is removed and the new one added, without waiting for the member's
+      // incarnation number to change again
+      checkEvent(member1, MEMBER_REMOVED, member2);
+      checkEvent(member1, MEMBER_ADDED, member2);
+      assertThat(trackedInstanceId(protocol, member2)).isEqualTo(CURRENT_INSTANCE_ID);
+    }
+
+    @Test
+    public void shouldDetectRestartWhenTheStrippedUpdateArrivesLast() throws InterruptedException {
+      // given - a member known to be running the instance it last reported
+      final var protocol = startIsolatedProtocol(member1);
+      final var incarnationNumber = System.currentTimeMillis();
+      protocol.updateState(aliveUpdate(member2, incarnationNumber - 1, PREVIOUS_INSTANCE_ID));
+      // events are posted asynchronously, so wait for the ones the setup produces instead of
+      // clearing the queue underneath them
+      checkEvent(member1, MEMBER_ADDED, member1);
+      checkEvent(member1, MEMBER_ADDED, member2);
+
+      // when - the member itself reports the restart before the relayed update reaches us
+      protocol.updateState(aliveUpdate(member2, incarnationNumber, CURRENT_INSTANCE_ID));
+      checkEvent(member1, MEMBER_REMOVED, member2);
+      checkEvent(member1, MEMBER_ADDED, member2);
+      protocol.updateState(aliveUpdate(member2, incarnationNumber, UNKNOWN_INSTANCE_ID));
+
+      // then - the update which lost the instance ID does not undo what we already know
+      checkNoEvent(member1, Duration.ofMillis(500));
+      assertThat(trackedInstanceId(protocol, member2)).isEqualTo(CURRENT_INSTANCE_ID);
+    }
+
+    @Test
+    public void shouldNotGossipPreviousRunsInstanceIdAfterRelayedUpdateDroppedIt()
+        throws InterruptedException {
+      // given - a member known to be running the instance it last reported
+      final var protocol = startIsolatedProtocol(member1);
+      final var incarnationNumber = System.currentTimeMillis();
+      protocol.updateState(aliveUpdate(member2, incarnationNumber - 1, PREVIOUS_INSTANCE_ID));
+      // events are posted asynchronously, so wait for the ones the setup produces instead of
+      // clearing the queue underneath them
+      checkEvent(member1, MEMBER_ADDED, member1);
+      checkEvent(member1, MEMBER_ADDED, member2);
+
+      // when - the next update we receive about it lost the instance ID in relaying
+      protocol.updateState(aliveUpdate(member2, incarnationNumber, UNKNOWN_INSTANCE_ID));
+
+      // then - we report the member as one whose instance ID we do not know
+      assertThat(trackedInstanceId(protocol, member2)).isEqualTo(UNKNOWN_INSTANCE_ID);
+    }
+
+    @Test
+    public void shouldKeepMemberWhenTheStrippedUpdateIsFollowedByTheSameInstanceId()
+        throws InterruptedException {
+      // given - a member known to be running the instance it last reported
+      final var protocol = startIsolatedProtocol(member1);
+      final var incarnationNumber = System.currentTimeMillis();
+      protocol.updateState(aliveUpdate(member2, incarnationNumber - 1, PREVIOUS_INSTANCE_ID));
+      // events are posted asynchronously, so wait for the ones the setup produces instead of
+      // clearing the queue underneath them
+      checkEvent(member1, MEMBER_ADDED, member1);
+      checkEvent(member1, MEMBER_ADDED, member2);
+
+      // when - the member did not restart, and its instance ID was only lost in relaying
+      protocol.updateState(aliveUpdate(member2, incarnationNumber, UNKNOWN_INSTANCE_ID));
+      protocol.updateState(aliveUpdate(member2, incarnationNumber, PREVIOUS_INSTANCE_ID));
+
+      // then - the member is kept, and the update confirms it is still the run we already knew
+      checkNoEvent(member1, Duration.ofMillis(500));
+      assertThat(trackedInstanceId(protocol, member2)).isEqualTo(PREVIOUS_INSTANCE_ID);
+    }
+
+    @Test
+    public void shouldStillReportUnreachableWhenTheSameUpdateConfirmsTheInstanceId()
+        throws InterruptedException {
+      // given - a member whose most recent update lost its instance ID in relaying
+      final var protocol = startIsolatedProtocol(member1);
+      final var incarnationNumber = System.currentTimeMillis();
+      protocol.updateState(aliveUpdate(member2, incarnationNumber - 1, PREVIOUS_INSTANCE_ID));
+      // events are posted asynchronously, so wait for the ones the setup produces instead of
+      // clearing the queue underneath them
+      checkEvent(member1, MEMBER_ADDED, member1);
+      checkEvent(member1, MEMBER_ADDED, member2);
+      protocol.updateState(aliveUpdate(member2, incarnationNumber, UNKNOWN_INSTANCE_ID));
+
+      // when - a single update carries both the missing instance ID and a progressed state
+      protocol.updateState(
+          update(
+              member2,
+              incarnationNumber,
+              PREVIOUS_INSTANCE_ID,
+              SwimMembershipProtocol.State.SUSPECT));
+
+      // then - confirming the instance ID does not swallow the state the update reports
+      checkEvent(member1, REACHABILITY_CHANGED, member2);
+      assertThat(trackedInstanceId(protocol, member2)).isEqualTo(PREVIOUS_INSTANCE_ID);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = SwimMembershipProtocol.State.class,
+        names = {"SUSPECT", "DEAD"})
+    public void shouldNotResurrectRestartedMemberReportedAsUnreachable(
+        final SwimMembershipProtocol.State state) throws InterruptedException {
+      // given - a member known to be running the instance it last reported
+      final var protocol = startIsolatedProtocol(member1);
+      final var incarnationNumber = System.currentTimeMillis();
+      protocol.updateState(aliveUpdate(member2, incarnationNumber, PREVIOUS_INSTANCE_ID));
+      // events are posted asynchronously, so wait for the ones the setup produces instead of
+      // clearing the queue underneath them
+      checkEvent(member1, MEMBER_ADDED, member1);
+      checkEvent(member1, MEMBER_ADDED, member2);
+
+      // when - the restart is only heard of through an update which reports the new run as
+      // unreachable
+      protocol.updateState(update(member2, incarnationNumber, CURRENT_INSTANCE_ID, state));
+
+      // then - the run we tracked is removed, and the one reported unreachable is not taken on
+      checkEvent(member1, MEMBER_REMOVED, member2);
+      checkNoEvent(member1, Duration.ofMillis(500));
+      assertThat(protocol.getMember(member2.id())).isNull();
+    }
+
+    @Test
+    public void shouldAddRestartedMemberOnceItIsReportedAlive() throws InterruptedException {
+      // given - a member whose restart we only heard of as a suspicion, and which we therefore
+      // removed
+      final var protocol = startIsolatedProtocol(member1);
+      final var incarnationNumber = System.currentTimeMillis();
+      protocol.updateState(aliveUpdate(member2, incarnationNumber, PREVIOUS_INSTANCE_ID));
+      // events are posted asynchronously, so wait for the ones the setup produces instead of
+      // clearing the queue underneath them
+      checkEvent(member1, MEMBER_ADDED, member1);
+      checkEvent(member1, MEMBER_ADDED, member2);
+      protocol.updateState(
+          update(
+              member2,
+              incarnationNumber,
+              CURRENT_INSTANCE_ID,
+              SwimMembershipProtocol.State.SUSPECT));
+      checkEvent(member1, MEMBER_REMOVED, member2);
+
+      // when - a later update reports the new run as alive
+      protocol.updateState(aliveUpdate(member2, incarnationNumber, CURRENT_INSTANCE_ID));
+
+      // then - the new run is added, so a suspicion which turns out to be wrong does not cost us
+      // the
+      // member for good
+      checkEvent(member1, MEMBER_ADDED, member2);
+      assertThat(trackedInstanceId(protocol, member2)).isEqualTo(CURRENT_INSTANCE_ID);
     }
   }
 }
