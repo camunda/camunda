@@ -460,18 +460,21 @@ class DefaultMembershipServiceTest {
   }
 
   @Test
-  void shouldNotRetainAnOutageEntryForALookupThatFailedNonTransiently() {
-    // given — a deterministic failure, which is the shape an unconfigured physical tenant takes:
-    // resolving its store throws rather than returning one
-    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
-        .thenThrow(new IllegalArgumentException("unknown physical tenant"));
+  void shouldNotRetainAnOutageEntryForAnUnconfiguredPhysicalTenant() {
+    // given — a physical tenant this registry does not know. PhysicalTenantFilter stamps the id
+    // from the request path without validating it, so an arbitrary one does reach this service;
+    // what stops it is the lookup opening by resolving that tenant's services.
     final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
 
-    // when / then — it propagates, as before
-    assertThatThrownBy(() -> inPhysicalTenant("default", () -> service.groupIds(query)))
-        .isInstanceOf(IllegalArgumentException.class);
+    // when / then — the registry rejects it before any search runs, and a rejection is not a
+    // transient failure, so it propagates
+    assertThatThrownBy(() -> inPhysicalTenant("tenantz", () -> service.groupIds(query)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantz");
 
-    // and nothing is retained, so a request that cannot resolve a store cannot cost memory either
+    // and nothing is retained. This is what bounds the map by the configured tenants rather than
+    // by the ids that arrive: an id no tenant matches cannot reach the failure branch that
+    // allocates.
     assertThat(service.lookupOutages).isEmpty();
   }
 
