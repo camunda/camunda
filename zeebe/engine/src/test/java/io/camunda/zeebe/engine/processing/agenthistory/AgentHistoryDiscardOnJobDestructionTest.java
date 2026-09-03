@@ -276,12 +276,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .getKey();
 
     final long agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
 
     final var historyItemId = Strings.newRandomValidBpmnId();
     ENGINE

@@ -67,12 +67,7 @@ public class AgentHistoryItemIdPersistenceTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(JOB_TYPE).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
