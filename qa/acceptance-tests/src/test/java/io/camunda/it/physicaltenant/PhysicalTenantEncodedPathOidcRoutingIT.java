@@ -48,12 +48,18 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * stamped id, and a token valid for the configured tenant is a valid token here.
  *
  * <p>Whether the request is then refused therefore rests on a different step than it does for basic
- * auth, which is why it needs its own test rather than an argument by analogy. It is refused, and
- * the different status — 400 here against 401 there — is the visible sign that a different step
- * does it.
+ * auth, which is why it needs its own test rather than an argument by analogy. It is refused: the
+ * stamped id is acted on, by a physical-tenant-scoped lookup that fails hard rather than falling
+ * back to a shared default, since resolving one tenant's request against another's storage would
+ * break isolation. Hence 400 here against 401 for basic auth, where authentication never succeeds
+ * in the first place.
  *
- * <p>Secondary storage is provisioned per tenant because membership resolution — the first thing
- * downstream to act on the stamped id — is only active when it is.
+ * <p>What matters for the caller is that every such lookup on an unknown id fails this way —
+ * deliberately and deterministically. None of them is the transient failure that would make {@code
+ * DefaultMembershipService} retain an outage entry.
+ *
+ * <p>Secondary storage is provisioned per tenant so those scoped lookups exist at all; without it
+ * the request would be refused for an unrelated reason and prove nothing.
  */
 @Testcontainers
 @ZeebeIntegration
@@ -139,9 +145,10 @@ final class PhysicalTenantEncodedPathOidcRoutingIT {
     // 404, and the token validated there. It must still not be served: the id handed downstream
     // matches no configured tenant. A 200 would mean it was served as some tenant; a 5xx would mean
     // the mismatched id travelled past authentication and failed on a store it cannot resolve.
-    // The status differs from the basic-auth case, which answers 401 when it cannot resolve the
-    // user under the mismatched id. What matters is shared: not 200, so it was not served, and not
-    // 5xx, which is what acting on an id that resolves to no store would produce.
+    // 400, not the 401 of the basic-auth case: the token is valid, so the refusal comes from a
+    // scoped lookup rejecting the stamped id — "No ResourceAccessProvider registered for physical
+    // tenant 'tenant%61'; refusing to fall back to a shared default". A deliberate rejection, not
+    // an accident of something unprepared for the id, which is what a 5xx would indicate.
     assertThat(encoded.statusCode())
         .as("an encoded spelling of a configured tenant must not be served")
         .isEqualTo(400);
