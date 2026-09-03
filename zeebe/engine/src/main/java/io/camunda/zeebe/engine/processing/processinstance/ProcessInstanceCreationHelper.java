@@ -150,7 +150,7 @@ public class ProcessInstanceCreationHelper {
   private Either<Rejection, DeployedProcess> getProcess(
       final DirectBuffer bpmnProcessId, final String tenantId) {
     final DeployedProcess process =
-        processState.getLatestProcessVersionByProcessId(bpmnProcessId, tenantId);
+        processState.getLatestActiveProcessVersionByProcessId(bpmnProcessId, tenantId);
     if (process != null) {
       return Either.right(process);
     } else {

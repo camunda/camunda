@@ -96,8 +96,8 @@ public class DrainingProcessDefinitionTest {
   }
 
   @Test
-  public void shouldRejectCreateInstanceByProcessIdWhenDraining() {
-    // given - a definition kept draining by a still-running instance
+  public void shouldRejectCreateInstanceByProcessIdWhenNoActiveVersionRemains() {
+    // given - the only version is kept draining by a still-running instance
     final var processId = helper.getBpmnProcessId();
     final var metadata = deployWithJob(processId);
     awaitJobCreated(engine.processInstance().ofBpmnProcessId(processId).create());
@@ -106,14 +106,37 @@ public class DrainingProcessDefinitionTest {
     // when
     engine.processInstance().ofBpmnProcessId(processId).expectRejection().create();
 
-    // then
+    // then - create-by-id skips draining versions; with none left this is not-found, not draining
     final var rejection =
         RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
     assertThat(rejection)
-        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING.formatted(
-                processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
+            "Expected to find process definition with process ID '%s', but none found"
+                .formatted(processId));
+  }
+
+  @Test
+  public void shouldCreateInstanceByProcessIdOnLatestActiveVersionWhenLatestIsDraining() {
+    // given - v1 stays ACTIVE while v2 is kept draining by a still-running instance
+    final var processId = helper.getBpmnProcessId();
+    final var v1 = deployWithJob(processId);
+    final var v2 = deployWithJob(processId, "end-v2");
+    awaitJobCreated(engine.processInstance().ofBpmnProcessId(processId).create());
+    drainViaDeletion(v2.getProcessDefinitionKey());
+
+    // when
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final var started =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+    assertThat(started.getValue().getProcessDefinitionKey())
+        .isEqualTo(v1.getProcessDefinitionKey());
+    assertThat(started.getValue().getVersion()).isEqualTo(v1.getVersion());
   }
 
   @Test
@@ -155,10 +178,10 @@ public class DrainingProcessDefinitionTest {
             .onlyCommandRejections()
             .getFirst();
     assertThat(rejection)
-        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING.formatted(
-                processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
+            "Expected to find process definition with process ID '%s', but none found"
+                .formatted(processId));
   }
 
   @Test
@@ -169,10 +192,12 @@ public class DrainingProcessDefinitionTest {
     awaitJobCreated(engine.processInstance().ofBpmnProcessId(processId).create());
     drainViaDeletion(metadata.getProcessDefinitionKey());
 
-    // when - bogus element id: proves the draining guard runs before start-instruction validation
+    // when - explicit version plus a bogus element id: proves the draining guard runs before
+    // start-instruction validation
     engine
         .processInstance()
         .ofBpmnProcessId(processId)
+        .withVersion(1)
         .withStartInstruction("nonExistentElement")
         .expectRejection()
         .create();
@@ -607,8 +632,9 @@ public class DrainingProcessDefinitionTest {
     // when - only the first instance completes
     engine.job().ofInstance(firstInstanceKey).withType(JOB_TYPE).complete();
 
-    // then - still draining: a new instance is still rejected, proving it is not yet drained
-    engine.processInstance().ofBpmnProcessId(processId).expectRejection().create();
+    // then - still draining: an explicit-version create is still rejected, proving it is not yet
+    // drained
+    engine.processInstance().ofBpmnProcessId(processId).withVersion(1).expectRejection().create();
     final var rejection =
         RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
     assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
@@ -804,8 +830,8 @@ public class DrainingProcessDefinitionTest {
     migrateToTarget(migratingInstanceKey, target.getProcessDefinitionKey(), "task");
 
     // then - the source is not finalized while the other instance still references it: it stays
-    // DRAINING, so a new instance is still rejected for that reason (not "not found")
-    engine.processInstance().ofBpmnProcessId(sourceId).expectRejection().create();
+    // DRAINING, so an explicit-version create is still rejected for that reason (not "not found")
+    engine.processInstance().ofBpmnProcessId(sourceId).withVersion(1).expectRejection().create();
     final var rejection =
         RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
     assertThat(rejection)
@@ -1212,13 +1238,17 @@ public class DrainingProcessDefinitionTest {
   }
 
   private ProcessMetadataValue deployWithJob(final String processId) {
+    return deployWithJob(processId, "end");
+  }
+
+  private ProcessMetadataValue deployWithJob(final String processId, final String endEventId) {
     return engine
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
-                .endEvent()
+                .endEvent(endEventId)
                 .done())
         .deploy()
         .getValue()
