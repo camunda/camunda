@@ -367,8 +367,7 @@ public class SwimMembershipProtocol
       return false;
     } else if (member.incarnationNumber() >= swimMember.getIncarnationNumber()
         && hasRebooted(member, swimMember)) {
-      replaceMember(member, swimMember);
-      return true;
+      return applyRebootedMember(member, swimMember);
     }
     // If the term has been increased, update the member and record a gossip event.
     else if (member.incarnationNumber() > swimMember.getIncarnationNumber()
@@ -437,6 +436,30 @@ public class SwimMembershipProtocol
       return updated;
     }
     return false;
+  }
+
+  /**
+   * Applies an update that describes a different run of a member we already track. The run we were
+   * tracking is gone either way, so it is always dropped. The new run is only adopted when the
+   * update says it is alive: taking on a run we were just told is unreachable would resurrect it as
+   * ALIVE and swallow the suspicion, and a run that is really alive is added back by the next
+   * update that says so.
+   */
+  private boolean applyRebootedMember(final ImmutableMember member, final SwimMember swimMember) {
+    if (member.state() == State.ALIVE) {
+      replaceMember(member, swimMember);
+    } else {
+      LOGGER.info(
+          "{} - Removing member {}, its restart is reported as {}",
+          localMember.id(),
+          swimMember,
+          member.state());
+      tryRemoveMember(swimMember);
+      // Gossip the update on, so the death or suspicion of the new run keeps spreading instead of
+      // stopping here.
+      recordUpdate(member);
+    }
+    return true;
   }
 
   /**
