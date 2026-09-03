@@ -108,8 +108,7 @@ export class IdentityAuthorizationsPage {
   }
 
   async clickResourceType(resourceType: string) {
-    await this.authorizationTypeFilterComboBox.click();
-    await this.resourceTypeOption(resourceType).click();
+    await this.selectResourceTypeTab(resourceType);
   }
 
   async clickCreateAuthorizationButton() {
