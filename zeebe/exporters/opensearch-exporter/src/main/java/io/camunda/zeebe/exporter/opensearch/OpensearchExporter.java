@@ -25,10 +25,23 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OpensearchExporter implements Exporter {
+
+  /**
+   * Supported pattern for the ISM {@code min_index_age} property. Retention periods smaller than a
+   * second are not useful here, so only days, hours, minutes, and seconds are supported.
+   *
+   * <p>See https://docs.opensearch.org/latest/api-reference/units/
+   */
+  private static final String PATTERN_MIN_AGE_FORMAT = "^[0-9]+[dhms]$";
+
+  private static final Predicate<String> CHECKER_MIN_AGE =
+      Pattern.compile(PATTERN_MIN_AGE_FORMAT).asPredicate();
 
   // by default, the bulk request may not be bigger than 100MB
   private static final int RECOMMENDED_MAX_BULK_MEMORY_LIMIT = 100 * 1024 * 1024;
@@ -203,6 +216,17 @@ public class OpensearchExporter implements Exporter {
     if (priority < 0) {
       throw new ExporterException(
           "Opensearch index template priority must be >= 0. Current value: %d".formatted(priority));
+    }
+
+    final String minimumAge = configuration.retention.getMinimumAge();
+    if (minimumAge == null || minimumAge.isBlank()) {
+      throw new ExporterException("Opensearch minimumAge must not be null or blank.");
+    }
+    if (!CHECKER_MIN_AGE.test(minimumAge)) {
+      throw new ExporterException(
+          String.format(
+              "Opensearch minimumAge '%s' must match pattern '%s', but didn't.",
+              minimumAge, PATTERN_MIN_AGE_FORMAT));
     }
   }
 
