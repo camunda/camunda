@@ -38,12 +38,14 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
  *
  * <p>The catch-all that rejects unconfigured tenants with 404 does not cover this: it too matches
  * on the decoded path, where this request is a valid tenant's. What stops it is one layer further
- * in — per-physical-tenant credential resolution, which finds no tenant under the encoded id and
- * answers 401. Authentication therefore fails before anything downstream acts on the mismatched id.
+ * in — authentication itself, which under basic auth resolves the caller against the physical
+ * tenant that was stamped, and so answers 401 for an id no tenant matches.
  *
- * <p>That ordering is what this test pins. It is load-bearing and not self-evident from either
- * layer alone: the security chains admit the request, and the filter hands on an id no
- * configuration matches, so only the credential step keeps the two from meeting.
+ * <p>That is what this test pins, and it is not self-evident from either layer alone: the security
+ * chains admit the request and the filter hands on a bogus id, so only the credential step keeps
+ * the two from meeting. It is also specific to this authentication method — see {@link
+ * PhysicalTenantEncodedPathOidcRoutingIT}, where a valid token gets further and a different scoped
+ * lookup does the refusing.
  */
 @MultiDbTest
 @MultiDbPhysicalTenants(EncodedTenantPaths.TENANT_ID)
@@ -67,8 +69,9 @@ final class PhysicalTenantEncodedPathRoutingIT {
 
   @Test
   void shouldNotServeAPercentEncodedTenantPath() throws Exception {
-    // given — a user that exists in the configured tenant, so the request gets past authentication
-    // and reaches membership resolution rather than stopping at a 401
+    // given — a user that exists in the configured tenant. Only the baseline needs it: without a
+    // user, both spellings would be refused and the test would pass while proving nothing about
+    // the encoding.
     final var username = createUser();
 
     // when — the same endpoint and the same credentials, spelled two ways
@@ -81,10 +84,10 @@ final class PhysicalTenantEncodedPathRoutingIT {
         .as("a configured tenant's own path must authenticate and serve")
         .isEqualTo(200);
 
-    // and — the encoded spelling is refused. It reached the tenant's chain, since the catch-all
-    // would have answered 404, but the credentials could not be resolved under an id no tenant
-    // matches. A 200 would mean it was served as some tenant; a 5xx would mean the mismatched id
-    // travelled past authentication and failed somewhere downstream on an unresolvable store.
+    // and — the encoded spelling is refused, having reached the tenant's chain: the catch-all
+    // would have answered 404. The same credentials that just worked do not authenticate here,
+    // because they are resolved against the stamped id. A 200 would mean it was served as some
+    // tenant; a 5xx would mean something met the id without being prepared for it.
     assertThat(encoded.statusCode())
         .as("an encoded spelling of a configured tenant must not be served")
         .isEqualTo(401);
