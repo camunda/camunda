@@ -32,9 +32,9 @@ export class IdentityAuthorizationsPage {
   readonly authorizationRowByOwnerId: (ownerId: string) => Locator;
   readonly selectResourceTypeTab: (resourceType: string) => Promise<void>;
   readonly resourceTypeComboBox: Locator;
+  readonly authorizationTypeFilterComboBox: Locator;
   readonly getAuthorizationCell: (ownerId: string) => Locator;
   readonly resourceTypeOption: (resourceType: string) => Locator;
-  readonly resourceTypeTab: (resourceType: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -91,10 +91,11 @@ export class IdentityAuthorizationsPage {
         name: 'Delete authorization',
       },
     );
-    this.selectResourceTypeTab = (resourceType) =>
-      this.resourceTypeTab(resourceType).click();
     this.resourceTypeComboBox = page.getByRole('combobox', {
       name: 'Resource type',
+    });
+    this.authorizationTypeFilterComboBox = page.getByRole('combobox', {
+      name: 'Authorization type',
     });
     this.getAuthorizationCell = (ownerId) =>
       this.authorizationsList.getByRole('cell', {
@@ -104,8 +105,10 @@ export class IdentityAuthorizationsPage {
       this.page.getByRole('option', {
         name: new RegExp(`^${resourceType}$`, 'i'),
       });
-    this.resourceTypeTab = (resourceType) =>
-      this.page.getByRole('tab', {name: new RegExp(`^${resourceType}$`, 'i')});
+    this.selectResourceTypeTab = async (resourceType) => {
+      await this.authorizationTypeFilterComboBox.click();
+      await this.resourceTypeOption(resourceType).click();
+    };
   }
 
   async navigateToAuthorizations() {
@@ -113,7 +116,8 @@ export class IdentityAuthorizationsPage {
   }
 
   async clickResourceType(resourceType: string) {
-    await this.resourceTypeTab(resourceType).click();
+    await this.authorizationTypeFilterComboBox.click();
+    await this.resourceTypeOption(resourceType).click();
   }
 
   async clickCreateAuthorizationButton() {
