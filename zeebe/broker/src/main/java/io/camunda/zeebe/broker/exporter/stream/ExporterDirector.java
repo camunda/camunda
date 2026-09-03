@@ -96,6 +96,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final String clusterId;
   private final ExporterMode exporterMode;
   private final Duration distributionInterval;
+  private final int migrationStatusScanMaxRecords;
   private ExporterStateDistributionService exporterDistributionService;
   private ScheduledTimer exporterDistributionTimer;
   private final PartitionId partitionId;
@@ -160,6 +161,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     exporterMode = context.getExporterMode();
     distributionInterval = context.getDistributionInterval();
+    migrationStatusScanMaxRecords = context.getMigrationStatusScanMaxRecords();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
 
     // needs name to be initialized
@@ -854,11 +856,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   /**
    * Gathers the two already-durable facts {@link ExportingMigrationStatusCalculator} needs, reading
-   * the lowest exported position and peeking the next unexported record's version within a single,
-   * uninterrupted actor job so a compaction pass can't invalidate the position in between. Reports
-   * a failure to read either fact as {@link MigrationStatusCode#UNKNOWN} rather than letting the
-   * exception reach {@link #handleFailure(Throwable)} -- this is a best-effort diagnostic read for
-   * an actuator endpoint, and must not be able to take down the exporter actor itself.
+   * the lowest exported position and scanning the not-yet-exported records' versions within a
+   * single, uninterrupted actor job so a compaction pass can't invalidate the position in between.
+   * Reports a failure to read either fact as {@link MigrationStatusCode#UNKNOWN} rather than
+   * letting the exception reach {@link #handleFailure(Throwable)} -- this is a best-effort
+   * diagnostic read for an actuator endpoint, and must not be able to take down the exporter actor
+   * itself.
    */
   private PartitionMigrationStatus computeExportingMigrationStatus() {
     try {
@@ -868,11 +871,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       }
 
       final long lowestExportedPosition = state.getLowestPosition();
-      final String nextUnexportedRecordVersion =
-          peekNextUnexportedRecordVersion(lowestExportedPosition);
-      final var status =
-          ExportingMigrationStatusCalculator.compute(
-              partitionId.number(), true, nextUnexportedRecordVersion);
+      final var status = scanUnexportedRecordsForPreviousVersion(lowestExportedPosition);
       return explainIfPaused(status);
     } catch (final Exception e) {
       LOG.warn(
@@ -906,24 +905,42 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   /**
-   * Peeks the version of the first not-yet-exported record, using its own throwaway reader instead
-   * of the {@link #logStreamReader} field the main export loop owns, since that one's cursor is
-   * actively advancing and isn't available at all in passive mode.
+   * Scans not-yet-exported records after {@code lowestExportedPosition}, looking for one stamped
+   * with a previous application version. Stops the moment it finds a non-current-version record --
+   * already conclusive -- or reaches the log head, having verified every pending record.
    *
    * @return {@code null} if every record up to the log head has already been exported
    */
-  private @Nullable String peekNextUnexportedRecordVersion(final long lowestExportedPosition) {
+  private PartitionMigrationStatus scanUnexportedRecordsForPreviousVersion(
+      final long lowestExportedPosition) {
     try (final LogStreamReader reader = logStream.newLogStreamReader()) {
       if (!reader.seekToNextEvent(lowestExportedPosition)) {
         throw new IllegalStateException(
             "expected to find an event at or after position " + lowestExportedPosition);
       }
-      if (!reader.hasNext()) {
-        return null;
-      }
       final var metadata = new RecordMetadata();
-      reader.peekNext().readMetadata(metadata);
-      return metadata.getBrokerVersion().toString();
+      int scanned = 0;
+      while (reader.hasNext()) {
+        if (scanned >= migrationStatusScanMaxRecords) {
+          return new PartitionMigrationStatus(
+              MigrationStatusCode.UNKNOWN,
+              "partition "
+                  + partitionId.number()
+                  + ": more than "
+                  + migrationStatusScanMaxRecords
+                  + " unexported records pending, cannot verify all of them are on the current"
+                  + " version");
+        }
+        reader.next().readMetadata(metadata);
+        scanned++;
+        final var status =
+            ExportingMigrationStatusCalculator.compute(
+                partitionId.number(), true, metadata.getBrokerVersion().toString());
+        if (status.code() != MigrationStatusCode.MIGRATED) {
+          return status;
+        }
+      }
+      return ExportingMigrationStatusCalculator.compute(partitionId.number(), true, null);
     }
   }
 

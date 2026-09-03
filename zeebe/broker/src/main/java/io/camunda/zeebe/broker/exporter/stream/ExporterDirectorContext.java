@@ -23,6 +23,7 @@ import org.jspecify.annotations.Nullable;
 public final class ExporterDirectorContext {
 
   public static final Duration DEFAULT_DISTRIBUTION_INTERVAL = Duration.ofSeconds(15);
+  public static final int DEFAULT_MIGRATION_STATUS_SCAN_MAX_RECORDS = 100_000;
 
   private int id;
   private PartitionId partitionId;
@@ -32,6 +33,7 @@ public final class ExporterDirectorContext {
   private PartitionMessagingService partitionMessagingService;
   private ExporterMode exporterMode = ExporterMode.ACTIVE; // per default we export records
   private Duration distributionInterval = DEFAULT_DISTRIBUTION_INTERVAL;
+  private int migrationStatusScanMaxRecords = DEFAULT_MIGRATION_STATUS_SCAN_MAX_RECORDS;
   private EventFilter positionsToSkipFilter;
   private MeterRegistry meterRegistry;
   private InstantSource clock;
@@ -66,6 +68,10 @@ public final class ExporterDirectorContext {
 
   public Duration getDistributionInterval() {
     return distributionInterval;
+  }
+
+  public int getMigrationStatusScanMaxRecords() {
+    return migrationStatusScanMaxRecords;
   }
 
   public EventFilter getPositionsToSkipFilter() {
@@ -135,6 +141,12 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext distributionInterval(final Duration distributionInterval) {
     this.distributionInterval = distributionInterval;
+    return this;
+  }
+
+  public ExporterDirectorContext migrationStatusScanMaxRecords(
+      final int migrationStatusScanMaxRecords) {
+    this.migrationStatusScanMaxRecords = migrationStatusScanMaxRecords;
     return this;
   }
 

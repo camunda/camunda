@@ -1136,6 +1136,57 @@ public final class ExporterDirectorTest {
   }
 
   @Test
+  public void
+      shouldReportExportingMigrationInProgressWhenAPreviousVersionRecordIsQueuedBehindACurrentVersionRecord() {
+    // given - the immediate next unexported record is already on the current version, but a
+    // second one further back in the backlog is on a previous version (e.g. from a briefly
+    // re-elected not-yet-upgraded broker); a single-record peek would have missed this entirely
+    startExporterDirector(exporterDescriptors);
+    writeEvent();
+    rule.writeEventWithBrokerVersion(
+        DeploymentIntent.CREATED, new DeploymentRecord(), oneMinorBehindTheCurrentVersion());
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATION_IN_PROGRESS);
+  }
+
+  @Test
+  public void shouldReportUnknownWhenTheBacklogExceedsTheConfiguredScanLimit() {
+    // given - two unexported records, both on the current version, but the scan budget only
+    // allows looking at one of them -- we cannot honestly claim the rest is fine without looking
+    rule.withExporterDirectorContextConfigurator(
+        context -> context.migrationStatusScanMaxRecords(1));
+    startExporterDirector(exporterDescriptors);
+    writeEvent();
+    writeEvent();
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.UNKNOWN);
+    assertThat(status.detail()).contains("more than 1 unexported records pending");
+  }
+
+  @Test
+  public void shouldReportMigratedWhenScanLimitIsZeroButNothingIsPending() {
+    // given - a scan budget of zero must not itself cause UNKNOWN when there is truly nothing to
+    // scan; the log head must be checked before the budget is
+    rule.withExporterDirectorContextConfigurator(
+        context -> context.migrationStatusScanMaxRecords(0));
+    startExporterDirector(exporterDescriptors);
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+  }
+
+  @Test
   public void shouldReportExportingMigrationInProgressWithDetailWhenSoftPausedAndBehind() {
     // given - soft-paused exporting keeps running but never persists its position, freezing a
     // genuine previous-version backlog behind it -- the operator needs to know pausing, not an
