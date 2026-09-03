@@ -182,7 +182,7 @@ export class IdentityTenantsPage {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
     await this.fillAssignUserName(user.id);
-    const option = this.assignUserOption(user.id)
+    const option = this.assignUserOption(user.id);
     await expect(option).toBeVisible({timeout: 30000});
     await option.click({timeout: 20000});
     await this.confirmAssignmentButton.click();
