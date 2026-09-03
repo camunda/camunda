@@ -17,7 +17,7 @@ type Props = {
 };
 
 const DrainingTag: React.FC<Props> = ({label, description, align = 'top', className}) => (
-	<Tooltip label={description} align={align} autoAlign>
+	<Tooltip description={description} align={align} autoAlign>
 		<Tag className={className} size="md" type="red" renderIcon={Timer} data-testid="draining-tag">
 			{label}
 		</Tag>
