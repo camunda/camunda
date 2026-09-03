@@ -72,7 +72,7 @@ jobs:
           runner: gcp-core-4-longrunning
         - name: optimize
           path: ./optimize
-          runner: gcp-core-16-longrunning
+          runner: gcp-core-8-longrunning
           maven-config: |
             -DskipQaBuild=true
         - name: single-app
