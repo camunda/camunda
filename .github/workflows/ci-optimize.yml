@@ -321,7 +321,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - name: "Parse pom.xml for versions"
         id: "pom_info"
-        uses: YunaBraska/java-info-action@094dc70cf4050d156dded76d5574c962886c0b0a # 3.0.12
+        uses: YunaBraska/java-info-action@085d09be3659b484e0a6d0c95aac6612687ce8d9 # 3.0.13
         with:
           work-dir: ./parent
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -511,7 +511,7 @@ jobs:
 
       - name: "Parse pom.xml for versions"
         id: "pom_info"
-        uses: YunaBraska/java-info-action@094dc70cf4050d156dded76d5574c962886c0b0a # 3.0.12
+        uses: YunaBraska/java-info-action@085d09be3659b484e0a6d0c95aac6612687ce8d9 # 3.0.13
         with:
           work-dir: ./optimize
 
