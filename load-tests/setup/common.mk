@@ -119,14 +119,6 @@ else ifeq ($(secondary_storage),none)
 endif
 platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 
-# Layer the pt1..ptN physical-tenant overlay on top, generated at install/template time
-# (not scaffold time) so re-running `make install` with a different physical_tenant_count
-# on an existing namespace doesn't require re-scaffolding via newLoadTest.sh. See the
-# generate-physical-tenant-values target below and generate-physical-tenant-values.sh.
-ifneq ($(physical_tenant_count),0)
-platform_values += -f camunda-platform-physical-tenants.yaml
-endif
-
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
@@ -189,10 +181,10 @@ install-stable: check-deadline install-load-test-setup $(install_storage_target)
 ifneq ($(physical_tenant_count),0)
 install: install-load-test-physical-tenants
 install-stable: install-load-test-physical-tenants
-install-platform: generate-physical-tenant-values
-install-platform-stable: generate-physical-tenant-values
-template: generate-physical-tenant-values
-template-stable: generate-physical-tenant-values
+install-platform:
+install-platform-stable:
+template:
+template-stable:
 endif
 
 # Fail fast if the namespace TTL deadline (read from load-test-setup-values.yaml,
@@ -255,13 +247,6 @@ endif
 endif
 
 ifeq ($(physical_tenants_supported),true)
-# Generates camunda-platform-physical-tenants.yaml (see generate-physical-tenant-values.sh)
-# when physical_tenant_count > 0. A no-op (the script removes any stale file) otherwise, so
-# this can be an unconditional prerequisite of install-platform(-stable)/template(-stable).
-.PHONY: generate-physical-tenant-values
-generate-physical-tenant-values:
-	../generate-physical-tenant-values.sh "$(secondary_storage)" "$(physical_tenant_count)" "$(rdbms_storages)"
-
 # Deploy pt1..ptN's own load testers, sharing the default tenant's secondary storage.
 # The camunda-load-tests subchart hardcodes the starter/worker resource names, so a second
 # Helm release per tenant would collide. Instead we render only those two templates from the
@@ -272,10 +257,6 @@ generate-physical-tenant-values:
 install-load-test-physical-tenants:
 	@for i in $$(seq 1 $(physical_tenant_count)); do \
 	  tenant="pt$$i"; \
-	  echo "Deploying the $$tenant physical-tenant load tester for namespace $(namespace)..."; \
-	  kubectl get secret load-test-credentials -n $(namespace) -o json \
-	    | jq --arg tenant "$$tenant" '.data.zeebeRestAddress = ("http://camunda:8080/physical-tenants/" + $$tenant | @base64) | .metadata.name = ("load-test-credentials-" + $$tenant) | del(.metadata.uid,.metadata.resourceVersion,.metadata.creationTimestamp,.metadata.ownerReferences,.metadata.managedFields)' \
-	    | kubectl apply -n $(namespace) -f - ; \
 	  helm template load-test-setup $(helm_chart_load_test_setup) \
 	      --namespace $(namespace) \
 	      -s charts/load-tester/templates/starter.yaml \

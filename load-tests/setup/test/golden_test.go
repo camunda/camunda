@@ -3,7 +3,6 @@ package golden
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -31,9 +30,10 @@ var update = flag.Bool("update-golden", false,
 // dedicated make target (e.g. template-load-test-setup-chaos). This avoids
 // duplicating the full storage matrix for features that are orthogonal to storage.
 //
-// PhysicalTenantCount, when > 0, passes physical_tenant_count=<N> to the platform
-// template target. Only supported on versions with physical-tenant config support
-// (main, stable-810).
+// PhysicalTenantCount, when > 0, is passed to newLoadTest.sh as
+// --physical-tenants-count=<N> at scaffold time, baking pt1..ptN physical-tenant
+// config into load-test-setup-values.yaml. Only supported on versions with
+// physical-tenant config support (main, stable-810).
 //
 // PlatformOnly, when true, renders only the platform chart. Use it for
 // scenarios whose assertions are scoped to platform-only templates.
@@ -185,7 +185,7 @@ func TestGoldenFiles(t *testing.T) {
 		t.Run(namespace, func(t *testing.T) {
 			t.Parallel()
 
-			ns := Scaffold(t, s.Version, namespace, s.Storage, strconv.FormatBool(s.Optimize))
+			ns := Scaffold(t, s.Version, namespace, s.Storage, strconv.FormatBool(s.Optimize), s.PhysicalTenantCount)
 			defer ns.Cleanup()
 
 			if s.Workload != "" {
@@ -208,16 +208,11 @@ func TestGoldenFiles(t *testing.T) {
 				platformTarget = "template-stable"
 			}
 
-			var extraVars []string
-			if s.PhysicalTenantCount > 0 {
-				extraVars = append(extraVars, fmt.Sprintf("physical_tenant_count=%d", s.PhysicalTenantCount))
-			}
-
-			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "", s.PathFilter, extraVars...)
+			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "", s.PathFilter)
 			if s.PlatformOnly {
 				return
 			}
-			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "", s.PathFilter, extraVars...)
+			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "", s.PathFilter)
 		})
 	}
 }
@@ -236,7 +231,7 @@ func TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProv
 		t.Run(version, func(t *testing.T) {
 			t.Parallel()
 
-			ns := Scaffold(t, version, "c8-golden-setup-flags-"+version, "elasticsearch", "true")
+			ns := Scaffold(t, version, "c8-golden-setup-flags-"+version, "elasticsearch", "true", 0)
 			defer ns.Cleanup()
 
 			cmd := exec.Command(
