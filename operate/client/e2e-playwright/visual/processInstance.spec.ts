@@ -531,13 +531,25 @@ test.describe('process instance page', () => {
 
     await processInstancePage.newVariableNameField.fill('newPayload');
 
-    await expect(
-      page
-        .getByTestId('json-editor-wrapper')
-        .getByTestId('json-editor-readonly'),
-    ).toBeVisible();
+    const inlineEditor = page.getByTestId('json-editor-wrapper');
+    const readOnlyEditor = inlineEditor.getByTestId('json-editor-readonly');
+
+    await expect(readOnlyEditor).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+
+    const widthBeforeFocus = await inlineEditor.evaluate(
+      (element) => element.getBoundingClientRect().width,
+    );
+
+    await readOnlyEditor.click();
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
+
+    const widthAfterFocus = await inlineEditor.evaluate(
+      (element) => element.getBoundingClientRect().width,
+    );
+
+    expect(widthAfterFocus).toBeLessThanOrEqual(widthBeforeFocus);
   });
 
   test('inline JSON edit - error state after blur', async ({

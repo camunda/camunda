@@ -32,6 +32,7 @@ const EditorWrapper = styled.div<{
   $invalid?: boolean;
 }>`
   position: relative;
+  min-width: 0;
 
   ${({$invalid}) =>
     $invalid &&
