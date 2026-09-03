@@ -7,6 +7,7 @@
  */
 
 import {Button, type ButtonSize} from '@carbon/react';
+import {TrashCan, type CarbonIconType} from '@carbon/react/icons';
 
 type ItemProps = {
   type: 'DELETE';
@@ -17,9 +18,9 @@ type ItemProps = {
 };
 
 const TYPE_DETAILS: Readonly<
-  Record<ItemProps['type'], {testId: string; label?: string}>
+  Record<ItemProps['type'], {icon: CarbonIconType; testId: string}>
 > = {
-  DELETE: {testId: 'delete-operation', label: 'Delete'},
+  DELETE: {icon: TrashCan, testId: 'delete-operation'},
 };
 
 const DangerButton: React.FC<ItemProps> = ({
@@ -29,21 +30,21 @@ const DangerButton: React.FC<ItemProps> = ({
   disabled,
   size,
 }) => {
-  const {testId, label} = TYPE_DETAILS[type];
+  const {icon, testId} = TYPE_DETAILS[type];
   return (
     <li>
       <Button
-        kind="danger--ghost"
+        kind="ghost"
+        renderIcon={icon}
+        tooltipPosition="left"
         iconDescription={title}
         onClick={onClick}
         disabled={disabled}
         data-testid={testId}
-        title={title}
         aria-label={title}
+        hasIconOnly
         size={size}
-      >
-        {label}
-      </Button>
+      />
     </li>
   );
 };

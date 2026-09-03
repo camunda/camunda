@@ -166,26 +166,22 @@ const InstanceOperations: React.FC<Props> = ({
       };
     }
 
-    let destructiveOperation: OperationConfig | null = null;
-    if (isActive || isSuspended) {
-      destructiveOperation = {
-        type: 'CANCEL_PROCESS_INSTANCE',
-        onExecute: () => cancelProcessInstance(),
-        disabled:
-          isCancelProcessInstancePending ||
-          activeOperations.includes('CANCEL_PROCESS_INSTANCE'),
-      };
-    }
-
-    if (state === 'COMPLETED' || state === 'TERMINATED') {
-      destructiveOperation = {
-        type: 'DELETE_PROCESS_INSTANCE',
-        onExecute: () => deleteProcessInstance(),
-        disabled:
-          isDeletePending ||
-          activeOperations.includes('DELETE_PROCESS_INSTANCE'),
-      };
-    }
+    const destructiveOperation: OperationConfig =
+      isActive || isSuspended
+        ? {
+            type: 'CANCEL_PROCESS_INSTANCE',
+            onExecute: () => cancelProcessInstance(),
+            disabled:
+              isCancelProcessInstancePending ||
+              activeOperations.includes('CANCEL_PROCESS_INSTANCE'),
+          }
+        : {
+            type: 'DELETE_PROCESS_INSTANCE',
+            onExecute: () => deleteProcessInstance(),
+            disabled:
+              isDeletePending ||
+              activeOperations.includes('DELETE_PROCESS_INSTANCE'),
+          };
 
     return [incidentOperation, stateChangeOperation, destructiveOperation];
   }, [
@@ -202,7 +198,6 @@ const InstanceOperations: React.FC<Props> = ({
     isSuspended,
     resolveProcessInstanceIncidents,
     resumeProcessInstance,
-    state,
     suspendProcessInstance,
   ]);
 
