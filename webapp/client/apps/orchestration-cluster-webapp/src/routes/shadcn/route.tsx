@@ -7,8 +7,11 @@
  */
 
 import appCss from '#/shared/theme/tailwind.css?url';
+import {PageLayout} from '@camunda/design-system';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
 import {ThemeProvider} from '#/shared/theme/shadcn.components/ThemeProvider';
+import {NotFoundPage} from '#/shared/pages/shadcn.components/NotFoundPage';
+import {GenericErrorPage} from '#/shared/pages/shadcn.components/GenericErrorPage';
 
 const Route = createFileRoute('/shadcn')({
 	component: function RouteComponent() {
@@ -18,6 +21,20 @@ const Route = createFileRoute('/shadcn')({
 			</ThemeProvider>
 		);
 	},
+	notFoundComponent: () => (
+		<ThemeProvider>
+			<PageLayout className="h-dvh">
+				<NotFoundPage />
+			</PageLayout>
+		</ThemeProvider>
+	),
+	errorComponent: ({reset}) => (
+		<ThemeProvider>
+			<PageLayout className="h-dvh">
+				<GenericErrorPage reset={reset} />
+			</PageLayout>
+		</ThemeProvider>
+	),
 	head: () => ({
 		meta: [],
 		links: [{rel: 'stylesheet', href: appCss}],

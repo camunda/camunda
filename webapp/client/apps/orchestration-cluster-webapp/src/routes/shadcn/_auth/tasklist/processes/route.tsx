@@ -7,13 +7,17 @@
  */
 
 import {useCallback, useMemo} from 'react';
-import {createFileRoute, Outlet, useNavigate} from '@tanstack/react-router';
+import {createFileRoute, Outlet, type ErrorComponentProps, useNavigate} from '@tanstack/react-router';
 import {useSuspenseInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
+import {PageLayout} from '@camunda/design-system';
 import {TasklistProcessesPage} from '#/tasklist/pages/shadcn.components/TasklistProcessesPage';
 import {processesSearchSchema} from '#/tasklist/modules/processes/searchSchema';
 import {getProcessDefinitionsRequestBody} from '#/tasklist/modules/processes/getProcessDefinitionsRequestBody';
 import {StartProcessProvider} from '#/tasklist/modules/processes/StartProcessProvider';
 import {queries} from '#/shared/http/queries';
+import {ForbiddenError} from '#/shared/errors';
+import {ForbiddenPage} from '#/shared/pages/shadcn.components/ForbiddenPage';
+import {GenericErrorPage} from '#/shared/pages/shadcn.components/GenericErrorPage';
 
 export const Route = createFileRoute('/shadcn/_auth/tasklist/processes')({
 	validateSearch: processesSearchSchema,
@@ -22,6 +26,21 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist/processes')({
 		const {tenants} = await queryClient.query(queries.getCurrentUser());
 		await queryClient.infiniteQuery(
 			queries.queryProcessDefinitionsInfinite(getProcessDefinitionsRequestBody(search, tenants)),
+		);
+	},
+	errorComponent: function ProcessesErrorPage({error, reset}: ErrorComponentProps) {
+		if (error instanceof ForbiddenError) {
+			return (
+				<PageLayout>
+					<ForbiddenPage />
+				</PageLayout>
+			);
+		}
+
+		return (
+			<PageLayout>
+				<GenericErrorPage reset={reset} />
+			</PageLayout>
 		);
 	},
 	component: function TasklistProcessesRoute() {
