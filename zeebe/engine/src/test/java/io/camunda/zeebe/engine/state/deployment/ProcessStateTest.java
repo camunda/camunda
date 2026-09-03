@@ -787,6 +787,61 @@ public final class ProcessStateTest {
   }
 
   @Test
+  public void shouldGetLatestActiveProcessSkippingDrainingLatest() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.markDraining(v2);
+
+    // when
+    final var latest =
+        processState.getLatestProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latest.getKey()).isEqualTo(v2.getKey());
+    assertThat(latestActive.getKey()).isEqualTo(v1.getKey());
+  }
+
+  @Test
+  public void shouldSkipDrainingAndPendingDeletionWhenLookingUpLatestActiveProcess() {
+    // given - v3 is draining, v2 is pending deletion, v1 is the only ACTIVE version
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    final var v3 = creatingProcessRecord(processingState, "processId", 3);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.putProcess(v3.getKey(), v3);
+    processState.updateProcessState(v2, PersistedProcessState.PENDING_DELETION);
+    processState.markDraining(v3);
+
+    // when
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latestActive.getKey()).isEqualTo(v1.getKey());
+  }
+
+  @Test
+  public void shouldReturnNullLatestActiveProcessWhenNoActiveVersionRemains() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.markDraining(processRecord);
+
+    // when
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latestActive).isNull();
+  }
+
+  @Test
   public void shouldRememberDeleteHistoryIntentWhileDraining() {
     // given
     final long processDefinitionKey = 100L;

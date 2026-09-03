@@ -482,21 +482,29 @@ public class ResourceDeletionDeleteProcessor
     resourceDeletionRecord.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
   }
 
-  // Skip DRAINING/deleted versions — they must not hold start-event subscriptions.
+  /**
+   * Latest {@code ACTIVE} version strictly below {@code version}. Skips draining and
+   * pending-deletion versions so they do not hold start-event subscriptions.
+   *
+   * <p>Loads known versions once and scans newest-first. {@code version >=} the deleted latest is
+   * skipped because that version is already draining.
+   */
   private Optional<DeployedProcess> findLatestActiveVersionBelow(
       final DirectBuffer processIdBuffer,
       final String processId,
       final int version,
       final String tenantId) {
-    var candidate = processState.findProcessVersionBefore(processId, version, tenantId);
-    while (candidate.isPresent()) {
-      final int candidateVersion = candidate.get();
+    final var knownVersions = processState.getKnownProcessVersions(processId, tenantId);
+    for (int i = knownVersions.size() - 1; i >= 0; i--) {
+      final int candidateVersion = knownVersions.get(i).intValue();
+      if (candidateVersion >= version) {
+        continue;
+      }
       final var process =
           processState.getProcessByProcessIdAndVersion(processIdBuffer, candidateVersion, tenantId);
       if (process != null && process.getState() == PersistedProcessState.ACTIVE) {
         return Optional.of(process);
       }
-      candidate = processState.findProcessVersionBefore(processId, candidateVersion, tenantId);
     }
     return Optional.empty();
   }

@@ -493,6 +493,39 @@ public final class DbProcessState implements MutableProcessState {
     return cachedProcess;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>When the highest version is {@code ACTIVE}, it is returned immediately without loading known
+   * versions. The reverse scan only runs when that version is not {@code ACTIVE}, and it skips
+   * {@code version >= latestVersion} because that version was already checked.
+   */
+  @Override
+  public DeployedProcess getLatestActiveProcessVersionByProcessId(
+      final DirectBuffer processIdBuffer, final String tenantId) {
+    DeployedProcess process = getLatestProcessVersionByProcessId(processIdBuffer, tenantId);
+    if (process == null) {
+      return null;
+    }
+    if (process.getState() == PersistedProcessState.ACTIVE) {
+      return process;
+    }
+
+    final int latestVersion = process.getVersion();
+    final var knownVersions = getKnownProcessVersions(bufferAsString(processIdBuffer), tenantId);
+    for (int i = knownVersions.size() - 1; i >= 0; i--) {
+      final int version = knownVersions.get(i).intValue();
+      if (version >= latestVersion) {
+        continue;
+      }
+      process = getProcessByProcessIdAndVersion(processIdBuffer, version, tenantId);
+      if (process != null && process.getState() == PersistedProcessState.ACTIVE) {
+        return process;
+      }
+    }
+    return null;
+  }
+
   @Override
   public DeployedProcess getProcessByProcessIdAndVersion(
       final DirectBuffer processId, final int version, final String tenantId) {
@@ -577,6 +610,11 @@ public final class DbProcessState implements MutableProcessState {
   public Optional<Integer> findProcessVersionBefore(
       final String bpmnProcessId, final long version, final String tenantId) {
     return versionManager.findResourceVersionBefore(bpmnProcessId, version, tenantId);
+  }
+
+  @Override
+  public List<Long> getKnownProcessVersions(final String bpmnProcessId, final String tenantId) {
+    return versionManager.getKnownResourceVersions(bpmnProcessId, tenantId);
   }
 
   @Override
