@@ -443,6 +443,61 @@ public class SecondaryStorageOpensearchTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.data.secondary-storage.type=opensearch",
+        "camunda.data.secondary-storage.opensearch.url=http://expected-url:4321",
+        "camunda.database.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.tasklist.opensearch.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.operate.opensearch.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "zeebe.broker.exporters.camundaexporter.class-name=io.camunda.exporter.CamundaExporter",
+        "zeebe.broker.exporters.camundaexporter.args.connect.socketTimeout="
+            + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.database.connectionTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "camunda.tasklist.opensearch.connectionTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "camunda.operate.opensearch.connectionTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "zeebe.broker.exporters.camundaexporter.args.connect.connectionTimeout="
+            + EXPECTED_CONNECTION_TIMEOUT,
+      })
+  class WithOnlyLegacyTimeoutsSet {
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    WithOnlyLegacyTimeoutsSet(
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    @Test
+    void shouldFallBackToTheLegacyTimeoutsForTheCamundaExporter() {
+      // given
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getConnect())
+          .returns(EXPECTED_SOCKET_TIMEOUT, ConnectConfiguration::getSocketTimeout)
+          .returns(EXPECTED_CONNECTION_TIMEOUT, ConnectConfiguration::getConnectTimeout);
+    }
+
+    @Test
+    void shouldFallBackToTheLegacyTimeoutsForTheSearchEngineConnectProperties() {
+      // then
+      assertThat(searchEngineConnectProperties)
+          .returns(EXPECTED_SOCKET_TIMEOUT, SearchEngineConnectProperties::getSocketTimeout)
+          .returns(EXPECTED_CONNECTION_TIMEOUT, SearchEngineConnectProperties::getConnectTimeout);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
         // type
         "camunda.data.secondary-storage.type=opensearch",
         "camunda.database.type=opensearch",
