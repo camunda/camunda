@@ -21,13 +21,9 @@ export function setup() {
 
   console.log(`Fetching authentication token from ${token_url}`);
   const params = {
-    headers: {
-      //'Content-Type': 'application/x-www-form-urlencoded',
-    },
+    headers: {},
   };
 
-  // https://docs.camunda.io/docs/apis-clients/console-api-reference/
-  //const payload = `grant_type=client_credentials&audience=${audience}&client_id=${client_id}&client_secret=${client_secret}`;
   const payload = {
     grant_type: 'client_credentials',
     audience: audience,
