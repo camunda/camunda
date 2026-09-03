@@ -426,8 +426,8 @@ public class AgentInstanceHistoryBatchProcessingTest {
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
             "Expected to create agent instance with history item 'item-user', but it carries "
-                + "positive metrics. History items included when creating an agent instance must "
-                + "not carry metrics.");
+                + "positive token-usage metrics. History items included when creating an agent "
+                + "instance must not carry positive token-usage metrics; durationMs is exempt.");
   }
 
   @Test
