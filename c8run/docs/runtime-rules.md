@@ -49,6 +49,8 @@ The marker path is resolved in this order:
 
 To force the quickstart URL to appear again, delete the marker file from whichever location was resolved.
 
+Pass `--no-browser` to skip opening a browser window entirely (for example, in a headless dev environment or an autostart script). Status output and the quickstart marker are still written as usual — only the browser launch is skipped.
+
 ## Connectors Startup
 
 C8Run starts Connectors from the connector bundle plus `custom_connectors/*`. Connectors runs alongside the main Camunda process and shares the same shutdown lifecycle.
@@ -86,6 +88,7 @@ Common start flags:
 ./c8run start --log-level debug
 ./c8run start --username demo --password demo
 ./c8run start --startup-url http://localhost:8080/operate
+./c8run start --no-browser
 ```
 
 Use `./c8run help` to print all supported commands and flags. When running in the foreground, `Ctrl+C` initiates graceful shutdown.
