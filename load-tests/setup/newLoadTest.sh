@@ -287,6 +287,10 @@ EOF
     cat <<'EOF'
 camundaManagementUrl: "http://zeebe-gateway:9600"
 
+# 8.7 doesn't have a REST API
+global:
+    performReadBenchmarks: false
+
 loadTest:
   client:
     oidc:
