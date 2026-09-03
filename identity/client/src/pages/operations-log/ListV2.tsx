@@ -30,8 +30,7 @@ import { useForm, FieldPath, FieldPathValue } from "react-hook-form";
 import { CellProperty } from "src/pages/operations-log/CellPropertyV2";
 import { CircleCheck, Plug, User, XCircle } from "lucide-react";
 import AiAgentIcon from "src/assets/images/ai-agent.svg";
-// TODO: Replace with `DateRangePicker` from design system
-import { DateRangeField } from "src/components/form/DateRangeField";
+import { DateRangeField } from "src/components/formV2/DateRangeField";
 import {
   ALLOWED_ENTITY_TYPES,
   ALLOWED_OPERATION_TYPES,
