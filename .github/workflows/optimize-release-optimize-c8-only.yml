@@ -65,7 +65,7 @@ jobs:
         # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@67d00e9260887361a31f6446252fffbecae4a02e # generate-github-app-token-from-vault-secrets: v1.1.1
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@67d00e9260887361a31f6446252fffbecae4a02e # generate-github-app-token-from-vault-secrets-1.1.1
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -174,7 +174,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Install common tooling (buildx) # required on self-hosted runners
-        uses: camunda/infra-global-github-actions/common-tooling@475528365f4010480dccff71ccac554cc3352e7c # common-tooling: v1.0.5
+        uses: camunda/infra-global-github-actions/common-tooling@475528365f4010480dccff71ccac554cc3352e7c # common-tooling-1.0.5
         with:
           buildx-enabled: true
           java-enabled: false
