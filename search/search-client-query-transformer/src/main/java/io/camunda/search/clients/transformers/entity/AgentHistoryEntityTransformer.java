@@ -42,7 +42,13 @@ public class AgentHistoryEntityTransformer
         toRole(source.getRole()),
         AgentContentTransformer.toContent(source.getContent()),
         toToolCalls(source.getToolCalls()),
-        toMetrics(source.getInputTokens(), source.getOutputTokens(), source.getDurationMs()),
+        toMetrics(
+            source.getInputTokens(),
+            source.getOutputTokens(),
+            source.getReasoningTokenCount(),
+            source.getCacheCreationTokenCount(),
+            source.getCacheReadTokenCount(),
+            source.getDurationMs()),
         toTools(source.getTools()),
         source.getModel(),
         source.getProvider(),
@@ -82,16 +88,32 @@ public class AgentHistoryEntityTransformer
   }
 
   /**
-   * Returns null when all three metric fields are null (metrics were never provided). When only
-   * some fields are null (partial absence), constructs a {@link Metrics} preserving the available
-   * values rather than losing them.
+   * Returns null when all metric fields are null (metrics were never provided). When only some
+   * fields are null (partial absence), constructs a {@link Metrics} preserving the available values
+   * rather than losing them.
    */
   private static Metrics toMetrics(
-      final Long inputTokens, final Long outputTokens, final Long durationMs) {
-    if (inputTokens == null && outputTokens == null && durationMs == null) {
+      final Long inputTokens,
+      final Long outputTokens,
+      final Long reasoningTokenCount,
+      final Long cacheCreationTokenCount,
+      final Long cacheReadTokenCount,
+      final Long durationMs) {
+    if (inputTokens == null
+        && outputTokens == null
+        && reasoningTokenCount == null
+        && cacheCreationTokenCount == null
+        && cacheReadTokenCount == null
+        && durationMs == null) {
       return null;
     }
-    return new Metrics(inputTokens, outputTokens, durationMs);
+    return new Metrics(
+        inputTokens,
+        outputTokens,
+        reasoningTokenCount,
+        cacheCreationTokenCount,
+        cacheReadTokenCount,
+        durationMs);
   }
 
   /** The tools available to the agent, as of this entry. CONFIGURATION items only. */

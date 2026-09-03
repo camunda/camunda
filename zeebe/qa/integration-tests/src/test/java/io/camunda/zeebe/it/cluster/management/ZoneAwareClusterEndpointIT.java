@@ -485,12 +485,12 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
     void shouldRejectAddZoneWithMismatchedBrokers() {
       // given - zoneA has already been force-removed from the shared cluster
 
-      // when - then - empty brokers[] is rejected
+      // when - then - a request naming no brokers at all is rejected
       final var emptyBrokersRequest =
           new AddZoneRequest().numberOfReplicas(1).priority(100).brokers(List.of());
       assertThatCode(() -> actuatorAfterZoneRemoval.addZone(ZONE_A, emptyBrokersRequest, false))
           .isInstanceOf(FeignException.BadRequest.class)
-          .hasMessageContaining("at least one broker");
+          .hasMessageContaining("Exactly one of brokers and numberOfBrokers must be set.");
 
       // when - then - fewer brokers than numberOfReplicas is rejected
       final var tooFewBrokersRequest =

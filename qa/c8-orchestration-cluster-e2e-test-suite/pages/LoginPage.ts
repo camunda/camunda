@@ -14,7 +14,6 @@ export class LoginPage {
   readonly usernameInput: Locator;
   readonly passwordInput: Locator;
   readonly loginButton: Locator;
-  readonly errorMessage: Locator;
   readonly invalidCredentialsError: Locator;
   readonly tasklistHeading: Locator;
   readonly operateHeading: Locator;
@@ -25,7 +24,12 @@ export class LoginPage {
     this.usernameInput = page.getByRole('textbox', {name: 'Username'});
     this.passwordInput = page.getByRole('textbox', {name: 'password'});
     this.loginButton = page.getByRole('button', {name: 'Login'});
-    this.errorMessage = page.locator('.cds--inline-notification__title');
+    // Carbon's InlineNotification (Operate, Tasklist) and the new design
+    // system's Alert (admin) both expose `role="alert"`, so match on the role
+    // and the message rather than on either framework's markup. The text
+    // filter also matters: the Operate login page renders an empty alert
+    // region before any error, so the role alone can resolve to more than one
+    // element.
     this.invalidCredentialsError = page
       .getByRole('alert')
       .getByText(/Username and [Pp]assword do(?: not|n't) match/);
@@ -99,8 +103,6 @@ export class LoginPage {
   }
 
   async expectInvalidCredentialsError(): Promise<void> {
-    await expect(this.errorMessage).toContainText(
-      /Username and [Pp]assword do(?: not|n't) match/,
-    );
+    await expect(this.invalidCredentialsError).toBeVisible();
   }
 }

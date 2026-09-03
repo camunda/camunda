@@ -99,4 +99,26 @@ final class SecretResolutionCfgTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Secret resolution batchResolutionLimit must be at least 1 but was 0");
   }
+
+  @Test
+  void shouldRejectNegativeWakeDelay() {
+    // given
+    final var cfg = new SecretResolutionCfg();
+    cfg.setWakeDelay(Duration.ofMillis(-1));
+
+    // when - then
+    assertThatThrownBy(() -> cfg.init(new BrokerCfg(), ""))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Secret resolution wakeDelay must not be negative but was PT-0.001S");
+  }
+
+  @Test
+  void shouldAcceptZeroWakeDelay() {
+    // given - zero just means the next cycle after one that resolved something runs immediately
+    final var cfg = new SecretResolutionCfg();
+    cfg.setWakeDelay(Duration.ZERO);
+
+    // when - then
+    assertThatCode(() -> cfg.init(new BrokerCfg(), "")).doesNotThrowAnyException();
+  }
 }

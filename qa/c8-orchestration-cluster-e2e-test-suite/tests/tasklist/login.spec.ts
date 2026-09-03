@@ -40,9 +40,7 @@ test.describe.parallel('Login Tests', () => {
   }) => {
     await loginPage.login('demo', 'wrong');
     await expect(page).toHaveURL('/tasklist/login');
-    await expect(loginPage.errorMessage).toContainText(
-      'Username and password do not match',
-    );
+    await expect(loginPage.invalidCredentialsError).toBeVisible();
 
     const results = await makeAxeBuilder().analyze();
 

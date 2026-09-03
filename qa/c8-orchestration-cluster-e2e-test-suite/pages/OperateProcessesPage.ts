@@ -35,7 +35,6 @@ class OperateProcessesPage {
   readonly continueMigrationDialogButton: Locator;
   readonly cancelProcessInstanceButton: Locator;
   readonly cancelProcessInstanceDialogButton: Locator;
-  readonly singleOperationSpinner: Locator;
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
   readonly processActiveCheckbox: Locator;
   readonly processCompletedCheckbox: Locator;
@@ -138,13 +137,6 @@ class OperateProcessesPage {
     this.cancelProcessInstanceDialogButton = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Apply'});
-    // The per-row operation spinner in the instances list is a Carbon
-    // InlineLoading (no data-testid) rendered only while a single operation is
-    // in progress; scope to the list so it never matches the incidents-table
-    // spinner on the instance detail page.
-    this.singleOperationSpinner = page
-      .getByTestId('data-list')
-      .locator('.cds--inline-loading');
     this.processActiveCheckbox = page
       .locator('label')
       .filter({hasText: 'Active'});
@@ -319,6 +311,19 @@ class OperateProcessesPage {
     return this.page.getByRole('button', {
       name: `Cancel Instance ${processInstanceKey}`,
     });
+  }
+
+  // The per-row operation spinner is a Carbon InlineLoading (no data-testid)
+  // rendered while an operation on that instance is in progress. Each scheduled
+  // operation also leaves an `aria-live` announcer with the same
+  // `.cds--inline-loading` class in the data-list, so a list-wide selector
+  // matches every instance that ever had an operation and trips strict mode.
+  // Scope to the target instance's row so exactly one element is matched.
+  getSingleOperationSpinner(processInstanceKey: string): Locator {
+    return OperateProcessesPage.getRowByProcessInstanceKey(
+      this.page,
+      processInstanceKey,
+    ).locator('.cds--inline-loading');
   }
 
   async clickRetryInstanceButton(processInstanceKey: string): Promise<void> {

@@ -7,7 +7,6 @@
  */
 package io.camunda.it.schema;
 
-import static org.apache.commons.lang3.StringUtils.isNumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -37,11 +36,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.awaitility.Awaitility;
@@ -656,7 +653,7 @@ public class ExporterMigrationTestHelper {
       throw new NoSuchElementException("No images found for " + previousMinorVersion);
     }
 
-    allPreviousVersions.sort(ExporterMigrationTestHelper::compareSemanticVersions);
+    allPreviousVersions.sort(SemanticVersion.ALPHA_AND_RELEASE_CANDIDATE_COMPARATOR);
 
     final List<String> releaseVersions =
         allPreviousVersions.stream()
@@ -712,72 +709,5 @@ public class ExporterMigrationTestHelper {
     }
 
     return String.format("%s.%s", components[0], String.valueOf(minor - 1));
-  }
-
-  // need to slightly customize how we do version comparisons here
-  // in particular we want to ensure that we correctly sort alpha and rc versions, but also
-  // want to ensure that alpha rc versions are not considered "later" than the final alpha version
-  // e.g. 8.10.0-alpha4-rc1 < 8.10.0-alpha4 < 8.10.0-alpha11 < 8.10.0
-  private static int compareSemanticVersions(final SemanticVersion v1, final SemanticVersion v2) {
-    if (v1.major() != v2.major()) {
-      return Integer.compare(v1.major(), v2.major());
-    }
-    if (v1.minor() != v2.minor()) {
-      return Integer.compare(v1.minor(), v2.minor());
-    }
-    if (v1.patch() != v2.patch()) {
-      return Integer.compare(v1.patch(), v2.patch());
-    }
-    return comparePreRelease(v1, v2);
-  }
-
-  private static int comparePreRelease(final SemanticVersion v1, final SemanticVersion v2) {
-    if (v1.preRelease() == null && v2.preRelease() == null) {
-      return 0;
-    } else if (v1.preRelease() != null && v2.preRelease() == null) {
-      return -1;
-    } else if (v1.preRelease() == null && v2.preRelease() != null) {
-      return 1;
-    }
-
-    final var preReleaseParts = splitPreRelease(v1.preRelease());
-    final var otherPreReleaseParts = splitPreRelease(v2.preRelease());
-
-    // sort by comparing the numeric parts as actual numbers (human readable) and the non-numeric
-    // parts lexicographically (ASCII sort order)
-    // this means that things like alpha2 will come before alpha10
-    for (int i = 0; i < Math.min(preReleaseParts.size(), otherPreReleaseParts.size()); i++) {
-      final var thisPart = preReleaseParts.get(i);
-      final var otherPart = otherPreReleaseParts.get(i);
-
-      if (isNumeric(thisPart) && isNumeric(otherPart)) {
-        // Identifiers consisting of only digits are compared numerically.
-        final var thisNumericPart = Integer.parseInt(thisPart);
-        final var otherNumericPart = Integer.parseInt(otherPart);
-        if (thisNumericPart != otherNumericPart) {
-          return Integer.compare(thisNumericPart, otherNumericPart);
-        }
-      } else if (isNumeric(thisPart)) {
-        // Numeric identifiers always have higher precedence than non-numeric identifiers.
-        return 1;
-      } else if (isNumeric(otherPart)) {
-        return -1;
-      } else {
-        final var comparison = thisPart.compareTo(otherPart);
-        if (comparison != 0) {
-          return comparison;
-        }
-      }
-    }
-
-    // prefer the shorter version as that will indicate we have a non-RC version
-    // e.g. 8.9.1-alpha1 is a later version than 8.9.1-alpha1-rc1
-    return -Integer.compare(preReleaseParts.size(), otherPreReleaseParts.size());
-  }
-
-  private static List<String> splitPreRelease(final String preRelease) {
-    return Arrays.stream(Objects.requireNonNull(preRelease).splitWithDelimiters("\\d+", 0))
-        .filter(s -> !s.isEmpty())
-        .toList();
   }
 }

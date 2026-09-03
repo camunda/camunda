@@ -96,8 +96,11 @@ test.describe('Operations', () => {
         instance.processInstanceKey,
       );
 
-      await expect(operateProcessesPage.singleOperationSpinner).toBeVisible();
-      await expect(operateProcessesPage.singleOperationSpinner).toBeHidden({
+      const operationSpinner = operateProcessesPage.getSingleOperationSpinner(
+        instance.processInstanceKey,
+      );
+      await expect(operationSpinner).toBeVisible();
+      await expect(operationSpinner).toBeHidden({
         timeout: 60000,
       });
     });

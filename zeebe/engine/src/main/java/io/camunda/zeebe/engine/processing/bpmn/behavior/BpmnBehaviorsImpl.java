@@ -35,10 +35,12 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizatio
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
-import io.camunda.zeebe.engine.processing.variable.MappingResolvers;
+import io.camunda.zeebe.engine.processing.variable.InputMappingResolvers;
+import io.camunda.zeebe.engine.processing.variable.OutputMappingResolvers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -95,10 +97,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final MessageCorrelationMetrics messageCorrelationMetrics,
       final ProcessDefinitionMetrics processDefinitionMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
-      final SecretStoreRegistry secretStoreRegistry) {
+      final SecretStoreRegistry secretStoreRegistry,
+      final SecretResolutionScheduler secretResolutionScheduler) {
 
     // The expression endpoint reports which trusted secrets an evaluation touched; only its
     // contexts record into the collector. The BPMN path uses collector-free contexts, so its
@@ -183,9 +185,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState,
             variableBehavior,
             eventTriggerBehavior,
-            evaluateDuplicateOutputMappingTargetsInOrder,
-            MappingResolvers.forMode(
-                config.getInputMappingMode(), config.getInputComparisonMode()));
+            InputMappingResolvers.forMode(
+                config.getInputMappingMode(), config.getInputComparisonMode()),
+            OutputMappingResolvers.forMode(
+                config.getOutputMappingMode(), config.getOutputComparisonMode()));
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
@@ -230,7 +233,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             cslCheck,
             tenantCheck,
             secretStoreRegistry,
-            incidentBehavior);
+            incidentBehavior,
+            secretResolutionScheduler);
 
     multiInstanceInputCollectionBehavior =
         new MultiInstanceInputCollectionBehavior(

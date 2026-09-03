@@ -38,7 +38,32 @@ FIX_LABEL = os.environ.get("ALWAYSGREEN_FIX_LABEL", "alwaysgreen-fix")
 #: Prefix of the per-dispatch-key label the fix workflow stamps on every PR it opens.
 KEY_LABEL_PREFIX = "alwaysgreen-key:"
 #: How long a no-fix verdict keeps its fingerprints out of dispatch.
-NO_FIX_COOLDOWN_DAYS = int(os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS", "7"))
+#:
+#: A no-fix verdict records no issue and nothing to close — FIX-AGENT.md is explicit
+#: that it "expires on its own" — so it is a statement about the conditions the agent
+#: met, not about the test. Conditions move on a scale of hours, and seven days let a
+#: transient one mask a week of later failures: run 33464059381 met a Web Modeler
+#: `/api/internal/login` 500, correctly declined to mask it, and thereby suppressed
+#: both SaaS smoke tests until 2026-09-08 — long after the outage had cleared.
+#:
+#: The pipeline runs every 20-40 minutes and an agent takes 7-14, so a genuinely
+#: persistent problem costs a few dispatches a day at this window rather than one a
+#: week. If that proves too eager, the answer is an escalation ladder — stop
+#: dispatching after N consecutive no-fix verdicts on one fingerprint and tell a
+#: human — not a longer blind window.
+NO_FIX_COOLDOWN_HOURS = int(os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_HOURS", "6"))
+
+#: The knob changed unit with the window, so the old name is refused rather than
+#: converted: reading `..._DAYS=7` as 168 hours would restore the very window this
+#: replaced. Refusing it silently would be indistinguishable from it working, so a
+#: leftover setting says so in the run instead.
+if os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS"):
+    print(
+        "::warning::ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS is no longer read. The no-fix "
+        "cooldown is now set in hours via ALWAYSGREEN_NO_FIX_COOLDOWN_HOURS "
+        f"(currently {NO_FIX_COOLDOWN_HOURS}h).",
+        file=sys.stderr,
+    )
 #: How long an open fix PR keeps holding its dispatch key; see
 #: planning.PR_LOCK_TTL_DAYS. Set to 0 to restore the old never-expiring lock.
 PR_LOCK_TTL_DAYS = int(
@@ -454,7 +479,7 @@ def recent_no_fix_fingerprints(workdir: Path) -> set[str]:
     if not isinstance(runs, list):
         return set()
 
-    cutoff = datetime.now(timezone.utc) - timedelta(days=NO_FIX_COOLDOWN_DAYS)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=NO_FIX_COOLDOWN_HOURS)
     out: set[str] = set()
     fetched = 0
     for run in runs:

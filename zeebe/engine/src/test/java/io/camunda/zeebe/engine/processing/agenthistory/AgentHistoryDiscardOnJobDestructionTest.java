@@ -41,8 +41,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
   private static final String SERVICE_TASK_ID = "agent-task";
   private static final String BOUNDARY_ID = "error-boundary";
   private static final String ERROR_CODE = "boom";
-  private static final String AGENTIC_JOB_TYPE =
-      JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
+  private static final String AGENTIC_JOB_TYPE = "agentic-task";
   private static final String PLAIN_JOB_TYPE = "plain-service-task";
   private static final String EXTERNAL_AGENT_JOB_TYPE = "external-agent-task";
 

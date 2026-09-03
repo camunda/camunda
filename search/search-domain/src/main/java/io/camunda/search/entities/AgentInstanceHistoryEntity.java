@@ -101,7 +101,12 @@ public record AgentInstanceHistoryEntity(
   /** Per-call token and latency metrics. Null when metrics were not provided at creation time. */
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record Metrics(
-      @Nullable Long inputTokens, @Nullable Long outputTokens, @Nullable Long durationMs) {}
+      @Nullable Long inputTokens,
+      @Nullable Long outputTokens,
+      @Nullable Long reasoningTokenCount,
+      @Nullable Long cacheCreationTokenCount,
+      @Nullable Long cacheReadTokenCount,
+      @Nullable Long durationMs) {}
 
   /** A tool made available to the agent by a CONFIGURATION item. */
   @JsonIgnoreProperties(ignoreUnknown = true)

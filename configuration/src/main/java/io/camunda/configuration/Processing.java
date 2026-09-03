@@ -30,6 +30,7 @@ public class Processing {
       true;
 
   private static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 1000;
+  private static final int DEFAULT_MAX_PENDING_SIDE_EFFECTS = 1000;
 
   private static final Set<String> LEGACY_MAX_COMMANDS_IN_BATCH_PROPERTIES =
       Set.of("zeebe.broker.processingCfg.maxCommandsInBatch");
@@ -173,6 +174,18 @@ public class Processing {
    * Default is 1000.
    */
   private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
+
+  /**
+   * Sets how many processed records may wait for their side effects to be committed before
+   * processing stops reading new records. Processing reads records as soon as they are appended,
+   * while a record's side effects, such as command responses, only run once its results are
+   * committed. This limit bounds the memory those waiting side effects retain when commits are
+   * slow. It is a safety valve rather than a tuning knob: the default sits far above the number of
+   * records processed within one commit round trip, so it should not be reached in normal
+   * operation. Raise it only to trade memory for throughput on a partition whose commit latency is
+   * genuinely high. Must be a positive integer. Default is 1000.
+   */
+  private int maxPendingSideEffects = DEFAULT_MAX_PENDING_SIDE_EFFECTS;
 
   public Integer getMaxCommandsInBatch() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -334,6 +347,14 @@ public class Processing {
 
   public void setMaxRecoverableRetries(final int maxRecoverableRetries) {
     this.maxRecoverableRetries = maxRecoverableRetries;
+  }
+
+  public int getMaxPendingSideEffects() {
+    return maxPendingSideEffects;
+  }
+
+  public void setMaxPendingSideEffects(final int maxPendingSideEffects) {
+    this.maxPendingSideEffects = maxPendingSideEffects;
   }
 
   public FlowControl getFlowControl() {

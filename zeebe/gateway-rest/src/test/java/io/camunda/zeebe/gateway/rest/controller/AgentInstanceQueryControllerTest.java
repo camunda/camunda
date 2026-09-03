@@ -74,7 +74,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
               "openai",
               List.of(
                   new ContentItem(ContentType.TEXT, "You are a helpful assistant.", null, null))),
-          new AgentInstanceMetrics(100L, 200L, 3, 5),
+          new AgentInstanceMetrics(100L, 200L, 30L, 40L, 50L, 3, 5),
           new AgentInstanceLimits(10000L, 10, 50),
           List.of(new AgentInstanceTool("search", "Search the web", "searchElement")),
           "AgentTask",
@@ -105,6 +105,9 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
             "metrics": {
               "inputTokens": 100,
               "outputTokens": 200,
+              "reasoningTokenCount": 30,
+              "cacheCreationTokenCount": 40,
+              "cacheReadTokenCount": 50,
               "modelCalls": 3,
               "toolCalls": 5
             },
@@ -192,6 +195,9 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
               "metrics": {
                 "inputTokens": 100,
                 "outputTokens": 200,
+                "reasoningTokenCount": 30,
+                "cacheCreationTokenCount": 40,
+                "cacheReadTokenCount": 50,
                 "modelCalls": 3,
                 "toolCalls": 5
               },

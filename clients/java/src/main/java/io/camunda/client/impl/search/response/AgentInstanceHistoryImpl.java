@@ -223,10 +223,29 @@ public class AgentInstanceHistoryImpl implements AgentInstanceHistory {
     if (proto == null) {
       return null;
     }
-    return new AgentInstanceHistoryMetrics()
-        .inputTokens(proto.getInputTokens())
-        .outputTokens(proto.getOutputTokens())
-        .durationMs(proto.getDurationMs());
+    // Every field on the wire type is nullable ("Null when not provided") and partial nulls are
+    // preserved rather than defaulted upstream, so each field must be guarded individually before
+    // unboxing into the primitive-accepting fluent setters below.
+    final AgentInstanceHistoryMetrics metrics = new AgentInstanceHistoryMetrics();
+    if (proto.getInputTokens() != null) {
+      metrics.inputTokens(proto.getInputTokens());
+    }
+    if (proto.getOutputTokens() != null) {
+      metrics.outputTokens(proto.getOutputTokens());
+    }
+    if (proto.getReasoningTokenCount() != null) {
+      metrics.reasoningTokenCount(proto.getReasoningTokenCount());
+    }
+    if (proto.getCacheCreationTokenCount() != null) {
+      metrics.cacheCreationTokenCount(proto.getCacheCreationTokenCount());
+    }
+    if (proto.getCacheReadTokenCount() != null) {
+      metrics.cacheReadTokenCount(proto.getCacheReadTokenCount());
+    }
+    if (proto.getDurationMs() != null) {
+      metrics.durationMs(proto.getDurationMs());
+    }
+    return metrics;
   }
 
   private static class LimitsImpl implements AgentInstance.Limits {

@@ -47,7 +47,7 @@
     "remark-gfm": "4.0.1",
     "styled-components": "6.5.0",
     "tiny-svg": "4.1.4",
-    "zod": "4.4.3"
+    "zod": "4.5.4"
   },
   "scripts": {
     "start": "vite",

@@ -25,7 +25,7 @@ jobs:
         vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
         vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
         vault-url: ${{ secrets.VAULT_ADDR }}
-    - uses: github/issue-labeler@c1b0f9f52a63158c4adc09425e858e87b32e9685 # v3.4
+    - uses: github/issue-labeler@ccca1e16fcb66762200e616fc29b57b940c1cb67 # v3.5
       with:
         configuration-path: .github/opened_issue_labeler.yml
         enable-versioned-regex: 0

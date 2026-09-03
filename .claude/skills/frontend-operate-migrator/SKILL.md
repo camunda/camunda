@@ -1,6 +1,6 @@
 ---
 name: frontend-operate-migrator
-description: Use when migrating any Operate page from operate/client/ to the orchestration cluster webapp. Always read frontend-migrator first — this skill adds Operate-specific overrides, the migration loop protocol, and page-by-page context.
+description: Use when migrating any Operate page from operate/client/ to the orchestration cluster webapp, including end-to-end execution from a migration ticket number. Always read frontend-migrator first — this skill adds Operate-specific overrides, the migration loop protocol, and page-by-page context.
 ---
 
 # Operate Migration — Pod-Specific Context
@@ -169,6 +169,34 @@ it('should display process instances', async ({worker}) => {
 
 **Interactions use `userEvent` from `'vitest/browser'`** (`userEvent.click`, `userEvent.fill`, `userEvent.keyboard`); direct `locator.click()` is acceptable for simple clicks.
 
+## Ticket-driven execution contract
+
+An explicit `/frontend-operate-migrator <ticket-number>` request means: execute the PR-sized
+migration end to end and return only when its draft PR has converged. This contract applies only to
+an execution request, not when the user is asking for analysis or planning.
+
+Unless the user narrows the permissions, the execution request authorizes local edits, branch
+creation, commits, pushes, draft PR creation, reviewer requests, and handling review threads. It does
+not authorize marking the PR ready, merging it, or changing unrelated code. Later user instructions
+replace the relevant permission; never carry permissions from another invocation.
+
+Before editing:
+
+1. Read the ticket and its live parent/subissue hierarchy. Determine whether the supplied number is
+   the PR-sized inner issue or a page issue. If it is a page issue, select only a clearly identified,
+   unblocked inner issue; never silently migrate the whole page or combine multiple PR-sized units.
+2. Inspect linked PRs and branches so work is not duplicated. Rebase the feature branch onto its base
+   branch; never create a merge commit.
+3. Build an acceptance matrix from the ticket and legacy implementation. Cover observable branches
+   and effects, API calls, URL state, loading/empty/error/forbidden states, permissions, tenancy, and
+   accessibility. Record intentional omissions such as tracking.
+4. Estimate the diff before implementation. Split the work before writing code when it cannot stay
+   within the 500-line PR limit.
+
+Keep an internal convergence ledger for the acceptance matrix, fidelity findings, code-review
+findings, Copilot threads, CI checks, and Git/PR state. This is task state, not a repository artifact:
+do not commit a ledger file.
+
 ## Definition of Done (9 gates)
 
 Run from `webapp/client`. Gates 1–6 are local; 7–9 gate the PR (9 is CI-authoritative — verify locally, never push regenerated snapshots). Use the existing package scripts — gates 1, 2, 6 also run together via `npm run lint`.
@@ -191,23 +219,80 @@ Iterate against feedback signals in three tiers, by cost. Loop on the cheapest t
 |------|-------|-----------------|----------------|
 | **edit** | 1 Prettier · 2 ESLint · 3 Typecheck | after every meaningful edit (seconds) | 5 |
 | **component** | + 4 Unit · 5 Build · 6 Knip | a component is done (minutes) | 5 |
-| **PR** | 7 Integration · 8 a11y · 9 Visual (CI) | before marking ready — drive with `ci-fix-failure` | 3 |
+| **PR** | 7 Integration · 8 a11y · 9 Visual (CI) | before returning — drive with `ci-fix-failure` | 3 |
 
 **Stop condition (guardrail).** Each tier loop is bounded. If a tier is not green within its max iterations, **stop and report** — do not keep iterating. A loop with no bound spins forever and burns budget on a problem it cannot converge on; the cap forces escalation to the engineer instead. An iteration that makes zero progress (same failure, same fix attempted) counts double — bail early.
 
-Full loop, start to close:
+### Full ticket-to-PR loop
 
 ```
-read this skill + the page issue (gh, live)        load spec + state
-→ own the inner subissue for this PR               (set in progress)
-→ port the component (legacy = exact spec, 1:1)
-→ [edit tier]       loop until green
-→ [fidelity]        deterministic checks + LLM flagger (below)
-→ [component tier]  loop until green
-→ open DRAFT PR     title feat:/fix:/refactor: …; body "Closes #<inner-subissue>"; request Copilot review
-→ push → [PR tier]  ci-fix-failure loop until CI green
-→ close the loop    check off the inner subissue, update the page issue
+ticket + live hierarchy → acceptance matrix → smallest migration diff
+→ [edit tier] → deterministic fidelity check
+→ independent behavior-fidelity review → fix valid findings → recheck
+→ [component tier]
+→ independent code review → fix valid findings → re-review changed diff
+→ commit + push → open DRAFT PR → request Copilot review
+→ handle Copilot threads → push fixes → [PR tier]
+→ refresh threads + CI until converged → final closure check → report
 ```
+
+#### 1. Implement and validate locally
+
+Implement the smallest complete migration diff. Run the edit tier after meaningful edits, then the
+deterministic fidelity script and component tier. Fix at the cheapest tier that exposes the problem;
+do not defer known local failures to CI.
+
+#### 2. Independent behavior-fidelity review
+
+After the edit tier is green, spawn a fresh read-only frontend reviewer. Give it the ticket,
+acceptance matrix, exact legacy source, migrated source, and diff. Its only task is to produce an
+evidence-backed `legacy → migrated` list of added, removed, or changed observable behavior and any
+shared logic that was copied instead of reused. Tracking-only differences are ignored.
+
+The implementing agent adjudicates every finding:
+
+- Fix a valid discrepancy with the smallest change, then rerun the affected local tier and fidelity
+  review.
+- Reject an invalid finding only with concrete code or test evidence in the convergence ledger.
+- Stop with a precise blocker when product intent is genuinely ambiguous; never invent behavior to
+  make the review pass.
+
+Repeat until there is no unexplained observable difference.
+
+#### 3. Independent code review
+
+Once fidelity and the component tier are green, spawn a fresh read-only code reviewer for the final
+diff. Give it the ticket, acceptance matrix, repository instructions, and relevant migration skills.
+Review correctness, regressions, architecture, type safety, tests, accessibility, and unnecessary
+scope. Do not duplicate the behavior-fidelity pass.
+
+Fix valid findings, rerun the cheapest affected tier, then re-review the changed diff. Do not
+blindly implement speculative suggestions or expand the ticket scope.
+
+The behavior-fidelity and code-review phases each have a maximum of 3 iterations. An iteration with
+the same finding and no new evidence counts double.
+
+#### 4. Draft PR and Copilot convergence
+
+Create the commit with the engineer as sole author; never add an AI co-author trailer. Push and open
+the PR as a draft using the repository template. Put `closes #<inner-subissue>` under the exact
+`## Related issues` heading, assign the team reviewer, and request Copilot review. Keep the PR draft
+after convergence; the engineer decides when it is ready.
+
+When Copilot finishes, fetch every unresolved thread and classify each comment as valid, invalid,
+already handled, or out of scope. Fix valid comments, reply with concise evidence where useful,
+resolve handled threads, rerun the cheapest affected tier, and push. Refresh review threads after
+every push because a new review can introduce findings.
+
+#### 5. CI convergence
+
+Run the PR tier after the draft PR is open. Use `ci-fix-failure` to diagnose a failing check; the
+implementing agent owns applying the valid fix, validating it locally, and pushing it. After every
+push, refresh both CI and unresolved review threads.
+
+The outer Copilot/CI loop has a maximum of 3 iterations. An iteration with the same failure and no
+new evidence counts double. At the cap, report the exact blocker instead of retrying blindly or
+claiming completion.
 
 ### State lives in GitHub, checked live
 
@@ -219,12 +304,30 @@ Epic [#51305](https://github.com/camunda/camunda/issues/51305) → page subissue
 
 ### Finishing step — draft PR + Copilot review
 
-Open the PR as a **draft**, body `Closes #<inner-subissue>`, then request Copilot review. Keep it draft until all 9 gates are green and Copilot threads resolved; only then mark ready.
+Do not return merely because the PR exists or one CI pass is green. Return only when:
 
-- `gh pr create --draft --title "<conventional-commit>" --body "Closes #<n>"`
-- Request Copilot review (mechanism: your `copilot-review` memory).
+- every ticket requirement is implemented or explicitly documented as out of scope;
+- the behavior-fidelity review has no unexplained observable difference;
+- all valid independent-review and Copilot findings are handled;
+- no actionable Copilot thread remains unresolved;
+- all 9 gates are green on the latest pushed SHA;
+- the intended commit shape has the engineer as sole author;
+- the local branch, remote branch, and draft PR head are synchronized; and
+- the PR is correctly linked, remains draft, and has the team reviewer assigned.
 
-Every new failure mode becomes a rule, not a one-off fix: encode it in this skill or your Claude memory so it cannot recur.
+- Create the PR with `gh pr create --draft`, a conventional-commit title, and a completed repository
+  template.
+- Request Copilot review using the configured reviewer mechanism, then verify that the request was
+  registered before waiting for the review.
+
+Update the page issue with in-progress PR state when its checklist requires it. Do not mark the
+inner issue or page migration complete before the PR is merged.
+
+Report only the draft PR URL, what migrated, meaningful behavior decisions, and blockers. Routine
+green checks and test counts are implicit.
+
+Every recurring failure mode becomes a rule, not a one-off fix: encode it in this skill or shared
+agent memory so it cannot recur.
 
 ## Fidelity checks (the 1:1 oracle)
 
@@ -239,12 +342,14 @@ node .claude/skills/frontend-operate-migrator/scripts/fidelity.mjs \
 
 Checks locale coverage (every `t('operate.*')` key exists in en/de/fr/es). Non-zero exit = a gate failure; fix before continuing.
 
-**Judgment (LLM flagger — flag, never approve):** the two checks a script cannot make. Emit a reviewable diff for the engineer; never assert "looks faithful."
+**Judgment (LLM flagger — flag, never approve):** the two checks a script cannot make. Emit an evidence-backed diff for the implementing agent; never assert "looks faithful."
 
 1. **No inlined shared logic.** For each shared hook/util/type the legacy component imports, confirm the port imports the same shared module — not a per-consumer copy. List any logic that was duplicated instead of shared.
-2. **1:1 behavior.** Walk the legacy component's branches and effects; list any observable behavior the port adds, drops, or alters. Ignore tracking-only behavior. Output a `legacy → port` diff of observable behavior. The engineer decides; you do not.
+2. **1:1 behavior.** Walk the legacy component's branches and effects; list any observable behavior the port adds, drops, or alters. Ignore tracking-only behavior. Output a `legacy → port` diff of observable behavior. The implementing agent adjudicates clear findings; escalate genuine product ambiguity.
 
-Per the verification rule: a script saying "key X missing from de.json" is trusted; an LLM saying "looks faithful" is not. The flagger produces evidence, the engineer rules.
+Per the verification rule: a script saying "key X missing from de.json" is trusted; an LLM saying
+"looks faithful" is not. The flagger produces evidence. The implementing agent fixes clear
+discrepancies and escalates only genuinely ambiguous product behavior.
 
 ## PR conventions
 

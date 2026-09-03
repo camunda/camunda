@@ -12,11 +12,12 @@ import io.camunda.zeebe.protocol.record.ErrorResponseDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public final class ErrorResponseHandler {
   private final ErrorResponseDecoder decoder = new ErrorResponseDecoder();
 
-  private DirectBuffer errorMessage;
+  private @Nullable DirectBuffer errorMessage;
 
   public boolean handlesResponse(final MessageHeaderDecoder responseHeader) {
     return ErrorResponseDecoder.SCHEMA_ID == responseHeader.schemaId()
@@ -36,7 +37,7 @@ public final class ErrorResponseHandler {
     return decoder.errorCode();
   }
 
-  public DirectBuffer getErrorMessage() {
+  public @Nullable DirectBuffer getErrorMessage() {
     return errorMessage;
   }
 }

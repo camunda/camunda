@@ -9,6 +9,9 @@ package io.camunda.zeebe.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 final class SemanticVersionTest {
@@ -81,5 +84,48 @@ final class SemanticVersionTest {
   void shouldCompareVersionsWithBuildMetadata() {
     assertThat(new SemanticVersion(1, 0, 0, "alpha", "build.1"))
         .isEqualByComparingTo(new SemanticVersion(1, 0, 0, "alpha", "build.2"));
+  }
+
+  @Test
+  void shouldSortAlphaAndReleaseCandidateVersions() {
+    final var versions =
+        Stream.of(
+                "1.0.0",
+                "2.0.0",
+                "2.0.0-rc3",
+                "2.0.0-SNAPSHOT",
+                "2.1.0-alpha3",
+                "2.1.0",
+                "1.0.0-alpha1",
+                "1.0.0-alpha1-rc1",
+                "1.0.0-alpha1-rc10",
+                "1.0.0-alpha1-rc2",
+                "1.0.0-alpha2-rc1",
+                "1.0.1-alpha2-rc1")
+            .map(SemanticVersion::parse)
+            .map(Optional::orElseThrow)
+            .toList();
+
+    final var sorted =
+        versions.stream()
+            .sorted(SemanticVersion.ALPHA_AND_RELEASE_CANDIDATE_COMPARATOR)
+            .map(SemanticVersion::toString)
+            .toList();
+
+    assertThat(sorted)
+        .isEqualTo(
+            List.of(
+                "1.0.0-alpha1-rc1",
+                "1.0.0-alpha1-rc2",
+                "1.0.0-alpha1-rc10",
+                "1.0.0-alpha1",
+                "1.0.0-alpha2-rc1",
+                "1.0.0",
+                "1.0.1-alpha2-rc1",
+                "2.0.0-SNAPSHOT",
+                "2.0.0-rc3",
+                "2.0.0",
+                "2.1.0-alpha3",
+                "2.1.0"));
   }
 }

@@ -172,6 +172,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .commandResponseWriter(context.getCommandApiService().newCommandResponseWriter())
         .maxCommandsInBatch(context.getBrokerCfg().getProcessing().getMaxCommandsInBatch())
         .maxRecoverableRetries(context.getBrokerCfg().getProcessing().getMaxRecoverableRetries())
+        .maxPendingSideEffects(context.getBrokerCfg().getProcessing().getMaxPendingSideEffects())
         .setScheduledTaskCheckInterval(
             context.getBrokerCfg().getProcessing().getScheduledTaskCheckInterval())
         .processingFilter(processingFilter)
