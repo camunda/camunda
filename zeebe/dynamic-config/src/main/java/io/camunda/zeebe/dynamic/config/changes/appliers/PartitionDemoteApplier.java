@@ -19,28 +19,26 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 /**
- * Applier for {@code PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation},
- * operating on a single named {@link PartitionGroupConfiguration}. A partition leave operation is
- * executed when a member wants to stop replicating a partition; this is allowed only when the
- * member is already replicating the partition. In the two-phase leave flow a demote operation
- * precedes this one and has already marked the partition {@code LEAVING}, which the re-entry branch
- * below accepts.
+ * Applier for {@code PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation},
+ * operating on a single named {@link PartitionGroupConfiguration}. Demotes the local member to a
+ * non-voting member of the partition's replication group - the first phase of a two-phase leave, so
+ * that the subsequent leave commits without the departing member's participation.
+ *
+ * <p>The partition state moves to {@code LEAVING} already at the demotion, which the leave
+ * applier's re-entry branch accepts; the leave removes the partition entry.
  */
-public final class PartitionLeaveApplier implements PartitionGroupConfigurationChangeApplier {
+public final class PartitionDemoteApplier implements PartitionGroupConfigurationChangeApplier {
 
   private final int partitionId;
   private final MemberId localMemberId;
-  private final int minimumAllowedReplicas;
   private final PartitionChangeExecutor partitionChangeExecutor;
 
-  public PartitionLeaveApplier(
+  public PartitionDemoteApplier(
       final MemberId localMemberId,
       final int partitionId,
-      final int minimumAllowedReplicas,
       final PartitionChangeExecutor partitionChangeExecutor) {
     this.localMemberId = localMemberId;
     this.partitionId = partitionId;
-    this.minimumAllowedReplicas = minimumAllowedReplicas;
     this.partitionChangeExecutor = partitionChangeExecutor;
   }
 
@@ -52,7 +50,8 @@ public final class PartitionLeaveApplier implements PartitionGroupConfigurationC
     if (!currentGlobalConfiguration.hasMember(localMemberId)) {
       return Either.left(
           new IllegalStateException(
-              "Expected to leave partition, but the local member does not exist in the cluster"));
+              "Expected to demote member in partition %d, but the local member does not exist in the cluster"
+                  .formatted(partitionId)));
     }
 
     final var localBroker = currentPartitionGroupConfiguration.getMember(localMemberId);
@@ -60,36 +59,32 @@ public final class PartitionLeaveApplier implements PartitionGroupConfigurationC
     if (localPartition == null) {
       return Either.left(
           new IllegalStateException(
-              "Expected to leave partition, but the local member does not have the partition %d"
+              "Expected to demote member in partition %d, but the local member does not have the partition"
                   .formatted(partitionId)));
     }
 
     if (localPartition.state() == PartitionState.State.LEAVING) {
-      // If partition state is already set to leaving, then we don't need to set it again. This can
-      // happen if the node was restarted while applying the leave operation. To ensure that the
-      // configuration change can make progress, we do not treat this as an error.
+      // The node restarted while applying the demote operation. The retried demotion is a no-op at
+      // the raft layer, so we do not treat this as an error.
       return Either.right(UnaryOperator.identity());
     }
 
-    // The number of active replicas that would remain once this member leaves - counting only
-    // members that durably participate in the quorum right now (see
-    // PartitionState.State#isActiveReplica): a learner catching up, or another member already on
-    // its way out, provides no redundancy and must not be counted toward the floor. Excluding the
-    // local member by identity, rather than subtracting one from a count that includes it, keeps
-    // this correct even when the leaving member is itself not an active replica (e.g. a stuck
-    // learner being removed directly) - removing a non-voting member never changes how many
-    // voting replicas remain, so that is always safe regardless of the minimum.
-    final var remainingActiveReplicas =
+    // A non-empty replication group without any voting member could neither elect a leader nor
+    // commit, and the leader rejects such a configuration - the demotion could never succeed and
+    // the change would be stuck. Transformers only emit a demotion when another active member
+    // remains; this guards against plans that violate that. isActiveReplica() (rather than a bare
+    // ACTIVE check) also accepts a RECOVERING member: recovery only pauses that member's own
+    // stream processing and does not affect its Raft voting rights.
+    final var otherActiveReplicaExists =
         currentPartitionGroupConfiguration.members().entrySet().stream()
             .filter(entry -> !entry.getKey().equals(localMemberId))
             .map(entry -> entry.getValue().getPartition(partitionId))
-            .filter(partition -> partition != null && partition.state().isActiveReplica())
-            .count();
-    if (remainingActiveReplicas < minimumAllowedReplicas) {
+            .anyMatch(partition -> partition != null && partition.state().isActiveReplica());
+    if (!otherActiveReplicaExists) {
       return Either.left(
           new IllegalStateException(
-              "Expected to leave partition, but the partition %d would have %d active replicas left but minimum allowed replicas is %d"
-                  .formatted(partitionId, remainingActiveReplicas, minimumAllowedReplicas)));
+              "Expected to demote member in partition %d, but no other member has the partition in active state"
+                  .formatted(partitionId)));
     }
 
     return Either.right(
@@ -105,14 +100,11 @@ public final class PartitionLeaveApplier implements PartitionGroupConfigurationC
         new CompletableActorFuture<>();
 
     partitionChangeExecutor
-        .leave(partitionId)
+        .demote(partitionId)
         .onComplete(
             (ignore, error) -> {
               if (error == null) {
-                result.complete(
-                    group ->
-                        group.updateMember(
-                            localMemberId, broker -> broker.removePartition(partitionId)));
+                result.complete(UnaryOperator.identity());
               } else {
                 result.completeExceptionally(error);
               }

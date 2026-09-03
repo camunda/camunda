@@ -205,6 +205,8 @@ message PartitionGroupChangeOperation {
     PartitionPreRestoreOperation partitionPreRestore = 19;
     PartitionRestoreOperation partitionRestore = 20;
     RemovePhysicalTenantOperation removePhysicalTenant = 21;
+    PartitionPromoteOperation partitionPromote = 22;
+    PartitionDemoteOperation partitionDemote = 23;
   }
 }
 
@@ -318,6 +320,8 @@ message TopologyChangeOperation {
     PartitionPreRestoreOperation partitionPreRestore = 27;
     PartitionRestoreOperation partitionRestore = 28;
     RemovePhysicalTenantOperation removePhysicalTenant = 29;
+    PartitionPromoteOperation partitionPromote = 30;
+    PartitionDemoteOperation partitionDemote = 31;
   }
 }
 
@@ -339,11 +343,22 @@ message CompletedTopologyChangeOperation {
 message PartitionJoinOperation {
   int32 partitionId = 1;
   int32 priority = 2;
+  // Absent (false) in operations serialized before two-phase joins existed: such an operation
+  // keeps its original meaning of a complete, single-step join as a voting member.
+  bool asLearner = 3;
 }
 
 message PartitionLeaveOperation {
   int32 partitionId = 1;
   int32 minimumAllowedReplicas = 2;
+}
+
+message PartitionPromoteOperation {
+  int32 partitionId = 1;
+}
+
+message PartitionDemoteOperation {
+  int32 partitionId = 1;
 }
 
 message PartitionReconfigurePriorityOperation {
@@ -460,6 +475,9 @@ enum State {
   LEFT = 4;
   BOOTSTRAPPING = 5;
   RECOVERING = 6;
+  // Partitions only: joined as a non-voting learner replica, catching up on the log until
+  // promoted to ACTIVE in a second configuration change.
+  LEARNER = 7;
 }
 
 enum ChangeStatus {

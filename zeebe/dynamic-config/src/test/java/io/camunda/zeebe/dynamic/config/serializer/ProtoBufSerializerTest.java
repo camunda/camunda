@@ -558,7 +558,7 @@ final class ProtoBufSerializerTest {
     final List<ClusterConfigurationChangeOperation> plannedChanges =
         List.of(
             new MemberLeaveOperation(MemberId.from("1")),
-            new PartitionJoinOperation(MemberId.from("2"), 1, 2),
+            new PartitionJoinOperation(MemberId.from("2"), 1, 2, true),
             new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
             new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
             new PartitionPreRestoreOperation(MemberId.from("1"), 1),
@@ -570,7 +570,7 @@ final class ProtoBufSerializerTest {
                 Map.of(
                     "default",
                     List.of(
-                        new PartitionJoinOperation(MemberId.from("2"), 1, 2),
+                        new PartitionJoinOperation(MemberId.from("2"), 1, 2, true),
                         new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
                         new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING)),
                     "anothertenant",
@@ -707,6 +707,61 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
+  void shouldDecodeAJoinFromBeforeTwoPhaseJoinsAsAJoinOfAVotingMember() throws Exception {
+    // given — a pending join as a version before two-phase joins serialized it: the same message
+    // without the asLearner field. Derived from a current encoding by clearing that field, so the
+    // test follows the message layout instead of pinning bytes.
+    final var groupId = "default";
+    final var startedAt = Instant.ofEpochSecond(1_700_000_000);
+    final var encodedByCurrentVersion =
+        protoBufSerializer.encodeCurrentClusterConfiguration(
+            configurationWithPendingJoin(groupId, startedAt, true));
+    final var proto =
+        Topology.CurrentClusterConfiguration.parseFrom(encodedByCurrentVersion).toBuilder();
+    final var graphPhase =
+        proto
+            .getPhasedChangeStateBuilder()
+            .getPendingBuilder(0)
+            .getPhasesBuilder(0)
+            .getPartitionGroupGraphPhaseBuilder();
+    final var graph = graphPhase.getGroupGraphsOrThrow(groupId).toBuilder();
+    graph
+        .getOperationsBuilder(0)
+        .getPartitionGroupOperationBuilder()
+        .getPartitionJoinBuilder()
+        .clearAsLearner();
+    graphPhase.putGroupGraphs(groupId, graph.build());
+    final var encodedByPreviousVersion = proto.build().toByteArray();
+
+    // when
+    final var decoded =
+        protoBufSerializer.decodeCurrentClusterConfiguration(encodedByPreviousVersion);
+
+    // then — the operation keeps its original meaning of a complete, single-step join: nothing in a
+    // plan from that version would promote a learner
+    assertThat(decoded).isEqualTo(configurationWithPendingJoin(groupId, startedAt, false));
+  }
+
+  private static CurrentClusterConfiguration configurationWithPendingJoin(
+      final String groupId, final Instant startedAt, final boolean asLearner) {
+    final var plan =
+        new PhasedChangePlan(
+            1,
+            0,
+            List.of(
+                PartitionGroupPhase.sequential(
+                    Map.of(
+                        groupId,
+                        List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1, asLearner))))),
+            startedAt);
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        GlobalConfiguration.init(),
+        Map.of(),
+        new PhasedChangeState(2L, Map.of(plan.id(), plan), List.of()));
+  }
+
+  @Test
   void shouldEncodeAndDecodeARemovedPhysicalTenant() {
     // given — a tombstoned tenant, built from a group that had a member before removal cleared it
     final var group =
@@ -822,8 +877,8 @@ final class ProtoBufSerializerTest {
     // partition group produces, with one operation already completed
     final var startedAt = Instant.ofEpochSecond(1_700_000_000);
     final var builder = OperationGraph.builder();
-    final var first = builder.add(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
-    builder.add(new PartitionJoinOperation(MemberId.from("2"), 1, 1));
+    final var first = builder.add(new PartitionJoinOperation(MemberId.from("1"), 1, 1, true));
+    builder.add(new PartitionJoinOperation(MemberId.from("2"), 1, 1, true));
     final var graph =
         new DependencyChangePlan(
             7,
