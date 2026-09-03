@@ -303,7 +303,7 @@ read it. If you can't name both, don't write it.
   avoid cross-run flakiness.
 - Use JUnit 5. Migrate JUnit 4 tests when modifying them.
 - Do not add a class-level `@DisplayName` to a new `@Nested` test class while the repo is on
-  Surefire 3.5.x (`plugin.version.surefire` in `parent/pom.xml`) — a Surefire 3.5.3regression
+  Surefire 3.5.x (`plugin.version.surefire` in `parent/pom.xml`) — a Surefire regression
   reports such classes under their flattened display name instead of their fully-qualified name in
   the XML test report, breaking FQN-based tooling (flaky-test tracking, CI report parsing). Method-
   level `@DisplayName` (on `@Test`/`@ParameterizedTest`) is unaffected. Existing occurrences were

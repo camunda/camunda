@@ -208,7 +208,7 @@ class DmnEvaluatedDecisionsTest {
 
   @Nested
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName("If successfully evaluated, the decision")
   class DecisionTypeTests {
 
@@ -255,7 +255,7 @@ class DmnEvaluatedDecisionsTest {
 
   @Nested
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName("If successfully evaluated, the decision table")
   class DecisionTableTest {
 
