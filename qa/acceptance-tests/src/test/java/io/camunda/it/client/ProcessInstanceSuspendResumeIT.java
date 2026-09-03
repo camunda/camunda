@@ -8,11 +8,13 @@
 package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeSuspended;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasVariable;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -153,22 +155,13 @@ public class ProcessInstanceSuspendResumeIT {
 
     // then - the same command is now accepted, and the process advances
     camundaClient.newCompleteCommand(jobKey).send().join();
-    await()
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(
-            () ->
-                assertThat(
-                        camundaClient
-                            .newElementInstanceSearchRequest()
-                            .filter(
-                                f ->
-                                    f.processInstanceKey(processInstanceKey)
-                                        .elementId(ELEMENT_IDS[1])
-                                        .state(ElementInstanceState.ACTIVE))
-                            .send()
-                            .join()
-                            .items())
-                    .isNotEmpty());
+    waitForElementInstances(
+        camundaClient,
+        f ->
+            f.processInstanceKey(processInstanceKey)
+                .elementId(ELEMENT_IDS[1])
+                .state(ElementInstanceState.ACTIVE),
+        1);
 
     // leaves an instance active at taskB; cancel it so it doesn't linger on the shared broker
     camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
@@ -198,31 +191,9 @@ public class ProcessInstanceSuspendResumeIT {
         .doesNotThrowAnyException();
 
     // then - values are exported and the instance stays suspended
-    await()
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var variables =
-                  camundaClient
-                      .newVariableSearchRequest()
-                      .filter(f -> f.processInstanceKey(processInstanceKey))
-                      .send()
-                      .join()
-                      .items();
-              assertThat(variables)
-                  .anySatisfy(
-                      v -> {
-                        assertThat(v.getName()).isEqualTo("recoverable");
-                        assertThat(v.getValue()).isEqualTo("\"after\"");
-                      });
-              assertThat(variables)
-                  .anySatisfy(
-                      v -> {
-                        assertThat(v.getName()).isEqualTo("added");
-                        assertThat(v.getValue()).isEqualTo("1");
-                      });
-            });
+    waitUntilProcessInstanceHasVariable(
+        camundaClient, processInstanceKey, "recoverable", "\"after\"");
+    waitUntilProcessInstanceHasVariable(camundaClient, processInstanceKey, "added", "1");
 
     final ProcessInstance stillSuspended =
         camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
@@ -256,22 +227,13 @@ public class ProcessInstanceSuspendResumeIT {
     final long processInstanceKey =
         startProcessInstance(camundaClient, processId, Map.of("x", 1)).getProcessInstanceKey();
     waitForProcessInstancesToStart(camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
-    await()
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(
-            () ->
-                assertThat(
-                        camundaClient
-                            .newElementInstanceSearchRequest()
-                            .filter(
-                                f ->
-                                    f.processInstanceKey(processInstanceKey)
-                                        .elementId(catchEventId)
-                                        .state(ElementInstanceState.ACTIVE))
-                            .send()
-                            .join()
-                            .items())
-                    .isNotEmpty());
+    waitForElementInstances(
+        camundaClient,
+        f ->
+            f.processInstanceKey(processInstanceKey)
+                .elementId(catchEventId)
+                .state(ElementInstanceState.ACTIVE),
+        1);
 
     camundaClient.newSuspendProcessInstanceCommand(processInstanceKey).send().join();
     waitForProcessInstancesToBeSuspended(
@@ -285,19 +247,7 @@ public class ProcessInstanceSuspendResumeIT {
         .join();
 
     // then - variable is updated while the instance stays suspended
-    await()
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                assertThat(
-                        camundaClient
-                            .newVariableSearchRequest()
-                            .filter(f -> f.processInstanceKey(processInstanceKey).name("x"))
-                            .send()
-                            .join()
-                            .items())
-                    .anySatisfy(v -> assertThat(v.getValue()).isEqualTo("42")));
+    waitUntilProcessInstanceHasVariable(camundaClient, processInstanceKey, "x", "42");
 
     assertThat(
             camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join().getState())
@@ -307,22 +257,13 @@ public class ProcessInstanceSuspendResumeIT {
     camundaClient.newResumeProcessInstanceCommand(processInstanceKey).send().join();
 
     // then - token moves past the catch event
-    await()
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(
-            () ->
-                assertThat(
-                        camundaClient
-                            .newElementInstanceSearchRequest()
-                            .filter(
-                                f ->
-                                    f.processInstanceKey(processInstanceKey)
-                                        .elementId(afterConditionTaskId)
-                                        .state(ElementInstanceState.ACTIVE))
-                            .send()
-                            .join()
-                            .items())
-                    .isNotEmpty());
+    waitForElementInstances(
+        camundaClient,
+        f ->
+            f.processInstanceKey(processInstanceKey)
+                .elementId(afterConditionTaskId)
+                .state(ElementInstanceState.ACTIVE),
+        1);
     camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
   }
 
