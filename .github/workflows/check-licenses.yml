@@ -87,7 +87,7 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@fc4fa13813cbc1835129967f10a12f24aa7a393c # fossa-1.0.2
+      uses: camunda/infra-global-github-actions/fossa/setup@ee746fa695a43480b4294e944a6bf6e01b4f8459 # fossa-1.0.17
     - name: Adjust pom.xml files for FOSSA
       if: matrix.project.name == 'single-app'
       run: |
@@ -105,7 +105,7 @@ jobs:
         # Strip test/provided/system scopes so depgraph's text graph stays under the JVM ~2 GiB array limit.
         python3 .github/scripts/strip-analysis-scopes.py .
     - name: Analyze project
-      uses: camunda/infra-global-github-actions/fossa/analyze@fc4fa13813cbc1835129967f10a12f24aa7a393c # fossa-1.0.2
+      uses: camunda/infra-global-github-actions/fossa/analyze@ee746fa695a43480b4294e944a6bf6e01b4f8459 # fossa-1.0.17
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{ github.ref_name }}
