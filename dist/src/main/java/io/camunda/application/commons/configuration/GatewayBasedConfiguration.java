@@ -140,7 +140,8 @@ public final class GatewayBasedConfiguration {
         new MessagingConfig()
             .setCompressionAlgorithm(cluster.getMessageCompression())
             .setInterfaces(Collections.singletonList(cluster.getHost()))
-            .setPort(cluster.getPort());
+            .setPort(cluster.getPort())
+            .setUdpEnabled(cluster.isUdpEnabled());
     if (cluster.getSocketSendBuffer() != null) {
       messaging.setSocketSendBuffer((int) cluster.getSocketSendBuffer().toBytes());
     }

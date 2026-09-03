@@ -199,6 +199,17 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Sets the size of the socket send buffer (SO_SNDBUF), for example 1MB. When not set (the default),
       # the operating system can determine the optimal size automatically.
       socket-send-buffer: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_CLUSTER_NETWORK_SOCKETSENDBUFFER
+      # Controls whether cluster membership gossip may use UDP. When disabled, no UDP socket is bound at all
+      # and gossip is carried by the internal API instead, so it is encrypted whenever internal-API TLS is
+      # enabled.
+      # Only enable this once every node in the cluster runs a version that can receive gossip over the
+      # internal API; a node that has been switched over cannot be heard by an older one.
+      # Costs: UDP gossip is a single fire-and-forget datagram, whereas gossip over the internal API reuses
+      # a pooled connection. For an unreachable peer that means a connection attempt every gossip interval
+      # instead of a datagram write. Failure detection itself is unaffected, as it rests on TCP probes.
+      # The guarantee covers Camunda's own cluster protocols. Infrastructure protocols the JVM speaks
+      # underneath — DNS above all — still use UDP and are out of scope.
+      udp-enabled: true # Type: Boolean, Env: CAMUNDA_CLUSTER_NETWORK_UDPENABLED
 
     node-id: null # Type: Integer, Env: CAMUNDA_CLUSTER_NODEID
     node-id-provider: # Type: io.camunda.configuration.NodeIdProvider

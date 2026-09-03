@@ -40,7 +40,8 @@ public class BrokerNetworkPropertiesTest {
         "camunda.cluster.network.socket-receive-buffer=3MB",
         "camunda.cluster.network.heartbeat-timeout=30s",
         "camunda.cluster.network.heartbeat-interval=10s",
-        "camunda.cluster.network.min-keep-alive-interval=45s"
+        "camunda.cluster.network.min-keep-alive-interval=45s",
+        "camunda.cluster.network.udp-enabled=false"
       })
   class WithNetworkPropertiesSet {
     final BrokerBasedProperties brokerCfg;
@@ -60,8 +61,24 @@ public class BrokerNetworkPropertiesTest {
           .isEqualTo(DataSize.ofMegabytes(3));
       assertThat(brokerCfg.getNetwork().getHeartbeatTimeout()).isEqualTo(Duration.ofSeconds(30));
       assertThat(brokerCfg.getNetwork().getHeartbeatInterval()).isEqualTo(Duration.ofSeconds(10));
+      assertThat(brokerCfg.getNetwork().isUdpEnabled()).isFalse();
       assertThat(brokerCfg.getGateway().getNetwork().getMaxMessageSize())
           .isEqualTo(DataSize.ofMegabytes(8));
+    }
+  }
+
+  @Nested
+  class WithNoNetworkPropertiesSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithNoNetworkPropertiesSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldEnableUdpByDefault() {
+      // existing deployments must keep gossiping over UDP unless they opt out
+      assertThat(brokerCfg.getNetwork().isUdpEnabled()).isTrue();
     }
   }
 

@@ -224,6 +224,7 @@ public class GatewayBasedPropertiesOverride {
     gatewayCluster.setAdvertisedHost(resolveAdvertisedHost());
     gatewayCluster.setSocketSendBuffer(network.getSocketSendBuffer());
     gatewayCluster.setSocketReceiveBuffer(network.getSocketReceiveBuffer());
+    gatewayCluster.setUdpEnabled(network.isUdpEnabled());
 
     populateFromInternalApi(override);
   }

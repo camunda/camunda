@@ -36,6 +36,7 @@ public class GatewayNetworkPropertiesTest {
         "camunda.cluster.network.socket-send-buffer=2MB",
         "camunda.cluster.network.socket-receive-buffer=3MB",
         "camunda.cluster.network.max-message-size=11MB",
+        "camunda.cluster.network.udp-enabled=false",
       })
   class WithNetworkPropertiesSet {
     final GatewayBasedProperties gatewayCfg;
@@ -52,6 +53,22 @@ public class GatewayNetworkPropertiesTest {
       assertThat(gatewayCfg.getCluster().getSocketReceiveBuffer())
           .isEqualTo(DataSize.ofMegabytes(3));
       assertThat(gatewayCfg.getNetwork().getMaxMessageSize()).isEqualTo(DataSize.ofMegabytes(11));
+      assertThat(gatewayCfg.getCluster().isUdpEnabled()).isFalse();
+    }
+  }
+
+  @Nested
+  class WithNoNetworkPropertiesSet {
+    final GatewayBasedProperties gatewayCfg;
+
+    WithNoNetworkPropertiesSet(@Autowired final GatewayBasedProperties gatewayCfg) {
+      this.gatewayCfg = gatewayCfg;
+    }
+
+    @Test
+    void shouldEnableUdpByDefault() {
+      // existing deployments must keep gossiping over UDP unless they opt out
+      assertThat(gatewayCfg.getCluster().isUdpEnabled()).isTrue();
     }
   }
 

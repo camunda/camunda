@@ -86,6 +86,24 @@ public class Network implements Cloneable {
    */
   private Duration heartbeatInterval = Duration.ofSeconds(5);
 
+  /**
+   * Controls whether cluster membership gossip may use UDP. When disabled, no UDP socket is bound
+   * at all and gossip is carried by the internal API instead, so it is encrypted whenever
+   * internal-API TLS is enabled.
+   *
+   * <p>Only enable this once every node in the cluster runs a version that can receive gossip over
+   * the internal API; a node that has been switched over cannot be heard by an older one.
+   *
+   * <p>Costs: UDP gossip is a single fire-and-forget datagram, whereas gossip over the internal API
+   * reuses a pooled connection. For an unreachable peer that means a connection attempt every
+   * gossip interval instead of a datagram write. Failure detection itself is unaffected, as it
+   * rests on TCP probes.
+   *
+   * <p>The guarantee covers Camunda's own cluster protocols. Infrastructure protocols the JVM
+   * speaks underneath — DNS above all — still use UDP and are out of scope.
+   */
+  private boolean udpEnabled = true;
+
   /** Sets the internal api configuration */
   @NestedConfigurationProperty private InternalApi internalApi = new InternalApi();
 
@@ -193,6 +211,19 @@ public class Network implements Cloneable {
 
   public void setHeartbeatInterval(final Duration heartbeatInterval) {
     this.heartbeatInterval = heartbeatInterval;
+  }
+
+  public boolean isUdpEnabled() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".udp-enabled",
+        udpEnabled,
+        Boolean.class,
+        UnifiedConfigurationHelper.BackwardsCompatibilityMode.NOT_SUPPORTED,
+        Set.of());
+  }
+
+  public void setUdpEnabled(final boolean udpEnabled) {
+    this.udpEnabled = udpEnabled;
   }
 
   public InternalApi getInternalApi() {

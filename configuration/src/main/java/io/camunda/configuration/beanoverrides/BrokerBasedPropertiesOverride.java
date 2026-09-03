@@ -710,6 +710,7 @@ public class BrokerBasedPropertiesOverride {
     brokerNetwork.setSocketReceiveBuffer(network.getSocketReceiveBuffer());
     brokerNetwork.setHeartbeatTimeout(network.getHeartbeatTimeout());
     brokerNetwork.setHeartbeatInterval(network.getHeartbeatInterval());
+    brokerNetwork.setUdpEnabled(network.isUdpEnabled());
 
     override.getGateway().getNetwork().setMaxMessageSize(network.getMaxMessageSize());
 

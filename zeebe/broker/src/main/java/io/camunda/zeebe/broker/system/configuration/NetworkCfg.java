@@ -31,6 +31,7 @@ public final class NetworkCfg implements ConfigurationEntry {
   private DataSize socketReceiveBuffer = null;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
+  private boolean udpEnabled = true;
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
@@ -123,6 +124,14 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.heartbeatInterval = heartbeatInterval;
   }
 
+  public boolean isUdpEnabled() {
+    return udpEnabled;
+  }
+
+  public void setUdpEnabled(final boolean udpEnabled) {
+    this.udpEnabled = udpEnabled;
+  }
+
   public CommandApiCfg getCommandApi() {
     return commandApi;
   }
@@ -162,6 +171,8 @@ public final class NetworkCfg implements ConfigurationEntry {
         + heartbeatTimeout
         + ", heartbeatInterval="
         + heartbeatInterval
+        + ", udpEnabled="
+        + udpEnabled
         + ", commandApi="
         + commandApi
         + ", internalApi="
