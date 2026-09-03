@@ -47,4 +47,109 @@ public final class JobSuspensionGateTest {
     assertThat(rejection.getRejectionReason())
         .contains("process instance with key '" + processInstanceKey + "'");
   }
+
+  @Test
+  public void shouldRejectJobFailWhileSuspended() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
+    final long processInstanceKey = job.getValue().getProcessInstanceKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(job.getKey()).withRetries(0).expectRejection().fail();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(JobIntent.FAIL)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldRejectJobThrowErrorWhileSuspended() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
+    final long processInstanceKey = job.getValue().getProcessInstanceKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(job.getKey()).withErrorCode("ERR").expectRejection().throwError();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(JobIntent.THROW_ERROR)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldRejectJobUpdateWhileSuspended() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
+    final long processInstanceKey = job.getValue().getProcessInstanceKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(job.getKey()).expectRejection().update();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(JobIntent.UPDATE)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldRejectJobUpdateRetriesWhileSuspended() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
+    final long processInstanceKey = job.getValue().getProcessInstanceKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(job.getKey()).withRetries(5).expectRejection().updateRetries();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(JobIntent.UPDATE_RETRIES)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldRejectJobUpdateTimeoutWhileSuspended() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
+    final long processInstanceKey = job.getValue().getProcessInstanceKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(job.getKey()).withTimeout(60_000L).expectRejection().updateTimeout();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(JobIntent.UPDATE_TIMEOUT)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
 }
