@@ -54,15 +54,29 @@ public class DefaultMembershipService implements MembershipPort {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultMembershipService.class);
   private static final Retry MEMBERSHIP_LOOKUP_RETRY = TransientRetry.of("membership-lookup");
 
-  private final ServiceRegistry serviceRegistry;
-  private final OidcGroupsExtractor oidcGroupsExtractor;
-  private final boolean isGroupsClaimConfigured;
-
   // This service is a singleton shared by every physical tenant, and each lookup routes to the
   // store of the tenant in context. An outage therefore belongs to the (tenant, lookup) pair: keyed
   // by lookup alone, a healthy call for one tenant would close another tenant's outage and make the
   // next failure report it again.
-  private final Map<String, OutageLog> lookupOutages = new ConcurrentHashMap<>();
+  //
+  // Only a transient failure puts an entry in here, which is what keeps the map sized by the
+  // configured tenants rather than by traffic. The key carries the physical tenant taken from the
+  // request path, and PhysicalTenantFilter stamps that without validating it (ADR-0003) — but an
+  // id no tenant matches cannot get this far: every lookup below opens by resolving its services
+  // through ServiceRegistry, which throws IllegalArgumentException for an unknown tenant before
+  // any search runs. That is not a transient failure, so it propagates without allocating.
+  //
+  // ServiceRegistry rejecting an unknown tenant is therefore load-bearing here, and is pinned by
+  // DefaultServiceRegistryTest. Were it ever to fall back to a default tenant instead, this map
+  // would silently become traffic-bounded again.
+  //
+  // Package-private so the test can assert what is retained, which is the whole point of the
+  // field's lifecycle and is not observable from any of this class's outputs.
+  final Map<String, OutageLog> lookupOutages = new ConcurrentHashMap<>();
+
+  private final ServiceRegistry serviceRegistry;
+  private final OidcGroupsExtractor oidcGroupsExtractor;
+  private final boolean isGroupsClaimConfigured;
 
   public DefaultMembershipService(
       final ServiceRegistry serviceRegistry, final CamundaSecurityLibraryProperties cslProperties) {
@@ -173,19 +187,23 @@ public class DefaultMembershipService implements MembershipPort {
     // no tenant bound is already doomed — the lookup itself resolves the tenant and throws.
     final var subject =
         requireNonNullElse(PhysicalTenantContext.currentOrNull(), "unknown") + "/" + label;
-    final var outage = lookupOutages.computeIfAbsent(subject, s -> new OutageLog(LOG));
     try {
       final var ids = Retry.decorateSupplier(MEMBERSHIP_LOOKUP_RETRY, lookup).get();
-      outage.recovery("Resolving {} works again", subject);
+      final var outage = lookupOutages.get(subject);
+      if (outage != null) {
+        outage.recovery("Resolving {} works again", subject);
+      }
       return ids;
     } catch (final RuntimeException e) {
       if (TransientRetry.isTransient(e)) {
-        outage.failure(
-            "Failed to resolve {} after {} attempts, falling back to empty: {}",
-            subject,
-            TransientRetry.MAX_ATTEMPTS,
-            e.getMessage(),
-            e);
+        lookupOutages
+            .computeIfAbsent(subject, s -> new OutageLog(LOG))
+            .failure(
+                "Failed to resolve {} after {} attempts, falling back to empty: {}",
+                subject,
+                TransientRetry.MAX_ATTEMPTS,
+                e.getMessage(),
+                e);
         return List.of();
       }
       throw e;
