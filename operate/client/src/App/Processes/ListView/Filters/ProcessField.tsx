@@ -64,8 +64,7 @@ const ProcessField: React.FC = observer(() => {
 
             return {
               id: definition.identifier,
-              label:
-                definition.state === 'DELETED' ? `${label} (Deleted)` : label,
+              label,
             };
           })}
           value={input.value}
