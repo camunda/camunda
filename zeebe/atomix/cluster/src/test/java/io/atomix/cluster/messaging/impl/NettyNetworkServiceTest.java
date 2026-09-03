@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.ManagedUnicastService;
+import io.atomix.cluster.messaging.UnicastService;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,8 +28,10 @@ final class NettyNetworkServiceTest {
 
   private final ManagedMessagingService messagingService = mock(ManagedMessagingService.class);
   private final ManagedUnicastService unicastService = mock(ManagedUnicastService.class);
+  private final UnicastService routedUnicastService = mock(UnicastService.class);
   private final NettyNetworkService networkService =
-      new NettyNetworkService(messagingService, unicastService, Runnable::run);
+      new NettyNetworkService(
+          messagingService, unicastService, routedUnicastService, Runnable::run);
 
   NettyNetworkServiceTest() {
     when(messagingService.start())
@@ -96,6 +99,6 @@ final class NettyNetworkServiceTest {
   void shouldExposeBothTransports() {
     // when - then
     assertThat(networkService.messagingService()).isSameAs(messagingService);
-    assertThat(networkService.unicastService()).isSameAs(unicastService);
+    assertThat(networkService.unicastService()).isSameAs(routedUnicastService);
   }
 }

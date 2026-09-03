@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
-import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.utils.Version;
 import io.camunda.application.commons.actor.ActorClockConfiguration;
 import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
@@ -687,7 +686,9 @@ public class ClusteringRule extends ExternalResource {
     LOGGER.debug(
         "Disconnecting node {} to cluster",
         broker.getSystemContext().getBrokerConfiguration().getCluster().getNodeId());
-    ((NettyUnicastService) cluster.getUnicastService()).stop().join();
+    // stopping the messaging services is what isolates the node: Raft replication and SWIM
+    // probe/sync are all TCP. gossip may still leave over UDP, but it is unreliable hearsay that
+    // failure detection does not rely on
     ((NettyMessagingService) cluster.getMessagingService()).stop().join();
     broker.getBrokerContext().getApiMessagingService().stop().join();
   }
@@ -698,7 +699,6 @@ public class ClusteringRule extends ExternalResource {
     LOGGER.debug(
         "Connecting node {} to cluster",
         broker.getSystemContext().getBrokerConfiguration().getCluster().getNodeId());
-    ((NettyUnicastService) cluster.getUnicastService()).start().join();
     ((NettyMessagingService) cluster.getMessagingService()).start().join();
   }
 

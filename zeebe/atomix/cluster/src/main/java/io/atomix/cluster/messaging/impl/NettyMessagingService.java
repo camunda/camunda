@@ -26,6 +26,7 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.MessagingService;
+import io.atomix.cluster.messaging.UnicastService;
 import io.atomix.utils.concurrent.OrderedFuture;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.StringUtil;
@@ -96,6 +97,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -112,11 +114,33 @@ import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Netty based MessagingService. */
-public final class NettyMessagingService implements ManagedMessagingService {
+/**
+ * Netty based MessagingService.
+ *
+ * <p>It also carries unreliable unicast over the same TCP transport, so that a cluster can run
+ * without UDP. That path allocates no Netty resources of its own: it reuses this class's name
+ * resolution, event loop groups, connection pool, TLS, compression and heartbeats. Whether it is
+ * used is decided by {@link CompositeUnicastService}, not here — this class always accepts unicast
+ * traffic, which is what lets the UDP switch be flipped one node at a time.
+ *
+ * <p>Its lifecycle belongs to the {@link io.atomix.cluster.messaging.ManagedNetworkService} that
+ * owns this instance, so unicast over TCP is available exactly while this service is running.
+ */
+public final class NettyMessagingService implements ManagedMessagingService, UnicastService {
   private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
   private static final String TLS_PROTOCOL = "TLSv1.3";
   private static final String MESSAGE_DISPATCHER_NAME = "handler";
+
+  /**
+   * Namespace for subjects carrying unreliable unicast, keeping them clear of the messaging handler
+   * that {@code DefaultClusterCommunicationService.consume()} registers under the bare subject —
+   * {@link HandlerRegistry#register} overwrites silently, so a collision would lose messages with
+   * no error.
+   *
+   * <p>This is a wire contract: both peers derive the same subject string, so it must stay stable
+   * across versions.
+   */
+  private static final String UNICAST_SUBJECT_PREFIX = "atomix-unicast:";
 
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final Address advertisedAddress;
@@ -125,6 +149,10 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private final ProtocolVersion protocolVersion;
   private final AtomicBoolean started = new AtomicBoolean(false);
   private final HandlerRegistry handlers = new HandlerRegistry();
+  // one registry entry per subject fans out to these; the registry holds a single handler per
+  // subject, while UnicastService allows many listeners
+  private final Map<String, Map<BiConsumer<Address, byte[]>, Executor>> unicastListeners =
+      Maps.newConcurrentMap();
   private final Map<Channel, RemoteClientConnection> connections = Maps.newConcurrentMap();
   private final AtomicLong messageIdGenerator = new AtomicLong(0);
   private final ChannelPool channelPool;
@@ -398,6 +426,68 @@ public final class NettyMessagingService implements ManagedMessagingService {
   @Override
   public void unregisterHandler(final String type) {
     handlers.unregister(type);
+  }
+
+  @Override
+  public void unicast(final Address address, final String subject, final byte[] payload) {
+    if (!started.get()) {
+      log.debug("Failed sending unicast message, messaging service was not started.");
+      return;
+    }
+
+    // fire-and-forget: a failure here must neither reach the caller nor flood the log, since
+    // membership gossip retries every 250ms by default. the try/catch covers the shutdown race,
+    // where sendAsync can throw synchronously rather than return a failed future
+    try {
+      sendAsync(address, UNICAST_SUBJECT_PREFIX + subject, payload)
+          .exceptionally(
+              error -> {
+                log.debug("Failed sending unicast message to {} on {}", address, subject, error);
+                return null;
+              });
+    } catch (final Exception e) {
+      log.debug("Failed sending unicast message to {} on {}", address, subject, e);
+    }
+  }
+
+  @Override
+  public synchronized void addListener(
+      final String subject, final BiConsumer<Address, byte[]> listener, final Executor executor) {
+    final var isFirstListener = !unicastListeners.containsKey(subject);
+    unicastListeners
+        .computeIfAbsent(subject, ignored -> new ConcurrentHashMap<>())
+        .put(listener, executor);
+
+    if (isFirstListener) {
+      // dispatch directly and let each listener hop onto its own executor, so listeners do not
+      // inherit whichever executor happened to register first
+      final BiConsumer<Address, byte[]> fanOut =
+          (sender, payload) -> dispatchUnicast(subject, sender, payload);
+      registerHandler(UNICAST_SUBJECT_PREFIX + subject, fanOut, MoreExecutors.directExecutor());
+    }
+  }
+
+  @Override
+  public synchronized void removeListener(
+      final String subject, final BiConsumer<Address, byte[]> listener) {
+    final var subjectListeners = unicastListeners.get(subject);
+    if (subjectListeners == null) {
+      return;
+    }
+
+    subjectListeners.remove(listener);
+    if (subjectListeners.isEmpty()) {
+      unicastListeners.remove(subject);
+      unregisterHandler(UNICAST_SUBJECT_PREFIX + subject);
+    }
+  }
+
+  private void dispatchUnicast(final String subject, final Address sender, final byte[] payload) {
+    final var subjectListeners = unicastListeners.get(subject);
+    if (subjectListeners != null) {
+      subjectListeners.forEach(
+          (listener, executor) -> executor.execute(() -> listener.accept(sender, payload)));
+    }
   }
 
   @Override
