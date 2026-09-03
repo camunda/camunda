@@ -72,8 +72,10 @@ export class IdentityAuthorizationsPage {
       this.page.locator(`input#${name.toUpperCase()}`);
     this.createAuthorizationOwnerTypeComboBox =
       this.createAuthorizationModal.getByRole('combobox', {name: 'Owner type'});
+    // The Select's popover renders in a portal outside the dialog's DOM
+    // subtree, so its options must be queried from the page, not the modal.
     this.createAuthorizationOwnerTypeOption = (name) =>
-      this.createAuthorizationModal.getByRole('option', {
+      this.page.getByRole('option', {
         name,
       });
     this.createAuthorizationSubmitButton =
@@ -81,7 +83,9 @@ export class IdentityAuthorizationsPage {
         name: 'Create authorization',
       });
     this.deleteAuthorizationButton = (name) =>
-      this.authorizationsList.getByRole('row', {name}).getByLabel('Delete');
+      this.authorizationsList
+        .getByRole('row', {name})
+        .getByRole('button', {name: 'Delete'});
     this.deleteAuthorizationModal = page.getByRole('dialog', {
       name: 'Delete authorization',
     });
@@ -239,51 +243,33 @@ export class IdentityAuthorizationsPage {
 
   async selectAuthorizationOwnerType(authorization: {ownerType: string}) {
     await this.createAuthorizationOwnerTypeComboBox.click();
-    await this.createAuthorizationOwnerTypeOption(
-      authorization.ownerType,
-    ).click();
-    // The owner field rendered depends on the owner type: a `User` owner now
-    // renders a searchable input ("Search by owner ID"), while every other
-    // type renders the "Select an owner" combobox. Wait for whichever field
-    // this owner type actually shows.
-    const ownerField =
-      authorization.ownerType === 'User'
-        ? this.createAuthorizationOwnerSearchInput
-        : this.createAuthorizationOwnerComboBox;
-    await ownerField.waitFor({state: 'visible', timeout: 10000});
+    await this.selectOwnerTypeFromDrowdown(authorization.ownerType);
+    // Selecting an owner type re-renders the owner field. User, Group and Role
+    // owners all now render the searchable "Search by owner ID" entity input
+    // (#51442) instead of the former "Select an owner" combobox; wait for it
+    // before selecting an owner.
+    await this.createAuthorizationOwnerSearchInput.waitFor({
+      state: 'visible',
+      timeout: 10000,
+    });
   }
 
   async selectAuthorizationOwner(authorization: {ownerId: string}) {
-    if (await this.createAuthorizationOwnerSearchInput.isVisible()) {
-      await this.createAuthorizationOwnerSearchInput.fill(
-        authorization.ownerId,
-      );
-      // The owner search is debounced + server-driven; the menu item for a
-      // just-created user can take longer than 20s to surface under load.
-      const ownerOption = this.createAuthorizationModal
-        .locator('.cds--list-box__menu-item')
-        .filter({hasText: authorization.ownerId})
-        .first();
-      await expect(ownerOption).toBeVisible({timeout: 60000});
-      await ownerOption.click({timeout: 20000, force: true});
-      return;
-    }
-
-    await this.createAuthorizationOwnerComboBox.click();
-    try {
-      await this.createAuthorizationOwnerOption(authorization.ownerId).click({
-        timeout: 60000,
-        force: true,
-      });
-    } catch (error) {
-      // Fall back to free-typing the owner id for owners that are not a
-      // selectable option (e.g. a not-yet-persisted owner used only to reach a
-      // later validation step). Reloading here would close the modal, so keep
-      // the dialog open and type the value directly.
-      console.log('Error while selecting owner' + error);
-      await this.createAuthorizationOwnerComboBox.fill(authorization.ownerId);
-      await this.createAuthorizationOwnerComboBox.press('Tab');
-    }
+    await this.createAuthorizationOwnerSearchInput.fill(authorization.ownerId);
+    // The owner search is debounced + server-driven; the menu item for a
+    // just-created user can take longer than 20s to surface under load.
+    // const ownerOption = this.createAuthorizationModal
+    //   .locator('.cds--list-box__menu-item')
+    //   .filter({hasText: authorization.ownerId})
+    //   .first();
+    await this.page.waitForTimeout(500);
+    const ownerOption = this.page
+      .getByRole('listbox')
+      .getByRole('option')
+      .filter({hasText: authorization.ownerId})
+      .first();
+    await expect(ownerOption).toBeVisible({timeout: 30000});
+    await ownerOption.click({timeout: 20000, force: true});
   }
 
   async findAuthorizationInPaginatedList(
