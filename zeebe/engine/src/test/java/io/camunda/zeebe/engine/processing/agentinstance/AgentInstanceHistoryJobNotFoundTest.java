@@ -500,4 +500,189 @@ public class AgentInstanceHistoryJobNotFoundTest {
         .as("an item discarded for a job that will never resolve is never committed")
         .isEmpty();
   }
+
+  @Test
+  public void shouldAccumulateMetricsButDropConfigurationWhenJobKeyNeverExisted() {
+    // given — a fabricated jobKey that never existed, same fixture as
+    // shouldAcceptAndImmediatelyDiscardUpdateWhenJobKeyNeverExisted. The batch carries both an
+    // ASSISTANT item (with metrics) and a CONFIGURATION item (with a model/provider change), to
+    // show the two are handled independently: metrics accumulate immediately regardless of item
+    // role, but a CONFIGURATION item's own changes are only ever applied when its item is
+    // committed — and an item discarded for a NOT_FOUND job is never committed.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+
+    final var assistantItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-fabricated-job-assistant")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("hi"));
+    assistantItem.getMetrics().setInputTokens(100L).setOutputTokens(40L);
+    assistantItem.addToolCall(
+        new AgentHistoryEmbeddedToolCall().setToolCallId("call-1").setToolName("lookup"));
+
+    final var configItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-fabricated-job-config")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    configItem.setModel("gpt-4o-mini").setProvider("azure-openai");
+    configItem.setChangedAttributes(List.of("model", "provider"));
+
+    // when — the fabricated jobKey never existed, so the job is JobState.State.NOT_FOUND. The
+    // update is still accepted, exactly as for the ASSISTANT-only case.
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(999999999L)
+            .withHistory(List.of(assistantItem, configItem))
+            .update();
+
+    // then
+    assertThat(updated.getIntent())
+        .as("the fabricated jobKey never existed, but the update is accepted anyway")
+        .isEqualTo(AgentInstanceIntent.UPDATED);
+
+    // and — the ASSISTANT item's metrics are accumulated even though no job ever backed this
+    // jobKey.
+    assertThat(updated.getValue().getMetrics().getInputTokens()).isEqualTo(100L);
+    assertThat(updated.getValue().getMetrics().getOutputTokens()).isEqualTo(40L);
+    assertThat(updated.getValue().getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(updated.getValue().getMetrics().getToolCalls()).isEqualTo(1);
+    assertThat(updated.getValue().getChangedAttributes())
+        .as("the metrics accumulation is a real change")
+        .contains("metrics");
+
+    // and — the CONFIGURATION item's own model/provider change is never applied: it is discarded
+    // together with the ASSISTANT item, so it is never committed, and committing is the only
+    // point at which UPDATE ever applies a CONFIGURATION item's changes.
+    assertThat(updated.getValue().getDefinition().getModel())
+        .as("the definition still reflects what was set at creation")
+        .isEqualTo("gpt-4o");
+    assertThat(updated.getValue().getDefinition().getProvider())
+        .as("the definition still reflects what was set at creation")
+        .isEqualTo("openai");
+    assertThat(updated.getValue().getChangedAttributes())
+        .as("the dropped configuration change must not be reflected as a change")
+        .doesNotContain("model", "provider");
+
+    // and — both items are created and immediately discarded in the same processing step, and
+    // neither is ever committed: a CONFIGURATION item gets no special treatment in the discard
+    // path.
+    final var clockResetKey = ENGINE.clock().reset().getKey();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_HISTORY)
+                .withIntent(AgentHistoryIntent.CREATED)
+                .filter(
+                    r ->
+                        ((AgentHistoryRecordValue) r.getValue())
+                            .getHistoryItemId()
+                            .equals("item-fabricated-job-assistant"))
+                .exists())
+        .as("the ASSISTANT item is created before it is discarded")
+        .isTrue();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_HISTORY)
+                .withIntent(AgentHistoryIntent.DISCARDED)
+                .filter(
+                    r ->
+                        ((AgentHistoryRecordValue) r.getValue())
+                            .getHistoryItemId()
+                            .equals("item-fabricated-job-assistant"))
+                .exists())
+        .as(
+            "the ASSISTANT item is discarded immediately since the fabricated job will never"
+                + " complete")
+        .isTrue();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_HISTORY)
+                .withIntent(AgentHistoryIntent.COMMITTED)
+                .filter(
+                    r ->
+                        ((AgentHistoryRecordValue) r.getValue())
+                            .getHistoryItemId()
+                            .equals("item-fabricated-job-assistant"))
+                .exists())
+        .as("the ASSISTANT item is never committed for a job that will never resolve")
+        .isFalse();
+
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_HISTORY)
+                .withIntent(AgentHistoryIntent.CREATED)
+                .filter(
+                    r ->
+                        ((AgentHistoryRecordValue) r.getValue())
+                            .getHistoryItemId()
+                            .equals("item-fabricated-job-config"))
+                .exists())
+        .as("the CONFIGURATION item is created before it is discarded")
+        .isTrue();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_HISTORY)
+                .withIntent(AgentHistoryIntent.DISCARDED)
+                .filter(
+                    r ->
+                        ((AgentHistoryRecordValue) r.getValue())
+                            .getHistoryItemId()
+                            .equals("item-fabricated-job-config"))
+                .exists())
+        .as(
+            "the CONFIGURATION item is discarded immediately, same as any other item on a"
+                + " NOT_FOUND job")
+        .isTrue();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_HISTORY)
+                .withIntent(AgentHistoryIntent.COMMITTED)
+                .filter(
+                    r ->
+                        ((AgentHistoryRecordValue) r.getValue())
+                            .getHistoryItemId()
+                            .equals("item-fabricated-job-config"))
+                .exists())
+        .as("the CONFIGURATION item is never committed, so its changes can never be applied")
+        .isFalse();
+  }
 }
