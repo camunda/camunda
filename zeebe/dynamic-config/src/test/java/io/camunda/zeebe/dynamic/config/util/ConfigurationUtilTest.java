@@ -16,12 +16,13 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
 import io.camunda.zeebe.dynamic.config.PartitionStateAssert;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import java.util.Map;
@@ -322,16 +323,27 @@ class ConfigurationUtilTest {
             2,
             member(0));
 
-    final ClusterConfiguration topology =
-        ClusterConfiguration.init()
-            .addMember(
-                member(0),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2, partitionConfig))))
-            .addMember(
-                member(1),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.joining(1, partitionConfig).toLearner())));
+    final CurrentClusterConfiguration topology =
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration
+                        .addMember(member(0), BrokerState.initializeAsActive())
+                        .addMember(member(1), BrokerState.initializeAsActive()))
+            .initPartitionGroup(GROUP_NAME)
+            .updatePartitionGroupConfig(
+                GROUP_NAME,
+                partitionGroupConfiguration ->
+                    partitionGroupConfiguration
+                        .addMember(
+                            member(0),
+                            BrokerPartitionState.initialize(
+                                Map.of(1, PartitionState.active(2, partitionConfig))))
+                        .addMember(
+                            member(1),
+                            BrokerPartitionState.initialize(
+                                Map.of(
+                                    1, PartitionState.joining(1, partitionConfig).toLearner()))));
 
     // when
     final var partitionDistribution =
