@@ -43,7 +43,7 @@ class ShadcnTaskDetailPage extends BasePage {
 	}
 
 	processName(name: string) {
-		return this.detailsHeader.getByText(name, {exact: true});
+		return this.processTabContent.getByText(name, {exact: true});
 	}
 
 	get detailsNavigation() {
@@ -64,6 +64,18 @@ class ShadcnTaskDetailPage extends BasePage {
 
 	get aside() {
 		return this.page.getByRole('complementary', {name: 'Task details right panel'});
+	}
+
+	get taskTabContent() {
+		return this.page.getByTestId('task-tab-content');
+	}
+
+	get processTabContent() {
+		return this.page.getByTestId('process-tab-content');
+	}
+
+	get historyTabContent() {
+		return this.page.getByRole('tabpanel');
 	}
 
 	get assignButton() {
@@ -178,6 +190,34 @@ class ShadcnTaskDetailPage extends BasePage {
 
 	get completionFailed() {
 		return this.page.getByText('Completion failed');
+	}
+
+	processVersion(version: number) {
+		return this.processTabContent.getByText(`Version: ${version}`);
+	}
+
+	get processDiagramZoomReset() {
+		return this.processTabContent.getByRole('button', {name: 'Reset diagram zoom'});
+	}
+
+	get processDiagramZoomIn() {
+		return this.processTabContent.getByRole('button', {name: 'Zoom in diagram'});
+	}
+
+	get processDiagramZoomOut() {
+		return this.processTabContent.getByRole('button', {name: 'Zoom out diagram'});
+	}
+
+	get processForbiddenError() {
+		return this.processTabContent.getByText("You don't have permission to view the process");
+	}
+
+	get processLoadError() {
+		return this.processTabContent.getByText('Process could not be loaded');
+	}
+
+	get processRetryButton() {
+		return this.processTabContent.getByRole('button', {name: 'Try again'});
 	}
 
 	async seedHideNotificationBanner() {

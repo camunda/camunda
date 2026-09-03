@@ -274,7 +274,9 @@ public final class AgentHistoryBatchBehavior {
       // A duplicate is skipped entirely: no metrics accumulation — re-applying values the
       // instance already reflects would be unobservable, so the durable signal that it was
       // skipped is the isDuplicate flag on the echoed item alone.
-      if (!isDuplicate && applyMetrics(target.getMetrics(), item)) {
+      if (!isDuplicate
+          && !agentHistoryState.hasAccumulatedMetrics(target.getAgentInstanceKey(), historyItemId)
+          && applyMetrics(target.getMetrics(), item)) {
         changedAttributes.add(AgentInstanceRecord.ATTR_METRICS);
       }
 

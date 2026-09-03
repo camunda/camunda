@@ -87,5 +87,8 @@ public final class AgentHistoryCreatedApplier
       }
     }
     agentHistoryState.insert(key, storedRecord);
+    // Marks the id as having had its metrics accumulated, independent of the pending record above
+    // (which is deleted on commit/discard) — see AGENT_HISTORY_METRICS_ACCUMULATED_IDS.
+    agentHistoryState.markMetricsAccumulated(value.getAgentInstanceKey(), value.getHistoryItemId());
   }
 }

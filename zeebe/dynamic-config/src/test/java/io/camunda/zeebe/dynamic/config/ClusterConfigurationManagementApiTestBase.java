@@ -82,11 +82,13 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
@@ -419,7 +421,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
     // then
     assertThat(changeStatus.legacyResponse().plannedChanges())
-        .containsExactly(new PartitionJoinOperation(memberFactory.apply(1), 1, 3));
+        .containsExactly(
+            new PartitionJoinOperation(memberFactory.apply(1), 1, 3, true),
+            new PartitionPromoteOperation(memberFactory.apply(1), 1));
   }
 
   @Test
@@ -442,7 +446,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
     // then
     assertThat(changeStatus.legacyResponse().plannedChanges())
-        .containsExactly(new PartitionLeaveOperation(memberFactory.apply(1), 1, 1));
+        .containsExactly(
+            new PartitionDemoteOperation(memberFactory.apply(1), 1),
+            new PartitionLeaveOperation(memberFactory.apply(1), 1, 1));
   }
 
   @Test
@@ -470,7 +476,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
             new MemberJoinOperation(memberFactory.apply(1)),
-            new PartitionJoinOperation(memberFactory.apply(1), 2, 1),
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 1, true),
+            new PartitionPromoteOperation(memberFactory.apply(1), 2),
+            new PartitionDemoteOperation(memberFactory.apply(0), 2),
             new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
             new PostScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))));
@@ -498,7 +506,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
     // then
     assertThat(changeStatus.legacyResponse().plannedChanges())
-        .hasSize(6)
+        .hasSize(8)
         .startsWith(
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))))
@@ -507,9 +515,11 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))))
         .contains(
             new MemberJoinOperation(memberFactory.apply(1)),
-            new PartitionJoinOperation(memberFactory.apply(1), 2, 2))
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 2, true),
+            new PartitionPromoteOperation(memberFactory.apply(1), 2))
         .containsSequence(
-            new PartitionJoinOperation(memberFactory.apply(1), 1, 1),
+            new PartitionJoinOperation(memberFactory.apply(1), 1, 1, true),
+            new PartitionPromoteOperation(memberFactory.apply(1), 1),
             new PartitionReconfigurePriorityOperation(memberFactory.apply(0), 1, 2));
   }
 
@@ -571,7 +581,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
     // then
     assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactlyInAnyOrder(
+            new PartitionDemoteOperation(memberFactory.apply(0), 2),
             new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
+            new PartitionDemoteOperation(memberFactory.apply(1), 1),
             new PartitionLeaveOperation(memberFactory.apply(1), 1, 1),
             new PartitionReconfigurePriorityOperation(memberFactory.apply(0), 1, 1),
             new PartitionReconfigurePriorityOperation(memberFactory.apply(1), 2, 1));
@@ -655,7 +667,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
             new MemberJoinOperation(memberFactory.apply(1)),
-            new PartitionJoinOperation(memberFactory.apply(1), 2, 1),
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 1, true),
+            new PartitionPromoteOperation(memberFactory.apply(1), 2),
+            new PartitionDemoteOperation(memberFactory.apply(0), 2),
             new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
             new StartPartitionScaleUp(memberFactory.apply(0), 3),
             new PartitionBootstrapOperation(memberFactory.apply(0), 3, 1, true),
@@ -692,7 +706,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
             new MemberJoinOperation(memberFactory.apply(1)),
-            new PartitionJoinOperation(memberFactory.apply(1), 2, 1),
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 1, true),
+            new PartitionPromoteOperation(memberFactory.apply(1), 2),
+            new PartitionDemoteOperation(memberFactory.apply(0), 2),
             new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
             new StartPartitionScaleUp(memberFactory.apply(0), 3),
             new PartitionBootstrapOperation(memberFactory.apply(0), 3, 1, true),
