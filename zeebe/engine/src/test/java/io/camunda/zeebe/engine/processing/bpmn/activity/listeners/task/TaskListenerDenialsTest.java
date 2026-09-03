@@ -88,15 +88,15 @@ public class TaskListenerDenialsTest {
   }
 
   @Test
-  public void shouldNotLeakCreateActionIntoDeniedEvents() {
+  public void shouldNotCarryActionOnAssignmentDenied() {
     // Regression: broker-internal CREATING sets action="create" on the user task record. Before
     // the fix in UserTaskCreatedV3Applier, that action was persisted into state and read back by
-    // UserTaskProcessor.processDenyTaskListener, so ASSIGNMENT_DENIED / UPDATE_DENIED /
-    // COMPLETION_DENIED emitted with action="create" (visible via TaskEntity.action in
-    // secondary storage). The applier now resets action in state so denials preserve pre-fix
-    // behavior (empty action for the broker-internal path).
+    // UserTaskProcessor.processDenyTaskListener, so ASSIGNMENT_DENIED emitted with
+    // action="create" (visible via TaskEntity.action in secondary storage). The applier now
+    // resets the action in state; the invariant is that state carries no action between
+    // transitions, so the denied event must expose action="".
 
-    // given: a user task with denying listeners for assign, update, and complete
+    // given: a user task with a denying assigning listener
     final long processInstanceKey =
         helper.createProcessInstance(
             helper.createUserTaskWithTaskListeners(
@@ -111,15 +111,107 @@ public class TaskListenerDenialsTest {
         .withResult(new JobResult().setDenied(true))
         .complete();
 
-    // then: ASSIGNMENT_DENIED must not carry the CREATING transition's action
+    // then
     assertThat(
             RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNMENT_DENIED)
                 .withProcessInstanceKey(processInstanceKey)
                 .getFirst()
                 .getValue()
                 .getAction())
-        .describedAs("ASSIGNMENT_DENIED must not inherit the broker-internal CREATING action")
-        .isNotEqualTo("create");
+        .describedAs("ASSIGNMENT_DENIED must not carry an action")
+        .isEqualTo("");
+  }
+
+  @Test
+  public void shouldNotCarryActionOnUpdateDeniedForCommand() {
+    // given: a user task with a denying updating listener
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating, listenerType));
+
+    // when: an update command triggers the listener which denies the transition
+    ENGINE.userTask().ofInstance(processInstanceKey).withPriority(80).update();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.UPDATE_DENIED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getAction())
+        .describedAs("UPDATE_DENIED must not carry an action")
+        .isEqualTo("");
+  }
+
+  @Test
+  public void shouldNotCarryActionOnUpdateDeniedForVariableUpdate() {
+    // Covers the VariableDocumentUpdateProcessor path where UPDATING is triggered without an
+    // explicit user task command.
+
+    // given: a user task with a denying updating listener
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating, listenerType));
+
+    // when: a variable update triggers the listener which denies the transition
+    final var userTaskInstanceKey = helper.getUserTaskElementInstanceKey(processInstanceKey);
+    ENGINE
+        .variables()
+        .ofScope(userTaskInstanceKey)
+        .withDocument(Map.of("status", "APPROVED"))
+        .withLocalSemantic()
+        .expectUpdating()
+        .update();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.UPDATE_DENIED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getAction())
+        .describedAs("UPDATE_DENIED (variable-triggered) must not carry an action")
+        .isEqualTo("");
+  }
+
+  @Test
+  public void shouldNotCarryActionOnCompletionDenied() {
+    // given: a user task with a denying completing listener
+    final long processInstanceKey =
+        helper.createProcessInstance(helper.createProcessWithCompletingTaskListeners(listenerType));
+
+    // when: completion triggers the listener which denies the transition
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.COMPLETION_DENIED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getAction())
+        .describedAs("COMPLETION_DENIED must not carry an action")
+        .isEqualTo("");
   }
 
   @Test
