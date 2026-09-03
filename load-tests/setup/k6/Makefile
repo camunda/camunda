@@ -4,4 +4,4 @@ install:
 	kubectl apply -k .
 
 clean:
-	kubectl delete -k .
+	-kubectl delete -k .

@@ -5,11 +5,16 @@ import { Counter } from 'k6/metrics';
 const http_response = new Counter('http_response');
 
 export const options = {
-  vus: 100,
-  duration: '15m',
+  scenarios: {
+    topology: {
+      exec: 'checkTopology',
+      executor: 'constant-vus',
+      duration: '1d',
+      vus: 100,
+    },
+  },
 };
 
-// Authenticate
 export function setup() {
   const token_url = __ENV.ZEEBE_AUTHORIZATION_SERVER_URL;
   const client_id = __ENV.ZEEBE_CLIENT_ID;
@@ -17,9 +22,6 @@ export function setup() {
   const audience = __ENV.ZEEBE_TOKEN_AUDIENCE;
 
   console.log(`Fetching authentication token from ${token_url}`);
-  const params = {
-    headers: {},
-  };
 
   const payload = {
     grant_type: 'client_credentials',
@@ -28,35 +30,30 @@ export function setup() {
     client_secret: client_secret,
   };
 
-  const response = http.post(token_url, payload, params);
+  const response = http.post(token_url, payload);
+  if (response.status != 200) {
     const result = response.body;
-    if (response.status != 200) {
-        throw new Error(`unable to fetch token: ${result}`);
-    }
+    throw new Error(`unable to fetch token: ${result}`);
+  }
+
   const token = response.json('access_token');
-  console.log("Authentication token fetched.");
+  console.log(`Authentication token fetched successfully.`);
   http_response.add(1, { status: response.status, endpoint: 'token-request' });
 
-  return token;
+  const context = {
+    token: token,
+    params: {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': "Bearer " + token,
+      }
+    },
+  };
+  return context;
 }
 
-
-// Check zeebe status
-export default (token) => {
+export function checkTopology (context) {
   const url = __ENV.ZEEBE_REST_ADDRESS + '/v1/topology';
-
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': "Bearer " + token,
-  };
-
-
-  const params = {
-    headers: headers
-  };
-
-  const response = http.get(url, params);
-
-  http_response.add(1, { status: response.status, endpoint: 'topology' });
+  http.get(url, context.params);
   sleep(1);
 };
