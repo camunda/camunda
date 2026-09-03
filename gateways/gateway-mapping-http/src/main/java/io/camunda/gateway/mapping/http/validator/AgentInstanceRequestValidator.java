@@ -37,7 +37,7 @@ import org.springframework.http.ProblemDetail;
 public class AgentInstanceRequestValidator {
 
   // Mirrors HistoryItemId#maxLength in identifiers.yaml.
-  public static final int MAX_HISTORY_ITEM_ID_LENGTH = 256;
+  private static final int MAX_HISTORY_ITEM_ID_LENGTH = 256;
 
   // Note: even if some properties are marked @NotNull in AgentInstanceCreationRequest,
   // no validation is performed during deserialization, so it is still necessary to validate it here
