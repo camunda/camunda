@@ -183,7 +183,7 @@ export class IdentityTenantsPage {
   async assignUserToTenant(user: {id: string; name: string}) {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
-    await this.fillAssignUserName(user.name);
+    await this.fillAssignUserName(user.id);
     // The assign-user search filters users by `username` and renders the
     // username as the option title, so `user.id` drives both steps.
     const option = this.assignUserSearchboxResult
