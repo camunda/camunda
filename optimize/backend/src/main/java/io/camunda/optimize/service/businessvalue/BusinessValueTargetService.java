@@ -34,10 +34,14 @@ import org.springframework.stereotype.Component;
  *
  * <p>A target write measures the definition and writes its overview rows synchronously, via {@link
  * BusinessValueOverviewComputeService#computeRowsForTarget}, so the caller's next {@code GET
- * /business-value/overview} shows the new verdict. Without it the row keeps the target it was last
- * swept with, and the stale-read backstop does not help: it fires on the age of the measurement,
- * and a row measured minutes ago carrying an hour-old target is not stale by that test. The cost is
- * one definition's aggregations, not the whole catalogue's.
+ * /business-value/overview} shows the new verdict when that compute succeeds. Without it the row
+ * keeps the target it was last swept with, and the stale-read backstop does not help: it fires on
+ * the age of the measurement, and a row measured minutes ago carrying an hour-old target is not
+ * stale by that test. The cost is one definition's aggregations, not the whole catalogue's.
+ *
+ * <p>The compute is best effort. A failure is logged rather than surfaced, because the target is
+ * already durable by then and failing the request would leave the caller unable to tell whether it
+ * saved; the next sweep brings the rows up to date.
  *
  * <p>Field-level input validation ({@code automationRateTargetPct ∈ [0, 100]}, {@code
  * cycleTimeTarget.value ≥ 0}) is expressed as JSR-380 annotations on {@link
