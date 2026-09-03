@@ -154,11 +154,34 @@ runs:
         secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token;
         secret/data/products/camunda/ci/harbor username | harbor-username;
         secret/data/products/camunda/ci/harbor password | harbor-password
+  - name: Prepare wretry action-clone credential
+    # wretry does not reuse the runner's authenticated action download -- it fetches the wrapped
+    # action with its own `git clone`. For a public repo GitHub answers git's first probe with 200,
+    # so git is never challenged and credentials embedded in the clone URL are never sent: the
+    # clone is anonymous whatever `github_token` is passed, which is how GitHub's anonymous
+    # download limiting took out 33 CI jobs on 2026-09-03. An `http.<url>.extraheader` is sent
+    # unconditionally on the first request, so it is the only way to authenticate that clone.
+    # Handed to the wretry step through GIT_CONFIG_* rather than `git config --global` so it is
+    # scoped to that one step: nothing to clean up, and no global config to clobber.
+    id: wretry-clone-credential
+    shell: bash
+    env:
+      ACTION_CLONE_TOKEN: ${{ github.token }}
+    run: |
+      credential="$(printf 'x-access-token:%s' "$ACTION_CLONE_TOKEN" | base64 | tr -d '\n')"
+      # base64 of the token is a usable credential and does not match the raw secret, so Actions
+      # will not mask it on its own.
+      echo "::add-mask::$credential"
+      echo "header=AUTHORIZATION: basic $credential" >> "$GITHUB_OUTPUT"
   - name: Setup Java
     # wretry retries setup-java through transient network/setup failures (INC-7417). Same pattern
     # as build-platform-docker; `_js_action` pin lets the *_context inputs be overridden.
     # `token` is passed explicitly since github_context is blanked (setup-java defaults it from it).
     uses: Wandalen/wretry.action@71a909ebf09f3ffdc6f42a17bd54ecb43481da49 # v3.8.0_js_action
+    env:
+      GIT_CONFIG_COUNT: '1'
+      GIT_CONFIG_KEY_0: http.https://github.com/.extraheader
+      GIT_CONFIG_VALUE_0: ${{ steps.wretry-clone-credential.outputs.header }}
     with:
       action: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
       attempt_limit: 3
