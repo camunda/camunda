@@ -61,10 +61,10 @@ const InstancesBar: React.FC<Props> = ({
 						{label.text}
 					</Label>
 				)}
-				{(isDraining || showActiveInstancesCount) && (
+				{((isDraining && drainingDescription !== undefined) || showActiveInstancesCount) && (
 					<RightControls>
-						{isDraining && (
-							<Tooltip label={drainingDescription ?? 'Draining'} align="top" autoAlign>
+						{isDraining && drainingDescription !== undefined && (
+							<Tooltip label={drainingDescription} align="top" autoAlign>
 								<DrainingIndicator data-testid="draining-indicator">
 									<Timer size={16} />
 								</DrainingIndicator>
