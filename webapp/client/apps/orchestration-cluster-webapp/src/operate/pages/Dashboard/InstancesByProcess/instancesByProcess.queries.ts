@@ -28,6 +28,8 @@ type DrainingLookup = {
 	byKey: Set<string>;
 };
 
+const drainingByIdKey = (tenantId: string, processDefinitionId: string) => `${tenantId}:${processDefinitionId}`;
+
 async function fetchAllDrainingProcessDefinitions(): Promise<ProcessDefinition[]> {
 	const items: ProcessDefinition[] = [];
 	let after: string | undefined;
@@ -57,7 +59,7 @@ const drainingProcessDefinitionsQuery = () =>
 		refetchInterval: DRAINING_REFETCH_INTERVAL,
 		queryFn: fetchAllDrainingProcessDefinitions,
 		select: (items): DrainingLookup => ({
-			byId: new Set(items.map((item) => item.processDefinitionId)),
+			byId: new Set(items.map((item) => drainingByIdKey(item.tenantId, item.processDefinitionId))),
 			byKey: new Set(items.map((item) => item.processDefinitionKey)),
 		}),
 	});
@@ -117,6 +119,7 @@ export {
 	instancesByProcessInfiniteQuery,
 	instancesByProcessVersionsQuery,
 	drainingProcessDefinitionsQuery,
+	drainingByIdKey,
 	PAGE_SIZE,
 	type DrainingLookup,
 };

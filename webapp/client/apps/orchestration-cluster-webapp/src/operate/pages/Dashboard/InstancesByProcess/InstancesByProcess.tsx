@@ -19,6 +19,7 @@ import {useDashboardScrollPagination} from '../useDashboardScrollPagination';
 import {runningOrAllInstancesFilter} from '../processesLinkFilters';
 import {LinkWrapper, LoadingRow} from '../styled';
 import {
+	drainingByIdKey,
 	drainingProcessDefinitionsQuery,
 	instancesByProcessInfiniteQuery,
 	PAGE_SIZE,
@@ -74,7 +75,7 @@ const InstancesByProcess: React.FC = () => {
 								label={{type: 'process', size: 'medium', text: labelText}}
 								activeInstancesCount={item.activeInstancesWithoutIncidentCount}
 								incidentsCount={item.activeInstancesWithIncidentCount}
-								isDraining={!!draining?.byId.has(item.processDefinitionId)}
+								isDraining={!!draining?.byId.has(drainingByIdKey(item.tenantId, item.processDefinitionId))}
 								drainingDescription={t('operate.dashboard.drainingDescriptionAllVersions')}
 								size="medium"
 							/>
