@@ -100,7 +100,8 @@ final class PartitionJoinTest {
               partitionManager.join(
                   1,
                   Map.of(MemberId.from("0"), 2, MemberId.from("1"), 1),
-                  DynamicPartitionConfig.init()))
+                  DynamicPartitionConfig.init(),
+                  true))
           .succeedsWithin(Duration.ofSeconds(10));
 
       // ... and can be promoted to a voting member once the leader's catch-up gate accepts. The

@@ -203,7 +203,8 @@ public final class PartitionReassignmentOperationsGenerator {
 
     for (final MemberId member : target.members().stream().sorted().toList()) {
       if (!member.equals(primary)) {
-        operations.add(new PartitionJoinOperation(member, partitionId, target.getPriority(member)));
+        operations.add(
+            new PartitionJoinOperation(member, partitionId, target.getPriority(member), true));
         operations.add(new PartitionPromoteOperation(member, partitionId));
       }
     }

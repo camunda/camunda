@@ -72,10 +72,10 @@ final class PartitionReassignmentOperationsGeneratorTest {
     assertThat(operations.get("tenantX"))
         .containsExactly(
             new PartitionBootstrapOperation(member(0), 1, 2, Optional.of(newTenantConfig), false),
-            new PartitionJoinOperation(member(1), 1, 1),
+            new PartitionJoinOperation(member(1), 1, 1, true),
             new PartitionPromoteOperation(member(1), 1),
             new PartitionBootstrapOperation(member(1), 2, 2, Optional.empty(), false),
-            new PartitionJoinOperation(member(2), 2, 1),
+            new PartitionJoinOperation(member(2), 2, 1, true),
             new PartitionPromoteOperation(member(2), 2));
   }
 
@@ -162,7 +162,7 @@ final class PartitionReassignmentOperationsGeneratorTest {
     assertThat(operations).containsOnlyKeys("tenantA");
     assertThat(operations.get("tenantA"))
         .containsExactly(
-            new PartitionJoinOperation(member(3), 1, 1),
+            new PartitionJoinOperation(member(3), 1, 1, true),
             new PartitionPromoteOperation(member(3), 1),
             new PartitionDemoteOperation(member(1), 1),
             new PartitionLeaveOperation(member(1), 1, 1),
@@ -205,7 +205,7 @@ final class PartitionReassignmentOperationsGeneratorTest {
     assertThat(operations).containsOnlyKeys("tenantA", "tenantB");
     assertThat(operations.get("tenantA"))
         .containsExactly(
-            new PartitionJoinOperation(member(1), 2, 1),
+            new PartitionJoinOperation(member(1), 2, 1, true),
             new PartitionPromoteOperation(member(1), 2));
     assertThat(operations.get("tenantB"))
         .containsExactly(

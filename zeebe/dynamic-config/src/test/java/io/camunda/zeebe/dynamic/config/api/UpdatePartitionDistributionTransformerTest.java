@@ -89,13 +89,13 @@ class UpdatePartitionDistributionTransformerTest {
     assertThat(result.get())
         .containsExactly(
             new UpdatePartitionDistributorConfigOperation(COORDINATOR, newConfig),
-            new PartitionJoinOperation(ZONE_A_1, 1, 2),
+            new PartitionJoinOperation(ZONE_A_1, 1, 2, true),
             new PartitionPromoteOperation(ZONE_A_1, 1),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 1, 3),
-            new PartitionJoinOperation(ZONE_A_0, 2, 2),
+            new PartitionJoinOperation(ZONE_A_0, 2, 2, true),
             new PartitionPromoteOperation(ZONE_A_0, 2),
             new PartitionReconfigurePriorityOperation(ZONE_A_1, 2, 3),
-            new PartitionJoinOperation(ZONE_A_1, 3, 2),
+            new PartitionJoinOperation(ZONE_A_1, 3, 2, true),
             new PartitionPromoteOperation(ZONE_A_1, 3),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 3, 3));
   }

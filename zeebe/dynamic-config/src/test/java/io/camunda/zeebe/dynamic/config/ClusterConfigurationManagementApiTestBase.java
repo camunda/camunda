@@ -422,7 +422,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     // then
     assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactly(
-            new PartitionJoinOperation(memberFactory.apply(1), 1, 3),
+            new PartitionJoinOperation(memberFactory.apply(1), 1, 3, true),
             new PartitionPromoteOperation(memberFactory.apply(1), 1));
   }
 
@@ -476,7 +476,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
             new MemberJoinOperation(memberFactory.apply(1)),
-            new PartitionJoinOperation(memberFactory.apply(1), 2, 1),
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 1, true),
             new PartitionPromoteOperation(memberFactory.apply(1), 2),
             new PartitionDemoteOperation(memberFactory.apply(0), 2),
             new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
@@ -515,10 +515,10 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))))
         .contains(
             new MemberJoinOperation(memberFactory.apply(1)),
-            new PartitionJoinOperation(memberFactory.apply(1), 2, 2),
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 2, true),
             new PartitionPromoteOperation(memberFactory.apply(1), 2))
         .containsSequence(
-            new PartitionJoinOperation(memberFactory.apply(1), 1, 1),
+            new PartitionJoinOperation(memberFactory.apply(1), 1, 1, true),
             new PartitionPromoteOperation(memberFactory.apply(1), 1),
             new PartitionReconfigurePriorityOperation(memberFactory.apply(0), 1, 2));
   }
@@ -667,7 +667,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
             new MemberJoinOperation(memberFactory.apply(1)),
-            new PartitionJoinOperation(memberFactory.apply(1), 2, 1),
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 1, true),
             new PartitionPromoteOperation(memberFactory.apply(1), 2),
             new PartitionDemoteOperation(memberFactory.apply(0), 2),
             new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
@@ -706,7 +706,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
             new MemberJoinOperation(memberFactory.apply(1)),
-            new PartitionJoinOperation(memberFactory.apply(1), 2, 1),
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 1, true),
             new PartitionPromoteOperation(memberFactory.apply(1), 2),
             new PartitionDemoteOperation(memberFactory.apply(0), 2),
             new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),

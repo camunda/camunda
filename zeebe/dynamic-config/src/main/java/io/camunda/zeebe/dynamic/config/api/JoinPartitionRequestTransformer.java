@@ -58,7 +58,7 @@ public final class JoinPartitionRequestTransformer implements ConfigurationChang
     // has caught up on the partition's log.
     final List<PartitionGroupOperation> operations =
         List.of(
-            new PartitionJoinOperation(memberId, partitionId, priority),
+            new PartitionJoinOperation(memberId, partitionId, priority, true),
             new PartitionPromoteOperation(memberId, partitionId));
     return Either.right(List.of(PartitionGroupPhase.sequential(Map.of(groupId, operations))));
   }

@@ -343,6 +343,9 @@ message CompletedTopologyChangeOperation {
 message PartitionJoinOperation {
   int32 partitionId = 1;
   int32 priority = 2;
+  // Absent (false) in operations serialized before two-phase joins existed: such an operation
+  // keeps its original meaning of a complete, single-step join as a voting member.
+  bool asLearner = 3;
 }
 
 message PartitionLeaveOperation {

@@ -80,7 +80,11 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
     return switch (operation) {
       case final PartitionJoinOperation op ->
           new PartitionJoinApplier(
-              op.memberId(), op.partitionId(), op.priority(), partitionChangeExecutor);
+              op.memberId(),
+              op.partitionId(),
+              op.priority(),
+              op.asLearner(),
+              partitionChangeExecutor);
       case final PartitionLeaveOperation op ->
           new PartitionLeaveApplier(
               op.memberId(),

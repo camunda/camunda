@@ -117,7 +117,7 @@ final class ZoneAwareClusterConfigurationManagementApiTest
                 ZONE_A_0,
                 new ZoneAwareConfig(
                     List.of(new ZoneSpec(ZONE_A, 1, 1), new ZoneSpec(ZONE_B, 1, 2)))),
-            new PartitionJoinOperation(ZONE_B_0, 1, 2),
+            new PartitionJoinOperation(ZONE_B_0, 1, 2, true),
             new PartitionPromoteOperation(ZONE_B_0, 1),
             new PartitionDemoteOperation(ZONE_A_1, 1),
             new PartitionLeaveOperation(ZONE_A_1, 1, 1));

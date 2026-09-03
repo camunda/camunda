@@ -204,7 +204,8 @@ public final class PartitionManagerImpl
 
   private ActorFuture<Void> joinPartition(
       final PartitionMetadata partitionMetadata,
-      final DynamicPartitionConfig initialPartitionConfig) {
+      final DynamicPartitionConfig initialPartitionConfig,
+      final RaftMember.Type joinMemberType) {
     final var result = concurrencyControl.<Void>createFuture();
     final var id = partitionMetadata.id().number();
     final var context =
@@ -224,10 +225,7 @@ public final class PartitionManagerImpl
             brokerMeterRegistry,
             brokerClient,
             gatewayBrokerTransport);
-    // Join as a learner: replicated to but part of no quorum, so that the join never makes a
-    // quorum depend on this empty-log member. The promote operation that every emitter pairs with
-    // the join makes the member a voting member once it has caught up.
-    context.joinMemberType(RaftMember.Type.PROMOTABLE);
+    context.joinMemberType(joinMemberType);
     final var partition = Partition.joining(context);
     final var previousPartition = partitions.putIfAbsent(id, partition);
     if (previousPartition != null) {
@@ -368,7 +366,8 @@ public final class PartitionManagerImpl
   public ActorFuture<Void> join(
       final int partitionId,
       final Map<MemberId, Integer> membersWithPriority,
-      final DynamicPartitionConfig partitionConfig) {
+      final DynamicPartitionConfig partitionConfig,
+      final boolean asLearner) {
     final int targetPriority = Collections.max(membersWithPriority.values());
 
     final var members = membersWithPriority.keySet();
@@ -391,7 +390,11 @@ public final class PartitionManagerImpl
             targetPriority,
             primary);
 
-    return joinPartition(partitionMetadata, partitionConfig); // TODO
+    // A learner is replicated to but part of no quorum, so the join never makes a quorum depend on
+    // this empty-log member; the promote operation that follows makes it a voting member once it
+    // has caught up. Only operations from before two-phase joins existed join as a voting member.
+    final var joinMemberType = asLearner ? RaftMember.Type.PROMOTABLE : RaftMember.Type.ACTIVE;
+    return joinPartition(partitionMetadata, partitionConfig, joinMemberType);
   }
 
   @Override

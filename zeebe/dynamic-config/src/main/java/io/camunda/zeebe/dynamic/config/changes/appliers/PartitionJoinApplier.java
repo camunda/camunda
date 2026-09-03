@@ -33,6 +33,10 @@ import java.util.function.UnaryOperator;
  * part of the partition distribution, so a restart within it retries the join from scratch; {@code
  * LEARNER} is, so a restart after it recovers the partition from disk.
  *
+ * <p>An operation created before two-phase joins existed ({@code asLearner} false) is not followed
+ * by a promote operation. It keeps its original meaning: the member joins as a voting member and
+ * the partition ends {@code ACTIVE}, so a change in flight during a rolling upgrade completes.
+ *
  * <p>A broker may not yet be a member of this particular partition group at all (e.g. its first
  * partition assignment in this group). This applier must therefore branch between {@link
  * PartitionGroupConfiguration#addMember} (broker not yet in this group) and {@link
@@ -43,6 +47,7 @@ public final class PartitionJoinApplier implements PartitionGroupConfigurationCh
   private final MemberId memberId;
   private final int partitionId;
   private final int priority;
+  private final boolean asLearner;
   private final PartitionChangeExecutor partitionChangeExecutor;
 
   private Map<MemberId, Integer> partitionMembersWithPriority;
@@ -52,10 +57,12 @@ public final class PartitionJoinApplier implements PartitionGroupConfigurationCh
       final MemberId memberId,
       final int partitionId,
       final int priority,
+      final boolean asLearner,
       final PartitionChangeExecutor partitionChangeExecutor) {
     this.memberId = memberId;
     this.partitionId = partitionId;
     this.priority = priority;
+    this.asLearner = asLearner;
     this.partitionChangeExecutor = partitionChangeExecutor;
   }
 
@@ -125,16 +132,16 @@ public final class PartitionJoinApplier implements PartitionGroupConfigurationCh
         new CompletableActorFuture<>();
 
     partitionChangeExecutor
-        .join(partitionId, partitionMembersWithPriority, partitionConfig)
+        .join(partitionId, partitionMembersWithPriority, partitionConfig, asLearner)
         .onComplete(
             (ignored, error) -> {
               if (error == null) {
+                final UnaryOperator<PartitionState> joined =
+                    asLearner ? PartitionState::toLearner : PartitionState::toActive;
                 result.complete(
                     group ->
                         group.updateMember(
-                            memberId,
-                            broker ->
-                                broker.updatePartition(partitionId, PartitionState::toLearner)));
+                            memberId, broker -> broker.updatePartition(partitionId, joined)));
               } else {
                 result.completeExceptionally(error);
               }

@@ -8,6 +8,9 @@
 package io.camunda.zeebe.dynamic.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -234,8 +237,8 @@ final class ClusterConfigurationManagerImplTest {
                             Map.of(
                                 CurrentClusterConfiguration.DEFAULT_GROUP,
                                 List.of(
-                                    new PartitionJoinOperation(MEMBER_0, 1, 1),
-                                    new PartitionJoinOperation(MEMBER_0, 2, 1)))))))
+                                    new PartitionJoinOperation(MEMBER_0, 1, 1, true),
+                                    new PartitionJoinOperation(MEMBER_0, 2, 1, true)))))))
         .join();
 
     // then — both operations drained in order and the plan completed; a reconciliation loop that
@@ -733,7 +736,7 @@ final class ClusterConfigurationManagerImplTest {
                         PartitionGroupPhase.sequential(
                             Map.of(
                                 CurrentClusterConfiguration.DEFAULT_GROUP,
-                                List.of(new PartitionJoinOperation(MEMBER_0, 1, 1)))))))
+                                List.of(new PartitionJoinOperation(MEMBER_0, 1, 1, true)))))))
         .join();
 
     // then — the coordinator advanced from the global phase into the partition-group phase and
@@ -806,9 +809,10 @@ final class ClusterConfigurationManagerImplTest {
                 c.initPlan(
                     List.of(
                         PartitionGroupPhase.sequential(
-                            Map.of("a", List.of(new PartitionJoinOperation(MEMBER_0, 1, 1)))),
+                            Map.of("a", List.of(new PartitionJoinOperation(MEMBER_0, 1, 1, true)))),
                         PartitionGroupPhase.sequential(
-                            Map.of("b", List.of(new PartitionJoinOperation(MEMBER_0, 1, 1)))))))
+                            Map.of(
+                                "b", List.of(new PartitionJoinOperation(MEMBER_0, 1, 1, true)))))))
         .join();
 
     // then — both phases were applied in order and the plan completed; neither group was skipped
@@ -1163,7 +1167,7 @@ final class ClusterConfigurationManagerImplTest {
                         PartitionGroupPhase.sequential(
                             Map.of(
                                 CurrentClusterConfiguration.DEFAULT_GROUP,
-                                List.of(new PartitionJoinOperation(MEMBER_0, 1, 1)))))))
+                                List.of(new PartitionJoinOperation(MEMBER_0, 1, 1, true)))))))
         .join();
 
     // then — the operation was retried and completed successfully
@@ -1240,7 +1244,7 @@ final class ClusterConfigurationManagerImplTest {
                         PartitionGroupPhase.sequential(
                             Map.of(
                                 CurrentClusterConfiguration.DEFAULT_GROUP,
-                                List.of(new PartitionJoinOperation(MEMBER_0, 1, 1)))))))
+                                List.of(new PartitionJoinOperation(MEMBER_0, 1, 1, true)))))))
         .join();
 
     // then — three consecutive failures did not stop the retries; the fourth attempt completed
@@ -1619,6 +1623,85 @@ final class ClusterConfigurationManagerImplTest {
   }
 
   @Test
+  void shouldCompleteAJoinFromBeforeTwoPhaseJoinsAsAVotingMember() {
+    // given — a change that was in flight when the broker was upgraded: a join operation created by
+    // a version without two-phase joins, so no promote operation follows it. Such an operation
+    // must keep its original meaning and end with a voting member, or the partition would be stuck
+    // as a learner that nothing promotes.
+    final PartitionChangeExecutor partitionChangeExecutor = mock(PartitionChangeExecutor.class);
+    when(partitionChangeExecutor.join(anyInt(), any(), any(), eq(false)))
+        .thenReturn(CompletableActorFuture.completed(null));
+
+    final var persisted =
+        PersistedCurrentClusterConfiguration.ofFile(
+            tmp.resolve("config-legacy-join.meta"), new ProtoBufSerializer());
+    final var manager =
+        new ClusterConfigurationManagerImpl(
+            executor,
+            MEMBER_0,
+            persisted,
+            new TopologyManagerMetrics(new SimpleMeterRegistry()),
+            Duration.ofMillis(1),
+            Duration.ofMillis(1));
+    manager.setCurrentConfigurationGossiper(ignored -> {});
+    manager.registerGlobalChangeAppliers(
+        new GlobalConfigurationChangeAppliersImpl(
+            new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor()));
+    final var group =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                MEMBER_1,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(2, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var withPendingLegacyJoin =
+        new CurrentClusterConfiguration(
+                CurrentClusterConfiguration.INITIAL_VERSION,
+                new GlobalConfiguration(
+                    1,
+                    Optional.empty(),
+                    Map.of(
+                        MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                        MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+                    Optional.empty(),
+                    Optional.empty(),
+                    Optional.empty()),
+                Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, group),
+                PhasedChangeState.empty())
+            .initPlan(
+                List.of(
+                    PartitionGroupPhase.sequential(
+                        Map.of(
+                            CurrentClusterConfiguration.DEFAULT_GROUP,
+                            List.of(new PartitionJoinOperation(MEMBER_0, 1, 1, false))))));
+
+    // when
+    manager.start(() -> CompletableActorFuture.completed(withPendingLegacyJoin)).join();
+    manager.registerPartitionGroupChangeAppliers(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            partitionChangeExecutor,
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+
+    // then — the member joined as a voting member in the single step the old operation promised
+    Awaitility.await("Legacy join completes with a voting member")
+        .untilAsserted(
+            () -> {
+              final var defaultGroup =
+                  configuration(manager).partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+              assertThat(defaultGroup.hasPendingChanges()).isFalse();
+              assertThat(defaultGroup.getMember(MEMBER_0).getPartition(1).state())
+                  .isEqualTo(PartitionState.State.ACTIVE);
+            });
+  }
+
+  @Test
   void shouldFinishADrainedChangeWithNoLocalOperationLeftToRun() {
     // given — a change whose every operation was applied by *peers*, merged into one drained plan
     // that nobody has cleared yet. This is the mechanic the queue model never had: finishing a
@@ -1824,7 +1907,8 @@ final class ClusterConfigurationManagerImplTest {
     public ActorFuture<Void> join(
         final int partitionId,
         final Map<MemberId, Integer> membersWithPriority,
-        final DynamicPartitionConfig partitionConfig) {
+        final DynamicPartitionConfig partitionConfig,
+        final boolean asLearner) {
       return mayBeFail();
     }
 
