@@ -26,6 +26,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
  *
  * <ul>
  *   <li>its last active instance completes or terminates ({@link #finalizeDeletionIfDraining})
+ *   <li>the last instance is migrated away
  *   <li>for a definition inherited by a freshly bootstrapped partition that holds none of its
  *       instances, when that partition finishes bootstrapping ({@link
  *       #finalizeDrainingDefinitionsWithoutLocalInstances})
@@ -70,9 +71,11 @@ public final class BpmnProcessDeletionBehavior {
       return;
     }
 
-    final var process =
-        processState.getProcessByKeyAndTenant(
-            context.getProcessDefinitionKey(), context.getTenantId());
+    finalizeDeletionIfDraining(context.getProcessDefinitionKey(), context.getTenantId());
+  }
+
+  public void finalizeDeletionIfDraining(final long processDefinitionKey, final String tenantId) {
+    final var process = processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
     if (process == null || process.getState() != PersistedProcessState.DRAINING) {
       return;
     }
@@ -121,6 +124,10 @@ public final class BpmnProcessDeletionBehavior {
             .setResourceName(process.getResourceName())
             .setTenantId(process.getTenantId())
             .setDeploymentKey(process.getDeploymentKey());
+    finalizeDeletion(processRecord);
+  }
+
+  public void finalizeDeletion(final ProcessRecord processRecord) {
     // the locally-minted key identifies the reporting partition to ProcessDeleteCompleteProcessor
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETING, processRecord);
