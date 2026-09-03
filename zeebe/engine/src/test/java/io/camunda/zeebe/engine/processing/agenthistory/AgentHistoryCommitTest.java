@@ -693,11 +693,7 @@ public class AgentHistoryCommitTest {
   }
 
   private static Record<?> createAgentInstance(final long elementInstanceKey) {
-    return ENGINE
-        .agentInstances()
-        .withElementInstanceKey(elementInstanceKey)
-        .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-        .create();
+    return ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create();
   }
 
   private static long createHistoryItem(

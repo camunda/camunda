@@ -81,7 +81,6 @@ public class AgentInstanceHistoryBatchProcessingTest {
         ENGINE
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withHistory(
                 List.of(
                     new AgentHistoryRecord()
@@ -205,12 +204,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -274,12 +268,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -332,12 +321,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -392,12 +376,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -457,12 +436,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -519,12 +493,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
 
     // when — a jobKey that was never activated
@@ -579,12 +548,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
 
     // when — no withJobKey(...) call at all
@@ -637,12 +601,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
 
     final var batch1 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
@@ -759,12 +718,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -848,12 +802,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
     final var ei2 = children.get(1).getKey();
 
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(ei1)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(ei1).create().getKey();
 
     ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).activate();
     final var ei2JobKey =
@@ -922,12 +871,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -1029,12 +973,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -1142,12 +1081,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -1210,12 +1144,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -1273,12 +1202,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -1634,12 +1558,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -1702,12 +1621,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -1758,12 +1672,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -1824,12 +1733,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -1901,7 +1805,6 @@ public class AgentInstanceHistoryBatchProcessingTest {
         ENGINE
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withJobKey(jobKey)
             .withHistory(List.of(userItem))
             .create();
@@ -2044,7 +1947,6 @@ public class AgentInstanceHistoryBatchProcessingTest {
         ENGINE
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withJobKey(jobKey)
             .withHistory(List.of(configItem))
             .create();
@@ -2135,7 +2037,6 @@ public class AgentInstanceHistoryBatchProcessingTest {
         ENGINE
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withJobKey(jobKey)
             .withHistory(List.of(configItem, userItem))
             .create();
@@ -2349,7 +2250,6 @@ public class AgentInstanceHistoryBatchProcessingTest {
         ENGINE
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withJobKey(jobKey)
             .withHistory(List.of(userItem))
             .create();
@@ -2390,12 +2290,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -2461,12 +2356,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -2560,12 +2450,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -2755,12 +2640,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -2894,12 +2774,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -3023,12 +2898,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -3128,12 +2998,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
     // the agent instance is created on EI1; EI1 remains active (parallel multi-instance).
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(ei1)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(ei1).create().getKey();
 
     ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).activate();
     final var job2Key =
@@ -3217,12 +3082,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
     final var ei2 = children.get(1).getKey();
 
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(ei1)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(ei1).create().getKey();
 
     ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).activate();
     final var activatedJobs =
@@ -3314,12 +3174,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
     final var ei2 = children.get(1).getKey();
 
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(ei1)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(ei1).create().getKey();
 
     ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).activate();
     final var activatedJobs =
@@ -3426,12 +3281,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
 
     final var batch1 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
@@ -3526,12 +3376,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
 
     // Activation 1 (superseded): push the item under lease1, carrying non-zero token/tool-call
     // deltas, then fail the job to trigger re-activation. Its copy stays pending — never
@@ -3665,12 +3510,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getKey();
 
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(ei1)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(ei1).create().getKey();
 
     ENGINE.jobs().withType(helper.getJobType()).activate();
     ENGINE.job().ofInstance(processInstanceKey).withType(helper.getJobType()).complete();
@@ -3755,12 +3595,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(ei1)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(ei1).create().getKey();
 
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var job1Key =
@@ -3878,12 +3713,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKeyA =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKeyA)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKeyA).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobAKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -3951,12 +3781,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKeyB =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKeyB)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKeyB).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobBKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -4016,12 +3841,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKeyA =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKeyA)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKeyA).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobAKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -4063,12 +3883,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKeyB =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKeyB)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKeyB).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobBKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -4138,12 +3953,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -4334,12 +4144,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getKey();
 
     final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(ei1)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
+        ENGINE.agentInstances().withElementInstanceKey(ei1).create().getKey();
 
     ENGINE.jobs().withType(helper.getJobType()).activate();
     ENGINE.job().ofInstance(processInstanceKey).withType(helper.getJobType()).complete();
