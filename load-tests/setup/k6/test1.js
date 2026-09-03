@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { sleep } from 'k6';
+import json from 'k6/json';
 import { Counter } from 'k6/metrics';
 
 const http_response = new Counter('http_response');
@@ -50,6 +51,12 @@ export const options = {
       duration: '1d',
       vus: 100,
     },
+    searchInstances: {
+      exec: 'checkForProcessInstances',
+      executor: 'constant-vus',
+      duration: '1d',
+      vus: 5,
+    },
   },
 };
 
@@ -68,5 +75,31 @@ export function checkTopology (context) {
 
   const url = __ENV.ZEEBE_REST_ADDRESS + '/v1/topology';
   http.get(url, params);
+  sleep(1);
+};
+
+
+# https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/search-process-instances/
+export function checkForProcessInstances (context) {
+  const renewedToken = token.renew();
+  const params = {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': "Bearer " + renewedToken.accessToken,
+      }
+    };
+
+  const url = __ENV.ZEEBE_REST_ADDRESS + '/v1/process-instances/search';
+  http.post(url, json.stringify({
+    "sort": [
+      {
+        "field": "startTime",
+        "direction": "DESC"
+      }
+    ], "filter": {
+      "processDefinitionId": "benchmark"
+    }
+  }), params);
   sleep(1);
 };
