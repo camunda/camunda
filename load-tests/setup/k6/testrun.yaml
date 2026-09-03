@@ -25,6 +25,8 @@ spec:
     env:
       - name: K6_PROMETHEUS_RW_SERVER_URL
         value: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
+      - name: K6_PROMETHEUS_RW_TREND_STATS
+        value: "p(50),p(95),p(99),min,max"
 
       # Credentials
       - name: ZEEBE_REST_ADDRESS
