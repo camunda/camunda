@@ -8,6 +8,7 @@
 package io.camunda.operate.store.elasticsearch;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ZeebeStore;
 import java.io.IOException;
@@ -39,15 +40,27 @@ public class ElasticsearchZeebeStore implements ZeebeStore {
   @Override
   public void refreshIndex(String indexPattern) {
     final RefreshRequest refreshRequest = new RefreshRequest(indexPattern);
+    final RefreshResponse refresh;
     try {
-      final RefreshResponse refresh =
-          zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-      if (refresh.getFailedShards() > 0) {
-        LOGGER.warn("Unable to refresh indices: {}", indexPattern);
-      }
+      refresh = zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (Exception ex) {
-      LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
+      throw new OperateRuntimeException(
+          String.format("Unable to refresh indices matching pattern %s", indexPattern), ex);
     }
+    if (refresh.getTotalShards() == 0) {
+      throw new OperateRuntimeException("Refresh matched no indices for pattern " + indexPattern);
+    }
+    if (refresh.getFailedShards() > 0) {
+      throw new OperateRuntimeException(
+          String.format(
+              "Unable to refresh indices matching pattern %s: %d of %d shards failed",
+              indexPattern, refresh.getFailedShards(), refresh.getTotalShards()));
+    }
+  }
+
+  @Override
+  public String getZeebeIndexPrefix() {
+    return operateProperties.getZeebeElasticsearch().getPrefix();
   }
 
   @Override

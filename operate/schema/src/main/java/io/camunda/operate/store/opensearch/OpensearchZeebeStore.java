@@ -8,9 +8,12 @@
 package io.camunda.operate.store.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ZeebeStore;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.indices.RefreshResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,16 +31,33 @@ public class OpensearchZeebeStore implements ZeebeStore {
   @Qualifier("zeebeOpensearchClient")
   private OpenSearchClient openSearchClient;
 
+  @Autowired private OperateProperties operateProperties;
+
   @Override
   public void refreshIndex(String indexPattern) {
+    final RefreshResponse response;
     try {
-      final var response = openSearchClient.indices().refresh(r -> r.index(indexPattern));
-      if (!response.shards().failures().isEmpty()) {
-        LOGGER.warn("Unable to refresh indices: {}", indexPattern);
-      }
+      response = openSearchClient.indices().refresh(r -> r.index(indexPattern));
     } catch (Exception ex) {
-      LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
+      throw new OperateRuntimeException(
+          String.format("Unable to refresh indices matching pattern %s", indexPattern), ex);
     }
+    if (response.shards().total().intValue() == 0) {
+      throw new OperateRuntimeException("Refresh matched no indices for pattern " + indexPattern);
+    }
+    if (!response.shards().failures().isEmpty()) {
+      throw new OperateRuntimeException(
+          String.format(
+              "Unable to refresh indices matching pattern %s: %d of %d shards failed",
+              indexPattern,
+              response.shards().failures().size(),
+              response.shards().total().intValue()));
+    }
+  }
+
+  @Override
+  public String getZeebeIndexPrefix() {
+    return operateProperties.getZeebeOpensearch().getPrefix();
   }
 
   @Override

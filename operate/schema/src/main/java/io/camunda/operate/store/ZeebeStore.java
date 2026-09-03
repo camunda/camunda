@@ -11,4 +11,7 @@ public interface ZeebeStore {
   void refreshIndex(String indexPattern);
 
   boolean zeebeIndicesExists(String indexPattern);
+
+  /** Returns the Zeebe-record index prefix configured for the backend currently in use. */
+  String getZeebeIndexPrefix();
 }

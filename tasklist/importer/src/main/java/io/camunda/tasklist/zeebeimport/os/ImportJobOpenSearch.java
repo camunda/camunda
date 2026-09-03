@@ -46,7 +46,7 @@ public class ImportJobOpenSearch extends ImportJobAbstract {
     final String indexPattern =
         importBatch
             .getImportValueType()
-            .getIndicesPattern(tasklistProperties.getZeebeElasticsearch().getPrefix());
+            .getIndicesPattern(tasklistProperties.getZeebeOpenSearch().getPrefix());
     OpenSearchUtil.refreshIndicesFor(zeebeOsClient, indexPattern);
   }
 
