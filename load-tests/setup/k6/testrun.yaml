@@ -12,8 +12,16 @@ spec:
 
   arguments: --out experimental-prometheus-rw
 
+  starter:
+    image: europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio/grafana/k6-operator:latest-starter
+    # Start test faster
+    imagePullPolicy: IfNotPresent
+
   runner:
     image: europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/grafana/k6:latest
+    # Start test faster
+    imagePullPolicy: IfNotPresent
+
     env:
       - name: K6_PROMETHEUS_RW_SERVER_URL
         value: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
