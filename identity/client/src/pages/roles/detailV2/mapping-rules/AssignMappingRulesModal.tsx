@@ -18,9 +18,19 @@ import type { MappingRule, Role } from "@camunda/camunda-api-zod-schemas/8.10";
 const AssignMappingRulesModal: FC<
   UseEntityModalCustomProps<
     { id: Role["roleId"] },
-    { assignedMappingRules: MappingRule[] }
+    {
+      assignedMappingRules: MappingRule[];
+      onItemsAssigned: (count: number) => void;
+    }
   >
-> = ({ entity: role, assignedMappingRules, onSuccess, open, onClose }) => {
+> = ({
+  entity: role,
+  assignedMappingRules,
+  onSuccess,
+  onItemsAssigned,
+  open,
+  onClose,
+}) => {
   const { t, Translate } = useTranslate("roles");
   const [selectedMappingRules, setSelectedMappingRules] = useState<
     MappingRule[]
@@ -48,6 +58,7 @@ const AssignMappingRulesModal: FC<
           }),
         ),
       );
+      onItemsAssigned(selectedMappingRules.length);
       onSuccess();
     } catch {
       // error handled globally
