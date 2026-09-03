@@ -24,6 +24,7 @@ import co.elastic.clients.elasticsearch.core.search.SourceFilter;
 import co.elastic.clients.elasticsearch.indices.AnalyzeRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshResponse;
 import co.elastic.clients.elasticsearch.indices.analyze.AnalyzeToken;
+import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
@@ -419,8 +420,9 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     final var positionQ =
         QueryBuilders.range(
             r ->
-                r.number(
-                    n -> n.field(PostImporterQueueTemplate.POSITION).gt((double) fromPosition)));
+                r.untyped(
+                    n ->
+                        n.field(PostImporterQueueTemplate.POSITION).gt(JsonData.of(fromPosition))));
     final var typeQ =
         QueryBuilders.term(
             t ->
