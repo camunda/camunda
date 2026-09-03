@@ -417,6 +417,9 @@ public final class ElementActivationBehavior {
 
     final var elementRecord =
         createElementRecord(processInstanceRecord, elementToActivate, elementFlowScopeKey);
+    // the caller merges the variables of its activate instruction right after this command is
+    // written, i.e. before the scope is created; flag it so that the scope is not created as empty
+    elementRecord.setHasVariables(true);
     commandWriter.appendFollowUpCommand(
         elementInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
     return elementInstanceKey;

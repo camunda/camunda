@@ -256,14 +256,19 @@ public class ProcessInstanceCreationHelper {
   public void setVariablesFromDocument(
       final ProcessInstanceRecord processInstance, final DirectBuffer variablesBuffer)
       throws VariableValidationException {
-    variableBehavior.mergeLocalDocument(
-        processInstance.getProcessInstanceKey(),
-        processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessInstanceKey(),
-        processInstance.getRootProcessInstanceKey(),
-        processInstance.getBpmnProcessIdBuffer(),
-        processInstance.getTenantId(),
-        variablesBuffer);
+    final boolean wroteVariables =
+        variableBehavior.mergeLocalDocument(
+            processInstance.getProcessInstanceKey(),
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessInstanceKey(),
+            processInstance.getRootProcessInstanceKey(),
+            processInstance.getBpmnProcessIdBuffer(),
+            processInstance.getTenantId(),
+            variablesBuffer);
+
+    // the scope is only created when the follow-up ACTIVATE_ELEMENT command is processed, so the
+    // record has to carry that these variables already exist
+    processInstance.setHasVariables(wroteVariables);
   }
 
   public void activateElementsForStartInstructions(
