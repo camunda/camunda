@@ -185,6 +185,39 @@ abstract class IncidentUpdateRepositoryIT {
     batchRequest.executeWithRefresh();
   }
 
+  private PostImporterQueueEntity newPendingUpdate() {
+    return new PostImporterQueueEntity()
+        .setActionType(PostImporterActionType.INCIDENT)
+        .setIntent(IncidentIntent.CREATED.name())
+        .setKey(1L)
+        .setPartitionId(PARTITION_ID)
+        .setProcessInstanceKey(1L)
+        .setPosition(1L);
+  }
+
+  private void setupIncidentUpdates(final long fromPosition, final long toPosition)
+      throws PersistenceException {
+    setupIncidentUpdates(fromPosition, toPosition, ignored -> {});
+  }
+
+  private void setupIncidentUpdates(
+      final long fromPosition,
+      final long toPosition,
+      final Consumer<PostImporterQueueEntity> modifier)
+      throws PersistenceException {
+    final var updates =
+        LongStream.rangeClosed(fromPosition, toPosition)
+            .mapToObj(position -> newPendingUpdate().setPosition(position).setKey(position))
+            .peek(modifier)
+            .toList();
+    final var batchRequest = clientAdapter.createBatchRequest();
+    updates.forEach(
+        e ->
+            batchRequest.add(
+                TargetIndex.mainIndex(postImporterQueueTemplate.getFullQualifiedName()), e));
+    batchRequest.executeWithRefresh();
+  }
+
   protected record RoutedDocument(String id, String routing) {}
 
   @DisabledIfSystemProperty(
@@ -392,39 +425,6 @@ abstract class IncidentUpdateRepositoryIT {
           .containsExactly(-1L, Collections.emptyMap());
     }
 
-    private PostImporterQueueEntity newPendingUpdate() {
-      return new PostImporterQueueEntity()
-          .setActionType(PostImporterActionType.INCIDENT)
-          .setIntent(IncidentIntent.CREATED.name())
-          .setKey(1L)
-          .setPartitionId(PARTITION_ID)
-          .setProcessInstanceKey(1L)
-          .setPosition(1L);
-    }
-
-    private void setupIncidentUpdates(final long fromPosition, final long toPosition)
-        throws PersistenceException {
-      setupIncidentUpdates(fromPosition, toPosition, ignored -> {});
-    }
-
-    private void setupIncidentUpdates(
-        final long fromPosition,
-        final long toPosition,
-        final Consumer<PostImporterQueueEntity> modifier)
-        throws PersistenceException {
-      final var updates =
-          LongStream.rangeClosed(fromPosition, toPosition)
-              .mapToObj(position -> newPendingUpdate().setPosition(position).setKey(position))
-              .peek(modifier)
-              .toList();
-      final var batchRequest = clientAdapter.createBatchRequest();
-      updates.forEach(
-          e ->
-              batchRequest.add(
-                  TargetIndex.mainIndex(postImporterQueueTemplate.getFullQualifiedName()), e));
-      batchRequest.executeWithRefresh();
-    }
-
     @Test
     void shouldUpdateLastIncidentUpdatePositionEvenIfBatchMakesNoUpdates() {
       // given
@@ -471,6 +471,35 @@ abstract class IncidentUpdateRepositoryIT {
         Awaitility.await()
             .until(() -> metadata.getLastIncidentUpdatePosition() == incidentUpdatePosition);
       }
+    }
+  }
+
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
+  @Nested
+  final class GetCountOfPendingIncidentUpdatesTest {
+
+    @Test
+    void shouldGetCountsByPosition() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      setupIncidentUpdates(1, 3);
+
+      // when
+      final var countStart = repository.getCountOfPendingIncidentUpdates(-1L);
+      final var countPos1 = repository.getCountOfPendingIncidentUpdates(1L);
+      final var countPos2 = repository.getCountOfPendingIncidentUpdates(2L);
+      final var countPos3 = repository.getCountOfPendingIncidentUpdates(3L);
+      final var countPos4 = repository.getCountOfPendingIncidentUpdates(4L);
+
+      // then
+      assertThat(countStart).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(3);
+      assertThat(countPos1).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(2);
+      assertThat(countPos2).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(1);
+      assertThat(countPos3).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(0);
+      assertThat(countPos4).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(0);
     }
   }
 
