@@ -5,7 +5,7 @@ go 1.25.0
 toolchain go1.27.0
 
 require (
-	github.com/gofrs/flock v0.13.0
+	github.com/gofrs/flock v0.13.1
 	github.com/joho/godotenv v1.5.1
 	github.com/rs/zerolog v1.35.1
 	github.com/stretchr/testify v1.12.1
