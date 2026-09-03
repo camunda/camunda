@@ -735,6 +735,133 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
+  public void shouldAcceptUpdateWithNonActivatedJobAndAccumulateItsMetricsButLeaveItemPending() {
+    // given — the job is activated once, then failed with retries left, which leaves it
+    // ACTIVATABLE (not re-activated). Unlike the superseded-lease case above, there is only one
+    // lease here — the job is never re-activated — so no lease machinery is involved at all.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+
+    // leaves the job ACTIVATABLE: a job record still exists, but it is not ACTIVATED.
+    ENGINE.job().ofInstance(processInstanceKey).withType(helper.getJobType()).withRetries(1).fail();
+
+    final var assistantItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-non-activated-job")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("hi"));
+    assistantItem.getMetrics().setInputTokens(100L).setOutputTokens(40L);
+    assistantItem.addToolCall(
+        new AgentHistoryEmbeddedToolCall().setToolCallId("call-1").setToolName("lookup"));
+
+    // when — the update is sent for the still-existing, but non-ACTIVATED, job.
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(List.of(assistantItem))
+            .update();
+
+    // then — the update is accepted, not rejected, even though the job is not ACTIVATED.
+    assertThat(updated.getIntent()).isEqualTo(AgentInstanceIntent.UPDATED);
+    assertThat(updated.getValue().getElementInstanceKey()).isEqualTo(elementInstanceKey);
+
+    // and — its metrics are accumulated immediately, exactly as with the superseded-lease case.
+    assertThat(updated.getValue().getMetrics().getInputTokens()).isEqualTo(100L);
+    assertThat(updated.getValue().getMetrics().getOutputTokens()).isEqualTo(40L);
+    assertThat(updated.getValue().getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(updated.getValue().getMetrics().getToolCalls()).isEqualTo(1);
+
+    // and — the item is created, whether or not it is later committed or discarded.
+    final var clockResetKey = ENGINE.clock().reset().getKey();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_HISTORY)
+                .withIntent(AgentHistoryIntent.CREATED)
+                .filter(
+                    r ->
+                        ((AgentHistoryRecordValue) r.getValue())
+                            .getHistoryItemId()
+                            .equals("item-non-activated-job"))
+                .exists())
+        .as("the item is created for a still-existing, non-ACTIVATED job")
+        .isTrue();
+
+    // and — the history item is only recorded PENDING: something will still resolve this job
+    // later (a re-activation and completion, or a cancel/error discard), so it is not committed
+    // by this update.
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_HISTORY)
+                .withIntent(AgentHistoryIntent.COMMITTED)
+                .filter(
+                    r ->
+                        ((AgentHistoryRecordValue) r.getValue())
+                            .getHistoryItemId()
+                            .equals("item-non-activated-job"))
+                .exists())
+        .as(
+            "an item pending for a still-existing, non-ACTIVATED job is not committed by this update")
+        .isFalse();
+
+    // and — unlike the NOT_FOUND case (no job record at all), the item is NOT discarded either:
+    // the job record survives, so something may still resolve it later. This is the assertion
+    // that distinguishes this case from AgentInstanceHistoryJobNotFoundTest.
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_HISTORY)
+                .withIntent(AgentHistoryIntent.DISCARDED)
+                .filter(
+                    r ->
+                        ((AgentHistoryRecordValue) r.getValue())
+                            .getHistoryItemId()
+                            .equals("item-non-activated-job"))
+                .exists())
+        .as("a job record still exists, so the item must not be discarded like the NOT_FOUND case")
+        .isFalse();
+  }
+
+  @Test
   public void shouldEmitHistoryEventForEachItemInOrderOnUpdate() {
     // given
     ENGINE
