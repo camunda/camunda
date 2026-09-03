@@ -36,7 +36,9 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 public final class AgentInstanceCreateProcessor
@@ -59,6 +61,17 @@ public final class AgentInstanceCreateProcessor
 
   private static final List<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
       List.of(BpmnElementType.AD_HOC_SUB_PROCESS, BpmnElementType.SERVICE_TASK);
+
+  private static final String ERROR_MSG_CREATE_ROLE_NOT_ALLOWED =
+      "Expected to create agent instance with history item '%s', but its role is '%s'. Allowed "
+          + "roles are: %s.";
+  private static final String ERROR_MSG_CREATE_METRICS_NOT_ALLOWED =
+      "Expected to create agent instance with history item '%s', but it carries positive "
+          + "metrics. History items included when creating an agent instance must not carry "
+          + "metrics.";
+
+  private static final Set<AgentHistoryRole> ALLOWED_CREATE_ROLES =
+      Set.of(AgentHistoryRole.CONFIGURATION, AgentHistoryRole.USER);
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -189,6 +202,13 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
+    final var isCreateHistoryValid = validateCreateHistoryItems(commandValue.getHistory());
+    if (isCreateHistoryValid.isLeft()) {
+      final var rejection = isCreateHistoryValid.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var deployedProcess =
         processState.getProcessByKeyAndTenant(
             elementInstanceValue.getProcessDefinitionKey(), elementInstanceValue.getTenantId());
@@ -275,6 +295,57 @@ public final class AgentInstanceCreateProcessor
 
     responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.CREATED, event, command);
+  }
+
+  /**
+   * Validates that every item in a CREATE batch has an allowed role ({@link
+   * AgentHistoryRole#CONFIGURATION} or {@link AgentHistoryRole#USER}) and carries no metrics.
+   * UPDATE keeps accepting every role, metrics included, since a rejected UPDATE still has a live
+   * {@code AgentInstance} to apply metrics onto — a rejected CREATE does not, so this check is
+   * CREATE-only.
+   *
+   * @return the rejection for the first invalid item found, or {@link Either#rightVoid()} if every
+   *     item is a CONFIGURATION or USER item without metrics
+   */
+  private static Either<Rejection, Void> validateCreateHistoryItems(
+      final List<? extends AgentHistoryRecordValue> history) {
+    if (history == null || history.isEmpty()) {
+      return Either.rightVoid();
+    }
+
+    for (final var item : history) {
+      final var historyItemId = item.getHistoryItemId();
+
+      if (!ALLOWED_CREATE_ROLES.contains(item.getRole())) {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                ERROR_MSG_CREATE_ROLE_NOT_ALLOWED.formatted(
+                    historyItemId, item.getRole(), ALLOWED_CREATE_ROLES)));
+      }
+
+      if (hasPositiveMetrics(item.getMetrics())) {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                ERROR_MSG_CREATE_METRICS_NOT_ALLOWED.formatted(historyItemId)));
+      }
+    }
+    return Either.rightVoid();
+  }
+
+  /**
+   * {@code durationMs} is deliberately excluded from this check: it isn't an accumulated
+   * conversation metric like the others, so it may be positive even on an otherwise-clean
+   * CONFIGURATION/USER item.
+   */
+  private static boolean hasPositiveMetrics(
+      final AgentHistoryRecordValue.AgentHistoryMetricsValue metrics) {
+    return metrics.getInputTokens() > 0
+        || metrics.getOutputTokens() > 0
+        || metrics.getReasoningTokenCount() > 0
+        || metrics.getCacheCreationTokenCount() > 0
+        || metrics.getCacheReadTokenCount() > 0;
   }
 
   private void writeRejection(
