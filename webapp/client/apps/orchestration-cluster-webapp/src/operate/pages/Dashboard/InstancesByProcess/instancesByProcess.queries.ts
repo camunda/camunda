@@ -11,6 +11,8 @@ import type {
 	GetProcessDefinitionInstanceStatisticsRequestBody,
 	GetProcessDefinitionInstanceStatisticsResponseBody,
 	GetProcessDefinitionInstanceVersionStatisticsResponseBody,
+	ProcessDefinition,
+	QueryProcessDefinitionsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
@@ -18,6 +20,52 @@ import {endpoints} from '#/shared/http/endpoints';
 
 const PAGE_SIZE = 50;
 const MAX_PAGES = 5;
+const DRAINING_REFETCH_INTERVAL = 5000;
+
+type DrainingLookup = {
+	byId: Set<string>;
+	byKey: Set<string>;
+};
+
+async function fetchAllDrainingProcessDefinitions(): Promise<ProcessDefinition[]> {
+	const {response, error} = await request(endpoints.queryProcessDefinitions({filter: {state: 'DRAINING'}}));
+	if (error !== null) {
+		throw mapQueryError(error);
+	}
+	const firstPage: QueryProcessDefinitionsResponseBody = await response.json();
+
+	if (firstPage.page.totalItems <= firstPage.items.length || firstPage.page.endCursor === null) {
+		return firstPage.items;
+	}
+
+	const {response: remainingResponse, error: remainingError} = await request(
+		endpoints.queryProcessDefinitions({
+			filter: {state: 'DRAINING'},
+			page: {
+				after: firstPage.page.endCursor,
+				limit: firstPage.page.totalItems - firstPage.items.length,
+			},
+		}),
+	);
+	if (remainingError !== null) {
+		throw mapQueryError(remainingError);
+	}
+	const remainingPage: QueryProcessDefinitionsResponseBody = await remainingResponse.json();
+
+	return firstPage.items.concat(remainingPage.items);
+}
+
+const drainingProcessDefinitionsQuery = () =>
+	queryOptions({
+		queryKey: ['drainingProcessDefinitions'] as const,
+		staleTime: DRAINING_REFETCH_INTERVAL,
+		refetchInterval: DRAINING_REFETCH_INTERVAL,
+		queryFn: fetchAllDrainingProcessDefinitions,
+		select: (items): DrainingLookup => ({
+			byId: new Set(items.map((item) => item.processDefinitionId)),
+			byKey: new Set(items.map((item) => item.processDefinitionKey)),
+		}),
+	});
 
 const DEFAULT_SORT: Pick<GetProcessDefinitionInstanceStatisticsRequestBody, 'sort'> = {
 	sort: [
@@ -70,4 +118,10 @@ const instancesByProcessVersionsQuery = (processDefinitionId: string, tenantId: 
 		},
 	});
 
-export {instancesByProcessInfiniteQuery, instancesByProcessVersionsQuery, PAGE_SIZE};
+export {
+	instancesByProcessInfiniteQuery,
+	instancesByProcessVersionsQuery,
+	drainingProcessDefinitionsQuery,
+	PAGE_SIZE,
+	type DrainingLookup,
+};

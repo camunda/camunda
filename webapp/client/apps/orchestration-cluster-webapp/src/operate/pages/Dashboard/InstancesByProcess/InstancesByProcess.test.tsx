@@ -12,9 +12,16 @@ import {describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
-import {mockGetProcessDefinitionInstanceStatisticsEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockGetProcessDefinitionInstanceStatisticsEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {
+	createProcessDefinition,
+	createQueryProcessDefinitionsResponse,
+} from '#/shared-test-modules/api-mocks/process-definitions';
 import {InstancesByProcess} from './InstancesByProcess';
 
 const REQUEST_SCHEMA = z.object({
@@ -28,6 +35,7 @@ const REQUEST_SCHEMA = z.object({
 });
 const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 const ERROR_RESPONSE = new HttpResponse(null, {status: 500});
+const NO_DRAINING_RESPONSE = HttpResponse.json(createQueryProcessDefinitionsResponse());
 
 const PAGE_1_RESPONSE = HttpResponse.json(
 	createPaginatedResponse({
@@ -75,6 +83,7 @@ describe('<InstancesByProcess />', () => {
 				successResponse: PAGE_1_RESPONSE,
 				failureResponse: FAILURE_RESPONSE,
 			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
@@ -91,6 +100,7 @@ describe('<InstancesByProcess />', () => {
 				successResponse: PAGE_1_RESPONSE,
 				failureResponse: FAILURE_RESPONSE,
 			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(
@@ -142,6 +152,7 @@ describe('<InstancesByProcess />', () => {
 				),
 				failureResponse: FAILURE_RESPONSE,
 			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
@@ -163,10 +174,40 @@ describe('<InstancesByProcess />', () => {
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				successResponse: ERROR_RESPONSE,
 			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
 
 		await expect.element(screen.getByText('Data could not be fetched')).toBeVisible();
+	});
+
+	it('should show a draining indicator for process definitions scheduled for deletion', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: PAGE_1_RESPONSE,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [createProcessDefinition({processDefinitionId: 'p2', state: 'DRAINING'})],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
+
+		await expect.element(screen.getByText('Beta Process')).toBeVisible();
+
+		const betaRow = screen.getByText('Beta Process').element().closest('a') as HTMLElement;
+		await expect.element(betaRow.querySelector('[data-testid="draining-indicator"]') as HTMLElement).toBeVisible();
+
+		const alphaRow = screen.getByText('Alpha Process').element().closest('a') as HTMLElement;
+		await expect
+			.element(alphaRow.querySelector('[data-testid="draining-indicator"]') as HTMLElement | null)
+			.not.toBeInTheDocument();
 	});
 });

@@ -24,6 +24,8 @@ const config: KnipConfig = {
 		'src/operate/shared/StructuredList/**',
 		// TODO(#55642): remove when BatchOperation detail page is migrated
 		'src/operate/shared/PaginatedSortableTable/**',
+		// TODO(#61095, #55987): remove when Process Instance header / Processes toolbar operations are migrated
+		'src/operate/components/DrainingTag/**',
 	],
 	ignoreDependencies: ['@vitest/browser'],
 	typescript: {
