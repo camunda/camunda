@@ -12,6 +12,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * Defines configuration for the engine's mapping resolution strategy. The prefix for this class is
  * camunda.processing.engine.mappings.
+ *
+ * <p><strong>Experimental:</strong> This configuration and all input/output mapping modes are
+ * experimental and may change in a future release.
  */
 public class EngineMappings {
 
@@ -38,11 +41,21 @@ public class EngineMappings {
    */
   @Nullable private OutputMode outputComparisonMode = null;
 
+  /**
+   * Experimental input-mapping resolution modes.
+   *
+   * <p><strong>Experimental:</strong> These modes may change in a future release.
+   */
   public enum InputMode {
     ORDERED,
     COMBINED
   }
 
+  /**
+   * Experimental output-mapping resolution modes.
+   *
+   * <p><strong>Experimental:</strong> These modes may change in a future release.
+   */
   public enum OutputMode {
     ORDERED,
     COMBINED
@@ -53,6 +66,9 @@ public class EngineMappings {
    * COMBINED}, the engine uses {@code CombinedInputMappingResolver} which merges all input mappings
    * into a single combined result. When set to {@code ORDERED}, the engine uses {@code
    * OrderedMappingResolver} which applies mappings in modeling order.
+   *
+   * <p><strong>Experimental:</strong> This setting and all input modes are experimental and may
+   * change in a future release.
    *
    * <p>This configuration can be accessed via the environment variable: <br>
    * {@code camunda.processing.engine.mappings.input-mode}.
@@ -67,6 +83,12 @@ public class EngineMappings {
     this.inputMode = inputMode;
   }
 
+  /**
+   * Returns the optional comparison resolver used alongside {@code inputMode} for diagnostics.
+   *
+   * <p><strong>Experimental:</strong> This setting and all input modes are experimental and may
+   * change in a future release.
+   */
   public @Nullable InputMode getInputComparisonMode() {
     return inputComparisonMode;
   }
@@ -75,6 +97,12 @@ public class EngineMappings {
     this.inputComparisonMode = inputComparisonMode;
   }
 
+  /**
+   * Controls the output-mapping resolver used during process instance execution.
+   *
+   * <p><strong>Experimental:</strong> This setting and all output modes are experimental and may
+   * change in a future release.
+   */
   public OutputMode getOutputMode() {
     return outputMode;
   }
@@ -83,6 +111,12 @@ public class EngineMappings {
     this.outputMode = outputMode;
   }
 
+  /**
+   * Returns the optional comparison resolver used alongside {@code outputMode} for diagnostics.
+   *
+   * <p><strong>Experimental:</strong> This setting and all output modes are experimental and may
+   * change in a future release.
+   */
   public @Nullable OutputMode getOutputComparisonMode() {
     return outputComparisonMode;
   }
