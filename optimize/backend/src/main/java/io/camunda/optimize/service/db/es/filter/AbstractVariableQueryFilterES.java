@@ -9,9 +9,10 @@ package io.camunda.optimize.service.db.es.filter;
 
 import static io.camunda.optimize.service.db.filter.util.OperatorMultipleValuesVariableFilterDataDtoUtil.validateMultipleValuesFilterDataDto;
 
-import co.elastic.clients.elasticsearch._types.query_dsl.LongNumberRangeQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.NumberRangeQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.UntypedRangeQuery;
+import co.elastic.clients.json.JsonData;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
@@ -71,9 +72,11 @@ public abstract class AbstractVariableQueryFilterES {
    * variable filter.
    *
    * <p>SHORT, INTEGER and LONG variables are indexed in a {@code long}-mapped value sub-field, so
-   * their bounds go through the exact-long range variant. Do not simplify this to the {@code
-   * number()} variant: it only accepts {@code double}, which cannot represent integers beyond 2^53
-   * exactly, so the bound would silently round and the filter would match the wrong instances.
+   * their bounds are serialized straight from the {@code long} via {@code untyped()}. Do not
+   * simplify this to the {@code number()} variant: it only accepts {@code double}, which cannot
+   * represent integers beyond 2^53 exactly, so the bound would silently round and the filter would
+   * match the wrong instances. The {@code longNumber()} variant would express this more directly,
+   * but the Elasticsearch client on this branch (8.16.6) does not have it yet.
    */
   protected static Query createNumericRangeQuery(
       final String field,
@@ -94,15 +97,16 @@ public abstract class AbstractVariableQueryFilterES {
       return Query.of(q -> q.range(r -> r.number(range.build())));
     }
 
-    final LongNumberRangeQuery.Builder range = new LongNumberRangeQuery.Builder().field(field);
+    final JsonData exactBound = JsonData.of(bound.longValue());
+    final UntypedRangeQuery.Builder range = new UntypedRangeQuery.Builder().field(field);
     switch (operator) {
-      case LESS_THAN -> range.lt(bound.longValue());
-      case LESS_THAN_EQUALS -> range.lte(bound.longValue());
-      case GREATER_THAN -> range.gt(bound.longValue());
-      case GREATER_THAN_EQUALS -> range.gte(bound.longValue());
+      case LESS_THAN -> range.lt(exactBound);
+      case LESS_THAN_EQUALS -> range.lte(exactBound);
+      case GREATER_THAN -> range.gt(exactBound);
+      case GREATER_THAN_EQUALS -> range.gte(exactBound);
       default -> throw new OptimizeRuntimeException(unsupportedRangeOperatorMessage(operator));
     }
-    return Query.of(q -> q.range(r -> r.longNumber(range.build())));
+    return Query.of(q -> q.range(r -> r.untyped(range.build())));
   }
 
   private static String unsupportedRangeOperatorMessage(final FilterOperator operator) {

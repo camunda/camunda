@@ -16,9 +16,10 @@ import static io.camunda.optimize.service.db.schema.index.AbstractInstanceIndex.
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-import co.elastic.clients.elasticsearch._types.query_dsl.LongNumberRangeQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.UntypedRangeQuery;
+import co.elastic.clients.json.JsonData;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.OperatorMultipleValuesFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
@@ -74,9 +75,9 @@ public class NumericVariableQueryFilterESTest {
     // then the exact long bound must reach Elasticsearch. The variable value is indexed in a
     // long-mapped sub-field, so a bound routed through double rounds beyond 2^53 and the report
     // wrongly includes or excludes instances around it.
-    assertThat(range.isLongNumber()).isTrue();
-    assertThat(range.longNumber().field()).endsWith("." + MULTIVALUE_FIELD_LONG);
-    assertThat(boundFor(range.longNumber(), operator)).isEqualTo(value);
+    assertThat(range.isUntyped()).isTrue();
+    assertThat(range.untyped().field()).endsWith("." + MULTIVALUE_FIELD_LONG);
+    assertThat(boundFor(range.untyped(), operator)).isEqualTo(value);
 
     assertValueGenuinelyExercisesRounding(value, losesPrecisionAsDouble);
   }
@@ -94,9 +95,9 @@ public class NumericVariableQueryFilterESTest {
         extractRangeQuery(decisionVariableFilter.createNumericQueryBuilder(filter).build());
 
     // then (see the process variable test for why a lossy double bound corrupts the filter)
-    assertThat(range.isLongNumber()).isTrue();
-    assertThat(range.longNumber().field()).endsWith("." + MULTIVALUE_FIELD_LONG);
-    assertThat(boundFor(range.longNumber(), operator)).isEqualTo(value);
+    assertThat(range.isUntyped()).isTrue();
+    assertThat(range.untyped().field()).endsWith("." + MULTIVALUE_FIELD_LONG);
+    assertThat(boundFor(range.untyped(), operator)).isEqualTo(value);
 
     assertValueGenuinelyExercisesRounding(value, losesPrecisionAsDouble);
   }
@@ -116,8 +117,8 @@ public class NumericVariableQueryFilterESTest {
 
     // then all integral types share the long-mapped value sub-field, so all of them must use the
     // exact long range variant
-    assertThat(range.isLongNumber()).isTrue();
-    assertThat(range.longNumber().gt()).isEqualTo(123L);
+    assertThat(range.isUntyped()).isTrue();
+    assertThat(range.untyped().gt().to(Long.class)).isEqualTo(123L);
   }
 
   @ParameterizedTest(name = "{0}")
@@ -166,14 +167,18 @@ public class NumericVariableQueryFilterESTest {
         .orElseThrow();
   }
 
-  private static Long boundFor(final LongNumberRangeQuery range, final FilterOperator operator) {
-    return switch (operator) {
-      case LESS_THAN -> range.lt();
-      case LESS_THAN_EQUALS -> range.lte();
-      case GREATER_THAN -> range.gt();
-      case GREATER_THAN_EQUALS -> range.gte();
-      default -> throw new IllegalArgumentException("Not a relative operator: " + operator);
-    };
+  // JsonData.of(long) keeps the raw value, so to(Long.class) hands it back without a mapper — an
+  // exact long here proves no double ever sat in the path.
+  private static Long boundFor(final UntypedRangeQuery range, final FilterOperator operator) {
+    final JsonData bound =
+        switch (operator) {
+          case LESS_THAN -> range.lt();
+          case LESS_THAN_EQUALS -> range.lte();
+          case GREATER_THAN -> range.gt();
+          case GREATER_THAN_EQUALS -> range.gte();
+          default -> throw new IllegalArgumentException("Not a relative operator: " + operator);
+        };
+    return bound.to(Long.class);
   }
 
   // Guards the value source against silently rotting: if a "large" value were ever swapped for one
