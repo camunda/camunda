@@ -121,6 +121,32 @@ final class ReconfigurationTest {
     return result;
   }
 
+  /**
+   * Drops entry-carrying append requests from {@code sender} to {@code receiver} while {@code
+   * enabled}. Heartbeats still pass, so the receiver keeps its leader and only the entries stay
+   * unacknowledged; the drop completes asynchronously so a failing append does not refuel the next
+   * one on the single raft thread.
+   */
+  private static void dropEntryAppendsTo(
+      final RaftServer sender, final MemberId receiver, final AtomicBoolean enabled) {
+    final var protocol = (TestRaftServerProtocol) sender.getContext().getProtocol();
+    protocol.interceptDelivery(
+        VersionedAppendRequest.class,
+        (target, request) -> {
+          final var result = new CompletableFuture<Void>();
+          CompletableFuture.runAsync(
+              () -> {
+                if (enabled.get() && target.equals(receiver) && !request.entries().isEmpty()) {
+                  result.completeExceptionally(new ConnectException("append dropped"));
+                } else {
+                  result.complete(null);
+                }
+              },
+              CompletableFuture.delayedExecutor(20, TimeUnit.MILLISECONDS));
+          return result;
+        });
+  }
+
   private RaftServer createServer(
       final Path dir, final ClusterMembershipService membershipService) {
     return createServer(dir, membershipService, config -> {});
@@ -518,6 +544,68 @@ final class ReconfigurationTest {
 
   @Nested
   final class Leaving {
+
+    /**
+     * Reproduces <a href="https://github.com/camunda/camunda/issues/60086">#60086</a>: a leader
+     * that recovers an uncommitted joint configuration must commit it before it appends the final
+     * configuration, as the normal reconfiguration path does. Appending the final configuration
+     * right away lets it, and the joint entry below it, commit under the new members' quorum alone.
+     * For a two-member cluster scaling down to one, that quorum is the leader by itself, so the
+     * leaving member's removal would commit without the leaving member having acknowledged
+     * anything.
+     */
+    @Test
+    void recoveredJointConfigurationCommitsBeforeTheFinalOne(@TempDir final Path tmp) {
+      // given - a two-member cluster in which m2 leaves, but appends to m2 are dropped so the joint
+      // configuration {1,2} -> {1} cannot commit. m2 still answers polls and votes, so m1 can be
+      // elected under the joint configuration.
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
+      CompletableFuture.allOf(m1.bootstrap(id1, id2), m2.bootstrap(id1, id2)).join();
+      awaitLeaderIsIn(servers, m1);
+
+      final var dropAppendsToM2 = new AtomicBoolean(true);
+      dropEntryAppendsTo(m1, id2, dropAppendsToM2);
+      m2.leave();
+      Awaitility.await("m1 appended the joint configuration")
+          .untilAsserted(
+              () ->
+                  assertThat(m1.getContext().getCluster().getConfiguration())
+                      .returns(true, Configuration::requiresJointConsensus));
+
+      // when - m1 restarts, recovers the joint configuration from its log and is elected again
+      m1.shutdown().join();
+      final var restartedM1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      dropEntryAppendsTo(restartedM1, id2, dropAppendsToM2);
+      final var m1Started = restartedM1.bootstrap(id1, id2);
+      awaitLeader(restartedM1);
+
+      // then - the final configuration is not appended while the joint one cannot commit
+      Awaitility.await("m1 stays in joint consensus while m2 cannot acknowledge the joint entry")
+          .during(Duration.ofSeconds(3))
+          .untilAsserted(
+              () ->
+                  assertThat(restartedM1.getContext().getCluster().getConfiguration())
+                      .returns(true, Configuration::requiresJointConsensus));
+
+      // and the leave completes once m2 acknowledges the joint configuration
+      dropAppendsToM2.set(false);
+      Awaitility.await("m1 left joint consensus with m2 removed")
+          .untilAsserted(
+              () -> {
+                final var configuration = restartedM1.getContext().getCluster().getConfiguration();
+                assertThat(configuration.requiresJointConsensus()).isFalse();
+                assertThat(configuration.newMembers())
+                    .extracting(RaftMember::memberId)
+                    .containsExactly(id1);
+                assertThat(restartedM1.getContext().getCommitIndex())
+                    .isGreaterThanOrEqualTo(configuration.index());
+              });
+      assertThat(m1Started).succeedsWithin(Duration.ofSeconds(10));
+    }
+
     @Test
     void followerCanLeaveCluster(@TempDir final Path tmp) {
       // given - a cluster with 3 members
@@ -1923,6 +2011,50 @@ final class ReconfigurationTest {
                     .describedAs("Member 1 has come out of force configuration")
                     .isFalse();
               });
+    }
+
+    /**
+     * The force-configure counterpart of {@code
+     * recoveredJointConfigurationCommitsBeforeTheFinalOne}: the leader elected under a forced
+     * configuration appends the first regular configuration only once its no-op entry has
+     * committed, like every other configuration change.
+     */
+    @Test
+    void leaderLeavesForcedConfigurationOnlyAfterItsNoOpEntryCommits() {
+      // given - the cluster is forced down to {1,2} with 3 and 4 gone, while entry-carrying
+      // appends between 1 and 2 are dropped. Either may become leader; heartbeats and votes pass.
+      m3.shutdown().join();
+      m4.shutdown().join();
+      final var dropEntryAppends = new AtomicBoolean(true);
+      dropEntryAppendsTo(m1, id2, dropEntryAppends);
+      dropEntryAppendsTo(m2, id1, dropEntryAppends);
+      m2.forceConfigure(newMembers()).join();
+
+      // when - a leader is elected under the forced configuration
+      final var leader = awaitLeader(m1, m2);
+      final var leaderServer = getLeaderServer(List.of(m1, m2)).orElseThrow();
+
+      // then - it stays in the forced configuration while the other member cannot acknowledge the
+      // no-op entry ...
+      Awaitility.await("the leader keeps the forced configuration while its no-op cannot commit")
+          .during(Duration.ofSeconds(2))
+          .untilAsserted(
+              () ->
+                  assertThat(leaderServer.getContext().getCluster().getConfiguration())
+                      .returns(true, Configuration::force));
+
+      // ... and leaves it once the no-op entry commits
+      dropEntryAppends.set(false);
+      Awaitility.await("the leader appends a regular configuration once the no-op committed")
+          .untilAsserted(
+              () -> {
+                final var configuration = leaderServer.getContext().getCluster().getConfiguration();
+                assertThat(configuration.force()).isFalse();
+                assertThat(configuration.allMembers())
+                    .extracting(RaftMember::memberId)
+                    .containsExactlyInAnyOrder(id1, id2);
+              });
+      assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(10));
     }
 
     private Map<MemberId, Type> newMembers() {
