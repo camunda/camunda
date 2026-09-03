@@ -130,7 +130,8 @@ public class EngineMappingsTest {
   }
 
   @Nested
-  @DisplayName("Output comparison mode")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("Output comparison mode")
   @SpringJUnitConfig({
     UnifiedConfiguration.class,
     BrokerBasedPropertiesOverride.class,
