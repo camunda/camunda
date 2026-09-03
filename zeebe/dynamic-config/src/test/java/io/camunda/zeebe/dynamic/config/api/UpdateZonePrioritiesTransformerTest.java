@@ -17,7 +17,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
@@ -28,6 +27,7 @@ import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Nested;
@@ -35,15 +35,15 @@ import org.junit.jupiter.api.Test;
 
 final class UpdateZonePrioritiesTransformerTest {
 
+  public static final String GROUP_NAME = "temp";
   private static final DynamicPartitionConfig PARTITION_CONFIG = DynamicPartitionConfig.init();
-
   private static final List<PartitionId> PARTITION_IDS =
-      IntStream.rangeClosed(1, 2).mapToObj(i -> new PartitionId("temp", i)).toList();
+      IntStream.rangeClosed(1, 2).mapToObj(i -> new PartitionId(GROUP_NAME, i)).toList();
 
-  // Builds a fully zone-aware ClusterConfiguration with one member per zone. Modeled on
+  // Builds a fully zone-aware cluster topology with one member per zone. Modeled on
   // ForceRemoveZoneTransformerTest#buildTopology /
   // UpdatePartitionDistributionTransformerTest#buildTopology.
-  private ClusterConfiguration zoneAwareCluster(final ZoneSpec... zones) {
+  private CurrentClusterConfiguration zoneAwareCluster(final ZoneSpec... zones) {
     final var config = new ZoneAwareConfig(List.of(zones));
     final var members =
         config.zones().stream()
@@ -53,8 +53,10 @@ final class UpdateZonePrioritiesTransformerTest {
         new ZoneAwarePartitionDistributor(config.zones())
             .distributePartitions(Set.copyOf(members), PARTITION_IDS, config.replicationFactor());
     final var topology =
-        ConfigurationUtil.getClusterConfigFrom(distribution, PARTITION_CONFIG, "c");
-    return topology.setPartitionDistributorConfig(config);
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            members, distribution, Map.of(GROUP_NAME, PARTITION_CONFIG), "c");
+    return topology.updateGlobalConfiguration(
+        globalConfiguration -> globalConfiguration.setPartitionDistributorConfig(config));
   }
 
   @Test
@@ -128,7 +130,7 @@ final class UpdateZonePrioritiesTransformerTest {
   @Test
   void shouldRejectWhenNotZoneAware() {
     // given a non-zone-aware cluster (no PartitionDistributorConfig persisted)
-    final var config = ClusterConfiguration.init();
+    final var config = CurrentClusterConfiguration.init();
     final var result =
         plannedOperations(new UpdateZonePrioritiesTransformer(List.of(ZONE_A)), config);
     EitherAssert.assertThat(result).isLeft();

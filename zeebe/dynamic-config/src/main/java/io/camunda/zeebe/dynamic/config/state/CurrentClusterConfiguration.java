@@ -468,6 +468,16 @@ public record CurrentClusterConfiguration(
     return new CurrentClusterConfiguration(version, updated, partitionGroups, phasedChangeState);
   }
 
+  public CurrentClusterConfiguration initPartitionGroup(final String groupId) {
+    if (hasPartitionGroup(groupId)) {
+      throw new IllegalStateException("Partition group %s already exists".formatted(groupId));
+    }
+    final var updatedPartitionGroups = new HashMap<>(partitionGroups);
+    updatedPartitionGroups.put(groupId, PartitionGroupConfiguration.empty(0));
+    return new CurrentClusterConfiguration(
+        version, globalConfiguration, updatedPartitionGroups, phasedChangeState);
+  }
+
   /**
    * Applies {@code updater} to the named partition group. Returns {@code this} if the group is
    * unchanged.
