@@ -691,6 +691,40 @@
 			"batchOperations": {
 				"title": "Batch Operations"
 			},
+			"batchOperation": {
+				"title": "Batch Operations",
+				"pageTitle": "Operate: Batch Operation {{name}}",
+				"notFoundNotificationTitle": "Batch operation {{batchOperationKey}} could not be found",
+				"loadErrorTitle": "Failed to load batch operation details",
+				"backButton": "Back to batch operations",
+				"forbidden": {
+					"heading": "403 - You do not have permission to view this information",
+					"description": "Contact your administrator to get access.",
+					"learnMoreLink": "Learn more about permissions"
+				},
+				"tiles": {
+					"state": "Batch state",
+					"summaryOfItems": "Summary of items",
+					"startDate": "Start date",
+					"endDate": "End date",
+					"actor": "Actor"
+				},
+				"itemsTable": {
+					"title": "Items",
+					"state": "Batch state",
+					"date": "Date",
+					"processInstanceKey": "Process instance key",
+					"decisionInstanceKey": "Decision instance key",
+					"incidentKey": "Incident key",
+					"noProcessInstance": "No process instance",
+					"noDecisionInstance": "No decision instance",
+					"noIncident": "No incident",
+					"viewProcessInstance": "View process instance {{key}}",
+					"viewDecisionInstance": "View decision instance {{key}}",
+					"failureReason": "Failure reason: {{message}}",
+					"emptyMessage": "No items found"
+				}
+			},
 			"shared": {
 				"errorMessage": {
 					"message": "Data could not be fetched",

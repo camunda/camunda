@@ -64,6 +64,16 @@ const mockQueryBatchOperationsEndpoint = createEndpointMock({
 	method: endpoints.queryBatchOperations.method,
 });
 
+const mockGetBatchOperationEndpoint = createEndpointMock({
+	endpoint: endpoints.getBatchOperation.getUrl({batchOperationKey: ':batchOperationKey'}),
+	method: endpoints.getBatchOperation.method,
+});
+
+const mockQueryBatchOperationItemsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryBatchOperationItems.getUrl(),
+	method: endpoints.queryBatchOperationItems.method,
+});
+
 const mockQueryDecisionDefinitionsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryDecisionDefinitions.getUrl(),
 	method: endpoints.queryDecisionDefinitions.method,
@@ -210,6 +220,8 @@ export {
 	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 	mockQueryBatchOperationsEndpoint,
+	mockGetBatchOperationEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
 	mockGetDecisionInstanceEndpoint,
 	mockQueryDecisionDefinitionsEndpoint,
 	mockQueryDecisionInstancesEndpoint,

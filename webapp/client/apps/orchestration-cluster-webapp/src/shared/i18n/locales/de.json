@@ -677,6 +677,40 @@
 			"batchOperations": {
 				"title": "Stapeloperationen"
 			},
+			"batchOperation": {
+				"title": "Stapeloperationen",
+				"pageTitle": "Operate: Stapeloperation {{name}}",
+				"notFoundNotificationTitle": "Stapeloperation {{batchOperationKey}} konnte nicht gefunden werden",
+				"loadErrorTitle": "Details der Stapeloperation konnten nicht geladen werden",
+				"backButton": "Zurück zu Stapeloperationen",
+				"forbidden": {
+					"heading": "403 - Sie haben keine Berechtigung, diese Informationen anzuzeigen",
+					"description": "Wenden Sie sich an Ihren Administrator, um Zugriff zu erhalten.",
+					"learnMoreLink": "Mehr über Berechtigungen erfahren"
+				},
+				"tiles": {
+					"state": "Stapelstatus",
+					"summaryOfItems": "Zusammenfassung der Elemente",
+					"startDate": "Startdatum",
+					"endDate": "Enddatum",
+					"actor": "Akteur"
+				},
+				"itemsTable": {
+					"title": "Elemente",
+					"state": "Stapelstatus",
+					"date": "Datum",
+					"processInstanceKey": "Prozessinstanzschlüssel",
+					"decisionInstanceKey": "Entscheidungsinstanzschlüssel",
+					"incidentKey": "Vorfallschlüssel",
+					"noProcessInstance": "Keine Prozessinstanz",
+					"noDecisionInstance": "Keine Entscheidungsinstanz",
+					"noIncident": "Kein Vorfall",
+					"viewProcessInstance": "Prozessinstanz {{key}} anzeigen",
+					"viewDecisionInstance": "Entscheidungsinstanz {{key}} anzeigen",
+					"failureReason": "Fehlerursache: {{message}}",
+					"emptyMessage": "Keine Elemente gefunden"
+				}
+			},
 			"shared": {
 				"errorMessage": {
 					"message": "Daten konnten nicht abgerufen werden",

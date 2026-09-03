@@ -23,8 +23,8 @@ const BatchItemsCount: React.FC<Props> = ({totalCount, completedCount, failedCou
 	const pendingCount = totalCount - completedCount - failedCount;
 	const hasAnyProgress = completedCount > 0 || failedCount > 0;
 
-	if (!hasAnyProgress && pendingCount > 0) {
-		const description = 'not started';
+	if (!hasAnyProgress) {
+		const description = pendingCount > 0 ? 'not started' : 'no items';
 		return (
 			<Tooltip description={description} align="bottom">
 				<Item $color="var(--cds-status-gray)" aria-label={description}>

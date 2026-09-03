@@ -6,7 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {BatchOperation, QueryBatchOperationsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+	BatchOperation,
+	BatchOperationItem,
+	QueryBatchOperationsResponseBody,
+	QueryBatchOperationItemsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 function createBatchOperation(overrides?: Partial<BatchOperation>): BatchOperation {
 	return {
@@ -35,4 +40,33 @@ function createQueryBatchOperationsResponse(
 	};
 }
 
-export {createBatchOperation, createQueryBatchOperationsResponse};
+function createBatchOperationItem(overrides?: Partial<BatchOperationItem>): BatchOperationItem {
+	return {
+		batchOperationKey: 'batch-op-1',
+		itemKey: 'item-1',
+		processInstanceKey: '2251799813685250',
+		rootProcessInstanceKey: null,
+		state: 'COMPLETED',
+		operationType: 'CANCEL_PROCESS_INSTANCE',
+		processedDate: '2024-01-01T10:03:00.000Z',
+		errorMessage: null,
+		...overrides,
+	};
+}
+
+function createQueryBatchOperationItemsResponse(
+	overrides?: Partial<QueryBatchOperationItemsResponseBody>,
+): QueryBatchOperationItemsResponseBody {
+	return {
+		items: [],
+		page: {totalItems: 0, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+		...overrides,
+	};
+}
+
+export {
+	createBatchOperation,
+	createQueryBatchOperationsResponse,
+	createBatchOperationItem,
+	createQueryBatchOperationItemsResponse,
+};
