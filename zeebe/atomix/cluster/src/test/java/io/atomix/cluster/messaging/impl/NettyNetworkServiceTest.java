@@ -8,15 +8,28 @@
 package io.atomix.cluster.messaging.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.atomix.cluster.messaging.ManagedNetworkService;
 import io.atomix.cluster.messaging.ManagedUnicastService;
+import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.UnicastService;
+import io.atomix.utils.net.Address;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.agrona.CloseHelper;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 final class NettyNetworkServiceTest {
@@ -100,5 +113,74 @@ final class NettyNetworkServiceTest {
     // when - then
     assertThat(networkService.messagingService()).isSameAs(messagingService);
     assertThat(networkService.unicastService()).isSameAs(routedUnicastService);
+  }
+
+  /**
+   * Binds real sockets, because the requirement is about what the operating system sees: with UDP
+   * disabled, no datagram socket may exist. Receiving gossip in the clear is as disqualifying as
+   * sending it, so "does not send over UDP" would not be enough.
+   */
+  @Nested
+  final class TransportSelectionTest {
+
+    @AutoClose private final MeterRegistry registry = new SimpleMeterRegistry();
+
+    private ManagedNetworkService service;
+
+    @AfterEach
+    void tearDown() {
+      if (service != null) {
+        CloseHelper.quietClose(() -> service.stop().join());
+      }
+    }
+
+    @Test
+    void shouldNotBindADatagramSocketWhenUdpIsDisabled() throws Exception {
+      // given
+      final var address = Address.from("127.0.0.1", SocketUtil.getNextAddress().getPort());
+      service = networkService(address, new MessagingConfig().setUdpEnabled(false));
+
+      // when
+      service.start().join();
+
+      // then - nothing is listening on UDP at the internal API port
+      try (final var probe = nonSharingDatagramSocket()) {
+        assertThatCode(() -> probe.bind(new InetSocketAddress(address.host(), address.port())))
+            .doesNotThrowAnyException();
+      }
+    }
+
+    @Test
+    void shouldBindADatagramSocketWhenUdpIsEnabled() throws Exception {
+      // given
+      final var address = Address.from("127.0.0.1", SocketUtil.getNextAddress().getPort());
+      service = networkService(address, new MessagingConfig().setUdpEnabled(true));
+
+      // when
+      service.start().join();
+
+      // then
+      try (final var probe = nonSharingDatagramSocket()) {
+        assertThatCode(() -> probe.bind(new InetSocketAddress(address.host(), address.port())))
+            .isInstanceOf(Exception.class);
+      }
+    }
+
+    private ManagedNetworkService networkService(
+        final Address address, final MessagingConfig config) {
+      return new NettyNetworkService(
+          "zeebe", address, config, "transport-selection", registry, Runnable::run);
+    }
+
+    /**
+     * An unbound socket with {@code SO_REUSEADDR} off, so that a successful bind means the port is
+     * genuinely free rather than shared. Java's default for the option is platform-dependent, so it
+     * is set explicitly.
+     */
+    private DatagramSocket nonSharingDatagramSocket() throws Exception {
+      final var socket = new DatagramSocket(null);
+      socket.setReuseAddress(false);
+      return socket;
+    }
   }
 }
