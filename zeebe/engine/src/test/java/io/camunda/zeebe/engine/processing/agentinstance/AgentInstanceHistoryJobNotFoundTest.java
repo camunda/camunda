@@ -48,9 +48,9 @@ import org.junit.Test;
  * case, there is no element instance to validate the update's {@code elementInstanceKey} against.
  * This means a caller-supplied {@code jobKey} that never existed at all is accepted exactly the
  * same way as one whose job genuinely ran to completion. This is an intentional trade-off, not a
- * bug: the caller already passed the coarser authorization check that gates every process
- * instance update, so a fabricated {@code jobKey} lets it do no more than it could already do
- * with a genuine one. Do not "fix" this by resurrecting the old rejection.
+ * bug: the caller already passed the coarser authorization check that gates every process instance
+ * update, so a fabricated {@code jobKey} lets it do no more than it could already do with a genuine
+ * one. Do not "fix" this by resurrecting the old rejection.
  */
 public class AgentInstanceHistoryJobNotFoundTest {
 
