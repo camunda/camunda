@@ -13,17 +13,22 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -278,14 +283,28 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .create()
             .getKey();
 
+    final var historyItemId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(elementInstanceKey)
+        .withJobKey(jobKey)
+        .withHistory(
+            List.of(
+                new AgentHistoryRecord()
+                    .setHistoryItemId(historyItemId)
+                    .setRole(AgentHistoryRole.USER)
+                    .setLoopIteration(1)
+                    .addContent(
+                        new AgentHistoryMessageContent()
+                            .setContentType(AgentHistoryContentType.TEXT)
+                            .setText("hi"))))
+        .update();
     final long itemKey =
-        ENGINE
-            .agentHistories()
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.CREATED)
             .withAgentInstanceKey(agentInstanceKey)
-            .withJobKey(jobKey)
-            .withElementInstanceKey(elementInstanceKey)
-            .withRole(AgentHistoryRole.USER)
-            .create()
+            .filter(r -> r.getValue().getHistoryItemId().equals(historyItemId))
+            .getFirst()
             .getKey();
 
     return new Fixture(processInstanceKey, elementInstanceKey, jobKey, itemKey);

@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbeddedToolCall;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -19,11 +21,15 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,6 +58,9 @@ public class AgentHistoryDiscardTest {
         createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "lease-a");
     final long secondItemKey =
         createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "lease-b");
+    // Each createHistoryItem call is a separate AGENT_INSTANCE:UPDATE with its own
+    // historyItemId, so they must not collapse into the same duplicate-detected item.
+    assertThat(secondItemKey).isNotEqualTo(firstItemKey);
 
     // An item on an unrelated job must not be discarded.
     createUnrelatedJobHistoryItem("");
@@ -80,7 +89,11 @@ public class AgentHistoryDiscardTest {
 
     final long lease1ItemKey =
         createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "lease-1");
-    createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "lease-2");
+    final long lease2ItemKey =
+        createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "lease-2");
+    // Guard against the lease-2 item silently collapsing into the lease-1 item: if it did, the
+    // assertion below would pass vacuously with only one item ever having existed.
+    assertThat(lease2ItemKey).isNotEqualTo(lease1ItemKey);
     createUnrelatedJobHistoryItem("lease-1");
 
     final var firstDiscarded =
@@ -126,16 +139,30 @@ public class AgentHistoryDiscardTest {
     final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
     final var jobKey = activateJobForProcessInstance(processInstanceKey);
 
+    final var item =
+        new AgentHistoryRecord()
+            .setHistoryItemId(Strings.newRandomValidBpmnId())
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("some large response text"))
+            .addToolCall(
+                new AgentHistoryEmbeddedToolCall()
+                    .setToolCallId("call-1")
+                    .setToolName("http-tool")
+                    .setElementId("call-activity")
+                    .setArguments(Map.of()));
+    item.getMetrics().setInputTokens(100).setOutputTokens(50).setDurationMs(1234);
+
     ENGINE
-        .agentHistories()
+        .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
-        .withJobKey(jobKey)
         .withElementInstanceKey(elementInstanceKey)
-        .withRole(AgentHistoryRole.ASSISTANT)
-        .withTextContent("some large response text")
-        .withToolCall("call-1", "http-tool", "call-activity")
-        .withMetrics(100, 50, 1234)
-        .create();
+        .withJobKey(jobKey)
+        .withHistory(List.of(item))
+        .update();
 
     final var discarded = ENGINE.agentHistories().withJobKey(jobKey).discard();
 
@@ -214,14 +241,28 @@ public class AgentHistoryDiscardTest {
       final long jobKey,
       final long elementInstanceKey,
       final String jobLease) {
-    return ENGINE
-        .agentHistories()
+    final var historyItemId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
-        .withJobKey(jobKey)
         .withElementInstanceKey(elementInstanceKey)
+        .withJobKey(jobKey)
         .withJobLease(jobLease)
-        .withRole(AgentHistoryRole.USER)
-        .create()
+        .withHistory(
+            List.of(
+                new AgentHistoryRecord()
+                    .setHistoryItemId(historyItemId)
+                    .setRole(AgentHistoryRole.USER)
+                    .setLoopIteration(1)
+                    .addContent(
+                        new AgentHistoryMessageContent()
+                            .setContentType(AgentHistoryContentType.TEXT)
+                            .setText("hi"))))
+        .update();
+    return RecordingExporter.agentHistoryRecords(AgentHistoryIntent.CREATED)
+        .withAgentInstanceKey(agentInstanceKey)
+        .filter(r -> r.getValue().getHistoryItemId().equals(historyItemId))
+        .getFirst()
         .getKey();
   }
 
