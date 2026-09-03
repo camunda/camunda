@@ -39,6 +39,7 @@ describe('Delete Item', () => {
     const deleteButton = screen.getByRole('button', {name: BUTTON_TITLE});
 
     expect(deleteButton).toHaveClass('cds--btn--icon-only');
+    expect(deleteButton).toHaveClass('cds--btn--danger--ghost');
     expect(deleteButton).not.toHaveTextContent('Delete');
 
     await user.hover(deleteButton);
