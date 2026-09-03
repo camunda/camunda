@@ -7,9 +7,7 @@
  */
 
 import type { AuditLog } from "@camunda/camunda-api-zod-schemas/8.10";
-// TODO: Replace with Tailwind during design-system migration.
-import { OwnerInfo, PropertyText } from "./components/styled";
-import { CodeSnippet } from "@carbon/react";
+import { Text } from "@camunda/design-system";
 import { spaceAndCapitalize } from "src/utility/format/spaceAndCapitalize";
 import { AuditLogOperationType } from "@camunda/camunda-api-zod-schemas/8.10";
 import useTranslate from "src/utility/localization";
@@ -30,22 +28,34 @@ const CellProperty: React.FC<Props> = ({ item }) => {
   if (item.result === "FAIL") {
     return (
       <div>
-        <PropertyText>{t("errorCode")}</PropertyText>
+        <Text
+          as="div"
+          variant="label-sm"
+          className="text-neutral-foreground-subtle"
+        >
+          {t("errorCode")}
+        </Text>
         {item.entityDescription}
       </div>
     );
   } else if (showProperty) {
     return (
       <div>
-        <PropertyText>
+        <Text
+          as="div"
+          variant="label-sm"
+          className="text-neutral-foreground-subtle"
+        >
           {item.entityType === "AUTHORIZATION" ? t("owner") : t("assignee")}
-        </PropertyText>
-        <OwnerInfo>
+        </Text>
+        <div className="whitespace-nowrap">
           {item.relatedEntityType
             ? spaceAndCapitalize(item.relatedEntityType)
             : "-"}{" "}
-          <CodeSnippet type="inline">{item.relatedEntityKey}</CodeSnippet>
-        </OwnerInfo>
+          <Text as="code" variant="code-sm">
+            {item.relatedEntityKey}
+          </Text>
+        </div>
       </div>
     );
   } else {
