@@ -138,7 +138,8 @@
   },
   "resolutions": {
     "react-is": "^19.0.0",
-    "**/tmp": "^0.2.7"
+    "**/tmp": "^0.2.7",
+    "@types/minimatch": "5.1.2"
   },
   "jest": {
     "resetMocks": false,
