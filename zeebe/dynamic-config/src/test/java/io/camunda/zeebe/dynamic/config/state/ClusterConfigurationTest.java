@@ -366,8 +366,8 @@ class ClusterConfigurationTest {
 
     private ClusterConfiguration configurationRunningAGraph() {
       final var builder = OperationGraph.builder();
-      builder.add(new PartitionJoinOperation(member(1), 1, 1));
-      builder.add(new PartitionJoinOperation(member(2), 1, 1));
+      builder.add(new PartitionJoinOperation(member(1), 1, 1, true));
+      builder.add(new PartitionJoinOperation(member(2), 1, 1, true));
       return ClusterConfiguration.builder()
           .version(2)
           .members(Map.of(member(1), MemberState.initializeAsActive(Map.of())))

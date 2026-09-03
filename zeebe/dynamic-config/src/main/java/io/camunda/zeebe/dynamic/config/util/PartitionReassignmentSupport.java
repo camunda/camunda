@@ -346,7 +346,7 @@ public final class PartitionReassignmentSupport {
                 (newMember, downstream) -> {
                   downstream.accept(
                       new PartitionJoinOperation(
-                          newMember, partitionId, target.getPriority(newMember)));
+                          newMember, partitionId, target.getPriority(newMember), true));
                   downstream.accept(new PartitionPromoteOperation(newMember, partitionId));
                 })
             .toList();

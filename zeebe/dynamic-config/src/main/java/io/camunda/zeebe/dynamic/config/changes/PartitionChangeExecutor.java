@@ -29,12 +29,16 @@ public interface PartitionChangeExecutor {
    *
    * @param partitionId id of the partition
    * @param membersWithPriority priority of each replicas used of leader election
+   * @param asLearner whether to join as a non-voting learner, to be made a voting member by a
+   *     subsequent {@link #promote(int)}, or directly as a voting member. The latter only serves
+   *     operations that were created before two-phase joins existed.
    * @return a future that completes when the partition is started and joined the replication group
    */
   ActorFuture<Void> join(
       int partitionId,
       Map<MemberId, Integer> membersWithPriority,
-      DynamicPartitionConfig partitionConfig);
+      DynamicPartitionConfig partitionConfig,
+      boolean asLearner);
 
   /**
    * The implementation of this method must remove the member from the replication group of the

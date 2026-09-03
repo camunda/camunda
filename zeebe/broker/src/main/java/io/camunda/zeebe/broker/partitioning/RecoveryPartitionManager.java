@@ -626,7 +626,8 @@ public final class RecoveryPartitionManager
   public ActorFuture<Void> join(
       final int partitionId,
       final Map<MemberId, Integer> membersWithPriority,
-      final DynamicPartitionConfig partitionConfig) {
+      final DynamicPartitionConfig partitionConfig,
+      final boolean asLearner) {
     return CompletableActorFuture.completedExceptionally(
         new IllegalStateException("Cannot perform join on a recovering partition"));
   }

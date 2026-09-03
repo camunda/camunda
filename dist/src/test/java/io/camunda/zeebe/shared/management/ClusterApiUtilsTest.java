@@ -1248,7 +1248,7 @@ final class ClusterApiUtilsTest {
         new AwaitRelocationCompletion(memberId1, 8, partitionSet),
 
         // Partition change operations
-        new PartitionJoinOperation(memberId1, 1, 1),
+        new PartitionJoinOperation(memberId1, 1, 1, true),
         new PartitionPromoteOperation(memberId1, 1),
         new PartitionDemoteOperation(memberId1, 1),
         new PartitionLeaveOperation(memberId1, 1, 3),
@@ -1341,7 +1341,7 @@ final class ClusterApiUtilsTest {
     final List<Phase> phases =
         List.of(
             PartitionGroupPhase.sequential(
-                Map.of("default", List.of(new PartitionJoinOperation(memberId1, 1, 3)))),
+                Map.of("default", List.of(new PartitionJoinOperation(memberId1, 1, 3, true)))),
             new GlobalPhase(List.of(new MemberLeaveOperation(memberId1))));
     final var config =
         configWithPhasedChangeState(
@@ -1369,7 +1369,7 @@ final class ClusterApiUtilsTest {
     // tenant has run the join and not the leave -- which is what the API must report. A group's
     // progress is a set of completed operations, with no queue index to read.
     final var memberId1 = member(1);
-    final var joinOperation = new PartitionJoinOperation(memberId1, 3, 1);
+    final var joinOperation = new PartitionJoinOperation(memberId1, 3, 1, true);
     final var leaveOperation = new PartitionLeaveOperation(memberId1, 4, 0);
     final var graphBuilder = OperationGraph.builder();
     final var joinId = graphBuilder.add(joinOperation);

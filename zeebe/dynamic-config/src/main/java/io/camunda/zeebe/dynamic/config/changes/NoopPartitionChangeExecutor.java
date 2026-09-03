@@ -21,7 +21,8 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
   public ActorFuture<Void> join(
       final int partitionId,
       final Map<MemberId, Integer> membersWithPriority,
-      final DynamicPartitionConfig config) {
+      final DynamicPartitionConfig config,
+      final boolean asLearner) {
     return CompletableActorFuture.completed(null);
   }
 

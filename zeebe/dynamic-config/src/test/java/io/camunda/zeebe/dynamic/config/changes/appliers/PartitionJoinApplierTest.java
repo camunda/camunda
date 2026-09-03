@@ -9,7 +9,9 @@ package io.camunda.zeebe.dynamic.config.changes.appliers;
 
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -79,7 +81,7 @@ final class PartitionJoinApplierTest {
 
     // when
     final var result =
-        new PartitionJoinApplier(localMemberId, 1, 1, partitionChangeExecutor)
+        new PartitionJoinApplier(localMemberId, 1, 1, true, partitionChangeExecutor)
             .init(globalConfigurationWithoutLocalMember, initialGroup);
 
     // then
@@ -103,7 +105,7 @@ final class PartitionJoinApplierTest {
 
     // when
     final var result =
-        new PartitionJoinApplier(localMemberId, 1, 1, partitionChangeExecutor)
+        new PartitionJoinApplier(localMemberId, 1, 1, true, partitionChangeExecutor)
             .init(globalConfigurationWithJoiningMember, initialGroup);
 
     // then
@@ -123,7 +125,7 @@ final class PartitionJoinApplierTest {
 
     // when
     final var result =
-        new PartitionJoinApplier(localMemberId, 1, 1, partitionChangeExecutor)
+        new PartitionJoinApplier(localMemberId, 1, 1, true, partitionChangeExecutor)
             .init(globalConfigurationWithLocalMemberActive, groupWithPartitionJoined);
 
     // then
@@ -141,7 +143,7 @@ final class PartitionJoinApplierTest {
 
     // when
     final var result =
-        new PartitionJoinApplier(localMemberId, 1, 1, partitionChangeExecutor)
+        new PartitionJoinApplier(localMemberId, 1, 1, true, partitionChangeExecutor)
             .init(globalConfigurationWithLocalMemberActive, groupWithoutActiveMembers);
 
     // then
@@ -163,7 +165,7 @@ final class PartitionJoinApplierTest {
 
     // when
     final var updater =
-        new PartitionJoinApplier(localMemberId, 1, 1, partitionChangeExecutor)
+        new PartitionJoinApplier(localMemberId, 1, 1, true, partitionChangeExecutor)
             .init(globalConfigurationWithLocalMemberActive, initialGroup)
             .get();
     final var resultingGroup = updater.apply(initialGroup);
@@ -188,7 +190,7 @@ final class PartitionJoinApplierTest {
 
     // when
     final var updater =
-        new PartitionJoinApplier(localMemberId, 1, 3, partitionChangeExecutor)
+        new PartitionJoinApplier(localMemberId, 1, 3, true, partitionChangeExecutor)
             .init(globalConfigurationWithLocalMemberActive, initialGroup)
             .get();
     final var resultingGroup = updater.apply(initialGroup);
@@ -213,7 +215,7 @@ final class PartitionJoinApplierTest {
 
     // when
     final var result =
-        new PartitionJoinApplier(localMemberId, 1, 1, partitionChangeExecutor)
+        new PartitionJoinApplier(localMemberId, 1, 1, true, partitionChangeExecutor)
             .init(globalConfigurationWithLocalMemberActive, initialGroup);
 
     // then
@@ -231,34 +233,64 @@ final class PartitionJoinApplierTest {
             Map.of(
                 MemberId.from("2"),
                 brokerWith(Map.of(1, PartitionState.active(1, partitionConfig)))));
-    final var applier = new PartitionJoinApplier(localMemberId, 1, 1, partitionChangeExecutor);
+    final var applier =
+        new PartitionJoinApplier(localMemberId, 1, 1, true, partitionChangeExecutor);
     final var groupWithJoining =
         applier
             .init(globalConfigurationWithLocalMemberActive, initialGroup)
             .get()
             .apply(initialGroup);
-    when(partitionChangeExecutor.join(anyInt(), any(), any()))
+    when(partitionChangeExecutor.join(anyInt(), any(), any(), anyBoolean()))
         .thenReturn(CompletableActorFuture.completed(null));
 
     // when
     final var resultingGroup = applier.apply().join().apply(groupWithJoining);
 
     // then — the member joined as a learner; the promote operation makes the partition ACTIVE
-    verify(partitionChangeExecutor, times(1)).join(anyInt(), any(), any());
+    verify(partitionChangeExecutor, times(1)).join(eq(1), any(), any(), eq(true));
     Assertions.assertThat(resultingGroup.getMember(localMemberId).getPartition(1).state())
         .isEqualTo(State.LEARNER);
   }
 
   @Test
+  void shouldJoinAsVotingMemberWhenTheOperationPredatesTwoPhaseJoins() {
+    // given — an operation created before two-phase joins existed: no promote operation follows it,
+    // so the join itself must make the member a voting member or the partition would be a learner
+    // forever
+    final var initialGroup =
+        groupWithMembers(
+            Map.of(
+                MemberId.from("2"),
+                brokerWith(Map.of(1, PartitionState.active(1, partitionConfig)))));
+    final var applier =
+        new PartitionJoinApplier(localMemberId, 1, 1, false, partitionChangeExecutor);
+    final var groupWithJoining =
+        applier
+            .init(globalConfigurationWithLocalMemberActive, initialGroup)
+            .get()
+            .apply(initialGroup);
+    when(partitionChangeExecutor.join(anyInt(), any(), any(), anyBoolean()))
+        .thenReturn(CompletableActorFuture.completed(null));
+
+    // when
+    final var resultingGroup = applier.apply().join().apply(groupWithJoining);
+
+    // then
+    verify(partitionChangeExecutor).join(eq(1), any(), any(), eq(false));
+    Assertions.assertThat(resultingGroup.getMember(localMemberId).getPartition(1).state())
+        .isEqualTo(State.ACTIVE);
+  }
+
+  @Test
   void shouldReturnExceptionWhenJoinFailed() {
     // given
-    when(partitionChangeExecutor.join(anyInt(), any(), any()))
+    when(partitionChangeExecutor.join(anyInt(), any(), any(), anyBoolean()))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(new RuntimeException("Expected")));
 
     // when
     final var joinFuture =
-        new PartitionJoinApplier(localMemberId, 1, 1, partitionChangeExecutor).apply();
+        new PartitionJoinApplier(localMemberId, 1, 1, true, partitionChangeExecutor).apply();
 
     // then
     Assertions.assertThat(joinFuture)
@@ -278,7 +310,7 @@ final class PartitionJoinApplierTest {
 
     // when
     final var updater =
-        new PartitionJoinApplier(localMemberId, 1, 2, partitionChangeExecutor)
+        new PartitionJoinApplier(localMemberId, 1, 2, true, partitionChangeExecutor)
             .init(globalConfigurationWithLocalMemberActive, initialGroup)
             .get();
     final var resultingGroup = updater.apply(initialGroup);

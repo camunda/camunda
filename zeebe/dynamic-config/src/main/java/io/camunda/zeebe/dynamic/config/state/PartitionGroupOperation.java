@@ -128,8 +128,15 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
      * @param memberId the member id of the member that will start replicating the partition
      * @param partitionId id of the partition to join
      * @param priority priority of the member in the partition used for Raft's priority election
+     * @param asLearner whether the member joins as a non-voting learner that a subsequent {@link
+     *     PartitionPromoteOperation} makes a voting member, or directly as a voting member. Every
+     *     current emitter joins as a learner. Operations serialized by a version that did not know
+     *     the two-phase join decode as {@code false} and keep their original meaning of a complete,
+     *     single-step join, so a change that was in flight during a rolling upgrade still runs to
+     *     completion instead of leaving the member a learner that nothing promotes.
      */
-    record PartitionJoinOperation(MemberId memberId, int partitionId, int priority)
+    record PartitionJoinOperation(
+        MemberId memberId, int partitionId, int priority, boolean asLearner)
         implements PartitionChangeOperation {}
 
     /**

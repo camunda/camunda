@@ -156,7 +156,8 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
           final var partitionFollowers =
               followers.computeIfAbsent(partitionId, key -> new ArrayList<>());
           partitionFollowers.add(
-              new PartitionJoinOperation(memberId, partitionId, partitions.getValue().priority()));
+              new PartitionJoinOperation(
+                  memberId, partitionId, partitions.getValue().priority(), true));
           partitionFollowers.add(new PartitionPromoteOperation(memberId, partitionId));
         }
       }

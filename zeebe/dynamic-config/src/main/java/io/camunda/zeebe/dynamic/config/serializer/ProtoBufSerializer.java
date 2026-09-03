@@ -540,7 +540,8 @@ public class ProtoBufSerializer
           builder.setPartitionJoin(
               Topology.PartitionJoinOperation.newBuilder()
                   .setPartitionId(joinOperation.partitionId())
-                  .setPriority(joinOperation.priority()));
+                  .setPriority(joinOperation.priority())
+                  .setAsLearner(joinOperation.asLearner()));
       case final PartitionLeaveOperation leaveOperation ->
           builder.setPartitionLeave(
               Topology.PartitionLeaveOperation.newBuilder()
@@ -882,7 +883,8 @@ public class ProtoBufSerializer
       return new PartitionJoinOperation(
           memberId,
           topologyChangeOperation.getPartitionJoin().getPartitionId(),
-          topologyChangeOperation.getPartitionJoin().getPriority());
+          topologyChangeOperation.getPartitionJoin().getPriority(),
+          topologyChangeOperation.getPartitionJoin().getAsLearner());
     } else if (topologyChangeOperation.hasPartitionLeave()) {
       return new PartitionLeaveOperation(
           memberId,
@@ -2464,6 +2466,7 @@ public class ProtoBufSerializer
               Topology.PartitionJoinOperation.newBuilder()
                   .setPartitionId(op.partitionId())
                   .setPriority(op.priority())
+                  .setAsLearner(op.asLearner())
                   .build());
       case final PartitionLeaveOperation op ->
           builder.setPartitionLeave(
@@ -2575,7 +2578,8 @@ public class ProtoBufSerializer
       return new PartitionJoinOperation(
           memberId,
           proto.getPartitionJoin().getPartitionId(),
-          proto.getPartitionJoin().getPriority());
+          proto.getPartitionJoin().getPriority(),
+          proto.getPartitionJoin().getAsLearner());
     } else if (proto.hasPartitionLeave()) {
       return new PartitionLeaveOperation(
           memberId,

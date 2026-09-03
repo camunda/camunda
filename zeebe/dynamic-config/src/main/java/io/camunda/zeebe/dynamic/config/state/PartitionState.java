@@ -83,7 +83,10 @@ public record PartitionState(State state, int priority, DynamicPartitionConfig c
      * merge at an equal version. That merge is unreachable, because any configuration carrying a
      * LEARNER partition also carries a promote operation, pending or in the completed-change
      * history, which such a broker cannot decode - it rejects the whole gossiped configuration
-     * before ever re-gossiping the UNKNOWN state.
+     * before ever re-gossiping the UNKNOWN state. In the other direction, a join operation created
+     * before the upgrade is not followed by a promote operation and therefore never produces this
+     * state: it completes as a single-step join to {@link #ACTIVE}, see {@code
+     * PartitionJoinOperation#asLearner()}.
      */
     LEARNER;
 

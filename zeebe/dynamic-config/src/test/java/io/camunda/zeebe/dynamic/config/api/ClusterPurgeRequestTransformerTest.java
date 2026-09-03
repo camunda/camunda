@@ -78,9 +78,9 @@ final class ClusterPurgeRequestTransformerTest {
             new UpdateIncarnationNumberOperation(id0),
             new PartitionBootstrapOperation(id0, 0, 2, Optional.of(partitionConfig), false),
             new PartitionBootstrapOperation(id1, 1, 2, Optional.of(partitionConfig), false),
-            new PartitionJoinOperation(id1, 0, 1),
+            new PartitionJoinOperation(id1, 0, 1, true),
             new PartitionPromoteOperation(id1, 0),
-            new PartitionJoinOperation(id0, 1, 1),
+            new PartitionJoinOperation(id0, 1, 1, true),
             new PartitionPromoteOperation(id0, 1));
   }
 
@@ -116,11 +116,11 @@ final class ClusterPurgeRequestTransformerTest {
             new PartitionBootstrapOperation(id0, 0, 2, Optional.of(partitionConfig), false),
             new PartitionBootstrapOperation(id1, 1, 2, Optional.of(partitionConfig), false),
             new PartitionBootstrapOperation(id0, 2, 2, Optional.of(partitionConfig), false),
-            new PartitionJoinOperation(id1, 0, 1),
+            new PartitionJoinOperation(id1, 0, 1, true),
             new PartitionPromoteOperation(id1, 0),
-            new PartitionJoinOperation(id0, 1, 1),
+            new PartitionJoinOperation(id0, 1, 1, true),
             new PartitionPromoteOperation(id0, 1),
-            new PartitionJoinOperation(id1, 2, 1),
+            new PartitionJoinOperation(id1, 2, 1, true),
             new PartitionPromoteOperation(id1, 2));
   }
 
