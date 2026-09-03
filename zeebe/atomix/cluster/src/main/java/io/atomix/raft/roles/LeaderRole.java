@@ -98,7 +98,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
             this,
             this::isPausedForTransfer,
             this::initializing,
-            () -> configuring() || jointConsensus());
+            this::reconfigurationInProgress);
     pauseGuard =
         new LeadershipTransferPauseGuard(
             context,
@@ -106,7 +106,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
             leadershipTransferRunner,
             this::isRunning,
             this::initializing,
-            () -> configuring() || jointConsensus());
+            this::reconfigurationInProgress);
   }
 
   @Override
@@ -125,20 +125,27 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     lastZbEntry = findLastZeebeEntry();
 
     if (jointConsensus() || forcedConfiguration()) {
-      // Come out of joint consensus or forced configuration
-      raft.getThreadContext()
-          .execute(
-              () -> {
-                if (!isRunning()) {
-                  // The role was stopped between scheduling and running this task, e.g. because
-                  // the server stepped down or shut down. Do not append as an ex-leader; the next
-                  // elected leader resumes the exit from joint consensus.
-                  return;
-                }
-                final var currentMembers = raft.getCluster().getConfiguration().newMembers();
-                ongoingReconfigurationRequestFuture = new CompletableFuture<>();
-                leaveJointConsensus(currentMembers, raft.getCluster().getConfiguration());
-              });
+      // Come out of joint consensus or forced configuration - but only once the no-op entry has
+      // committed, which commits the recovered configuration entry below it under that
+      // configuration's own quorum. That mirrors the normal path, where leaveJointConsensus runs
+      // from the commit of the joint entry it appended. Appending the final configuration any
+      // earlier would let it, and the joint entry with it, commit under the new members' quorum
+      // alone, dropping the old members' majority that joint consensus exists to keep. The same
+      // rule keeps onReconfigure from accepting changes while initializing().
+      commitInitialEntriesFuture.whenCompleteAsync(
+          (ignored, error) -> {
+            if (error != null || !isRunning()) {
+              // The no-op entry did not commit, or the role was stopped before it did, e.g.
+              // because the server stepped down or shut down. Do not append as an ex-leader; the
+              // next elected leader resumes the exit from joint consensus. commitInitialEntries
+              // steps down on its own when the commit fails, so there is nothing more to do here.
+              return;
+            }
+            final var currentMembers = raft.getCluster().getConfiguration().newMembers();
+            ongoingReconfigurationRequestFuture = new CompletableFuture<>();
+            leaveJointConsensus(currentMembers, raft.getCluster().getConfiguration());
+          },
+          raft.getThreadContext());
     }
 
     return super.start().thenRun(this::startTimers).thenApply(v -> this);
@@ -191,8 +198,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .build()));
     }
 
-    // If another configuration change is already under way, reject the configuration.
-    if (configuring() || jointConsensus()) {
+    // If another configuration change is already under way, reject the configuration. A forced
+    // configuration counts: its exit is queued behind the no-op commit, the same moment
+    // initializing() stops rejecting requests, so without this gate a request could race the
+    // queued exit for the single in-flight change.
+    if (reconfigurationInProgress()) {
       /*
        If the request is a duplicate, return the current future. This is essential for completing
        the join of a second member into a single-member cluster. During a join retry, if the
@@ -202,8 +212,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
        There is no future to return when the configuration change was not requested from this
        leader role: a leader that recovered a joint configuration resumes its exit from a task
-       queued in start(), and until that task runs there is nothing to hook onto. Reject the
-       request as retriable instead of returning null.
+       that start() runs once the no-op entry has committed, and until then there is nothing to
+       hook onto. Reject the request as retriable instead of returning null.
       */
       if (isDuplicateReconfigureRequest(request) && ongoingReconfigurationRequestFuture != null) {
         return ongoingReconfigurationRequestFuture;
@@ -707,6 +717,15 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   private boolean jointConsensus() {
     return raft.getCluster().inJointConsensus();
+  }
+
+  /**
+   * True while a configuration entry is appended but not yet committed, or while the current
+   * configuration still has to be followed by another one: the final configuration after a joint
+   * one, or the first regular configuration after a forced one.
+   */
+  private boolean reconfigurationInProgress() {
+    return configuring() || jointConsensus() || forcedConfiguration();
   }
 
   private boolean forcedConfiguration() {
