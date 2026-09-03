@@ -68,8 +68,8 @@ public final class AgentInstanceCreateProcessor
           + "roles are: %s.";
   private static final String ERROR_MSG_CREATE_METRICS_NOT_ALLOWED =
       "Expected to create agent instance with history item '%s', but it carries positive "
-          + "metrics. History items included when creating an agent instance must not carry "
-          + "metrics.";
+          + "token-usage metrics. History items included when creating an agent instance must "
+          + "not carry positive token-usage metrics; durationMs is exempt.";
 
   private static final Set<AgentHistoryRole> ALLOWED_CREATE_ROLES =
       Set.of(AgentHistoryRole.CONFIGURATION, AgentHistoryRole.USER);
@@ -300,13 +300,15 @@ public final class AgentInstanceCreateProcessor
 
   /**
    * Validates that every item in a CREATE batch has an allowed role ({@link
-   * AgentHistoryRole#CONFIGURATION} or {@link AgentHistoryRole#USER}) and carries no metrics.
+   * AgentHistoryRole#CONFIGURATION} or {@link AgentHistoryRole#USER}) and carries no positive
+   * token-usage metrics ({@code inputTokens}, {@code outputTokens}, {@code reasoningTokenCount},
+   * {@code cacheCreationTokenCount}, {@code cacheReadTokenCount}); {@code durationMs} is exempt.
    * UPDATE keeps accepting every role, metrics included, since a rejected UPDATE still has a live
    * {@code AgentInstance} to apply metrics onto — a rejected CREATE does not, so this check is
    * CREATE-only.
    *
    * @return the rejection for the first invalid item found, or {@link Either#rightVoid()} if every
-   *     item is a CONFIGURATION or USER item without metrics
+   *     item is a CONFIGURATION or USER item without positive token-usage metrics
    */
   private static Either<Rejection, Void> validateCreateHistoryItems(
       final List<? extends AgentHistoryRecordValue> history) {
