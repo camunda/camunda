@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, { FC, useCallback, useEffect, useMemo, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import useTranslate from "src/utility/localization";
 import Page, { PageHeader } from "src/components/layoutV2/Page";
 import EntityList from "src/components/entityListV2";
@@ -15,29 +15,20 @@ import { usePagination, SortConfig } from "src/utility/api";
 import { useQuery } from "@tanstack/react-query";
 import { auditLogQueries } from "src/utility/api/audit-logs/queries";
 import { spaceAndCapitalize } from "src/utility/format/spaceAndCapitalize";
-// TODO: Replace with Tailwind during design-system migration.
-import {
-  OperationLogName,
-  SuccessIcon,
-  ErrorIcon,
-  Grid,
-  ColumnRightPadding,
-  CenteredRow,
-  StickySection,
-  EntityListStickyWrapper,
-} from "./components/styled";
 import {
   Button,
-  CodeSnippet,
-  Column,
-  Heading,
-  Stack,
-  TextInput,
-} from "@carbon/react";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  PageContentLayout,
+  Text,
+} from "@camunda/design-system";
+import TextField from "src/components/formV2/TextField";
 import useDebounce from "react-debounced";
 import { useForm, FieldPath, FieldPathValue } from "react-hook-form";
 import { CellProperty } from "src/pages/operations-log/CellPropertyV2";
-import { Api, User } from "@carbon/react/icons";
+import { CircleCheck, Plug, User, XCircle } from "lucide-react";
 import AiAgentIcon from "src/assets/images/ai-agent.svg";
 // TODO: Replace with `DateRangePicker` from design system
 import { DateRangeField } from "src/components/form/DateRangeField";
@@ -165,11 +156,15 @@ const List: FC = () => {
         linkText={t("operationsLog").toLowerCase()}
         docsLinkPath="/components/admin/audit-operations/"
       />
-      <Grid condensed fullWidth>
-        <ColumnRightPadding sm={4} md={3} lg={4} xlg={3}>
-          <StickySection level={4}>
-            <Stack gap={5}>
-              <Heading>{t("filter")}</Heading>
+      <PageContentLayout
+        sidebarPosition="left"
+        sidebarWidth={240}
+        sidebar={
+          <Card className="sticky top-0">
+            <CardHeader>
+              <CardTitle>{t("filter")}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
               <Select
                 id="operationType"
                 items={[...ALLOWED_OPERATION_TYPES]}
@@ -205,17 +200,15 @@ const List: FC = () => {
                       onSelectValueChange("relatedEntityType", selectedItem);
                     }}
                   />
-                  <TextInput
-                    id="relatedEntityKey"
-                    labelText={t("ownerKey")}
+                  <TextField
+                    label={t("ownerKey")}
                     placeholder={t("ownerKeyPlaceholder")}
                     value={filters.relatedEntityKey}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const value = e.target.value.trim();
+                    onChange={(newValue) => {
+                      const value = newValue.trim();
                       setValue("relatedEntityKey", value);
                       debounce(() => setDebouncedRelatedEntityKey(value ?? ""));
                     }}
-                    size="sm"
                   />
                 </>
               )}
@@ -228,17 +221,15 @@ const List: FC = () => {
                 items={[...ALLOWED_RESULT_TYPES]}
                 selectedItem={filters.result}
               />
-              <TextInput
-                id="actorId"
-                labelText={t("actor")}
+              <TextField
+                label={t("actor")}
                 placeholder={t("actorPlaceholder")}
                 value={filters.actor}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const value = e.target.value.trim();
+                onChange={(newValue) => {
+                  const value = newValue.trim();
                   setValue("actor", value);
                   debounce(() => setDebouncedActor(value ?? ""));
                 }}
-                size="sm"
               />
               <DateRangeField
                 isModalOpen={isDateRangeModalOpen}
@@ -255,107 +246,107 @@ const List: FC = () => {
                 popoverTitle="Filter by timestamp date range"
                 label={t("date")}
               />
-              <CenteredRow>
-                <Button
-                  kind="ghost"
-                  size="sm"
-                  disabled={
-                    !filters.operationType &&
-                    !filters.entityType &&
-                    !filters.result &&
-                    !filters.actor &&
-                    !filters.timestampFrom &&
-                    !filters.timestampTo
-                  }
-                  type="reset"
-                  onClick={() => {
-                    reset({
-                      operationType: undefined,
-                      entityType: undefined,
-                      relatedEntityType: undefined,
-                      relatedEntityKey: "",
-                      result: undefined,
-                      actor: "",
-                      timestampFrom: "",
-                      timestampTo: "",
-                    });
-                    setDebouncedActor("");
-                    setDebouncedRelatedEntityKey("");
-                  }}
-                >
-                  {t("reset")}
-                </Button>
-              </CenteredRow>
-            </Stack>
-          </StickySection>
-        </ColumnRightPadding>
-        <Column sm={4} md={5} lg={12} xlg={13}>
-          <EntityListStickyWrapper>
-            <EntityList
-              data={
-                auditLogs?.items.map((log) => ({
-                  id: log.auditLogKey,
-                  result:
-                    log.result === "SUCCESS" ? (
-                      <SuccessIcon size={20} />
-                    ) : (
-                      <ErrorIcon size={20} />
-                    ),
-                  operationType: (
-                    <OperationLogName>
-                      {spaceAndCapitalize(log.operationType)}
-                    </OperationLogName>
-                  ),
-                  entityType: spaceAndCapitalize(log.entityType),
-                  reference: (
-                    <CodeSnippet type="inline">
-                      {log.entityDescription?.trim() || log.entityKey}
-                    </CodeSnippet>
-                  ),
-                  property: <CellProperty item={log} />,
-                  actorId: log.actorId ? (
-                    <OperationLogName>
-                      {log.actorType === "CLIENT" ? (
-                        <Api aria-label="Client" />
-                      ) : (
-                        <User aria-label="User" />
-                      )}
-                      {log.agentElementId && <AiAgentIcon aria-label="Agent" />}
-                      {log.actorId}
-                    </OperationLogName>
+              <Button
+                className="mx-auto w-fit"
+                variant="ghost"
+                size="sm"
+                disabled={
+                  !filters.operationType &&
+                  !filters.entityType &&
+                  !filters.result &&
+                  !filters.actor &&
+                  !filters.timestampFrom &&
+                  !filters.timestampTo
+                }
+                type="reset"
+                onClick={() => {
+                  reset({
+                    operationType: undefined,
+                    entityType: undefined,
+                    relatedEntityType: undefined,
+                    relatedEntityKey: "",
+                    result: undefined,
+                    actor: "",
+                    timestampFrom: "",
+                    timestampTo: "",
+                  });
+                  setDebouncedActor("");
+                  setDebouncedRelatedEntityKey("");
+                }}
+              >
+                {t("reset")}
+              </Button>
+            </CardContent>
+          </Card>
+        }
+      >
+        <EntityList
+          data={
+            auditLogs?.items.map((log) => ({
+              id: log.auditLogKey,
+              result:
+                log.result === "SUCCESS" ? (
+                  <CircleCheck
+                    role="img"
+                    className="h-5 w-5 text-success-action-default"
+                    aria-label={spaceAndCapitalize(log.result)}
+                  />
+                ) : (
+                  <XCircle
+                    role="img"
+                    className="h-5 w-5 text-danger-action-default"
+                    aria-label={spaceAndCapitalize(log.result)}
+                  />
+                ),
+              operationType: spaceAndCapitalize(log.operationType),
+              entityType: spaceAndCapitalize(log.entityType),
+              reference: (
+                <Text as="code" variant="code-sm">
+                  {log.entityDescription?.trim() || log.entityKey}
+                </Text>
+              ),
+              property: <CellProperty item={log} />,
+              actorId: log.actorId ? (
+                <div className="flex items-center gap-1">
+                  {log.actorType === "CLIENT" ? (
+                    <Plug role="img" className="h-4 w-4" aria-label="Client" />
                   ) : (
-                    "-"
-                  ),
-                  timestamp: new Date(log.timestamp).toLocaleString(),
-                })) || []
-              }
-              headers={[
-                { header: "", key: "result" },
-                {
-                  header: t("operationType"),
-                  key: "operationType",
-                  isSortable: true,
-                },
-                {
-                  header: t("entityType"),
-                  key: "entityType",
-                  isSortable: true,
-                },
-                { header: t("reference"), key: "reference" },
-                { header: t("property"), key: "property" },
-                { header: t("actor"), key: "actorId", isSortable: true },
-                { header: t("date"), key: "timestamp", isSortable: true },
-              ]}
-              loading={loading}
-              setSort={handleSort}
-              page={{ ...page, ...auditLogs?.page }}
-              pageSizes={[50, 100, 200]}
-              setPageNumber={setPageNumber}
-              setPageSize={setPageSize}
-            />
-          </EntityListStickyWrapper>
-        </Column>
-      </Grid>
+                    <User role="img" className="h-4 w-4" aria-label="User" />
+                  )}
+                  {log.agentElementId && <AiAgentIcon aria-label="Agent" />}
+                  {log.actorId}
+                </div>
+              ) : (
+                "-"
+              ),
+              timestamp: new Date(log.timestamp).toLocaleString(),
+            })) || []
+          }
+          headers={[
+            { header: "", key: "result" },
+            {
+              header: t("operationType"),
+              key: "operationType",
+              isSortable: true,
+            },
+            {
+              header: t("entityType"),
+              key: "entityType",
+              isSortable: true,
+            },
+            { header: t("reference"), key: "reference" },
+            { header: t("property"), key: "property" },
+            { header: t("actor"), key: "actorId", isSortable: true },
+            { header: t("date"), key: "timestamp", isSortable: true },
+          ]}
+          loading={loading}
+          setSort={handleSort}
+          page={{ ...page, ...auditLogs?.page }}
+          pageSizes={[50, 100, 200]}
+          setPageNumber={setPageNumber}
+          setPageSize={setPageSize}
+        />
+      </PageContentLayout>
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("operationsLogCouldNotLoad")}

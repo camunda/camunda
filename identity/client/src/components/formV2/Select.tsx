@@ -6,63 +6,82 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { Dropdown as CarbonDropdown } from "@carbon/react";
-import { DropdownProps } from "@carbon/react/lib/components/Dropdown/Dropdown";
+import { ReactNode, useId } from "react";
+import {
+  Label,
+  Select as DSSelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  cn,
+} from "@camunda/design-system";
 import { spaceAndCapitalize } from "src/utility/format/spaceAndCapitalize.ts";
 import useTranslate from "src/utility/localization";
 
 const ALL_OPTION = "all" as const;
 
-type Props<T extends string> = Omit<
-  DropdownProps<T | typeof ALL_OPTION>,
-  "label" | "items" | "selectedItem" | "onChange" | "itemToString"
-> & {
+type Props<T extends string> = {
+  id?: string;
+  className?: string;
+  disabled?: boolean;
+  titleText?: ReactNode;
   items: readonly T[];
   selectedItem?: T;
   onChange?: (data: { selectedItem?: T }) => void;
 };
 
 const Select = <T extends string>({
-  onChange,
+  id,
+  className,
+  disabled,
+  titleText,
   items,
   selectedItem,
-  ...rest
+  onChange,
 }: Props<T>) => {
   const { t } = useTranslate("components");
-  const options: (T | typeof ALL_OPTION)[] = [ALL_OPTION, ...items];
+  const generatedId = useId();
+  const selectId = id ?? generatedId;
 
   const controlledSelectedItem = selectedItem ?? ALL_OPTION;
 
-  function onDropdownChange({
-    selectedItem,
-  }: {
-    selectedItem: T | typeof ALL_OPTION | null;
-  }) {
-    if (!selectedItem || selectedItem === ALL_OPTION) {
+  function handleValueChange(value: string) {
+    if (value === ALL_OPTION) {
       onChange?.({ selectedItem: undefined });
       return;
     }
 
-    onChange?.({ selectedItem });
+    onChange?.({ selectedItem: value as T });
   }
 
   return (
-    <CarbonDropdown<T | typeof ALL_OPTION>
-      {...rest}
-      label={t("selectLabel")}
-      aria-label={t("selectLabel")}
-      size="sm"
-      items={options}
-      selectedItem={controlledSelectedItem}
-      itemToString={(item) =>
-        item === ALL_OPTION
-          ? t("selectAll")
-          : item
-            ? spaceAndCapitalize(item)
-            : ""
-      }
-      onChange={onDropdownChange}
-    />
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      {titleText !== undefined ? (
+        <Label htmlFor={selectId}>{titleText}</Label>
+      ) : null}
+      <DSSelect
+        value={controlledSelectedItem}
+        onValueChange={handleValueChange}
+        disabled={disabled}
+      >
+        <SelectTrigger
+          id={selectId}
+          className="w-full"
+          aria-label={titleText === undefined ? t("selectLabel") : undefined}
+        >
+          <SelectValue placeholder={t("selectLabel")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL_OPTION}>{t("selectAll")}</SelectItem>
+          {items.map((item) => (
+            <SelectItem key={item} value={item}>
+              {spaceAndCapitalize(item)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </DSSelect>
+    </div>
   );
 };
 
