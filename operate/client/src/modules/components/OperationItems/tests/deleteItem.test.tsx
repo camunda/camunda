@@ -12,27 +12,32 @@ import {OperationItems} from '../';
 import {DangerButton} from '../../OperationItem/DangerButton';
 
 describe('Delete Item', () => {
-  it('should render a trash can icon for delete operations', () => {
+  it('should render a text button by default', () => {
+    const BUTTON_TITLE = 'Delete process definition';
+
     render(
       <OperationItems>
-        <DangerButton
-          type="DELETE"
-          onClick={noop}
-          title="delete process instance"
-        />
+        <DangerButton type="DELETE" onClick={noop} title={BUTTON_TITLE} />
       </OperationItems>,
     );
 
-    expect(
-      screen.getByTestId('delete-operation').querySelector('svg'),
-    ).toBeInTheDocument();
+    const deleteButton = screen.getByRole('button', {name: BUTTON_TITLE});
+
+    expect(deleteButton).toHaveTextContent('Delete');
+    expect(deleteButton).toHaveAttribute('title', BUTTON_TITLE);
+    expect(deleteButton.querySelector('svg')).not.toBeInTheDocument();
   });
 
   it('should render an icon-only delete button with a tooltip', async () => {
     const BUTTON_TITLE = 'Delete Instance 1';
     const {user} = render(
       <OperationItems>
-        <DangerButton type="DELETE" onClick={noop} title={BUTTON_TITLE} />
+        <DangerButton
+          type="DELETE"
+          onClick={noop}
+          title={BUTTON_TITLE}
+          isIconOnly
+        />
       </OperationItems>,
     );
 
