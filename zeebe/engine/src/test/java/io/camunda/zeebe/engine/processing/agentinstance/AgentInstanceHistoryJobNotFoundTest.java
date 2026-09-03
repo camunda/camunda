@@ -335,4 +335,169 @@ public class AgentInstanceHistoryJobNotFoundTest {
         .as("an item discarded for a job that will never resolve is never committed")
         .isFalse();
   }
+
+  @Test
+  public void shouldNotReaccumulateMetricsWhenNotFoundUpdateIsResent() {
+    // given — a fabricated jobKey that never existed, same fixture as
+    // shouldAcceptAndImmediatelyDiscardUpdateWhenJobKeyNeverExisted. Its history item is created
+    // and discarded on the spot, so — unlike a superseded lease — nothing is left pending that a
+    // resend could match against. Only the per-instance metrics-accumulated ids can prevent this
+    // resend from being counted a second time.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+
+    final var assistantItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-resent-fabricated-job")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("hi"));
+    assistantItem.getMetrics().setInputTokens(100L).setOutputTokens(40L);
+    assistantItem.addToolCall(
+        new AgentHistoryEmbeddedToolCall().setToolCallId("call-1").setToolName("lookup"));
+
+    // when — the first update is accepted, its metrics accumulated, and its history item created
+    // and discarded in one step.
+    final var updated1 =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(999999999L)
+            .withHistory(List.of(assistantItem))
+            .update();
+    assertThat(updated1.getIntent()).isEqualTo(AgentInstanceIntent.UPDATED);
+    assertThat(updated1.getValue().getMetrics().getInputTokens()).isEqualTo(100L);
+    assertThat(updated1.getValue().getMetrics().getOutputTokens()).isEqualTo(40L);
+    assertThat(updated1.getValue().getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(updated1.getValue().getMetrics().getToolCalls()).isEqualTo(1);
+    assertThat(updated1.getValue().getChangedAttributes())
+        .as("the first submission's metrics are a real change")
+        .contains("metrics");
+
+    // when — the same historyItemId is resent on a second, separate update against the same
+    // fabricated jobKey. Its metrics differ from the first submission's — proving that whatever
+    // suppresses the second accumulation matches on the item's id, not on its payload.
+    final var resentAssistantItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-resent-fabricated-job")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("hi again"));
+    resentAssistantItem.getMetrics().setInputTokens(500L).setOutputTokens(900L);
+    resentAssistantItem.addToolCall(
+        new AgentHistoryEmbeddedToolCall().setToolCallId("call-2").setToolName("lookup"));
+
+    final var updated2 =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(999999999L)
+            .withHistory(List.of(resentAssistantItem))
+            .update();
+
+    // then — a resend after a discard is not itself an error: the second update is accepted too.
+    assertThat(updated2.getIntent())
+        .as("resending after a discard is not an error")
+        .isEqualTo(AgentInstanceIntent.UPDATED);
+
+    // and — "metrics" is absent from the second update's changedAttributes: this is the durable
+    // signal that its metrics were skipped, not applied a second time.
+    assertThat(updated2.getValue().getChangedAttributes())
+        .as("the resend's metrics must not be reflected as a change")
+        .doesNotContain("metrics");
+
+    // and — the agent instance's cumulative metrics equal a single accumulation, not two.
+    assertThat(updated2.getValue().getMetrics().getInputTokens())
+        .as("inputTokens must not double-count the resent item")
+        .isEqualTo(100L);
+    assertThat(updated2.getValue().getMetrics().getOutputTokens())
+        .as("outputTokens must not double-count the resent item")
+        .isEqualTo(40L);
+    assertThat(updated2.getValue().getMetrics().getModelCalls())
+        .as("modelCalls must not double-count the resent item")
+        .isEqualTo(1);
+    assertThat(updated2.getValue().getMetrics().getToolCalls())
+        .as("toolCalls must not double-count the resent item")
+        .isEqualTo(1);
+
+    // and — the resent item is still created and immediately discarded, just like the first: the
+    // dedup is about metrics, not about suppressing the item's own create/discard lifecycle. Both
+    // updates share the historyItemId "item-resent-fabricated-job", so under the clock-reset
+    // limit each intent must show up exactly twice — once per update — proving the second update
+    // produced its own create/discard pair rather than merely reusing the first's.
+    final var clockResetKey = ENGINE.clock().reset().getKey();
+    final var createdForItem =
+        RecordingExporter.records()
+            .limit(r -> r.getKey() == clockResetKey)
+            .withValueType(ValueType.AGENT_HISTORY)
+            .withIntent(AgentHistoryIntent.CREATED)
+            .filter(
+                r ->
+                    ((AgentHistoryRecordValue) r.getValue())
+                        .getHistoryItemId()
+                        .equals("item-resent-fabricated-job"))
+            .toList();
+    assertThat(createdForItem).as("both the original and the resent item are created").hasSize(2);
+    final var discardedForItem =
+        RecordingExporter.records()
+            .limit(r -> r.getKey() == clockResetKey)
+            .withValueType(ValueType.AGENT_HISTORY)
+            .withIntent(AgentHistoryIntent.DISCARDED)
+            .filter(
+                r ->
+                    ((AgentHistoryRecordValue) r.getValue())
+                        .getHistoryItemId()
+                        .equals("item-resent-fabricated-job"))
+            .toList();
+    assertThat(discardedForItem)
+        .as("both the original and the resent item are discarded immediately")
+        .hasSize(2);
+    final var committedForItem =
+        RecordingExporter.records()
+            .limit(r -> r.getKey() == clockResetKey)
+            .withValueType(ValueType.AGENT_HISTORY)
+            .withIntent(AgentHistoryIntent.COMMITTED)
+            .filter(
+                r ->
+                    ((AgentHistoryRecordValue) r.getValue())
+                        .getHistoryItemId()
+                        .equals("item-resent-fabricated-job"))
+            .toList();
+    assertThat(committedForItem)
+        .as("an item discarded for a job that will never resolve is never committed")
+        .isEmpty();
+  }
 }
