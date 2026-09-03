@@ -66,7 +66,7 @@ const InstancesBar: React.FC<Props> = ({
 						{isDraining && drainingDescription !== undefined && (
 							<Tooltip label={drainingDescription} align="top" autoAlign>
 								<DrainingIndicator data-testid="draining-indicator">
-									<Timer size={16} />
+									<Timer size={16} aria-hidden="true" focusable="false" />
 								</DrainingIndicator>
 							</Tooltip>
 						)}
