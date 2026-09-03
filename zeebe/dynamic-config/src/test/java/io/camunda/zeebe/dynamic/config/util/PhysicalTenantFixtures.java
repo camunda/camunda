@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.dynamic.config.util;
 
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
@@ -23,7 +22,9 @@ public final class PhysicalTenantFixtures {
   /**
    * The given single-group topology as a multi-group configuration whose two partition groups are
    * mirror images: the default tenant and {@link #TENANT_A} run the same partitions over the same
-   * brokers.
+   * brokers. The input's single group is renamed to the default group in the process — a group's
+   * name is irrelevant to the operations these fixtures plan, and the mirrored shape is what the
+   * tests assert on.
    *
    * <p>Mirroring rather than varying the two is what makes a plan easy to read: whatever a request
    * does to the default tenant it must do to the other one as well, so a plan that only ever saw
@@ -31,17 +32,18 @@ public final class PhysicalTenantFixtures {
    * that has to be derived.
    */
   public static CurrentClusterConfiguration withMirroredTenant(
-      final ClusterConfiguration topology) {
-    final var single = CurrentClusterConfiguration.fromLegacy(topology);
+      final CurrentClusterConfiguration topology) {
+    if (topology.partitionGroups().size() != 1) {
+      throw new IllegalArgumentException(
+          "Expected a topology with exactly one partition group, but got "
+              + topology.partitionGroups().keySet());
+    }
+    final var singleGroup = topology.partitionGroups().values().iterator().next();
     return new CurrentClusterConfiguration(
-        single.version(),
-        single.globalConfiguration(),
-        Map.of(
-            CurrentClusterConfiguration.DEFAULT_GROUP,
-            single.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP),
-            TENANT_A,
-            single.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)),
-        single.phasedChangeState());
+        topology.version(),
+        topology.globalConfiguration(),
+        Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, singleGroup, TENANT_A, singleGroup),
+        topology.phasedChangeState());
   }
 
   /**

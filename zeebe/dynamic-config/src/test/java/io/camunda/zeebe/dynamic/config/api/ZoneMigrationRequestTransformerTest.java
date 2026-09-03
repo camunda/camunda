@@ -16,14 +16,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.cluster.ZoneLayout;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
@@ -35,6 +33,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
+import io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,10 +57,12 @@ final class ZoneMigrationRequestTransformerTest {
     final var configUpdatedTopology = setZoneAwareConfig(initialTopology, zones);
 
     // when
-    final var result =
-        plannedOperations(new ZoneMigrationRequestTransformer(ZONE_A), configUpdatedTopology);
-    assertThat(result).isRight();
-    assertThat(result.get())
+    final var phasesResult =
+        new ZoneMigrationRequestTransformer(ZONE_A).phases(configUpdatedTopology);
+    assertThat(phasesResult).isRight();
+    final var phases = phasesResult.get();
+    final var operations = TestChangePlan.flatten(phases);
+    assertThat(operations)
         // check is unordered because member ordering between runs is not stable
         .containsExactly(
             new MemberJoinOperation(ZONE_A_0),
@@ -106,12 +107,13 @@ final class ZoneMigrationRequestTransformerTest {
             new MemberLeaveOperation(BARE_0),
             new MemberLeaveOperation(BARE_1),
             new MemberLeaveOperation(BARE_2));
-    final var newTopology = TestTopologyChangeSimulator.apply(configUpdatedTopology, result.get());
+    final var newTopology = TestTopologyChangeSimulator.apply(configUpdatedTopology, phases);
 
     // then
     assertThat(newTopology.isFullyZoneAware()).isTrue();
-    assertThat(newTopology.partitionDistributorConfig()).hasValue(new ZoneAwareConfig(zones));
-    assertThat(newTopology.members().keySet())
+    assertThat(newTopology.globalConfiguration().partitionDistributorConfig())
+        .hasValue(new ZoneAwareConfig(zones));
+    assertThat(newTopology.globalConfiguration().members().keySet())
         .containsExactlyInAnyOrder(ZONE_A_0, ZONE_A_1, ZONE_A_2);
     assertSamePartitionDistribution(
         initialTopology, newTopology, nodeMapping(IntStream.range(0, 3), ZONE_A));
@@ -167,16 +169,17 @@ final class ZoneMigrationRequestTransformerTest {
 
     // then
     assertThat(afterSecondaryMigration.isPartiallyZoneAware()).isTrue();
-    assertThat(afterSecondaryMigration.partitionDistributorConfig())
+    assertThat(afterSecondaryMigration.globalConfiguration().partitionDistributorConfig())
         .hasValue(new ZoneAwareConfig(zones));
-    assertThat(afterSecondaryMigration.members().keySet())
+    assertThat(afterSecondaryMigration.globalConfiguration().members().keySet())
         .containsExactlyInAnyOrder(BARE_0, BARE_2, ZONE_B_0, ZONE_B_1);
     assertSamePartitionDistribution(
         initialTopology, afterSecondaryMigration, mixedDualRegionNodeMapping());
 
     assertThat(finalTopology.isFullyZoneAware()).isTrue();
-    assertThat(finalTopology.partitionDistributorConfig()).hasValue(new ZoneAwareConfig(zones));
-    assertThat(finalTopology.members().keySet())
+    assertThat(finalTopology.globalConfiguration().partitionDistributorConfig())
+        .hasValue(new ZoneAwareConfig(zones));
+    assertThat(finalTopology.globalConfiguration().members().keySet())
         .containsExactlyInAnyOrder(ZONE_A_0, ZONE_A_1, ZONE_B_0, ZONE_B_1);
     assertSamePartitionDistribution(
         initialTopology, finalTopology, dualRegionNodeMapping(4, List.of(ZONE_A, ZONE_B)));
@@ -245,7 +248,10 @@ final class ZoneMigrationRequestTransformerTest {
   void shouldRejectInvalidPartitionDistribution() {
     // given
     final var oldTopology =
-        unzonedTopology(3, 3, 3).setPartitionDistributorConfig(new RoundRobinConfig());
+        unzonedTopology(3, 3, 3)
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration.setPartitionDistributorConfig(new RoundRobinConfig()));
 
     // when
     final var result = plannedOperations(new ZoneMigrationRequestTransformer(ZONE_A), oldTopology);
@@ -326,12 +332,11 @@ final class ZoneMigrationRequestTransformerTest {
                         "Zone migration request targets unknown zone 'unknown-zone'"));
   }
 
-  private ClusterConfiguration migrate(
-      final ClusterConfiguration oldTopology, final String zoneName) {
-    final var result =
-        plannedOperations(new ZoneMigrationRequestTransformer(zoneName), oldTopology);
-    assertThat(result).isRight();
-    return TestTopologyChangeSimulator.apply(oldTopology, result.get());
+  private CurrentClusterConfiguration migrate(
+      final CurrentClusterConfiguration oldTopology, final String zoneName) {
+    final var phasesResult = new ZoneMigrationRequestTransformer(zoneName).phases(oldTopology);
+    assertThat(phasesResult).isRight();
+    return TestTopologyChangeSimulator.apply(oldTopology, phasesResult.get());
   }
 
   /**
@@ -339,31 +344,21 @@ final class ZoneMigrationRequestTransformerTest {
    * every broker holds partitions of both tenants. Enough to tell a plan that saw every tenant's
    * partition group from one that only ever saw the default group.
    */
-  private CurrentClusterConfiguration twoTenantCluster(final ClusterConfiguration topology) {
-    final var single = CurrentClusterConfiguration.fromLegacy(topology);
-    return new CurrentClusterConfiguration(
-        single.version(),
-        single.globalConfiguration(),
-        Map.of(
-            CurrentClusterConfiguration.DEFAULT_GROUP,
-            single.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP),
-            TENANT_A,
-            single.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)),
-        single.phasedChangeState());
+  private CurrentClusterConfiguration twoTenantCluster(final CurrentClusterConfiguration topology) {
+    return PhysicalTenantFixtures.withMirroredTenant(topology);
   }
 
-  private ClusterConfiguration setZoneAwareConfig(
-      final ClusterConfiguration topology, final List<ZoneSpec> zones) {
-    final var result =
-        plannedOperations(
-            new UpdatePartitionDistributionTransformer(new ZoneAwareConfig(zones)), topology);
-    assertThat(result).isRight();
-    return TestTopologyChangeSimulator.apply(topology, result.get());
+  private CurrentClusterConfiguration setZoneAwareConfig(
+      final CurrentClusterConfiguration topology, final List<ZoneSpec> zones) {
+    final var phasesResult =
+        new UpdatePartitionDistributionTransformer(new ZoneAwareConfig(zones)).phases(topology);
+    assertThat(phasesResult).isRight();
+    return TestTopologyChangeSimulator.apply(topology, phasesResult.get());
   }
 
   private void assertSamePartitionDistribution(
-      final ClusterConfiguration oldTopology,
-      final ClusterConfiguration newTopology,
+      final CurrentClusterConfiguration oldTopology,
+      final CurrentClusterConfiguration newTopology,
       final Map<MemberId, MemberId> nodeMapping) {
     final Map<Integer, Set<MemberId>> expected =
         partitionToMembers(oldTopology).entrySet().stream()
@@ -377,22 +372,15 @@ final class ZoneMigrationRequestTransformerTest {
         .isEqualTo(expected);
   }
 
-  private int indexOf(
-      final List<ClusterConfigurationChangeOperation> operations,
-      final ClusterConfigurationChangeOperation expectedOperation) {
-    final var index = operations.indexOf(expectedOperation);
-    assertThat(index)
-        .describedAs("expected operation %s to be part of the migration plan", expectedOperation)
-        .isNotNegative();
-    return index;
-  }
-
-  private Map<Integer, Set<MemberId>> partitionToMembers(final ClusterConfiguration topology) {
-    return ConfigurationUtil.getPartitionDistributionFrom(topology, "temp").stream()
+  private Map<Integer, Set<MemberId>> partitionToMembers(
+      final CurrentClusterConfiguration topology) {
+    return ConfigurationUtil.getPartitionDistributionFrom(
+            topology, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .stream()
         .collect(Collectors.toMap(p -> p.id().number(), p -> Set.copyOf(p.members())));
   }
 
-  private ClusterConfiguration unzonedTopology(
+  private CurrentClusterConfiguration unzonedTopology(
       final int clusterSize, final int partitionCount, final int replicationFactor) {
     final Set<MemberId> members =
         IntStream.range(0, clusterSize).mapToObj(MemberId::from).collect(Collectors.toSet());
@@ -400,18 +388,16 @@ final class ZoneMigrationRequestTransformerTest {
         new RoundRobinConfig()
             .toDistributor()
             .distributePartitions(members, sortedPartitionIds(partitionCount), replicationFactor);
-    var topology = ConfigurationUtil.getClusterConfigFrom(distribution, partitionConfig, "cid");
-    for (final MemberId member : members) {
-      if (!topology.hasMember(member)) {
-        topology = topology.addMember(member, MemberState.initializeAsActive(Map.of()));
-      }
-    }
-    return topology;
+    return ConfigurationUtil.getCurrentClusterConfigurationFrom(
+        members,
+        distribution,
+        Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, partitionConfig),
+        "cid");
   }
 
   private List<PartitionId> sortedPartitionIds(final int partitionCount) {
     return IntStream.rangeClosed(1, partitionCount)
-        .mapToObj(id -> new PartitionId("temp", id))
+        .mapToObj(id -> new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, id))
         .collect(Collectors.toList());
   }
 

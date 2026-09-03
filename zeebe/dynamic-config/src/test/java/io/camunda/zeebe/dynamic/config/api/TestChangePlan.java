@@ -8,7 +8,6 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -36,16 +35,11 @@ final class TestChangePlan {
   private TestChangePlan() {}
 
   static Either<Exception, List<ClusterConfigurationChangeOperation>> plannedOperations(
-      final ConfigurationChangeRequest request, final ClusterConfiguration topology) {
-    return plannedOperations(request, CurrentClusterConfiguration.fromLegacy(topology));
-  }
-
-  static Either<Exception, List<ClusterConfigurationChangeOperation>> plannedOperations(
       final ConfigurationChangeRequest request, final CurrentClusterConfiguration configuration) {
     return request.phases(configuration).map(TestChangePlan::flatten);
   }
 
-  private static List<ClusterConfigurationChangeOperation> flatten(final List<Phase> phases) {
+  static List<ClusterConfigurationChangeOperation> flatten(final List<Phase> phases) {
     final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
     for (final var phase : phases) {
       switch (phase) {
