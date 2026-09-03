@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceDefinition;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -270,18 +272,60 @@ public class MigrateAgentInstanceTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("B")
             .getFirst();
+    // set each agent instance's definition the live way: via a CONFIGURATION history item in
+    // CREATE's own history batch, applied inline by AgentInstanceCreateProcessor before it
+    // appends AGENT_INSTANCE:CREATED.
+    engine.jobs().withType(AGENT_JOB_TYPE).activate();
+    final var firstJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(AGENT_JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final var firstConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-config-a")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    firstConfigItem.setModel("gpt-4o").setProvider("openai");
+    firstConfigItem.addSystemPrompt(
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText(firstSystemPrompt));
+    firstConfigItem.setChangedAttributes(List.of("model", "provider", "systemPrompt"));
     final long firstAgentInstanceKey =
         engine
             .agentInstances()
             .withElementInstanceKey(firstTaskInstance.getKey())
-            .withDefinition("gpt-4o", "openai", firstSystemPrompt)
+            .withJobKey(firstJobKey)
+            .withHistory(List.of(firstConfigItem))
             .create()
             .getKey();
+
+    engine.jobs().withType(otherJobType).activate();
+    final var secondJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(otherJobType)
+            .getFirst()
+            .getKey();
+    final var secondConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-config-b")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    secondConfigItem.setModel("claude-sonnet-4-5").setProvider("anthropic");
+    secondConfigItem.addSystemPrompt(
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText(secondSystemPrompt));
+    secondConfigItem.setChangedAttributes(List.of("model", "provider", "systemPrompt"));
     final long secondAgentInstanceKey =
         engine
             .agentInstances()
             .withElementInstanceKey(secondTaskInstance.getKey())
-            .withDefinition("claude-sonnet-4-5", "anthropic", secondSystemPrompt)
+            .withJobKey(secondJobKey)
+            .withHistory(List.of(secondConfigItem))
             .create()
             .getKey();
 
