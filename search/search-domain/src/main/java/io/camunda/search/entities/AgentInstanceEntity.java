@@ -31,7 +31,7 @@ public record AgentInstanceEntity(
     Long processDefinitionKey,
     String processDefinitionId,
     Integer processDefinitionVersion,
-    @Nullable String versionTag,
+    @Nullable String processDefinitionVersionTag,
     String tenantId,
     OffsetDateTime creationDate,
     OffsetDateTime lastUpdatedDate,
@@ -76,7 +76,13 @@ public record AgentInstanceEntity(
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record AgentInstanceMetrics(
-      long inputTokens, long outputTokens, int modelCalls, int toolCalls) {}
+      long inputTokens,
+      long outputTokens,
+      long reasoningTokenCount,
+      long cacheCreationTokenCount,
+      long cacheReadTokenCount,
+      int modelCalls,
+      int toolCalls) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record AgentInstanceTool(

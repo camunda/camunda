@@ -27,6 +27,7 @@ import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
+import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -186,14 +187,15 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public static void validateTaskResponse(final GetTasksResponse taskResponse) {
     if (taskResponse.error() != null) {
       LOG.error("An Opensearch task failed with error: {}", taskResponse.error());
-      throw new OptimizeRuntimeException(taskResponse.error().toString());
+      // ErrorCause has no toString() override; toJsonString() serializes every field.
+      throw new OptimizeRuntimeException(taskResponse.error().toJsonString());
     }
 
     if (taskResponse.response() != null) {
       final List<BulkByScrollFailure> failures = taskResponse.response().failures();
       if (failures != null && !failures.isEmpty()) {
         LOG.error("Opensearch task contains failures: {}", failures);
-        throw new OptimizeRuntimeException(failures.toString());
+        throw new OptimizeByQueryFailureException(failures.toString());
       }
     }
   }
@@ -304,6 +306,14 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
   public long updateByQuery(final String index, final Query query, final Script script) {
     return richOpenSearchClient.doc().updateByQuery(index, query, script);
+  }
+
+  public long updateByQuery(
+      final String index,
+      final Query query,
+      final Script script,
+      final boolean failOnVersionConflicts) {
+    return richOpenSearchClient.doc().updateByQuery(index, query, script, failOnVersionConflicts);
   }
 
   public final <T> IndexResponse index(final IndexRequest.Builder<T> indexRequest) {
@@ -926,12 +936,26 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final Query filterQuery,
       final boolean refresh,
       final String... indices) {
+    return deleteByQueryTask(deleteItemIdentifier, filterQuery, refresh, false, indices);
+  }
+
+  /**
+   * @param failOnVersionConflicts if {@code true}, the request aborts on the first version conflict
+   *     (a concurrent write on a matched document), which surfaces the conflict via the existing
+   *     failures-check as an {@link OptimizeByQueryFailureException}.
+   */
+  public boolean deleteByQueryTask(
+      final String deleteItemIdentifier,
+      final Query filterQuery,
+      final boolean refresh,
+      final boolean failOnVersionConflicts,
+      final String... indices) {
     LOG.debug("Deleting {}", deleteItemIdentifier);
     final Refresh refreshPolicy = refresh ? Refresh.True : Refresh.False;
     final DeleteByQueryRequest.Builder requestBuilder =
         new DeleteByQueryRequest.Builder()
             .index(applyIndexPrefixes(indices))
-            .conflicts(Conflicts.Proceed)
+            .conflicts(failOnVersionConflicts ? Conflicts.Abort : Conflicts.Proceed)
             .query(filterQuery)
             .refresh(refreshPolicy);
     final Function<Exception, String> errorMessage =
@@ -955,8 +979,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     waitUntilTaskIsFinished(taskId, deleteItemIdentifier);
 
     final Status taskStatus = richOpenSearchClient.task().task(taskId).task().status();
-    LOG.debug("Deleted [{}] {}.", taskStatus.updated(), deleteItemIdentifier);
-    return taskStatus.updated() > 0L;
+    LOG.debug("Deleted [{}] {}.", taskStatus.deleted(), deleteItemIdentifier);
+    return taskStatus.deleted() > 0L;
   }
 
   public void waitUntilTaskIsFinished(final String taskId, final String taskItemIdentifier) {

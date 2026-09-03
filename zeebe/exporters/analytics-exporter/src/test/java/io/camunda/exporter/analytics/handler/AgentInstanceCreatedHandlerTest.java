@@ -52,7 +52,7 @@ class AgentInstanceCreatedHandlerTest {
             .withProcessInstanceKey(22L)
             .withRootProcessInstanceKey(9L)
             .withTenantId("acme")
-            .withVersionTag("release-2026-q1")
+            .withProcessDefinitionVersionTag("release-2026-q1")
             .withDefinition(
                 b ->
                     b.withModel("claude-sonnet-4-5")

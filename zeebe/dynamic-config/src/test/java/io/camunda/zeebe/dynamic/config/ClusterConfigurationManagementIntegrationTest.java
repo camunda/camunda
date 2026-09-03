@@ -204,7 +204,7 @@ class ClusterConfigurationManagementIntegrationTest {
                 Either.right(
                     CurrentClusterConfiguration.toPhases(
                         List.of(
-                            new PartitionJoinOperation(MEMBER_0, 2, 1),
+                            new PartitionJoinOperation(MEMBER_0, 2, 1, true),
                             new PartitionLeaveOperation(MEMBER_1, 1, 1)))))
         .join();
 
@@ -267,9 +267,9 @@ class ClusterConfigurationManagementIntegrationTest {
                 Either.right(
                     CurrentClusterConfiguration.toPhases(
                         List.of(
-                            new PartitionJoinOperation(MEMBER_0, 2, 1),
+                            new PartitionJoinOperation(MEMBER_0, 2, 1, true),
                             new PartitionLeaveOperation(MEMBER_1, 1, 1),
-                            new PartitionJoinOperation(MEMBER_1, 1, 1)))))
+                            new PartitionJoinOperation(MEMBER_1, 1, 1, true)))))
         .join();
 
     // then

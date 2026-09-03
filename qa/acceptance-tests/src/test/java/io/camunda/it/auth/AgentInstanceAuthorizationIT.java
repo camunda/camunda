@@ -35,7 +35,6 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -52,6 +51,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 class AgentInstanceAuthorizationIT {
 
   private static final String AGENT_ELEMENT_ID = "agentAuthElement";
+  private static final String AGENT_JOB_TYPE = "agent-task";
   private static final String PROCESS_ID_1 = "agentAuthProcess1";
   private static final String PROCESS_ID_2 = "agentAuthProcess2";
   private static final String PROCESS_ID_3 = "agentAuthProcess3";
@@ -419,7 +419,7 @@ class AgentInstanceAuthorizationIT {
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .zeebeJobType(AGENT_JOB_TYPE)
             .zeebeAiAgentSubProcessDefinition()
             .endEvent()
             .done();
@@ -444,7 +444,7 @@ class AgentInstanceAuthorizationIT {
     final var activatedJobs =
         adminClient
             .newActivateJobsCommand()
-            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .jobType(AGENT_JOB_TYPE)
             .maxJobsToActivate(1)
             .timeout(Duration.ofMinutes(5))
             .send()

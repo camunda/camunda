@@ -31,6 +31,12 @@ const STATIC_DIR = path.join(OUTPUT_DIR, 'static');
 module.exports = {
   entry: path.join(FRONTEND_DIR, 'app.js'),
 
+  experiments: {
+    // Keeps the minimizer off index.html: its inline {{ COVERAGE_DATA }}
+    // placeholder is not parseable JavaScript until Java substitutes it.
+    html: false,
+  },
+
   output: {
     path: STATIC_DIR,
     filename: 'bundle.js',

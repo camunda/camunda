@@ -5245,7 +5245,7 @@ final class JsonSerializableToJsonTest {
                       .setProcessDefinitionKey(2251799813685100L)
                       .setProcessDefinitionVersion(3)
                       .setAgentDefinitionKey(2251799813685077L)
-                      .setVersionTag("v1.2")
+                      .setProcessDefinitionVersionTag("v1.2")
                       .setTenantId("<default>")
                       .setStatus(AgentInstanceStatus.TOOL_CALLING)
                       .setTools(
@@ -5289,7 +5289,7 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": 2251799813685100,
           "processDefinitionVersion": 3,
           "agentDefinitionKey": 2251799813685077,
-          "versionTag": "v1.2",
+          "processDefinitionVersionTag": "v1.2",
           "tenantId": "<default>",
           "status": "TOOL_CALLING",
           "definition": {
@@ -5333,7 +5333,7 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": -1,
           "processDefinitionVersion": -1,
           "agentDefinitionKey": -1,
-          "versionTag": "",
+          "processDefinitionVersionTag": "",
           "tenantId": "<default>",
           "status": "UNSPECIFIED",
           "definition": { "model": "", "provider": "", "systemPrompt": [] },
@@ -5393,7 +5393,7 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": -1,
           "processDefinitionVersion": -1,
           "agentDefinitionKey": -1,
-          "versionTag": "",
+          "processDefinitionVersionTag": "",
           "tenantId": "<default>",
           "status": "UNSPECIFIED",
           "definition": { "model": "", "provider": "", "systemPrompt": [] },
@@ -5497,7 +5497,7 @@ final class JsonSerializableToJsonTest {
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack(Map.of("page", 1)))));
+                      .setObject(Map.of("page", 1)));
               record.addSystemPrompt(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.TEXT)
@@ -5507,9 +5507,7 @@ final class JsonSerializableToJsonTest {
                       .setToolCallId("call_abc123")
                       .setToolName("extract_line_items")
                       .setElementId("extract-line-items-task")
-                      .setArguments(
-                          wrapArray(
-                              MsgPackConverter.convertToMsgPack(Map.of("documentId", "inv-001")))));
+                      .setArguments(Map.of("documentId", "inv-001")));
               record.getMetrics().setInputTokens(512L).setOutputTokens(148L).setDurationMs(1200L);
               return record;
             },
@@ -5590,27 +5588,23 @@ final class JsonSerializableToJsonTest {
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(
-                          wrapArray(
-                              MsgPackConverter.convertToMsgPack(
-                                  List.of(Map.of("id", 1), Map.of("id", 2))))));
+                      .setObject(List.of(Map.of("id", 1), Map.of("id", 2))));
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(
-                          wrapArray(MsgPackConverter.convertToMsgPack(List.of(10, 20, 30)))));
+                      .setObject(List.of(10, 20, 30)));
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack(42))));
+                      .setObject(42));
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack(true))));
+                      .setObject(true));
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
-                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack((Object) "hello"))));
+                      .setObject("hello"));
               return record;
             },
         """

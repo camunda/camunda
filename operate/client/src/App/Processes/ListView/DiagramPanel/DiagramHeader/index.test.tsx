@@ -6,13 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {DiagramHeader} from '.';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {searchResult} from 'modules/testUtils';
 import type {ProcessDefinitionSelection} from 'modules/hooks/processDefinitions';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
@@ -46,6 +47,7 @@ const noMatchSelection: ProcessDefinitionSelection = {
 describe('DiagramHeader', () => {
   beforeEach(() => {
     mockSearchProcessInstances().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
   });
 
   it('should render header with full data', async () => {
@@ -94,6 +96,44 @@ describe('DiagramHeader', () => {
 
     expect(
       await screen.findByRole('button', {name: /delete process definition/i}),
+    ).toBeInTheDocument();
+  });
+
+  it('should identify a deleted definition and explain that deletion purges its history', async () => {
+    const {user} = render(
+      <DiagramHeader
+        processDefinitionSelection={{
+          ...singleVersionSelection,
+          definition: {
+            ...singleVersionSelection.definition,
+            state: 'DELETED',
+          },
+        }}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(await screen.findByTestId('deleted-tag')).toBeInTheDocument();
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /delete process definition/i,
+      }),
+    );
+
+    const dialog = screen.getByRole('dialog', {
+      name: 'Delete Process Definition',
+    });
+
+    expect(
+      within(dialog).getByText(
+        'This process definition is already deleted. Continuing will permanently remove its remaining history:',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        'Yes, I confirm I want to permanently delete this process definition history.',
+      ),
     ).toBeInTheDocument();
   });
 

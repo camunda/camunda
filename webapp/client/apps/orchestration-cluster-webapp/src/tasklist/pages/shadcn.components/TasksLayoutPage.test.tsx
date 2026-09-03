@@ -8,16 +8,28 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {describe, expect, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
+import {HttpResponse} from 'msw';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {mockCurrentUserEndpoint} from '#/shared-test-modules/mock-handlers';
 import {TasksLayoutPage} from './TasksLayoutPage';
 
 const currentUser = createCurrentUser({username: 'demo'});
 const noop = vi.fn().mockResolvedValue(undefined);
 
 describe('<TasksLayoutPage />', () => {
-	it('should display the tasks panel empty state', async () => {
+	beforeEach(() => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+	});
+
+	afterEach(() => {
+		sessionStorage.clear();
+	});
+
+	it('should display the tasks panel empty state', async ({worker}) => {
+		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(currentUser)}));
 		const screen = await renderWithRouter(
 			() => (
 				<TasksLayoutPage

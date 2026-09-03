@@ -36,7 +36,6 @@ import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.client.dsl.RequestDSL;
 import io.camunda.optimize.service.db.os.schema.OpenSearchIndexSettingsBuilder;
 import io.camunda.optimize.service.db.os.schema.OpenSearchMetadataService;
-import io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import io.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
@@ -213,26 +212,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void addEntryWithRawIndex(final String rawIndexName, final String id, final Object entry) {
-    try {
-      final IndexRequest.Builder<Object> request =
-          new IndexRequest.Builder<>()
-              .document(entry)
-              .index(rawIndexName)
-              .id(id)
-              .refresh(Refresh.True);
-      final IndexResponse response =
-          getOptimizeOpenSearchClient().getOpenSearchClient().index(request.build());
-      if (!response.shards().failures().isEmpty()) {
-        throw new OptimizeIntegrationTestException(
-            String.format("Could not add raw entry to index %s with id %s", rawIndexName, id));
-      }
-    } catch (final IOException e) {
-      throw new OptimizeIntegrationTestException("Unable to add a raw entry to OpenSearch", e);
-    }
-  }
-
-  @Override
   public void addEntriesToDatabase(final String indexName, final Map<String, Object> idToEntryMap) {
     StreamSupport.stream(Iterables.partition(idToEntryMap.entrySet(), 10_000).spliterator(), false)
         .forEach(
@@ -375,37 +354,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     deleteZeebeIndicesByName(indicesToDelete);
   }
 
-  private List<String> listZeebeIndicesForPrefix(final String prefix) {
-    try {
-      return getOptimizeOpenSearchClient()
-          .getOpenSearchClient()
-          .indices()
-          .get(RequestDSL.getIndexRequestBuilder(prefix + "*").ignoreUnavailable(true).build())
-          .result()
-          .keySet()
-          .stream()
-          .toList();
-    } catch (final IOException e) {
-      return List.of(); // No indices exist — nothing to clean
-    }
-  }
-
-  private void deleteZeebeIndicesByName(final List<String> indices) {
-    if (indices.isEmpty()) {
-      return;
-    }
-    // Wrap in a catch so that an ephemeral index (e.g. camunda-history-deletion in Zeebe 8.9)
-    // that vanishes between listing and deletion does not fail the cleanup.
-    try {
-      getOptimizeOpenSearchClient()
-          .getOpenSearchClient()
-          .indices()
-          .delete(d -> d.index(indices).ignoreUnavailable(true));
-    } catch (final Exception e) {
-      LOG.debug("Some Zeebe indices already gone by delete time, ignoring: {}", e.getMessage());
-    }
-  }
-
   @Override
   public void updateZeebeRecordsForPrefix(
       final String zeebeRecordPrefix, final String indexName, final String updateScript) {
@@ -533,6 +481,26 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
+  public void addEntryWithRawIndex(final String rawIndexName, final String id, final Object entry) {
+    try {
+      final IndexRequest.Builder<Object> request =
+          new IndexRequest.Builder<>()
+              .document(entry)
+              .index(rawIndexName)
+              .id(id)
+              .refresh(Refresh.True);
+      final IndexResponse response =
+          getOptimizeOpenSearchClient().getOpenSearchClient().index(request.build());
+      if (!response.shards().failures().isEmpty()) {
+        throw new OptimizeIntegrationTestException(
+            String.format("Could not add raw entry to index %s with id %s", rawIndexName, id));
+      }
+    } catch (final IOException e) {
+      throw new OptimizeIntegrationTestException("Unable to add a raw entry to OpenSearch", e);
+    }
+  }
+
+  @Override
   public void deleteProcessInstancesFromIndex(final String indexName, final String id) {
     getOptimizeOpenSearchClient().getRichOpenSearchClient().doc().delete(indexName, id);
   }
@@ -594,14 +562,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     } catch (final Exception e) {
       LOG.warn("Delete failed, no snapshots to delete from repository {}", snapshotRepositoryName);
     }
-  }
-
-  @Override
-  public List<String> getImportIndices() {
-    return OpenSearchSchemaManager.getAllNonDynamicMappings().stream()
-        .filter(IndexMappingCreator::isImportIndex)
-        .map(IndexMappingCreator::getIndexName)
-        .toList();
   }
 
   @Override
@@ -922,6 +882,37 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   @Override
   public String[] getIndexNames() throws IOException {
     return getOptimizeOpenSearchClient().getAllIndexNames().toArray(new String[0]);
+  }
+
+  private List<String> listZeebeIndicesForPrefix(final String prefix) {
+    try {
+      return getOptimizeOpenSearchClient()
+          .getOpenSearchClient()
+          .indices()
+          .get(RequestDSL.getIndexRequestBuilder(prefix + "*").ignoreUnavailable(true).build())
+          .result()
+          .keySet()
+          .stream()
+          .toList();
+    } catch (final IOException e) {
+      return List.of(); // No indices exist — nothing to clean
+    }
+  }
+
+  private void deleteZeebeIndicesByName(final List<String> indices) {
+    if (indices.isEmpty()) {
+      return;
+    }
+    // Wrap in a catch so that indices that vanish between listing and deletion do not fail the
+    // cleanup.
+    try {
+      getOptimizeOpenSearchClient()
+          .getOpenSearchClient()
+          .indices()
+          .delete(d -> d.index(indices).ignoreUnavailable(true));
+    } catch (final Exception e) {
+      LOG.debug("Some Zeebe indices already gone by delete time, ignoring: {}", e.getMessage());
+    }
   }
 
   private IndexSettings createIndexSettings(

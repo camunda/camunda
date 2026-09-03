@@ -13,7 +13,7 @@ import io.camunda.debug.cli.recover.ProcessDefinitionRecovery.Summary;
 import io.camunda.debug.cli.state.SnapshotUtil;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.handlers.EmbeddedFormHandler;
-import io.camunda.exporter.handlers.ProcessHandler;
+import io.camunda.exporter.handlers.ProcessCreatedHandler;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -251,7 +251,7 @@ public class RecoverProcessDefinitionsCommand implements Callable<Integer> {
       }
 
       final var processHandler =
-          new ProcessHandler(
+          new ProcessCreatedHandler(
               processIndexName, new NoopProcessCache(), new ExtensionPropertyConfiguration());
       final var embeddedFormHandler = new EmbeddedFormHandler(formIndexName);
 

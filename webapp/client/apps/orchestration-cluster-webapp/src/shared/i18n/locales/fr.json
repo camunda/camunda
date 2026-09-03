@@ -491,6 +491,23 @@
 					"startDatePopoverTitle": "Filtrer les instances par date de début",
 					"endDatePopoverTitle": "Filtrer les instances par date de fin"
 				},
+				"instancesTable": {
+					"title": "Instances de processus",
+					"name": "Nom",
+					"processInstanceKey": "Clé d'instance de processus",
+					"version": "Version",
+					"versionTag": "Étiquette de version",
+					"businessId": "ID métier",
+					"tenant": "Locataire",
+					"startDate": "Date de début",
+					"endDate": "Date de fin",
+					"parentProcessInstanceKey": "Clé d'instance de processus parente",
+					"viewInstance": "Afficher l'instance {{key}}",
+					"viewParentInstance": "Afficher l'instance parente {{key}}",
+					"none": "Aucune",
+					"emptyMessage": "Aucune instance ne correspond à ce jeu de filtres",
+					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance"
+				},
 				"diagramHeader": {
 					"title": "Processus",
 					"processName": "Nom du processus",
@@ -506,6 +523,19 @@
 			},
 			"decisions": {
 				"title": "Décisions",
+				"diagramHeader": {
+					"title": "Décision",
+					"copyButtonDescription": "ID de décision / Cliquer pour copier"
+				},
+				"diagramPanel": {
+					"multipleVersionsSelected": "Plusieurs versions sont sélectionnées pour la décision \"{{name}}\"",
+					"selectSingleVersion": "Pour voir une table de décision ou une expression littérale, sélectionnez une seule version",
+					"multipleTenantsSelected": "La décision \"{{name}}\" existe dans plusieurs locataires",
+					"selectSingleTenant": "Pour voir une table de décision ou une expression littérale, sélectionnez un seul locataire",
+					"noDecisionSelected": "Aucune décision n'est sélectionnée",
+					"selectDecisionInFilters": "Pour voir une table de décision ou une expression littérale, sélectionnez une décision dans le panneau de filtres",
+					"decisionNotFoundTitle": "La décision n'a pas pu être trouvée"
+				},
 				"filters": {
 					"tenant": "Locataire",
 					"decisionSection": "Décision",

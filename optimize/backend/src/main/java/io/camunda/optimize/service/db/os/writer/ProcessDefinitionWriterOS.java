@@ -9,24 +9,24 @@ package io.camunda.optimize.service.db.os.writer;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
+import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.FLOW_NODE_DATA;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
-import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION;
+import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
+import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.USER_TASK_NAMES;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
-import io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex;
+import io.camunda.optimize.service.db.writer.DeletedProcessDefinitionFilter;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch.core.UpdateRequest;
@@ -41,7 +41,17 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
 
   private static final Script MARK_AS_DELETED_SCRIPT =
       OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-          "ctx._source.deleted = true", Collections.emptyMap());
+          "ctx._source.deleted = true;"
+              + " ctx._source."
+              + PROCESS_DEFINITION_XML
+              + " = null;"
+              + " ctx._source."
+              + FLOW_NODE_DATA
+              + " = null;"
+              + " ctx._source."
+              + USER_TASK_NAMES
+              + " = null",
+          Collections.emptyMap());
 
   private static final Script MARK_AS_ONBOARDED_SCRIPT =
       OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
@@ -50,82 +60,43 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
       org.slf4j.LoggerFactory.getLogger(ProcessDefinitionWriterOS.class);
 
   private final ConfigurationService configurationService;
+  private final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter;
 
   public ProcessDefinitionWriterOS(
       final OptimizeOpenSearchClient osClient,
       final ObjectMapper objectMapper,
-      final ConfigurationService configurationService) {
+      final ConfigurationService configurationService,
+      final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter) {
     super(objectMapper, osClient);
     this.configurationService = configurationService;
+    this.deletedProcessDefinitionFilter = deletedProcessDefinitionFilter;
   }
 
   @Override
   public void importProcessDefinitions(final List<ProcessDefinitionOptimizeDto> procDefs) {
-    LOG.debug("Writing [{}] process definitions to opensearch", procDefs.size());
-    writeProcessDefinitionInformation(procDefs);
+    final List<ProcessDefinitionOptimizeDto> filteredProcDefs =
+        deletedProcessDefinitionFilter.filterOutSuppressed(
+            procDefs, ProcessDefinitionOptimizeDto::getId);
+    LOG.debug("Writing [{}] process definitions to opensearch", filteredProcDefs.size());
+    writeProcessDefinitionInformation(filteredProcDefs);
   }
 
   @Override
-  public void markDefinitionAsDeleted(final String definitionId) {
-    LOG.debug("Marking process definition with ID {} as deleted", definitionId);
+  public void softDeleteDefinition(final String definitionId) {
+    LOG.debug("Soft-deleting process definition with ID {}", definitionId);
+    // Refresh immediately: callers rely on a subsequent search seeing this delete right away
     final UpdateRequest.Builder updateReqBuilder =
         new UpdateRequest.Builder<>()
             .index(PROCESS_DEFINITION_INDEX_NAME)
             .id(definitionId)
             .script(MARK_AS_DELETED_SCRIPT)
-            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+            .refresh(Refresh.True);
     final String errorMessage =
         String.format(
-            "There was a problem when trying to mark process definition with ID %s as deleted",
+            "There was a problem when trying to soft-delete process definition with ID %s",
             definitionId);
     osClient.update(updateReqBuilder, errorMessage);
-  }
-
-  @Override
-  public boolean markRedeployedDefinitionsAsDeleted(
-      final List<ProcessDefinitionOptimizeDto> importedDefinitions) {
-    final AtomicBoolean definitionsUpdated = new AtomicBoolean(false);
-    // We must partition this into batches to avoid the maximum OS boolQuery clause limit being
-    // reached
-    // OS counts the clauses in a different way to ES: 300 is roughly equivalent to 1000 in ES
-    // The issue was reproduced locally with 300 partition size so reduced to 100
-    Lists.partition(importedDefinitions, 100)
-        .forEach(
-            partition -> {
-              final BoolQuery.Builder definitionsToDeleteQuery = new BoolQuery.Builder();
-              partition.forEach(
-                  definition -> {
-                    final BoolQuery.Builder matchingDefinitionQuery =
-                        new BoolQuery.Builder()
-                            .must(QueryDSL.term(PROCESS_DEFINITION_KEY, definition.getKey()))
-                            .must(
-                                QueryDSL.term(PROCESS_DEFINITION_VERSION, definition.getVersion()))
-                            .mustNot(QueryDSL.term(PROCESS_DEFINITION_ID, definition.getId()));
-                    if (definition.getTenantId() != null) {
-                      matchingDefinitionQuery.must(
-                          QueryDSL.term(
-                              DecisionDefinitionIndex.TENANT_ID, definition.getTenantId()));
-                    } else {
-                      matchingDefinitionQuery.mustNot(
-                          QueryDSL.exists(DecisionDefinitionIndex.TENANT_ID));
-                    }
-                    definitionsToDeleteQuery.should(matchingDefinitionQuery.build().toQuery());
-                  });
-
-              final long deleted =
-                  osClient.updateByQuery(
-                      PROCESS_DEFINITION_INDEX_NAME,
-                      definitionsToDeleteQuery.build().toQuery(),
-                      MARK_AS_DELETED_SCRIPT);
-
-              if (deleted > 0 && !definitionsUpdated.get()) {
-                definitionsUpdated.set(true);
-              }
-            });
-    if (definitionsUpdated.get()) {
-      LOG.debug("Marked old process definitions with new deployments as deleted");
-    }
-    return definitionsUpdated.get();
   }
 
   @Override

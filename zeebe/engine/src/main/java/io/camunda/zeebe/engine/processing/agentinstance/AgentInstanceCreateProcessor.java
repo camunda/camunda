@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AgentDefinitionState;
+import io.camunda.zeebe.engine.state.immutable.AgentHistoryState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -63,6 +65,7 @@ public final class AgentInstanceCreateProcessor
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final AgentDefinitionState agentDefinitionState;
+  private final AgentHistoryState agentHistoryState;
   private final CslAuthorizationCheck cslCheck;
   private final KeyGenerator keyGenerator;
   private final AgentHistoryBatchBehavior historyBatchHelper;
@@ -78,6 +81,7 @@ public final class AgentInstanceCreateProcessor
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
     agentDefinitionState = processingState.getAgentDefinitionState();
+    agentHistoryState = processingState.getAgentHistoryState();
     this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
     historyBatchHelper = new AgentHistoryBatchBehavior(keyGenerator, processingState);
@@ -200,7 +204,8 @@ public final class AgentInstanceCreateProcessor
             .setProcessDefinitionKey(elementInstanceValue.getProcessDefinitionKey())
             .setProcessDefinitionVersion(elementInstanceValue.getVersion())
             .setAgentDefinitionKey(agentDefinitionKey)
-            .setVersionTag(deployedProcess == null ? "" : deployedProcess.getVersionTag())
+            .setProcessDefinitionVersionTag(
+                deployedProcess == null ? "" : deployedProcess.getVersionTag())
             .setTenantId(elementInstanceValue.getTenantId())
             .setStatus(AgentInstanceStatus.INITIALIZING);
 
@@ -222,18 +227,49 @@ public final class AgentInstanceCreateProcessor
           commandValue.getJobKey(),
           commandValue.getJobLease(),
           commandValue.getElementInstanceKey(),
-          commandValue.getHistory(),
-          true);
+          commandValue.getHistory());
     }
+
+    // event.getHistory() allocates a fresh list on every call — now that
+    // applyInstanceChangesFromHistory has populated it above, read it once here and reuse it for
+    // both loops below.
+    final var history = event.getHistory();
+
+    // Unlike UPDATE (which defers this to AgentHistoryCommitProcessor, once the item is actually
+    // committed), CREATE applies a CONFIGURATION item's changes right here, before its own
+    // AGENT_INSTANCE:CREATED is appended below — so a newly created instance always starts with a
+    // valid, usable definition instead of a placeholder one.
+    history.stream()
+        .filter(Predicate.not(AgentHistoryRecordValue::isDuplicate))
+        .filter(item -> item.getRole() == AgentHistoryRole.CONFIGURATION)
+        .forEach(item -> AgentHistoryBatchBehavior.applyConfigurationChanges(event, item));
 
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.CREATED, event);
 
-    event.getHistory().stream()
+    // AGENT_HISTORY items reference their AgentInstance parent by key, so they can only be
+    // created after AGENT_INSTANCE:CREATED above has assigned that key.
+    history.stream()
         .filter(Predicate.not(AgentHistoryRecordValue::isDuplicate))
         .forEach(
-            item ->
+            item -> {
+              stateWriter.appendFollowUpEvent(
+                  item.getAgentHistoryKey(), AgentHistoryIntent.CREATED, item);
+              // CONFIGURATION changes are applied directly above, during CREATE itself, rather
+              // than deferred like an UPDATE's would be — so the history record must commit
+              // immediately too, instead of sitting PENDING/discardable.
+              if (item.getRole() == AgentHistoryRole.CONFIGURATION) {
+                // Read the item back from state rather than reusing the untrimmed in-memory
+                // `item`: AgentHistoryCreatedApplier, applied synchronously by the CREATED event
+                // just appended above, has already trimmed it down to identity fields plus the
+                // CONFIGURATION-specific ones — the exact shape AgentHistoryCommitProcessor's own
+                // COMMITTED event re-emits for UPDATE. Fetching it keeps both paths' COMMITTED
+                // events identical in shape without duplicating that trimming logic here.
                 stateWriter.appendFollowUpEvent(
-                    item.getAgentHistoryKey(), AgentHistoryIntent.CREATED, item));
+                    item.getAgentHistoryKey(),
+                    AgentHistoryIntent.COMMITTED,
+                    agentHistoryState.get(item.getAgentHistoryKey()));
+              }
+            });
 
     responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.CREATED, event, command);

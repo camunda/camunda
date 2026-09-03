@@ -26,7 +26,7 @@ public class AgentInstanceTemplate extends AbstractTemplateDescriptor
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
-  public static final String VERSION_TAG = "versionTag";
+  public static final String PROCESS_DEFINITION_VERSION_TAG = "processDefinitionVersionTag";
   public static final String TENANT_ID = "tenantId";
   public static final String STATUS = "status";
   public static final String MODEL = "model";
@@ -37,6 +37,9 @@ public class AgentInstanceTemplate extends AbstractTemplateDescriptor
   public static final String MAX_TOOL_CALLS = "maxToolCalls";
   public static final String INPUT_TOKENS = "inputTokens";
   public static final String OUTPUT_TOKENS = "outputTokens";
+  public static final String REASONING_TOKEN_COUNT = "reasoningTokenCount";
+  public static final String CACHE_CREATION_TOKEN_COUNT = "cacheCreationTokenCount";
+  public static final String CACHE_READ_TOKEN_COUNT = "cacheReadTokenCount";
   public static final String MODEL_CALLS = "modelCalls";
   public static final String TOOL_CALLS = "toolCalls";
   public static final String TOOLS = "tools";

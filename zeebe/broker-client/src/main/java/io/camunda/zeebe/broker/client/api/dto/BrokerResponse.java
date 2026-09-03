@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.broker.client.api.dto;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.broker.client.api.BrokerClientException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
+import org.jspecify.annotations.Nullable;
 
 public class BrokerResponse<T> {
   private static final String ILLEGAL_SUCCESS_RESPONSE_MESSAGE =
@@ -19,7 +22,7 @@ public class BrokerResponse<T> {
       "Expected broker response to be either response, rejection, or error, but is neither of them";
 
   private final boolean isResponse;
-  private final T response;
+  private final @Nullable T response;
   private final int partitionId;
   private final long key;
 
@@ -45,7 +48,7 @@ public class BrokerResponse<T> {
     return false;
   }
 
-  public BrokerError getError() {
+  public @Nullable BrokerError getError() {
     return null;
   }
 
@@ -53,7 +56,7 @@ public class BrokerResponse<T> {
     return false;
   }
 
-  public BrokerRejection getRejection() {
+  public @Nullable BrokerRejection getRejection() {
     return null;
   }
 
@@ -61,13 +64,13 @@ public class BrokerResponse<T> {
     return isResponse;
   }
 
-  public T getResponse() {
+  public @Nullable T getResponse() {
     return response;
   }
 
   public T getResponseOrThrow() {
     if (isResponse()) {
-      return response;
+      return requireNonNull(response, "response is null");
     }
 
     throw toException();
@@ -77,9 +80,9 @@ public class BrokerResponse<T> {
     if (isResponse()) {
       return new IllegalBrokerResponseException(ILLEGAL_SUCCESS_RESPONSE_MESSAGE);
     } else if (isError()) {
-      return new BrokerErrorException(getError());
+      return new BrokerErrorException(requireNonNull(getError(), "error is null"));
     } else if (isRejection()) {
-      return new BrokerRejectionException(getRejection());
+      return new BrokerRejectionException(requireNonNull(getRejection(), "rejection is null"));
     }
 
     return new IllegalBrokerResponseException(ILLEGAL_RESPONSE_MESSAGE);

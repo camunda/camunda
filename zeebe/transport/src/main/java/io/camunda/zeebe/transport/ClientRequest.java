@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.transport;
 
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import org.jspecify.annotations.Nullable;
 
 public interface ClientRequest extends BufferWriter {
 
@@ -23,10 +23,8 @@ public interface ClientRequest extends BufferWriter {
   RequestType getRequestType();
 
   /**
-   * @return the partition group (physical tenant) this request targets; defaults to {@code
-   *     "default"} for backward compatibility
+   * @return the partition group (physical tenant) this request targets, or {@code null} when none
+   *     has been configured
    */
-  default String getPartitionGroup() {
-    return PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
-  }
+  @Nullable String getPartitionGroup();
 }

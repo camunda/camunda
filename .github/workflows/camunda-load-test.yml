@@ -2,8 +2,7 @@
 #              routes through this workflow. Builds Docker images (or reuses existing ones),
 #              then deploys via newLoadTest.sh + `make install` to a GKE cluster.
 # called-by: camunda-daily-load-tests.yml, camunda-weekly-load-tests.yml,
-#            camunda-pr-load-test.yaml, camunda-release-load-test.yaml,
-#            zeebe-update-long-running-migrating-benchmark.yaml
+#            camunda-pr-load-test.yaml, camunda-release-load-test.yaml
 # also: triggerable manually via workflow_dispatch for ad-hoc load tests
 # monitoring: https://dashboard.benchmark.camunda.cloud/
 # type: CI
@@ -473,10 +472,30 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl load-tests/load-tester -am install
+      # registry.camunda.cloud intermittently stops answering the manifest PUT at the end of the
+      # push. jib's own retries all fall inside a ~5 minute window, so they re-hit the same bad
+      # spell and the job fails. Each attempt here is capped well above the ~15s a healthy push
+      # takes, so a hung one is abandoned quickly and the registry is sampled again a minute later.
+      #
+      # This is mitigation, not a fix — it makes a hanging registry survivable, it does not stop it
+      # hanging. Drop both wrappers once these images are published to GAR instead
+      # (camunda/team-infrastructure#992), which removes the dependency on this registry altogether.
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${IMAGE_REPOSITORY}/starter:${IMAGE_TAG}"
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 60
+          timeout_minutes: 2
+          shell: bash
+          command: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${IMAGE_REPOSITORY}/starter:${IMAGE_TAG}"
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${IMAGE_REPOSITORY}/worker:${IMAGE_TAG}"
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 60
+          timeout_minutes: 2
+          shell: bash
+          command: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${IMAGE_REPOSITORY}/worker:${IMAGE_TAG}"
       - name: Observe build status
         if: always()
         continue-on-error: true

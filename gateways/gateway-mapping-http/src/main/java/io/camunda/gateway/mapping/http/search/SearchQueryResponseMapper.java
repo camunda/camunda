@@ -2177,6 +2177,9 @@ public final class SearchQueryResponseMapper {
         AgentInstanceMetrics.Builder.create()
             .inputTokens(m.inputTokens())
             .outputTokens(m.outputTokens())
+            .reasoningTokenCount(m.reasoningTokenCount())
+            .cacheCreationTokenCount(m.cacheCreationTokenCount())
+            .cacheReadTokenCount(m.cacheReadTokenCount())
             .modelCalls(m.modelCalls())
             .toolCalls(m.toolCalls())
             .build();
@@ -2223,7 +2226,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(keyToString(entity.processDefinitionKey()))
         .processDefinitionId(entity.processDefinitionId())
         .processDefinitionVersion(entity.processDefinitionVersion())
-        .processDefinitionVersionTag(entity.versionTag())
+        .processDefinitionVersionTag(entity.processDefinitionVersionTag())
         .tenantId(entity.tenantId())
         .creationDate(formatDate(entity.creationDate()))
         .lastUpdatedDate(formatDate(entity.lastUpdatedDate()))
@@ -2275,6 +2278,9 @@ public final class SearchQueryResponseMapper {
           AgentInstanceHistoryItemMetrics.Builder.create()
               .inputTokens(m.inputTokens())
               .outputTokens(m.outputTokens())
+              .reasoningTokenCount(m.reasoningTokenCount())
+              .cacheCreationTokenCount(m.cacheCreationTokenCount())
+              .cacheReadTokenCount(m.cacheReadTokenCount())
               .durationMs(m.durationMs())
               .build();
     }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.client.api;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
+import org.jspecify.annotations.Nullable;
 
 public class BrokerErrorException extends BrokerClientException {
   private static final String ERROR_MESSAGE_FORMAT = "Received error from broker (%s): %s";
@@ -18,7 +19,7 @@ public class BrokerErrorException extends BrokerClientException {
     this(brokerError, null);
   }
 
-  public BrokerErrorException(final BrokerError error, final Throwable cause) {
+  public BrokerErrorException(final BrokerError error, final @Nullable Throwable cause) {
     super(String.format(ERROR_MESSAGE_FORMAT, error.getCode(), error.getMessage()), cause);
     this.error = error;
   }

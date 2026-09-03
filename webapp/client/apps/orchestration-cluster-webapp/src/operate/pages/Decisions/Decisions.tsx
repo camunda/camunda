@@ -8,11 +8,11 @@
 
 import {useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useSuspenseQuery} from '@tanstack/react-query';
+import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
-import {decisionDefinitionsOptions} from './decisions.queries';
+import {decisionDefinitionSelectionOptions, decisionDefinitionsOptions} from './decisions.queries';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {InstancesList} from '#/operate/shared/InstancesList/InstancesList';
@@ -24,6 +24,8 @@ import {WarningFilled, CheckmarkOutline} from '#/operate/shared/StateIcon/styled
 import {VisuallyHiddenH1} from '#/operate/shared/VisuallyHiddenH1/VisuallyHiddenH1';
 import {InstancesTable} from './InstancesTable';
 import {OptionalFiltersFormGroup, type OptionalFilter, type OptionalFilterValues} from './OptionalFiltersFormGroup';
+import {DecisionPanel, type DecisionDefinitionSelection} from './DecisionPanel';
+import {useDecisionDefinitionVersions} from './useDecisionDefinitionVersions';
 import type {DecisionsSearch} from './decisionsFilter';
 
 type FiltersFormValues = OptionalFilterValues & {
@@ -35,6 +37,9 @@ type FiltersFormValues = OptionalFilterValues & {
 type Props = DecisionsSearch;
 
 type DecisionItem = {id: string; label: string};
+type DecisionVersionItem = {id: string; version?: number};
+
+const ALL_VERSIONS_ITEM: DecisionVersionItem = {id: 'all'};
 
 const Decisions: React.FC<Props> = ({
 	decisionDefinitionId,
@@ -60,29 +65,104 @@ const Decisions: React.FC<Props> = ({
 		[decisionEvaluationInstanceKey, processInstanceKey, businessId, evaluationDateFrom, evaluationDateTo],
 	);
 
+	const decisionDefinitionSelectionQuery = useQuery({
+		...decisionDefinitionSelectionOptions({
+			decisionDefinitionId,
+			decisionDefinitionVersion,
+			tenantId: specificTenantId,
+		}),
+		enabled: decisionDefinitionId !== undefined,
+	});
+	const decisionDefinitionVersionsQuery = useDecisionDefinitionVersions(decisionDefinitionId, specificTenantId);
+
 	const decisionItems = useMemo<DecisionItem[]>(() => {
 		const seen = new Set<string>();
-		return data.items.reduce<DecisionItem[]>((acc, def) => {
+		const definitions = [
+			...data.items,
+			...(decisionDefinitionSelectionQuery.data?.items ?? []),
+			...(decisionDefinitionVersionsQuery.data ?? []),
+		];
+		const items = definitions.reduce<DecisionItem[]>((acc, def) => {
 			if (!seen.has(def.decisionDefinitionId)) {
 				seen.add(def.decisionDefinitionId);
 				acc.push({id: def.decisionDefinitionId, label: def.name ?? def.decisionDefinitionId});
 			}
 			return acc;
 		}, []);
-	}, [data]);
+		if (decisionDefinitionId !== undefined && !seen.has(decisionDefinitionId)) {
+			items.push({id: decisionDefinitionId, label: decisionDefinitionId});
+		}
+		return items;
+	}, [data, decisionDefinitionId, decisionDefinitionSelectionQuery.data, decisionDefinitionVersionsQuery.data]);
 
-	const versionNumbers = useMemo<(number | undefined)[]>(() => {
+	const versionItems = useMemo<DecisionVersionItem[]>(() => {
 		if (!decisionDefinitionId) {
 			return [];
 		}
-		const versions = data.items
-			.filter((def) => def.decisionDefinitionId === decisionDefinitionId)
-			.sort((a, b) => b.version - a.version)
-			.map((def) => def.version);
-		return [undefined, ...versions];
-	}, [data, decisionDefinitionId]);
+		const definitions = [
+			...data.items,
+			...(decisionDefinitionSelectionQuery.data?.items ?? []),
+			...(decisionDefinitionVersionsQuery.data ?? []),
+		];
+		const versionSet = new Set(
+			definitions.filter((def) => def.decisionDefinitionId === decisionDefinitionId).map((def) => def.version),
+		);
+		if (decisionDefinitionVersion !== undefined) {
+			versionSet.add(decisionDefinitionVersion);
+		}
+		const versions = [...versionSet].sort((a, b) => b - a).map((version) => ({id: String(version), version}));
+		return [ALL_VERSIONS_ITEM, ...versions];
+	}, [
+		data,
+		decisionDefinitionId,
+		decisionDefinitionSelectionQuery.data,
+		decisionDefinitionVersion,
+		decisionDefinitionVersionsQuery.data,
+	]);
 
 	const selectedDecision = decisionItems.find((item) => item.id === decisionDefinitionId) ?? null;
+	const selectedVersion =
+		decisionDefinitionId === undefined
+			? null
+			: (versionItems.find(({version}) => version === decisionDefinitionVersion) ?? ALL_VERSIONS_ITEM);
+
+	const decisionDefinitionSelection = useMemo<DecisionDefinitionSelection>(() => {
+		if (!decisionDefinitionId || decisionDefinitionSelectionQuery.status !== 'success') {
+			return {kind: 'no-match'};
+		}
+
+		const matches = decisionDefinitionSelectionQuery.data.items.filter(
+			(definition) =>
+				definition.decisionDefinitionId === decisionDefinitionId &&
+				(decisionDefinitionVersion === undefined || definition.version === decisionDefinitionVersion) &&
+				(specificTenantId === undefined || definition.tenantId === specificTenantId),
+		);
+
+		if (decisionDefinitionVersion === undefined) {
+			const first = matches[0];
+			return first === undefined
+				? {kind: 'no-match'}
+				: {kind: 'all-versions', definition: {name: first.name, decisionDefinitionId: first.decisionDefinitionId}};
+		}
+
+		const definition = matches[0];
+		if (definition === undefined) {
+			return {kind: 'no-match'};
+		}
+		if (new Set(matches.map(({tenantId: definitionTenantId}) => definitionTenantId)).size > 1) {
+			return {
+				kind: 'multiple-tenants',
+				definition: {name: definition.name, decisionDefinitionId: definition.decisionDefinitionId},
+			};
+		}
+		return {kind: 'single-version', definition};
+	}, [
+		decisionDefinitionId,
+		decisionDefinitionSelectionQuery.data,
+		decisionDefinitionSelectionQuery.status,
+		decisionDefinitionVersion,
+		specificTenantId,
+	]);
 
 	const hasOptionalFilters =
 		tenantId !== undefined || Object.values(optionalFilterValues).some((value) => value !== undefined);
@@ -168,7 +248,8 @@ const Decisions: React.FC<Props> = ({
 																search: (prev) => ({
 																	...prev,
 																	decisionDefinitionId: selectedItem?.id,
-																	decisionDefinitionVersion: undefined,
+																	decisionDefinitionVersion:
+																		selectedItem?.id === decisionDefinitionId ? decisionDefinitionVersion : undefined,
 																}),
 															});
 														}}
@@ -177,19 +258,22 @@ const Decisions: React.FC<Props> = ({
 														id="decision-version-filter"
 														titleText={t('operate.decisions.filters.version')}
 														label={t('operate.decisions.filters.selectVersion')}
-														items={versionNumbers}
+														items={versionItems}
 														itemToString={(item) =>
-															item === undefined || item === null
+															item?.version === undefined
 																? t('operate.decisions.filters.allVersions')
-																: String(item)
+																: String(item.version)
 														}
-														selectedItem={decisionDefinitionVersion}
+														selectedItem={selectedVersion}
 														disabled={!decisionDefinitionId}
 														size="sm"
 														onChange={({selectedItem}) => {
 															void navigate({
 																to: '.',
-																search: (prev) => ({...prev, decisionDefinitionVersion: selectedItem ?? undefined}),
+																search: (prev) => ({
+																	...prev,
+																	decisionDefinitionVersion: selectedItem?.version,
+																}),
 															});
 														}}
 													/>
@@ -238,7 +322,16 @@ const Decisions: React.FC<Props> = ({
 						)}
 					</Form>
 				}
-				topPanel={<div />}
+				topPanel={
+					<DecisionPanel
+						decisionDefinitionSelection={decisionDefinitionSelection}
+						isDefinitionSelectionLoading={
+							decisionDefinitionId !== undefined &&
+							(decisionDefinitionSelectionQuery.isPending || decisionDefinitionSelectionQuery.fetchStatus !== 'idle')
+						}
+						isDefinitionSelectionError={decisionDefinitionSelectionQuery.isError}
+					/>
+				}
 				bottomPanel={
 					<InstancesTable
 						search={{

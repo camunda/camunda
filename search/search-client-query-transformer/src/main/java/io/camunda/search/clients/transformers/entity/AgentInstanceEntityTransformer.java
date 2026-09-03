@@ -35,6 +35,9 @@ public class AgentInstanceEntityTransformer
         new AgentInstanceMetrics(
             source.getInputTokens(),
             source.getOutputTokens(),
+            source.getReasoningTokenCount(),
+            source.getCacheCreationTokenCount(),
+            source.getCacheReadTokenCount(),
             source.getModelCalls(),
             source.getToolCalls());
 
@@ -59,7 +62,7 @@ public class AgentInstanceEntityTransformer
         source.getProcessDefinitionKey(),
         source.getBpmnProcessId(),
         source.getProcessDefinitionVersion(),
-        source.getVersionTag(),
+        source.getProcessDefinitionVersionTag(),
         source.getTenantId(),
         source.getCreationDate(),
         source.getLastUpdatedDate(),

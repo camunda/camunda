@@ -32,7 +32,7 @@
       "processDefinitionVersion": {
         "type": "integer"
       },
-      "versionTag": {
+      "processDefinitionVersionTag": {
         "type": "keyword"
       },
       "tenantId": {
@@ -140,6 +140,15 @@
         "type": "long"
       },
       "outputTokens": {
+        "type": "long"
+      },
+      "reasoningTokenCount": {
+        "type": "long"
+      },
+      "cacheCreationTokenCount": {
+        "type": "long"
+      },
+      "cacheReadTokenCount": {
         "type": "long"
       },
       "modelCalls": {

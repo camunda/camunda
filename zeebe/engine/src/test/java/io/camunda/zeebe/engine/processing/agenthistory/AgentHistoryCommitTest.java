@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -33,7 +32,7 @@ public class AgentHistoryCommitTest {
 
   private static final String PROCESS_ID = "process";
   private static final String SERVICE_TASK_ID = "agent-task";
-  private static final String JOB_TYPE = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
+  private static final String JOB_TYPE = "agentic-task";
   private static final String EXTERNAL_SERVICE_TASK_PROCESS_ID = "external-agent-service-task";
   private static final String EXTERNAL_SERVICE_TASK_ID = "external-agent-task";
   private static final String EXTERNAL_SERVICE_TASK_JOB_TYPE = "external-agent-job";

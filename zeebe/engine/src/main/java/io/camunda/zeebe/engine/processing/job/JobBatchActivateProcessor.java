@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.DroppedJob;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.FailedInjectionJob;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.OversizedJob;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -61,6 +62,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final CslAuthorizationCheck cslCheck;
   private final CslTenantCheck tenantCheck;
   private final JobSecretInjector jobSecretInjector;
+  private final SecretResolutionScheduler secretResolutionScheduler;
   private final BpmnIncidentBehavior incidentBehavior;
 
   public JobBatchActivateProcessor(
@@ -72,7 +74,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final CslTenantCheck tenantCheck,
       final InstantSource clock,
       final BpmnIncidentBehavior incidentBehavior,
-      final SecretStoreRegistry secretStoreRegistry) {
+      final SecretStoreRegistry secretStoreRegistry,
+      final SecretResolutionScheduler secretResolutionScheduler) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -80,6 +83,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
     jobSecretInjector = new JobSecretInjector(secretStoreRegistry);
+    this.secretResolutionScheduler = secretResolutionScheduler;
     jobBatchCollector =
         new JobBatchCollector(
             state,
@@ -217,6 +221,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
    */
   private void requestSecretResolution(
       final Map<SecretReference, List<Long>> jobsWithNonCachedSecrets) {
+    boolean anyRequested = false;
     for (final var waiting : jobsWithNonCachedSecrets.entrySet()) {
       final var reference = waiting.getKey();
       final var event =
@@ -231,10 +236,17 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       // to the next activation, which keeps its jobs activatable.
       if (!stateWriter.canWriteEventOfLength(
           event.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
-        return;
+        // stop appending, but still wake for whatever was already appended above
+        break;
       }
       stateWriter.appendFollowUpEvent(
           keyGenerator.nextKey(), SecretReferenceIntent.RESOLUTION_REQUESTED, event);
+      anyRequested = true;
+    }
+    if (anyRequested) {
+      // once per activation rather than per reference: the flag it sets is consumed by whichever
+      // cycle runs next, so setting it more than once per activation adds nothing
+      secretResolutionScheduler.stayAwake();
     }
   }
 

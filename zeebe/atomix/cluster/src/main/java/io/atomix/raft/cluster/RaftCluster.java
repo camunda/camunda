@@ -135,7 +135,27 @@ public interface RaftCluster {
    */
   CompletableFuture<Void> bootstrap(Collection<MemberId> cluster);
 
-  CompletableFuture<Void> join(Collection<MemberId> cluster);
+  /**
+   * Joins the cluster as an {@link RaftMember.Type#ACTIVE} member.
+   *
+   * @param cluster a list of member ids that are part of the cluster and assist in joining.
+   * @return A completable future to be completed once the server has joined the cluster.
+   */
+  default CompletableFuture<Void> join(final Collection<MemberId> cluster) {
+    return join(RaftMember.Type.ACTIVE, cluster);
+  }
+
+  /**
+   * Joins the cluster as a member of the given type.
+   *
+   * @param type the type the member joins as: {@link RaftMember.Type#ACTIVE} for a one-shot voting
+   *     join (current production behavior), {@link RaftMember.Type#PROMOTABLE} for the two-phase
+   *     learner flow where the member is caught up first and promoted to ACTIVE in a second
+   *     configuration change. {@link RaftMember.Type#INACTIVE} is rejected.
+   * @param cluster a list of member ids that are part of the cluster and assist in joining.
+   * @return A completable future to be completed once the server has joined the cluster.
+   */
+  CompletableFuture<Void> join(RaftMember.Type type, Collection<MemberId> cluster);
 
   /**
    * Returns a member by ID.

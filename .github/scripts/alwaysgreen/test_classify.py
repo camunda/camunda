@@ -211,13 +211,16 @@ def test_empty_report_counts_zero():
 # ---------------------------------------------------------------------------
 
 
-def test_setup_only_failures_are_provisioning():
-    # Observed shape: every failing spec was in test-setup.spec.ts
-    # (Create Default Cluster / Create AWS Cluster).
+def test_setup_only_failures_still_reach_the_agent():
+    # Downstream run 33483343722: every failing spec was in test-setup.spec.ts, and
+    # the trace shows a healthy app with the button on screen, failing on a retry
+    # where the project already existed. Classifying on the file name dropped this
+    # with no dispatch; the file mixes provisioning with ordinary UI flows, and
+    # nothing in the report separates the two.
     counts = classify.SpecCounts(total=15, failed=2, flaky=0, setup_failed=2)
     assert (
         classify.saas_surface_from_counts(counts, has_artifacts=True)
-        == classify.SURFACE_SAAS_PROVISIONING
+        == classify.SURFACE_SAAS_E2E
     )
 
 
@@ -227,6 +230,19 @@ def test_real_test_failures_are_saas_e2e():
         classify.saas_surface_from_counts(counts, has_artifacts=True)
         == classify.SURFACE_SAAS_E2E
     )
+
+
+def test_setup_failures_are_still_counted_for_the_log():
+    # Not a gate any more, but the triage log still reports it, so a run whose
+    # failures are all in setup specs stays visible as such without being dropped.
+    report = _nested_report(
+        [
+            {"file": "test-setup.spec.ts", "title": "a", "ok": False, "tests": [{"results": [{"status": "failed"}]}]},
+        ]
+    )
+    counts = classify.count_specs(report)
+    assert counts.failed == 1
+    assert counts.setup_failed == 1
 
 
 def test_no_failing_specs_with_reports_is_a_ci_job_failure():

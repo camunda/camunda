@@ -48,6 +48,8 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -348,6 +350,67 @@ public class CCSMTokenServiceTest {
     assertThat(result).contains("cookie-token");
   }
 
+  @Test
+  void shouldFallBackToValidatedBearerTokenWhenNoSessionOrCookie() {
+    // given — stateless CSL API caller (e.g. the Web Modeler cluster proxy): no OIDC session and no
+    // auth cookie, only a validated bearer token in the security context
+    setCurrentRequestWithoutAuthCookie();
+    SecurityContextHolder.getContext().setAuthentication(jwtAuthentication("bearer-token"));
+    when(camundaAuthenticationProviderProvider.getIfAvailable())
+        .thenReturn(camundaAuthenticationProvider);
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserAuthToken();
+
+    // then
+    assertThat(result).contains("bearer-token");
+  }
+
+  @Test
+  void shouldNotFallBackToBearerTokenWhenCslInactive() {
+    // given — the legacy public API path also authenticates as a JwtAuthenticationToken, but CSL is
+    // not active; the bearer token must not flow into tenant resolution as it did not before
+    setCurrentRequestWithoutAuthCookie();
+    SecurityContextHolder.getContext().setAuthentication(jwtAuthentication("api-token"));
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserAuthToken();
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldPreferAuthCookieOverBearerTokenWhenBothPresent() {
+    // given — a request carrying both a stale auth cookie and a security-context bearer token; the
+    // cookie must win so a lingering context token can never override the request's own credential
+    setCurrentRequestWithAuthCookie("cookie-token");
+    SecurityContextHolder.getContext().setAuthentication(jwtAuthentication("bearer-token"));
+    // CSL active, so the bearer token is a live alternative: only the cookie-before-bearer ordering
+    // keeps it from winning. Lenient because that ordering short-circuits before the bearer branch.
+    lenient()
+        .when(camundaAuthenticationProviderProvider.getIfAvailable())
+        .thenReturn(camundaAuthenticationProvider);
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserAuthToken();
+
+    // then
+    assertThat(result).contains("cookie-token");
+  }
+
+  @Test
+  void shouldReturnEmptyWhenNoSessionCookieOrBearerToken() {
+    // given — an authenticated request that carries none of the supported token sources
+    setCurrentRequestWithoutAuthCookie();
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserAuthToken();
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
   // --- getCurrentUserIdFromAuthToken: principal source (CSL claim vs legacy sub) ---
 
   @Test
@@ -363,6 +426,23 @@ public class CCSMTokenServiceTest {
     final Optional<String> result = ccsmTokenService.getCurrentUserIdFromAuthToken();
 
     // then — id comes from the CSL principal, without decoding the token
+    assertThat(result).contains("preferred-username");
+  }
+
+  @Test
+  void shouldResolveCurrentUserIdFromCslPrincipalForBearerRequests() {
+    // given — CSL authenticates a bearer request as a JWT; the id must still come from the
+    // configured username-claim, not the raw sub claim
+    SecurityContextHolder.getContext().setAuthentication(jwtAuthentication("bearer-token"));
+    when(camundaAuthenticationProviderProvider.getIfAvailable())
+        .thenReturn(camundaAuthenticationProvider);
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.user("preferred-username")));
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserIdFromAuthToken();
+
+    // then — id comes from the CSL principal, without decoding the bearer token
     assertThat(result).contains("preferred-username");
   }
 
@@ -393,6 +473,17 @@ public class CCSMTokenServiceTest {
     when(request.getAttributeNames()).thenReturn(Collections.emptyEnumeration());
     when(request.getCookies()).thenReturn(new Cookie[] {cookie});
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+  }
+
+  private void setCurrentRequestWithoutAuthCookie() {
+    when(request.getAttributeNames()).thenReturn(Collections.emptyEnumeration());
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+  }
+
+  private JwtAuthenticationToken jwtAuthentication(final String tokenValue) {
+    final Jwt jwt =
+        Jwt.withTokenValue(tokenValue).header("alg", "none").claim("sub", "user").build();
+    return new JwtAuthenticationToken(jwt);
   }
 
   private OAuth2AuthenticationToken oauthToken() {

@@ -125,7 +125,7 @@ public class MigrateAgentInstanceTest {
         .describedAs("Definition fields are updated to the target process definition")
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasBpmnProcessId(targetProcessId)
-        .hasVersionTag("v2")
+        .hasProcessDefinitionVersionTag("v2")
         .describedAs("elementId is remapped despite \"A\" having no active element instance")
         .hasElementId("A2");
   }
@@ -316,7 +316,7 @@ public class MigrateAgentInstanceTest {
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasBpmnProcessId(targetProcessId)
         .hasProcessDefinitionVersion(1)
-        .hasVersionTag("v2")
+        .hasProcessDefinitionVersionTag("v2")
         .hasElementId("A2")
         .describedAs(
             "Properties migration must not touch stay exactly as they were before migration")
@@ -338,7 +338,7 @@ public class MigrateAgentInstanceTest {
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasBpmnProcessId(targetProcessId)
         .hasProcessDefinitionVersion(1)
-        .hasVersionTag("v2")
+        .hasProcessDefinitionVersionTag("v2")
         .hasElementId("B")
         .describedAs(
             "Properties migration must not touch stay exactly as they were before migration")

@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
 import io.camunda.zeebe.dynamic.config.PartitionStateAssert;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
@@ -280,6 +281,69 @@ class ConfigurationUtilTest {
 
     // then
     assertThat(partitionDistribution).containsExactly(partitionOne);
+  }
+
+  @Test
+  void shouldIncludeLearnerPartitionsInDistribution() {
+    // given - a learner must be part of the distribution so that it starts its partition on boot
+    // and recovers its raft state, otherwise a pending promotion could never complete
+    final PartitionMetadata partitionOne =
+        new PartitionMetadata(
+            new PartitionId(GROUP_NAME, 1),
+            Set.of(member(0), member(1)),
+            Map.of(member(0), 2, member(1), 1),
+            2,
+            member(0));
+
+    final ClusterConfiguration topology =
+        ClusterConfiguration.init()
+            .addMember(
+                member(0),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2, partitionConfig))))
+            .addMember(
+                member(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.joining(1, partitionConfig).toLearner())));
+
+    // when
+    final var partitionDistribution =
+        ConfigurationUtil.getPartitionDistributionFrom(topology, GROUP_NAME);
+
+    // then
+    assertThat(partitionDistribution).containsExactly(partitionOne);
+  }
+
+  @Test
+  void shouldIncludeLearnerPartitionsInPerTenantDistribution() {
+    // given - same as above, but through the per-partition-group distribution
+    final ClusterConfiguration topology =
+        ClusterConfiguration.init()
+            .addMember(
+                member(0),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2, partitionConfig))))
+            .addMember(
+                member(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.joining(1, partitionConfig).toLearner())));
+    final var configuration = CurrentClusterConfiguration.fromLegacy(topology);
+
+    // when
+    final var distribution =
+        ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(configuration);
+
+    // then
+    final var defaultGroup = CurrentClusterConfiguration.DEFAULT_GROUP;
+    assertThat(distribution).containsOnlyKeys(defaultGroup);
+    assertThat(distribution.get(defaultGroup))
+        .containsExactly(
+            new PartitionMetadata(
+                new PartitionId(defaultGroup, 1),
+                Set.of(member(0), member(1)),
+                Map.of(member(0), 2, member(1), 1),
+                2,
+                member(0)));
   }
 
   @Test

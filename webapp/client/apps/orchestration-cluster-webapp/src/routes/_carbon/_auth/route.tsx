@@ -53,7 +53,32 @@ const Route = createFileRoute('/_carbon/_auth')({
 
 		return {initialSaasToken: await fetchSaasToken()};
 	},
-	component: RouteComponent,
+	component: function RouteComponent() {
+		const {initialSaasToken} = Route.useLoaderData();
+		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
+		const {data: license} = useSuspenseQuery(queries.getLicense());
+		const pathname = useRouterState({select: ({location}) => location.pathname});
+		const currentApp = resolveCurrentApp(pathname);
+
+		useSessionHeartbeat({
+			url: endpoints.sessionHeartbeatUrl(),
+			csrfToken: getCsrfTokenFromStorage,
+			onUnauthorized: () => {
+				authenticationStore.disableSession();
+				reactQueryClient.clear();
+			},
+		});
+
+		return (
+			<>
+				<SessionWatcher />
+				<C3Provider currentApp={currentApp} initialSaasToken={initialSaasToken}>
+					<Header currentUser={currentUser} license={license} />
+					<Outlet />
+				</C3Provider>
+			</>
+		);
+	},
 	notFoundComponent: () => (
 		<main className="cds--content">
 			<NotFoundPage />
@@ -83,33 +108,6 @@ function resolveCurrentApp(pathname: string): CurrentApp | undefined {
 	}
 
 	return undefined;
-}
-
-function RouteComponent() {
-	const {initialSaasToken} = Route.useLoaderData();
-	const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
-	const {data: license} = useSuspenseQuery(queries.getLicense());
-	const pathname = useRouterState({select: ({location}) => location.pathname});
-	const currentApp = resolveCurrentApp(pathname);
-
-	useSessionHeartbeat({
-		url: endpoints.sessionHeartbeatUrl(),
-		csrfToken: getCsrfTokenFromStorage,
-		onUnauthorized: () => {
-			authenticationStore.disableSession();
-			reactQueryClient.clear();
-		},
-	});
-
-	return (
-		<>
-			<SessionWatcher />
-			<C3Provider currentApp={currentApp} initialSaasToken={initialSaasToken}>
-				<Header currentUser={currentUser} license={license} />
-				<Outlet />
-			</C3Provider>
-		</>
-	);
 }
 
 export {Route};

@@ -299,12 +299,13 @@ processing.engine.caches.resource-cache-capacity
 processing.engine.distribution.max-backoff-duration
 processing.engine.distribution.pause-command-distribution
 processing.engine.distribution.redistribution-interval
-processing.engine.evaluate-duplicate-output-mapping-targets-in-order
 processing.engine.job.include-variables-in-job-completed-event
 processing.engine.job.timeout-checker-batch-limit
 processing.engine.job.timeout-checker-polling-interval
 processing.engine.mappings.input-comparison-mode
 processing.engine.mappings.input-mode
+processing.engine.mappings.output-comparison-mode
+processing.engine.mappings.output-mode
 processing.engine.max-process-depth
 processing.engine.messages.ttl-checker-batch-limit
 processing.engine.messages.ttl-checker-interval
@@ -314,6 +315,7 @@ processing.engine.secrets.retry-backoff-factor
 processing.engine.secrets.retry-initial-delay
 processing.engine.secrets.retry-max-attempts
 processing.engine.secrets.retry-max-delay
+processing.engine.secrets.wake-delay
 processing.engine.storage-ordinals.enable-archiverless
 processing.engine.storage-ordinals.fixed-storage-ordinal-key
 processing.engine.validators.results-output-max-size
@@ -349,6 +351,7 @@ processing.flow-control.write.throttle.enabled
 processing.flow-control.write.throttle.minimum-limit
 processing.flow-control.write.throttle.resolution
 processing.max-commands-in-batch
+processing.max-pending-side-effects
 processing.max-recoverable-retries
 processing.scheduled-tasks-check-interval
 processing.skip-positions

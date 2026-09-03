@@ -47,6 +47,11 @@ class PartitionGroupConfigurationTest {
     return new BrokerPartitionState(1, Instant.EPOCH, partitions, Mode.PROCESSING);
   }
 
+  private static BrokerPartitionState brokerWith(
+      final int partitionId, final PartitionState state) {
+    return new BrokerPartitionState(1, Instant.EPOCH, Map.of(partitionId, state), Mode.PROCESSING);
+  }
+
   private static PartitionGroupConfiguration group(
       final long version, final Map<MemberId, BrokerPartitionState> members) {
     return new PartitionGroupConfiguration(
@@ -912,6 +917,167 @@ class PartitionGroupConfigurationTest {
 
       // when / then
       assertThat(config.desiredLeaders()).isEmpty();
+    }
+
+    @Test
+    void shouldSkipALearnerEvenWithTheHighestPriority() {
+      // given — a learner cannot vote and can therefore never actually lead; it must not be
+      // reported as the desired leader even though it outranks the only real candidate
+      final var config =
+          group(
+              1,
+              Map.of(
+                  MEMBER_0,
+                  brokerWith(1, PartitionState.active(1, DynamicPartitionConfig.init())),
+                  MEMBER_1,
+                  brokerWith(
+                      1, PartitionState.joining(9, DynamicPartitionConfig.init()).toLearner())));
+
+      // when / then
+      assertThat(config.getDesiredLeader(1)).contains(MEMBER_0);
+    }
+
+    @Test
+    void shouldSkipALeavingMemberEvenWithTheHighestPriority() {
+      // given — a member on its way out must not be handed the leadership it is about to give up
+      final var config =
+          group(
+              1,
+              Map.of(
+                  MEMBER_0,
+                  brokerWith(1, PartitionState.active(1, DynamicPartitionConfig.init())),
+                  MEMBER_1,
+                  brokerWith(
+                      1, PartitionState.active(9, DynamicPartitionConfig.init()).toLeaving())));
+
+      // when / then
+      assertThat(config.getDesiredLeader(1)).contains(MEMBER_0);
+    }
+
+    @Test
+    void shouldTreatARecoveringMemberAsAValidCandidate() {
+      // given — recovery only pauses stream processing, it does not affect raft voting rights
+      final var config =
+          group(
+              1,
+              Map.of(
+                  MEMBER_0,
+                  brokerWith(1, PartitionState.active(1, DynamicPartitionConfig.init())),
+                  MEMBER_1,
+                  brokerWith(
+                      1, PartitionState.active(9, DynamicPartitionConfig.init()).toRecovering())));
+
+      // when / then
+      assertThat(config.getDesiredLeader(1)).contains(MEMBER_1);
+    }
+
+    @Test
+    void shouldReturnEmptyWhenOnlyALearnerReplicatesPartition() {
+      // given — no member is currently eligible to lead
+      final var config =
+          group(
+              1,
+              Map.of(
+                  MEMBER_0,
+                  brokerWith(
+                      1, PartitionState.joining(1, DynamicPartitionConfig.init()).toLearner())));
+
+      // when / then
+      assertThat(config.getDesiredLeader(1)).isEmpty();
+    }
+  }
+
+  @Nested
+  class PrimaryForPartition {
+
+    @Test
+    void shouldReturnHighestPriorityActiveBroker() {
+      // given
+      final var config =
+          group(
+              1,
+              Map.of(
+                  MEMBER_0, brokerWithPriorities(Map.of(1, 1)),
+                  MEMBER_1, brokerWithPriorities(Map.of(1, 3)),
+                  MEMBER_2, brokerWithPriorities(Map.of(1, 2))));
+
+      // when / then
+      assertThat(config.getPrimaryForPartition(1)).contains(MEMBER_1);
+    }
+
+    @Test
+    void shouldSkipALearnerEvenWithTheHighestPriority() {
+      // given — a learner cannot vote and can therefore never actually lead; it must not be
+      // reported as primary even though it outranks the only real candidate
+      final var config =
+          group(
+              1,
+              Map.of(
+                  MEMBER_0, brokerWith(1, PartitionState.active(1, DynamicPartitionConfig.init())),
+                  MEMBER_1,
+                      brokerWith(
+                          1,
+                          PartitionState.joining(9, DynamicPartitionConfig.init()).toLearner())));
+
+      // when / then
+      assertThat(config.getPrimaryForPartition(1)).contains(MEMBER_0);
+    }
+
+    @Test
+    void shouldSkipALeavingMemberEvenWithTheHighestPriority() {
+      // given — a member on its way out must not be handed back as the (future) primary
+      final var config =
+          group(
+              1,
+              Map.of(
+                  MEMBER_0, brokerWith(1, PartitionState.active(1, DynamicPartitionConfig.init())),
+                  MEMBER_1,
+                      brokerWith(
+                          1, PartitionState.active(9, DynamicPartitionConfig.init()).toLeaving())));
+
+      // when / then
+      assertThat(config.getPrimaryForPartition(1)).contains(MEMBER_0);
+    }
+
+    @Test
+    void shouldTreatARecoveringMemberAsAValidCandidate() {
+      // given — recovery only pauses stream processing, it does not affect raft voting rights
+      final var config =
+          group(
+              1,
+              Map.of(
+                  MEMBER_0, brokerWith(1, PartitionState.active(1, DynamicPartitionConfig.init())),
+                  MEMBER_1,
+                      brokerWith(
+                          1,
+                          PartitionState.active(9, DynamicPartitionConfig.init()).toRecovering())));
+
+      // when / then
+      assertThat(config.getPrimaryForPartition(1)).contains(MEMBER_1);
+    }
+
+    @Test
+    void shouldReturnEmptyWhenNoBrokerReplicatesPartition() {
+      // given
+      final var config = group(1, Map.of(MEMBER_0, brokerWithPriorities(Map.of(1, 1))));
+
+      // when / then
+      assertThat(config.getPrimaryForPartition(2)).isEmpty();
+    }
+
+    @Test
+    void shouldReturnEmptyWhenOnlyALearnerReplicatesPartition() {
+      // given — no member is currently eligible to be primary
+      final var config =
+          group(
+              1,
+              Map.of(
+                  MEMBER_0,
+                  brokerWith(
+                      1, PartitionState.joining(1, DynamicPartitionConfig.init()).toLearner())));
+
+      // when / then
+      assertThat(config.getPrimaryForPartition(1)).isEmpty();
     }
   }
 }

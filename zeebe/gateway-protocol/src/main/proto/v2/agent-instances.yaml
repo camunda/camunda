@@ -534,6 +534,9 @@ components:
       required:
         - inputTokens
         - outputTokens
+        - reasoningTokenCount
+        - cacheCreationTokenCount
+        - cacheReadTokenCount
         - modelCalls
         - toolCalls
       properties:
@@ -545,6 +548,18 @@ components:
           type: integer
           format: int64
           description: Total output tokens produced across all model calls.
+        reasoningTokenCount:
+          type: integer
+          format: int64
+          description: Total reasoning tokens consumed across all model calls.
+        cacheCreationTokenCount:
+          type: integer
+          format: int64
+          description: Total tokens used to create prompt cache entries across all model calls.
+        cacheReadTokenCount:
+          type: integer
+          format: int64
+          description: Total tokens read from prompt cache across all model calls.
         modelCalls:
           type: integer
           format: int32
@@ -735,7 +750,8 @@ components:
           description: |
             The historyItemId of the corresponding item in the request, echoed back
             so callers can correlate response entries with request items by id.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/HistoryItemId'
         historyItemKey:
           description: |
             The system-generated key for the history item. When isDuplicate is true,
@@ -804,7 +820,8 @@ components:
             item. For example, when a retried job activation resubmits history items
             it already sent in an earlier attempt, those items are not rejected; they
             are flagged via isDuplicate in the response instead. Must be non-blank.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/HistoryItemId'
         loopIteration:
           description: The loop iteration this item belongs to.
           allOf:
@@ -832,7 +849,7 @@ components:
           description: Per-call token and latency metrics. Present on ASSISTANT items only.
           nullable: true
           allOf:
-            - $ref: '#/components/schemas/AgentInstanceHistoryItemMetrics'
+            - $ref: '#/components/schemas/AgentInstanceHistoryItemMetricsRequest'
         producedAt:
           description: The agent-side timestamp of when this message was produced.
           type: string
@@ -980,10 +997,9 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/AgentHistoryItemKey'
         historyItemId:
-          description: |
-            The client-supplied identifier this item was created with. Empty for items that don't
-            carry one.
-          type: string
+          description: The historyItemId of this history item.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/HistoryItemId'
         agentInstanceKey:
           description: The key of the agent instance this item belongs to.
           allOf:
@@ -1190,12 +1206,53 @@ components:
           nullable: true
           additionalProperties: true
 
+    AgentInstanceHistoryItemMetricsRequest:
+      description: |
+        Per-call token and latency metrics for an ASSISTANT history item, as submitted on a
+        create/update request. All fields are optional: omit a field the caller has no value
+        for rather than sending it as an explicit null.
+      type: object
+      properties:
+        inputTokens:
+          description: Input tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        outputTokens:
+          description: Output tokens produced by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        reasoningTokenCount:
+          description: Reasoning tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        cacheCreationTokenCount:
+          description: Cache-creation tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        cacheReadTokenCount:
+          description: Cache-read tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        durationMs:
+          description: Wall-clock duration of the LLM call in milliseconds. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+
     AgentInstanceHistoryItemMetrics:
       description: Per-call token and latency metrics for an ASSISTANT history item.
       type: object
       required:
         - inputTokens
         - outputTokens
+        - reasoningTokenCount
+        - cacheCreationTokenCount
+        - cacheReadTokenCount
         - durationMs
       properties:
         inputTokens:
@@ -1205,6 +1262,21 @@ components:
           format: int64
         outputTokens:
           description: Output tokens produced by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        reasoningTokenCount:
+          description: Reasoning tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        cacheCreationTokenCount:
+          description: Cache-creation tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        cacheReadTokenCount:
+          description: Cache-read tokens consumed by this LLM call. Null when not provided.
           nullable: true
           type: integer
           format: int64

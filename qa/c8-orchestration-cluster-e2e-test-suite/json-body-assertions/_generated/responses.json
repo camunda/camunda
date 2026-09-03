@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "3dd3899185adc11bc87d15c489bf9dcfc4dacb97",
-    "generatedAt": "2026-08-28T16:06:42.173Z",
+    "commit": "c1c1304630f06fedad4aa6da3a9758a7336c50ea",
+    "generatedAt": "2026-09-03T12:13:07.049Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "01ce3d2893c2e9e015a18d8b0b5b8104ec7fb28122f05f3d39231d6b117e64fc"
+    "specSha256": "f1506177e7d57fda5fd1d287043cde354acebfa461b80f62375345c44e023d20"
   },
   "responses": [
     {
@@ -265,6 +265,14 @@
             "children": {
               "required": [
                 {
+                  "name": "cacheCreationTokenCount",
+                  "type": "number"
+                },
+                {
+                  "name": "cacheReadTokenCount",
+                  "type": "number"
+                },
+                {
                   "name": "inputTokens",
                   "type": "number"
                 },
@@ -274,6 +282,10 @@
                 },
                 {
                   "name": "outputTokens",
+                  "type": "number"
+                },
+                {
+                  "name": "reasoningTokenCount",
                   "type": "number"
                 },
                 {
@@ -472,6 +484,14 @@
                   "children": {
                     "required": [
                       {
+                        "name": "cacheCreationTokenCount",
+                        "type": "number"
+                      },
+                      {
+                        "name": "cacheReadTokenCount",
+                        "type": "number"
+                      },
+                      {
                         "name": "inputTokens",
                         "type": "number"
                       },
@@ -481,6 +501,10 @@
                       },
                       {
                         "name": "outputTokens",
+                        "type": "number"
+                      },
+                      {
+                        "name": "reasoningTokenCount",
                         "type": "number"
                       },
                       {
@@ -666,10 +690,20 @@
                 },
                 {
                   "name": "metrics",
-                  "type": "0",
+                  "type": "object",
                   "nullable": true,
                   "children": {
                     "required": [
+                      {
+                        "name": "cacheCreationTokenCount",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      {
+                        "name": "cacheReadTokenCount",
+                        "type": "number",
+                        "nullable": true
+                      },
                       {
                         "name": "durationMs",
                         "type": "number",
@@ -682,6 +716,11 @@
                       },
                       {
                         "name": "outputTokens",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      {
+                        "name": "reasoningTokenCount",
                         "type": "number",
                         "nullable": true
                       }
@@ -9479,7 +9518,8 @@
                           "joining",
                           "active",
                           "leaving",
-                          "recovering"
+                          "recovering",
+                          "learner"
                         ]
                       }
                     ],
@@ -11302,7 +11342,8 @@
                                 "joining",
                                 "active",
                                 "leaving",
-                                "recovering"
+                                "recovering",
+                                "learner"
                               ]
                             }
                           ],

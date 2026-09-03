@@ -216,31 +216,29 @@ public final class AgentHistoryBatchBehavior {
    * Applies an already-validated batch onto {@code target}, in array order: builds one {@code
    * AGENT_HISTORY} event per item (a full copy of the item, with its record-context fields
    * overwritten to match {@code target}/{@code jobKey}/{@code jobLease}) and accumulates metrics
-   * immediately. Whichever of model/provider/systemPrompt/tools/limits a {@link
-   * AgentHistoryRole#CONFIGURATION} item names in its own {@code changedAttributes} is only applied
-   * immediately if {@code applyConfigurationChanges} is {@code true} — CREATE passes {@code true}
-   * so a newly created instance always has a valid definition, while UPDATE passes {@code false}
-   * and instead defers that application to when the item is committed (see {@code
-   * AgentHistoryCommitProcessor}).
+   * immediately. Never applies a {@link AgentHistoryRole#CONFIGURATION} item's own
+   * model/provider/systemPrompt/tools/limits changes itself — that is always the caller's explicit
+   * responsibility, via {@link #applyConfigurationChanges(AgentInstanceRecord,
+   * AgentHistoryRecordValue)}, at whichever point the caller considers the item committed
+   * (immediately, for {@code CREATE}, which commits its own {@code CONFIGURATION} items inline; at
+   * real commit time via {@code AgentHistoryCommitProcessor}, for {@code UPDATE}).
    *
-   * <p><strong>Mutates {@code target} in place</strong> (metrics, definition, tools, limits,
-   * history) and does not itself emit any event — the caller is responsible for turning {@code
-   * target.getHistory()} into {@code AGENT_HISTORY:CREATED} follow-up events. An item already
-   * pending under the same {@code (jobKey, jobLease)} pair is echoed back with {@code isDuplicate}
-   * set instead: it is skipped for metrics/configuration application, and the caller must filter it
-   * out rather than turn it into a {@code CREATED} event.
+   * <p><strong>Mutates {@code target} in place</strong> (metrics, history — never
+   * definition/tools/limits) and does not itself emit any event — the caller is responsible for
+   * turning {@code target.getHistory()} into {@code AGENT_HISTORY:CREATED} follow-up events. An
+   * item already pending under the same {@code (jobKey, jobLease)} pair is echoed back with {@code
+   * isDuplicate} set instead: it is skipped for metrics accumulation, and the caller must filter it
+   * out rather than turn it into a {@code CREATED} event or apply its configuration changes.
    *
-   * @param applyConfigurationChanges whether a CONFIGURATION item's changes should be applied onto
-   *     {@code target} immediately, rather than deferred until the item is committed
    * @return the {@code AgentInstanceRecord} attribute names that actually changed as a result
+   *     (currently only ever {@link AgentInstanceRecord#ATTR_METRICS})
    */
   Set<String> applyInstanceChangesFromHistory(
       final AgentInstanceRecord target,
       final long jobKey,
       final String jobLease,
       final long elementInstanceKey,
-      final List<? extends AgentHistoryRecordValue> history,
-      final boolean applyConfigurationChanges) {
+      final List<? extends AgentHistoryRecordValue> history) {
     final var changedAttributes = new HashSet<String>();
     final var items = new ArrayList<AgentHistoryRecord>(history.size());
     final var agentHistoryState = processingState.getAgentHistoryState();
@@ -273,16 +271,13 @@ public final class AgentHistoryBatchBehavior {
           .setJobLease(jobLease)
           .setDuplicate(isDuplicate);
 
-      // A duplicate is skipped entirely: no metrics accumulation, no CONFIGURATION attributes
-      // applied — re-applying values the instance already reflects would be unobservable, so the
-      // durable signal that it was skipped is the isDuplicate flag on the echoed item alone.
-      if (!isDuplicate) {
-        if (applyMetrics(target.getMetrics(), item)) {
-          changedAttributes.add(AgentInstanceRecord.ATTR_METRICS);
-        }
-        if (applyConfigurationChanges) {
-          changedAttributes.addAll(applyConfigurationChanges(target, item));
-        }
+      // A duplicate is skipped entirely: no metrics accumulation — re-applying values the
+      // instance already reflects would be unobservable, so the durable signal that it was
+      // skipped is the isDuplicate flag on the echoed item alone.
+      if (!isDuplicate
+          && !agentHistoryState.hasAccumulatedMetrics(target.getAgentInstanceKey(), historyItemId)
+          && applyMetrics(target.getMetrics(), item)) {
+        changedAttributes.add(AgentInstanceRecord.ATTR_METRICS);
       }
 
       items.add(event);

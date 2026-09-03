@@ -273,6 +273,9 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
                 new AgentInstanceHistoryItemMetrics()
                     .inputTokens(10L)
                     .outputTokens(20L)
+                    .reasoningTokenCount(30L)
+                    .cacheCreationTokenCount(40L)
+                    .cacheReadTokenCount(50L)
                     .durationMs(100L))
             .toolCalls(
                 Collections.singletonList(
@@ -335,6 +338,18 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
           final AgentInstanceHistoryMetrics metrics = item.getMetrics();
           softly.assertThat(metrics.getInputTokens()).as("inputTokens").isEqualTo(10L);
           softly.assertThat(metrics.getOutputTokens()).as("outputTokens").isEqualTo(20L);
+          softly
+              .assertThat(metrics.getReasoningTokenCount())
+              .as("reasoningTokenCount")
+              .isEqualTo(30L);
+          softly
+              .assertThat(metrics.getCacheCreationTokenCount())
+              .as("cacheCreationTokenCount")
+              .isEqualTo(40L);
+          softly
+              .assertThat(metrics.getCacheReadTokenCount())
+              .as("cacheReadTokenCount")
+              .isEqualTo(50L);
           softly.assertThat(metrics.getDurationMs()).as("durationMs").isEqualTo(100L);
 
           softly.assertThat(item.getToolCalls()).as("toolCalls").hasSize(1);
@@ -373,6 +388,45 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
               .assertThat(((TextContent) item.getSystemPrompt().get(0)).getText())
               .as("systemPrompt text")
               .isEqualTo("You are a helpful assistant.");
+        });
+  }
+
+  @Test
+  void shouldMapPartiallyPopulatedMetrics() {
+    // given
+    gatewayService.onAgentInstanceHistorySearchRequest(
+        AGENT_INSTANCE_KEY,
+        Instancio.create(AgentInstanceHistorySearchQueryResult.class)
+            .items(
+                Collections.singletonList(
+                    Instancio.create(AgentInstanceHistoryItemResult.class)
+                        .historyItemKey("1")
+                        .agentInstanceKey("1")
+                        .elementInstanceKey("1")
+                        .jobKey("1")
+                        .producedAt(null)
+                        .metrics(
+                            new AgentInstanceHistoryItemMetrics()
+                                .inputTokens(10L)
+                                .cacheCreationTokenCount(5L)))));
+
+    // when
+    final SearchResponse<AgentInstanceHistory> result =
+        client.newAgentInstanceHistorySearchRequest(AGENT_INSTANCE_KEY).send().join();
+
+    // then
+    final AgentInstanceHistoryMetrics metrics = result.items().get(0).getMetrics();
+    assertSoftly(
+        softly -> {
+          softly.assertThat(metrics.getInputTokens()).as("inputTokens").isEqualTo(10L);
+          softly.assertThat(metrics.getOutputTokens()).as("outputTokens").isNull();
+          softly.assertThat(metrics.getReasoningTokenCount()).as("reasoningTokenCount").isNull();
+          softly
+              .assertThat(metrics.getCacheCreationTokenCount())
+              .as("cacheCreationTokenCount")
+              .isEqualTo(5L);
+          softly.assertThat(metrics.getCacheReadTokenCount()).as("cacheReadTokenCount").isNull();
+          softly.assertThat(metrics.getDurationMs()).as("durationMs").isNull();
         });
   }
 

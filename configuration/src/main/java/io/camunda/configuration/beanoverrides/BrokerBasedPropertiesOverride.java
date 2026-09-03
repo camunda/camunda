@@ -13,6 +13,7 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
 import io.camunda.configuration.EngineMappings.InputMode;
+import io.camunda.configuration.EngineMappings.OutputMode;
 import io.camunda.configuration.EngineStorageOrdinals;
 import io.camunda.configuration.Export;
 import io.camunda.configuration.Exporter;
@@ -70,6 +71,7 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
+import io.camunda.zeebe.engine.EngineConfiguration.OutputMappingMode;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
@@ -81,7 +83,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -218,6 +219,7 @@ public class BrokerBasedPropertiesOverride {
     // processing
     override.getProcessing().setMaxCommandsInBatch(processing.getMaxCommandsInBatch());
     override.getProcessing().setMaxRecoverableRetries(processing.getMaxRecoverableRetries());
+    override.getProcessing().setMaxPendingSideEffects(processing.getMaxPendingSideEffects());
     override
         .getProcessing()
         .setScheduledTaskCheckInterval(processing.getScheduledTasksCheckInterval());
@@ -278,12 +280,6 @@ public class BrokerBasedPropertiesOverride {
 
     override
         .getExperimental()
-        .getFeatures()
-        .setEvaluateDuplicateOutputMappingTargetsInOrder(
-            camunda.getProcessing().getEngine().isEvaluateDuplicateOutputMappingTargetsInOrder());
-
-    override
-        .getExperimental()
         .getEngine()
         .setMaxProcessDepth(camunda.getProcessing().getEngine().getMaxProcessDepth());
 
@@ -293,19 +289,37 @@ public class BrokerBasedPropertiesOverride {
         .setInputMappingMode(
             toEngineMode(camunda.getProcessing().getEngine().getMappings().getInputMode()));
 
+    final var inputComparisonMode =
+        camunda.getProcessing().getEngine().getMappings().getInputComparisonMode();
     override
         .getExperimental()
         .getEngine()
         .setInputComparisonMode(
-            toEngineMode(
-                camunda.getProcessing().getEngine().getMappings().getInputComparisonMode()));
+            inputComparisonMode != null ? toEngineMode(inputComparisonMode) : null);
+
+    override
+        .getExperimental()
+        .getEngine()
+        .setOutputMappingMode(
+            toEngineOutputMode(camunda.getProcessing().getEngine().getMappings().getOutputMode()));
+
+    final var outputComparisonMode =
+        camunda.getProcessing().getEngine().getMappings().getOutputComparisonMode();
+    override
+        .getExperimental()
+        .getEngine()
+        .setOutputComparisonMode(
+            outputComparisonMode != null ? toEngineOutputMode(outputComparisonMode) : null);
   }
 
-  private static InputMappingMode toEngineMode(final @Nullable InputMode mode) {
-    if (mode == null) {
-      return null;
-    }
+  private static InputMappingMode toEngineMode(final InputMode mode) {
     return mode == InputMode.COMBINED ? InputMappingMode.COMBINED : InputMappingMode.ORDERED;
+  }
+
+  private static OutputMappingMode toEngineOutputMode(final OutputMode outputMode) {
+    return outputMode == OutputMode.COMBINED
+        ? OutputMappingMode.COMBINED
+        : OutputMappingMode.ORDERED;
   }
 
   private static void populateFromDistribution(
@@ -1383,6 +1397,7 @@ public class BrokerBasedPropertiesOverride {
     secretResolutionCfg.setRetryMaxDelay(engineSecrets.getRetryMaxDelay());
     secretResolutionCfg.setRetryBackoffFactor(engineSecrets.getRetryBackoffFactor());
     secretResolutionCfg.setBatchResolutionLimit(engineSecrets.getBatchResolutionLimit());
+    secretResolutionCfg.setWakeDelay(engineSecrets.getWakeDelay());
   }
 
   private static void populateFromStorageOrdinals(

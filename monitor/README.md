@@ -112,6 +112,70 @@ You can refer to existing dashboards in that repository for examples if you are 
 
 **Note**: The Zeebe team maintains an own Grafana deployment for [reliability testing](/docs/testing/reliability-testing.md). In case of dashboard deletion, check their deployment definition in the [zeebe-infra repository](https://github.com/camunda/zeebe-infra/blob/main/gcp/zeebe-io/zeebe-cluster/monitoring/kube-prometheus-stack.yml) to ensure it is not referenced there.
 
+### Verifying a dashboard against an existing cluster
+
+Panels that render fine against a local broker can still be wrong against real workloads — a metric may not
+exist under the name you assumed, or a label you filter on may never be set. To check a panel before it is
+deployed, point the local Grafana at the Prometheus of any cluster. For example, for `camunda-benchmark-prod`,
+you can run the load test there to validate the panel against a real workload. This is read-only: nothing is deployed or changed in the cluster.
+
+1) Log in to Teleport and select the benchmark cluster:
+
+```sh
+tsh login --proxy=camunda.teleport.sh:443 camunda.teleport.sh
+tsh kube login camunda-benchmark-prod
+```
+
+2) Forward the cluster's Prometheus to a host port. Use 9091, so it does not collide with the local
+Prometheus on 9090. Leave this running — it dies when the Teleport certificate expires, and is restarted
+with the same command:
+
+```sh
+kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9091:9090
+```
+
+3) Add a datasource for the forwarded port to
+[datasources.yml](grafana/provisioning/datasources/datasources.yml). Keep this as a local-only edit —
+the forward exists on your machine, so the datasource is unreachable for everyone else and should not
+be committed:
+
+```yaml
+# Remote Prometheus of the camunda-benchmark-prod cluster.
+# Requires an active port-forward on the host (see the previous step).
+- name: Prometheus-Benchmark
+  uid: prometheus-benchmark
+  type: prometheus
+  access: proxy
+  orgId: 1
+  url: http://host.docker.internal:9091
+  basicAuth: false
+  isDefault: false
+  jsonData:
+    httpMethod: POST
+    timeInterval: 30s
+  version: 1
+  editable: true
+```
+
+Leave the existing `Prometheus` entry alone — it stays the default, so dashboards keep working against
+the local stack.
+
+4) Start Grafana. Datasources are provisioned at startup, so this has to come after the edit above. The
+container reaches the port-forward through `host.docker.internal`, which the
+[compose file](docker-compose.yml) wires up via `extra_hosts`:
+
+```yaml
+# Lets the container reach a "kubectl port-forward" running on the host.
+extra_hosts:
+- "host.docker.internal:host-gateway"
+```
+
+```sh
+docker compose up -d --force-recreate --no-deps grafana
+```
+
+5) Open a dashboard and select **Prometheus-Benchmark** in the `DS_PROMETHEUS` picker.
+
 ### Example Dashboard: Zeebe
 
 You can find a pre-built Grafana dashboard [here](grafana/zeebe.json) to

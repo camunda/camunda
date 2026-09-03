@@ -590,8 +590,9 @@ Consider opening an incident for serious issues (see below).
 # Incident Process
 
 If you discover serious issues during the Monorepo Release process (while working on any of its subtasks), you can start the incident (per usual process with `/inc` command in Slack).
+The incident type is shared among the C8 Release Train (not just Monorepo) and can be used for any blocker encountered during it.
 
-Please select incident type: `C8 Monorepo Release incident`.
+Please select incident type: `C8 Release incident`.
 
 Who can start the incident:
 - Anyone participating in the current release process (Release Manager, QA Engineers, etc.)

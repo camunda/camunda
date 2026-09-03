@@ -49,6 +49,18 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbLong>
       committedHistoryItemIdsColumnFamily;
 
+  // Metrics-accumulated ids: (agentInstanceKey, historyItemId) -> nil
+  // Supports prefix search by agentInstanceKey alone, for the one-shot delete on instance
+  // completion. Kept separate from committedHistoryItemIdsColumnFamily: that store's value is
+  // echoed back as the item's agentHistoryKey, so writing an entry there at creation time would
+  // make a created-then-discarded item look committed on resend.
+  private final DbLong metricsAccumulatedAgentInstanceKey = new DbLong();
+  private final DbString metricsAccumulatedHistoryItemId = new DbString();
+  private final DbCompositeKey<DbLong, DbString> metricsAccumulatedKey =
+      new DbCompositeKey<>(metricsAccumulatedAgentInstanceKey, metricsAccumulatedHistoryItemId);
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil>
+      metricsAccumulatedIdsColumnFamily;
+
   public DbAgentHistoryState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     agentHistoryColumnFamily =
@@ -66,6 +78,12 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
             transactionContext,
             committedKey,
             committedAgentHistoryKey);
+    metricsAccumulatedIdsColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.AGENT_HISTORY_METRICS_ACCUMULATED_IDS,
+            transactionContext,
+            metricsAccumulatedKey,
+            DbNil.INSTANCE);
   }
 
   @Override
@@ -162,6 +180,37 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
     for (final var historyItemId : historyItemIds) {
       committedHistoryItemId.wrapString(historyItemId);
       committedHistoryItemIdsColumnFamily.deleteExisting(committedKey);
+    }
+  }
+
+  @Override
+  public boolean hasAccumulatedMetrics(final long agentInstanceKey, final String historyItemId) {
+    metricsAccumulatedAgentInstanceKey.wrapLong(agentInstanceKey);
+    metricsAccumulatedHistoryItemId.wrapString(historyItemId);
+    return metricsAccumulatedIdsColumnFamily.exists(metricsAccumulatedKey);
+  }
+
+  @Override
+  public void markMetricsAccumulated(final long agentInstanceKey, final String historyItemId) {
+    metricsAccumulatedAgentInstanceKey.wrapLong(agentInstanceKey);
+    metricsAccumulatedHistoryItemId.wrapString(historyItemId);
+    metricsAccumulatedIdsColumnFamily.upsert(metricsAccumulatedKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void deleteMetricsAccumulatedIds(final long agentInstanceKey) {
+    metricsAccumulatedAgentInstanceKey.wrapLong(agentInstanceKey);
+    // Collect the ids in one pass, then delete in a second: mutating the column family while its
+    // own iterator is still open is unsafe (RocksDB explicitly warns against it), so this must not
+    // call deleteExisting from inside the whileEqualPrefix visitor below.
+    final var historyItemIds = new ArrayList<String>();
+    final Consumer<DbCompositeKey<DbLong, DbString>> collectHistoryItemId =
+        key -> historyItemIds.add(key.second().toString());
+    metricsAccumulatedIdsColumnFamily.whileEqualPrefix(
+        metricsAccumulatedAgentInstanceKey, collectHistoryItemId);
+    for (final var historyItemId : historyItemIds) {
+      metricsAccumulatedHistoryItemId.wrapString(historyItemId);
+      metricsAccumulatedIdsColumnFamily.deleteExisting(metricsAccumulatedKey);
     }
   }
 }

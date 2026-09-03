@@ -488,6 +488,23 @@
 					"startDatePopoverTitle": "Instanzen nach Startdatum filtern",
 					"endDatePopoverTitle": "Instanzen nach Enddatum filtern"
 				},
+				"instancesTable": {
+					"title": "Prozessinstanzen",
+					"name": "Name",
+					"processInstanceKey": "Prozessinstanz-Schlüssel",
+					"version": "Version",
+					"versionTag": "Versions-Tag",
+					"businessId": "Geschäfts-ID",
+					"tenant": "Mandant",
+					"startDate": "Startdatum",
+					"endDate": "Enddatum",
+					"parentProcessInstanceKey": "Übergeordneter Prozessinstanz-Schlüssel",
+					"viewInstance": "Instanz {{key}} anzeigen",
+					"viewParentInstance": "Übergeordnete Instanz {{key}} anzeigen",
+					"none": "Keine",
+					"emptyMessage": "Es gibt keine Instanzen, die diesem Filtersatz entsprechen",
+					"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen"
+				},
 				"diagramHeader": {
 					"title": "Prozess",
 					"processName": "Prozessname",
@@ -503,6 +520,19 @@
 			},
 			"decisions": {
 				"title": "Entscheidungen",
+				"diagramHeader": {
+					"title": "Entscheidung",
+					"copyButtonDescription": "Entscheidungs-ID / Klicken zum Kopieren"
+				},
+				"diagramPanel": {
+					"multipleVersionsSelected": "Für die Entscheidung \"{{name}}\" ist mehr als eine Version ausgewählt",
+					"selectSingleVersion": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine einzelne Version aus",
+					"multipleTenantsSelected": "Die Entscheidung \"{{name}}\" ist in mehr als einem Mandanten vorhanden",
+					"selectSingleTenant": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie einen einzelnen Mandanten aus",
+					"noDecisionSelected": "Es ist keine Entscheidung ausgewählt",
+					"selectDecisionInFilters": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine Entscheidung im Filterbereich aus",
+					"decisionNotFoundTitle": "Entscheidung konnte nicht gefunden werden"
+				},
 				"filters": {
 					"tenant": "Mandant",
 					"decisionSection": "Entscheidung",

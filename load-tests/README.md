@@ -76,8 +76,9 @@ graph TD
     VARIANT -- "always profiles first<br/>30min of each variant" --> PROFILE
     VARIANT -- "3hr soak, then<br/>snapshot metrics" --> METRICS
     VARIANT -- "delete namespace<br/>after metrics" --> DELETE
-    WEEKLY -- "3 parallel calls:<br/>realistic, opensearch-realistic,<br/>rdbms-realistic" --> CORE
-    WEEKLY -- "ECS" --> ECS
+    WEEKLY -- "main: 3 parallel calls,<br/>realistic, opensearch-realistic,<br/>rdbms-realistic" --> CORE
+    WEEKLY -- "main: ECS" --> ECS
+    WEEKLY -- "stable: 1 job per branch<br/>(cross-branch ref)" --> CORE
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
@@ -99,13 +100,12 @@ graph TD
 
 ### Schedule
 
-|       Time        |                       Workflow                       | Frequency |
-|-------------------|------------------------------------------------------|-----------|
-| 00:00 UTC Monday  | `zeebe-update-long-running-migrating-benchmark.yaml` | Weekly    |
-| 01:00 UTC Monday  | `camunda-weekly-load-tests.yml`                      | Weekly    |
-| 02:00 UTC Mon-Fri | `camunda-scheduled-release-load-tests.yml`           | Weekdays  |
-| 02:00 UTC Mon-Fri | `camunda-daily-load-tests.yml`                       | Weekdays  |
-| 04:00 UTC         | `camunda-load-test-ttl-cleanup.yml`                  | Daily     |
+|       Time        |                  Workflow                  | Frequency |
+|-------------------|--------------------------------------------|-----------|
+| 01:00 UTC Monday  | `camunda-weekly-load-tests.yml`            | Weekly    |
+| 02:00 UTC Mon-Fri | `camunda-scheduled-release-load-tests.yml` | Weekdays  |
+| 02:00 UTC Mon-Fri | `camunda-daily-load-tests.yml`             | Weekdays  |
+| 04:00 UTC         | `camunda-load-test-ttl-cleanup.yml`        | Daily     |
 
 For detailed inputs, triggers, and job definitions, see each workflow's header comments in [`.github/workflows/`](../.github/workflows/).
 

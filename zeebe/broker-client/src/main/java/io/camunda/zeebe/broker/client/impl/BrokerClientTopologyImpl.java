@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import org.agrona.collections.Int2ObjectHashMap;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -33,7 +32,6 @@ import org.jspecify.annotations.Nullable;
  * The configured cluster state is updated from the global {@link
  * io.camunda.zeebe.dynamic.config.state.ClusterConfiguration}.
  */
-@NullMarked
 public record BrokerClientTopologyImpl(
     LiveClusterState liveClusterState, ConfiguredClusterState configuredClusterState)
     implements BrokerClusterState {

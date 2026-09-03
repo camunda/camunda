@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
@@ -26,9 +25,12 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Both resolvers are always run — even when the primary fails — so that divergences between
  * failure and success outcomes are also detected and logged.
+ *
+ * @param <M> the type of mappings record (e.g. {@link
+ *     io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings})
  */
 @NullMarked
-public final class ComparingMappingResolver implements MappingResolver {
+public final class ComparingMappingResolver<M> implements MappingResolver<M> {
 
   private static final Logger LOG = LoggerFactory.getLogger(ComparingMappingResolver.class);
   private static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());
@@ -36,30 +38,31 @@ public final class ComparingMappingResolver implements MappingResolver {
   // 1/s throttle per instance; one engine instance → one resolver → effective global rate limit
   private final Logger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(1));
 
-  private final MappingResolver primary;
-  private final MappingResolver comparison;
+  private final MappingResolver<M> primary;
+  private final MappingResolver<M> comparison;
 
-  public ComparingMappingResolver(final MappingResolver primary, final MappingResolver comparison) {
+  public ComparingMappingResolver(
+      final MappingResolver<M> primary, final MappingResolver<M> comparison) {
     this.primary = primary;
     this.comparison = comparison;
   }
 
   @Override
-  public Either<Failure, DirectBuffer> resolveInputMappings(
-      final InputMappings inputMappings, final MappingExpressionProcessor processor) {
-    final var primaryResult = primary.resolveInputMappings(inputMappings, processor);
+  public Either<Failure, DirectBuffer> resolve(
+      final M mappings, final MappingExpressionProcessor processor) {
+    final var primaryResult = primary.resolve(mappings, processor);
 
-    // Snapshot before the comparison run: CombinedMappingResolver returns a view into a shared
+    // Snapshot before the comparison run: CombinedInputMappingResolver returns a view into a shared
     // evaluation buffer that the comparison resolver will overwrite on its own evaluation pass.
     // Returning the snapshot (a clone) instead of primaryResult shields the caller from corruption.
     final var snapshot = snapshot(primaryResult);
 
     try {
-      final var comparisonResult = comparison.resolveInputMappings(inputMappings, processor);
+      final var comparisonResult = comparison.resolve(mappings, processor);
 
       if (!equivalent(snapshot, comparisonResult)) {
         throttledLog.warn(
-            "Input mapping results differ between {} and {} resolvers [{}].",
+            "Mapping results differ between {} and {} resolvers [{}].",
             primary.getClass().getSimpleName(),
             comparison.getClass().getSimpleName(),
             processor.getMappingContext());

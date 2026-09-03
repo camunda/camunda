@@ -124,7 +124,7 @@ class AgentInstanceExportHandlerTest {
     assertThat(model.processDefinitionId()).isEqualTo("myProcess");
     assertThat(model.processDefinitionKey()).isEqualTo(200L);
     assertThat(model.processDefinitionVersion()).isEqualTo(3);
-    assertThat(model.versionTag()).isEqualTo("v1.0");
+    assertThat(model.processDefinitionVersionTag()).isEqualTo("v1.0");
     assertThat(model.tenantId()).isEqualTo("myTenant");
     assertThat(model.partitionId()).isEqualTo(record.getPartitionId());
     // status
@@ -141,6 +141,9 @@ class AgentInstanceExportHandlerTest {
     // metrics
     assertThat(model.inputTokens()).isEqualTo(100L);
     assertThat(model.outputTokens()).isEqualTo(50L);
+    assertThat(model.reasoningTokenCount()).isEqualTo(20L);
+    assertThat(model.cacheCreationTokenCount()).isEqualTo(15L);
+    assertThat(model.cacheReadTokenCount()).isEqualTo(10L);
     assertThat(model.modelCalls()).isEqualTo(3);
     assertThat(model.toolCalls()).isEqualTo(2);
     // tools
@@ -188,7 +191,7 @@ class AgentInstanceExportHandlerTest {
             .withBpmnProcessId("targetProcess")
             .withProcessDefinitionKey(999L)
             .withProcessDefinitionVersion(4)
-            .withVersionTag("v2.0")
+            .withProcessDefinitionVersionTag("v2.0")
             .withElementId("targetElement")
             .withAgentDefinitionKey(888L)
             .build();
@@ -210,7 +213,7 @@ class AgentInstanceExportHandlerTest {
     assertThat(model.processDefinitionId()).isEqualTo("targetProcess");
     assertThat(model.processDefinitionKey()).isEqualTo(999L);
     assertThat(model.processDefinitionVersion()).isEqualTo(4);
-    assertThat(model.versionTag()).isEqualTo("v2.0");
+    assertThat(model.processDefinitionVersionTag()).isEqualTo("v2.0");
     assertThat(model.elementId()).isEqualTo("targetElement");
     assertThat(model.agentDefinitionKey()).isEqualTo(888L);
     assertThat(model.completionDate()).isNull();
@@ -313,7 +316,7 @@ class AgentInstanceExportHandlerTest {
     final var recordValue =
         ImmutableAgentInstanceRecordValue.builder()
             .from(buildRecordValue(agentKey))
-            .withVersionTag("") // process has no version tag
+            .withProcessDefinitionVersionTag("") // process has no version tag
             .withTools(List.of(tool))
             .build();
     final Record<AgentInstanceRecordValue> record =
@@ -328,7 +331,7 @@ class AgentInstanceExportHandlerTest {
     // then
     verify(writer).update(modelCaptor.capture());
     final AgentInstanceDbModel model = modelCaptor.getValue();
-    assertThat(model.versionTag()).isNull();
+    assertThat(model.processDefinitionVersionTag()).isNull();
     assertThat(model.toolValues()).hasSize(1);
     assertThat(model.toolValues().getFirst().description()).isNull();
     assertThat(model.toolValues().getFirst().elementId()).isNull();
@@ -352,7 +355,7 @@ class AgentInstanceExportHandlerTest {
         .withBpmnProcessId("myProcess")
         .withProcessDefinitionKey(200L)
         .withProcessDefinitionVersion(3)
-        .withVersionTag("v1.0")
+        .withProcessDefinitionVersionTag("v1.0")
         .withTenantId("myTenant")
         .withStatus(AgentInstanceStatus.INITIALIZING)
         .withDefinition(
@@ -376,6 +379,9 @@ class AgentInstanceExportHandlerTest {
             ImmutableAgentInstanceMetricsValue.builder()
                 .withInputTokens(100L)
                 .withOutputTokens(50L)
+                .withReasoningTokenCount(20L)
+                .withCacheCreationTokenCount(15L)
+                .withCacheReadTokenCount(10L)
                 .withModelCalls(3)
                 .withToolCalls(2)
                 .build())

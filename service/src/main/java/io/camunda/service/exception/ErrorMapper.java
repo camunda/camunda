@@ -66,38 +66,44 @@ public class ErrorMapper {
     return new ServiceException(mapDocumentErrorToServiceError(documentError));
   }
 
+  /**
+   * Maps a search failure onto the API-facing {@link ServiceException}, keeping the original as the
+   * cause. Several reasons collapse onto the same {@link ServiceException.Status}, so the cause is
+   * the only remaining way to recover the precise reason — internal callers such as the
+   * authentication layer rely on it to tell a retryable outage from a permanent error.
+   */
   public static ServiceException mapSearchError(final CamundaSearchException cse) {
     final String errorMessage = cse.getMessage();
     return switch (cse.getReason()) {
-      case INVALID_ARGUMENT -> new ServiceException(errorMessage, INVALID_ARGUMENT);
-      case NOT_FOUND -> new ServiceException(errorMessage, NOT_FOUND);
-      case NOT_UNIQUE -> new ServiceException(errorMessage, ALREADY_EXISTS);
-      case FORBIDDEN -> new ServiceException(errorMessage, FORBIDDEN);
+      case INVALID_ARGUMENT -> new ServiceException(errorMessage, INVALID_ARGUMENT, cse);
+      case NOT_FOUND -> new ServiceException(errorMessage, NOT_FOUND, cse);
+      case NOT_UNIQUE -> new ServiceException(errorMessage, ALREADY_EXISTS, cse);
+      case FORBIDDEN -> new ServiceException(errorMessage, FORBIDDEN, cse);
       case CONNECTION_FAILED -> {
         final String detail = "The search client could not connect to the search server";
         LOGGER.debug(detail, cse);
-        yield new ServiceException(detail, UNAVAILABLE);
+        yield new ServiceException(detail, UNAVAILABLE, cse);
       }
       case SECONDARY_STORAGE_NOT_SET -> {
         final String detail =
             "The search client requires a secondary storage, but none is set. Secondary storage can be configured using the '%s' property"
                 .formatted(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE);
         LOGGER.debug(detail, cse);
-        yield new ServiceException(detail, FORBIDDEN);
+        yield new ServiceException(detail, FORBIDDEN, cse);
       }
       case SEARCH_SERVER_FAILED -> {
         final String detail = "The search server was unable to process the request";
         LOGGER.debug(detail, cse);
-        yield new ServiceException(detail, INTERNAL);
+        yield new ServiceException(detail, INTERNAL, cse);
       }
       case SEARCH_CLIENT_FAILED -> {
         final String detail = "The search client was unable to process the request";
         LOGGER.debug(detail, cse);
-        yield new ServiceException(detail, INTERNAL);
+        yield new ServiceException(detail, INTERNAL, cse);
       }
       default -> {
         LOGGER.debug(errorMessage, cse);
-        yield new ServiceException(errorMessage, INTERNAL);
+        yield new ServiceException(errorMessage, INTERNAL, cse);
       }
     };
   }
