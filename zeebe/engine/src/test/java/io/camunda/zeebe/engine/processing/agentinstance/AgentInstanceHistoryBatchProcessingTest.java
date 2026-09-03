@@ -311,6 +311,64 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
+  public void shouldRejectCreateHistoryBatchWithUnspecifiedRole() {
+    // given — UNSPECIFIED is rejected by the shared validateHistory check, which runs before
+    // this CREATE-only check; pins that ordering so the CREATE-only check never masks it.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+    final var item =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-unspecified")
+            .setRole(AgentHistoryRole.UNSPECIFIED)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("content"));
+
+    // when
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .withHistory(List.of(item))
+            .expectRejection()
+            .create();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            AgentHistoryBatchBehavior.ERROR_MSG_ROLE_UNSPECIFIED.formatted("item-unspecified"));
+  }
+
+  @Test
   public void shouldRejectCreateHistoryBatchWithPositiveMetricsOnUserItem() {
     // given — an allowed role (USER) is still rejected on CREATE if it carries metrics: metrics
     // are only ever meaningful on ASSISTANT/TOOL_RESULT items, which CREATE already disallows
@@ -370,6 +428,62 @@ public class AgentInstanceHistoryBatchProcessingTest {
             "Expected to create agent instance with history item 'item-user', but it carries "
                 + "positive metrics. History items included when creating an agent instance must "
                 + "not carry metrics.");
+  }
+
+  @Test
+  public void shouldAllowCreateHistoryBatchWithPositiveDurationMsOnUserItem() {
+    // given — durationMs isn't an accumulated conversation metric like the others, so it's
+    // exempt from the metrics check and may be positive even on a USER/CONFIGURATION item.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+    final var userItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-user")
+            .setRole(AgentHistoryRole.USER)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("hi"));
+    userItem.getMetrics().setDurationMs(5L);
+
+    // when
+    final var created =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .withHistory(List.of(userItem))
+            .create();
+
+    // then
+    assertThat(created.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(created.getValue().getHistory()).hasSize(1);
   }
 
   @Test
