@@ -67,9 +67,9 @@ public class EngineMappings {
   }
 
   /**
-   * Controls the optional comparison mode for input mappings. When set, input mappings are evaluated
-   * with both the primary mode ({@code inputMode}) and this comparison mode, and a warning is
-   * logged if the results differ.
+   * Controls the optional comparison mode for input mappings. When set, input mappings are
+   * evaluated with both the primary mode ({@code inputMode}) and this comparison mode, and a
+   * warning is logged if the results differ.
    *
    * <p><strong>Experimental:</strong> This setting and all input modes are experimental and may
    * change in a future release.
@@ -80,8 +80,8 @@ public class EngineMappings {
    * <p>This configuration can be accessed via the environment variable: <br>
    * {@code camunda.processing.engine.mappings.input-comparison-mode}.
    *
-   * <p>Defaults to {@code null}. Has no effect when null or when set to the same value as
-   * {@code input-mode}.
+   * <p>Defaults to {@code null}. Has no effect when null or when set to the same value as {@code
+   * input-mode}.
    */
   public @Nullable InputMode getInputComparisonMode() {
     return inputComparisonMode;
@@ -126,8 +126,8 @@ public class EngineMappings {
    * <p>This configuration can be accessed via the environment variable: <br>
    * {@code camunda.processing.engine.mappings.output-comparison-mode}.
    *
-   * <p>Defaults to {@code null}. Has no effect when null or when set to the same value as
-   * {@code output-mode}.
+   * <p>Defaults to {@code null}. Has no effect when null or when set to the same value as {@code
+   * output-mode}.
    */
   public @Nullable OutputMode getOutputComparisonMode() {
     return outputComparisonMode;
