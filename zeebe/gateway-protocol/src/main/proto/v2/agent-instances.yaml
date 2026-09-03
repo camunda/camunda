@@ -651,7 +651,9 @@ components:
             response's createdHistory, positionally correlated. Must include a
             CONFIGURATION item establishing model, provider, and systemPrompt (and,
             if needed, limits). Every item's role must be CONFIGURATION or USER, and
-            no item may carry metrics.
+            no item may carry positive usage-token metrics (inputTokens, outputTokens,
+            reasoningTokenCount, cacheCreationTokenCount, cacheReadTokenCount);
+            durationMs is exempt and may be positive.
           type: array
           minItems: 1
           items:
