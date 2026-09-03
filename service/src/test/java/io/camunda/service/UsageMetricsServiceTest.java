@@ -22,10 +22,9 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.OffsetDateTime;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +41,9 @@ public final class UsageMetricsServiceTest {
   public void before() {
     client = mock(UsageMetricsSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    executor = Executors.newFixedThreadPool(2, r -> new Thread(r, READ_THREAD_NAME));
+    executor =
+        Executors.newFixedThreadPool(
+            2, Thread.ofPlatform().name(READ_THREAD_NAME).daemon(true).factory());
     final var executorProvider = mock(ApiServicesExecutorProvider.class);
     when(executorProvider.getExecutor()).thenReturn(executor);
     services =
@@ -84,17 +85,18 @@ public final class UsageMetricsServiceTest {
   @Test
   public void shouldRunReadsOnTheManagedExecutor() {
     // given
-    final Set<String> readThreadNames = ConcurrentHashMap.newKeySet();
+    final var statsReadThread = new AtomicReference<String>();
+    final var tuStatsReadThread = new AtomicReference<String>();
     when(client.usageMetricStatistics(any()))
         .thenAnswer(
             invocation -> {
-              readThreadNames.add(Thread.currentThread().getName());
+              statsReadThread.set(Thread.currentThread().getName());
               return new UsageMetricStatisticsEntity(16, 14, 2, null);
             });
     when(client.usageMetricTUStatistics(any()))
         .thenAnswer(
             invocation -> {
-              readThreadNames.add(Thread.currentThread().getName());
+              tuStatsReadThread.set(Thread.currentThread().getName());
               return new UsageMetricTUStatisticsEntity(16, null);
             });
 
@@ -102,7 +104,8 @@ public final class UsageMetricsServiceTest {
     services.search(usageMetricsQuery());
 
     // then
-    assertThat(readThreadNames).containsExactly(READ_THREAD_NAME);
+    assertThat(statsReadThread).hasValue(READ_THREAD_NAME);
+    assertThat(tuStatsReadThread).hasValue(READ_THREAD_NAME);
   }
 
   private static UsageMetricsQuery usageMetricsQuery() {
