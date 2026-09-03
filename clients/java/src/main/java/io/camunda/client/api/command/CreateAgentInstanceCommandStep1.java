@@ -85,7 +85,8 @@ public interface CreateAgentInstanceCommandStep1 {
     /**
      * Sets the batch of conversation history items to append to the agent instance at creation.
      * Always required — a CONFIGURATION item within the batch establishing model, provider, and
-     * systemPrompt is the only way to create an agent instance.
+     * systemPrompt is the only way to create an agent instance. Every item's role must be
+     * CONFIGURATION or USER, and no item may carry metrics.
      *
      * @param history the history items to append, in order. Must not be null or empty; elements
      *     must not be null.
