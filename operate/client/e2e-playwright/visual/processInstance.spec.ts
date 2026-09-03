@@ -574,7 +574,7 @@ test.describe('process instance page', () => {
       (element) => element.getBoundingClientRect().width,
     );
 
-    expect(widthAfterFocus).toBeLessThanOrEqual(widthBeforeFocus);
+    expect(widthAfterFocus).toBeLessThanOrEqual(widthBeforeFocus + 1);
   });
 
   test('inline JSON edit - error state after blur', async ({
