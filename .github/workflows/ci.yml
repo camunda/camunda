@@ -97,7 +97,7 @@ jobs:
         timeout-minutes: 1
         with:
           persist-credentials: false
-      - uses: camunda/infra-global-github-actions/actionlint@0077d059bb0d698e1086a4b46517cb7917fa8300 # actionlint: v1.0.2
+      - uses: camunda/infra-global-github-actions/actionlint@0077d059bb0d698e1086a4b46517cb7917fa8300 # actionlint-1.0.2
         with:
           version: ${{ env.ACTIONLINT_VERSION }}
           ignore: |-
