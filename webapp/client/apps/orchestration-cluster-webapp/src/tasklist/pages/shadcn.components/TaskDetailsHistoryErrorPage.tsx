@@ -50,7 +50,7 @@ const ForbiddenHistoryPage: React.FC = () => {
 						</div>
 					</div>
 					<Button asChild variant="link" className="h-auto max-w-full justify-start whitespace-normal p-0 text-left">
-						<a href={DOCS_URL} target="_blank" rel="noreferrer">
+						<a href={DOCS_URL} target="_blank" rel="noopener noreferrer">
 							{t('tasklist.taskDetailsHistoryForbiddenLinkLabel')}
 							<ExternalLink aria-hidden />
 						</a>
