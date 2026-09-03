@@ -9,11 +9,13 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
+import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
 import static io.camunda.it.util.TestHelper.waitForProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeSuspended;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitForUserTask;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasVariable;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,6 +26,7 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -265,6 +268,209 @@ public class ProcessInstanceSuspendResumeIT {
                 .state(ElementInstanceState.ACTIVE),
         1);
     camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
+  }
+
+  @Test
+  void shouldSuspendAndResumeWithParallelGatewayAsIfNeverSuspended() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var jobTypeA = Strings.newRandomValidBpmnId();
+    final var jobTypeB = Strings.newRandomValidBpmnId();
+    final var model =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .parallelGateway("fork")
+            .serviceTask("taskA", t -> t.zeebeJobType(jobTypeA))
+            .parallelGateway("join")
+            .moveToNode("fork")
+            .serviceTask("taskB", t -> t.zeebeJobType(jobTypeB))
+            .connectTo("join")
+            .endEvent()
+            .done();
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(model, processId + ".bpmn")
+        .send()
+        .join();
+    waitForProcessesToBeDeployed(camundaClient, f -> f.processDefinitionId(processId), 1);
+
+    final long suspendedKey =
+        startProcessInstance(camundaClient, processId).getProcessInstanceKey();
+    final long controlKey = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
+    waitForProcessInstancesToStart(
+        camundaClient, f -> f.processInstanceKey(b -> b.in(suspendedKey, controlKey)), 2);
+
+    // both branches must be active before suspending, otherwise suspend can race the fork
+    waitForElementInstances(
+        camundaClient,
+        f ->
+            f.processInstanceKey(suspendedKey)
+                .elementId(b -> b.in("taskA", "taskB"))
+                .state(ElementInstanceState.ACTIVE),
+        2);
+
+    // when
+    camundaClient.newSuspendProcessInstanceCommand(suspendedKey).send().join();
+    waitForProcessInstancesToBeSuspended(camundaClient, f -> f.processInstanceKey(suspendedKey), 1);
+
+    camundaClient.newResumeProcessInstanceCommand(suspendedKey).send().join();
+    waitForProcessInstance(
+        camundaClient,
+        f -> f.processInstanceKey(suspendedKey),
+        instances ->
+            assertThat(instances)
+                .singleElement()
+                .extracting(ProcessInstance::getState)
+                .isEqualTo(ProcessInstanceState.ACTIVE));
+
+    activateAndCompleteJobs(jobTypeA, 2);
+    activateAndCompleteJobs(jobTypeB, 2);
+
+    // then
+    waitForProcessInstancesToBeCompleted(
+        camundaClient, f -> f.processInstanceKey(b -> b.in(suspendedKey, controlKey)), 2);
+    await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var suspendedElements = elementIdsAndStates(suspendedKey);
+              final var controlElements = elementIdsAndStates(controlKey);
+              assertThat(suspendedElements).hasSize(6);
+              assertThat(suspendedElements)
+                  .extracting(t -> t.toList().get(0))
+                  .contains("taskA", "taskB", "fork", "join");
+              assertThat(suspendedElements)
+                  .extracting(t -> t.toList().get(1))
+                  .containsOnly(ElementInstanceState.COMPLETED);
+              assertThat(suspendedElements).containsExactlyInAnyOrderElementsOf(controlElements);
+            });
+  }
+
+  @Test
+  void shouldRejectUserTaskCompleteWhileSuspendedAndAcceptAfterResume() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var model =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .userTask("userTask")
+            .zeebeUserTask()
+            .endEvent()
+            .done();
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(model, processId + ".bpmn")
+        .send()
+        .join();
+    waitForProcessesToBeDeployed(camundaClient, f -> f.processDefinitionId(processId), 1);
+
+    final long processInstanceKey =
+        startProcessInstance(camundaClient, processId).getProcessInstanceKey();
+    waitForProcessInstancesToStart(camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
+
+    final long userTaskKey =
+        waitForUserTask(camundaClient, f -> f.processInstanceKey(processInstanceKey))
+            .getUserTaskKey();
+    camundaClient.newSuspendProcessInstanceCommand(processInstanceKey).send().join();
+    waitForProcessInstancesToBeSuspended(
+        camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
+
+    // when
+    final var problem =
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(() -> camundaClient.newCompleteUserTaskCommand(userTaskKey).send().join())
+            .actual();
+    assertThat(problem.details().getDetail()).contains("is suspended");
+
+    // then
+    camundaClient.newResumeProcessInstanceCommand(processInstanceKey).send().join();
+    waitForProcessInstance(
+        camundaClient,
+        f -> f.processInstanceKey(processInstanceKey),
+        instances ->
+            assertThat(instances)
+                .singleElement()
+                .extracting(ProcessInstance::getState)
+                .isEqualTo(ProcessInstanceState.ACTIVE));
+
+    camundaClient.newCompleteUserTaskCommand(userTaskKey).send().join();
+    waitForProcessInstancesToBeCompleted(
+        camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
+  }
+
+  @Test
+  void shouldCorrelateMessageAfterSuspendAndResume() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var jobType = Strings.newRandomValidBpmnId();
+    final var messageName = Strings.newRandomValidBpmnId();
+    final var model =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .intermediateCatchEvent(
+                "msgCatch",
+                c ->
+                    c.message(
+                        m -> m.name(messageName).zeebeCorrelationKeyExpression("correlationKey")))
+            .serviceTask("afterMsg", t -> t.zeebeJobType(jobType))
+            .endEvent()
+            .done();
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(model, processId + ".bpmn")
+        .send()
+        .join();
+    waitForProcessesToBeDeployed(camundaClient, f -> f.processDefinitionId(processId), 1);
+
+    final long processInstanceKey =
+        startProcessInstance(camundaClient, processId, Map.of("correlationKey", "key1"))
+            .getProcessInstanceKey();
+    waitForProcessInstancesToStart(camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
+
+    waitForElementInstances(
+        camundaClient,
+        f ->
+            f.processInstanceKey(processInstanceKey)
+                .elementId("msgCatch")
+                .state(ElementInstanceState.ACTIVE),
+        1);
+    waitForMessageSubscriptions(
+        camundaClient,
+        f ->
+            f.processInstanceKey(processInstanceKey)
+                .messageSubscriptionState(MessageSubscriptionState.CREATED),
+        1);
+
+    // when - a suspend-driven subscription close isn't observable through this search endpoint
+    // (it re-emits CREATED, not DELETED); that race is covered at the record level instead, by
+    // MessageSuspensionGateTest.
+    camundaClient.newSuspendProcessInstanceCommand(processInstanceKey).send().join();
+    waitForProcessInstancesToBeSuspended(
+        camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
+
+    camundaClient
+        .newPublishMessageCommand()
+        .messageName(messageName)
+        .correlationKey("key1")
+        .timeToLive(Duration.ofSeconds(120))
+        .send()
+        .join();
+
+    camundaClient.newResumeProcessInstanceCommand(processInstanceKey).send().join();
+
+    // then
+    waitForElementInstances(
+        camundaClient,
+        f ->
+            f.processInstanceKey(processInstanceKey)
+                .elementId("afterMsg")
+                .state(ElementInstanceState.ACTIVE),
+        1);
+
+    activateAndCompleteJobs(jobType, 1);
+    waitForProcessInstancesToBeCompleted(
+        camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
   }
 
   private static void activateAndCompleteJobs(final String jobType, final int count) {

@@ -619,6 +619,7 @@ public final class TestHelper {
             () -> {
               migratedTask[0] =
                   client.newUserTaskSearchRequest().filter(filter).send().join().singleItem();
+              assertThat(migratedTask[0]).isNotNull();
             });
     return migratedTask[0];
   }
