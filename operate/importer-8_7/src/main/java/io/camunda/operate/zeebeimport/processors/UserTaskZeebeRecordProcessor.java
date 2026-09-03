@@ -23,6 +23,7 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -135,7 +136,7 @@ public class UserTaskZeebeRecordProcessor {
       final BatchRequest batchRequest, final Record<UserTaskRecordValue> userTaskRecord)
       throws PersistenceException {
     final Intent intent = userTaskRecord.getIntent();
-    LOGGER.info("Intent is: {}", intent);
+    LOGGER.debug("Intent is: {}", intent);
     final var userTaskValue = userTaskRecord.getValue();
     final UserTaskEntity userTaskEntity;
     try {
@@ -205,7 +206,7 @@ public class UserTaskZeebeRecordProcessor {
   }
 
   private OffsetDateTime toDateOrNull(final String dateString) {
-    if (dateString == null) {
+    if (StringUtils.isBlank(dateString)) {
       return null;
     }
     try {
