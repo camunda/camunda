@@ -52,10 +52,6 @@ public class ClusterStatusController {
    * Reports one overall upgrade-readiness status for the whole cluster (see the {@code
    * upgradeReadiness} actuator endpoint for full per-physical-tenant, per-condition detail). Public
    * and unauthenticated, like {@link #getClusterStatus()} — see camunda/camunda#61619.
-   *
-   * <p>Always answers {@code 200}, even for {@code MIGRATION_IN_PROGRESS}/{@code UNKNOWN}: an
-   * in-progress upgrade is an expected condition the cluster keeps serving traffic through, unlike
-   * {@link #getClusterStatus()}'s {@code DOWN}, which is a genuine outage.
    */
   @CamundaGetMapping(path = "/status/upgrade")
   public CompletableFuture<ResponseEntity<Object>> getClusterUpgradeStatus() {

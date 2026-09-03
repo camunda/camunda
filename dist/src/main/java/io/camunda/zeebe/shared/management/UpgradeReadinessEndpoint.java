@@ -22,11 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
  * upgrade can safely be triggered (see camunda/product-hub#3067).
  *
  * <p>Collects every {@link MigrationStatusProvider} bean registered in this process, via the shared
- * {@link MigrationStatusAggregator} bean (also consumed by the public {@code GET
- * /cluster/v2/status/upgrade} endpoint, see camunda/camunda#61619). The response only contains
- * conditions for which a provider bean currently exists — {@code upgradeable} is intentionally not
- * meaningful until every planned provider (RDBMS schema, Elasticsearch/OpenSearch schema, RocksDB
- * snapshot, exporter flush) is registered; see {@link UpgradeReadinessResponse}.
+ * {@link MigrationStatusAggregator} bean; see {@link UpgradeReadinessResponse}.
  */
 @Component
 @RestControllerEndpoint(id = "upgradeReadiness")
