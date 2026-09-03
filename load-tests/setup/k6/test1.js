@@ -19,19 +19,15 @@ export function setup() {
   const client_secret = __ENV.ZEEBE_CLIENT_SECRET;
   const audience = __ENV.ZEEBE_TOKEN_AUDIENCE;
 
+  console.log(`Fetching authentication token from ${token_url}`);
   const params = {
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
     },
   };
 
   // https://docs.camunda.io/docs/apis-clients/console-api-reference/
-  const payload = JSON.stringify({
-    grant_type: 'client_credentials',
-    audience: audience,
-    client_id: client_id,
-    client_secret: client_secret,
-  });
+  const payload = `grant_type=client_credentials&audience=${audience}&client_id=${client_id}&client_secret=${client_secret}`;
 
   const response = http.post(token_url, payload, params);
     const result = response.body;
