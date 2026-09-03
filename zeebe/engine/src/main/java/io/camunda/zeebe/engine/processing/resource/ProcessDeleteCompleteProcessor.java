@@ -96,11 +96,5 @@ public final class ProcessDeleteCompleteProcessor
   private void finishProcessDelete(
       final TypedRecord<ProcessRecord> command, final ProcessRecord process) {
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessIntent.FULLY_DELETED, process);
-
-    deleteHistory(command.getKey(), command);
-  }
-
-  private void deleteHistory(final long eventKey, final TypedRecord<ProcessRecord> command) {
-    // TODO delete history https://github.com/camunda/camunda/issues/56973
   }
 }

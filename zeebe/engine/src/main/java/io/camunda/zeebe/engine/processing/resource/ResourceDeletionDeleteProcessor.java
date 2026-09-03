@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.exception.Forbi
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
+import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
@@ -39,6 +41,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ResourceState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
@@ -61,11 +64,13 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import org.agrona.DirectBuffer;
 
 public class ResourceDeletionDeleteProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
 
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final KeyGenerator keyGenerator;
@@ -82,6 +87,7 @@ public class ResourceDeletionDeleteProcessor
   private final FormState formState;
   private final ResourceState resourceState;
   private final TenantState tenantState;
+  private final RoutingInfo routingInfo;
 
   public ResourceDeletionDeleteProcessor(
       final Writers writers,
@@ -89,8 +95,10 @@ public class ResourceDeletionDeleteProcessor
       final ProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
       final BpmnBehaviors bpmnBehaviors,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final RoutingInfo routingInfo) {
     stateWriter = writers.state();
+    commandWriter = writers.command();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
@@ -110,6 +118,7 @@ public class ResourceDeletionDeleteProcessor
     formState = processingState.getFormState();
     resourceState = processingState.getResourceState();
     tenantState = processingState.getTenantState();
+    this.routingInfo = routingInfo;
   }
 
   @Override
@@ -146,37 +155,48 @@ public class ResourceDeletionDeleteProcessor
           command, exception.getRejectionType(), exception.getMessage());
       responseWriter.writeRejectedResponseOnCommand(
           command, exception.getRejectionType(), exception.getMessage());
+      acknowledgeIfDistributed(command);
       return ProcessingError.EXPECTED_ERROR;
     } else if (error instanceof final NoSuchResourceException exception) {
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
       responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.NOT_FOUND, exception.getMessage());
-
-      if (command.isCommandDistributed()) {
-        // If the command is distributed, and it cannot be found upon processing, we can acknowledge
-        // the distribution.
-        commandDistributionBehavior.acknowledgeCommand(command);
-      }
-
+      acknowledgeIfDistributed(command);
       return ProcessingError.EXPECTED_ERROR;
-    } else if (error instanceof final ActiveProcessInstancesException exception) {
+    } else if (error instanceof final ResourceDeletionInProgressException exception) {
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, exception.getMessage());
       responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.INVALID_STATE, exception.getMessage());
+      acknowledgeIfDistributed(command);
       return ProcessingError.EXPECTED_ERROR;
     }
 
     return ProcessingError.UNEXPECTED_ERROR;
   }
 
+  // Ack even on rejection, otherwise the distribution never finishes and head-of-line blocks every
+  // command queued behind it.
+  private void acknowledgeIfDistributed(final TypedRecord<ResourceDeletionRecord> command) {
+    if (command.isCommandDistributed()) {
+      commandDistributionBehavior.acknowledgeCommand(command);
+    }
+  }
+
   private void tryDeleteResources(
       final TypedRecord<ResourceDeletionRecord> command, final long eventKey) {
     final var value = command.getValue();
 
+    final var drainingDeletionInFlight = new AtomicBoolean(false);
     final var resourceDeleted =
-        untilResourceDeleted(command, tenantId -> tryDeleteResource(command, tenantId, eventKey));
+        untilResourceDeleted(
+            command,
+            tenantId -> tryDeleteResource(command, tenantId, eventKey, drainingDeletionInFlight));
 
     if (!resourceDeleted) {
+      if (drainingDeletionInFlight.get()
+          || processState.hasPendingDeletion(value.getResourceKey())) {
+        throw new ResourceDeletionInProgressException(value.getResourceKey());
+      }
       throw new NoSuchResourceException(value.getResourceKey());
     }
   }
@@ -184,18 +204,18 @@ public class ResourceDeletionDeleteProcessor
   private boolean tryDeleteResource(
       final TypedRecord<ResourceDeletionRecord> command,
       final String tenantId,
-      final long eventKey) {
+      final long eventKey,
+      final AtomicBoolean drainingDeletionInFlight) {
     final var value = command.getValue();
 
     final var process = processState.getProcessByKeyAndTenant(value.getResourceKey(), tenantId);
     if (process != null) {
-      return authorizeAndDelete(
-          command,
-          eventKey,
-          PermissionType.DELETE_PROCESS,
-          bufferAsString(process.getBpmnProcessId()),
-          process.getTenantId(),
-          () -> deleteProcess(process));
+      final var handled = tryDeleteProcessDefinition(command, eventKey, process);
+      if (handled.isPresent()) {
+        return handled.get();
+      }
+      // found but not ACTIVE: deletion already in flight, so the caller rejects as INVALID_STATE
+      drainingDeletionInFlight.set(true);
     }
 
     final var drgOptional =
@@ -287,53 +307,97 @@ public class ResourceDeletionDeleteProcessor
             .setDecisionRequirementsKey(persistedDecision.getDecisionRequirementsKey())
             .setTenantId(persistedDecision.getTenantId())
             .setDeploymentKey(persistedDecision.getDeploymentKey());
+
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
   }
 
-  private void deleteProcess(final DeployedProcess process) {
+  // Empty when the definition is not ACTIVE, so the caller rejects a repeated delete as
+  // already-being-deleted (INVALID_STATE).
+  private Optional<Boolean> tryDeleteProcessDefinition(
+      final TypedRecord<ResourceDeletionRecord> command,
+      final long eventKey,
+      final DeployedProcess process) {
+    if (process.getState() != PersistedProcessState.ACTIVE) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        authorizeAndDelete(
+            command,
+            eventKey,
+            PermissionType.DELETE_PROCESS,
+            bufferAsString(process.getBpmnProcessId()),
+            process.getTenantId(),
+            () -> deleteProcess(process, command)));
+  }
+
+  private void deleteProcess(
+      final DeployedProcess process, final TypedRecord<ResourceDeletionRecord> command) {
     // We don't add the checksum or resource in this event. The checksum is not easily available
     // and the resources are left out to prevent exceeding the maximum batch size.
     final var processIdBuffer = process.getBpmnProcessId();
-    final var processRecord =
-        new ProcessRecord()
-            .setBpmnProcessId(processIdBuffer)
-            .setVersion(process.getVersion())
-            .setVersionTag(process.getVersionTag())
-            .setKey(process.getKey())
-            .setResourceName(process.getResourceName())
-            .setTenantId(process.getTenantId())
-            .setDeploymentKey(process.getDeploymentKey());
-    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETING, processRecord);
-
+    final var tenantId = process.getTenantId();
+    final var processRecord = toProcessRecord(process);
     final String processId = processRecord.getBpmnProcessId();
     final var latestVersion =
         processState.getLatestProcessVersion(processId, processRecord.getTenantId());
+
+    processRecord.setDrainPartitions(routingInfo.desiredPartitions());
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DRAINING, processRecord);
 
     // If we are deleting the latest version we must unsubscribe the start events
     if (latestVersion == process.getVersion()) {
       unsubscribeStartEvents(process);
 
-      final var previousVersion =
-          processState.findProcessVersionBefore(
-              processId, latestVersion, processRecord.getTenantId());
-      // If there is a previous version we must resubscribe to the previous version's start events.
-      if (previousVersion.isPresent()) {
-        final var previousProcess =
-            processState.getProcessByProcessIdAndVersion(
-                processIdBuffer, previousVersion.get(), process.getTenantId());
-        startEventSubscriptions.resubscribeToStartEvents(previousProcess);
-      }
+      // Hand the start subscription down to the latest ACTIVE version; DRAINING/deleted versions
+      // reject new instances so must stay unsubscribed.
+      findLatestActiveVersionBelow(processIdBuffer, processId, latestVersion, tenantId)
+          .ifPresent(startEventSubscriptions::resubscribeToStartEvents);
     }
 
     final var bannedInstances = bannedInstanceState.getBannedProcessInstanceKeys();
-    final var hasRunningInstances =
-        elementInstanceState.hasActiveProcessInstances(process.getKey(), bannedInstances);
+    final boolean finalizedImmediately =
+        !elementInstanceState.hasActiveProcessInstances(process.getKey(), bannedInstances);
 
-    if (!hasRunningInstances) {
-      stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETED, processRecord);
-    } else {
-      throw new ActiveProcessInstancesException(process.getKey());
+    if (finalizedImmediately) {
+      finalizeDeletion(processRecord);
     }
+  }
+
+  private void finalizeDeletion(final ProcessRecord processRecord) {
+    final long key = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETING, processRecord);
+    stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETED, processRecord);
+    commandWriter.appendFollowUpCommand(key, ProcessIntent.DELETE_COMPLETE, processRecord);
+  }
+
+  private ProcessRecord toProcessRecord(final DeployedProcess process) {
+    return new ProcessRecord()
+        .setBpmnProcessId(process.getBpmnProcessId())
+        .setVersion(process.getVersion())
+        .setVersionTag(process.getVersionTag())
+        .setKey(process.getKey())
+        .setResourceName(process.getResourceName())
+        .setTenantId(process.getTenantId())
+        .setDeploymentKey(process.getDeploymentKey());
+  }
+
+  // Skip DRAINING/deleted versions — they must not hold start-event subscriptions.
+  private Optional<DeployedProcess> findLatestActiveVersionBelow(
+      final DirectBuffer processIdBuffer,
+      final String processId,
+      final int version,
+      final String tenantId) {
+    var candidate = processState.findProcessVersionBefore(processId, version, tenantId);
+    while (candidate.isPresent()) {
+      final int candidateVersion = candidate.get();
+      final var process =
+          processState.getProcessByProcessIdAndVersion(processIdBuffer, candidateVersion, tenantId);
+      if (process != null && process.getState() == PersistedProcessState.ACTIVE) {
+        return Optional.of(process);
+      }
+      candidate = processState.findProcessVersionBefore(processId, candidateVersion, tenantId);
+    }
+    return Optional.empty();
   }
 
   private void unsubscribeStartEvents(final DeployedProcess deployedProcess) {
@@ -467,12 +531,12 @@ public class ResourceDeletionDeleteProcessor
     }
   }
 
-  private static final class ActiveProcessInstancesException extends IllegalStateException {
-    private static final String ERROR_MESSAGE_RUNNING_INSTANCES =
-        "Expected to delete resource with key `%d` but there are still running instances";
+  private static final class ResourceDeletionInProgressException extends IllegalStateException {
+    private static final String ERROR_MESSAGE_DELETION_IN_PROGRESS =
+        "Expected to delete process definition with key `%d`, but it is already being deleted.";
 
-    private ActiveProcessInstancesException(final long processDefinitionKey) {
-      super(String.format(ERROR_MESSAGE_RUNNING_INSTANCES, processDefinitionKey));
+    private ResourceDeletionInProgressException(final long resourceKey) {
+      super(String.format(ERROR_MESSAGE_DELETION_IN_PROGRESS, resourceKey));
     }
   }
 }

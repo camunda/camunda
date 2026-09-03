@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.util.client;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
@@ -147,127 +148,86 @@ public final class JobClient {
     return jobKey;
   }
 
-  public Record<JobRecordValue> complete() {
+  // Route to the partition encoded in the job key.
+  // Deployment-partition and non-encoded keys keep the default path.
+  private long writeJobCommand(final JobIntent intent) {
     final long jobKey = findJobKey();
-    final long position =
-        writer.writeCommand(
-            jobKey, JobIntent.COMPLETE, jobRecord, authorizedTenantIds.toArray(new String[0]));
-    return expectation.apply(position);
+    final int partitionId = Protocol.decodePartitionId(jobKey);
+    if (partitionId <= Protocol.DEPLOYMENT_PARTITION) {
+      return writer.writeCommand(
+          jobKey, intent, jobRecord, authorizedTenantIds.toArray(new String[0]));
+    }
+    return writer.writeCommandOnPartition(
+        partitionId, jobKey, intent, jobRecord, authorizedTenantIds.toArray(new String[0]));
+  }
+
+  private long writeJobCommand(final JobIntent intent, final String username) {
+    final long jobKey = findJobKey();
+    final int partitionId = Protocol.decodePartitionId(jobKey);
+    if (partitionId <= Protocol.DEPLOYMENT_PARTITION) {
+      return writer.writeCommand(
+          jobKey, intent, username, jobRecord, authorizedTenantIds.toArray(new String[0]));
+    }
+    return writer.writeCommandOnPartition(
+        partitionId,
+        jobKey,
+        intent,
+        username,
+        jobRecord,
+        authorizedTenantIds.toArray(new String[0]));
+  }
+
+  public Record<JobRecordValue> complete() {
+    return expectation.apply(writeJobCommand(JobIntent.COMPLETE));
   }
 
   public Record<JobRecordValue> complete(final String username) {
-    final long jobKey = findJobKey();
-    final long position =
-        writer.writeCommand(
-            jobKey,
-            JobIntent.COMPLETE,
-            username,
-            jobRecord,
-            authorizedTenantIds.toArray(new String[0]));
-    return expectation.apply(position);
+    return expectation.apply(writeJobCommand(JobIntent.COMPLETE, username));
   }
 
   public Record<JobRecordValue> fail() {
-    final long jobKey = findJobKey();
-    final long position =
-        writer.writeCommand(
-            jobKey, JobIntent.FAIL, jobRecord, authorizedTenantIds.toArray(new String[0]));
-
-    return expectation.apply(position);
+    return expectation.apply(writeJobCommand(JobIntent.FAIL));
   }
 
   public Record<JobRecordValue> fail(final String username) {
-    final long jobKey = findJobKey();
-    final long position =
-        writer.writeCommand(
-            jobKey,
-            JobIntent.FAIL,
-            username,
-            jobRecord,
-            authorizedTenantIds.toArray(new String[0]));
-
-    return expectation.apply(position);
+    return expectation.apply(writeJobCommand(JobIntent.FAIL, username));
   }
 
   public Record<JobRecordValue> yield() {
     final long jobKey = findJobKey();
-    final long position = writer.writeCommand(jobKey, JobIntent.YIELD, jobRecord);
-
+    final int partitionId = Protocol.decodePartitionId(jobKey);
+    final long position =
+        partitionId <= Protocol.DEPLOYMENT_PARTITION
+            ? writer.writeCommand(jobKey, JobIntent.YIELD, jobRecord)
+            : writer.writeCommandOnPartition(partitionId, jobKey, JobIntent.YIELD, jobRecord);
     return expectation.apply(position);
   }
 
   public Record<JobRecordValue> updateRetries() {
-    final long jobKey = findJobKey();
-    final long position =
-        writer.writeCommand(
-            jobKey,
-            JobIntent.UPDATE_RETRIES,
-            jobRecord,
-            authorizedTenantIds.toArray(new String[0]));
-    return expectation.apply(position);
+    return expectation.apply(writeJobCommand(JobIntent.UPDATE_RETRIES));
   }
 
   public Record<JobRecordValue> updateRetries(final String username) {
-    final long jobKey = findJobKey();
-    final long position =
-        writer.writeCommand(
-            jobKey,
-            JobIntent.UPDATE_RETRIES,
-            username,
-            jobRecord,
-            authorizedTenantIds.toArray(new String[0]));
-    return expectation.apply(position);
+    return expectation.apply(writeJobCommand(JobIntent.UPDATE_RETRIES, username));
   }
 
   public Record<JobRecordValue> updateTimeout() {
-    final long jobKey = findJobKey();
-    final long position =
-        writer.writeCommand(
-            jobKey,
-            JobIntent.UPDATE_TIMEOUT,
-            jobRecord,
-            authorizedTenantIds.toArray(new String[0]));
-    return expectation.apply(position);
+    return expectation.apply(writeJobCommand(JobIntent.UPDATE_TIMEOUT));
   }
 
   public Record<JobRecordValue> updateTimeout(final String username) {
-    final long jobKey = findJobKey();
-    final long position =
-        writer.writeCommand(
-            jobKey,
-            JobIntent.UPDATE_TIMEOUT,
-            username,
-            jobRecord,
-            authorizedTenantIds.toArray(new String[0]));
-    return expectation.apply(position);
+    return expectation.apply(writeJobCommand(JobIntent.UPDATE_TIMEOUT, username));
   }
 
   public Record<JobRecordValue> update() {
-    final long jobKey = findJobKey();
-    final long position =
-        writer.writeCommand(
-            jobKey, JobIntent.UPDATE, jobRecord, authorizedTenantIds.toArray(new String[0]));
-    return expectation.apply(position);
+    return expectation.apply(writeJobCommand(JobIntent.UPDATE));
   }
 
   public Record<JobRecordValue> throwError() {
-    final long jobKey = findJobKey();
-    final long position =
-        writer.writeCommand(
-            jobKey, JobIntent.THROW_ERROR, jobRecord, authorizedTenantIds.toArray(new String[0]));
-
-    return expectation.apply(position);
+    return expectation.apply(writeJobCommand(JobIntent.THROW_ERROR));
   }
 
   public Record<JobRecordValue> throwError(final String username) {
-    final long jobKey = findJobKey();
-    final long position =
-        writer.writeCommand(
-            jobKey,
-            JobIntent.THROW_ERROR,
-            username,
-            jobRecord,
-            authorizedTenantIds.toArray(new String[0]));
-    return expectation.apply(position);
+    return expectation.apply(writeJobCommand(JobIntent.THROW_ERROR, username));
   }
 }
