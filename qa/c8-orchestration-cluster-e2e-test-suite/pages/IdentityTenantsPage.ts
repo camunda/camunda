@@ -14,7 +14,6 @@ import {waitForItemInList} from 'utils/waitForItemInList';
 export class IdentityTenantsPage {
   private page: Page;
   readonly tenantsList: Locator;
-  readonly assignedUsersList: Locator;
   readonly createTenantButton: Locator;
   readonly editTenantButton: (rowName?: string) => Locator;
   readonly deleteTenantButton: (rowName?: string) => Locator;
@@ -53,7 +52,6 @@ export class IdentityTenantsPage {
     this.page = page;
 
     this.tenantsList = page.getByRole('table');
-    this.assignedUsersList = page.getByRole('table');
     this.createTenantButton = page.getByRole('button', {
       name: 'Create tenant',
     });
@@ -198,7 +196,7 @@ export class IdentityTenantsPage {
     await expect(this.assignUserModal).toBeHidden();
     await waitForItemInList(
       this.page,
-      this.assignedUsersList.getByRole('cell', {name: user.id, exact: true}),
+      this.tenantsList.getByRole('cell', {name: user.id, exact: true}),
       {timeout: 30000},
     );
   }
