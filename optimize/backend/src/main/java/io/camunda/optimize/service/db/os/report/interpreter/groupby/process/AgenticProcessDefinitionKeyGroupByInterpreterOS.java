@@ -20,7 +20,6 @@ import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeOS;
 import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
-import io.camunda.optimize.service.db.report.interpreter.util.ProcessDefinitionNameResolver;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
@@ -43,8 +42,8 @@ import org.springframework.stereotype.Component;
  * supplied, returns only the top N process definitions by the configured measure. The top N is
  * computed server-side (terms aggregation with {@code size=limit} ordered by the primary measure
  * plus a cardinality sub-aggregation for the total count) so it scales to large data sets. All
- * other behaviour is inherited from {@link ProcessGroupByProcessDefinitionKeyInterpreterOS}, which
- * is left untouched for every non-agentic process-definition-key report.
+ * other behaviour, including labelling each group with the definition's name, is inherited from
+ * {@link ProcessGroupByProcessDefinitionKeyInterpreterOS}.
  */
 @Component
 @Conditional(OpenSearchCondition.class)
@@ -56,15 +55,12 @@ public class AgenticProcessDefinitionKeyGroupByInterpreterOS
   private static final String PROCESS_DEFINITION_KEY_COUNT_AGGREGATION =
       "processDefinitionKeyCountAgg";
 
-  private final DefinitionService definitionService;
-
   public AgenticProcessDefinitionKeyGroupByInterpreterOS(
       final ConfigurationService configurationService,
       final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
       final ProcessViewInterpreterFacadeOS viewInterpreter,
       final DefinitionService definitionService) {
-    super(configurationService, distributedByInterpreter, viewInterpreter);
-    this.definitionService = definitionService;
+    super(configurationService, distributedByInterpreter, viewInterpreter, definitionService);
   }
 
   @Override
@@ -108,9 +104,6 @@ public class AgenticProcessDefinitionKeyGroupByInterpreterOS
       final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     super.addQueryResult(compositeCommandResult, response, context);
-    // Label each bar with the definition's latest-version name instead of the raw BPMN process id.
-    ProcessDefinitionNameResolver.applyLatestVersionNameLabels(
-        compositeCommandResult, definitionService);
     topNPagination(context)
         .ifPresent(
             pagination -> {
@@ -120,6 +113,14 @@ public class AgenticProcessDefinitionKeyGroupByInterpreterOS
                 pagination.setTotal(countAggregation.cardinality().value());
               }
             });
+  }
+
+  @Override
+  protected boolean shouldResolveDefinitionNames(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    // Every report on this path is one Optimize generates for an agentic dashboard, whether or
+    // not it also carries the business value flag, so names are always wanted here.
+    return true;
   }
 
   private Optional<PaginationDto> topNPagination(
