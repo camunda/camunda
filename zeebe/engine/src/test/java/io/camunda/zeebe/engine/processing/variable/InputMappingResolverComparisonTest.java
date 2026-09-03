@@ -354,7 +354,8 @@ class InputMappingResolverComparisonTest {
   // @DisplayName(
   //    "Rule 7: variables from a higher scope are partially shadowed by input mappings"
   //        + " (OrderedInputMappingResolver already implements this correctly; the gap is in"
-  //        + " CombinedInputMappingResolver/8.9.0's combined-FEEL-context evaluation, which loses an"
+  //        + " CombinedInputMappingResolver/8.9.0's combined-FEEL-context evaluation, which loses
+  // an"
   //        + " ancestor's untouched sibling once that object's root has been partially mapped)")
   class Rule7PartiallyShadowsHigherScope {
 
