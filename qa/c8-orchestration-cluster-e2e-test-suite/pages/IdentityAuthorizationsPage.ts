@@ -241,13 +241,7 @@ export class IdentityAuthorizationsPage {
 
   async selectAuthorizationOwner(authorization: {ownerId: string}) {
     await this.createAuthorizationOwnerSearchInput.fill(authorization.ownerId);
-    // The owner search is debounced + server-driven; the menu item for a
-    // just-created user can take longer than 20s to surface under load.
-    // const ownerOption = this.createAuthorizationModal
-    //   .locator('.cds--list-box__menu-item')
-    //   .filter({hasText: authorization.ownerId})
-    //   .first();
-    await this.page.waitForTimeout(500);
+    await expect(this.page.getByRole('listbox')).toBeVisible();
     const ownerOption = this.page
       .getByRole('listbox')
       .getByRole('option')
