@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.processing;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
@@ -30,6 +32,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,25 +44,41 @@ public final class CheckpointRecordsProcessor
 
   private final BackupManager backupManager;
   private final boolean trackBackupMetadata;
+
+  @SuppressWarnings("NullAway.Init")
   private CheckpointCreateProcessor checkpointCreateProcessor;
+
+  @SuppressWarnings("NullAway.Init")
   private CheckpointConfirmBackupProcessor checkpointConfirmBackupProcessor;
+
+  @SuppressWarnings("NullAway.Init")
   private CheckpointDeleteBackupProcessor checkpointDeleteBackupProcessor;
+
+  @SuppressWarnings("NullAway.Init")
   private CheckpointClearStateProcessor checkpointClearStateProcessor;
+
+  @SuppressWarnings("NullAway.Init")
   private CheckpointCreatedEventApplier checkpointCreatedEventApplier;
+
+  @SuppressWarnings("NullAway.Init")
   private CheckpointBackupConfirmedApplier checkpointBackupConfirmedApplier;
+
+  @SuppressWarnings("NullAway.Init")
   private CheckpointBackupDeletedApplier checkpointBackupDeletedApplier;
+
+  @SuppressWarnings("NullAway.Init")
   private CheckpointStateClearedApplier checkpointStateClearedApplier;
 
   //  Can be accessed concurrently by other threads to add new listeners. Hence we have to use a
   // thread safe collection
   private final Set<CheckpointListener> checkpointListeners = new CopyOnWriteArraySet<>();
   private final CheckpointMetrics metrics;
-  private DbCheckpointState checkpointState;
-  private DbCheckpointMetadataState checkpointMetadataState;
-  private DbBackupRangeState backupRangeState;
-  private ProcessingScheduleService executor;
-  private ScalingStatusSupplier scalingInProgressSupplier;
-  private PartitionCountSupplier partitionCountSupplier;
+  private @Nullable DbCheckpointState checkpointState;
+  private @Nullable DbCheckpointMetadataState checkpointMetadataState;
+  private @Nullable DbBackupRangeState backupRangeState;
+  private @Nullable ProcessingScheduleService executor;
+  private @Nullable ScalingStatusSupplier scalingInProgressSupplier;
+  private @Nullable PartitionCountSupplier partitionCountSupplier;
 
   public CheckpointRecordsProcessor(
       final BackupManager backupManager,
@@ -144,7 +163,7 @@ public final class CheckpointRecordsProcessor
 
     final long checkpointId = checkpointState.getLatestCheckpointId();
     final var checkpointType = checkpointState.getLatestCheckpointType();
-    if (checkpointId != CheckpointState.NO_CHECKPOINT) {
+    if (checkpointId != CheckpointState.NO_CHECKPOINT && checkpointType != null) {
       checkpointListeners.forEach(
           listener -> listener.onNewCheckpointCreated(checkpointId, checkpointType));
       metrics.setCheckpointId(checkpointId, checkpointState.getLatestCheckpointPosition());
@@ -241,9 +260,10 @@ public final class CheckpointRecordsProcessor
       executor.runDelayed(
           Duration.ZERO,
           () -> {
-            final var checkpointId = checkpointState.getLatestCheckpointId();
-            final var checkpointType = checkpointState.getLatestCheckpointType();
-            if (checkpointId != CheckpointState.NO_CHECKPOINT) {
+            final var state = requireNonNull(checkpointState);
+            final var checkpointId = state.getLatestCheckpointId();
+            final var checkpointType = state.getLatestCheckpointType();
+            if (checkpointId != CheckpointState.NO_CHECKPOINT && checkpointType != null) {
               checkpointListener.onNewCheckpointCreated(checkpointId, checkpointType);
             }
           });
@@ -255,6 +275,6 @@ public final class CheckpointRecordsProcessor
     // After a leader change, the new leader will not continue taking the backup initiated by
     // previous leader. So mark them as failed, so that the users do not wait forever for it to be
     // completed.
-    backupManager.failInProgressBackup(checkpointState.getLatestCheckpointId());
+    backupManager.failInProgressBackup(requireNonNull(checkpointState).getLatestCheckpointId());
   }
 }

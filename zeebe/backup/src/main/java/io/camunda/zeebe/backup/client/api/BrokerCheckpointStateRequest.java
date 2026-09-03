@@ -18,6 +18,7 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public class BrokerCheckpointStateRequest extends BrokerRequest<CheckpointStateResponse> {
 
@@ -58,7 +59,7 @@ public class BrokerCheckpointStateRequest extends BrokerRequest<CheckpointStateR
   }
 
   @Override
-  public BufferWriter getRequestWriter() {
+  public @Nullable BufferWriter getRequestWriter() {
     return null;
   }
 

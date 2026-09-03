@@ -57,8 +57,11 @@ test.describe.serial('groups CRUD', () => {
     await expect(identityGroupsPage.createGroupModal).toContainText(
       'Please enter a valid group ID',
     );
+    // The Create group modal renders on the new design system, whose Input
+    // marks a failed field with `aria-invalid` instead of Carbon's
+    // `data-invalid`.
     await expect(identityGroupsPage.createGroupIdField).toHaveAttribute(
-      'data-invalid',
+      'aria-invalid',
       'true',
     );
   });

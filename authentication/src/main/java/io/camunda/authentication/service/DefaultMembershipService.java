@@ -9,7 +9,10 @@ package io.camunda.authentication.service;
 
 import static io.camunda.security.api.model.authz.EntityType.GROUP;
 import static io.camunda.security.api.model.authz.EntityType.MAPPING_RULE;
+import static java.util.Objects.requireNonNullElse;
 
+import io.camunda.authentication.utils.OutageLog;
+import io.camunda.authentication.utils.TransientRetry;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -24,10 +27,14 @@ import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.spring.utils.PhysicalTenantContext;
+import io.github.resilience4j.retry.Retry;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,10 +52,17 @@ import org.springframework.stereotype.Service;
 @ConditionalOnSecondaryStorageEnabled
 public class DefaultMembershipService implements MembershipPort {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultMembershipService.class);
+  private static final Retry MEMBERSHIP_LOOKUP_RETRY = TransientRetry.of("membership-lookup");
 
   private final ServiceRegistry serviceRegistry;
   private final OidcGroupsExtractor oidcGroupsExtractor;
   private final boolean isGroupsClaimConfigured;
+
+  // This service is a singleton shared by every physical tenant, and each lookup routes to the
+  // store of the tenant in context. An outage therefore belongs to the (tenant, lookup) pair: keyed
+  // by lookup alone, a healthy call for one tenant would close another tenant's outage and make the
+  // next failure report it again.
+  private final Map<String, OutageLog> lookupOutages = new ConcurrentHashMap<>();
 
   public DefaultMembershipService(
       final ServiceRegistry serviceRegistry, final CamundaSecurityLibraryProperties cslProperties) {
@@ -65,17 +79,22 @@ public class DefaultMembershipService implements MembershipPort {
       return List.of();
     }
     final var ids =
-        serviceRegistry
-            .mappingRuleServices(PhysicalTenantContext.current())
-            .getMatchingMappingRules(query.tokenClaims(), CamundaAuthentication.anonymous())
-            .map(MappingRuleEntity::mappingRuleId)
-            .collect(Collectors.toSet());
+        resolveWithRetry(
+            "mappingRuleIds",
+            () ->
+                List.copyOf(
+                    serviceRegistry
+                        .mappingRuleServices(PhysicalTenantContext.current())
+                        .getMatchingMappingRules(
+                            query.tokenClaims(), CamundaAuthentication.anonymous())
+                        .map(MappingRuleEntity::mappingRuleId)
+                        .collect(Collectors.toSet())));
     if (ids.isEmpty()) {
       // Log only claim keys — values may contain PII (sub, email, scopes, …) and DEBUG can still
       // reach log aggregators.
       LOG.debug("No mappingRules found for claim keys: {}", query.tokenClaims().keySet());
     }
-    return List.copyOf(ids);
+    return ids;
   }
 
   @Override
@@ -93,14 +112,16 @@ public class DefaultMembershipService implements MembershipPort {
           .toList();
     }
     final var owners = buildOwners(query);
-    final var ids =
-        serviceRegistry
-            .groupServices(PhysicalTenantContext.current())
-            .getGroupsByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
-            .stream()
-            .map(GroupEntity::groupId)
-            .collect(Collectors.toSet());
-    return List.copyOf(ids);
+    return resolveWithRetry(
+        "groupIds",
+        () ->
+            List.copyOf(
+                serviceRegistry
+                    .groupServices(PhysicalTenantContext.current())
+                    .getGroupsByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
+                    .stream()
+                    .map(GroupEntity::groupId)
+                    .collect(Collectors.toSet())));
   }
 
   @Override
@@ -109,14 +130,16 @@ public class DefaultMembershipService implements MembershipPort {
     if (!query.resolvedGroupIds().isEmpty()) {
       owners.put(GROUP, new HashSet<>(query.resolvedGroupIds()));
     }
-    final var ids =
-        serviceRegistry
-            .roleServices(PhysicalTenantContext.current())
-            .getRolesByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
-            .stream()
-            .map(RoleEntity::roleId)
-            .collect(Collectors.toSet());
-    return List.copyOf(ids);
+    return resolveWithRetry(
+        "roleIds",
+        () ->
+            List.copyOf(
+                serviceRegistry
+                    .roleServices(PhysicalTenantContext.current())
+                    .getRolesByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
+                    .stream()
+                    .map(RoleEntity::roleId)
+                    .collect(Collectors.toSet())));
   }
 
   @Override
@@ -128,12 +151,45 @@ public class DefaultMembershipService implements MembershipPort {
     if (!query.resolvedRoleIds().isEmpty()) {
       owners.put(EntityType.ROLE, new HashSet<>(query.resolvedRoleIds()));
     }
-    return serviceRegistry
-        .tenantServices(PhysicalTenantContext.current())
-        .getTenantsByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
-        .stream()
-        .map(TenantEntity::tenantId)
-        .toList();
+    return resolveWithRetry(
+        "tenantIds",
+        () ->
+            serviceRegistry
+                .tenantServices(PhysicalTenantContext.current())
+                .getTenantsByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
+                .stream()
+                .map(TenantEntity::tenantId)
+                .toList());
+  }
+
+  /**
+   * Runs {@code lookup}, retrying on transient search failures (see {@link
+   * TransientRetry#isTransient}). Once retries are exhausted, falls back to an empty list so
+   * authorization is still evaluated against direct grants rather than failing the whole request
+   * over an index outage. A non-transient failure propagates unchanged.
+   */
+  private <T> List<T> resolveWithRetry(final String label, final Supplier<List<T>> lookup) {
+    // currentOrNull rather than current: deriving the key must not decide the outcome. A call with
+    // no tenant bound is already doomed — the lookup itself resolves the tenant and throws.
+    final var subject =
+        requireNonNullElse(PhysicalTenantContext.currentOrNull(), "unknown") + "/" + label;
+    final var outage = lookupOutages.computeIfAbsent(subject, s -> new OutageLog(LOG));
+    try {
+      final var ids = Retry.decorateSupplier(MEMBERSHIP_LOOKUP_RETRY, lookup).get();
+      outage.recovery("Resolving {} works again", subject);
+      return ids;
+    } catch (final RuntimeException e) {
+      if (TransientRetry.isTransient(e)) {
+        outage.failure(
+            "Failed to resolve {} after {} attempts, falling back to empty: {}",
+            subject,
+            TransientRetry.MAX_ATTEMPTS,
+            e.getMessage(),
+            e);
+        return List.of();
+      }
+      throw e;
+    }
   }
 
   private EnumMap<EntityType, Set<String>> buildOwners(final MembershipQuery query) {

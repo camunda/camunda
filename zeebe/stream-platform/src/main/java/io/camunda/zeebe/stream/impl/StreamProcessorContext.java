@@ -34,6 +34,14 @@ import org.jspecify.annotations.Nullable;
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
   public static final int DEFAULT_MAX_COMMANDS_IN_BATCH = 100;
+
+  /**
+   * Bounds how far processing runs ahead of the commit index. In healthy operation the queue holds
+   * roughly the records processed within one commit round trip, which is orders of magnitude below
+   * this. It is a safety valve against unbounded memory when commits are slow, not a tuning knob.
+   */
+  public static final int DEFAULT_MAX_PENDING_SIDE_EFFECTS = 1000;
+
   public static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 1000;
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
   private @Nullable ActorControl actor;
@@ -59,6 +67,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
   private @Nullable KeyGeneratorControls keyGeneratorControls;
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
+  private int maxPendingSideEffects = DEFAULT_MAX_PENDING_SIDE_EFFECTS;
   private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
   private EventFilter processingFilter = e -> true;
   private @Nullable ControllableStreamClock clock;
@@ -268,6 +277,15 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public int getMaxCommandsInBatch() {
     return maxCommandsInBatch;
+  }
+
+  public StreamProcessorContext maxPendingSideEffects(final int maxPendingSideEffects) {
+    this.maxPendingSideEffects = maxPendingSideEffects;
+    return this;
+  }
+
+  public int getMaxPendingSideEffects() {
+    return maxPendingSideEffects;
   }
 
   public StreamProcessorContext maxRecoverableRetries(final int maxRecoverableRetries) {

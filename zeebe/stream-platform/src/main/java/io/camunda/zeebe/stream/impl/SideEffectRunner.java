@@ -9,11 +9,13 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.logstreams.storage.LogStorage.CommittedPositionListener;
 import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.PostCommitTask;
 import io.camunda.zeebe.stream.api.ProcessingResponse;
 import io.camunda.zeebe.stream.impl.metrics.ProcessingMetrics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.List;
@@ -27,6 +29,12 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Must run on the Processing State Machine's actor because side effects are not necessarily
  * thread-safe.
+ *
+ * <p>The queue is bounded. Processing reads uncommitted records, so it can run arbitrarily far
+ * ahead of the commit index while commits are slow, and every queued entry retains its responses
+ * and post-commit task closures until it runs. {@link #hasCapacity()} lets the processing state
+ * machine stop reading new records once the queue is full, which bounds that memory. Capacity frees
+ * up on commit, which never depends on further processing, so this cannot deadlock.
  */
 final class SideEffectRunner implements CommittedPositionListener {
   private static final Logger LOG = LoggerFactory.getLogger(SideEffectRunner.class);
@@ -35,20 +43,54 @@ final class SideEffectRunner implements CommittedPositionListener {
   private final ActorControl actor;
   private final ProcessingMetrics processingMetrics;
   private final CommandResponseWriter responseWriter;
+  private final int maxPendingSideEffects;
+  private final Runnable onCapacityAvailable;
   private final Queue<SideEffects> sideEffects;
   private long highestCommittedPosition = StreamProcessor.UNSET_POSITION;
   private boolean executingSideEffects;
+  private volatile boolean capacityExhausted;
+  private volatile long capacityExhaustedSinceMillis;
 
   SideEffectRunner(
       final int partitionId,
       final ActorControl actor,
       final ProcessingMetrics processingMetrics,
-      final CommandResponseWriter responseWriter) {
+      final CommandResponseWriter responseWriter,
+      final int maxPendingSideEffects,
+      final Runnable onCapacityAvailable) {
     this.actor = actor;
     this.processingMetrics = processingMetrics;
     this.responseWriter = responseWriter;
     this.partitionId = partitionId;
+    this.maxPendingSideEffects = maxPendingSideEffects;
+    this.onCapacityAvailable = onCapacityAvailable;
     sideEffects = new ArrayDeque<>();
+  }
+
+  /**
+   * Whether another processing result's side effects fit in the queue.
+   *
+   * <p>Must be called on {@link #actor}'s thread. The processing state machine checks this before
+   * it reads the next record, so the queue never grows beyond {@code maxPendingSideEffects}.
+   */
+  boolean hasCapacity() {
+    return sideEffects.size() < maxPendingSideEffects;
+  }
+
+  /**
+   * How long the queue has been continuously at {@code maxPendingSideEffects}, or {@link
+   * Duration#ZERO} if it currently has room. Distinguishes a stall that has outlasted a normal
+   * commit round trip from the brief, expected waits that happen under healthy operation.
+   *
+   * <p>Must be called on {@link #actor}'s thread to read a value consistent with {@link
+   * #hasCapacity()}; the stream processor's health report calls it from other threads too, where it
+   * still returns a safe, if possibly stale, answer.
+   */
+  Duration capacityExhaustedDuration() {
+    return capacityExhausted
+        ? Duration.ofMillis(
+            Math.max(0, ActorClock.currentTimeMillis() - capacityExhaustedSinceMillis))
+        : Duration.ZERO;
   }
 
   /**
@@ -84,6 +126,12 @@ final class SideEffectRunner implements CommittedPositionListener {
             new AggregatePostCommitTask(partitionId, position, postCommitTasks),
             completionCallback));
     processingMetrics.setPendingSideEffects(sideEffects.size());
+    if (!capacityExhausted && !hasCapacity()) {
+      // Ordered before the flag write below: a reader that observes capacityExhausted == true is
+      // then guaranteed to observe this timestamp too.
+      capacityExhaustedSinceMillis = ActorClock.currentTimeMillis();
+      capacityExhausted = true;
+    }
     executeNextSideEffects();
   }
 
@@ -120,11 +168,20 @@ final class SideEffectRunner implements CommittedPositionListener {
   }
 
   private void completeSideEffects(final SideEffects completedSideEffects) {
+    final var wasFull = !hasCapacity();
     sideEffects.remove();
     processingMetrics.setPendingSideEffects(sideEffects.size());
     executingSideEffects = false;
     completedSideEffects.completionCallback().run();
     executeNextSideEffects();
+    if (wasFull) {
+      capacityExhausted = false;
+      // Processing stopped reading records because the queue was full. Nothing else will wake it:
+      // the records it stopped on are already appended, so no append notification is coming.
+      // Signalling only on the full -> not-full transition keeps this to one job per stall
+      // instead of one per side effect.
+      onCapacityAvailable.run();
+    }
   }
 
   private void sendResponses(final Collection<ProcessingResponse> responses) {

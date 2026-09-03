@@ -58,6 +58,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
@@ -705,23 +706,53 @@ public class ClusterEndpoint {
       @RequestBody final io.camunda.zeebe.management.cluster.AddZoneRequest request,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     try {
-      final var brokerIds = request.getBrokers().stream().map(BrokerId::toString).toList();
-      return withValidMembers(
-          brokerIds,
-          members -> {
-            final var addZoneRequest =
-                new AddZoneRequest(
-                    zoneId,
-                    request.getNumberOfReplicas(),
-                    request.getPriority(),
-                    Set.copyOf(members),
-                    dryRun);
-            return ClusterApiUtils.mapOperationResponse(
-                requestSender.addZone(addZoneRequest).join());
-          });
+      final var brokers = Optional.ofNullable(request.getBrokers()).orElse(List.of());
+      final var numberOfBrokers = Optional.ofNullable(request.getNumberOfBrokers());
+      if (brokers.isEmpty() == numberOfBrokers.isEmpty()) {
+        return invalidRequest("Exactly one of brokers and numberOfBrokers must be set.");
+      }
+      if (numberOfBrokers.isPresent()) {
+        if (numberOfBrokers.get() < 1) {
+          return invalidRequest("numberOfBrokers must be at least 1.");
+        }
+        final List<MemberId> members;
+        try {
+          members = zonedBrokers(zoneId, numberOfBrokers.get());
+        } catch (final IllegalArgumentException invalidZoneId) {
+          return invalidRequest(invalidZoneId.getMessage());
+        }
+        return sendAddZone(zoneId, request, members, dryRun);
+      }
+      final var brokerIds = brokers.stream().map(BrokerId::toString).toList();
+      return withValidMembers(brokerIds, members -> sendAddZone(zoneId, request, members, dryRun));
     } catch (final Exception exception) {
       return ClusterApiUtils.mapError(exception);
     }
+  }
+
+  private ResponseEntity<?> sendAddZone(
+      final String zoneId,
+      final io.camunda.zeebe.management.cluster.AddZoneRequest request,
+      final Collection<MemberId> members,
+      final boolean dryRun) {
+    final var addZoneRequest =
+        new AddZoneRequest(
+            zoneId,
+            request.getNumberOfReplicas(),
+            request.getPriority(),
+            Set.copyOf(members),
+            dryRun);
+    return ClusterApiUtils.mapOperationResponse(requestSender.addZone(addZoneRequest).join());
+  }
+
+  /**
+   * Derives the member ids of a zone's brokers from their count, mirroring how a broker of a
+   * zone-aware cluster derives its own id: node indices are 0-based within the zone.
+   */
+  private static List<MemberId> zonedBrokers(final String zoneId, final int numberOfBrokers) {
+    return IntStream.range(0, numberOfBrokers)
+        .mapToObj(nodeIdx -> MemberId.from(zoneId, nodeIdx))
+        .toList();
   }
 
   /**

@@ -37,6 +37,9 @@
       MAX_TOOL_CALLS,
       INPUT_TOKENS,
       OUTPUT_TOKENS,
+      REASONING_TOKEN_COUNT,
+      CACHE_CREATION_TOKEN_COUNT,
+      CACHE_READ_TOKEN_COUNT,
       MODEL_CALLS,
       TOOL_CALLS,
       TOOLS,
@@ -65,6 +68,9 @@
       #{maxToolCalls},
       #{inputTokens},
       #{outputTokens},
+      #{reasoningTokenCount},
+      #{cacheCreationTokenCount},
+      #{cacheReadTokenCount},
       #{modelCalls},
       #{toolCalls},
       #{tools, jdbcType=CLOB},
@@ -83,25 +89,28 @@
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
     UPDATE ${prefix}AGENT_INSTANCE
     SET
-      AGENT_DEFINITION_KEY            = #{agentDefinitionKey},
-      PROCESS_DEFINITION_ID           = #{processDefinitionId},
-      PROCESS_DEFINITION_KEY          = #{processDefinitionKey},
-      PROCESS_DEFINITION_VERSION      = #{processDefinitionVersion},
-      PROCESS_DEFINITION_VERSION_TAG  = #{processDefinitionVersionTag},
-      ELEMENT_ID                      = #{elementId},
-      STATUS                          = #{status},
-      MODEL                           = #{model},
-      PROVIDER                        = #{provider},
-      SYSTEM_PROMPT                   = #{systemPrompt, jdbcType=CLOB},
-      MAX_TOKENS                      = #{maxTokens},
-      MAX_MODEL_CALLS                 = #{maxModelCalls},
-      MAX_TOOL_CALLS                  = #{maxToolCalls},
-      INPUT_TOKENS                    = #{inputTokens},
-      OUTPUT_TOKENS                   = #{outputTokens},
-      MODEL_CALLS                     = #{modelCalls},
-      TOOL_CALLS                      = #{toolCalls},
-      TOOLS                           = #{tools, jdbcType=CLOB},
-      LAST_UPDATED_DATE               = #{lastUpdatedDate, jdbcType=TIMESTAMP}
+      AGENT_DEFINITION_KEY           = #{agentDefinitionKey},
+      PROCESS_DEFINITION_ID          = #{processDefinitionId},
+      PROCESS_DEFINITION_KEY         = #{processDefinitionKey},
+      PROCESS_DEFINITION_VERSION     = #{processDefinitionVersion},
+      PROCESS_DEFINITION_VERSION_TAG = #{processDefinitionVersionTag},
+      ELEMENT_ID                     = #{elementId},
+      STATUS                         = #{status},
+      MODEL                          = #{model},
+      PROVIDER                       = #{provider},
+      SYSTEM_PROMPT                  = #{systemPrompt, jdbcType=CLOB},
+      MAX_TOKENS                     = #{maxTokens},
+      MAX_MODEL_CALLS                = #{maxModelCalls},
+      MAX_TOOL_CALLS                 = #{maxToolCalls},
+      INPUT_TOKENS                   = #{inputTokens},
+      OUTPUT_TOKENS                  = #{outputTokens},
+      REASONING_TOKEN_COUNT          = #{reasoningTokenCount},
+      CACHE_CREATION_TOKEN_COUNT     = #{cacheCreationTokenCount},
+      CACHE_READ_TOKEN_COUNT         = #{cacheReadTokenCount},
+      MODEL_CALLS                    = #{modelCalls},
+      TOOL_CALLS                     = #{toolCalls},
+      TOOLS                          = #{tools, jdbcType=CLOB},
+      LAST_UPDATED_DATE              = #{lastUpdatedDate, jdbcType=TIMESTAMP}
       <if test="completionDate != null">
         , COMPLETION_DATE = #{completionDate, jdbcType=TIMESTAMP}
       </if>
@@ -178,6 +187,9 @@
       <arg column="MAX_TOOL_CALLS" javaType="_int" name="maxToolCalls"/>
       <arg column="INPUT_TOKENS" javaType="_long" name="inputTokens"/>
       <arg column="OUTPUT_TOKENS" javaType="_long" name="outputTokens"/>
+      <arg column="REASONING_TOKEN_COUNT" javaType="_long" name="reasoningTokenCount"/>
+      <arg column="CACHE_CREATION_TOKEN_COUNT" javaType="_long" name="cacheCreationTokenCount"/>
+      <arg column="CACHE_READ_TOKEN_COUNT" javaType="_long" name="cacheReadTokenCount"/>
       <arg column="MODEL_CALLS" javaType="_int" name="modelCalls"/>
       <arg column="TOOL_CALLS" javaType="_int" name="toolCalls"/>
       <arg column="TOOLS" javaType="java.lang.String" name="tools"/>
@@ -220,6 +232,9 @@
             ai.MAX_TOOL_CALLS,
             ai.INPUT_TOKENS,
             ai.OUTPUT_TOKENS,
+            ai.REASONING_TOKEN_COUNT,
+            ai.CACHE_CREATION_TOKEN_COUNT,
+            ai.CACHE_READ_TOKEN_COUNT,
             ai.MODEL_CALLS,
             ai.TOOL_CALLS,
             ai.TOOLS,

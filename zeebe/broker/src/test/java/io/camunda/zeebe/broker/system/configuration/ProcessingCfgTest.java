@@ -145,6 +145,70 @@ final class ProcessingCfgTest {
   }
 
   @Test
+  void shouldUseDefaultMaxPendingSideEffects() {
+    // given
+    final var cfg = new ProcessingCfg();
+
+    // when
+    final int limit = cfg.getMaxPendingSideEffects();
+
+    // then
+    assertThat(limit).isEqualTo(1000);
+  }
+
+  @Test
+  void shouldSetMaxPendingSideEffects() {
+    // given
+    final var cfg = new ProcessingCfg();
+    cfg.setMaxPendingSideEffects(50);
+
+    // when
+    final int limit = cfg.getMaxPendingSideEffects();
+
+    // then
+    assertThat(limit).isEqualTo(50);
+  }
+
+  @Test
+  void shouldSetMaxPendingSideEffectsFromConfig() {
+    // given
+    final var cfg =
+        TestConfigReader.readConfig("processing-cfg", Collections.emptyMap()).getProcessing();
+
+    // when
+    final int limit = cfg.getMaxPendingSideEffects();
+
+    // then
+    assertThat(limit).isEqualTo(250);
+  }
+
+  @Test
+  void shouldSetMaxPendingSideEffectsFromEnvironment() {
+    // given
+    final var environment =
+        Collections.singletonMap("zeebe.broker.processing.maxPendingSideEffects", "75");
+    final var cfg = TestConfigReader.readConfig("processing-cfg", environment).getProcessing();
+
+    // when
+    final var limit = cfg.getMaxPendingSideEffects();
+
+    // then
+    assertThat(limit).isEqualTo(75);
+  }
+
+  @Test
+  void shouldRejectInvalidMaxPendingSideEffects() {
+    // given
+    final var environment =
+        Collections.singletonMap("zeebe.broker.processing.maxPendingSideEffects", "0");
+
+    // then
+    assertThatThrownBy(() -> TestConfigReader.readConfig("processing-cfg", environment))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("maxPendingSideEffects must be >= 1");
+  }
+
+  @Test
   void shouldSetSkipPositions() {
     // given
     final var cfg = new ProcessingCfg();

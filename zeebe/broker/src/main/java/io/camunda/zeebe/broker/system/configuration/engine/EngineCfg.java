@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
+import io.camunda.zeebe.engine.EngineConfiguration.OutputMappingMode;
 import org.jspecify.annotations.Nullable;
 
 public final class EngineCfg implements ConfigurationEntry {
@@ -28,6 +29,9 @@ public final class EngineCfg implements ConfigurationEntry {
   private EngineConfiguration.InputMappingMode inputMappingMode =
       EngineConfiguration.InputMappingMode.COMBINED;
   private @Nullable InputMappingMode inputComparisonMode = null;
+  private EngineConfiguration.OutputMappingMode outputMappingMode =
+      EngineConfiguration.OutputMappingMode.COMBINED;
+  private @Nullable OutputMappingMode outputComparisonMode = null;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
   private ExpressionCfg expression = new ExpressionCfg();
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
@@ -140,6 +144,22 @@ public final class EngineCfg implements ConfigurationEntry {
     this.inputComparisonMode = inputComparisonMode;
   }
 
+  public EngineConfiguration.OutputMappingMode getOutputMappingMode() {
+    return outputMappingMode;
+  }
+
+  public void setOutputMappingMode(final EngineConfiguration.OutputMappingMode outputMappingMode) {
+    this.outputMappingMode = outputMappingMode;
+  }
+
+  public @Nullable OutputMappingMode getOutputComparisonMode() {
+    return outputComparisonMode;
+  }
+
+  public void setOutputComparisonMode(final @Nullable OutputMappingMode outputComparisonMode) {
+    this.outputComparisonMode = outputComparisonMode;
+  }
+
   public GlobalListenersCfg getGlobalListeners() {
     return globalListeners;
   }
@@ -225,6 +245,10 @@ public final class EngineCfg implements ConfigurationEntry {
         + inputMappingMode
         + ", inputComparisonMode="
         + inputComparisonMode
+        + ", outputMappingMode="
+        + outputMappingMode
+        + ", outputComparisonMode="
+        + outputComparisonMode
         + '}';
   }
 
@@ -260,6 +284,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setSecretResolutionRetryMaxDelay(secretResolution.getRetryMaxDelay())
         .setSecretResolutionRetryBackoffFactor(secretResolution.getRetryBackoffFactor())
         .setSecretResolutionBatchLimit(secretResolution.getBatchResolutionLimit())
+        .setSecretResolutionWakeDelay(secretResolution.getWakeDelay())
         .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
         .setJobMetricsExportInterval(jobMetrics.getExportInterval())
         .setJobMetricsExportEnabled(jobMetrics.isEnabled())
@@ -288,6 +313,8 @@ public final class EngineCfg implements ConfigurationEntry {
         .setArchiverlessEnabled(storageOrdinals.isEnableArchiverless())
         .setFixedStorageOrdinalKey(storageOrdinals.getFixedStorageOrdinalKey())
         .setInputMappingMode(inputMappingMode)
-        .setInputComparisonMode(inputComparisonMode);
+        .setInputComparisonMode(inputComparisonMode)
+        .setOutputMappingMode(outputMappingMode)
+        .setOutputComparisonMode(outputComparisonMode);
   }
 }

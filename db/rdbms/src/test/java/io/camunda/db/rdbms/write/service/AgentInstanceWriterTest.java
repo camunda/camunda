@@ -310,6 +310,65 @@ class AgentInstanceWriterTest {
         .update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.update"), any());
   }
 
+  @Test
+  void shouldMergeMetricsIntoRowInsertWhenMergedBeforeFlush() throws Exception {
+    // given: a real ExecutionQueue so the actual merge logic (UpsertMerger) runs - an update that
+    // coalesces into a not-yet-flushed create() must carry all seven metrics fields onto the
+    // pending INSERT, not reset them to the (empty) ones from create(). Every field gets a
+    // distinct non-zero value so a key/getter mix-up in the merge would fail the test instead of
+    // comparing 0 against 0.
+    final var session = mock(SqlSession.class);
+    final var sqlSessionFactory = mock(SqlSessionFactory.class);
+    final var metrics = mock(RdbmsWriterMetrics.class);
+    when(sqlSessionFactory.openSession(
+            ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED))
+        .thenReturn(session);
+    final var connection = mock(Connection.class);
+    when(connection.getAutoCommit()).thenReturn(false);
+    when(session.getConnection()).thenReturn(connection);
+
+    final var realExecutionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 0, metrics);
+    final var realWriter =
+        new AgentInstanceWriter(realExecutionQueue, mapper, vendorDatabaseProperties);
+
+    final var created = buildModel(6L, List.of(500L));
+    final var updated =
+        new AgentInstanceDbModel.Builder()
+            .agentInstanceKey(6L)
+            .status(AgentInstanceStatus.COMPLETED)
+            .inputTokens(44L)
+            .outputTokens(9L)
+            .reasoningTokenCount(11L)
+            .cacheCreationTokenCount(22L)
+            .cacheReadTokenCount(33L)
+            .modelCalls(5)
+            .toolCalls(6)
+            .lastUpdatedDate(OffsetDateTime.now())
+            .elementInstanceKeys(List.of(500L))
+            .build();
+
+    // when
+    realWriter.create(created);
+    realWriter.update(updated);
+    realExecutionQueue.flush();
+
+    // then: the merged row INSERT carries all metrics fields from the update, not the (empty)
+    // ones from create() - no separate UPDATE statement was needed
+    final var rowInsertParam = ArgumentCaptor.forClass(Object.class);
+    verify(session)
+        .update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.insert"), rowInsertParam.capture());
+    final var mergedRow = (AgentInstanceDbModel) rowInsertParam.getValue();
+    assertThat(mergedRow.inputTokens()).isEqualTo(44L);
+    assertThat(mergedRow.outputTokens()).isEqualTo(9L);
+    assertThat(mergedRow.reasoningTokenCount()).isEqualTo(11L);
+    assertThat(mergedRow.cacheCreationTokenCount()).isEqualTo(22L);
+    assertThat(mergedRow.cacheReadTokenCount()).isEqualTo(33L);
+    assertThat(mergedRow.modelCalls()).isEqualTo(5);
+    assertThat(mergedRow.toolCalls()).isEqualTo(6);
+    verify(session, never())
+        .update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.update"), any());
+  }
+
   private AgentInstanceDbModel buildModel(final long key, final List<Long> elementInstanceKeys) {
     return new AgentInstanceDbModel.Builder()
         .agentInstanceKey(key)

@@ -239,6 +239,9 @@ jobs:
           max_attempts: "2"
           timeout_minutes: "3"
       - name: Unit tests
+        env:
+          # Capture failure screenshots even when CI contention delays web font loading.
+          PW_TEST_SCREENSHOT_NO_FONTS_READY: "1"
         run: npm run test:unit
       - name: Upload failure artifacts
         if: ${{ failure() }}

@@ -16,20 +16,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
 import io.camunda.client.api.command.AgentInstanceHistoryContent.ObjectContent;
+import io.camunda.client.api.command.AgentInstanceHistoryContent.TextContent;
 import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.AgentInstanceHistoryMetrics;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
+import io.camunda.client.api.search.filter.AgentInstanceHistoryFilter;
 import io.camunda.client.api.search.response.AgentInstanceHistory;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,7 @@ public class AgentInstanceHistorySearchIT {
 
   private static final String AGENT_ELEMENT_ID = "agentHistorySearchElement";
   private static final String PROCESS_ID = "agentHistorySearchProcess";
+  private static final String AGENT_JOB_TYPE = "agent-task";
 
   private static CamundaClient camundaClient;
 
@@ -58,7 +61,7 @@ public class AgentInstanceHistorySearchIT {
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .zeebeJobType(AGENT_JOB_TYPE)
             .zeebeAiAgentSubProcessDefinition()
             .endEvent("end")
             .done();
@@ -86,7 +89,7 @@ public class AgentInstanceHistorySearchIT {
     final var activatedJobs =
         camundaClient
             .newActivateJobsCommand()
-            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .jobType(AGENT_JOB_TYPE)
             .maxJobsToActivate(1)
             .withLease(true)
             .timeout(Duration.ofMinutes(5))
@@ -156,6 +159,9 @@ public class AgentInstanceHistorySearchIT {
                             new AgentInstanceHistoryMetrics()
                                 .inputTokens(512L)
                                 .outputTokens(148L)
+                                .reasoningTokenCount(64L)
+                                .cacheCreationTokenCount(32L)
+                                .cacheReadTokenCount(16L)
                                 .durationMs(1200L)),
                     new AgentInstanceHistoryItem()
                         .historyItemId(UUID.randomUUID().toString())
@@ -346,21 +352,254 @@ public class AgentInstanceHistorySearchIT {
               assertThat(m.getOutputTokens())
                   .as("outputTokens must match the value provided at creation")
                   .isEqualTo(148L);
+              assertThat(m.getReasoningTokenCount())
+                  .as("reasoningTokenCount must match the value provided at creation")
+                  .isEqualTo(64L);
+              assertThat(m.getCacheCreationTokenCount())
+                  .as("cacheCreationTokenCount must match the value provided at creation")
+                  .isEqualTo(32L);
+              assertThat(m.getCacheReadTokenCount())
+                  .as("cacheReadTokenCount must match the value provided at creation")
+                  .isEqualTo(16L);
               assertThat(m.getDurationMs())
                   .as("durationMs must match the value provided at creation")
                   .isEqualTo(1200L);
             });
   }
 
+  @Test
+  void shouldCreateAgentInstanceWithMultipleHistoryItemsInOneBatch() {
+    // given - an agent job for which we can create an agent instance
+    final var job = startAndActivateAgentJob();
+
+    // when — a CONFIGURATION item and a USER item are submitted together in ONE CREATE call,
+    // proving CREATE can batch more than a single history item at a time.
+    final var createResponse =
+        camundaClient
+            .newCreateAgentInstanceCommand()
+            .elementInstanceKey(job.elementInstanceKey())
+            .jobKey(job.jobKey())
+            .jobLease(job.jobLease())
+            .history(
+                List.of(
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.CONFIGURATION)
+                        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T09:59:00Z"))
+                        .model("gpt-4o")
+                        .provider("openai")
+                        .systemPrompt(
+                            List.of(
+                                AgentInstanceHistoryContent.text("You are a helpful assistant."))),
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.USER)
+                        .content(List.of(AgentInstanceHistoryContent.text("Hello there")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T10:00:00Z"))))
+            .send()
+            .join();
+    final long agentInstanceKey = createResponse.getAgentInstanceKey();
+    final long configurationItemKey = createResponse.getCreatedHistory().get(0).getHistoryItemKey();
+    final long userItemKey = createResponse.getCreatedHistory().get(1).getHistoryItemKey();
+
+    waitForAgentInstanceToBeIndexed(camundaClient, agentInstanceKey);
+
+    camundaClient.newCompleteCommand(job.jobKey()).withLeaseToken(job.jobLease()).execute();
+    waitForHistoryItemsToBeIndexed(camundaClient, agentInstanceKey, 2);
+
+    // then
+    final var response =
+        camundaClient
+            .newAgentInstanceHistorySearchRequest(agentInstanceKey)
+            .sort(s -> s.producedAt().desc())
+            .execute();
+
+    assertThat(response.items())
+        .as("both items from the single CREATE batch must come back, ordered by producedAt")
+        .extracting(AgentInstanceHistory::getHistoryItemKey)
+        .containsExactly(userItemKey, configurationItemKey);
+    assertThat(response.items())
+        .as("both items from the single CREATE batch must come back, ordered by producedAt")
+        .extracting(AgentInstanceHistory::getRole)
+        .containsExactly(AgentInstanceHistoryRole.USER, AgentInstanceHistoryRole.CONFIGURATION);
+    assertThat(response.items().getFirst().getContent())
+        .as("the USER item's submitted content must be preserved")
+        .extracting(c -> ((TextContent) c).getText())
+        .containsExactly("Hello there");
+  }
+
+  @Test
+  void shouldUpdateAgentInstanceWithMultipleHistoryItemsInOneBatch() {
+    // given - an agent job for which we can create an agent instance
+    final var job = startAndActivateAgentJob();
+
+    final var createResponse =
+        camundaClient
+            .newCreateAgentInstanceCommand()
+            .elementInstanceKey(job.elementInstanceKey())
+            .jobKey(job.jobKey())
+            .jobLease(job.jobLease())
+            .history(
+                List.of(
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.CONFIGURATION)
+                        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T09:59:00Z"))
+                        .model("gpt-4o")
+                        .provider("openai")
+                        .systemPrompt(
+                            List.of(
+                                AgentInstanceHistoryContent.text("You are a helpful assistant.")))))
+            .send()
+            .join();
+    final long agentInstanceKey = createResponse.getAgentInstanceKey();
+    waitForAgentInstanceToBeIndexed(camundaClient, agentInstanceKey);
+
+    // when — three items of different roles are submitted together in ONE UPDATE call.
+    final var updatedHistory =
+        camundaClient
+            .newUpdateAgentInstanceCommand(agentInstanceKey)
+            .elementInstanceKey(job.elementInstanceKey())
+            .jobKey(job.jobKey())
+            .jobLease(job.jobLease())
+            .history(
+                List.of(
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.USER)
+                        .content(List.of(AgentInstanceHistoryContent.text("What's the weather?")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T10:00:00Z")),
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.ASSISTANT)
+                        .content(List.of(AgentInstanceHistoryContent.text("Let me check that.")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T10:01:00Z"))
+                        .metrics(
+                            new AgentInstanceHistoryMetrics()
+                                .inputTokens(256L)
+                                .outputTokens(64L)
+                                .durationMs(800L)),
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.TOOL_RESULT)
+                        .content(List.of(AgentInstanceHistoryContent.object("sunny, 22C")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T10:02:00Z"))))
+            .send()
+            .join()
+            .getCreatedHistory();
+    final long userItemKey = updatedHistory.get(0).getHistoryItemKey();
+    final long assistantItemKey = updatedHistory.get(1).getHistoryItemKey();
+    final long toolResultItemKey = updatedHistory.get(2).getHistoryItemKey();
+
+    // Complete the job so all three PENDING items commit and become searchable.
+    camundaClient.newCompleteCommand(job.jobKey()).withLeaseToken(job.jobLease()).execute();
+    waitForHistoryItemsToBeIndexed(
+        camundaClient,
+        agentInstanceKey,
+        f -> f.role(r -> r.neq(AgentInstanceHistoryRole.CONFIGURATION)),
+        3);
+
+    // then
+    final var response =
+        camundaClient
+            .newAgentInstanceHistorySearchRequest(agentInstanceKey)
+            .filter(f -> f.role(r -> r.neq(AgentInstanceHistoryRole.CONFIGURATION)))
+            .sort(s -> s.producedAt().asc())
+            .execute();
+
+    assertThat(response.items())
+        .as("all three items from the single UPDATE batch must come back, ordered by producedAt")
+        .extracting(AgentInstanceHistory::getHistoryItemKey)
+        .containsExactly(userItemKey, assistantItemKey, toolResultItemKey);
+    assertThat(response.items())
+        .as("all three items from the single UPDATE batch must come back, ordered by producedAt")
+        .extracting(AgentInstanceHistory::getRole)
+        .containsExactly(
+            AgentInstanceHistoryRole.USER,
+            AgentInstanceHistoryRole.ASSISTANT,
+            AgentInstanceHistoryRole.TOOL_RESULT);
+    final var metrics = response.items().stream().map(AgentInstanceHistory::getMetrics).toList();
+    assertThat(metrics.get(0)).as("USER item must have no metrics").isNull();
+    assertThat(metrics.get(1))
+        .as("ASSISTANT item must return the metrics submitted with it")
+        .isNotNull();
+    assertThat(metrics.get(1).getInputTokens()).isEqualTo(256L);
+    assertThat(metrics.get(1).getOutputTokens()).isEqualTo(64L);
+    assertThat(metrics.get(1).getDurationMs()).isEqualTo(800L);
+    assertThat(metrics.get(2)).as("TOOL_RESULT item must have no metrics").isNull();
+  }
+
+  /**
+   * Starts a new instance of the class's process and activates its agent job — but does not create
+   * the agent instance itself, leaving each caller free to submit its own CREATE batch. Shared by
+   * the two tests above so each can set up its own agent instance without touching the class's
+   * shared {@code agentInstanceKey}/{@code elementInstanceKey} fields, which the other tests in
+   * this class assert on.
+   */
+  private static AgentJob startAndActivateAgentJob() {
+    final var pi = startProcessInstance(camundaClient, PROCESS_ID);
+    final long processInstanceKey = pi.getProcessInstanceKey();
+
+    waitForElementInstances(
+        camundaClient,
+        f -> f.elementId(AGENT_ELEMENT_ID).processInstanceKey(processInstanceKey),
+        1);
+
+    final long elementInstanceKey =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementId(AGENT_ELEMENT_ID).processInstanceKey(processInstanceKey))
+            .execute()
+            .items()
+            .getFirst()
+            .getElementInstanceKey();
+
+    final var activatedJobs =
+        camundaClient
+            .newActivateJobsCommand()
+            .jobType(AGENT_JOB_TYPE)
+            .maxJobsToActivate(1)
+            .withLease(true)
+            .timeout(Duration.ofMinutes(5))
+            .send()
+            .join()
+            .getJobs();
+    assertThat(activatedJobs)
+        .as("expected to activate one agent job for process instance %d", processInstanceKey)
+        .isNotEmpty();
+
+    return new AgentJob(
+        elementInstanceKey, activatedJobs.get(0).getKey(), activatedJobs.get(0).getLeaseToken());
+  }
+
   private static void waitForHistoryItemsToBeIndexed(
       final CamundaClient client, final long agentKey, final int expectedCount) {
+    waitForHistoryItemsToBeIndexed(client, agentKey, f -> {}, expectedCount);
+  }
+
+  private static void waitForHistoryItemsToBeIndexed(
+      final CamundaClient client,
+      final long agentKey,
+      final Consumer<AgentInstanceHistoryFilter> filter,
+      final int expectedCount) {
     Awaitility.await("agent history indexed")
         .atMost(Duration.ofSeconds(30))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var response = client.newAgentInstanceHistorySearchRequest(agentKey).execute();
+              final var response =
+                  client.newAgentInstanceHistorySearchRequest(agentKey).filter(filter).execute();
               assertThat(response.items()).hasSizeGreaterThanOrEqualTo(expectedCount);
             });
   }
+
+  private record AgentJob(long elementInstanceKey, long jobKey, String jobLease) {}
 }

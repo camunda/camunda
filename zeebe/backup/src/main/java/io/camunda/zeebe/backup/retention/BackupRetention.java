@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.retention;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
@@ -198,7 +200,7 @@ public class BackupRetention extends Actor {
           if (error != null) {
             retentionFuture.completeExceptionally(error);
           } else {
-            retentionFuture.complete(null);
+            retentionFuture.complete(unit());
           }
         });
     return retentionFuture;
@@ -224,7 +226,13 @@ public class BackupRetention extends Actor {
         new BackupIdentifierWildcardImpl(
             Optional.empty(), Optional.of(partitionId), CheckpointPattern.any());
     final ActorFuture<Collection<BackupStatus>> requestFuture = createFuture();
-    backupStore
+    final var store = backupStore;
+    if (store == null) {
+      requestFuture.completeExceptionally(
+          new IllegalStateException("backupStore must be initialized before retention runs"));
+      return requestFuture;
+    }
+    store
         .list(identifier)
         .thenApplyAsync(
             backups -> backups.stream().sorted(BACKUP_STATUS_COMPARATOR).toList(), actor)
@@ -255,12 +263,12 @@ public class BackupRetention extends Actor {
     long firstAvailableBackupInNewRange = -1L;
     final var deletableBackups = new ArrayList<BackupIdentifier>();
 
-    final Instant windowBound = calculateWindowBound(latestCompletedBackup.get());
+    final var windowBound = calculateWindowBound(latestCompletedBackup.get());
 
     for (final var backup : backups) {
       final var timestamp = backupTimestamp(backup);
 
-      if (timestamp.isBefore(windowBound)) {
+      if (timestamp != null && windowBound != null && timestamp.isBefore(windowBound)) {
         if (backup.id().checkpointId() != latestCompletedBackup.get().id().checkpointId()) {
           deletableBackups.add(backup.id());
         } else {
@@ -295,8 +303,13 @@ public class BackupRetention extends Actor {
     return backups.stream().filter(backup -> backupTimestamp(backup) != null).toList();
   }
 
-  private Instant calculateWindowBound(final BackupStatus latestCompletedBackup) {
-    return backupTimestamp(latestCompletedBackup).minusSeconds(retentionWindow.toSeconds());
+  private @Nullable Instant calculateWindowBound(final BackupStatus latestCompletedBackup) {
+    final var completedTimestamp = backupTimestamp(latestCompletedBackup);
+    if (completedTimestamp != null) {
+      return completedTimestamp.minusSeconds(retentionWindow.toSeconds());
+    } else {
+      return null;
+    }
   }
 
   /**
@@ -312,7 +325,7 @@ public class BackupRetention extends Actor {
   private CompletableActorFuture<Void> writeDeleteCommands(final RetentionContext context) {
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     if (context.deletableBackups.isEmpty()) {
-      future.complete(null);
+      future.complete(unit());
       return future;
     }
 
@@ -373,7 +386,9 @@ public class BackupRetention extends Actor {
     }
   }
 
-  private Instant backupTimestamp(final BackupStatus backup) {
+  // `@Nullable` had to be added manually:
+  // NullAway cannot infer that `orElseGet(() -> null)` is nullable
+  private @Nullable Instant backupTimestamp(final BackupStatus backup) {
     return backup
         .descriptor()
         .map(BackupDescriptor::checkpointTimestamp)
@@ -390,13 +405,13 @@ public class BackupRetention extends Actor {
       List<BackupIdentifier> deletableBackups,
       long earliestBackupInNewRange,
       int partitionId,
-      Instant windowBoundary) {
+      @Nullable Instant windowBoundary) {
 
     static RetentionContext init(
         final int partitionId,
         final List<BackupIdentifier> deletableBackups,
         final long earliestBackupInNewRange,
-        final Instant windowBoundary) {
+        final @Nullable Instant windowBoundary) {
       return new RetentionContext(
           deletableBackups, earliestBackupInNewRange, partitionId, windowBoundary);
     }

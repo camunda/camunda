@@ -37,11 +37,11 @@ import org.jspecify.annotations.NullMarked;
  * {@code "1"} rather than being reparsed as a number by FEEL.
  */
 @NullMarked
-public final class CombinedMappingResolver implements MappingResolver {
+public final class CombinedInputMappingResolver implements MappingResolver<InputMappings> {
 
   @Override
-  public Either<Failure, DirectBuffer> resolveInputMappings(
-      final InputMappings inputMappings, final MappingExpressionProcessor processor) {
-    return processor.evaluateVariableMappingExpression(inputMappings.combinedExpression());
+  public Either<Failure, DirectBuffer> resolve(
+      final InputMappings mappings, final MappingExpressionProcessor processor) {
+    return processor.evaluateVariableMappingExpression(mappings.combinedExpression());
   }
 }

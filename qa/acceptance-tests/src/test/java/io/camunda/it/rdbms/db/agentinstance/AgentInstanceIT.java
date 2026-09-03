@@ -250,6 +250,10 @@ public class AgentInstanceIT {
     assertThat(entity.limits().maxToolCalls()).isEqualTo(dbModel.maxToolCalls());
     assertThat(entity.metrics().inputTokens()).isEqualTo(dbModel.inputTokens());
     assertThat(entity.metrics().outputTokens()).isEqualTo(dbModel.outputTokens());
+    assertThat(entity.metrics().reasoningTokenCount()).isEqualTo(dbModel.reasoningTokenCount());
+    assertThat(entity.metrics().cacheCreationTokenCount())
+        .isEqualTo(dbModel.cacheCreationTokenCount());
+    assertThat(entity.metrics().cacheReadTokenCount()).isEqualTo(dbModel.cacheReadTokenCount());
     assertThat(entity.metrics().modelCalls()).isEqualTo(dbModel.modelCalls());
     assertThat(entity.metrics().toolCalls()).isEqualTo(dbModel.toolCalls());
   }

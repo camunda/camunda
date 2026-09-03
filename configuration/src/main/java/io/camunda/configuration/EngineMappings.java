@@ -16,6 +16,7 @@ import org.jspecify.annotations.Nullable;
 public class EngineMappings {
 
   private InputMode inputMode = InputMode.COMBINED;
+  private OutputMode outputMode = OutputMode.COMBINED;
 
   /**
    * When set, evaluates input mappings with both the primary resolver ({@code inputMode}) and this
@@ -27,15 +28,30 @@ public class EngineMappings {
    */
   @Nullable private InputMode inputComparisonMode = null;
 
+  /**
+   * When set, evaluates output mappings with both the primary resolver ({@code outputMode}) and
+   * this comparison resolver, then logs a warning if their results differ. Intended for diagnostic
+   * use only: each completion evaluates mappings with both resolvers and compares the result
+   * documents, which adds overhead for large mapping sets.
+   *
+   * <p>Has no effect when null (default) or when set to the same value as {@code outputMode}.
+   */
+  @Nullable private OutputMode outputComparisonMode = null;
+
   public enum InputMode {
+    ORDERED,
+    COMBINED
+  }
+
+  public enum OutputMode {
     ORDERED,
     COMBINED
   }
 
   /**
    * Controls the input-mapping resolver used during process instance execution. When set to {@code
-   * COMBINED}, the engine uses {@code CombinedMappingResolver} which merges all input mappings into
-   * a single combined result. When set to {@code ORDERED}, the engine uses {@code
+   * COMBINED}, the engine uses {@code CombinedInputMappingResolver} which merges all input mappings
+   * into a single combined result. When set to {@code ORDERED}, the engine uses {@code
    * OrderedMappingResolver} which applies mappings in modeling order.
    *
    * <p>This configuration can be accessed via the environment variable: <br>
@@ -59,12 +75,32 @@ public class EngineMappings {
     this.inputComparisonMode = inputComparisonMode;
   }
 
+  public OutputMode getOutputMode() {
+    return outputMode;
+  }
+
+  public void setOutputMode(final OutputMode outputMode) {
+    this.outputMode = outputMode;
+  }
+
+  public @Nullable OutputMode getOutputComparisonMode() {
+    return outputComparisonMode;
+  }
+
+  public void setOutputComparisonMode(final @Nullable OutputMode outputComparisonMode) {
+    this.outputComparisonMode = outputComparisonMode;
+  }
+
   @Override
   public String toString() {
     return "EngineMappings{inputMode="
         + inputMode
         + ", inputComparisonMode="
         + inputComparisonMode
+        + ", outputMode="
+        + outputMode
+        + ", outputComparisonMode="
+        + outputComparisonMode
         + '}';
   }
 }

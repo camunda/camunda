@@ -11,6 +11,13 @@ import type {QueryDecisionDefinitionsResponseBody} from '@camunda/camunda-api-zo
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
+import {queries} from '#/shared/http/queries';
+
+type DecisionDefinitionSelectionOptions = {
+	decisionDefinitionId?: string;
+	decisionDefinitionVersion?: number;
+	tenantId?: string;
+};
 
 function decisionDefinitionsOptions(tenantId?: string) {
 	return queryOptions({
@@ -27,4 +34,23 @@ function decisionDefinitionsOptions(tenantId?: string) {
 	});
 }
 
-export {decisionDefinitionsOptions};
+function decisionDefinitionSelectionOptions({
+	decisionDefinitionId,
+	decisionDefinitionVersion,
+	tenantId,
+}: DecisionDefinitionSelectionOptions) {
+	return {
+		...queries.queryDecisionDefinitions({
+			filter: {
+				decisionDefinitionId,
+				version: decisionDefinitionVersion,
+				tenantId,
+			},
+			page: {limit: decisionDefinitionVersion === undefined ? 1 : 2},
+			sort: [{field: 'version', order: 'desc'}],
+		}),
+		staleTime: 5000,
+	};
+}
+
+export {decisionDefinitionsOptions, decisionDefinitionSelectionOptions};

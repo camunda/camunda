@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.job.LeaseTokens;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -69,6 +70,7 @@ public class BpmnJobActivationBehavior {
   private static final Logger LOGGER = LoggerFactory.getLogger(BpmnJobActivationBehavior.class);
 
   private final JobStreamer jobStreamer;
+  private final SecretResolutionScheduler secretResolutionScheduler;
   private final JobVariablesCollector jobVariablesCollector;
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
@@ -91,8 +93,10 @@ public class BpmnJobActivationBehavior {
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final SecretStoreRegistry secretStoreRegistry,
-      final BpmnIncidentBehavior incidentBehavior) {
+      final BpmnIncidentBehavior incidentBehavior,
+      final SecretResolutionScheduler secretResolutionScheduler) {
     this.jobStreamer = jobStreamer;
+    this.secretResolutionScheduler = secretResolutionScheduler;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
     jobVariablesCollector = new JobVariablesCollector(state);
@@ -273,6 +277,9 @@ public class BpmnJobActivationBehavior {
       parked = true;
     }
     if (parked) {
+      // once per activation rather than per reference: the flag it sets is consumed by whichever
+      // cycle runs next, so setting it more than once per activation adds nothing
+      secretResolutionScheduler.stayAwake();
       jobMetrics.countJobEvent(JobAction.SKIPPED_UNCACHED_SECRET, jobKind, jobType);
     } else {
       notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);

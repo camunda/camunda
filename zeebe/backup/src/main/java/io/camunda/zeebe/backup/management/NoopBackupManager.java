@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.management;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupRange;
@@ -68,7 +70,7 @@ public class NoopBackupManager implements BackupManager {
 
   @Override
   public ActorFuture<Void> closeAsync() {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed(unit());
   }
 
   @Override

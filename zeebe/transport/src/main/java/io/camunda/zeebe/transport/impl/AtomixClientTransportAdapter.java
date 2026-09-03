@@ -62,6 +62,14 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       final boolean shouldRetry,
       final Duration timeout) {
 
+    final var requestFuture = new CompletableActorFuture<DirectBuffer>();
+    final var partitionGroup = clientRequest.getPartitionGroup();
+    if (partitionGroup == null) {
+      requestFuture.completeExceptionally(
+          new IllegalStateException("Cannot send a request without a partition group"));
+      return requestFuture;
+    }
+
     // copy once
     final var length = clientRequest.getLength();
     final var requestBytes = new byte[length];
@@ -70,11 +78,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
     final var partitionId = clientRequest.getPartitionId();
     final var requestType = clientRequest.getRequestType();
-    final var topicName =
-        AtomixServerTransport.topicName(
-            clientRequest.getPartitionGroup(), partitionId, requestType);
-
-    final var requestFuture = new CompletableActorFuture<DirectBuffer>();
+    final var topicName = AtomixServerTransport.topicName(partitionGroup, partitionId, requestType);
     final var requestContext =
         new RequestContext(
             requestFuture,
