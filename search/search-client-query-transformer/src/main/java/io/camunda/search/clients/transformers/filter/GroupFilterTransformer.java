@@ -34,6 +34,7 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
   @Override
   public SearchQuery toSearchQuery(final GroupFilter filter) {
     final var queries = new ArrayList<>(toSearchQueryFields(filter));
+    queries.add(term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType()));
 
     if (filter.memberIdsByType() != null && !filter.memberIdsByType().isEmpty()) {
       queries.add(createMultipleMemberTypeQuery(filter));
@@ -65,7 +66,6 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
                   IdentityJoinRelationshipType.MEMBER.getType(),
                   stringTerms(MEMBER_ID, filter.memberIds())));
     }
-    queries.add(term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType()));
     if (filter.childMemberType() != null) {
       queries.add(
           hasChildQuery(

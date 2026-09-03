@@ -31,6 +31,7 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
   @Override
   public SearchQuery toSearchQuery(final RoleFilter filter) {
     final var queries = new ArrayList<>(toSearchQueryFields(filter));
+    queries.add(term(RoleIndex.JOIN, IdentityJoinRelationshipType.ROLE.getType()));
 
     if (filter.memberIdsByType() != null && !filter.memberIdsByType().isEmpty()) {
       queries.add(createMultipleMemberTypeQuery(filter));
@@ -54,7 +55,6 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
     if (filter.description() != null) {
       queries.add(term(RoleIndex.DESCRIPTION, filter.description()));
     }
-    queries.add(term(RoleIndex.JOIN, IdentityJoinRelationshipType.ROLE.getType()));
     if (filter.memberIds() != null) {
       queries.add(
           filter.memberIds().isEmpty()
