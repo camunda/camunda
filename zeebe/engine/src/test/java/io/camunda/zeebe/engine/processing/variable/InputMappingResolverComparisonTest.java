@@ -353,8 +353,8 @@ class InputMappingResolverComparisonTest {
   // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName(
   //    "Rule 7: variables from a higher scope are partially shadowed by input mappings"
-  //        + " (OrderedMappingResolver already implements this correctly; the gap is in"
-  //        + " CombinedMappingResolver/8.9.0's combined-FEEL-context evaluation, which loses an"
+  //        + " (OrderedInputMappingResolver already implements this correctly; the gap is in"
+  //        + " CombinedInputMappingResolver/8.9.0's combined-FEEL-context evaluation, which loses an"
   //        + " ancestor's untouched sibling once that object's root has been partially mapped)")
   class Rule7PartiallyShadowsHigherScope {
 
