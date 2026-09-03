@@ -442,6 +442,39 @@ class DefaultMembershipServiceTest {
                     .contains("groupIds"));
   }
 
+  @Test
+  void shouldNotRetainAnOutageEntryForALookupThatNeverFailed() {
+    // given — a healthy group store
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new GroupEntity(1L, "g1", "group", null)));
+    final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
+
+    // when — the lookup succeeds
+    inPhysicalTenant("default", () -> service.groupIds(query));
+
+    // then — nothing is retained. The key is derived from the physical tenant on the request, which
+    // PhysicalTenantFilter stamps without validating, so anything retained on the success path
+    // would tie this service's memory to the set of tenant ids that reach it rather than to the set
+    // that is configured.
+    assertThat(service.lookupOutages).isEmpty();
+  }
+
+  @Test
+  void shouldNotRetainAnOutageEntryForALookupThatFailedNonTransiently() {
+    // given — a deterministic failure, which is the shape an unconfigured physical tenant takes:
+    // resolving its store throws rather than returning one
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenThrow(new IllegalArgumentException("unknown physical tenant"));
+    final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
+
+    // when / then — it propagates, as before
+    assertThatThrownBy(() -> inPhysicalTenant("default", () -> service.groupIds(query)))
+        .isInstanceOf(IllegalArgumentException.class);
+
+    // and nothing is retained, so a request that cannot resolve a store cannot cost memory either
+    assertThat(service.lookupOutages).isEmpty();
+  }
+
   private void inPhysicalTenant(final String physicalTenantId, final Runnable call) {
     final var request = new MockHttpServletRequest();
     PhysicalTenantContext.setPhysicalTenantId(request, physicalTenantId);
