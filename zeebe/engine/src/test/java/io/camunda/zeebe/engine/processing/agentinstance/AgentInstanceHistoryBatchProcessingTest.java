@@ -1333,19 +1333,32 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor.
+    final var baselineConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-baseline")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    baselineConfigItem.setModel("gpt-4o").setProvider("openai");
+    baselineConfigItem.addSystemPrompt(
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText("You are a helpful agent."));
+    baselineConfigItem.setChangedAttributes(List.of("model", "provider", "systemPrompt"));
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(List.of(baselineConfigItem))
+            .create()
             .getKey();
     final var configItem =
         new AgentHistoryRecord()
@@ -1392,9 +1405,12 @@ public class AgentInstanceHistoryBatchProcessingTest {
     assertThat(updated.getValue().getChangedAttributes()).isEmpty();
 
     // the persisted AGENT_HISTORY event is still a full copy of the item, including these fields.
+    // Scoped to this item's historyItemId (rather than a position-based skip) so the lookup stays
+    // correct regardless of how many other CREATED events the CREATE batch above also produced.
     final var historyItem =
         RecordingExporter.agentHistoryRecords(AgentHistoryIntent.CREATED)
             .withAgentInstanceKey(agentInstanceKey)
+            .filter(r -> r.getValue().getHistoryItemId().equals("item-config"))
             .getFirst();
     assertThat(historyItem.getValue().getModel()).isEqualTo("gpt-4o-mini");
     assertThat(historyItem.getValue().getProvider()).isEqualTo("azure-openai");
@@ -1458,19 +1474,28 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor.
+    final var baselineConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-baseline")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    baselineConfigItem.setModel("gpt-4o").setProvider("openai");
+    baselineConfigItem.setChangedAttributes(List.of("model", "provider"));
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(List.of(baselineConfigItem))
+            .create()
             .getKey();
     final var configItem =
         new AgentHistoryRecord()
@@ -1535,19 +1560,28 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor.
+    final var baselineConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-baseline")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    baselineConfigItem.setModel("gpt-4o").setProvider("openai");
+    baselineConfigItem.setChangedAttributes(List.of("model", "provider"));
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(List.of(baselineConfigItem))
+            .create()
             .getKey();
     final var userItem =
         new AgentHistoryRecord()
@@ -2619,19 +2653,29 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
     ENGINE.jobs().withType(helper.getJobType()).activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
+            .getKey();
+    // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor.
+    final var baselineConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-baseline")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1)
+            .setModel("gpt-4o")
+            .setProvider("openai")
+            .setChangedAttributes(List.of("model", "provider"));
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(List.of(baselineConfigItem))
+            .create()
             .getKey();
     final var configItem =
         new AgentHistoryRecord()
