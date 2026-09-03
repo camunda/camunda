@@ -14,13 +14,13 @@ import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatHistoryDate} from '../formatHistoryDate';
 import {getOperationTypeTranslationKey} from '../getOperationTypeTranslationKey';
-import type {TaskDetailsHistorySearch} from '../sortUtils';
+import type {TaskDetailsHistorySearch, TaskDetailsHistorySortField} from '../sortUtils';
 import {ColumnHeader} from './ColumnHeader';
 
 type HeaderConfig = {
 	key: string;
 	header: string;
-	sortKey?: string;
+	sortKey?: TaskDetailsHistorySortField;
 	isDisabled: boolean;
 };
 
