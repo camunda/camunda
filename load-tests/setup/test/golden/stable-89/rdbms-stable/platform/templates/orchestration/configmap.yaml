@@ -257,5 +257,10 @@ data:
     # History cleanup adjust batch sizes
     camunda.data.secondary-storage.rdbms.history.historyCleanupBatchSize: 100000
     camunda.data.secondary-storage.rdbms.history.historyCleanupProcessInstanceBatchSize: 2000
+    # set to 2001 and not 2000 to directly see when queue is full in metrics dashboard
+    camunda.data.secondary-storage.rdbms.queueSize: 2001
+    camunda.data.secondary-storage.rdbms.history.defaultHistoryTTL: P1D
+    camunda.data.secondary-storage.rdbms.history.minHistoryCleanupInterval: PT1H
+    camunda.data.secondary-storage.rdbms.history.maxHistoryCleanupInterval: PT3H
   application-override.yml: |
     # no overrides
