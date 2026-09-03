@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {lazy, Suspense, useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {observer} from 'mobx-react-lite';
 import {
   beautifyJSON,
   beautifyTruncatedJSON,
 } from 'modules/utils/editor/beautifyJSON';
-import {EditorLoader, EditorWrapper, WriteModeEditor} from './styled';
+import {EditorWrapper, WriteModeEditor} from './styled';
 import {
   EDITOR_DECORATION_WIDTH,
   EDITOR_FONT_SIZE,
@@ -25,7 +25,7 @@ import {
 } from './constants';
 import {ReadOnlyEditor} from './ReadOnlyEditor';
 
-const RichTextEditor = lazy(async () => {
+const importRichTextEditor = async () => {
   const [{loadMonaco}, {RichTextEditor}] = await Promise.all([
     import('modules/loadMonaco'),
     import('modules/components/RichTextEditor'),
@@ -33,8 +33,15 @@ const RichTextEditor = lazy(async () => {
 
   loadMonaco();
 
-  return {default: RichTextEditor};
-});
+  return RichTextEditor;
+};
+
+let richTextEditorPromise: ReturnType<typeof importRichTextEditor> | undefined;
+
+const loadRichTextEditor = () => {
+  richTextEditorPromise ??= importRichTextEditor();
+  return richTextEditorPromise;
+};
 
 type Props = {
   value: string;
@@ -91,6 +98,11 @@ const InlineJsonEditor: React.FC<Props> = observer(
 
     const [editingValue, setEditingValue] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [LoadedRichTextEditor, setLoadedRichTextEditor] = useState<
+      Awaited<ReturnType<typeof loadRichTextEditor>> | undefined
+    >();
+    const [editorLoadError, setEditorLoadError] = useState<unknown>();
+    const shouldStartEditingRef = useRef(false);
 
     const displayValue = useMemo(() => {
       if (isEditing && editingValue !== null) {
@@ -114,13 +126,34 @@ const InlineJsonEditor: React.FC<Props> = observer(
       }
     };
 
+    const startEditing = useCallback(() => {
+      if (isReadOnly) {
+        return;
+      }
+      shouldStartEditingRef.current = true;
+      void loadRichTextEditor().then(
+        (RichTextEditor) => {
+          if (shouldStartEditingRef.current) {
+            setLoadedRichTextEditor(() => RichTextEditor);
+            setIsEditing(true);
+            setEditingValue(null);
+          }
+        },
+        (error: unknown) => {
+          if (shouldStartEditingRef.current) {
+            setEditorLoadError(error);
+          }
+        },
+      );
+    }, [isReadOnly]);
+
     const handleFocus = useCallback(() => {
-      setIsEditing(true);
-      setEditingValue(null);
+      startEditing();
       onFocus?.();
-    }, [onFocus]);
+    }, [onFocus, startEditing]);
 
     const handleBlur = useCallback(() => {
+      shouldStartEditingRef.current = false;
       onBlur?.();
       // Monaco's FocusTracker debounces blur via setTimeout(0). Synchronously
       // calling setIsEditing(false) would dispose the editor before that timer
@@ -134,9 +167,16 @@ const InlineJsonEditor: React.FC<Props> = observer(
 
     useEffect(() => {
       if (autoFocus) {
-        handleFocus();
+        startEditing();
       }
-    }, [autoFocus, handleFocus]);
+      return () => {
+        shouldStartEditingRef.current = false;
+      };
+    }, [autoFocus, startEditing]);
+
+    if (editorLoadError !== undefined) {
+      throw editorLoadError;
+    }
 
     return (
       <EditorWrapper
@@ -148,7 +188,7 @@ const InlineJsonEditor: React.FC<Props> = observer(
         onFocus={handleFocus}
         $invalid={!!fieldError}
       >
-        {isReadOnly || !isEditing ? (
+        {isReadOnly || !isEditing || LoadedRichTextEditor === undefined ? (
           <ReadOnlyEditor
             data-testid={dataTestId}
             value={displayValue}
@@ -166,39 +206,38 @@ const InlineJsonEditor: React.FC<Props> = observer(
             <label htmlFor={id} className="cds--visually-hidden">
               {label ?? 'Value'}
             </label>
-            <Suspense fallback={<EditorLoader $height={height} />}>
-              <WriteModeEditor $invalid={!!fieldError}>
-                <RichTextEditor
-                  loading={null}
-                  value={displayValue}
-                  onChange={isReadOnly ? undefined : handleChange}
-                  readOnly={isReadOnly}
-                  height={`${height}px`}
-                  options={{
-                    formatOnType: false,
-                    lineNumbers: 'off',
-                    lineDecorationsWidth: isReadOnly
-                      ? 0
-                      : EDITOR_DECORATION_WIDTH,
-                    renderLineHighlight: 'none',
-                    overviewRulerLanes: 0,
-                    stickyScroll: {enabled: false},
-                    glyphMargin: false,
-                    folding: false,
-                    scrollbar: {useShadows: false},
-                    minimap: {enabled: false},
-                    tabFocusMode: true,
-                    fontSize: EDITOR_FONT_SIZE,
-                    lineHeight: EDITOR_LINE_HEIGHT,
-                    fontFamily: EDITOR_FONT_FAMILY,
-                    padding: {
-                      top: EDITOR_PADDING_TOP,
-                      bottom: EDITOR_PADDING_BOTTOM,
-                    },
-                  }}
-                />
-              </WriteModeEditor>
-            </Suspense>
+            <WriteModeEditor $invalid={!!fieldError}>
+              <LoadedRichTextEditor
+                loading={null}
+                value={displayValue}
+                onChange={isReadOnly ? undefined : handleChange}
+                readOnly={isReadOnly}
+                height={`${height}px`}
+                options={{
+                  formatOnType: false,
+                  lineNumbers: 'off',
+                  lineDecorationsWidth: isReadOnly
+                    ? 0
+                    : EDITOR_DECORATION_WIDTH,
+                  renderLineHighlight: 'none',
+                  overviewRulerLanes: 0,
+                  stickyScroll: {enabled: false},
+                  glyphMargin: false,
+                  folding: false,
+                  scrollbar: {useShadows: false},
+                  minimap: {enabled: false},
+                  tabFocusMode: true,
+                  fixedOverflowWidgets: true,
+                  fontSize: EDITOR_FONT_SIZE,
+                  lineHeight: EDITOR_LINE_HEIGHT,
+                  fontFamily: EDITOR_FONT_FAMILY,
+                  padding: {
+                    top: EDITOR_PADDING_TOP,
+                    bottom: EDITOR_PADDING_BOTTOM,
+                  },
+                }}
+              />
+            </WriteModeEditor>
           </>
         )}
         {fieldError && (

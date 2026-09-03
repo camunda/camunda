@@ -47,10 +47,6 @@ const EditorWrapper = styled.div<{
     `}
 `;
 
-const EditorLoader = styled.div<{$height: number}>`
-  height: ${({$height}) => $height}px;
-`;
-
 const ReadOnlyEditorWrapper = styled.div<{
   $height: number;
   $empty: boolean;
@@ -196,7 +192,6 @@ const WriteModeEditor = styled.div<{
 
 export {
   EditorWrapper,
-  EditorLoader,
   ReadOnlyEditorContainer,
   ReadOnlyEditorWrapper,
   ReadOnlyEditorContent,
