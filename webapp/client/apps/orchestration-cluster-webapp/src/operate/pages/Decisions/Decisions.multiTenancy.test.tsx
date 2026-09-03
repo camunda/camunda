@@ -9,21 +9,17 @@
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {http, HttpResponse, type PathParams} from 'msw';
 import {endpoints, type QueryDecisionDefinitionsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {useSearch} from '@tanstack/react-router';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {
-	mockCurrentUserEndpoint,
-	mockQueryDecisionDefinitionsEndpoint,
-	mockQueryDecisionInstancesEndpoint,
-} from '#/shared-test-modules/mock-handlers';
+import {mockCurrentUserEndpoint, mockQueryDecisionDefinitionsEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {
 	createDecisionDefinition,
 	createQueryDecisionDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/decision-definitions';
-import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {DecisionsHarness} from './DecisionsHarness';
+import {Decisions} from './Decisions';
 
 const DECISION_DEFINITIONS = HttpResponse.json(
 	createQueryDecisionDefinitionsResponse({
@@ -31,14 +27,51 @@ const DECISION_DEFINITIONS = HttpResponse.json(
 	}),
 );
 
-const EMPTY_DECISION_INSTANCES = HttpResponse.json(createQueryDecisionInstancesResponse());
+function toOptionalString(value: unknown) {
+	return value === undefined ? undefined : String(value);
+}
 
-function renderDecisionsPage(searchParams?: Record<string, string>) {
+function DecisionsWithoutInstancesHarness({renderSelectedVersion = true}: {renderSelectedVersion?: boolean}) {
+	const search = useSearch({strict: false}) as Record<string, unknown>;
+
+	return (
+		<div style={{height: '100vh'}}>
+			<Decisions
+				decisionDefinitionId={toOptionalString(search.decisionDefinitionId)}
+				decisionDefinitionVersion={
+					renderSelectedVersion && typeof search.decisionDefinitionVersion === 'number'
+						? search.decisionDefinitionVersion
+						: undefined
+				}
+				tenantId={toOptionalString(search.tenantId)}
+				evaluated={false}
+				failed={false}
+			/>
+		</div>
+	);
+}
+
+function DecisionsNavigationWithoutInstancesHarness() {
+	return <DecisionsWithoutInstancesHarness renderSelectedVersion={false} />;
+}
+
+let unmountPage: (() => Promise<void>) | undefined;
+let waitForRequests: (() => Promise<void>) | undefined;
+
+async function renderDecisionsPage(
+	searchParams?: Record<string, string>,
+	Harness: React.ComponentType = DecisionsWithoutInstancesHarness,
+) {
 	const query = searchParams ? `?${new URLSearchParams(searchParams).toString()}` : '';
-	return renderWithRouter(DecisionsHarness, {
+	const screen = await renderWithRouter(Harness, {
 		path: '/operate/decisions',
 		initialEntry: `/operate/decisions${query}`,
 	});
+	unmountPage = () => screen.unmount();
+	waitForRequests = async () => {
+		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+	};
+	return screen;
 }
 
 const CURRENT_USER = HttpResponse.json(
@@ -58,16 +91,20 @@ describe('Multi tenancy', () => {
 		);
 	});
 
-	afterEach(() => {
-		sessionStorage.clear();
+	afterEach(async () => {
+		try {
+			await waitForRequests?.();
+		} finally {
+			await unmountPage?.();
+			waitForRequests = undefined;
+			unmountPage = undefined;
+			sessionStorage.clear();
+		}
 	});
 
 	it('should hide the tenant filter when multi tenancy is not enabled', async ({worker}) => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
-		worker.use(
-			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
-			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
-		);
+		worker.use(mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}));
 
 		const screen = await renderDecisionsPage();
 
@@ -78,7 +115,6 @@ describe('Multi tenancy', () => {
 	it('should load the tenant value from the URL', async ({worker}) => {
 		worker.use(
 			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
-			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
 
@@ -90,7 +126,6 @@ describe('Multi tenancy', () => {
 	it('should set the tenant to the URL on change', async ({worker}) => {
 		worker.use(
 			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
-			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
 
@@ -106,15 +141,17 @@ describe('Multi tenancy', () => {
 	it('should clear the decision and version filters when the tenant changes', async ({worker}) => {
 		worker.use(
 			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
-			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
 
-		const screen = await renderDecisionsPage({
-			decisionDefinitionId: 'invoice-approval',
-			decisionDefinitionVersion: '1',
-			tenantId: '<default>',
-		});
+		const screen = await renderDecisionsPage(
+			{
+				decisionDefinitionId: 'invoice-approval',
+				decisionDefinitionVersion: '1',
+				tenantId: '<default>',
+			},
+			DecisionsNavigationWithoutInstancesHarness,
+		);
 		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
 
 		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('Invoice Approval');
@@ -135,7 +172,6 @@ describe('Multi tenancy', () => {
 					return HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []}));
 				},
 			),
-			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
 
@@ -145,21 +181,23 @@ describe('Multi tenancy', () => {
 	});
 
 	it('should not scope the decision-definitions request when "all tenants" is selected', async ({worker}) => {
+		let requestReceived = false;
 		let requestedFilter: unknown;
 		worker.use(
 			http.post<PathParams, QueryDecisionDefinitionsRequestBody>(
 				endpoints.queryDecisionDefinitions.getUrl(),
 				async ({request}) => {
 					requestedFilter = (await request.json()).filter;
+					requestReceived = true;
 					return HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []}));
 				},
 			),
-			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
 
 		await renderDecisionsPage({tenantId: 'all'});
 
-		await expect.poll(() => requestedFilter).toBeUndefined();
+		await expect.poll(() => requestReceived).toBe(true);
+		expect(requestedFilter).toBeUndefined();
 	});
 });
