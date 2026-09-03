@@ -7,7 +7,7 @@
  */
 
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryObserverBaseResult } from "@tanstack/react-query";
 import type {
   User,
   QueryUsersResponseBody,
@@ -25,10 +25,9 @@ type UseEnrichedUsersResult = {
   users: UserWithId[];
   loading: boolean;
   success: boolean;
-  reload: () => Promise<{
-    data?: QueryUsersResponseBody | QueryUsersByGroupResponseBody;
-    isSuccess: boolean;
-  }>;
+  reload: QueryObserverBaseResult<
+    QueryUsersResponseBody | QueryUsersByGroupResponseBody
+  >["refetch"];
   paginationProps: {
     page: { pageNumber: number; pageSize: number; totalItems?: number };
     setPageNumber: (page: number) => void;
