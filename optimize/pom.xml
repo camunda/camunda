@@ -45,16 +45,16 @@
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
     <awssdk.version>2.28.13</awssdk.version>
 
-    <jetty.version>12.0.33</jetty.version>
+    <jetty.version>12.0.36</jetty.version>
     <jackson.version>2.21.5</jackson.version>
     <jsonpath.version>2.9.0</jsonpath.version>
-    <apache.http5-client.version>5.5</apache.http5-client.version>
-    <apache.http5-core.version>5.3.6</apache.http5-core.version>
+    <apache.http5-client.version>5.6.4</apache.http5-client.version>
+    <apache.http5-core.version>5.4.3</apache.http5-core.version>
     <guava.version>33.3.1-jre</guava.version>
     <spring.boot.version>3.5.15</spring.boot.version>
     <spring.version>6.2.19-spring-framework-6.2.21</spring.version>
     <spring.security.version>6.5.11</spring.security.version>
-    <version.tomcat>10.1.44</version.tomcat>
+    <version.tomcat>10.1.56</version.tomcat>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <kotlin-stdlib.version>2.1.0</kotlin-stdlib.version>
