@@ -16,11 +16,7 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.qa.util.multidb.MultiPhysicalTenantClients;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.UUID;
@@ -50,14 +46,12 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
  * configuration matches, so only the credential step keeps the two from meeting.
  */
 @MultiDbTest
-@MultiDbPhysicalTenants(PhysicalTenantEncodedPathRoutingIT.TENANT_ID)
+@MultiDbPhysicalTenants(EncodedTenantPaths.TENANT_ID)
 @EnabledIfSystemProperty(
     named = "test.integration.camunda.database.type",
     matches = "rdbms.*$",
     disabledReason = "Physical-tenant secondary storage is RDBMS-only")
 final class PhysicalTenantEncodedPathRoutingIT {
-
-  static final String TENANT_ID = "tenanta";
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -68,10 +62,6 @@ final class PhysicalTenantEncodedPathRoutingIT {
 
   static MultiPhysicalTenantClients ptClients;
 
-  /** {@code tenanta} with its last character written as {@code %61}. */
-  private static final String ENCODED_TENANT_ID = "tenant%61";
-
-  private static final String ME_ENDPOINT = "/v2/authentication/me";
   private static final String PASSWORD = "encoded-path-probe";
   private static final Duration PROPAGATION_TIMEOUT = Duration.ofSeconds(30);
 
@@ -82,8 +72,9 @@ final class PhysicalTenantEncodedPathRoutingIT {
     final var username = createUser();
 
     // when — the same endpoint and the same credentials, spelled two ways
-    final var plain = get("/physical-tenants/" + TENANT_ID + ME_ENDPOINT, username);
-    final var encoded = get("/physical-tenants/" + ENCODED_TENANT_ID + ME_ENDPOINT, username);
+    final var plain = get(EncodedTenantPaths.meEndpointFor(EncodedTenantPaths.TENANT_ID), username);
+    final var encoded =
+        get(EncodedTenantPaths.meEndpointFor(EncodedTenantPaths.ENCODED_TENANT_ID), username);
 
     // then — the plain spelling is the baseline: authenticated and served
     assertThat(plain.statusCode())
@@ -100,7 +91,7 @@ final class PhysicalTenantEncodedPathRoutingIT {
   }
 
   private String createUser() {
-    final CamundaClient admin = ptClients.admin(TENANT_ID);
+    final CamundaClient admin = ptClients.admin(EncodedTenantPaths.TENANT_ID);
     final var username = "probe-" + UUID.randomUUID().toString().substring(0, 8);
     admin
         .newCreateUserCommand()
@@ -128,18 +119,8 @@ final class PhysicalTenantEncodedPathRoutingIT {
 
   private static HttpResponse<String> get(final String rawPath, final String username)
       throws Exception {
-    final var base = BROKER.restAddress().toString().replaceAll("/+$", "");
     final var credentials =
         Base64.getEncoder().encodeToString((username + ":" + PASSWORD).getBytes());
-    // A raw java.net.http request: a CamundaClient builds the prefix itself and would normalize the
-    // encoding away, which is the very thing under test.
-    try (final var client = HttpClient.newHttpClient()) {
-      return client.send(
-          HttpRequest.newBuilder(URI.create(base + rawPath))
-              .header("Authorization", "Basic " + credentials)
-              .GET()
-              .build(),
-          BodyHandlers.ofString());
-    }
+    return EncodedTenantPaths.get(BROKER.restAddress().toString(), rawPath, "Basic " + credentials);
   }
 }
