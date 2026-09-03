@@ -13,17 +13,6 @@ import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * Registers the single {@link MigrationStatusAggregator} instance shared by the {@code
- * upgradeReadiness} actuator endpoint ({@link UpgradeReadinessEndpoint}) and the public {@code GET
- * /cluster/v2/status/upgrade} endpoint (camunda/camunda#61619). Both must read from one instance so
- * their caching/backfill behavior can never diverge.
- *
- * <p>Deliberately not conditional on any HTTP gateway being enabled: the actuator endpoint must
- * keep working on broker-only nodes with no REST gateway, matching the {@link
- * MigrationStatusProvider} bean configurations it depends on (none of which are gateway-gated
- * either).
- */
 @Configuration(proxyBeanMethods = false)
 public class MigrationStatusAggregatorConfiguration {
 
