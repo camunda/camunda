@@ -130,11 +130,7 @@ public class AgentHistorySuspensionGateTest {
   }
 
   private static Record<?> createAgentInstance(final long elementInstanceKey) {
-    return ENGINE
-        .agentInstances()
-        .withElementInstanceKey(elementInstanceKey)
-        .withDefinition("gpt-4o", "openai", "sys")
-        .create();
+    return ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create();
   }
 
   private static long activateJobForProcessInstance(final long processInstanceKey) {
