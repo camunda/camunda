@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -317,11 +318,15 @@ public final class AgentInstanceCreateProcessor
       final var historyItemId = item.getHistoryItemId();
 
       if (!ALLOWED_CREATE_ROLES.contains(item.getRole())) {
+        // sorted here, the only place the message's ordering matters: Set's own iteration order
+        // is seeded from a per-JVM salt, so its toString() would vary across JVM runs.
+        final var sortedAllowedRoles =
+            ALLOWED_CREATE_ROLES.stream().sorted(Comparator.comparing(Enum::name)).toList();
         return Either.left(
             new Rejection(
                 RejectionType.INVALID_ARGUMENT,
                 ERROR_MSG_CREATE_ROLE_NOT_ALLOWED.formatted(
-                    historyItemId, item.getRole(), ALLOWED_CREATE_ROLES)));
+                    historyItemId, item.getRole(), sortedAllowedRoles)));
       }
 
       if (hasPositiveMetrics(item.getMetrics())) {
