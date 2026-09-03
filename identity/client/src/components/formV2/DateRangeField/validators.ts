@@ -9,8 +9,6 @@
 import { isValid, parse, parseISO } from "date-fns";
 import { FormValues } from "src/components/formV2/DateRangeField/DateRangeModal";
 
-const VALIDATION_TIMEOUT = 750;
-const TIME_ERROR = "Time has to be in the format hh:mm:ss";
 const TIME_RANGE_ERROR = '"From time" is after "To time"';
 
 function parseDate(dateString: string | Date) {
@@ -32,17 +30,6 @@ function parseFilterTime(value: string) {
   }
 }
 
-export const validateTimeComplete = async (
-  value: string | undefined,
-): Promise<true | string> => {
-  if (value && value !== "" && !isValid(parseFilterTime(value.trim()))) {
-    await new Promise((r) => setTimeout(r, VALIDATION_TIMEOUT));
-    return TIME_ERROR;
-  }
-
-  return true;
-};
-
 export const validateTimeRange = (
   _: string,
   { fromDate, fromTime, toDate, toTime }: FormValues,
@@ -60,12 +47,5 @@ export const validateTimeRange = (
     return TIME_RANGE_ERROR;
   }
 
-  return true;
-};
-
-export const validateTimeCharacters = (value: string): true | string => {
-  if (value !== "" && value.replace(/[0-9]|:/g, "") !== "") {
-    return TIME_ERROR;
-  }
   return true;
 };
