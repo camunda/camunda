@@ -44,7 +44,7 @@ public class ProcessNestedUnitTest {
   }
 
   @Nested
-  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName("Happy path tests")
   class HappyPathTests {
 

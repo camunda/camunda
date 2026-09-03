@@ -157,7 +157,7 @@ class DmnEvaluationTest {
 
   @Nested
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName("If successfully evaluated, the output")
   class OutputTests {
 

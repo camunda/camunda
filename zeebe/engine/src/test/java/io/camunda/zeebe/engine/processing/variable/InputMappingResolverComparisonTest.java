@@ -80,7 +80,7 @@ class InputMappingResolverComparisonTest {
   private static final CombinedInputMappingResolver LEGACY = new CombinedInputMappingResolver();
 
   @Nested
-  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName("Rule 1: an input mapping creates a local variable")
   class Rule1CreatesALocalVariable {
 
@@ -99,7 +99,7 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName("Rule 2: a source can reference variables from a higher scope")
   class Rule2ReadsFromAHigherScope {
 
@@ -135,7 +135,7 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName("Rule 3: an unresolvable source yields null, it does not raise an incident")
   class Rule3UnresolvableSourceYieldsNull {
 
@@ -154,7 +154,7 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName("Rule 4: input mappings build the local context")
   class Rule4BuildsTheLocalContext {
 
@@ -186,7 +186,7 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName("Rule 5: input mappings are evaluated in the order they are defined in")
   class Rule5EvaluatedInDeclarationOrder {
 
@@ -288,7 +288,7 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName("Rule 6: later input mappings can replace earlier input mappings")
   class Rule6LaterReplacesEarlier {
 
@@ -350,7 +350,7 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName(
   //    "Rule 7: variables from a higher scope are partially shadowed by input mappings"
   //        + " (OrderedMappingResolver already implements this correctly; the gap is in"
@@ -461,7 +461,7 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName(
   //    "Rule 8: types survive across input mappings within one resolver context, but not when"
   //        + " written through MsgPack (confirmed bug camunda/camunda#60011).
@@ -519,7 +519,7 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName("issue #60551 regression coverage (not one of the doc's numbered rules)")
   class Issue60551RegressionCoverage {
 
@@ -570,7 +570,7 @@ class InputMappingResolverComparisonTest {
   }
 
   @Nested
-  // @DisplayName can't be used on @Nested classes with surefire 3.5.6, see PR description
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName("additional regression coverage not addressed by the rules doc")
   class AdditionalCoverageBeyondTheRulesDoc {
 
