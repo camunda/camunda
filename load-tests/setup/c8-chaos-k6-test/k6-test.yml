@@ -1,0 +1,127 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-sample-script
+data:
+  test.js: |
+    import http from 'k6/http';
+    import { sleep } from 'k6';
+    import { Counter } from 'k6/metrics';
+
+    // Metric in Prometheus will be: k6_requests_total
+    const metric_requests = new Counter('requests');
+
+    export const options = {
+      vus: 2,
+      duration: '15m',
+    };
+
+    // Authenticate
+    export function setup() {
+      const token_url = __ENV.ZEEBE_AUTHORIZATION_SERVER_URL;
+      const client_id = __ENV.ZEEBE_CLIENT_ID;
+      const client_secret = __ENV.ZEEBE_CLIENT_SECRET;
+      const audience = __ENV.ZEEBE_TOKEN_AUDIENCE;
+
+      const params = {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      };
+
+      // https://docs.camunda.io/docs/apis-clients/console-api-reference/
+      const payload = JSON.stringify({
+        grant_type: 'client_credentials',
+        audience: audience,
+        client_id: client_id,
+        client_secret: client_secret,
+      });
+
+      const response = http.post(token_url, payload, params);
+        const result = response.body;
+        if (response.status != 200) {
+            throw new Error(`unable to fetch token: ${result}`);
+        }
+      const token = response.json('access_token');
+      console.log("Authentication token fetched.");
+
+      return token;
+    }
+
+
+    // Check zeebe status
+    export default (token) => {
+      const url = __ENV.ZEEBE_REST_ADDRESS + '/v1/topology';
+
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': "Bearer " + token,
+      };
+
+
+      const params = {
+        headers: headers
+      };
+
+      const response = http.get(url, params);
+
+      var status = response.status;
+      metric_requests.add(1, { status: response.status });
+      sleep(1);
+
+    };
+---
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: k6-sample
+spec:
+  parallelism: 2
+  script:
+    configMap:
+      name: k6-sample-script
+      file: test.js
+
+  arguments: --out experimental-prometheus-rw
+
+  runner:
+    image: europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/grafana/k6:latest
+    env:
+      - name: K6_PROMETHEUS_RW_SERVER_URL
+        value: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
+      - name: ZEEBE_REST_ADDRESS
+        valueFrom:
+          secretKeyRef:
+            key: zeebeRestAddress
+            name: load-test-credentials
+      - name: ZEEBE_CLIENT_ID
+        valueFrom:
+          secretKeyRef:
+            key: clientId
+            name: load-test-credentials
+      - name: ZEEBE_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            key: clientSecret
+            name: load-test-credentials
+      - name: ZEEBE_AUTHORIZATION_SERVER_URL
+        valueFrom:
+          secretKeyRef:
+            key: authServer
+            name: load-test-credentials
+      - name: ZEEBE_TOKEN_AUDIENCE
+        valueFrom:
+          secretKeyRef:
+            key: authorizationAudience
+            name: load-test-credentials
+      - name: ZEEBE_AUTH_TYPE
+        valueFrom:
+          secretKeyRef:
+            key: authType
+            name: load-test-credentials
+      - name: ZEEBE_GRPC_ADDRESS
+        valueFrom:
+          secretKeyRef:
+            key: zeebeGrpcAddress
+            name: load-test-credentials
