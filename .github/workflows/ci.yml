@@ -85,7 +85,7 @@ jobs:
         timeout-minutes: 1
         with:
           persist-credentials: false
-      - uses: camunda/infra-global-github-actions/actionlint@0077d059bb0d698e1086a4b46517cb7917fa8300 # actionlint: v1.0.2
+      - uses: camunda/infra-global-github-actions/actionlint@0077d059bb0d698e1086a4b46517cb7917fa8300 # actionlint-1.0.2
         with:
           version: ${{ env.ACTIONLINT_VERSION }}
           ignore: |-
@@ -925,7 +925,7 @@ jobs:
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: "20"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # setup-yarn-cache: v1.0.0
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # setup-yarn-cache-1.0.0
         with:
           directory: identity/client
       - name: Install dependencies
