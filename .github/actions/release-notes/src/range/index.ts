@@ -6,6 +6,11 @@
 
 // Alphas are 1-based: an `-alpha0` would make the previous-alpha baseline
 // `-alpha-1`, a ref that cannot exist, so it is rejected as unrecognized.
+//
+// Dotted alphas (`8.8.0-alpha4.1`) are deliberately NOT accepted, though the
+// 8.8 line has a couple and zcl parses them. The release process no longer
+// cuts them, so this is a closed shape, not an oversight — do not widen the
+// regex on the strength of those tags alone.
 const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha([1-9]\d*))?$/;
 
 // Release candidates are 1-based too, and appear at every level: `8.9.0-rc1`,
