@@ -8,7 +8,7 @@
 
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Card, CardContent, toast} from '@camunda/design-system';
-import {useMemo, useRef, useState} from 'react';
+import {useCallback, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {CompleteTaskButton} from '#/tasklist/modules/task-details/shadcn.components/CompleteTaskButton';
 import type {CompletionStatus} from '#/tasklist/modules/task-details/useTaskCompletion';
@@ -50,6 +50,34 @@ const TaskDetailsForm: React.FC<Props> = ({
 	const formattedData = useMemo(() => formatVariablesToFormData(variables), [variables]);
 	const submissionStatus = localSubmissionStatus ?? completionStatus;
 	const canCompleteTask = isCompletionAllowed && !isImportError;
+	const handleMount = useCallback((formManager: FormManager) => {
+		formManagerRef.current = formManager;
+	}, []);
+	const handleSubmit = useCallback(
+		(variables: PartialVariable[]) => {
+			onSubmit(getVariablesFromSubmitPayload(variables));
+			return Promise.resolve();
+		},
+		[onSubmit],
+	);
+	const handleFileUpload = useCallback((files: Map<string, File[]>) => uploadDocuments(files), [uploadDocuments]);
+	const handleImportError = useCallback(() => {
+		setIsImportError(true);
+		toast.error(t('tasklist.formJSInvalidSchemaErrorNotificationTitle'));
+	}, [t]);
+	const handleSubmitStart = useCallback(() => {
+		setLocalSubmissionStatus('active');
+	}, []);
+	const handleSubmitReset = useCallback(() => {
+		setLocalSubmissionStatus(null);
+	}, []);
+	const handleSubmitError = useCallback(() => {
+		setLocalSubmissionStatus('error');
+	}, []);
+	const handleCompleteTask = useCallback(() => {
+		setLocalSubmissionStatus('active');
+		formManagerRef.current?.submit();
+	}, []);
 
 	return (
 		<div className="h-full min-h-0 w-full" data-testid="task-tab-content">
@@ -62,30 +90,14 @@ const TaskDetailsForm: React.FC<Props> = ({
 									schema={formSchema}
 									data={formattedData}
 									readOnly={!canCompleteTask}
-									onMount={(formManager) => {
-										formManagerRef.current = formManager;
-									}}
-									handleSubmit={(variables) => {
-										onSubmit(getVariablesFromSubmitPayload(variables));
-										return Promise.resolve();
-									}}
-									handleFileUpload={(files) => uploadDocuments(files)}
-									onImportError={() => {
-										setIsImportError(true);
-										toast.error(t('tasklist.formJSInvalidSchemaErrorNotificationTitle'));
-									}}
-									onSubmitStart={() => {
-										setLocalSubmissionStatus('active');
-									}}
-									onSubmitSuccess={() => {
-										setLocalSubmissionStatus(null);
-									}}
-									onSubmitError={() => {
-										setLocalSubmissionStatus('error');
-									}}
-									onValidationError={() => {
-										setLocalSubmissionStatus(null);
-									}}
+									onMount={handleMount}
+									handleSubmit={handleSubmit}
+									handleFileUpload={handleFileUpload}
+									onImportError={handleImportError}
+									onSubmitStart={handleSubmitStart}
+									onSubmitSuccess={handleSubmitReset}
+									onSubmitError={handleSubmitError}
+									onValidationError={handleSubmitReset}
 								/>
 							</CardContent>
 						</Card>
@@ -93,10 +105,7 @@ const TaskDetailsForm: React.FC<Props> = ({
 					<footer className="mt-auto flex w-full justify-end border-t border-border px-4 py-3">
 						<CompleteTaskButton
 							status={submissionStatus}
-							onClick={() => {
-								setLocalSubmissionStatus('active');
-								formManagerRef.current?.submit();
-							}}
+							onClick={handleCompleteTask}
 							isHidden={isHidden}
 							isDisabled={!canCompleteTask}
 						/>
