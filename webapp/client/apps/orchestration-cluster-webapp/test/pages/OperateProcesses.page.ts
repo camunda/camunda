@@ -33,6 +33,14 @@ class OperateProcessesPage extends BasePage {
 	get resetFiltersButton() {
 		return this.page.getByRole('button', {name: 'Reset filters'});
 	}
+
+	get instancesTable() {
+		return this.page.getByTestId('process-instances-table');
+	}
+
+	instanceLink(processInstanceKey: string) {
+		return this.page.getByRole('link', {name: `View instance ${processInstanceKey}`});
+	}
 }
 
 export {OperateProcessesPage};

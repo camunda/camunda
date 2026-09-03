@@ -16,6 +16,7 @@ import {
 	type GetProcessDefinitionStatisticsRequestBody,
 	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+	type QueryProcessInstancesRequestBody,
 	type QueryBatchOperationsRequestBody,
 	type QueryDecisionDefinitionsRequestBody,
 	type QueryDecisionInstancesRequestBody,
@@ -209,6 +210,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.getProcessDefinitionInstanceVersionStatistics.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getProcessDefinitionInstanceVersionStatistics.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryProcessInstances: (body: QueryProcessInstancesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryProcessInstances.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryProcessInstances.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),

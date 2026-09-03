@@ -491,6 +491,23 @@
 					"startDatePopoverTitle": "Filtrer les instances par date de début",
 					"endDatePopoverTitle": "Filtrer les instances par date de fin"
 				},
+				"instancesTable": {
+					"title": "Instances de processus",
+					"name": "Nom",
+					"processInstanceKey": "Clé d'instance de processus",
+					"version": "Version",
+					"versionTag": "Étiquette de version",
+					"businessId": "ID métier",
+					"tenant": "Locataire",
+					"startDate": "Date de début",
+					"endDate": "Date de fin",
+					"parentProcessInstanceKey": "Clé d'instance de processus parente",
+					"viewInstance": "Afficher l'instance {{key}}",
+					"viewParentInstance": "Afficher l'instance parente {{key}}",
+					"none": "Aucune",
+					"emptyMessage": "Aucune instance ne correspond à ce jeu de filtres",
+					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance"
+				},
 				"diagramHeader": {
 					"title": "Processus",
 					"processName": "Nom du processus",

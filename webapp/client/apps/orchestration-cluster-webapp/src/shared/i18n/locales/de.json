@@ -488,6 +488,23 @@
 					"startDatePopoverTitle": "Instanzen nach Startdatum filtern",
 					"endDatePopoverTitle": "Instanzen nach Enddatum filtern"
 				},
+				"instancesTable": {
+					"title": "Prozessinstanzen",
+					"name": "Name",
+					"processInstanceKey": "Prozessinstanz-Schlüssel",
+					"version": "Version",
+					"versionTag": "Versions-Tag",
+					"businessId": "Geschäfts-ID",
+					"tenant": "Mandant",
+					"startDate": "Startdatum",
+					"endDate": "Enddatum",
+					"parentProcessInstanceKey": "Übergeordneter Prozessinstanz-Schlüssel",
+					"viewInstance": "Instanz {{key}} anzeigen",
+					"viewParentInstance": "Übergeordnete Instanz {{key}} anzeigen",
+					"none": "Keine",
+					"emptyMessage": "Es gibt keine Instanzen, die diesem Filtersatz entsprechen",
+					"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen"
+				},
 				"diagramHeader": {
 					"title": "Prozess",
 					"processName": "Prozessname",
