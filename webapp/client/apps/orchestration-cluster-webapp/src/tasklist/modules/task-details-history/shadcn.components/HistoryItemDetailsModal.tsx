@@ -65,7 +65,7 @@ const HistoryItemDetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
 							<dl className="border-y border-border">
 								<div className="grid min-h-11 grid-cols-[40%_60%] items-center">
 									<dt className="flex items-center gap-1 py-2 pr-4 whitespace-nowrap">
-										<CalendarClock aria-hidden />
+										<CircleUser aria-hidden />
 										{t('tasklist.taskDetailsHistoryModalAssignee')}
 									</dt>
 									<dd className="py-2">{auditLog.relatedEntityKey}</dd>
