@@ -27,6 +27,7 @@ const search = (search: string) =>
       : {
           filter: {
             $or: [
+              { username: { $like: `*${search}*` } },
               { name: { $like: `*${search}*` } },
               { email: { $like: `*${search}*` } },
             ],
