@@ -312,7 +312,7 @@ jobs:
       LIMITS_CPU: 4
       TEST_TYPE: Unit
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -372,7 +372,7 @@ jobs:
             "optimize.Dockerfile",
           ]
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -409,7 +409,7 @@ jobs:
             "optimize.Dockerfile",
           ]
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -466,7 +466,7 @@ jobs:
       TEST_OWNER: '@camunda/optimize-frontend'
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
