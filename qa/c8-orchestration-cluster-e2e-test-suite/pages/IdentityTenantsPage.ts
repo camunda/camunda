@@ -182,16 +182,9 @@ export class IdentityTenantsPage {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
     await this.fillAssignUserName(user.id);
-    // The assign-user search filters users by `username` and renders the
-    // username as the option title, so `user.id` drives both steps.
-    const option = this.assignUserSearchboxResult
-      .getByRole('option')
-      .filter({hasText: user.id})
-      .first();
+    const option = this.assignUserOption(user.id)
     await expect(option).toBeVisible({timeout: 30000});
     await option.click({timeout: 20000});
-    // The assign-user search is debounced + server-driven, so the option can
-    // outlast the 10s default actionTimeout on a loaded cluster.
     await this.confirmAssignmentButton.click();
     await expect(this.assignUserModal).toBeHidden();
     await waitForItemInList(
