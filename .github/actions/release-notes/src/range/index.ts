@@ -23,7 +23,21 @@ function parseVersion(version: string): ParsedVersion {
 
 function format(v: Pick<ParsedVersion, 'major' | 'minor' | 'patch'> & { alpha?: number | null }): string {
   const base = `${v.major}.${v.minor}.${v.patch}`;
-  return v.alpha ? `${base}-alpha${v.alpha}` : base;
+  // Explicit null check, not truthiness: an `alpha: 0` reaching here would
+  // otherwise format as a stable tag and send the walk at the wrong baseline.
+  return v.alpha == null ? base : `${base}-alpha${v.alpha}`;
+}
+
+/** `minor - 1`, guarded: at minor 0 the previous line belongs to the previous
+ *  major, whose last minor no arithmetic on this version string can name. */
+function previousMinor(v: ParsedVersion, target: string): number {
+  if (v.minor === 0) {
+    throw new Error(
+      `Unsupported release version "${target}": the baseline for the first minor of a major is the previous ` +
+        `major's last minor, which cannot be derived from the version number alone.`,
+    );
+  }
+  return v.minor - 1;
 }
 
 export type BaselineStrategy =
@@ -35,10 +49,19 @@ export type BaselineStrategy =
 export function resolveBaselineStrategy(target: string): BaselineStrategy {
   const v = parseVersion(target);
 
+  // An alpha is a pre-release of a minor, so it only ever carries patch 0.
+  // Without this, `X.Y.1-alpha1` falls through to the previous-alpha branch and
+  // resolves to `X.Y.1` — the target's own base version, a tag never cut.
+  if (v.alpha !== null && v.patch !== 0) {
+    throw new Error(
+      `Unsupported release version "${target}": an alpha is a pre-release of a minor, so it must carry patch 0.`,
+    );
+  }
+
   // alpha1-of-cycle: no prior tag on this line exists yet, so always the fork
   // point off the previous minor's stable branch, never a tag lookup (V5).
   if (v.alpha === 1 && v.patch === 0) {
-    return { kind: 'forkPoint', otherRef: `origin/stable/${v.major}.${v.minor - 1}` };
+    return { kind: 'forkPoint', otherRef: `origin/stable/${v.major}.${previousMinor(v, target)}` };
   }
 
   if (v.alpha !== null) {
@@ -50,7 +73,7 @@ export function resolveBaselineStrategy(target: string): BaselineStrategy {
   }
 
   // Minor release: fork point between the previous minor's release tag and this target.
-  const previousMinorTag = format({ major: v.major, minor: v.minor - 1, patch: 0 });
+  const previousMinorTag = format({ major: v.major, minor: previousMinor(v, target), patch: 0 });
   return { kind: 'forkPoint', otherRef: previousMinorTag };
 }
 
