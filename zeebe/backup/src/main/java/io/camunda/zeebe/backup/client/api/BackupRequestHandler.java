@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -36,6 +37,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class BackupRequestHandler implements BackupApi {
+  private static final Duration BACKUP_REQUEST_TIMEOUT = Duration.ofSeconds(60);
 
   final BrokerClient brokerClient;
   final BrokerTopologyManager topologyManager;
@@ -173,7 +175,9 @@ public final class BackupRequestHandler implements BackupApi {
                   topology.getPartitions().stream()
                       .map(requestCreator)
                       .map(request -> stampPhysicalTenant(request, physicalTenantId))
-                      .map(brokerClient::sendRequestWithRetry)
+                      .map(
+                          request ->
+                              brokerClient.sendRequestWithRetry(request, BACKUP_REQUEST_TIMEOUT))
                       .toList();
               return CompletableFuture.allOf(responses.toArray(CompletableFuture[]::new))
                   .thenApply(

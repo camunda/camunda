@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.api.gax.paging.Page;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
+import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.IOException;
@@ -37,8 +39,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Semaphore;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -59,6 +63,8 @@ public final class ManifestManager {
           .setSerializationInclusion(Include.NON_ABSENT);
   public static final int PRECONDITION_FAILED = 412;
   private static final int LIST_MAX_RETRIES = 6;
+  private static final int LIST_PAGE_SIZE = 1000;
+  private static final int MANIFEST_READ_PARALLELISM = 16;
   private static final int MAX_CAUSE_DEPTH = 20;
   private static final Duration MIN_LIST_RETRY_DELAY = Duration.ofMillis(100);
   private static final Duration MAX_LIST_RETRY_DELAY = Duration.ofSeconds(2);
@@ -96,6 +102,7 @@ public final class ManifestManager {
   private final Storage client;
   private final String basePath;
   private final ExecutorService executor;
+  private final Semaphore manifestReadConcurrencyLimit = new Semaphore(MANIFEST_READ_PARALLELISM);
 
   ManifestManager(
       final Storage client,
@@ -207,37 +214,49 @@ public final class ManifestManager {
     final var blobFilter = filterBlobsByWildcard(wildcard);
     LOG.debug("Listing backup statuses for wildcard {}", wildcard);
     final var prefix = wildcardPrefix(wildcard);
-    final var listing = listManifestBlobsWithRetry(prefix);
-    final var statusFutures = new ArrayList<CompletableFuture<BackupStatus>>();
-    for (final var blob : listing) {
-      if (!blobFilter.test(blob)) {
-        continue;
+    final var statuses = new ArrayList<BackupStatus>();
+    var pageToken = Optional.<String>empty();
+
+    while (true) {
+      final var page = listManifestBlobPageWithRetry(prefix, pageToken);
+      final var statusFutures = new ArrayList<CompletableFuture<BackupStatus>>();
+      for (final var blob : page.getValues()) {
+        if (!blobFilter.test(blob)) {
+          continue;
+        }
+        final var fromMetadata =
+            ManifestMetadata.toBackupStatus(blob, basePath, MANIFEST_BLOB_NAME);
+        if (fromMetadata.isPresent()) {
+          statusFutures.add(CompletableFuture.completedFuture(fromMetadata.get()));
+        } else {
+          // Fallback: download the manifest for blobs without metadata
+          statusFutures.add(downloadManifestStatus(blob));
+        }
       }
-      final var fromMetadata = ManifestMetadata.toBackupStatus(blob, basePath, MANIFEST_BLOB_NAME);
-      if (fromMetadata.isPresent()) {
-        statusFutures.add(CompletableFuture.completedFuture(fromMetadata.get()));
-      } else {
-        // Fallback: download the manifest for blobs without metadata
-        statusFutures.add(downloadManifestStatus(blob));
+
+      CompletableFuture.allOf(statusFutures.toArray(CompletableFuture[]::new)).join();
+      statuses.addAll(
+          statusFutures.stream()
+              .map(CompletableFuture::join)
+              .filter(status -> wildcard.matches(status.id()))
+              .toList());
+
+      if (!page.hasNextPage()) {
+        LOG.debug("Found {} matching backup statuses for wildcard {}", statuses.size(), wildcard);
+        return List.copyOf(statuses);
       }
+      pageToken = Optional.of(page.getNextPageToken());
     }
-
-    CompletableFuture.allOf(statusFutures.toArray(CompletableFuture[]::new)).join();
-    LOG.debug("Found {} matching backup statuses for wildcard {}", statusFutures.size(), wildcard);
-
-    return statusFutures.stream()
-        .map(CompletableFuture::join)
-        .filter(status -> wildcard.matches(status.id()))
-        .toList();
   }
 
-  private List<Blob> listManifestBlobsWithRetry(final String prefix) {
+  private Page<Blob> listManifestBlobPageWithRetry(
+      final String prefix, final Optional<String> pageToken) {
     try {
       final var operationName =
           "list GCS backup manifests from bucket '%s' with prefix '%s'"
               .formatted(bucketInfo.getName(), prefix);
       return MANIFEST_LIST_RETRY.decorate(
-          operationName, () -> listManifestBlobs(prefix), ignored -> false);
+          operationName, () -> listManifestBlobPage(prefix, pageToken), ignored -> false);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -248,13 +267,12 @@ public final class ManifestManager {
     }
   }
 
-  private List<Blob> listManifestBlobs(final String prefix) {
-    final var blobs = new ArrayList<Blob>();
-    client
-        .list(bucketInfo.getName(), BlobListOption.prefix(prefix))
-        .iterateAll()
-        .forEach(blobs::add);
-    return blobs;
+  private Page<Blob> listManifestBlobPage(final String prefix, final Optional<String> pageToken) {
+    final var options = new ArrayList<BlobListOption>();
+    options.add(BlobListOption.prefix(prefix));
+    options.add(BlobListOption.pageSize(LIST_PAGE_SIZE));
+    pageToken.map(BlobListOption::pageToken).ifPresent(options::add);
+    return client.list(bucketInfo.getName(), options.toArray(BlobListOption[]::new));
   }
 
   private static boolean shouldRetryListOperation(final Throwable error) {
@@ -298,7 +316,7 @@ public final class ManifestManager {
   }
 
   private CompletableFuture<BackupStatus> downloadManifestStatus(final Blob blob) {
-    return CompletableFuture.supplyAsync(
+    return SemaphoreLeasedScheduler.schedule(
         () -> {
           try {
             final var manifest =
@@ -308,7 +326,8 @@ public final class ManifestManager {
             throw new UncheckedIOException(e);
           }
         },
-        executor);
+        executor,
+        manifestReadConcurrencyLimit);
   }
 
   public void deleteManifest(final Manifest manifest) {
