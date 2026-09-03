@@ -50,14 +50,14 @@
 	"devDependencies": {
 		"@playwright/test": "1.62.1",
 		"@types/react": "19.2.18",
-		"@types/react-dom": "19.2.4",
-		"@vitest/browser-playwright": "4.1.10",
+		"@types/react-dom": "19.2.5",
+		"@vitest/browser-playwright": "4.1.11",
 		"react": "19.2.8",
 		"react-dom": "19.2.8",
 		"typescript": "7.0.2",
-		"vite": "8.2.1",
+		"vite": "8.2.2",
 		"vite-plugin-dts": "5.0.3",
-		"vitest": "4.1.10",
+		"vitest": "4.1.11",
 		"vitest-browser-react": "2.2.0"
 	},
 	"peerDependencies": {
