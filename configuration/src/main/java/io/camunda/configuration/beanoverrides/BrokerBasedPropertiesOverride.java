@@ -794,7 +794,10 @@ public class BrokerBasedPropertiesOverride {
       final BrokerBasedProperties override, final Camunda camunda) {
     final Export export = camunda.getData().getExport();
     final var exportingCfg =
-        new ExportingCfg(export.getSkipRecords(), export.getDistributionInterval());
+        new ExportingCfg(
+            export.getSkipRecords(),
+            export.getDistributionInterval(),
+            export.getMigrationStatusScanMaxRecords());
     override.setExporting(exportingCfg);
   }
 
