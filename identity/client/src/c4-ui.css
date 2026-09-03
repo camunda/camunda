@@ -14,7 +14,18 @@
  * apply a second, unscoped global preflight on top of it.
  */
 @import "tailwindcss/theme";
-@import "tailwindcss/utilities";
+
+/*
+ * `@camunda/design-system/styles.css` ships its own utilities
+ * unlayered, so this app's copy of the same class name (e.g. `.flex-col`)
+ * would otherwise win or lose the cascade purely by which stylesheet's
+ * <style> tag happens to land later — the DS's own components rely on
+ * pairs like `flex-col sm:flex-row` resolving together, and a same-named
+ * consumer utility landing later flips only one half of that pair.
+ * Layering keeps this app's utilities from ever winning that tie, without
+ * changing normal (non-colliding) usage elsewhere in the app.
+ */
+@import "tailwindcss/utilities" layer(consumer-utilities);
 
 /*
  * Carbon-coexistence opt-out.
@@ -167,5 +178,15 @@
  * REF: https://github.com/camunda/design-system/issues/496
  */
 :where(.c4-ui) [data-slot="multi-select-content"] {
+  pointer-events: auto;
+}
+
+/* DateRangePicker's calendar popover is unclickable when opened from inside
+ * a Dialog — the same root cause as the MultiSelect fix above (see #496):
+ * its portaled Popover content is a sibling of the Dialog, not a descendant
+ * of its content, so it never gets the `pointer-events: auto` restoration
+ * Radix applies to the Dialog's own content and inherits `none` from <body>.
+ */
+:where(.c4-ui) [data-slot="date-range-picker-content"] {
   pointer-events: auto;
 }

@@ -11,9 +11,9 @@ This version adapts the same behavior and validation logic to work with
 
 ## What’s Included
 
-- `DateInput`
-- `TimeInput`
-- Time and range validators (`validateTimeCharacters`, `validateTimeComplete`, `validateTimeRange`)
+- Time fields via the shared `TextField` (`type="time"`), wired through `Controller`
+- Range validator (`validateTimeRange`) — character/completeness validation is delegated to the
+  native `<input type="time">` widget
 - Integration via `Controller` from `react-hook-form`
 
 The goal was to preserve:

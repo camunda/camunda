@@ -6,14 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { DatePicker, Layer, Modal, Stack } from "@carbon/react";
+import { DateRangePicker } from "@camunda/design-system";
+import { parseISO } from "date-fns";
+import { FormModal } from "src/components/modalV2";
+import TextField from "src/components/formV2/TextField";
 import { formatDate } from "../formatDate";
-// TODO: Replace with `DateRangePicker` from Camunda's design system.
-import { DateInput } from "./DateInput";
-import { TimeInput } from "./TimeInput";
-import { TimeInputStack } from "./styled";
-import { createPortal } from "react-dom";
-import { FormProvider, useForm } from "react-hook-form";
+import { validateTimeRange } from "../validators";
+import { Controller, useForm } from "react-hook-form";
 
 const defaultTime = {
   from: "00:00:00",
@@ -82,80 +81,78 @@ const DateRangeModal: React.FC<Props> = ({
     reValidateMode: "onChange",
   });
 
+  const selectedRange =
+    defaultValues.fromDate !== "" && defaultValues.toDate !== ""
+      ? {
+          from: parseISO(defaultValues.fromDate),
+          to: parseISO(defaultValues.toDate),
+        }
+      : undefined;
+
   return (
-    <FormProvider {...methods}>
-      <form>
-        <Layer level={0}>
-          <>
-            {createPortal(
-              <Modal
-                data-testid="date-range-modal"
-                open={isModalOpen}
-                size="xs"
-                modalHeading={title}
-                primaryButtonText="Apply"
-                secondaryButtonText="Cancel"
-                onRequestClose={onCancel}
-                onRequestSubmit={methods.handleSubmit(handleApply)}
-                primaryButtonDisabled={!methods.formState.isValid}
-              >
-                <Stack gap={6}>
-                  <div>
-                    <DatePicker
-                      value={[defaultValues.fromDate, defaultValues.toDate]}
-                      datePickerType="range"
-                      onChange={(event) => {
-                        const [fromDateTime, toDateTime] = event;
-                        if (fromDateTime !== undefined) {
-                          methods.setValue(
-                            "fromDate",
-                            formatDate(fromDateTime),
-                            { shouldValidate: true },
-                          );
-                          if (methods.getValues("fromTime") === "") {
-                            methods.setValue("fromTime", defaultTime.from, {
-                              shouldValidate: true,
-                            });
-                          }
-                        }
-                        if (toDateTime !== undefined) {
-                          methods.setValue("toDate", formatDate(toDateTime), {
-                            shouldValidate: true,
-                          });
-                          if (methods.getValues("toTime") === "") {
-                            methods.setValue("toTime", defaultTime.to, {
-                              shouldValidate: true,
-                            });
-                          }
-                        }
-                      }}
-                      dateFormat="Y-m-d"
-                      short
-                    >
-                      <DateInput
-                        id="date-picker-input-id-start"
-                        type="from"
-                        labelText="From date"
-                      />
-                      <DateInput
-                        id="date-picker-input-id-finish"
-                        type="to"
-                        labelText="To date"
-                      />
-                    </DatePicker>
-                  </div>
-                  <TimeInputStack orientation="horizontal">
-                    <TimeInput type="from" labelText="From time" />
-                    <TimeInput type="to" labelText="To time" />
-                  </TimeInputStack>
-                </Stack>
-              </Modal>,
-              document.body,
-            )}
-          </>
-        </Layer>
-      </form>
-    </FormProvider>
+    <FormModal
+      open={isModalOpen}
+      headline={title}
+      size="sm"
+      confirmLabel="Apply"
+      submitDisabled={!methods.formState.isValid}
+      onClose={onCancel}
+      onSubmit={methods.handleSubmit(handleApply)}
+    >
+      <DateRangePicker
+        defaultValue={selectedRange}
+        onChange={(range) => {
+          if (range?.from) {
+            methods.setValue("fromDate", formatDate(range.from), {
+              shouldValidate: true,
+            });
+            if (methods.getValues("fromTime") === "") {
+              methods.setValue("fromTime", defaultTime.from, {
+                shouldValidate: true,
+              });
+            }
+          }
+          if (range?.to) {
+            methods.setValue("toDate", formatDate(range.to), {
+              shouldValidate: true,
+            });
+            if (methods.getValues("toTime") === "") {
+              methods.setValue("toTime", defaultTime.to, {
+                shouldValidate: true,
+              });
+            }
+          }
+        }}
+      />
+      <div className="grid grid-cols-2 gap-4">
+        <Controller
+          name="fromTime"
+          control={methods.control}
+          rules={{ validate: { range: validateTimeRange } }}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              type="time"
+              label="From time"
+              errors={fieldState.error?.message}
+            />
+          )}
+        />
+        <Controller
+          name="toTime"
+          control={methods.control}
+          rules={{ validate: { range: validateTimeRange } }}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              type="time"
+              label="To time"
+              errors={fieldState.error?.message}
+            />
+          )}
+        />
+      </div>
+    </FormModal>
   );
 };
 

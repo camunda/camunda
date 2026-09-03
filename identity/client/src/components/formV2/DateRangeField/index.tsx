@@ -6,12 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useRef } from "react";
+import TextField from "src/components/formV2/TextField";
 import { formatDate, formatTime } from "./formatDate";
-import { Calendar } from "@carbon/react/icons";
 import { DateRangeModal } from "./DateRangeModal";
-// TODO: Replace with normal `TextField` during design system migration
-import { IconTextInput } from "../../form/IconInput";
 
 type Props = {
   popoverTitle: string;
@@ -41,8 +38,6 @@ const DateRangeField: React.FC<Props> = ({
   onChange,
   value,
 }) => {
-  const textFieldRef = useRef<HTMLDivElement>(null);
-
   const getInputValue = () => {
     if (isModalOpen) {
       return "Custom";
@@ -61,20 +56,14 @@ const DateRangeField: React.FC<Props> = ({
 
   return (
     <>
-      <div ref={textFieldRef}>
-        <IconTextInput
-          Icon={Calendar}
-          id={`optional-filter-timestamp`}
-          labelText={label}
-          value={getInputValue()}
-          title={getInputValue()}
-          placeholder="Enter date range"
-          size="sm"
-          buttonLabel="Open date range modal"
-          onIconClick={handleClick}
-          onClick={handleClick}
-        />
-      </div>
+      <TextField
+        label={label}
+        value={getInputValue()}
+        title={getInputValue()}
+        placeholder="Enter date range"
+        readOnly
+        onClick={handleClick}
+      />
 
       {isModalOpen ? (
         <DateRangeModal
