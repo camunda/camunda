@@ -7,7 +7,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {mapProcessInstancesFilter, type ProcessesSearch} from './processesFilter';
+import {mapProcessInstancesFilter, mapProcessInstancesSort, type ProcessesSearch} from './processesFilter';
 
 const NO_STATES: ProcessesSearch = {
 	active: false,
@@ -27,5 +27,24 @@ describe('mapProcessInstancesFilter', () => {
 
 	it('should ignore an empty tenant filter', () => {
 		expect(mapProcessInstancesFilter({...NO_STATES, active: true, tenantId: ''})?.tenantId).toBeUndefined();
+	});
+});
+
+describe('mapProcessInstancesSort', () => {
+	it.for([
+		['processDefinitionName+asc', 'processDefinitionName', 'asc'],
+		['processInstanceKey+desc', 'processInstanceKey', 'desc'],
+		['processDefinitionVersion+asc', 'processDefinitionVersion', 'asc'],
+		['businessId+desc', 'businessId', 'desc'],
+		['tenantId+asc', 'tenantId', 'asc'],
+		['startDate+desc', 'startDate', 'desc'],
+		['endDate+asc', 'endDate', 'asc'],
+		['parentProcessInstanceKey+desc', 'parentProcessInstanceKey', 'desc'],
+	] as const)('should map the supported sort value %s', ([sort, field, order]) => {
+		expect(mapProcessInstancesSort(sort)).toEqual([{field, order}]);
+	});
+
+	it.for([undefined, 'unknown+asc', 'startDate+unknown'])('should fall back to the default sort for %s', (sort) => {
+		expect(mapProcessInstancesSort(sort)).toEqual([{field: 'startDate', order: 'desc'}]);
 	});
 });

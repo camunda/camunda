@@ -7,6 +7,7 @@
  */
 
 import type {ProcessInstanceState, QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {z} from 'zod';
 import {parseIds} from '#/operate/shared/utils/parseIds';
 import {decodeAdvancedStringFilter} from '#/operate/shared/utils/advancedStringFilter';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
@@ -180,7 +181,7 @@ const DEFAULT_SORT: ResolvedProcessInstancesSort = [{field: 'startDate', order: 
 
 // The sortable columns InstancesTable wires up — the app never produces a `sort` value outside
 // this set, so anything else can only come from a hand-edited URL.
-const SORTABLE_FIELDS: ProcessInstancesSortField[] = [
+const SORTABLE_FIELDS = [
 	'processDefinitionName',
 	'processInstanceKey',
 	'processDefinitionVersion',
@@ -189,7 +190,12 @@ const SORTABLE_FIELDS: ProcessInstancesSortField[] = [
 	'startDate',
 	'endDate',
 	'parentProcessInstanceKey',
-];
+] as const satisfies readonly ProcessInstancesSortField[];
+
+const processInstancesSortSchema = z.object({
+	field: z.enum(SORTABLE_FIELDS),
+	order: z.enum(['asc', 'desc']),
+});
 
 /**
  * Parses the `sort` search param (`"field+order"`) into the API sort shape, falling back to start
@@ -202,11 +208,9 @@ function mapProcessInstancesSort(sort: string | undefined): ResolvedProcessInsta
 	}
 
 	const [field, order] = sort.split('+');
-	if (!SORTABLE_FIELDS.includes(field as ProcessInstancesSortField) || (order !== 'asc' && order !== 'desc')) {
-		return DEFAULT_SORT;
-	}
+	const result = processInstancesSortSchema.safeParse({field, order});
 
-	return [{field: field as ProcessInstancesSortField, order}];
+	return result.success ? [result.data] : DEFAULT_SORT;
 }
 
 export {mapProcessInstancesFilter, mapProcessInstancesSort};
