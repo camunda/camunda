@@ -7,7 +7,7 @@
  */
 
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryObserverBaseResult } from "@tanstack/react-query";
 import { ApiDefinition, unwrap } from "src/utility/api/request";
 import { searchGroups } from "src/utility/api/groups";
 import { usePagination } from "src/utility/api";
@@ -25,10 +25,9 @@ type UseEnrichedGroupsResult = {
   groups: GroupWithId[];
   loading: boolean;
   success: boolean;
-  reload: () => Promise<{
-    data?: QueryGroupsResponseBody | QueryGroupsByRoleResponseBody;
-    isSuccess: boolean;
-  }>;
+  reload: QueryObserverBaseResult<
+    QueryGroupsResponseBody | QueryGroupsByRoleResponseBody
+  >["refetch"];
   paginationProps: {
     page: { pageNumber: number; pageSize: number; totalItems?: number };
     setPageNumber: (page: number) => void;
