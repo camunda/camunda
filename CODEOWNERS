@@ -176,7 +176,7 @@
 #################
 ## Camunda Ex  ##
 #################
-/clients/        @camunda/c8-java-sdk
+/clients/        @camunda/c8-api-team
 /library-parent/ @camunda/c8-java-sdk
 /testing/        @camunda/c8-testing
 

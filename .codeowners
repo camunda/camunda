@@ -58,7 +58,7 @@ zeebe/qa/pom.xml            @camunda/orchestration-cluster
 buf.yaml                    @camunda/orchestration-cluster
 
 # Camunda Client & SB Starter
-/clients/                   @camunda/core-features
+/clients/                   @camunda/c8-api-team
 
 # Spring utilities
 /spring-utils/              @camunda/core-features
