@@ -11,6 +11,7 @@ import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.backup.client.api.BackupAlreadyExistException;
+import io.camunda.zeebe.backup.client.api.BackupApi;
 import io.camunda.zeebe.backup.client.api.BackupDeleteRequest;
 import io.camunda.zeebe.backup.client.api.BackupListRequest;
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
@@ -38,8 +40,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -412,6 +417,119 @@ public class BackupRequestHandlerTest extends GatewayTest {
   }
 
   @Test
+  public void shouldReportOnlyBackupsEveryPartitionWasEnumeratedPast() {
+    // given — partition 1 pages 100, 90, 80 while the others page 100, 95, 85
+    brokerClient.registerHandler(
+        BackupListRequest.class,
+        request ->
+            new BrokerResponse<>(pageOf(request, List.of(100, 90, 80), List.of(100, 95, 85))));
+
+    // when
+    final var future =
+        requestHandler.listBackups(
+            DEFAULT_PHYSICAL_TENANT_ID,
+            BackupApi.WILDCARD,
+            OptionalLong.empty(),
+            OptionalInt.of(3));
+
+    // then — 85 and 80 wait for the next page, because partition 1 may still hold statuses below 80
+    assertThat(future).succeedsWithin(Duration.ofMillis(500));
+    final var backups = future.toCompletableFuture().join();
+    assertThat(backups).extracting(BackupStatus::backupId).containsExactly(100L, 95L, 90L);
+    assertThat(backups)
+        .extracting(BackupStatus::status)
+        .containsExactly(State.COMPLETED, State.INCOMPLETE, State.INCOMPLETE);
+  }
+
+  @Test
+  public void shouldContinueAfterTheCursor() {
+    // given — the same partitions as above, asked for the page below 90
+    brokerClient.registerHandler(
+        BackupListRequest.class,
+        request -> {
+          assertThat(((BackupListRequest) request).getBeforeCheckpointId()).hasValue(90L);
+          return new BrokerResponse<>(pageOf(request, List.of(80, 70, 60), List.of(85, 70, 65)));
+        });
+
+    // when
+    final var future =
+        requestHandler.listBackups(
+            DEFAULT_PHYSICAL_TENANT_ID, BackupApi.WILDCARD, OptionalLong.of(90), OptionalInt.of(3));
+
+    // then — 85 that the previous page held back is reported now, nothing was lost
+    assertThat(future).succeedsWithin(Duration.ofMillis(500));
+    final var backups = future.toCompletableFuture().join();
+    assertThat(backups).extracting(BackupStatus::backupId).containsExactly(85L, 80L, 70L);
+  }
+
+  @Test
+  public void shouldNotLetAnExhaustedPartitionBoundThePage() {
+    // given — partition 1 holds a single backup, the others page three much older ones
+    brokerClient.registerHandler(
+        BackupListRequest.class,
+        request -> new BrokerResponse<>(pageOf(request, List.of(100), List.of(50, 40, 30))));
+
+    // when
+    final var future =
+        requestHandler.listBackups(
+            DEFAULT_PHYSICAL_TENANT_ID,
+            BackupApi.WILDCARD,
+            OptionalLong.empty(),
+            OptionalInt.of(3));
+
+    // then — a short page means partition 1 has nothing below 100, so the others' ids are safe
+    assertThat(future).succeedsWithin(Duration.ofMillis(500));
+    final var backups = future.toCompletableFuture().join();
+    assertThat(backups).extracting(BackupStatus::backupId).containsExactly(100L, 50L, 40L);
+  }
+
+  @Test
+  public void shouldTreatAPartitionIgnoringThePageSizeAsExhausted() {
+    // given — partition 1 answers like a broker before the paged protocol: with everything
+    brokerClient.registerHandler(
+        BackupListRequest.class,
+        request ->
+            new BrokerResponse<>(pageOf(request, List.of(100, 90, 80, 70), List.of(100, 95))));
+
+    // when
+    final var future =
+        requestHandler.listBackups(
+            DEFAULT_PHYSICAL_TENANT_ID,
+            BackupApi.WILDCARD,
+            OptionalLong.empty(),
+            OptionalInt.of(2));
+
+    // then — the full pages of the other partitions bound the page at 95
+    assertThat(future).succeedsWithin(Duration.ofMillis(500));
+    final var backups = future.toCompletableFuture().join();
+    assertThat(backups).extracting(BackupStatus::backupId).containsExactly(100L, 95L);
+  }
+
+  @Test
+  public void shouldClampThePageSizeSentToPartitions() {
+    // given
+    final var requestedPageSize = new AtomicReference<OptionalInt>();
+    brokerClient.registerHandler(
+        BackupListRequest.class,
+        request -> {
+          requestedPageSize.set(((BackupListRequest) request).getPageSize());
+          return new BrokerResponse<>(new BackupListResponse(List.of()));
+        });
+
+    // when
+    final var future =
+        requestHandler.listBackups(
+            DEFAULT_PHYSICAL_TENANT_ID,
+            BackupApi.WILDCARD,
+            OptionalLong.empty(),
+            OptionalInt.of(BackupApi.MAX_PAGE_SIZE * 5));
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(500));
+    assertThat(requestedPageSize.get()).hasValue(BackupApi.MAX_PAGE_SIZE);
+  }
+
+  @Test
   public void shouldGetCheckpointState() {
     // given
     final var now = Instant.now();
@@ -520,6 +638,20 @@ public class BackupRequestHandlerTest extends GatewayTest {
         .failsWithin(Duration.ofMillis(500))
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(BrokerErrorException.class);
+  }
+
+  /**
+   * Partition 1 answers with the first list of completed backups, every other partition with the
+   * second.
+   */
+  private static BackupListResponse pageOf(
+      final BrokerRequest<?> request,
+      final List<Integer> partitionOneBackupIds,
+      final List<Integer> otherPartitionsBackupIds) {
+    final var partitionId = request.getPartitionId();
+    final var backupIds = partitionId == 1 ? partitionOneBackupIds : otherPartitionsBackupIds;
+    return new BackupListResponse(
+        backupIds.stream().map(backupId -> getCompletedBackup(backupId, partitionId)).toList());
   }
 
   private static BackupListResponse.BackupStatus getCompletedBackup(

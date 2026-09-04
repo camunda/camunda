@@ -10,6 +10,8 @@ package io.camunda.zeebe.backup.client.api;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import java.util.List;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.concurrent.CompletionStage;
 
 public interface BackupApi {
