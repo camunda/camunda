@@ -26,6 +26,8 @@ public final class EngineCfg implements ConfigurationEntry {
   private JobMetricsCfg jobMetrics = new JobMetricsCfg();
   private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
+  private int agentHistoryCleanupChunkSize =
+      EngineConfiguration.DEFAULT_AGENT_HISTORY_CLEANUP_CHUNK_SIZE;
   private EngineConfiguration.InputMappingMode inputMappingMode =
       EngineConfiguration.InputMappingMode.COMBINED;
   private @Nullable InputMappingMode inputComparisonMode = null;
@@ -126,6 +128,14 @@ public final class EngineCfg implements ConfigurationEntry {
 
   public void setMaxProcessDepth(final int maxProcessDepth) {
     this.maxProcessDepth = maxProcessDepth;
+  }
+
+  public int getAgentHistoryCleanupChunkSize() {
+    return agentHistoryCleanupChunkSize;
+  }
+
+  public void setAgentHistoryCleanupChunkSize(final int agentHistoryCleanupChunkSize) {
+    this.agentHistoryCleanupChunkSize = agentHistoryCleanupChunkSize;
   }
 
   public EngineConfiguration.InputMappingMode getInputMappingMode() {
@@ -233,6 +243,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + distribution
         + ", maxProcessDepth="
         + maxProcessDepth
+        + ", agentHistoryCleanupChunkSize="
+        + agentHistoryCleanupChunkSize
         + ", expression="
         + expression
         + ", processInstanceCreation="
@@ -296,6 +308,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setCommandRedistributionInterval(distribution.getRedistributionInterval())
         .setCommandRedistributionMaxBackoff(distribution.getMaxBackoffDuration())
         .setMaxProcessDepth(getMaxProcessDepth())
+        .setAgentHistoryCleanupChunkSize(agentHistoryCleanupChunkSize)
         .setGlobalListeners(globalListeners.createGlobalListenersConfiguration())
         .setExpressionEvaluationTimeout(expression.getTimeout())
         .setBusinessIdUniquenessEnabled(processInstanceCreation.isBusinessIdUniquenessEnabled())

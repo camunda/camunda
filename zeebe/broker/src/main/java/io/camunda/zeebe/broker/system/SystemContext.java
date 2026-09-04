@@ -331,6 +331,21 @@ public final class SystemContext {
         .map(ExperimentalCfg::getEngine)
         .map(EngineCfg::getGlobalListeners)
         .ifPresent(listeners -> validateListenersConfig(tenantId, listeners));
+
+    Optional.of(experimental)
+        .map(ExperimentalCfg::getEngine)
+        .ifPresent(config -> validateAgentHistoryCleanupChunkSize(tenantId, config));
+  }
+
+  private void validateAgentHistoryCleanupChunkSize(final String tenantId, final EngineCfg config) {
+    if (config.getAgentHistoryCleanupChunkSize() <= 0) {
+      throw new IllegalArgumentException(
+          tenantScopedMessage(
+              tenantId,
+              String.format(
+                  "experimental.engine.agentHistoryCleanupChunkSize must be greater than 0, but was %s",
+                  config.getAgentHistoryCleanupChunkSize())));
+    }
   }
 
   private void validateDiskConfig(final DataCfg dataCfg) {

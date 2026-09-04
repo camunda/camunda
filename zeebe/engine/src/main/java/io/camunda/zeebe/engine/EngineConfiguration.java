@@ -39,6 +39,9 @@ public final class EngineConfiguration {
   public static final boolean DEFAULT_ENABLE_AUTHORIZATION_CHECKS = false;
 
   public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
+  // number of history-item ids deleted, combined across the committed and metrics-accumulated
+  // indexes, per AGENT_INSTANCE:CLEANED cycle
+  public static final int DEFAULT_AGENT_HISTORY_CLEANUP_CHUNK_SIZE = 100;
   public static final Duration DEFAULT_USAGE_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
   public static final Duration DEFAULT_JOB_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
   public static final int DEFAULT_JOB_METRICS_MAX_WORKER_NAME_LENGTH = 100;
@@ -145,6 +148,7 @@ public final class EngineConfiguration {
   private int validatorsResultsOutputMaxSize = DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
   private boolean enableAuthorization = DEFAULT_ENABLE_AUTHORIZATION_CHECKS;
   private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
+  private int agentHistoryCleanupChunkSize = DEFAULT_AGENT_HISTORY_CLEANUP_CHUNK_SIZE;
   private Duration batchOperationSchedulerInterval = DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL;
   private int batchOperationChunkSize = DEFAULT_BATCH_OPERATION_CHUNK_SIZE;
   private int batchOperationQueryPageSize = DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE;
@@ -348,6 +352,16 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setMaxProcessDepth(final int maxProcessDepth) {
     this.maxProcessDepth = maxProcessDepth;
+    return this;
+  }
+
+  public int getAgentHistoryCleanupChunkSize() {
+    return agentHistoryCleanupChunkSize;
+  }
+
+  public EngineConfiguration setAgentHistoryCleanupChunkSize(
+      final int agentHistoryCleanupChunkSize) {
+    this.agentHistoryCleanupChunkSize = agentHistoryCleanupChunkSize;
     return this;
   }
 
