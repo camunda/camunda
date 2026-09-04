@@ -65,12 +65,12 @@ public class CamundaProcessTestConnectorsIT {
         public void beforeAll(final ExtensionContext context) {
           final int wireMockPort = WIREMOCK.getRuntimeInfo().getHttpPort();
           Testcontainers.exposeHostPorts(wireMockPort);
-          withConnectorsSecret(
-              "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness");
           withConnectorsSecret("BASE_URL", "http://host.testcontainers.internal:" + wireMockPort);
           super.beforeAll(context);
         }
-      }.withConnectorsEnabled(true);
+      }.withConnectorsEnabled(true)
+          .withConnectorsSecret(
+              "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness");
 
   private CamundaClient client;
   private CamundaProcessTestContext processTestContext;
