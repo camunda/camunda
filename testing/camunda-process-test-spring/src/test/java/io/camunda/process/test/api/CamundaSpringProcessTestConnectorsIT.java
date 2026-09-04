@@ -53,6 +53,9 @@ import org.testcontainers.Testcontainers;
 @CamundaSpringProcessTest
 public class CamundaSpringProcessTestConnectorsIT {
 
+  // The ID is part of the connector configuration in the BPMN element
+  private static final String INBOUND_CONNECTOR_ID = "941c5492-ab2b-4305-aa18-ac86991ff4ca";
+
   private static final WireMockServer WIREMOCK =
       new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
 
@@ -70,9 +73,6 @@ public class CamundaSpringProcessTestConnectorsIT {
   static void tearDown() {
     WIREMOCK.stop();
   }
-
-  // The ID is part of the connector configuration in the BPMN element
-  private static final String INBOUND_CONNECTOR_ID = "941c5492-ab2b-4305-aa18-ac86991ff4ca";
 
   @Autowired private CamundaClient client;
   @Autowired private CamundaProcessTestContext processTestContext;
