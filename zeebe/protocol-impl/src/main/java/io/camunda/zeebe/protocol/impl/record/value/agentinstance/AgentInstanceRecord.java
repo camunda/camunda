@@ -78,9 +78,11 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   private final StringProperty jobLeaseProp = new StringProperty("jobLease", "");
   private final ArrayProperty<AgentHistoryRecord> historyProp =
       new ArrayProperty<>("history", AgentHistoryRecord::new);
+  private final ArrayProperty<StringValue> historyItemIdsToDeleteProp =
+      new ArrayProperty<>("historyItemIdsToDelete", StringValue::new);
 
   public AgentInstanceRecord() {
-    super(22);
+    super(23);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(agentDefinitionKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -102,7 +104,8 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(changedAttributesProp)
         .declareProperty(jobKeyProp)
         .declareProperty(jobLeaseProp)
-        .declareProperty(historyProp);
+        .declareProperty(historyProp)
+        .declareProperty(historyItemIdsToDeleteProp);
   }
 
   @Override
@@ -348,6 +351,23 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord addHistoryItem(final AgentHistoryRecord historyItem) {
     historyProp.add().copyFrom(historyItem);
+    return this;
+  }
+
+  @Override
+  public List<String> getHistoryItemIdsToDelete() {
+    return historyItemIdsToDeleteProp.stream()
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .toList();
+  }
+
+  public AgentInstanceRecord setHistoryItemIdsToDelete(final List<String> historyItemIdsToDelete) {
+    historyItemIdsToDeleteProp.reset();
+    if (historyItemIdsToDelete != null) {
+      historyItemIdsToDelete.forEach(
+          id -> historyItemIdsToDeleteProp.add().wrap(BufferUtil.wrapString(id)));
+    }
     return this;
   }
 }

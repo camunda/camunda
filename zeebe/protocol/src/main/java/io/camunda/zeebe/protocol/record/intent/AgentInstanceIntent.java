@@ -22,7 +22,9 @@ public enum AgentInstanceIntent implements Intent {
   UPDATED((short) 3, true),
   COMPLETE((short) 4, false),
   COMPLETED((short) 5, true),
-  MIGRATED((short) 6, true);
+  MIGRATED((short) 6, true),
+  CLEAN_UP((short) 7, false),
+  CLEANED((short) 8, true);
 
   private final short value;
   private final boolean isEvent;
@@ -58,6 +60,10 @@ public enum AgentInstanceIntent implements Intent {
         return COMPLETED;
       case 6:
         return MIGRATED;
+      case 7:
+        return CLEAN_UP;
+      case 8:
+        return CLEANED;
       default:
         return Intent.UNKNOWN;
     }
