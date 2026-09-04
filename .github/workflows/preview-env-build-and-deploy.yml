@@ -160,7 +160,7 @@ jobs:
     #########################################################################
     # Create a preview environment
     - name: Deploy Preview Environment for c8sm
-      uses: camunda/infra-global-github-actions/preview-env/create@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env-1.0.8
+      uses: camunda/infra-global-github-actions/preview-env/create@67d00e9260887361a31f6446252fffbecae4a02e # preview-env-1.0.12
       with:
         revision: ${{ github.head_ref }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
@@ -186,4 +186,4 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-preview]
     steps:
-    - uses: camunda/infra-global-github-actions/preview-env/comment@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env-1.0.8
+    - uses: camunda/infra-global-github-actions/preview-env/comment@67d00e9260887361a31f6446252fffbecae4a02e # preview-env-1.0.12
