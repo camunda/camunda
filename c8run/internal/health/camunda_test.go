@@ -174,8 +174,12 @@ func TestShouldSkipOpeningBrowserWhenNoBrowserIsSet(t *testing.T) {
 	if !printStatusCalled {
 		t.Fatal("expected printStatusFunc to still be called")
 	}
-	if _, err := os.Stat(markerPath); !os.IsNotExist(err) {
-		t.Fatalf("expected quickstart marker not to be consumed on a headless start, but it was created")
+	_, err = os.Stat(markerPath)
+	if err == nil {
+		t.Fatal("expected quickstart marker not to be consumed on a headless start, but it was created")
+	}
+	if !os.IsNotExist(err) {
+		t.Fatalf("unexpected error checking marker path: %v", err)
 	}
 }
 
