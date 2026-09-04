@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -38,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 class BusinessValueTargetServiceTest {
 
@@ -49,6 +52,7 @@ class BusinessValueTargetServiceTest {
   private BusinessValueTargetRepository repository;
   private TenantService tenantService;
   private DefinitionService definitionService;
+  private BusinessValueOverviewComputeService overviewComputeService;
   private BusinessValueTargetService service;
 
   @BeforeEach
@@ -57,9 +61,12 @@ class BusinessValueTargetServiceTest {
     repository = mock(BusinessValueTargetRepository.class);
     tenantService = mock(TenantService.class);
     definitionService = mock(DefinitionService.class);
+    overviewComputeService = mock(BusinessValueOverviewComputeService.class);
     when(tenantService.isAuthorizedToSeeTenant(anyString(), anyString())).thenReturn(true);
     stubDefinitionExists(PROCESS_KEY, TENANT);
-    service = new BusinessValueTargetService(writer, repository, tenantService, definitionService);
+    service =
+        new BusinessValueTargetService(
+            writer, repository, tenantService, definitionService, overviewComputeService);
   }
 
   private void stubDefinitionExists(final String processDefinitionKey, final String... tenantIds) {
@@ -138,6 +145,75 @@ class BusinessValueTargetServiceTest {
     // and — response echoes the written state
     assertThat(response.cycleTimeTarget().millis()).isEqualTo(172_800_000L);
     assertThat(response.automationRateTargetPct()).isEqualTo(90);
+  }
+
+  // --- upsert: overview coherence ---
+
+  /**
+   * Without this the saved target does not reach L0 until the next sweep, because the overview row
+   * carries the target it was last computed with and the stale-read backstop keys off the age of
+   * the measurement, not of the target — a freshly measured row holding a stale target looks
+   * perfectly fresh to it.
+   */
+  @Test
+  void shouldComputeOverviewRowsWithTheTargetItJustWrote() {
+    // given
+    final BusinessValueTargetUpsertRequestDto request =
+        new BusinessValueTargetUpsertRequestDto(
+            new CycleTimeTargetDto(2L, TargetValueUnit.DAYS, null), 90);
+
+    // when
+    service.upsertTarget(USER, TENANT, PROCESS_KEY, request);
+
+    // then the compute runs after the target is durable, and on exactly what was persisted
+    final ArgumentCaptor<BusinessValueTargetDto> computeCaptor =
+        ArgumentCaptor.forClass(BusinessValueTargetDto.class);
+    final InOrder inOrder = inOrder(writer, overviewComputeService);
+    inOrder.verify(writer).upsertTarget(any(BusinessValueTargetDto.class));
+    inOrder.verify(overviewComputeService).computeRowsForTarget(computeCaptor.capture());
+    final BusinessValueTargetDto computed = computeCaptor.getValue();
+    assertThat(computed.getTenantId()).isEqualTo(TENANT);
+    assertThat(computed.getProcessDefinitionKey()).isEqualTo(PROCESS_KEY);
+    assertThat(computed.getCycleTimeTargetMillis()).isEqualTo(172_800_000L);
+    assertThat(computed.getAutomationRateTargetPct()).isEqualTo(90);
+  }
+
+  /**
+   * The target is already durable by the time the compute runs, and the next sweep measures the
+   * definition anyway. Failing the request instead would leave the caller unable to tell whether
+   * their target saved — worse than an overview that lags one interval.
+   */
+  @Test
+  void shouldStillReturnTheSavedTargetWhenComputingTheOverviewFails() {
+    // given a compute that blows up
+    doThrow(new IllegalStateException("elasticsearch is having a moment"))
+        .when(overviewComputeService)
+        .computeRowsForTarget(any());
+    final BusinessValueTargetUpsertRequestDto request =
+        new BusinessValueTargetUpsertRequestDto(
+            new CycleTimeTargetDto(2L, TargetValueUnit.DAYS, null), 90);
+
+    // when
+    final BusinessValueTargetResponseDto response =
+        service.upsertTarget(USER, TENANT, PROCESS_KEY, request);
+
+    // then the save stands and the caller sees what was persisted
+    verify(writer).upsertTarget(any(BusinessValueTargetDto.class));
+    assertThat(response.cycleTimeTarget().millis()).isEqualTo(172_800_000L);
+    assertThat(response.automationRateTargetPct()).isEqualTo(90);
+  }
+
+  /** A rejected upsert must not measure anything — there is no new target to propagate. */
+  @Test
+  void shouldNotComputeOverviewRowsWhenTheUpsertIsRejected() {
+    // given a request that fails the service's own cross-field validation
+    final BusinessValueTargetUpsertRequestDto missingUnit =
+        new BusinessValueTargetUpsertRequestDto(new CycleTimeTargetDto(2L, null, null), 90);
+
+    // when / then
+    assertThatThrownBy(() -> service.upsertTarget(USER, TENANT, PROCESS_KEY, missingUnit))
+        .isInstanceOf(BadRequestException.class);
+    verify(overviewComputeService, never()).computeRowsForTarget(any());
   }
 
   // --- upsert: clear semantics ---
