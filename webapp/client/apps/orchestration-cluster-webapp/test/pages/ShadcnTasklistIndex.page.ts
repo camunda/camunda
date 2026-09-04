@@ -74,8 +74,8 @@ class ShadcnTasklistIndexPage extends BasePage {
 			.last();
 	}
 
-	get customFilterActionsButton() {
-		return this.page.getByRole('menuitem', {name: /custom filter actions/i});
+	customFilterActionsButton(filterName: string) {
+		return this.page.getByRole('menuitem', {name: `Custom filter actions - ${filterName}`, exact: true});
 	}
 
 	customFilterOverflowItem(name: 'Edit' | 'Delete') {
