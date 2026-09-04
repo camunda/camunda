@@ -612,8 +612,59 @@ final class ClusterScaleRequestTransformerTest {
   }
 
   @Test
-  void shouldRejectBrokerCountCombinedWithPhysicalTenant() {
-    // given — brokerCount changes cluster membership, which has no tenant dimension
+  void shouldGrowOnlyTheRequestedTenantWhileChangingTheBrokerCount() {
+    // given — the cluster shrinks from three brokers to two and tenant-b alone grows from one
+    // partition to two: the broker count has no tenant dimension, but the partition count does
+    final var transformer =
+        new ClusterScaleRequestTransformer(
+            Optional.of(2),
+            Optional.of(2),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of(TENANT_B));
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then — the named tenant gains the partition, the default tenant keeps its count, and the
+    // departing broker leaves only after the partition work
+    assertThat(result).isRight();
+    final var partitionPhase =
+        (PartitionGroupPhase)
+            result.get().stream().filter(PartitionGroupPhase.class::isInstance).findFirst().get();
+    Assertions.assertThat(bootstraps(partitionPhase, TENANT_B))
+        .singleElement()
+        .satisfies(op -> Assertions.assertThat(op.partitionId()).isEqualTo(2));
+    Assertions.assertThat(bootstraps(partitionPhase, DEFAULT_GROUP)).isEmpty();
+    Assertions.assertThat(((GlobalPhase) result.get().getLast()).operations())
+        .contains(new MemberLeaveOperation(id2));
+  }
+
+  @Test
+  void shouldRejectUnknownPhysicalTenantWhileChangingTheBrokerCount() {
+    // given — the tenant is resolved on the broker-count path too, not only when the request plans
+    // the partition count on its own
+    final var transformer =
+        new ClusterScaleRequestTransformer(
+            Optional.of(2),
+            Optional.of(2),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of("unknown"));
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(NotFound.class)
+        .hasMessageContaining("unknown");
+  }
+
+  @Test
+  void shouldRejectPhysicalTenantWithoutAPartitionCountToScope() {
+    // given — the broker count is cluster-wide, so a tenant named alongside it scopes nothing
     final var transformer =
         new ClusterScaleRequestTransformer(
             Optional.of(3),
@@ -626,7 +677,10 @@ final class ClusterScaleRequestTransformerTest {
     final var result = transformer.phases(twoTenantCluster());
 
     // then
-    assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessageContaining("physicalTenant scopes newPartitionCount alone");
   }
 
   @Test

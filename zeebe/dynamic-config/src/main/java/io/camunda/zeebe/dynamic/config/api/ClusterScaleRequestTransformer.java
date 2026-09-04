@@ -56,19 +56,19 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
   @Override
   public Either<Exception, List<Phase>> phases(
       final CurrentClusterConfiguration clusterConfiguration) {
-    if (physicalTenantId.isPresent()) {
-      if (brokerCount.isPresent()) {
-        return Either.left(
-            new InvalidRequest(
-                "brokerCount cannot be combined with physicalTenant: brokerCount changes cluster "
-                    + "membership, which has no tenant dimension"));
-      }
-      if (newReplicationFactor.isPresent()) {
-        return Either.left(
-            new InvalidRequest(
-                "newReplicationFactor cannot be combined with physicalTenant: the replication "
-                    + "factor is a cluster-wide setting, so it has no tenant to scope it to"));
-      }
+    if (physicalTenantId.isPresent() && newReplicationFactor.isPresent()) {
+      return Either.left(
+          new InvalidRequest(
+              "newReplicationFactor cannot be combined with physicalTenant: the replication "
+                  + "factor is a cluster-wide setting, so it has no tenant to scope it to"));
+    }
+    if (physicalTenantId.isPresent() && newPartitionCount.isEmpty()) {
+      // Rejected rather than ignored: an operator who scopes a request to a tenant expects the
+      // scope to do something, and here there is nothing for it to apply to.
+      return Either.left(
+          new InvalidRequest(
+              "physicalTenant scopes newPartitionCount alone, and this request does not change "
+                  + "it: brokerCount changes cluster membership, which has no tenant dimension"));
     }
     if (brokerCount.isEmpty() && newPartitionCount.isEmpty() && newReplicationFactor.isEmpty()) {
       // Changes neither membership nor a partition dimension, so there is nothing to plan.
@@ -83,30 +83,33 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
     if (invalidZone.isPresent()) {
       return Either.left(invalidZone.get());
     }
-    if (brokerCount.isPresent()) {
-      // brokerCount has no tenant dimension, but the partitions it moves do: every tenant's
-      // partitions have to be redistributed over the new member set, not just the default
-      // tenant's, which is what ScaleRequestTransformer plans.
-      return new ScaleRequestTransformer(
-              newSetOfMembers(clusterConfiguration.getMembers()),
-              newReplicationFactor,
-              newPartitionCount,
-              zone)
-          .phases(clusterConfiguration);
-    }
-
     final var groupId = physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP);
 
-    // Only the partition count targets a group; the replication factor spans every tenant, so a
-    // request carrying it alone has no group that has to exist.
+    // Only the partition count targets a group; the replication factor and the broker count span
+    // every tenant, so a request carrying only those has no group that has to exist.
     if (newPartitionCount.isPresent() && !clusterConfiguration.hasPartitionGroup(groupId)) {
       return Either.left(
           new NotFound(
               "Expected to scale physical tenant '%s', but there's no such tenant"
                   .formatted(groupId)));
     }
+    if (brokerCount.isPresent()) {
+      // brokerCount has no tenant dimension, but the partitions it moves do: every tenant's
+      // partitions have to be redistributed over the new member set, not just the default
+      // tenant's, which is what ScaleRequestTransformer plans. The partition count keeps its
+      // tenant scope while it does so — the two dimensions are independent, so a request may
+      // resize the cluster and grow one named tenant in the same plan.
+      return new ScaleRequestTransformer(
+              newSetOfMembers(clusterConfiguration.getMembers()),
+              newReplicationFactor,
+              newPartitionCount.map(count -> new TenantPartitionCount(groupId, count)),
+              zone)
+          .phases(clusterConfiguration);
+    }
     return PartitionGroupScalingPhases.phases(
-        groupId, clusterConfiguration, newPartitionCount, newReplicationFactor);
+        clusterConfiguration,
+        newPartitionCount.map(count -> new TenantPartitionCount(groupId, count)),
+        newReplicationFactor);
   }
 
   /**

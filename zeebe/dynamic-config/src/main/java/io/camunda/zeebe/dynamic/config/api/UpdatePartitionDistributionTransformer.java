@@ -86,8 +86,9 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
     // The placement must be computed with the new distributor, and the planner resolves it from the
     // configuration it is handed — so hand it a copy that already carries the new config. Only the
     // operation above really persists it.
+    // Redistributes every tenant's partitions under the new distributor without changing any
+    // tenant's partition count, so it scales no physical tenant.
     return PartitionGroupScalingPhases.phases(
-            CurrentClusterConfiguration.DEFAULT_GROUP,
             configuration.updateGlobalConfiguration(
                 global -> global.setPartitionDistributorConfig(newConfig)),
             targetMembers(configuration.getMembers()),

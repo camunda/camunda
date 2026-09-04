@@ -30,31 +30,28 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
 
   private final Set<MemberId> members;
   private final Optional<Integer> newReplicationFactor;
-  private final Optional<Integer> newPartitionCount;
+  private final Optional<TenantPartitionCount> newPartitionCount;
   private final Optional<String> zone;
   private final ArrayList<ClusterConfigurationChangeOperation> generatedOperations =
       new ArrayList<>();
 
-  public ScaleRequestTransformer(final Set<MemberId> members) {
-    this(members, Optional.empty());
-  }
-
-  public ScaleRequestTransformer(
-      final Set<MemberId> members, final Optional<Integer> newReplicationFactor) {
-    this(members, newReplicationFactor, Optional.empty());
-  }
-
-  public ScaleRequestTransformer(
-      final Set<MemberId> members,
-      final Optional<Integer> newReplicationFactor,
-      final Optional<Integer> newPartitionCount) {
-    this(members, newReplicationFactor, newPartitionCount, Optional.empty());
-  }
-
+  /**
+   * @param members the complete member set the cluster should have once this request is applied, so
+   *     a member being removed is simply absent from it
+   * @param newReplicationFactor the replication factor every partition of every group should reach,
+   *     or empty to keep the one currently in use
+   * @param newPartitionCount the partition count one named physical tenant should reach, or empty
+   *     to scale no tenant. The count carries the tenant it applies to rather than defaulting to
+   *     the default group, so that a caller scaling no tenant names none and a caller scaling one
+   *     has to say which; see {@link TenantPartitionCount}.
+   * @param zone the zone whose brokers this request resizes, or empty on an unzoned cluster. Only
+   *     selects the member from which the pre/post-scaling callbacks run — the partition placement
+   *     spans the whole cluster either way.
+   */
   public ScaleRequestTransformer(
       final Set<MemberId> members,
       final Optional<Integer> newReplicationFactor,
-      final Optional<Integer> newPartitionCount,
+      final Optional<TenantPartitionCount> newPartitionCount,
       final Optional<String> zone) {
     this.members = members;
     this.newReplicationFactor = newReplicationFactor;
@@ -68,7 +65,8 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
    *
    * <p>{@link PartitionGroupScalingPhases} distributes every group's partitions together over
    * {@link #members}, rather than distributing the default group's alone. The member operations
-   * have no tenant dimension, so they are unchanged.
+   * have no tenant dimension, so they are unchanged. Only {@link #newPartitionCount} is scoped to
+   * one group — the one it names.
    *
    * <p>The resulting phases are the same three {@code toPhases} derives from the flat operation
    * list today — a global phase, a partition-group phase, a global phase — with the two global runs
@@ -119,11 +117,7 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
     scalingExecutor.ifPresent(id -> after.add(new PostScalingOperation(id, members)));
 
     return PartitionGroupScalingPhases.phases(
-            CurrentClusterConfiguration.DEFAULT_GROUP,
-            configuration,
-            members,
-            newPartitionCount,
-            newReplicationFactor)
+            configuration, members, newPartitionCount, newReplicationFactor)
         .map(partitionPhases -> assemble(before, partitionPhases, after));
   }
 

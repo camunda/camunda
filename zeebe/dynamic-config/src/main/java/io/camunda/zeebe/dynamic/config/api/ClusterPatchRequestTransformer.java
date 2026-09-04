@@ -52,19 +52,20 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
   public Either<Exception, List<Phase>> phases(
       final CurrentClusterConfiguration clusterConfiguration) {
     final var changesMembership = !membersToAdd.isEmpty() || !membersToRemove.isEmpty();
-    if (physicalTenantId.isPresent()) {
-      if (changesMembership) {
-        return Either.left(
-            new InvalidRequest(
-                "membersToAdd/membersToRemove cannot be combined with physicalTenant: they change "
-                    + "cluster membership, which has no tenant dimension"));
-      }
-      if (newReplicationFactor.isPresent()) {
-        return Either.left(
-            new InvalidRequest(
-                "newReplicationFactor cannot be combined with physicalTenant: the replication "
-                    + "factor is a cluster-wide setting, so it has no tenant to scope it to"));
-      }
+    if (physicalTenantId.isPresent() && newReplicationFactor.isPresent()) {
+      return Either.left(
+          new InvalidRequest(
+              "newReplicationFactor cannot be combined with physicalTenant: the replication "
+                  + "factor is a cluster-wide setting, so it has no tenant to scope it to"));
+    }
+    if (physicalTenantId.isPresent() && newPartitionCount.isEmpty()) {
+      // Rejected rather than ignored: an operator who scopes a request to a tenant expects the
+      // scope to do something, and here there is nothing for it to apply to.
+      return Either.left(
+          new InvalidRequest(
+              "physicalTenant scopes newPartitionCount alone, and this request does not change "
+                  + "it: membersToAdd/membersToRemove change cluster membership, which has no "
+                  + "tenant dimension"));
     }
     // The replication factor of a zone-aware cluster follows from its zone specs, so it cannot be
     // set directly. Checked before anything else that could plan, so that a request combining a
@@ -75,6 +76,15 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
           new InvalidRequest(
               "Changing the replication factor is not supported on zone-aware clusters."));
     }
+    final var groupId = physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP);
+    // Only the partition count targets a group; the replication factor and the membership span
+    // every tenant, so a request carrying only those has no group that has to exist.
+    if (newPartitionCount.isPresent() && !clusterConfiguration.hasPartitionGroup(groupId)) {
+      return Either.left(
+          new NotFound(
+              "Expected to patch physical tenant '%s', but there's no such tenant"
+                  .formatted(groupId)));
+    }
     if (changesMembership) {
       if (membersToAdd.stream().anyMatch(membersToRemove::contains)) {
         return Either.left(
@@ -84,29 +94,27 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
       }
       // Membership has no tenant dimension, but the partitions it moves do: every tenant's
       // partitions have to be redistributed over the new member set, not just the default
-      // tenant's, which is what ScaleRequestTransformer plans.
+      // tenant's, which is what ScaleRequestTransformer plans. The partition count keeps its
+      // tenant scope while it does so — the two dimensions are independent, so a request may
+      // change membership and grow one named tenant in the same plan.
       final var newSetOfMembers =
           new HashSet<>(clusterConfiguration.globalConfiguration().members().keySet());
       newSetOfMembers.addAll(membersToAdd);
       newSetOfMembers.removeAll(membersToRemove);
-      return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
+      return new ScaleRequestTransformer(
+              newSetOfMembers,
+              newReplicationFactor,
+              newPartitionCount.map(count -> new TenantPartitionCount(groupId, count)),
+              Optional.empty())
           .phases(clusterConfiguration);
     }
     if (newPartitionCount.isEmpty() && newReplicationFactor.isEmpty()) {
       // Changes neither membership nor a partition dimension, so there is nothing to plan.
       return Either.right(List.of());
     }
-
-    final var groupId = physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP);
-    // Only the partition count targets a group; the replication factor spans every tenant, so a
-    // request carrying it alone has no group that has to exist.
-    if (newPartitionCount.isPresent() && !clusterConfiguration.hasPartitionGroup(groupId)) {
-      return Either.left(
-          new NotFound(
-              "Expected to patch physical tenant '%s', but there's no such tenant"
-                  .formatted(groupId)));
-    }
     return PartitionGroupScalingPhases.phases(
-        groupId, clusterConfiguration, newPartitionCount, newReplicationFactor);
+        clusterConfiguration,
+        newPartitionCount.map(count -> new TenantPartitionCount(groupId, count)),
+        newReplicationFactor);
   }
 }
