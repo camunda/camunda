@@ -2,7 +2,7 @@
 
 Load tests validate the reliability and performance of Camunda 8 across releases and development branches. They can be created via automated GitHub Actions workflows or manually (via Makefiles) on a GKE cluster (`camunda-benchmark-prod`), deploying the [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm) and a custom [load test Helm chart](https://github.com/camunda/camunda-load-tests-helm).
 
-For background on goals and test variants, see the [reliability testing documentation](../docs/testing/reliability-testing.md).
+For background on goals and test variants, see the [reliability testing documentation](../docs/testing/reliability-testing.md). For the Reliability Testing team's mission, scope, and responsibilities, see the [team handbook page](https://github.com/camunda/company-handbook/blob/main/departments/products/engineering/organization-teams-in-r-d/qa-engineering/reliability-testing/index.md).
 
 ## Directory Layout
 
