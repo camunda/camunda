@@ -18,7 +18,7 @@ jobs:
   typecheck:
     name: "Type check"
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -31,16 +31,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-      - name: Setup npm cache
-        uses: ./.github/actions/setup-npm-cache
-        with:
-          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: Type check
         run: npm run typecheck
       - name: Observe build status
@@ -56,7 +52,7 @@ jobs:
   eslint:
     name: "ESLint"
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -69,16 +65,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-      - name: Setup npm cache
-        uses: ./.github/actions/setup-npm-cache
-        with:
-          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: ESLint
         run: npm run lint:eslint
       - name: Observe build status
@@ -94,7 +86,7 @@ jobs:
   knip:
     name: "Knip"
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -107,16 +99,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-      - name: Setup npm cache
-        uses: ./.github/actions/setup-npm-cache
-        with:
-          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: Knip
         run: npm run lint:knip
       - name: Observe build status
@@ -132,7 +120,7 @@ jobs:
   prettier:
     name: "Prettier"
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -145,16 +133,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-      - name: Setup npm cache
-        uses: ./.github/actions/setup-npm-cache
-        with:
-          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: Prettier
         run: npm run lint:prettier
       - name: Observe build status
@@ -170,7 +154,7 @@ jobs:
   build:
     name: "Build"
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -183,16 +167,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-      - name: Setup npm cache
-        uses: ./.github/actions/setup-npm-cache
-        with:
-          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: Build packages
         run: npm run build
       - name: Observe build status
@@ -210,7 +190,7 @@ jobs:
     env:
       TEST_TYPE: Unit
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
       image: mcr.microsoft.com/playwright:v1.62.1
@@ -228,16 +208,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-      - name: Setup npm cache
-        uses: ./.github/actions/setup-npm-cache
-        with:
-          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: Unit tests
         run: npm run test:unit
       - name: Upload blob report
@@ -283,10 +259,6 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-      - name: Setup npm cache
-        uses: ./.github/actions/setup-npm-cache
-        with:
-          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
@@ -319,7 +291,7 @@ jobs:
     env:
       TEST_TYPE: Accessibility
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
       image: mcr.microsoft.com/playwright:v1.62.1
@@ -337,16 +309,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-      - name: Setup npm cache
-        uses: ./.github/actions/setup-npm-cache
-        with:
-          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: Build frontend
         run: npm run build -w @camunda/orchestration-cluster-webapp
       - name: Accessibility tests
@@ -375,7 +343,7 @@ jobs:
     env:
       TEST_TYPE: Visual Regression
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 21
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
       image: mcr.microsoft.com/playwright:v1.62.1
@@ -393,10 +361,6 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-      - name: Setup npm cache
-        uses: ./.github/actions/setup-npm-cache
-        with:
-          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:

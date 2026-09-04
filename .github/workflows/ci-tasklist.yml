@@ -82,7 +82,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - Type check"
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -105,7 +105,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - run: npm run ts-check
         name: Type checks
       - name: Observe build status
@@ -122,7 +122,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - ESLint"
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -145,7 +145,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - run: npm run lint:eslint
         name: ESLint
       - name: Observe build status
@@ -162,7 +162,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - Stylelint"
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -184,7 +184,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - run: npm run lint:stylelint
         name: Stylelint
       - name: Observe build status
@@ -201,7 +201,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - Prettier"
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -224,7 +224,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - run: npm run lint:prettier
         name: Prettier
       - name: Observe build status
@@ -278,7 +278,7 @@ jobs:
     if: inputs.runFeTests
     name: "Unit - Front End - Visual Regression"
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: visual-regression
@@ -305,7 +305,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: Build frontend
         run: npm run build:visual-regression
       - name: Run Playwright tests
@@ -330,7 +330,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - a11y"
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -357,7 +357,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: Build frontend
         run: npm run build
       - name: Run A11y tests
