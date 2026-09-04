@@ -674,7 +674,8 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.clickResetFilters();
     });
 
-    await test.step('Filter by variable and batch operation key and assert results', async () => {
+    // Skipped due to bug 62004: https://github.com/camunda/camunda/issues/62004
+    await test.step.skip('Filter by variable and batch operation key and assert results', async () => {
       const processToCancelMeowInstance = {
         processInstanceKey: Number(
           (await createSingleInstance('ProcessToCancel', 1, {sound: 'meow'}))
