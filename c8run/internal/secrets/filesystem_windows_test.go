@@ -90,6 +90,7 @@ func grantEveryoneFullControl(path string, inherit bool) error {
 
 func assertRestrictedACL(t *testing.T, path string, inherits bool) {
 	t.Helper()
+	const fileAllAccess = windows.STANDARD_RIGHTS_REQUIRED | windows.SYNCHRONIZE | 0x1ff
 	descriptor, err := windows.GetNamedSecurityInfo(path, windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION)
 	require.NoError(t, err)
 	control, _, err := descriptor.Control()
@@ -111,7 +112,7 @@ func assertRestrictedACL(t *testing.T, path string, inherits bool) {
 		require.NoError(t, windows.GetAce(dacl, uint32(index), &ace))
 		assert.Equal(t, uint8(windows.ACCESS_ALLOWED_ACE_TYPE), ace.Header.AceType)
 		assert.Zero(t, ace.Header.AceFlags&windows.INHERITED_ACE)
-		assert.Equal(t, windows.ACCESS_MASK(windows.GENERIC_ALL), ace.Mask)
+		assert.Equal(t, windows.ACCESS_MASK(fileAllAccess), ace.Mask)
 		sid := (*windows.SID)(unsafe.Pointer(&ace.SidStart))
 		_, trusted := expected[sid.String()]
 		assert.True(t, trusted, "unexpected ACL principal %s", sid.String())
