@@ -49,7 +49,7 @@ The marker path is resolved in this order:
 
 To force the quickstart URL to appear again, delete the marker file from whichever location was resolved.
 
-Pass `--no-browser` to skip opening a browser window entirely (for example, in a headless dev environment or an autostart script). Status output and the quickstart marker are still written as usual — only the browser launch is skipped.
+Pass `--no-browser` to skip opening a browser window entirely (for example, in a headless dev environment or an autostart script). Status output is still printed as usual, but the quickstart marker is left untouched — a headless first start never shows the quickstart, so the next normal start still shows it instead of jumping straight to Operate.
 
 ## Connectors Startup
 
