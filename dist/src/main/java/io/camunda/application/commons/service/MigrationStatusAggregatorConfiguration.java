@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.shared.management;
+package io.camunda.application.commons.service;
 
 import io.camunda.cluster.migration.MigrationStatusProvider;
 import io.camunda.service.MigrationStatusAggregator;
