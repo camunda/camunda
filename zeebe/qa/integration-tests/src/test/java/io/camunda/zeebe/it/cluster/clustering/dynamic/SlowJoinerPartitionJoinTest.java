@@ -163,11 +163,9 @@ final class SlowJoinerPartitionJoinTest {
         proxies.getOrCreateHostProxy(broker.mappedPort(TestZeebePort.CLUSTER));
     broker
         .withCreateSchema(false)
-        // Not part of the unified configuration yet; the legacy property still binds.
-        .withProperty(
-            "zeebe.broker.experimental.raft.joinCatchUpTimeout", JOIN_CATCH_UP_TIMEOUT.toString())
         .withUnifiedConfig(
             cfg -> {
+              cfg.getCluster().getRaft().setJoinCatchUpTimeout(JOIN_CATCH_UP_TIMEOUT);
               final var internalApi = cfg.getCluster().getNetwork().getInternalApi();
               internalApi.setAdvertisedHost(toxiproxy.getHost());
               internalApi.setAdvertisedPort(
