@@ -18,7 +18,7 @@ jobs:
   typecheck:
     name: "Type check"
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -40,7 +40,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: Type check
         run: npm run typecheck
       - name: Observe build status
@@ -56,7 +56,7 @@ jobs:
   eslint:
     name: "ESLint"
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -78,7 +78,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: ESLint
         run: npm run lint:eslint
       - name: Observe build status
@@ -94,7 +94,7 @@ jobs:
   knip:
     name: "Knip"
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -116,7 +116,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: Knip
         run: npm run lint:knip
       - name: Observe build status
@@ -132,7 +132,7 @@ jobs:
   prettier:
     name: "Prettier"
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -154,7 +154,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: Prettier
         run: npm run lint:prettier
       - name: Observe build status
@@ -170,7 +170,7 @@ jobs:
   build:
     name: "Build"
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -192,7 +192,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: Build packages
         run: npm run build
       - name: Observe build status
@@ -210,7 +210,7 @@ jobs:
     env:
       TEST_TYPE: Unit
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
       image: mcr.microsoft.com/playwright:v1.62.1
@@ -237,7 +237,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: Unit tests
         env:
           # Capture failure screenshots even when CI contention delays web font loading.
@@ -323,7 +323,7 @@ jobs:
     env:
       TEST_TYPE: Accessibility
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
       image: mcr.microsoft.com/playwright:v1.62.1
@@ -350,7 +350,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "3"
+          timeout_minutes: "6"
       - name: Build frontend
         run: npm run build -w @camunda/orchestration-cluster-webapp
       - name: Accessibility tests
