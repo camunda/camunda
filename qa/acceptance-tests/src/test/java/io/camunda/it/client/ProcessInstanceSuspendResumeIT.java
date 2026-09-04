@@ -348,6 +348,102 @@ public class ProcessInstanceSuspendResumeIT {
   }
 
   @Test
+  void shouldSuspendAndResumeWithAdHocSubProcessAsIfNeverSuspended() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var jobTypeA = Strings.newRandomValidBpmnId();
+    final var jobTypeB = Strings.newRandomValidBpmnId();
+    final var model =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHoc -> {
+                  adHoc.serviceTask("taskA", t -> t.zeebeJobType(jobTypeA));
+                  adHoc.serviceTask("taskB", t -> t.zeebeJobType(jobTypeB));
+                })
+            .endEvent()
+            .done();
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(model, processId + ".bpmn")
+        .send()
+        .join();
+    waitForProcessesToBeDeployed(camundaClient, f -> f.processDefinitionId(processId), 1);
+
+    final long suspendedKey =
+        startProcessInstance(camundaClient, processId).getProcessInstanceKey();
+    final long controlKey = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
+    waitForProcessInstancesToStart(
+        camundaClient, f -> f.processInstanceKey(b -> b.in(suspendedKey, controlKey)), 2);
+
+    waitForElementInstances(
+        camundaClient, f -> f.processInstanceKey(suspendedKey).elementId("ad-hoc"), 1);
+    waitForElementInstances(
+        camundaClient, f -> f.processInstanceKey(controlKey).elementId("ad-hoc"), 1);
+    final long suspendedAdHocInstanceKey = adHocSubProcessInstanceKey(suspendedKey);
+    final long controlAdHocInstanceKey = adHocSubProcessInstanceKey(controlKey);
+
+    camundaClient
+        .newActivateAdHocSubProcessActivitiesCommand(Long.toString(suspendedAdHocInstanceKey))
+        .activateElement("taskA")
+        .activateElements("taskB")
+        .send()
+        .join();
+    camundaClient
+        .newActivateAdHocSubProcessActivitiesCommand(Long.toString(controlAdHocInstanceKey))
+        .activateElement("taskA")
+        .activateElements("taskB")
+        .send()
+        .join();
+
+    waitForElementInstances(
+        camundaClient,
+        f ->
+            f.processInstanceKey(suspendedKey)
+                .elementId(b -> b.in("taskA", "taskB"))
+                .state(ElementInstanceState.ACTIVE),
+        2);
+
+    // when
+    camundaClient.newSuspendProcessInstanceCommand(suspendedKey).send().join();
+    waitForProcessInstancesToBeSuspended(camundaClient, f -> f.processInstanceKey(suspendedKey), 1);
+
+    camundaClient.newResumeProcessInstanceCommand(suspendedKey).send().join();
+    waitForProcessInstance(
+        camundaClient,
+        f -> f.processInstanceKey(suspendedKey),
+        instances ->
+            assertThat(instances)
+                .singleElement()
+                .extracting(ProcessInstance::getState)
+                .isEqualTo(ProcessInstanceState.ACTIVE));
+
+    activateAndCompleteJobs(jobTypeA, 2);
+    activateAndCompleteJobs(jobTypeB, 2);
+
+    // then
+    waitForProcessInstancesToBeCompleted(
+        camundaClient, f -> f.processInstanceKey(b -> b.in(suspendedKey, controlKey)), 2);
+    await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var suspendedElements = elementIdsAndStates(suspendedKey);
+              final var controlElements = elementIdsAndStates(controlKey);
+              assertThat(suspendedElements).hasSize(7);
+              assertThat(suspendedElements)
+                  .extracting(t -> t.toList().get(0))
+                  .contains("ad-hoc", "taskA", "taskB");
+              assertThat(suspendedElements)
+                  .extracting(t -> t.toList().get(1))
+                  .containsOnly(ElementInstanceState.COMPLETED);
+              assertThat(suspendedElements).containsExactlyInAnyOrderElementsOf(controlElements);
+            });
+  }
+
+  @Test
   void shouldRejectUserTaskCompleteWhileSuspendedAndAcceptAfterResume() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
@@ -521,6 +617,17 @@ public class ProcessInstanceSuspendResumeIT {
               jobs[0] = activated.getFirst().getKey();
             });
     return jobs[0];
+  }
+
+  private static long adHocSubProcessInstanceKey(final long processInstanceKey) {
+    return camundaClient
+        .newElementInstanceSearchRequest()
+        .filter(f -> f.processInstanceKey(processInstanceKey).elementId("ad-hoc"))
+        .send()
+        .join()
+        .items()
+        .getFirst()
+        .getElementInstanceKey();
   }
 
   private static List<Tuple> elementIdsAndStates(final long processInstanceKey) {

@@ -14,7 +14,9 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -170,5 +172,75 @@ public final class UserTaskSuspensionGateTest {
         .hasRejectionType(RejectionType.INVALID_STATE);
     assertThat(rejection.getRejectionReason())
         .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldCancelUserTaskWhenInstanceTerminatedWhileSuspended() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldRejectTaskListenerJobCompletionWhileSuspended() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String listenerType = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeTaskListener(l -> l.completing().type(listenerType))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    final long listenerJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(listenerType)
+            .getFirst()
+            .getKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(listenerJobKey).expectRejection().complete();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(JobIntent.COMPLETE)
+        .hasRejectionType(RejectionType.INVALID_STATE);
   }
 }
