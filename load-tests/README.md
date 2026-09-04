@@ -332,7 +332,7 @@ Example values from a past release:
 
 > [!NOTE]
 >
-> Since 8.8+ Optimize is build together with the main Camunda OC release, the `optimize-tag` input needs to be filled with the corresponding value.
+> Since 8.8+, Optimize is built together with the main Camunda release; if you need Optimize to match a specific release tag, pass the corresponding `optimize-tag` explicitly.
 
 #### Daily smoke tests
 
@@ -354,7 +354,7 @@ Results are posted to the `#reliability-testing-alerts` Slack channel.
 
 Weekly load tests run against the state of the **main** branch via the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). They are automatically created every Monday and run for four weeks, then cleaned up by the [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-ttl-cleanup.yml). This results in several concurrent weekly tests (multiple variants × four weeks).
 
-The weekly tests cover endurance testing with the [realistic workload](../docs/testing/reliability-testing.md#realistic-load). It exists different variants covering different storage backends, such as Elasticsearch, OpenSearch, and PostgreSQL.
+The weekly tests cover endurance testing with the [realistic workload](../docs/testing/reliability-testing.md#realistic-load). There are different variants covering different storage backends, such as Elasticsearch, OpenSearch, and PostgreSQL.
 
 **Goal:** Validating the long-term reliability of the current main, detecting newly introduced instabilities, memory leaks, and performance degradation.
 
@@ -365,7 +365,7 @@ Example running tests (naming pattern: `medic-y-<year>-<week>-<sha>-<variant>-re
 - `medic-y-2025-22-a60d64da-realistic`
 - `medic-y-2025-22-a60d64da-rdbms-realistic`
 
-> ![IMPORTANT]
+> [!IMPORTANT]
 >
 > **Expectations:** If an issue prevents a test from working properly and no workaround is available, the test can be deleted to save resources.
 
