@@ -10,12 +10,23 @@ package io.camunda.zeebe.engine.state.immutable;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
+import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public interface ProcessState {
 
   DeployedProcess getLatestProcessVersionByProcessId(DirectBuffer processId, final String tenantId);
+
+  /**
+   * Latest {@code ACTIVE} version of this process id. Skips draining and pending-deletion versions.
+   *
+   * <p>If the highest version in state is already {@code ACTIVE}, that process is returned and
+   * older versions are not inspected. {@link #getLatestProcessVersionByProcessId} still returns the
+   * highest version in state regardless of lifecycle.
+   */
+  DeployedProcess getLatestActiveProcessVersionByProcessId(
+      DirectBuffer processId, final String tenantId);
 
   DeployedProcess getProcessByProcessIdAndVersion(
       DirectBuffer processId, int version, final String tenantId);
@@ -59,6 +70,8 @@ public interface ProcessState {
    */
   Optional<Integer> findProcessVersionBefore(
       String bpmnProcessId, long version, final String tenantId);
+
+  List<Long> getKnownProcessVersions(String bpmnProcessId, String tenantId);
 
   <T extends ExecutableFlowElement> T getFlowElement(
       long processDefinitionKey, String tenantId, DirectBuffer elementId, Class<T> elementType);
