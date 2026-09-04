@@ -329,9 +329,10 @@ final class BackupServiceImpl {
               ListOptions.newestFirst(
                   OptionalLong.of(latestBackupId + 1), OptionalInt.of(IN_PROGRESS_SCAN_MARGIN)));
       candidates =
-          newerThanLatestBackup.thenCombine(
+          newerThanLatestBackup.thenCombineAsync(
               marginBelowLatestBackup,
-              (newer, margin) -> Stream.concat(newer.stream(), margin.stream()).toList());
+              (newer, margin) -> Stream.concat(newer.stream(), margin.stream()).toList(),
+              executor);
     }
     executor.run(
         () ->
