@@ -8,6 +8,7 @@
 package io.camunda.tasklist.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -18,8 +19,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.exceptions.PersistenceException;
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import java.io.IOException;
 import org.apache.lucene.search.TotalHits;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -28,6 +32,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
+import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
@@ -193,6 +198,68 @@ class ElasticsearchUtilTest {
         ArgumentCaptor.forClass(ClearScrollRequest.class);
     verify(esClient).clearScroll(clearCaptor.capture(), any());
     assertThat(clearCaptor.getValue().getScrollIds()).containsExactly("scroll-id-2");
+  }
+
+  @Test
+  void shouldThrowWhenRefreshMatchesNoIndices() throws Exception {
+    final RestHighLevelClient esClient = mock(RestHighLevelClient.class);
+    final IndicesClient indicesClient = mock(IndicesClient.class);
+    final RefreshResponse refreshResponse = mock(RefreshResponse.class);
+    when(refreshResponse.getTotalShards()).thenReturn(0);
+    when(esClient.indices()).thenReturn(indicesClient);
+    when(indicesClient.refresh(any(RefreshRequest.class), eq(RequestOptions.DEFAULT)))
+        .thenReturn(refreshResponse);
+
+    assertThatThrownBy(
+            () -> ElasticsearchUtil.refreshIndicesFor(esClient, "zeebe-record*process-instance*"))
+        .isInstanceOf(TasklistRuntimeException.class)
+        .hasMessageContaining("zeebe-record*process-instance*");
+  }
+
+  @Test
+  void shouldThrowWhenRefreshHasFailedShards() throws Exception {
+    final RestHighLevelClient esClient = mock(RestHighLevelClient.class);
+    final IndicesClient indicesClient = mock(IndicesClient.class);
+    final RefreshResponse refreshResponse = mock(RefreshResponse.class);
+    when(refreshResponse.getTotalShards()).thenReturn(3);
+    when(refreshResponse.getFailedShards()).thenReturn(1);
+    when(esClient.indices()).thenReturn(indicesClient);
+    when(indicesClient.refresh(any(RefreshRequest.class), eq(RequestOptions.DEFAULT)))
+        .thenReturn(refreshResponse);
+
+    assertThatThrownBy(
+            () -> ElasticsearchUtil.refreshIndicesFor(esClient, "my-zeebe*process-instance*"))
+        .isInstanceOf(TasklistRuntimeException.class)
+        .hasMessageContaining("my-zeebe*process-instance*");
+  }
+
+  @Test
+  void shouldThrowWhenRefreshRequestFails() throws Exception {
+    final RestHighLevelClient esClient = mock(RestHighLevelClient.class);
+    final IndicesClient indicesClient = mock(IndicesClient.class);
+    when(esClient.indices()).thenReturn(indicesClient);
+    when(indicesClient.refresh(any(RefreshRequest.class), eq(RequestOptions.DEFAULT)))
+        .thenThrow(new IOException("cluster unreachable"));
+
+    assertThatThrownBy(
+            () -> ElasticsearchUtil.refreshIndicesFor(esClient, "my-zeebe*process-instance*"))
+        .isInstanceOf(TasklistRuntimeException.class);
+  }
+
+  @Test
+  void shouldNotThrowWhenRefreshMatchesHealthyIndices() throws Exception {
+    final RestHighLevelClient esClient = mock(RestHighLevelClient.class);
+    final IndicesClient indicesClient = mock(IndicesClient.class);
+    final RefreshResponse refreshResponse = mock(RefreshResponse.class);
+    when(refreshResponse.getTotalShards()).thenReturn(3);
+    when(refreshResponse.getFailedShards()).thenReturn(0);
+    when(esClient.indices()).thenReturn(indicesClient);
+    when(indicesClient.refresh(any(RefreshRequest.class), eq(RequestOptions.DEFAULT)))
+        .thenReturn(refreshResponse);
+
+    assertThatCode(
+            () -> ElasticsearchUtil.refreshIndicesFor(esClient, "my-zeebe*process-instance*"))
+        .doesNotThrowAnyException();
   }
 
   @Test
