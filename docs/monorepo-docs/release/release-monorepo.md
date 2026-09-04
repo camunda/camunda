@@ -364,6 +364,7 @@ Ownership model:
 #### 8. Wire release workflows (branch must exist)
 
 - [ ] Merge the dry-run and preview/smoke-test PRs (drafted earlier). Every job resolves `uses: ...@stable/<minor>` and checks out the branch, so they only pass once it exists. **Quote every version literal** — unquoted, `8.10` parses as `8.1`.
+- [ ] ⚠️ **Preview-env smoke test:** wait until this minor is released and its smoke tests exist in `camunda/c8-cross-component-e2e-tests` before turning on its `deploy-<minor>` job in [`preview-env-smoke-test.yml`](../../../.github/workflows/preview-env-smoke-test.yml). Until then, keep the job set to run by hand only (its `if:` should match just its own version, not `all` or `""`). If you turn it on too early, the Monday run fails with `No tests found` and pages `monorepo-ci-medic`. See the [Preview Environment Smoke Test Failure runbook](../ci-runbooks.md#preview-environment-smoke-test-failure).
 - [ ] Verify the release BPMN uses `stable/<minor>` as the source branch, and that the code freeze date and start date are correct when starting the minor instance.
 - [ ] Confirm the scheduled `stable/<minor>` release dry-run is green before starting the minor.
 

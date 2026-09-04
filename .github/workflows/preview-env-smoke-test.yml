@@ -172,7 +172,15 @@ jobs:
 
   deploy-8-11:
     name: Deploy 8.11 Preview Environment
-    if: contains(fromJSON('["all", "8.11", ""]'), inputs.version) && inputs.existing-host == ''
+    # Temporary: 8.11 only runs when someone starts this workflow by hand and
+    # picks version 8.11. We keep it out of the weekly Monday run because the
+    # 8.11 smoke tests (tests/SM-8.11/smoke-tests.spec.ts) don't exist yet in
+    # camunda/c8-cross-component-e2e-tests. With them missing, the scheduled run
+    # failed every Monday with "No tests found" and paged the on-call medic for
+    # nothing they could fix. The team agreed to stick with the 8.10 tests until
+    # 8.11 is released, so we don't add a new version here until its tests exist.
+    # Once QA ships tests/SM-8.11, put "all" and "" back to run it on schedule.
+    if: contains(fromJSON('["8.11"]'), inputs.version) && inputs.existing-host == ''
     uses: ./.github/workflows/preview-env-build-and-deploy.yml
     secrets: inherit
     with:
@@ -296,7 +304,7 @@ jobs:
 
       - name: Generate GitHub Token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets-1.1.0
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
