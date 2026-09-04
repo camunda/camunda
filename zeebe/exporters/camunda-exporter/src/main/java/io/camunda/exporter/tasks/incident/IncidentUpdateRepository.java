@@ -91,8 +91,8 @@ public interface IncidentUpdateRepository extends AutoCloseable {
   CompletionStage<Set<Long>> deletedProcessInstances(final Set<Long> processInstanceKeys);
 
   /**
-   * Executes the given bulk update against the underlying document store, waiting until the
-   * affected indices are refreshed. This ensures you will later read your own writes.
+   * Executes the given incident bulk update against the underlying document store, waiting until
+   * the affected indices are refreshed. This ensures you will later read your own writes.
    *
    * @param update the bulk update to execute
    * @return the ids of the documents updated
@@ -100,8 +100,7 @@ public interface IncidentUpdateRepository extends AutoCloseable {
   CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate update);
 
   /**
-   * Executes the given bulk update against the underlying document store, waiting until the
-   * affected indices are refreshed. This ensures you will later read your own writes.
+   * Executes the given non-incident bulk update against the underlying document store.
    *
    * @param update the bulk update to execute
    * @return the ids of the documents updated
@@ -158,13 +157,13 @@ public interface IncidentUpdateRepository extends AutoCloseable {
    * the store specific implementation
    */
   record NonIncidentBulkUpdate(
-      Collection<DocumentUpdate> listViewRequests,
-      Collection<DocumentUpdate> flowNodeInstanceRequests) {
+      Collection<ListViewInstanceUpdate> listViewRequests,
+      Collection<FlowNodeInstanceUpdate> flowNodeInstanceRequests) {
     public NonIncidentBulkUpdate() {
       this(new ConcurrentLinkedQueue<>(), new ConcurrentLinkedQueue<>());
     }
 
-    public Stream<DocumentUpdate> stream() {
+    Stream<? extends IncidentTaskUpdate> stream() {
       return Stream.concat(listViewRequests.stream(), flowNodeInstanceRequests.stream()).distinct();
     }
   }
@@ -174,22 +173,15 @@ public interface IncidentUpdateRepository extends AutoCloseable {
    * all the update queries into one, and pass it down to the store specific implementation to
    * execute.
    */
-  record IncidentBulkUpdate(Collection<DocumentUpdate> incidentRequests) {
+  record IncidentBulkUpdate(Collection<IncidentUpdate> incidentRequests) {
     public IncidentBulkUpdate() {
       this(new ConcurrentLinkedQueue<>());
     }
 
-    public Stream<DocumentUpdate> stream() {
+    Stream<IncidentUpdate> stream() {
       return incidentRequests.stream().distinct();
     }
   }
-
-  /**
-   * Represents a specific document store agnostic update to execute.
-   *
-   * <p>All fields are expected to be non-null, except routing.
-   */
-  record DocumentUpdate(String id, String index, Map<String, Object> doc, String routing) {}
 
   /**
    * A batch of pending incident updates fetched from the post importer queue. The {@code
