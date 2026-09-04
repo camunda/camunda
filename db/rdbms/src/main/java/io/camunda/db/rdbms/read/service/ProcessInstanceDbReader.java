@@ -89,6 +89,6 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
       final int partitionId, final OffsetDateTime cleanupDate, final int limit) {
     return processInstanceMapper.selectExpiredRootProcessInstances(
         new SelectExpiredRootProcessInstancesDto(
-            partitionId, cleanupDate, new DbQueryPage(limit, null, null, null)));
+            partitionId, cleanupDate, new DbQueryPage(limit, null, null, null, false)));
   }
 }
