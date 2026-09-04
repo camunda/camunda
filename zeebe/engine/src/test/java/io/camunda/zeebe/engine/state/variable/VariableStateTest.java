@@ -536,6 +536,24 @@ public final class VariableStateTest {
     assertThat(variableState.getParentScopeKey(child)).isEqualTo(parent);
   }
 
+  @Test
+  public void shouldGetVariableFromParentScopeThatWasNotCreatedYet() {
+    // given
+    setVariableLocal(parent, wrapString("a"), asMsgPack("1"));
+    variableState.createScope(child, parent, false);
+
+    try {
+      // when
+      final DirectBuffer variable = variableState.getVariable(child, wrapString("a"));
+
+      // then
+      assertEquality(variable, "1");
+    } finally {
+      variableState.removeScope(child);
+      variableState.removeScope(parent);
+    }
+  }
+
   private void declareScope(final long key) {
     declareScope(-1, key);
   }

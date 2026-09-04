@@ -217,7 +217,9 @@ public class DbVariableState implements MutableVariableState {
       childKey.wrapLong(currentScopeKey);
       final ParentScopeKey scope = childParentColumnFamily.get(childKey);
       if (scope == null) {
-        return null;
+        // The scope record may not exist yet even though variables have already been written to it.
+        variable = getVariableLocal(currentScopeKey, name, nameOffset, nameLength);
+        return variable != null ? variable.getValue() : null;
       }
 
       final long parentScopeKey = scope.get();
