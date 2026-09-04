@@ -126,7 +126,7 @@ export class IdentityTenantsPage {
       name: 'Assign user',
     });
     this.assignUserSearchbox = this.assignUserModal.getByRole('combobox', {
-      name: 'Search by username',
+      name: 'Search by name, email, or username',
     });
     this.assignUserSearchboxResult = page.getByRole('listbox');
     this.assignUserOption = (username) =>
