@@ -27,6 +27,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
@@ -86,6 +87,52 @@ final class NettyUnicastServiceTest {
   }
 
   @Test
+  void shouldReplaceTheListenerAlreadyRegisteredForASubject() {
+    // given
+    final var replaced = new CompletableFuture<byte[]>();
+    final var current = new CompletableFuture<byte[]>();
+    service1.addListener("test", (address, payload) -> replaced.complete(payload));
+    service1.addListener("test", (address, payload) -> current.complete(payload));
+
+    // when
+    service2.unicast(address1, "test", "Hello world!".getBytes());
+
+    // then - last registration wins, as it does for MessagingService#registerHandler
+    assertThat(current).succeedsWithin(TIMEOUT).isEqualTo("Hello world!".getBytes());
+    assertThat(replaced).as("the replaced listener no longer receives").isNotDone();
+  }
+
+  @Test
+  void shouldKeepTheCurrentListenerWhenRemovingAReplacedOne() {
+    // given
+    final var current = new CompletableFuture<byte[]>();
+    final BiConsumer<Address, byte[]> replaced = (address, payload) -> {};
+    service1.addListener("test", replaced);
+    service1.addListener("test", (address, payload) -> current.complete(payload));
+
+    // when - removing a listener that is no longer the registered one
+    service1.removeListener("test", replaced);
+
+    // then - the listener that replaced it is untouched
+    service2.unicast(address1, "test", "Hello world!".getBytes());
+    assertThat(current).succeedsWithin(TIMEOUT).isEqualTo("Hello world!".getBytes());
+  }
+
+  @Test
+  void shouldKeepTheCurrentListenerWhenRemovingAnEqualButDistinctOne() {
+    // given - a listener whose type has value equality, so an equal instance is not the same one
+    final var current = new CompletableFuture<byte[]>();
+    service1.addListener("test", new ValueEqualListener(current));
+
+    // when - removing a listener that is equal to, but not, the registered instance
+    service1.removeListener("test", new ValueEqualListener(current));
+
+    // then - the registered listener is untouched, as removal compares by identity
+    service2.unicast(address1, "test", "Hello world!".getBytes());
+    assertThat(current).succeedsWithin(TIMEOUT).isEqualTo("Hello world!".getBytes());
+  }
+
+  @Test
   void shouldNotThrowExceptionWhenServiceStopped() {
     // given
     service2.stop();
@@ -93,5 +140,14 @@ final class NettyUnicastServiceTest {
     // when - then
     assertThatCode(() -> service2.unicast(address1, "test", "Hello world!".getBytes()))
         .doesNotThrowAnyException();
+  }
+
+  /** A listener with value equality, so that two distinct instances can compare equal. */
+  private record ValueEqualListener(CompletableFuture<byte[]> received)
+      implements BiConsumer<Address, byte[]> {
+    @Override
+    public void accept(final Address address, final byte[] payload) {
+      received.complete(payload);
+    }
   }
 }

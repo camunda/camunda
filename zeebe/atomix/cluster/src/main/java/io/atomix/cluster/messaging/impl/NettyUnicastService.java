@@ -49,7 +49,6 @@ import io.netty.util.concurrent.Future;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -75,8 +74,7 @@ public class NettyUnicastService implements ManagedUnicastService {
   private final Address advertisedAddress;
   private final MessagingConfig config;
   private final int preamble;
-  private final Map<String, Map<BiConsumer<Address, byte[]>, Executor>> listeners =
-      Maps.newConcurrentMap();
+  private final Map<String, Listener> listeners = Maps.newConcurrentMap();
   private final AtomicBoolean started = new AtomicBoolean();
   private final Address bindAddress;
 
@@ -149,21 +147,18 @@ public class NettyUnicastService implements ManagedUnicastService {
   }
 
   @Override
-  public synchronized void addListener(
+  public void addListener(
       final String subject, final BiConsumer<Address, byte[]> listener, final Executor executor) {
-    listeners.computeIfAbsent(subject, s -> new ConcurrentHashMap<>()).put(listener, executor);
+    listeners.put(subject, new Listener(listener, executor));
   }
 
   @Override
-  public synchronized void removeListener(
-      final String subject, final BiConsumer<Address, byte[]> listener) {
-    final Map<BiConsumer<Address, byte[]>, Executor> listeners = this.listeners.get(subject);
-    if (listeners != null) {
-      listeners.remove(listener);
-      if (listeners.isEmpty()) {
-        this.listeners.remove(subject);
-      }
-    }
+  public void removeListener(final String subject, final BiConsumer<Address, byte[]> listener) {
+    // compared by identity, not equality: only the instance that is actually registered may remove
+    // itself, so a caller holding a reference to one that has since been replaced cannot
+    // unregister its replacement
+    listeners.computeIfPresent(
+        subject, (ignored, current) -> current.consumer() == listener ? null : current);
   }
 
   private CompletableFuture<Void> bootstrap() {
@@ -197,12 +192,11 @@ public class NettyUnicastService implements ManagedUnicastService {
     final byte[] payload = new byte[packet.content().readInt()];
     packet.content().readBytes(payload);
     final Message message = SERIALIZER.decode(payload);
-    final Map<BiConsumer<Address, byte[]>, Executor> subjectListeners =
-        listeners.get(message.subject());
-    if (subjectListeners != null) {
-      subjectListeners.forEach(
-          (consumer, executor) ->
-              executor.execute(() -> consumer.accept(message.source(), message.payload())));
+    final Listener listener = listeners.get(message.subject());
+    if (listener != null) {
+      listener
+          .executor()
+          .execute(() -> listener.consumer().accept(message.source(), message.payload()));
     }
   }
 
@@ -307,6 +301,9 @@ public class NettyUnicastService implements ManagedUnicastService {
       Thread.currentThread().interrupt();
     }
   }
+
+  /** The single listener registered for a subject, with the executor it asked to be called on. */
+  private record Listener(BiConsumer<Address, byte[]> consumer, Executor executor) {}
 
   /**
    * Internal unicast service message.
