@@ -147,7 +147,7 @@ public abstract class BackgroundTaskIT<T extends BackgroundTask> {
     resourceProvider.init(
         config,
         cacheProvider,
-        context.getMeterRegistry(),
+        context,
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
     return resourceProvider;

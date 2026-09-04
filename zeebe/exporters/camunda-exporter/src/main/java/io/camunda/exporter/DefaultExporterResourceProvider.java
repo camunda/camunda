@@ -121,7 +121,6 @@ import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperatio
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -151,13 +150,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       final ExporterConfiguration configuration,
       final ExporterEntityCacheProvider entityCacheProvider,
       final Context context,
-      final MeterRegistry meterRegistry,
       final ExporterMetadata exporterMetadata,
       final ObjectMapper objectMapper) {
     final var globalPrefix = configuration.getConnect().getIndexPrefix();
     final var isElasticsearch =
         ConnectionTypes.isElasticSearch(configuration.getConnect().getType());
     indexDescriptors = new IndexDescriptors(globalPrefix, isElasticsearch);
+    final var meterRegistry = context.getMeterRegistry();
     final var partitionId = context.getPartitionId();
 
     batchOperationCache =

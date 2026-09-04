@@ -302,7 +302,7 @@ public class CamundaExporter implements Exporter {
     provider.init(
         configuration,
         clientAdapter.getExporterEntityCacheProvider(),
-        context.getMeterRegistry(),
+        context,
         metadata,
         clientAdapter.objectMapper());
 
