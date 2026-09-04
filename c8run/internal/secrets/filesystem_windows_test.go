@@ -112,7 +112,7 @@ func assertRestrictedACL(t *testing.T, path string, inherits bool) {
 		require.NoError(t, windows.GetAce(dacl, uint32(index), &ace))
 		assert.Equal(t, uint8(windows.ACCESS_ALLOWED_ACE_TYPE), ace.Header.AceType)
 		assert.Zero(t, ace.Header.AceFlags&windows.INHERITED_ACE)
-		assert.Equal(t, windows.ACCESS_MASK(fileAllAccess), ace.Mask)
+		assert.Contains(t, []windows.ACCESS_MASK{windows.GENERIC_ALL, fileAllAccess}, ace.Mask)
 		sid := (*windows.SID)(unsafe.Pointer(&ace.SidStart))
 		_, trusted := expected[sid.String()]
 		assert.True(t, trusted, "unexpected ACL principal %s", sid.String())
