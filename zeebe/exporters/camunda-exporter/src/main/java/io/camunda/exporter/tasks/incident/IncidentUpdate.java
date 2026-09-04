@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public record IncidentUpdate(String id, String index, IncidentState state, String treePath)
-    implements DocumentUpdate {
+    implements IncidentTaskUpdate {
 
   @Override
   public Map<String, Object> doc() {
@@ -29,7 +29,7 @@ public record IncidentUpdate(String id, String index, IncidentState state, Strin
     return new Builder(id);
   }
 
-  public static final class Builder extends DocumentUpdate.Builder<IncidentUpdate, Builder> {
+  public static final class Builder extends IncidentTaskUpdate.Builder<IncidentUpdate, Builder> {
     private IncidentState state;
     private String treePath;
 
