@@ -45,71 +45,87 @@ There exist various variations of load tests in the wild to answer different que
 The table below gives a quick overview; each variant is described in more detail afterward, along
 with whether it is implemented as a scenario in [`load-tests/`](../../load-tests):
 
-|     Test type     |                           Question answered                            |                                            Status                                             |
-|-------------------|------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
-| Average load test | How does the system behave under normal/average workload?              | Implemented (`typical`, `realistic`); weekly endurance rotation runs the `realistic` variants |
-| Stress test       | How does the system perform under stress, up to the maximum load?      | Implemented (`max`), run as a bounded ~3-hour test via the daily load tests                   |
-| Endurance test    | Can the system sustain load reliably over a long time?                 | Implemented by the average-load scenarios (see above)                                         |
-| Spike test        | How does the system handle a sudden, short burst, and does it recover? | Defined below; not run as a dedicated scenario                                                |
-| Smoke test        | Does the workload behave correctly at minimal, negligible load?        | Covered continuously via completion-rate SLOs/alerting on every scenario (see note below)     |
-| Breakpoint test   | Where exactly does the system's capacity limit lie?                    | Defined below; not run as a dedicated scenario                                                |
+|                Test type                |                           Question answered                            |                                            Status                                             |
+|-----------------------------------------|------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| [Average load test](#average-load-test) | How does the system behave under normal/average workload?              | Implemented (`typical`, `realistic`); weekly endurance rotation runs the `realistic` variants |
+| [Stress test](#stress-test)             | How does the system perform under stress, up to the maximum load?      | Implemented (`max`), run as a bounded ~3-hour test via the daily load tests                   |
+| [Endurance test](#endurance-test)       | Can the system sustain load reliably over a long time?                 | Implemented by the average-load scenarios (see above)                                         |
+| [Spike test](#spike-test)               | How does the system handle a sudden, short burst, and does it recover? | Defined below; not run as a dedicated scenario                                                |
+| [Smoke test](#smoke-test)               | Does the workload behave correctly at minimal, negligible load?        | Covered continuously via completion-rate SLOs/alerting on every scenario (see note below)     |
+| [Breakpoint test](#breakpoint-test)     | Where exactly does the system's capacity limit lie?                    | Defined below; not run as a dedicated scenario                                                |
 
-* [Average load test](https://en.wikipedia.org/wiki/Load_testing)
-  * _Question: How does the system behave under normal/average workload?_
-  * This is to understand, in general, how the system behaves, providing a base for comparison.
-  * Resources:
-    * [Wiki: Load testing](https://en.wikipedia.org/wiki/Load_testing)
-    * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
-    * [k6: Load testing (average-load)](https://grafana.com/docs/k6/latest/testing-guides/test-types/load-testing/)
-* [Stress test](https://en.wikipedia.org/wiki/Stress_testing)
-  * _Question: How does the system perform under stress? Can it handle high load, and what is the maximum?_
-  * Here we put the system under high load up to maximum load. We want to find out what the limit is and where it starts to break.
-  * These tests are commonly not long-running.
-  * Resources:
-    * [Wiki: Stress testing](https://en.wikipedia.org/wiki/Stress_testing)
-    * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
-    * [k6: Stress testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/stress-testing/)
-* Spike test
-  * _Question: How does the system handle spikes? Can it recover? What is max etc._
-  * Here we put the system also under high load up to maximum load, but only for a short period of time. We want to understand how the system behaves and recovers afterwards.
-  * These tests are commonly not long-running.
-  * We do not run this as a dedicated scenario; our `max` scenario applies sustained high load rather than a short burst-and-recover shape.
-  * Resources:
-    * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
-    * [k6: Spike testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/spike-testing/)
-* Smoke test
-  * _Question: Does the workload behave correctly at minimal, negligible load?_
-  * A quick run of the workload at very low load, meant to catch functional issues before scaling up to a full load test.
-  * **We fold this into every load test rather than running it separately:** every scenario we run
-    continuously tracks process and flow-node completion rates (PI/s, FNI/s) against SLO targets
-    (see [docs/metrics.md](../../load-tests/docs/metrics.md)), surfaced on Grafana dashboards (e.g.
-    the [Zeebe Medic Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m)),
-    the PR metrics-comparison comment's per-metric verdicts, and Slack notifications on scheduled
-    runs (`#reliability-testing-alerts`). A workload that stops making progress or fails to meet
-    its throughput SLO is caught during the run itself, not just at start-up. Combined with
-    functional correctness already being validated elsewhere (acceptance testing) before a load
-    test starts, this covers what a dedicated, separate minimal-load smoke pass would check, so we
-    do not run one.
-  * **Naming note:** we already use "smoke test" for a different, unrelated concept: our
-    [`camunda-load-test-smoke.yml`](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-smoke.yml)
-    CI workflow and the [scheduled smoke tests](../../load-tests/README.md#scheduled-smoke-tests)
-    validate that the load-test *infrastructure* installs/upgrades correctly (pods become ready,
-    the gateway is reachable), regardless of which scenario is deployed, not workload correctness.
-  * Resources:
-    * [k6: Smoke testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/smoke-testing/)
-* Breakpoint test
-  * _Question: Where exactly does the system's capacity limit lie?_
-  * Incrementally increases load until the system fails or an SLO is breached, to discover the ceiling rather than assume one. Our `max` scenario instead targets a fixed, pre-determined load (300 PI/s).
-  * We do not run this as a dedicated scenario.
-  * Resources:
-    * [k6: Breakpoint testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/breakpoint-testing/)
-* [Endurance test](https://en.wikipedia.org/wiki/Soak_testing)
-  * _Question: Can it handle high load (not maximum) over a long time? Reliable?_
-  * Discovery of memory or thread leaks and performance and stability issues over time
-  * Resources:
-    * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
-    * [Geeks4Geeks:  Endurance testing](https://www.geeksforgeeks.org/software-testing/software-testing-endurance-testing/)
-    * [k6: Soak testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/soak-testing/)
+#### Average load test
+
+* [Definition](https://en.wikipedia.org/wiki/Load_testing)
+* _Question: How does the system behave under normal/average workload?_
+* This is to understand, in general, how the system behaves, providing a base for comparison.
+* Resources:
+  * [Wiki: Load testing](https://en.wikipedia.org/wiki/Load_testing)
+  * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
+  * [k6: Load testing (average-load)](https://grafana.com/docs/k6/latest/testing-guides/test-types/load-testing/)
+
+#### Stress test
+
+* [Definition](https://en.wikipedia.org/wiki/Stress_testing)
+* _Question: How does the system perform under stress? Can it handle high load, and what is the maximum?_
+* Here we put the system under high load up to maximum load. We want to find out what the limit is and where it starts to break.
+* These tests are commonly not long-running.
+* Resources:
+  * [Wiki: Stress testing](https://en.wikipedia.org/wiki/Stress_testing)
+  * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
+  * [k6: Stress testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/stress-testing/)
+
+#### Spike test
+
+* _Question: How does the system handle spikes? Can it recover? What is max etc._
+* Here we put the system also under high load up to maximum load, but only for a short period of time. We want to understand how the system behaves and recovers afterwards.
+* These tests are commonly not long-running.
+* We do not run this as a dedicated scenario; our `max` scenario applies sustained high load rather than a short burst-and-recover shape.
+* Resources:
+  * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
+  * [k6: Spike testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/spike-testing/)
+
+#### Smoke test
+
+* _Question: Does the workload behave correctly at minimal, negligible load?_
+* A quick run of the workload at very low load, meant to catch functional issues before scaling up to a full load test.
+* **We fold this into every load test rather than running it separately:** every scenario we run
+  continuously tracks process and flow-node completion rates (PI/s, FNI/s) against SLO targets
+  (see [docs/metrics.md](../../load-tests/docs/metrics.md)), surfaced on Grafana dashboards (e.g.
+  the [Zeebe Medic Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m)),
+  the PR metrics-comparison comment's per-metric verdicts, and Slack notifications on scheduled
+  runs (`#reliability-testing-alerts`). A workload that stops making progress or fails to meet
+  its throughput SLO is caught during the run itself, not just at start-up. Combined with
+  functional correctness already being validated elsewhere (acceptance testing) before a load
+  test starts, this covers what a dedicated, separate minimal-load smoke pass would check, so we
+  do not run one.
+* **Naming note:** we already use "smoke test" for a different, unrelated concept: our
+  [`camunda-load-test-smoke.yml`](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-smoke.yml)
+  CI workflow and the [scheduled smoke tests](../../load-tests/README.md#scheduled-smoke-tests)
+  validate that the load-test *infrastructure* installs/upgrades correctly (pods become ready,
+  the gateway is reachable), regardless of which scenario is deployed, not workload correctness.
+* Resources:
+  * [k6: Smoke testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/smoke-testing/)
+
+#### Breakpoint test
+
+* _Question: Where exactly does the system's capacity limit lie?_
+* Incrementally increases load until the system fails or an SLO is breached, to discover the ceiling rather than assume one. Our `max` scenario instead targets a fixed, pre-determined load (300 PI/s).
+* We do not run this as a dedicated scenario.
+* Resources:
+  * [k6: Breakpoint testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/breakpoint-testing/)
+
+#### Endurance test
+
+* [Definition](https://en.wikipedia.org/wiki/Soak_testing)
+* _Question: Can it handle high load (not maximum) over a long time? Reliable?_
+* Discovery of memory or thread leaks and performance and stability issues over time
+* Resources:
+  * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
+  * [Geeks4Geeks:  Endurance testing](https://www.geeksforgeeks.org/software-testing/software-testing-endurance-testing/)
+  * [k6: Soak testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/soak-testing/)
+
+### How do we implement these tests?
 
 Our average-load scenarios (`typical`, `realistic`) run as endurance tests: the [weekly load tests](../../load-tests/README.md#weekly-load-tests) keep them running for up to four weeks. Our stress/max scenario runs as a bounded stress test: the [daily load tests](../../load-tests/README.md#daily-load-tests) deploy it for a ~3-hour window before tearing it down.
 
