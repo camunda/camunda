@@ -336,7 +336,8 @@ test.describe('Process Instances Filters', () => {
     });
   });
 
-  test('Filter process instances by parent key, date range, and error message', async ({
+  // Skipped due to bug 62004: https://github.com/camunda/camunda/issues/62004
+  test.skip('Filter process instances by parent key, date range, and error message', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
@@ -674,8 +675,7 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.clickResetFilters();
     });
 
-    // Skipped due to bug 62004: https://github.com/camunda/camunda/issues/62004
-    await test.step.skip('Filter by variable and batch operation key and assert results', async () => {
+    await test.step('Filter by variable and batch operation key and assert results', async () => {
       const processToCancelMeowInstance = {
         processInstanceKey: Number(
           (await createSingleInstance('ProcessToCancel', 1, {sound: 'meow'}))
