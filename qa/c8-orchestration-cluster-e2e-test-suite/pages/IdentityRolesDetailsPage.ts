@@ -46,10 +46,10 @@ export class IdentityRolesDetailsPage {
       name: 'Close',
     });
     // On the new design system the assign-user modal's search field is a cmdk
-    // combobox ("Search by Username or Name") rather than Carbon's searchbox.
+    // combobox ("Search by name, email, or username") rather than Carbon's searchbox.
     this.assignUserModalSearchField = this.assignUserModal.getByRole(
       'combobox',
-      {name: 'Search by Username or Name'},
+      {name: 'Search by name, email, or username'},
     );
     // The results render in a Radix popover that portals as a *sibling* of the
     // dialog (DS #496), so the listbox is not a descendant of the modal —
