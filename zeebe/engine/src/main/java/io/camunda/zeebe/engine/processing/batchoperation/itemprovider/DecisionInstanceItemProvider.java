@@ -60,6 +60,9 @@ public class DecisionInstanceItemProvider implements ItemProvider {
 
     final boolean isLastPage = result.items().isEmpty() || result.total() < pageSize;
 
+    // TODO temp set this
+    final int ordinalKey = 2;
+
     return new ItemPage(
         result.items().stream()
             .map(
@@ -67,7 +70,8 @@ public class DecisionInstanceItemProvider implements ItemProvider {
                     new Item(
                         di.decisionInstanceKey(),
                         di.processInstanceKey(),
-                        di.rootProcessInstanceKey()))
+                        di.rootProcessInstanceKey(),
+                        ordinalKey))
             .collect(Collectors.toList()),
         result.endCursor(),
         result.total(),

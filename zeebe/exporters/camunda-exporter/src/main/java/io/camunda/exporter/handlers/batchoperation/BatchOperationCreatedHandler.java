@@ -10,7 +10,7 @@ package io.camunda.exporter.handlers.batchoperation;
 import static io.camunda.exporter.utils.ExporterUtil.map;
 
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -37,7 +37,7 @@ import java.util.Map;
  * access.
  */
 public class BatchOperationCreatedHandler
-    implements ExportHandler<BatchOperationEntity, BatchOperationCreationRecordValue> {
+    implements OrdinalIndexExportHandler<BatchOperationEntity, BatchOperationCreationRecordValue> {
 
   private final String indexName;
   private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;

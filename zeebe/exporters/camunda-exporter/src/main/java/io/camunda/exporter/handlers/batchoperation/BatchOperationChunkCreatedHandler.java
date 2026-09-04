@@ -8,7 +8,7 @@
 package io.camunda.exporter.handlers.batchoperation;
 
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
@@ -36,7 +36,7 @@ import java.util.Map;
  * that case the numbers would forever be wrong.
  */
 public class BatchOperationChunkCreatedHandler
-    implements ExportHandler<BatchOperationEntity, BatchOperationChunkRecordValue> {
+    implements OrdinalIndexExportHandler<BatchOperationEntity, BatchOperationChunkRecordValue> {
 
   private final String indexName;
 

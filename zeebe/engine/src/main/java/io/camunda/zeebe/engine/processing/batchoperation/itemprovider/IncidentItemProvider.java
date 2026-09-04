@@ -129,12 +129,18 @@ public class IncidentItemProvider implements ItemProvider {
     final var result =
         searchClientsProxy.withSecurityContext(securityContext).searchIncidents(query);
 
+    // TODO temp set this
+    final int ordinalKey = 2;
+
     return new ItemPage(
         result.items().stream()
             .map(
                 pi ->
                     new Item(
-                        pi.incidentKey(), pi.processInstanceKey(), pi.rootProcessInstanceKey()))
+                        pi.incidentKey(),
+                        pi.processInstanceKey(),
+                        pi.rootProcessInstanceKey(),
+                        ordinalKey))
             .collect(Collectors.toList()),
         result.endCursor(),
         result.total(),

@@ -11,6 +11,7 @@ import com.google.common.base.Splitter;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,10 +65,17 @@ public class BatchOperationChunkCreatedItemHandler
   }
 
   @Override
-  public List<String> generateIds(final Record<BatchOperationChunkRecordValue> record) {
+  public List<IdAndIndex> extractIdAndIndexes(
+      final TargetIndexLocator indexLocator, final Record<BatchOperationChunkRecordValue> record) {
     return record.getValue().getItems().stream()
-        .map(item -> generateId(record.getValue().getBatchOperationKey(), item.getItemKey()))
+        .map(item -> generateIdAndIndex(indexLocator, record.getValue(), item))
         .toList();
+  }
+
+  @Override
+  public List<String> generateIds(final Record<BatchOperationChunkRecordValue> record) {
+    throw new UnsupportedOperationException(
+        "Use extractIdAndIndexes() instead of generateIds() for BatchOperationChunkCreatedItemHandler");
   }
 
   @Override
@@ -129,6 +138,14 @@ public class BatchOperationChunkCreatedItemHandler
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private IdAndIndex generateIdAndIndex(
+      final TargetIndexLocator indexLocator,
+      final BatchOperationChunkRecordValue batchOperation,
+      final BatchOperationItemValue item) {
+    final String id = generateId(batchOperation.getBatchOperationKey(), item.getItemKey());
+    return new IdAndIndex(id, indexLocator.locateOrdinalIndex(indexName, item));
   }
 
   /**

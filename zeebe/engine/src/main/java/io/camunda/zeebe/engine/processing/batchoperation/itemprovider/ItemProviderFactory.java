@@ -122,13 +122,14 @@ public class ItemProviderFactory {
         authentication);
   }
 
-  private ProcessInstanceItemProvider forDeleteProcessInstance(
+  private UnsetOrdinalsItemProvider forDeleteProcessInstance(
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
-    return new ProcessInstanceItemProvider(
-        searchClientsProxy,
-        metrics,
-        filter.toBuilder().partitionId(partitionId).build(),
-        authentication);
+    return new UnsetOrdinalsItemProvider(
+        new ProcessInstanceItemProvider(
+            searchClientsProxy,
+            metrics,
+            filter.toBuilder().partitionId(partitionId).build(),
+            authentication));
   }
 
   private ProcessInstanceItemProvider forSuspendProcessInstance(

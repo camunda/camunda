@@ -25,6 +25,7 @@ import io.camunda.exporter.handlers.MainIndexExporterHandler;
 import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.exporter.handlers.operation.AbstractOperationHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
@@ -114,11 +115,14 @@ public class ExportHandlerArchTest {
                   Predicates.assignableTo(AuditLogHandler.class),
                   Predicates.assignableTo(AuditLogCleanupHandler.class),
                   // operation handler needs to be excluded as it needs slight custom handling
-                  Predicates.assignableTo(AbstractOperationHandler.class)))
-          .and()
+                  Predicates.assignableTo(AbstractOperationHandler.class),
+                  // custom handling for batch operation chunk created items (need to look at
+                  // ordinal per item)
+                  Predicates.assignableTo(BatchOperationChunkCreatedItemHandler.class)))
+          // .and()
           // TODO remove these exclusions once we have refactored the handlers to implement the
           // correct interface
-          .resideOutsideOfPackages("io.camunda.exporter.handlers.batchoperation..")
+          // .resideOutsideOfPackages("io.camunda.exporter.handlers.batchoperation..")
           .should()
           .beAssignableTo(
               DescribedPredicate.or(

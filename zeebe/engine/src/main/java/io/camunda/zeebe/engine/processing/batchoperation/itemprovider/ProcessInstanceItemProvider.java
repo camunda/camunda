@@ -64,6 +64,9 @@ public class ProcessInstanceItemProvider implements ItemProvider {
 
     final boolean isLastPage = result.items().isEmpty() || result.total() < pageSize;
 
+    // TODO temp set this
+    final int ordinalKey = 2;
+
     return new ItemPage(
         result.items().stream()
             .map(
@@ -71,7 +74,8 @@ public class ProcessInstanceItemProvider implements ItemProvider {
                     new Item(
                         pi.processInstanceKey(),
                         pi.processInstanceKey(),
-                        pi.rootProcessInstanceKey()))
+                        pi.rootProcessInstanceKey(),
+                        ordinalKey))
             .collect(Collectors.toList()),
         result.endCursor(),
         result.total(),

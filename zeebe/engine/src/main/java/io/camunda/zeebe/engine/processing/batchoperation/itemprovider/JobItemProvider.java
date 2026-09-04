@@ -58,11 +58,18 @@ public class JobItemProvider implements ItemProvider {
 
     final boolean isLastPage = result.items().isEmpty() || result.total() < pageSize;
 
+    // TODO temp set this
+    final int ordinalKey = 2;
+
     return new ItemPage(
         result.items().stream()
             .map(
                 job ->
-                    new Item(job.jobKey(), job.processInstanceKey(), job.rootProcessInstanceKey()))
+                    new Item(
+                        job.jobKey(),
+                        job.processInstanceKey(),
+                        job.rootProcessInstanceKey(),
+                        ordinalKey))
             .collect(Collectors.toList()),
         result.endCursor(),
         result.total(),

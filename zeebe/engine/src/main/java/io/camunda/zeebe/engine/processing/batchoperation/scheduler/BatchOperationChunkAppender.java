@@ -157,7 +157,8 @@ public class BatchOperationChunkAppender {
     return new BatchOperationItem()
         .setItemKey(item.itemKey())
         .setProcessInstanceKey(item.processInstanceKey())
-        .setRootProcessInstanceKey(Optional.ofNullable(item.rootProcessInstanceKey()).orElse(-1L));
+        .setRootProcessInstanceKey(Optional.ofNullable(item.rootProcessInstanceKey()).orElse(-1L))
+        .setStorageOrdinalKey(Optional.ofNullable(item.storageOrdinalKey()).orElse(-1));
   }
 
   /**
