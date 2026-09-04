@@ -61,10 +61,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [ utils-get-snapshot-docker-tag ]
+    outputs:
+      commit_hash: ${{ steps.set-image-metadata.outputs.commit_hash }}
+      image_tag: ${{ steps.set-image-metadata.outputs.image_tag }}
+      ci_image_tag: ${{ steps.set-image-metadata.outputs.ci_image_tag }}
+      pr_image_tag: ${{ steps.set-image-metadata.outputs.pr_image_tag }}
+    permissions:
+      contents: read
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -73,12 +80,22 @@ jobs:
       #########################################################################
       # Setup: define env variables
       - name: Set GitHub environment variables
+        id: set-image-metadata
         run: |
-          GIT_COMMIT_HASH=$(git rev-parse ${{ inputs.branch }})
+          GIT_COMMIT_HASH=$(git rev-parse HEAD)
           BRANCH_SLUG=$(echo "${{ inputs.branch }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
-          echo "IMAGE_TAG=$(if [ "${{ inputs.branch }}" = "main" ]; then echo $GIT_COMMIT_HASH; else echo "branch-$BRANCH_SLUG"; fi)" >> $GITHUB_ENV
-          echo "CI_IMAGE_TAG=ci-$GIT_COMMIT_HASH" >> $GITHUB_ENV
-          echo "PR_IMAGE_TAG=pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
+          IMAGE_TAG=$(if [ "${{ inputs.branch }}" = "main" ]; then echo "$GIT_COMMIT_HASH"; else echo "branch-$BRANCH_SLUG"; fi)
+          {
+            echo "IMAGE_TAG=$IMAGE_TAG"
+            echo "CI_IMAGE_TAG=ci-$GIT_COMMIT_HASH"
+            echo "PR_IMAGE_TAG=pr-$GIT_COMMIT_HASH"
+          } >> "$GITHUB_ENV"
+          {
+            echo "commit_hash=$GIT_COMMIT_HASH"
+            echo "image_tag=$IMAGE_TAG"
+            echo "ci_image_tag=ci-$GIT_COMMIT_HASH"
+            echo "pr_image_tag=pr-$GIT_COMMIT_HASH"
+          } >> "$GITHUB_OUTPUT"
 
       #########################################################################
       # Setup: import secrets from vault
@@ -116,10 +133,81 @@ jobs:
           directory: ./operate/client
 
       #########################################################################
-      # Build: maven artifacts and Docker images
+      # Build: maven artifacts (the Docker image is built in `build-docker`)
       - name: Build Maven
         run: |
           ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+
+      #########################################################################
+      # Hand the distribution to a Docker job with a separate timeout (INC-7561).
+      - name: Upload distball for the docker build job
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: operate-distball
+          path: dist/target/camunda-zeebe-*.tar.gz
+          retention-days: 1
+          if-no-files-found: error
+
+      #########################################################################
+      # Collect information about build status for central statistics with CI Analytics
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  build-docker:
+    # Give slow Harbor pushes a fresh 30-minute budget (INC-7561).
+    if: >
+      always() &&
+      needs.build.result == 'success' &&
+      contains(
+        fromJson('["success", "skipped"]'),
+        needs.utils-get-snapshot-docker-tag.result
+      )
+    name: Build Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [ build, utils-get-snapshot-docker-tag ]
+    permissions:
+      contents: read
+    env:
+      IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
+      CI_IMAGE_TAG: ${{ needs.build.outputs.ci_image_tag }}
+      PR_IMAGE_TAG: ${{ needs.build.outputs.pr_image_tag }}
+    steps:
+      # Setup: checkout the commit that produced the distball
+      - name: Checkout '${{ needs.build.outputs.commit_hash }}' commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.build.outputs.commit_hash }}
+          persist-credentials: false
+
+      #########################################################################
+      # Setup and configure Docker + registry logins
+      - uses: ./.github/actions/setup-build
+        name: Build setup
+        with:
+          dockerhub: ${{ env.SHOULD_PUSH_DOCKER_SNAPSHOT == 'true' }}
+          minimus: true
+          harbor: true
+          java-distribution: adopt
+          maven-cache-key-modifier: operate
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      #########################################################################
+      # Download the distribution into the path expected by operate.Dockerfile
+      - name: Download distball
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: operate-distball
+          path: dist/target
 
       #########################################################################
       # Build Docker image
