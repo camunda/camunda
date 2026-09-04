@@ -35,7 +35,7 @@ runs:
 
       # Check if PR contains a label to disable the cache
     - name: Check if cache is enabled
-      uses: camunda/infra-global-github-actions/is-cache-enabled@main
+      uses: camunda/infra-global-github-actions/is-cache-enabled@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       id: is-cache-enabled
 
     - name: Detect branch type
