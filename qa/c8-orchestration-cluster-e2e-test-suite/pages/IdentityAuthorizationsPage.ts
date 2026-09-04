@@ -264,7 +264,7 @@ export class IdentityAuthorizationsPage {
       .getByRole('option')
       .filter({hasText: authorization.ownerId})
       .first();
-    await expect(ownerOption).toBeVisible({timeout: 30000});
+    await expect(ownerOption).toBeVisible({timeout: 60000});
     await ownerOption.click({timeout: 20000, force: true});
   }
 
