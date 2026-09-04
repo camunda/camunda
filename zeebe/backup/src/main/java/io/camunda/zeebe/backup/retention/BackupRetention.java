@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.retention;
 
 import static io.camunda.zeebe.util.Unit.unit;
+import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -15,6 +16,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.client.api.BackupDeleteRequest;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.schedule.Schedule;
@@ -24,8 +26,6 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
@@ -35,6 +35,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
@@ -55,15 +57,21 @@ import org.slf4j.LoggerFactory;
  * each partition of the physical tenant:
  *
  * <ol>
- *   <li><b>Retrieve Backups:</b> Fetches all existing backups for the partition from the backup
- *       store, sorted by creation time and checkpoint ID.
- *   <li><b>Filter Backups:</b> Identifies backups that fall outside the retention window (i.e.,
- *       backups older than {@code currentTime - retentionWindow}) and marks them for deletion.
- *   <li><b>Write Delete Commands:</b> For each deletable backup, sends a {@code DELETE_BACKUP}
- *       request to the partition leader via the {@link BrokerClient}. The leader's stream processor
- *       handles the actual deletion: updating the CHECKPOINTS and BACKUP_RANGES column families,
- *       asynchronously deleting from the backup store, and syncing the JSON metadata file.
+ *   <li><b>Find the anchor:</b> Reads backups newest first until the latest completed backup is
+ *       found. Its timestamp minus the retention window is the window bound.
+ *   <li><b>Sweep expired backups:</b> Reads backups oldest first, in batches. Every backup older
+ *       than the window bound is deleted, except the anchor. The sweep stops at the first backup
+ *       inside the window, so only the expired backups and one page at each end are ever read.
+ *   <li><b>Write Delete Commands:</b> For each batch, sends a {@code DELETE_BACKUP} request per
+ *       deletable checkpoint to the partition leader via the {@link BrokerClient}, and waits for
+ *       them before reading the next batch. The leader's stream processor handles the actual
+ *       deletion: updating the CHECKPOINTS and BACKUP_RANGES column families, asynchronously
+ *       deleting from the backup store, and syncing the JSON metadata file.
  * </ol>
+ *
+ * Checkpoint ids are strictly increasing per partition, so reading in checkpoint id order is
+ * reading in creation order. This keeps the cost of a retention run proportional to the number of
+ * expired backups instead of the number of stored backups.
  *
  * <h2>Scheduling</h2>
  *
@@ -87,25 +95,15 @@ import org.slf4j.LoggerFactory;
  */
 public class BackupRetention extends Actor {
   private static final Logger LOG = LoggerFactory.getLogger(BackupRetention.class);
-  private static final Comparator<BackupStatus> BACKUP_STATUS_COMPARATOR =
-      Comparator.comparing(
-          (BackupStatus s) -> {
-            final var refTimestampOpt =
-                s.descriptor().map(BackupDescriptor::checkpointTimestamp).or(s::lastModified);
-            return refTimestampOpt.orElse(null);
-          },
-          Comparator.nullsLast(Comparator.naturalOrder()));
-  private static final Comparator<BackupStatus> MAX_BACKUP_COMPARATOR =
-      Comparator.comparing(
-          status -> {
-            if (status.created().isPresent()) {
-              return status.created().get().toEpochMilli();
-            } else if (status.lastModified().isPresent()) {
-              return status.lastModified().get().toEpochMilli();
-            } else {
-              return status.id().checkpointId();
-            }
-          });
+
+  /** Newest-first page size while looking for the latest completed backup. */
+  private static final int ANCHOR_PAGE_SIZE = 20;
+
+  /**
+   * Oldest-first batch size while sweeping expired backups. Every batch enumerates the partition's
+   * manifest keys again, so batches are large to keep that overhead small during a backlog.
+   */
+  private static final int SWEEP_BATCH_SIZE = 1000;
 
   private final String physicalTenantId;
   private final Supplier<BackupStore> backupStoreFactory;
@@ -184,132 +182,178 @@ public class BackupRetention extends Actor {
 
   private ActorFuture<Void> performRetention() {
     final ActorFuture<Void> retentionFuture = createFuture();
-    final var partitionFutures =
-        topologyManager.getTopology(physicalTenantId).getPartitions().stream()
-            .parallel()
-            .map(this::createRetentionContext)
-            .map(
-                future ->
-                    future
-                        .thenApply(this::logContext, this)
-                        .thenApply(this::writeDeleteCommands, this))
-            .collect(new ActorFutureCollector<>(this));
+    final var store = backupStore;
+    if (store == null) {
+      retentionFuture.completeExceptionally(
+          new IllegalStateException("backupStore must be initialized before retention runs"));
+      return retentionFuture;
+    }
 
-    partitionFutures.onComplete(
-        (futures, error) -> {
-          if (error != null) {
-            retentionFuture.completeExceptionally(error);
-          } else {
-            retentionFuture.complete(unit());
-          }
-        });
+    final var partitionRetentions =
+        topologyManager.getTopology(physicalTenantId).getPartitions().stream()
+            .map(partitionId -> retainPartition(store, partitionId))
+            .toArray(CompletableFuture[]::new);
+    CompletableFuture.allOf(partitionRetentions)
+        .whenCompleteAsync(
+            (ignored, error) -> {
+              if (error != null) {
+                retentionFuture.completeExceptionally(error);
+              } else {
+                retentionFuture.complete(unit());
+              }
+            },
+            actor);
     return retentionFuture;
   }
 
-  private RetentionContext logContext(final RetentionContext ctx) {
+  /**
+   * Deletes the expired backups of one partition. Finds the latest completed backup newest first,
+   * then sweeps oldest first until the first backup inside the retention window.
+   */
+  private CompletableFuture<Void> retainPartition(final BackupStore store, final int partitionId) {
+    return findLatestCompletedBackup(store, partitionId, OptionalLong.empty())
+        .thenComposeAsync(
+            anchor -> {
+              if (anchor.isEmpty()) {
+                LOG.debug(
+                    "Unable to determine retention window for partition {}. No completed backup found.",
+                    partitionId);
+                return CompletableFuture.<Void>completedFuture(null);
+              }
+              final var windowBound = calculateWindowBound(anchor.get());
+              return sweep(
+                  store,
+                  new PartitionSweep(partitionId, anchor.get(), windowBound),
+                  OptionalLong.empty());
+            },
+            actor);
+  }
+
+  /**
+   * Reads pages newest first until one holds a completed backup with a timestamp. Usually that is
+   * the first page. Returns empty when the whole partition holds no such backup.
+   */
+  private CompletableFuture<Optional<BackupStatus>> findLatestCompletedBackup(
+      final BackupStore store, final int partitionId, final OptionalLong before) {
+    return store
+        .list(
+            allBackupsOfPartition(partitionId),
+            ListOptions.newestFirst(before, OptionalInt.of(ANCHOR_PAGE_SIZE)))
+        .thenComposeAsync(
+            page -> {
+              final var latestCompleted =
+                  page.stream()
+                      .filter(backup -> backup.statusCode() == BackupStatusCode.COMPLETED)
+                      .filter(backup -> backupTimestamp(backup) != null)
+                      .max(Comparator.comparingLong(backup -> backup.id().checkpointId()));
+              if (latestCompleted.isPresent() || isLastPage(page, ANCHOR_PAGE_SIZE)) {
+                return CompletableFuture.completedFuture(latestCompleted);
+              }
+              return findLatestCompletedBackup(
+                  store, partitionId, OptionalLong.of(oldestCheckpointId(page)));
+            },
+            actor);
+  }
+
+  /**
+   * Reads one batch oldest first, deletes its expired backups and continues with the next batch
+   * until the first retained completed backup is seen or the partition is exhausted.
+   */
+  private CompletableFuture<Void> sweep(
+      final BackupStore store, final PartitionSweep sweep, final OptionalLong after) {
+    return store
+        .list(
+            allBackupsOfPartition(sweep.partitionId),
+            ListOptions.oldestFirst(after, OptionalInt.of(SWEEP_BATCH_SIZE)))
+        .thenComposeAsync(
+            batch -> {
+              final var result = processBatch(batch, sweep);
+              logContext(result.context());
+              return writeDeleteCommands(result.context(), sweep)
+                  .thenComposeAsync(
+                      ignored -> {
+                        if (result.reachedWindow() || isLastPage(batch, SWEEP_BATCH_SIZE)) {
+                          return CompletableFuture.<Void>completedFuture(null);
+                        }
+                        return sweep(store, sweep, OptionalLong.of(newestCheckpointId(batch)));
+                      },
+                      actor);
+            },
+            actor);
+  }
+
+  /**
+   * Walks a batch in checkpoint id order. Every backup with a timestamp before the window bound is
+   * deletable, except the anchor. The first completed backup at or after the bound is the earliest
+   * backup of the new range and ends the sweep. Backups without a timestamp are skipped.
+   */
+  private BatchResult processBatch(final List<BackupStatus> batch, final PartitionSweep sweep) {
+    final var deletableBackups = new ArrayList<BackupIdentifier>();
+    long earliestBackupInNewRange = -1L;
+    boolean reachedWindow = false;
+
+    for (final var backup : batch) {
+      final var timestamp = backupTimestamp(backup);
+      if (timestamp == null) {
+        continue;
+      }
+
+      if (timestamp.isBefore(sweep.windowBound)) {
+        if (backup.id().checkpointId() != sweep.anchor.id().checkpointId()) {
+          deletableBackups.add(backup.id());
+        } else {
+          // If the backup is the latest completed backup it should not be deleted and the marker
+          // should be moved to that backup id.
+          earliestBackupInNewRange = backup.id().checkpointId();
+        }
+      } else {
+        // Only consider completed backups for the range change.
+        if (backup.statusCode() == BackupStatusCode.COMPLETED && earliestBackupInNewRange == -1L) {
+          earliestBackupInNewRange = backup.id().checkpointId();
+        }
+        if (earliestBackupInNewRange == -1L) {
+          continue;
+        }
+        reachedWindow = true;
+        break;
+      }
+    }
+    return new BatchResult(
+        RetentionContext.init(
+            sweep.partitionId, deletableBackups, earliestBackupInNewRange, sweep.windowBound),
+        reachedWindow);
+  }
+
+  private void logContext(final RetentionContext ctx) {
     LOG.atDebug()
         .addKeyValue("deletableBackups", ctx.deletableBackups)
         .addKeyValue("earliestBackupInNewRange", ctx.earliestBackupInNewRange)
         .setMessage("Determined retention context for partition " + ctx.partitionId)
         .log();
-    return ctx;
   }
 
-  private ActorFuture<RetentionContext> createRetentionContext(final int partitionId) {
-    return retrieveBackups(partitionId)
-        .thenApply(this::excludeBackupsWithoutTimestamps, this)
-        .thenApply((statuses) -> processBackups(statuses, partitionId), this);
+  private static boolean isLastPage(final Collection<BackupStatus> page, final int limit) {
+    return page.stream().map(backup -> backup.id().checkpointId()).distinct().count() < limit;
   }
 
-  private ActorFuture<Collection<BackupStatus>> retrieveBackups(final int partitionId) {
-    final var identifier =
-        new BackupIdentifierWildcardImpl(
-            Optional.empty(), Optional.of(partitionId), CheckpointPattern.any());
-    final ActorFuture<Collection<BackupStatus>> requestFuture = createFuture();
-    final var store = backupStore;
-    if (store == null) {
-      requestFuture.completeExceptionally(
-          new IllegalStateException("backupStore must be initialized before retention runs"));
-      return requestFuture;
-    }
-    store
-        .list(identifier)
-        .thenApplyAsync(
-            backups -> backups.stream().sorted(BACKUP_STATUS_COMPARATOR).toList(), actor)
-        .whenCompleteAsync(
-            (backups, throwable) -> {
-              if (throwable != null) {
-                requestFuture.completeExceptionally(throwable);
-              } else {
-                requestFuture.complete(backups);
-              }
-            },
-            actor);
-    return requestFuture;
+  private static long oldestCheckpointId(final Collection<BackupStatus> page) {
+    return page.stream().mapToLong(backup -> backup.id().checkpointId()).min().orElseThrow();
   }
 
-  private RetentionContext processBackups(
-      final Collection<BackupStatus> backups, final int partitionId) {
-
-    final var latestCompletedBackup = latestCompletedBackup(backups);
-    if (latestCompletedBackup.isEmpty()) {
-      LOG.debug(
-          "Unable to determine retention window for partition {}. No completed backup found.",
-          partitionId);
-      // Returning a context with no deletable backups will not trigger any further actions
-      return RetentionContext.init(partitionId, List.of(), -1L, null);
-    }
-
-    long firstAvailableBackupInNewRange = -1L;
-    final var deletableBackups = new ArrayList<BackupIdentifier>();
-
-    final var windowBound = calculateWindowBound(latestCompletedBackup.get());
-
-    for (final var backup : backups) {
-      final var timestamp = backupTimestamp(backup);
-
-      if (timestamp != null && windowBound != null && timestamp.isBefore(windowBound)) {
-        if (backup.id().checkpointId() != latestCompletedBackup.get().id().checkpointId()) {
-          deletableBackups.add(backup.id());
-        } else {
-          // If the backup is the latest completed backup it should not be deleted and the marker
-          // should be moved to that backup id.
-          firstAvailableBackupInNewRange = backup.id().checkpointId();
-        }
-      } else {
-        // Only consider completed backups for the range change.
-        if (backup.statusCode() == BackupStatusCode.COMPLETED
-            && firstAvailableBackupInNewRange == -1L) {
-          firstAvailableBackupInNewRange = backup.id().checkpointId();
-        }
-        if (firstAvailableBackupInNewRange == -1L) {
-          continue;
-        }
-        break;
-      }
-    }
-    return RetentionContext.init(
-        partitionId, deletableBackups, firstAvailableBackupInNewRange, windowBound);
+  private static long newestCheckpointId(final Collection<BackupStatus> page) {
+    return page.stream().mapToLong(backup -> backup.id().checkpointId()).max().orElseThrow();
   }
 
-  private Optional<BackupStatus> latestCompletedBackup(final Collection<BackupStatus> backups) {
-    return backups.stream()
-        .filter(f -> f.statusCode() == BackupStatusCode.COMPLETED)
-        .max(MAX_BACKUP_COMPARATOR);
+  private static BackupIdentifierWildcardImpl allBackupsOfPartition(final int partitionId) {
+    return new BackupIdentifierWildcardImpl(
+        Optional.empty(), Optional.of(partitionId), CheckpointPattern.any());
   }
 
-  private Collection<BackupStatus> excludeBackupsWithoutTimestamps(
-      final Collection<BackupStatus> backups) {
-    return backups.stream().filter(backup -> backupTimestamp(backup) != null).toList();
-  }
-
-  private @Nullable Instant calculateWindowBound(final BackupStatus latestCompletedBackup) {
-    final var completedTimestamp = backupTimestamp(latestCompletedBackup);
-    if (completedTimestamp != null) {
-      return completedTimestamp.minusSeconds(retentionWindow.toSeconds());
-    } else {
-      return null;
-    }
+  private Instant calculateWindowBound(final BackupStatus latestCompletedBackup) {
+    final var completedTimestamp =
+        requireNonNull(
+            backupTimestamp(latestCompletedBackup), "anchor backup must have a timestamp");
+    return completedTimestamp.minusSeconds(retentionWindow.toSeconds());
   }
 
   /**
@@ -322,11 +366,15 @@ public class BackupRetention extends Actor {
    * by a single {@code DELETE_BACKUP} command — the stream processor's post-commit task deletes all
    * copies via a wildcard query.
    */
-  private CompletableActorFuture<Void> writeDeleteCommands(final RetentionContext context) {
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+  private CompletableFuture<Void> writeDeleteCommands(
+      final RetentionContext context, final PartitionSweep sweep) {
     if (context.deletableBackups.isEmpty()) {
-      future.complete(unit());
-      return future;
+      if (context.earliestBackupInNewRange > 0) {
+        metrics
+            .forPartition(context.partitionId)
+            .setEarliestBackupId(context.earliestBackupInNewRange);
+      }
+      return CompletableFuture.completedFuture(null);
     }
 
     // Deduplicate by checkpoint ID — a single DELETE_BACKUP command handles all node copies
@@ -353,12 +401,11 @@ public class BackupRetention extends Actor {
               .thenAcceptAsync(this::throwOnBrokerError, actor));
     }
 
-    CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+    return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
         .thenAcceptAsync(
             ignore -> {
-              metrics
-                  .forPartition(context.partitionId)
-                  .setBackupsDeleted(uniqueCheckpointIds.length);
+              sweep.deleted += uniqueCheckpointIds.length;
+              metrics.forPartition(context.partitionId).setBackupsDeleted(sweep.deleted);
               if (context.earliestBackupInNewRange > 0) {
                 metrics
                     .forPartition(context.partitionId)
@@ -375,9 +422,7 @@ public class BackupRetention extends Actor {
                     error);
               }
             },
-            actor)
-        .whenCompleteAsync(future, actor);
-    return future;
+            actor);
   }
 
   private void throwOnBrokerError(final BrokerResponse<?> response) {
@@ -400,6 +445,23 @@ public class BackupRetention extends Actor {
               return null;
             });
   }
+
+  /** The state of one partition's sweep: the anchor, the window it defines and what was deleted. */
+  private static final class PartitionSweep {
+    private final int partitionId;
+    private final BackupStatus anchor;
+    private final Instant windowBound;
+    private int deleted;
+
+    private PartitionSweep(
+        final int partitionId, final BackupStatus anchor, final Instant windowBound) {
+      this.partitionId = partitionId;
+      this.anchor = anchor;
+      this.windowBound = windowBound;
+    }
+  }
+
+  private record BatchResult(RetentionContext context, boolean reachedWindow) {}
 
   record RetentionContext(
       List<BackupIdentifier> deletableBackups,

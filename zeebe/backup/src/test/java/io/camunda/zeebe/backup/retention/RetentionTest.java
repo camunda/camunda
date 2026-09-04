@@ -17,6 +17,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -27,9 +28,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.BackupDescriptor;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.client.api.BackupDeleteRequest;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
@@ -50,12 +53,14 @@ import io.micrometer.core.instrument.search.MeterNotFoundException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -96,6 +101,7 @@ public class RetentionTest {
         .when(brokerClient)
         .sendRequestWithRetry(any());
     lenient().doReturn(CompletableFuture.completedFuture(null)).when(backupStore).closeAsync();
+    stubPagedListing(backupStore);
 
     actorScheduler.getClock().pinCurrentTime();
   }
@@ -337,12 +343,85 @@ public class RetentionTest {
     verifyNoDeleteCommandSent(backup2.id().checkpointId());
   }
 
+  @Test
+  void shouldDrainBacklogInBatchesReadingOnlyExpiredBackups() {
+    // given — one backup per second for 2500 seconds, far more than a single sweep batch
+    final var now = actorScheduler.getClock().instant();
+    final var backups =
+        IntStream.range(0, 2500).mapToObj(i -> backup(now.minusSeconds(i))).toList();
+    when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(backups));
+
+    // when
+    runRetentionCycle();
+
+    // then — everything older than the 1-minute window relative to the newest backup is deleted
+    verify(brokerClient, times(2500 - 61)).sendRequestWithRetry(any());
+    verifyNoDeleteCommandSent(now.toEpochMilli());
+    verifyNoDeleteCommandSent(now.minusSeconds(60).toEpochMilli());
+    verifyDeleteCommandSent(1, now.minusSeconds(61).toEpochMilli());
+    // the anchor was found on the first newest-first page
+    verify(backupStore, times(1))
+        .list(any(), argThat(options -> options.order() == ListOptions.Order.DESCENDING));
+    // the sweep stopped at the first retained backup instead of paging through the retained ones
+    verify(backupStore, times(3))
+        .list(any(), argThat(options -> options.order() == ListOptions.Order.ASCENDING));
+  }
+
+  @Test
+  void shouldFindAnchorBeyondTheFirstPage() {
+    // given — the newest 25 backups failed, so the anchor is on the second newest-first page
+    final var now = actorScheduler.getClock().instant();
+    final var expired =
+        List.of(
+            backup(now.minusSeconds(500)),
+            backup(now.minusSeconds(400)),
+            backup(now.minusSeconds(300)));
+    final var anchor = backup(now.minusSeconds(200));
+    final var failed =
+        IntStream.range(0, 25).mapToObj(i -> failedBackup(now.minusSeconds(100 - i))).toList();
+    final var backups = new ArrayList<BackupStatus>(expired);
+    backups.add(anchor);
+    backups.addAll(failed);
+    when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(backups));
+
+    // when
+    runRetentionCycle();
+
+    // then — the window is relative to the anchor, the failed backups inside it are kept
+    expired.forEach(backup -> verifyDeleteCommandSent(1, backup.id().checkpointId()));
+    verifyNoDeleteCommandSent(anchor.id().checkpointId());
+    failed.forEach(backup -> verifyNoDeleteCommandSent(backup.id().checkpointId()));
+    verify(backupStore, times(2))
+        .list(any(), argThat(options -> options.order() == ListOptions.Order.DESCENDING));
+  }
+
   private Gauge getGauge(final String gaugeName) {
     return meterRegistry.get(gaugeName).gauge();
   }
 
   private Gauge getGauge(final String gaugeName, final int partitionId) {
     return meterRegistry.get(gaugeName).tag(PARTITION_TAG, String.valueOf(partitionId)).gauge();
+  }
+
+  /**
+   * Answers paged listings from whatever the test stubbed for the unpaged listing, selecting the
+   * page as a real store would. Tests keep describing the store content with {@code list(any())}.
+   */
+  private static void stubPagedListing(final BackupStore store) {
+    lenient()
+        .doAnswer(
+            invocation -> {
+              final BackupIdentifierWildcard wildcard = invocation.getArgument(0);
+              final ListOptions options = invocation.getArgument(1);
+              final var unpaged = store.list(wildcard);
+              if (unpaged == null) {
+                return CompletableFuture.failedFuture(
+                    new IllegalStateException("Test did not stub list(wildcard)"));
+              }
+              return unpaged.thenApply(statuses -> options.select(statuses, BackupStatus::id));
+            })
+        .when(store)
+        .list(any(), any());
   }
 
   private BackupRetention createBackupRetention() {
@@ -510,6 +589,7 @@ public class RetentionTest {
     void actorShouldNotHangOnBackupListingFailure() {
       // given
       reset(backupStore);
+      stubPagedListing(backupStore);
       when(backupStore.list(any()))
           .thenReturn(
               CompletableFuture.failedFuture(new RuntimeException("Failed to list backups")));
@@ -732,7 +812,7 @@ public class RetentionTest {
       actorScheduler.workUntilDone();
 
       // then — the loop was still ticking on its own schedule, so it resumes without a restart
-      verify(backupStore, times(1)).list(any());
+      verify(backupStore, atLeastOnce()).list(any());
     }
   }
 }
