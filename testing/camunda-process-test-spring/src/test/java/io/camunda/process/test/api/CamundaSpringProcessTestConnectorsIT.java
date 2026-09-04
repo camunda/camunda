@@ -16,6 +16,7 @@
 package io.camunda.process.test.api;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
@@ -25,7 +26,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import java.io.IOException;
@@ -37,34 +39,50 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.testcontainers.Testcontainers;
 
-@WireMockTest(httpPort = 10000)
 @SpringBootTest(
     classes = {CamundaSpringProcessTestConnectorsIT.class},
     properties = {
       "io.camunda.process.test.connectors-enabled=true",
       "io.camunda.process.test.connectors-secrets.CONNECTORS_URL=http://connectors:8080/actuator/health/readiness",
-      "io.camunda.process.test.connectors-secrets.BASE_URL=http://host.testcontainers.internal:10000"
+      "io.camunda.process.test.connectors-secrets.BASE_URL=http://host.testcontainers.internal:${cpt.wiremock.port}"
     })
 @CamundaSpringProcessTest
 public class CamundaSpringProcessTestConnectorsIT {
 
-  private static final int WIREMOCK_PORT = 10000;
+  private static final WireMockServer WIREMOCK =
+      new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
+
+  static {
+    WIREMOCK.start();
+    configureFor("localhost", WIREMOCK.port());
+    System.setProperty("cpt.wiremock.port", Integer.toString(WIREMOCK.port()));
+  }
 
   // The ID is part of the connector configuration in the BPMN element
   private static final String INBOUND_CONNECTOR_ID = "941c5492-ab2b-4305-aa18-ac86991ff4ca";
 
+  @Value("${cpt.wiremock.port}")
+  private int wireMockPort;
+
   @Autowired private CamundaClient client;
   @Autowired private CamundaProcessTestContext processTestContext;
 
-  @BeforeAll
-  static void setup() {
-    Testcontainers.exposeHostPorts(WIREMOCK_PORT);
+  @BeforeEach
+  void setup() {
+    Testcontainers.exposeHostPorts(wireMockPort);
+  }
+
+  @AfterAll
+  static void tearDown() {
+    WIREMOCK.stop();
   }
 
   @Test
