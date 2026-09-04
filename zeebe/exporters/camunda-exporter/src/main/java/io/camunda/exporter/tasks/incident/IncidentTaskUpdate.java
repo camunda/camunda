@@ -9,7 +9,7 @@ package io.camunda.exporter.tasks.incident;
 
 import java.util.Map;
 
-interface DocumentUpdate {
+interface IncidentTaskUpdate {
   String id();
 
   String index();
@@ -20,7 +20,7 @@ interface DocumentUpdate {
 
   Map<String, Object> doc();
 
-  abstract class Builder<T extends DocumentUpdate, B extends Builder<T, B>> {
+  abstract class Builder<T extends IncidentTaskUpdate, B extends Builder<T, B>> {
     protected final String id;
     protected String index;
 
