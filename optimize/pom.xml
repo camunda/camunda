@@ -155,6 +155,15 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <!-- Must be declared before spring-boot-dependencies so this version wins,
+           per Maven's first-import-wins BOM merge rule. -->
+      <dependency>
+        <groupId>org.springframework.security</groupId>
+        <artifactId>spring-security-bom</artifactId>
+        <version>${spring.security.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
@@ -175,13 +184,6 @@
         <version>${jackson.version}</version>
         <scope>import</scope>
         <type>pom</type>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-bom</artifactId>
-        <version>${spring.security.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -910,6 +912,21 @@
 
   <!-- Fix for bug with downloading snapshots from Camunda Nexus using groups with RELEASE and SNAPSHOTS -->
   <repositories>
+    <!-- Reuses the "zeebe" repository id so CI's Maven mirror (authenticated) picks this
+         up too; needed to fetch NES/commercial-patched coordinates like spring-security-bom's,
+         which aren't served anonymously from the public repositories below. -->
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>zeebe</id>
+      <name>Zeebe Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io/</url>
+    </repository>
+
     <repository>
       <id>camunda-nexus</id>
       <name>Camunda Nexus</name>
