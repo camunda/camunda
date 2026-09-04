@@ -166,6 +166,31 @@ func TestEnsureRejectsWritableSymbolicLinkTargetOnUnix(t *testing.T) {
 	assert.ErrorContains(t, err, "must not be writable by other users")
 }
 
+func TestEnsurePersistsCanonicalDirectoryOnUnix(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Creating symlinks requires additional privileges on Windows")
+	}
+	baseDir := t.TempDir()
+	canonicalParent := filepath.Join(baseDir, "canonical")
+	require.NoError(t, os.Mkdir(canonicalParent, 0o700))
+	linkedParent := filepath.Join(baseDir, "linked")
+	require.NoError(t, os.Symlink(canonicalParent, linkedParent))
+	t.Setenv(DirectoryEnv, filepath.Join(linkedParent, "secrets"))
+	store := New(baseDir)
+
+	require.NoError(t, store.Ensure())
+	directory, err := store.Directory()
+
+	require.NoError(t, err)
+	canonicalParent, err = filepath.EvalSymlinks(canonicalParent)
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(canonicalParent, "secrets"), directory)
+	require.NoError(t, store.Set("API_KEY", []byte("value")))
+	content, err := os.ReadFile(filepath.Join(canonicalParent, "secrets", "API_KEY"))
+	require.NoError(t, err)
+	assert.Equal(t, "value", string(content))
+}
+
 func TestEnsureRejectsSecretSymlink(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Creating symlinks requires additional privileges on Windows")
@@ -187,12 +212,13 @@ func TestListReturnsSortedNamesWithoutReadingValues(t *testing.T) {
 	require.NoError(t, store.Ensure())
 	require.NoError(t, os.WriteFile(filepath.Join(store.directory, "B_SECRET"), []byte("second-value"), 0o000))
 	require.NoError(t, os.WriteFile(filepath.Join(store.directory, "A_SECRET"), []byte("first-value"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(store.directory, "tls.crt"), []byte("certificate"), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(store.directory, ".temporary"), []byte("hidden-value"), 0o600))
 
 	names, err := store.List()
 
 	require.NoError(t, err)
-	assert.Equal(t, []string{"A_SECRET", "B_SECRET"}, names)
+	assert.Equal(t, []string{"A_SECRET", "B_SECRET", "tls.crt"}, names)
 }
 
 func TestDeleteRemovesOnlyNamedSecret(t *testing.T) {
@@ -212,12 +238,13 @@ func TestDeleteAllRemovesSecretsButPreservesOtherEntries(t *testing.T) {
 	store := New(t.TempDir())
 	require.NoError(t, store.Set("FIRST", []byte("first-value")))
 	require.NoError(t, store.Set("SECOND", []byte("second-value")))
+	require.NoError(t, os.WriteFile(filepath.Join(store.directory, "tls.crt"), []byte("certificate"), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(store.directory, ".keep"), []byte("keep"), 0o600))
 
 	names, err := store.DeleteAll()
 
 	require.NoError(t, err)
-	assert.Equal(t, []string{"FIRST", "SECOND"}, names)
+	assert.Equal(t, []string{"FIRST", "SECOND", "tls.crt"}, names)
 	remaining, err := os.ReadDir(store.directory)
 	require.NoError(t, err)
 	require.Len(t, remaining, 2)

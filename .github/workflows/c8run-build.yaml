@@ -212,7 +212,7 @@ jobs:
         if: failure()
         with:
           name: c8run-logs-${{ matrix.os }}
-          path: ./c8run/log/*.log
+          path: ${{ env.C8RUN_E2E_DIR }}/log/*.log
           retention-days: 10
 
       - name: Import Secrets
@@ -326,7 +326,8 @@ jobs:
         working-directory: .\c8run
 
       - name: Configure packaged C8Run E2E secret
-        run: bash -c "printf '%s' 'c8run-centralized-secret-test-value' | ./c8run.exe secrets set C8RUN_E2E_SECRET --stdin"
+        shell: bash
+        run: printf '%s' 'c8run-centralized-secret-test-value' | ./c8run.exe secrets set C8RUN_E2E_SECRET --stdin
         working-directory: ${{ env.C8RUN_E2E_DIR }}
 
       - name: ls
@@ -387,7 +388,7 @@ jobs:
         if: failure()
         with:
           name: c8run-logs
-          path: .\c8run\log\*.log
+          path: ${{ env.C8RUN_E2E_DIR }}/log/*.log
           retention-days: 10
 
       - name: Upload message to Slack on failure

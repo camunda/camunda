@@ -120,12 +120,12 @@ func (c *secretsCommand) set(store *localsecrets.Store, args []string) error {
 			return err
 		}
 		value, err := io.ReadAll(io.LimitReader(c.input, localsecrets.MaxSecretSize+1))
-		if len(value) > localsecrets.MaxSecretSize {
-			return fmt.Errorf("secret value must not exceed %d bytes", localsecrets.MaxSecretSize)
+		if err != nil {
+			return fmt.Errorf("failed to read secret value: %w", err)
 		}
 		value = localsecrets.TrimInputLineEnding(value)
-		if err != nil {
-			return errors.New("failed to read secret value")
+		if len(value) > localsecrets.MaxSecretSize {
+			return fmt.Errorf("secret value must not exceed %d bytes", localsecrets.MaxSecretSize)
 		}
 		if err := store.SetManyGuarded(map[string][]byte{names[0]: value}, withoutInterrupts); err != nil {
 			return err
@@ -304,11 +304,11 @@ func (c *secretsCommand) importDotenv(store *localsecrets.Store, args []string) 
 	if len(args) == 1 && args[0] != "-" {
 		importPath, err := filepath.Abs(args[0])
 		if err != nil {
-			return fmt.Errorf("failed to resolve dotenv file %q", args[0])
+			return fmt.Errorf("failed to resolve dotenv file %q: %w", args[0], err)
 		}
 		metadataPath, err := filepath.Abs(".env")
 		if err != nil {
-			return errors.New("failed to resolve the c8run .env path")
+			return fmt.Errorf("failed to resolve the c8run .env path: %w", err)
 		}
 		file, err := os.Open(importPath)
 		if err != nil {
@@ -324,7 +324,7 @@ func (c *secretsCommand) importDotenv(store *localsecrets.Store, args []string) 
 		}
 		if importErr != nil {
 			_ = file.Close()
-			return fmt.Errorf("failed to inspect dotenv file %q", args[0])
+			return fmt.Errorf("failed to inspect dotenv file %q: %w", args[0], importErr)
 		}
 		if metadataOpenErr == nil && metadataErr == nil && os.SameFile(importInfo, metadataInfo) {
 			_ = file.Close()
