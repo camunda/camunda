@@ -27,18 +27,24 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.ListOptions;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class ManifestManager {
@@ -58,6 +64,8 @@ public final class ManifestManager {
    * The path format is constructed by partitionId/checkpointId/nodeId/manifest.json
    */
   private static final String MANIFEST_PATH_FORMAT = "manifests/%s/%s/%s/manifest.json";
+
+  private static final int LIST_PAGE_SIZE = 1000;
 
   private static final ObjectMapper MAPPER =
       new ObjectMapper()
@@ -224,15 +232,37 @@ public final class ManifestManager {
   }
 
   public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
+    return listManifests(wildcard, ListOptions.all());
+  }
+
+  /**
+   * Lists the page of manifests selected by the options. All matching blob names are enumerated
+   * page by page, but only the selected manifests are downloaded.
+   */
+  public List<Manifest> listManifests(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
     assureContainerCreated();
-    return blobContainerClient
-        .listBlobs(new ListBlobsOptions().setPrefix(wildcardPrefix(wildcard)), null)
-        .stream()
-        .map(BlobItem::getName)
-        .filter(path -> filterBlobsByWildcard(wildcard, path))
-        .map(this::getManifestWithPath)
+    final var pathPattern = manifestPathPattern(wildcard);
+    final var manifestBlobs = new ArrayList<ManifestBlob>();
+    final var listOptions =
+        new ListBlobsOptions()
+            .setPrefix(wildcardPrefix(wildcard))
+            .setMaxResultsPerPage(LIST_PAGE_SIZE);
+    for (final var page : blobContainerClient.listBlobs(listOptions, null).iterableByPage()) {
+      for (final BlobItem blob : page.getValue()) {
+        final var matcher = pathPattern.matcher(blob.getName());
+        if (!matcher.matches()) {
+          continue;
+        }
+        final var id = parseIdentifier(matcher);
+        if (wildcard.matches(id)) {
+          manifestBlobs.add(new ManifestBlob(id, blob.getName()));
+        }
+      }
+    }
+    return options.select(manifestBlobs, ManifestBlob::id).stream()
+        .map(manifestBlob -> getManifestWithPath(manifestBlob.path()))
         .filter(Objects::nonNull)
-        .filter(m -> wildcard.matches(m.id()))
         .toList();
   }
 
@@ -247,16 +277,23 @@ public final class ManifestManager {
         backupIdentifier.brokerId().id());
   }
 
-  private boolean filterBlobsByWildcard(
-      final BackupIdentifierWildcard wildcard, final String path) {
-    final var pattern =
-        Pattern.compile(
-                MANIFEST_PATH_FORMAT.formatted(
-                    wildcard.partitionId().map(Number::toString).orElse("\\d+"),
-                    wildcard.checkpointPattern().asRegex(),
-                    BackupIdentifierWildcard.memberIdRegex(wildcard)))
-            .asMatchPredicate();
-    return pattern.test(path);
+  /** Matches the manifest paths of the wildcard and captures the identifier's path segments. */
+  private static Pattern manifestPathPattern(final BackupIdentifierWildcard wildcard) {
+    return Pattern.compile(
+        MANIFEST_PATH_FORMAT.formatted(
+            "(?<partitionId>%s)"
+                .formatted(wildcard.partitionId().map(Number::toString).orElse("\\d+")),
+            "(?<checkpointId>%s)".formatted(wildcard.checkpointPattern().asRegex()),
+            "(?<memberId>%s)".formatted(BackupIdentifierWildcard.memberIdRegex(wildcard))));
+  }
+
+  private static BackupIdentifier parseIdentifier(final Matcher manifestPath) {
+    final var memberId = BrokerMemberId.from(manifestPath.group("memberId"));
+    return new BackupIdentifierImpl(
+        memberId.nodeIdx(),
+        memberId.zone(),
+        Integer.parseInt(manifestPath.group("partitionId")),
+        Long.parseLong(manifestPath.group("checkpointId")));
   }
 
   /**
@@ -289,4 +326,6 @@ public final class ManifestManager {
   }
 
   record PersistedManifest(String eTag, InProgressManifest manifest) {}
+
+  private record ManifestBlob(BackupIdentifier id, String path) {}
 }

@@ -251,7 +251,7 @@ class ManifestManagerTest {
 
       // then the walk carries on, having collected nothing for the entry that is no longer there
       assertThat(result).isEqualTo(FileVisitResult.CONTINUE);
-      assertThat(collector.manifests()).isEmpty();
+      assertThat(collector.manifestFiles()).isEmpty();
     }
 
     @Test

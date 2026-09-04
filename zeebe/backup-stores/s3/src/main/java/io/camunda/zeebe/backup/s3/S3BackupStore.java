@@ -21,6 +21,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplete;
@@ -39,12 +40,18 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -59,8 +66,10 @@ import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.LegacyMd5Plugin;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.CommonPrefix;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -96,8 +105,10 @@ public final class S3BackupStore implements BackupStore {
   static final String METADATA_OBJECT_NAME = "metadata.json";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final int SCAN_PARALLELISM = 16;
+  private static final int LIST_PAGE_SIZE = 1000;
   private static final int MAX_DELETE_BATCH_SIZE = 1000;
   private final Pattern backupIdentifierPattern;
+  private final Pattern legacyCheckpointPrefixPattern;
   private final S3BackupConfig config;
   private final S3AsyncClient client;
   private final FileSetManager fileSetManager;
@@ -116,6 +127,8 @@ public final class S3BackupStore implements BackupStore {
         "(?:manifests/)?(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<memberId>(%s)).*"
             .formatted(MemberIdUtil.regexPattern());
     backupIdentifierPattern = Pattern.compile("^" + basePrefix + identifierSuffix);
+    legacyCheckpointPrefixPattern =
+        Pattern.compile("^" + basePrefix + "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/$");
   }
 
   public static BackupStore of(final S3BackupConfig config) {
@@ -257,8 +270,29 @@ public final class S3BackupStore implements BackupStore {
    */
   @Override
   public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
-    return readManifestObjects(wildcard)
-        .thenApplyAsync(manifests -> manifests.stream().map(Manifest::toStatus).toList());
+    return list(wildcard, ListOptions.all()).thenApply(statuses -> statuses);
+  }
+
+  @Override
+  public CompletableFuture<List<BackupStatus>> list(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
+    LOG.atTrace()
+        .addKeyValue("pattern", wildcard)
+        .addKeyValue("options", options)
+        .setMessage("Listing backups")
+        .log();
+    return listManifestKeys(wildcard)
+        .thenCompose(keys -> selectPage(wildcard, keys, options))
+        .thenCompose(this::readManifestObjects)
+        .thenApply(
+            manifests ->
+                options.select(
+                    manifests.stream()
+                        .map(Manifest::toStatus)
+                        // The manifest was deleted between listing its key and reading it
+                        .filter(status -> status.statusCode() != BackupStatusCode.DOES_NOT_EXIST)
+                        .toList(),
+                    BackupStatus::id));
   }
 
   @Override
@@ -464,45 +498,182 @@ public final class S3BackupStore implements BackupStore {
             });
   }
 
-  SdkPublisher<BackupIdentifier> findBackupIds(
-      final BackupIdentifierWildcard wildcard, final boolean legacyStructure) {
-    final var prefix = legacyStructure ? legacyWildcardPrefix(wildcard) : wildcardPrefix(wildcard);
-    LOG.atTrace()
-        .addKeyValue("pattern", wildcard)
-        .setMessage("Searching for matching manifest files")
-        .log();
-    return client
-        .listObjectsV2Paginator(cfg -> cfg.bucket(config.bucketName()).prefix(prefix))
-        .contents()
-        .filter(obj -> obj.key().endsWith(MANIFEST_OBJECT_KEY))
-        .map(S3Object::key)
-        .map(this::tryParseKeyAsId)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .filter(wildcard::matches);
+  /**
+   * Enumerates the manifest keys matching the wildcard without reading any manifest. Keys of the
+   * current layout parse to complete identifiers. Legacy backups store their contents next to the
+   * manifest, so listing them by key would walk every content object of every legacy backup; when
+   * the wildcard names a partition they are enumerated by checkpoint id with a delimiter listing
+   * instead, and the member copies of a checkpoint are resolved only once it is selected.
+   */
+  private CompletableFuture<ManifestKeys> listManifestKeys(
+      final BackupIdentifierWildcard wildcard) {
+    final Set<BackupIdentifier> identifiers = ConcurrentHashMap.newKeySet();
+    final Set<Long> legacyCheckpointIds = ConcurrentHashMap.newKeySet();
+    final var current =
+        forEachPage(
+            wildcardPrefix(wildcard),
+            Optional.empty(),
+            page -> collectManifestIdentifiers(page, wildcard, identifiers));
+    final CompletableFuture<Void> legacy;
+    if (wildcard.partitionId().isPresent()) {
+      legacy =
+          forEachPage(
+              legacyCheckpointPrefix(wildcard),
+              Optional.of("/"),
+              page ->
+                  page.commonPrefixes().stream()
+                      .map(CommonPrefix::prefix)
+                      .map(this::tryParseLegacyCheckpointId)
+                      .flatMap(Optional::stream)
+                      .filter(wildcard.checkpointPattern()::matches)
+                      .forEach(legacyCheckpointIds::add));
+    } else {
+      // Without a partition the legacy prefix spans the whole bucket, there is no cheaper walk
+      legacy =
+          forEachPage(
+              legacyWildcardPrefix(wildcard),
+              Optional.empty(),
+              page -> collectManifestIdentifiers(page, wildcard, identifiers));
+    }
+    return current.thenCombine(
+        legacy,
+        (ignoredCurrent, ignoredLegacy) -> new ManifestKeys(identifiers, legacyCheckpointIds));
   }
 
-  CompletableFuture<Collection<Manifest>> readManifestObjects(
-      final BackupIdentifierWildcard wildcard) {
+  private void collectManifestIdentifiers(
+      final ListObjectsV2Response page,
+      final BackupIdentifierWildcard wildcard,
+      final Set<BackupIdentifier> identifiers) {
+    page.contents().stream()
+        .map(S3Object::key)
+        .filter(key -> key.endsWith(MANIFEST_OBJECT_KEY))
+        .map(this::tryParseKeyAsId)
+        .flatMap(Optional::stream)
+        .filter(wildcard::matches)
+        .forEach(identifiers::add);
+  }
 
-    final var legacyAggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
-    final var legacyPublisher = findBackupIds(wildcard, true).map(this::readManifestObject);
-    legacyPublisher.subscribe(legacyAggregator);
-
-    final var aggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
-    final var publisher = findBackupIds(wildcard, false).map(this::readManifestObject);
-    publisher.subscribe(aggregator);
-
-    return legacyAggregator
+  /**
+   * Resolves the checkpoint ids selected by the options to the identifiers of all their copies, in
+   * the order of the options. Only selected legacy checkpoints are listed for their members.
+   */
+  private CompletableFuture<List<BackupIdentifier>> selectPage(
+      final BackupIdentifierWildcard wildcard, final ManifestKeys keys, final ListOptions options) {
+    final var selected = options.selectCheckpointIds(keys.checkpointIds());
+    final var selectedLegacy =
+        selected.stream().filter(keys.legacyCheckpointIds()::contains).toList();
+    final var legacyMembers =
+        new AsyncAggregatingSubscriber<Set<BackupIdentifier>>(SCAN_PARALLELISM);
+    SdkPublisher.fromIterable(selectedLegacy)
+        .map(checkpointId -> listLegacyMembers(wildcard, checkpointId))
+        .subscribe(legacyMembers);
+    return legacyMembers
         .result()
-        .thenCombine(
-            aggregator.result(),
-            (legacyManifests, manifests) -> {
-              final var combined = new HashSet<>(legacyManifests);
-              combined.addAll(manifests);
-              combined.removeIf(m -> !wildcard.matches(m.id()));
-              return combined;
+        .thenApply(
+            members -> {
+              final var byCheckpointId = new HashMap<Long, Set<BackupIdentifier>>();
+              Stream.concat(keys.identifiers().stream(), members.stream().flatMap(Set::stream))
+                  .forEach(
+                      id ->
+                          byCheckpointId
+                              .computeIfAbsent(id.checkpointId(), ignored -> new LinkedHashSet<>())
+                              .add(id));
+              return selected.stream()
+                  .flatMap(
+                      checkpointId -> byCheckpointId.getOrDefault(checkpointId, Set.of()).stream())
+                  .toList();
             });
+  }
+
+  private CompletableFuture<Set<BackupIdentifier>> listLegacyMembers(
+      final BackupIdentifierWildcard wildcard, final long checkpointId) {
+    final var prefix =
+        legacyBasePrefix() + wildcard.partitionId().orElseThrow() + "/" + checkpointId + "/";
+    final Set<BackupIdentifier> members = ConcurrentHashMap.newKeySet();
+    return forEachPage(
+            prefix,
+            Optional.of("/"),
+            page ->
+                page.commonPrefixes().stream()
+                    .map(CommonPrefix::prefix)
+                    .map(this::tryParseKeyAsId)
+                    .flatMap(Optional::stream)
+                    .filter(wildcard::matches)
+                    .forEach(members::add))
+        .thenApply(ignored -> members);
+  }
+
+  private CompletableFuture<List<Manifest>> readManifestObjects(final List<BackupIdentifier> ids) {
+    final var manifests = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
+    SdkPublisher.fromIterable(ids).map(this::readManifestObject).subscribe(manifests);
+    return manifests.result().thenApply(List::copyOf);
+  }
+
+  /** Requests the pages of a listing one after another and hands each page to the consumer. */
+  private CompletableFuture<Void> forEachPage(
+      final String prefix,
+      final Optional<String> delimiter,
+      final Consumer<ListObjectsV2Response> onPage) {
+    return forEachPage(prefix, delimiter, Optional.empty(), onPage);
+  }
+
+  private CompletableFuture<Void> forEachPage(
+      final String prefix,
+      final Optional<String> delimiter,
+      final Optional<String> continuationToken,
+      final Consumer<ListObjectsV2Response> onPage) {
+    return client
+        .listObjectsV2(
+            request -> {
+              request.bucket(config.bucketName()).prefix(prefix).maxKeys(LIST_PAGE_SIZE);
+              delimiter.ifPresent(request::delimiter);
+              continuationToken.ifPresent(request::continuationToken);
+            })
+        .thenCompose(
+            response -> {
+              onPage.accept(response);
+              final var next = Optional.ofNullable(response.nextContinuationToken());
+              if (next.isEmpty()) {
+                return CompletableFuture.<Void>completedFuture(null);
+              }
+              return forEachPage(prefix, delimiter, next, onPage);
+            });
+  }
+
+  private String legacyBasePrefix() {
+    return config.basePath().map(base -> base + "/").orElse("");
+  }
+
+  /**
+   * Prefix under which a delimiter listing yields one common prefix per legacy checkpoint of the
+   * wildcard's partition, narrowed by the checkpoint pattern where it has a prefix.
+   */
+  private String legacyCheckpointPrefix(final BackupIdentifierWildcard wildcard) {
+    return legacyBasePrefix()
+        + wildcard.partitionId().orElseThrow()
+        + "/"
+        + wildcard.checkpointPattern().prefix();
+  }
+
+  private Optional<Long> tryParseLegacyCheckpointId(final String commonPrefix) {
+    final var matcher = legacyCheckpointPrefixPattern.matcher(commonPrefix);
+    if (!matcher.matches()) {
+      return Optional.empty();
+    }
+    try {
+      return Optional.of(Long.parseLong(matcher.group("checkpointId")));
+    } catch (final NumberFormatException e) {
+      LOG.warn("Tried interpreting prefix {} as a legacy checkpoint but failed", commonPrefix, e);
+      return Optional.empty();
+    }
+  }
+
+  private record ManifestKeys(Set<BackupIdentifier> identifiers, Set<Long> legacyCheckpointIds) {
+    Set<Long> checkpointIds() {
+      final var checkpointIds = new HashSet<>(legacyCheckpointIds);
+      identifiers.forEach(id -> checkpointIds.add(id.checkpointId()));
+      return checkpointIds;
+    }
   }
 
   private CompletableFuture<ResponseBytes<GetObjectResponse>> findManifestForBackup(
