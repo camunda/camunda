@@ -45,5 +45,13 @@ runs:
         # Pin to bash so a forward-slash `directory` works consistently on
         # Linux, container images, and Windows runners (git-bash).
         shell: bash
+        # --loglevel=http surfaces each registry request/response (and where
+        # one is hanging) instead of a silent gap between the deprecation
+        # warnings and the timeout kill.
         command: |
-          cd "${{ inputs.directory }}" && npm ci
+          cd "${{ inputs.directory }}" && npm ci --loglevel=http
+        # A killed attempt (timeout) can leave node_modules half-extracted,
+        # which makes the next attempt fail deterministically (e.g. ENOTEMPTY)
+        # instead of getting a clean retry.
+        on_retry_command: |
+          rm -rf "${{ inputs.directory }}/node_modules"
