@@ -332,7 +332,7 @@ Example values from a past release:
 
 > [!NOTE]
 >
-> Since 8.8+, Optimize is built together with the main Camunda release; if you need Optimize to match a specific release tag, pass the corresponding `optimize-tag` explicitly.
+> The scheduled release load test workflow uses hardcoded release tags per branch. Update `.github/workflows/camunda-scheduled-release-load-tests.yml` manually when the tested patch versions change.
 
 #### Daily smoke tests
 
