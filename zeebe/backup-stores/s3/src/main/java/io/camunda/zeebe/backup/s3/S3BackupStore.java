@@ -668,14 +668,6 @@ public final class S3BackupStore implements BackupStore {
     }
   }
 
-  private record ManifestKeys(Set<BackupIdentifier> identifiers, Set<Long> legacyCheckpointIds) {
-    Set<Long> checkpointIds() {
-      final var checkpointIds = new HashSet<>(legacyCheckpointIds);
-      identifiers.forEach(id -> checkpointIds.add(id.checkpointId()));
-      return checkpointIds;
-    }
-  }
-
   private CompletableFuture<ResponseBytes<GetObjectResponse>> findManifestForBackup(
       final BackupIdentifier id) {
     LOG.atTrace().addKeyValue("backup", id).setMessage("Finding manifest").log();
@@ -856,6 +848,18 @@ public final class S3BackupStore implements BackupStore {
                         AwsBasicCredentials.create(
                             credentials.accessKey(), credentials.secretKey()))));
     return builder.build();
+  }
+
+  /**
+   * Manifest keys matching a wildcard: complete identifiers from the current layout, and legacy
+   * backups by checkpoint id only, whose member copies are resolved once they are selected.
+   */
+  private record ManifestKeys(Set<BackupIdentifier> identifiers, Set<Long> legacyCheckpointIds) {
+    Set<Long> checkpointIds() {
+      final var checkpointIds = new HashSet<>(legacyCheckpointIds);
+      identifiers.forEach(id -> checkpointIds.add(id.checkpointId()));
+      return checkpointIds;
+    }
   }
 
   public enum Directory {

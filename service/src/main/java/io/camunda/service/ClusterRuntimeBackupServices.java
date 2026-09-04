@@ -366,8 +366,6 @@ public final class ClusterRuntimeBackupServices {
         limit != null ? OptionalInt.of(limit) : OptionalInt.empty());
   }
 
-  private record Page(OptionalLong before, OptionalInt limit) {}
-
   private static CompletionStage<Long> take(
       final PhysicalTenantBackupPort target, final @Nullable Long backupId) {
     return backupId == null
@@ -638,6 +636,9 @@ public final class ClusterRuntimeBackupServices {
   }
 
   private record PhysicalTenantBackups(String physicalTenantId, List<BackupStatus> backups) {}
+
+  /** The validated page of a listing request, empty parts meaning "all" and "from the newest". */
+  private record Page(OptionalLong before, OptionalInt limit) {}
 
   /**
    * One physical tenant's runtime-backup port, plus the backup-id mode it is configured in — the
