@@ -91,14 +91,25 @@ abstract class AbstractEntityReader<T> {
     if (page.after() != null || page.before() != null) {
       keySetPagination = createKeySetPagination(sort, page);
     }
+    final var searchBefore = page.before() != null;
 
     if (SearchQueryResultType.UNLIMITED.equals(page.resultType())) {
       // assuming Integer.MAX_VALUE is enough
-      return new DbQueryPage(Integer.MAX_VALUE, 0, Integer.MAX_VALUE, keySetPagination);
+      return new DbQueryPage(
+          Integer.MAX_VALUE, 0, Integer.MAX_VALUE, keySetPagination, searchBefore);
     }
 
     return new DbQueryPage(
-        page.size(), page.from(), readerConfig.maxTotalHits() + 1, keySetPagination);
+        page.size(), page.from(), readerConfig.maxTotalHits() + 1, keySetPagination, searchBefore);
+  }
+
+  /**
+   * Restores the display order of a page seeked backwards from a {@code before} cursor. Such a page
+   * is queried against the display direction so that its LIMIT keeps the rows adjacent to the
+   * cursor (see {@code Commons.orderBy}), which leaves the returned rows in reverse order.
+   */
+  protected List<T> restoreDisplayOrder(final DbQueryPage page, final List<T> hits) {
+    return page.searchBefore() ? hits.reversed() : hits;
   }
 
   /**
@@ -232,7 +243,7 @@ abstract class AbstractEntityReader<T> {
       return buildSearchQueryResult(totalHits, List.of(), dbSort);
     }
     final List<T> results = executeQuery(resultsSupplier);
-    return buildSearchQueryResult(totalHits, results, dbSort);
+    return buildSearchQueryResult(totalHits, restoreDisplayOrder(page, results), dbSort);
   }
 
   /**
