@@ -239,27 +239,28 @@ For the full list of metric names and PromQL queries, see [docs/metrics.md](docs
 The `load-test-ops` skill ([skills/load-test-ops/SKILL.md](skills/load-test-ops/SKILL.md))
 documents known dashboard UIDs for the benchmark cluster.
 
-## Test Scenarios
+## When Load Tests Run
 
-We have different scenarios targeting different use cases and versions. All use the same [setup](#setup) and [endurance test variants](../docs/testing/reliability-testing.md#endurance-test-variants) defined in the reliability testing documentation.
+Load tests are triggered on different occasions (per release, weekly, daily, or ad-hoc), each targeting different use cases and versions. They build on a common [setup](#setup), but differ in details (for example, stress tests use smaller secondary storage disks) and in the [test variants](../docs/testing/reliability-testing.md#endurance-test-variants) defined in the reliability testing documentation.
 
-### Release load tests
+### Release load tests (endurance test)
 
-For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous load test with a realistic workload. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn), which triggers the [Camunda release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-release-load-test.yaml).
+For every [supported/maintained](https://github.com/camunda/company-handbook/blob/main/departments/products/engineering/processes-technical-processes-and-standards/standard-and-extended-support-periods/index.md) version, we run a continuous endurance test with a realistic workload. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn), which triggers the [Camunda release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-release-load-test.yaml).
 
-**Goal:** Validating the reliability of our releases and detecting earlier issues, especially with alpha versions and updates.
+**Goal:** Validating the long-term reliability of our releases and detecting earlier issues, especially with alpha versions and updates.
 
-**Validation:** The tailored [Zeebe Medic Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m) can be used to observe and validate the performance of the different load tests.
+**Validation:** The tailored [Camunda Performance Dashboard](https://dashboard.benchmark.camunda.cloud/d/camunda-performance-dashboard/camunda-performance) can be used to observe and validate the performance of the different load tests. In addition alerts have been configured to notify the team of any performance regressions or anomalies.
 
-#### Architecture
+#### Release load test and process integration
 
-The release load test workflow acts as an abstraction layer between the release process and the underlying load test infrastructure, with a simple public API accepting `name` and `tag` as required inputs, plus optional per-component image tag overrides (`optimize-tag`, `identity-tag`, `connectors-tag`).
+The [release load test GitHub workflow](https://github.com/camunda/camunda/blob/a78705f4b709733a7c05d400932bad2cee3cdc35/.github/workflows/camunda-release-load-test.yaml) acts as an abstraction layer between the [monorepo BPMN release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn) and the underlying load test infrastructure, with a simple public API accepting `name` and `tag` as required inputs, plus optional per-component image tag overrides (`optimize-tag`, `identity-tag`, `connectors-tag`).
 
 ```mermaid
+%%{init: {'flowchart': {'nodeSpacing': 150, 'rankSpacing': 90}}}%%
 graph TD
     subgraph "Callers"
         BPMN["Release Process<br/>(BPMN)"]
-        SCHEDULE["Scheduled Smoke Tests<br/>(weekdays 02:00 UTC)"]
+        SCHEDULE["Daily Smoke Tests<br/>(weekdays 02:00 UTC)"]
     end
 
     subgraph "Abstraction Layer — camunda-release-load-test.yaml"
@@ -329,9 +330,13 @@ Example values from a past release:
 | `release_tag`       | `8.7.17`        | The release tag to use for the test |
 | `benchmark_name`    | `release-8-7-x` | The name of the load test           |
 
-#### Scheduled smoke tests
+> [!NOTE]
+>
+> The scheduled release load test workflow uses hardcoded release tags per branch. Update `.github/workflows/camunda-scheduled-release-load-tests.yml` manually when the tested patch versions change.
 
-The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) runs on weekdays at 02:00 UTC to validate that release load tests can be created for the currently active stable branches (`stable/8.7`, `stable/8.8`, `stable/8.9`) and `main`. Each branch's load test is created by calling the release load test workflow on that branch (`@stable/8.x`), ensuring the correct infrastructure files are used.
+#### Daily smoke tests
+
+The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) runs on weekdays to validate that release load tests can be created for the currently active stable branches and `main`. Each branch's load test is created by calling the release load test workflow on that branch (`@stable/8.x`), ensuring the correct infrastructure files are used.
 
 After deployment, each load test is verified by the [verify-and-cleanup workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-verify-and-cleanup-load-test.yml), which:
 
@@ -343,30 +348,32 @@ Results are posted to the `#reliability-testing-alerts` Slack channel.
 
 > [!Note]
 >
-> The scheduled workflow uses hardcoded release tags per stable branch. Patch releases do not require updates — only new minor versions (e.g., 8.10) or deprecated branches need the workflow to be updated.
+> The scheduled workflow uses hardcoded release tags per stable branch, and are updated by renovate.
 
-### Weekly load tests
+### Weekly load tests (endurance test)
 
-Weekly load tests run against the state of the **main** branch via the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). They are automatically created every Monday and run for 4 weeks, then cleaned up by the [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-ttl-cleanup.yml). This results in several concurrent weekly tests (multiple variants × four weeks).
+Weekly load tests run against the state of the **main** branch via the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). They are automatically created every Monday and run for four weeks, then cleaned up by the [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-ttl-cleanup.yml). This results in several concurrent weekly tests (multiple variants × four weeks).
 
-The weekly tests cover, for example, the [realistic load](../docs/testing/reliability-testing.md#realistic-load) variants (one with Elasticsearch, one with OpenSearch, and one with PostgreSQL).
+The weekly tests cover endurance testing with the [realistic workload](../docs/testing/reliability-testing.md#realistic-load). There are different variants covering different storage backends, such as Elasticsearch, OpenSearch, and PostgreSQL.
 
-**Goal:** Validating the reliability of the current main, detecting newly introduced instabilities, memory leaks, and performance degradation.
+**Goal:** Validating the long-term reliability of the current main, detecting newly introduced instabilities, memory leaks, and performance degradation.
 
-**Validation:** The tailored [Zeebe Medic Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m) can be used to observe and validate the performance of the different load tests.
+**Validation:** The tailored [Camunda Performance Dashboard](https://dashboard.benchmark.camunda.cloud/d/camunda-performance-dashboard/camunda-performance) can be used to observe and validate the performance of the different load tests. In addition alerts have been configured to notify the team of any performance regressions or anomalies.
 
-Example running tests (naming pattern: `medic-y-<year>-cw-<week>-<sha>-<variant>`):
+Example running tests (naming pattern: `medic-y-<year>-<week>-<sha>-<variant>-realistic`):
 
-- `medic-y-2025-cw-22-a60d64da-test-realistic`
-- `medic-y-2025-cw-22-a60d64da-test-rdbms-realistic`
+- `medic-y-2025-22-a60d64da-realistic`
+- `medic-y-2025-22-a60d64da-rdbms-realistic`
 
-**Expectations:** If an issue prevents a test from working properly and no workaround is available, the test can be deleted to save resources.
+> [!IMPORTANT]
+>
+> **Expectations:** If an issue prevents a test from working properly and no workaround is available, the test can be deleted to save resources.
 
-### Daily load tests
+### Daily load tests (stress test)
 
-Daily stress tests run against the state of the **main** branch via the [Daily load tests GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-daily-load-tests.yml), in three variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage (exporters disabled).
+Daily stress tests run against the state of the **main** branch via the [Daily load tests GitHub workflow](../.github/workflows/camunda-daily-load-tests.yml), in three variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage (exporters disabled). All use the same [stress-load-test.yml](../.github/workflows/stress-load-test.yml) workflow and run for 3 hours.
 
-**Goal:** Validating the reliability of the current main under stress, and detecting newly introduced instabilities with a short feedback loop. The no-secondary-storage variant only runs this daily `max` leg — it does not get its own multi-week weekly endurance rotation, since that long-horizon engine coverage is not storage-specific and is already provided by the ES/OS/RDBMS weekly runs (see [Weekly load tests](#weekly-load-tests) above).
+**Goal:** Validating the reliability and performance of the current main under stress, and detecting newly introduced instabilities with a short feedback loop.
 
 **Benefits:**
 
@@ -374,27 +381,35 @@ Daily stress tests run against the state of the **main** branch via the [Daily l
 - Earlier regression detection — shorter feedback loop when something breaks
 - Daily sanity check that load tests work with current Helm charts and application
 
-**Validation:** TBD — explicit dashboard with KPIs is tracked in [#42274](https://github.com/camunda/camunda/issues/42274).
+**Validation:** Every day stress test results are posted to slack - in #reliability-testing-alerts channel. Based on the results a seven day trend is calculated. The results are extracted based on prometheus metrics which are collected via the [camunda-load-test-metrics.yaml](../.github/workflows/camunda-load-test-metrics.yaml).
 
-**Profiling:** unlike the PR-label flow, profiling here is unconditional — after each run's setup job succeeds, the reusable [`profile-load-test.yml`](../.github/workflows/profile-load-test.yml) workflow waits out the same 15-minute warmup as the metrics path, then captures a 30-minute async-profiler flamegraph for each of the gRPC, REST, and no-secondary-storage runs, in parallel with the 3-hour soak. Flamegraph artifacts upload the same way as the PR path.
+**Profiling:** Every stress test variant is profiled by [`profile-load-test.yml`](../.github/workflows/profile-load-test.yml).
+
+Before any metrics or profiles are taken the stress tests get a warmup period.
 
 ### Ad-hoc load tests
 
-On top of the previous scenarios, we support running ad-hoc load tests. They can be either set up by labeling an existing pull-request (PR) at the mono repository with the **benchmark** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Charts [manually](setup/README.md).
+On top of the previous automated occasions, when load tests run, we support running ad-hoc load tests. They can be either set up by labeling an existing pull-request (PR) at the mono repository with the **benchmark** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Charts [manually](setup/README.md).
 
 **Goal:** The goal of these ad-hoc load tests is to have a quick way to validate certain changes (reducing the feedback loop). The intentions can be manifold, may it be stability/reliability, performance, or something else.
 
-**Validation:** The more general [Zeebe Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?orgId=1) should be used to observe and validate the performance of the different load tests. If performance is the motivator of such a test, it might be helpful to use the [Camunda Performance](https://dashboard.benchmark.camunda.cloud/d/camunda-performance/camunda-performance?orgId=1) Dashboard.
+**Validation:** The tailored [Camunda Performance Dashboard](https://dashboard.benchmark.camunda.cloud/d/camunda-performance-dashboard/camunda-performance) can be used to observe and validate the performance of the different load tests. For more in-depth analysis, the more general [Zeebe Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?orgId=1) can be used as well.
 
 **Requirement:** Please make sure that load test namespaces are always prefixed with your initials, to allow us to identify who created the tests and reach out if necessary. Note that the `c8-` namespace prefix is added implicitly by the tooling (due to cluster access policies). For example, a name like `pp-stable-vms-october` will result in the Kubernetes namespace `c8-pp-stable-vms-october`.
+
+> [!NOTE]
+>
+> Ad-hoc load tests get by default a TTL of one day - if you need to run load tests for a longer time, you will need to adjust the TTL accordingly.
 
 #### Labeling a PR
 
 It is as easy as it sounds; we can label an existing PR with the [**benchmark**](https://github.com/camunda/camunda/labels/benchmark) label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-pr-load-test.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
 
-This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
+> [!NOTE]
+>
+> This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
 
-Alongside the flamegraph comment, the `benchmark` label also posts a **metrics-comparison comment** on the PR. Both paths share a 15-minute warmup, after which the metrics path opens a 30-minute collection window:
+Load tests started by labeling a PR will always run a stress test (no endurance test). Running Camunda applications will be profiled after a warm up period, and metrics will be collected during the subsequent steady-state period. Afterwards the results will be shared via a comment on the PR.
 
 - **Profile path:** after the 15-minute warmup, async-profiler samples each pod and the flamegraph comment is posted as soon as artifacts upload. No dependency on the metrics path.
 - **Metrics path:**
@@ -505,7 +520,7 @@ Use the following values directly in the workflow form:
 
 ##### Creating load test for old versions
 
-With the Camunda load test GitHub workflow, it is also possible to create load tests for older versions (until 8.6).
+With the Camunda load test GitHub workflow, it is also possible to create load tests for older versions (until 8.7).
 
 ![1-main](docs/assets/1-main.png)
 
@@ -513,7 +528,7 @@ As part of the workflow dispatch form (UI), select the respective workflow revis
 
 ![2-choosing](docs/assets/2-choosing.png)
 
-This will make sure that the right Camunda Platform Helm Chart version and values file are used for the load test set up. Respective values files can be found in the stable branches and will be picked up by the GitHub Workflow on the different stable branches.
+This will make sure that the right Camunda Platform Helm Chart version and values file are used for the load test set up. Respective values files can be found in the stable-8x folders in `load-tests/setup` folder. The right target version will be picked up by the GitHub Workflow on the different stable branches.
 
 We can reference tags, branches or commit SHAs as ref. It must not necessarily correspond to the stable branch, but should be compatible with the version. This will be used to build the Docker image for the respective cluster under test and load test applications.
 
