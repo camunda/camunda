@@ -26,7 +26,6 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 
@@ -42,10 +41,6 @@ import org.springframework.http.HttpStatus;
  */
 @MultiDbTest
 @MultiDbPhysicalTenants({PhysicalTenantWebSessionUnprotectedApiIT.TENANT_A})
-@EnabledIfSystemProperty(
-    named = "test.integration.camunda.database.type",
-    matches = "rdbms.*$",
-    disabledReason = "Per-physical-tenant secondary storage is only supported on RDBMS backends")
 public class PhysicalTenantWebSessionUnprotectedApiIT {
 
   static final String TENANT_A = "tenanta";
