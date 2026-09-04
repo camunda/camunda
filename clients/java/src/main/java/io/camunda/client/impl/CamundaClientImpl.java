@@ -152,6 +152,7 @@ import io.camunda.client.api.fetch.ResourceContentGetRequest;
 import io.camunda.client.api.fetch.ResourceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
+import io.camunda.client.api.fetch.RuntimeVariablesGetRequest;
 import io.camunda.client.api.fetch.TenantGetRequest;
 import io.camunda.client.api.fetch.TenantScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.UserGetRequest;
@@ -346,6 +347,7 @@ import io.camunda.client.impl.fetch.ResourceContentBinaryGetRequestImpl;
 import io.camunda.client.impl.fetch.ResourceContentGetRequestImpl;
 import io.camunda.client.impl.fetch.ResourceGetRequestImpl;
 import io.camunda.client.impl.fetch.RoleGetRequestImpl;
+import io.camunda.client.impl.fetch.RuntimeVariablesGetRequestImpl;
 import io.camunda.client.impl.fetch.TenantGetRequestImpl;
 import io.camunda.client.impl.fetch.TenantScopedClusterVariableGetRequestImpl;
 import io.camunda.client.impl.fetch.UserGetRequestImpl;
@@ -1112,6 +1114,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ElementInstanceGetRequest newElementInstanceGetRequest(final long elementInstanceKey) {
     return new ElementInstanceGetRequestImpl(httpClient, elementInstanceKey);
+  }
+
+  @Override
+  public RuntimeVariablesGetRequest newRuntimeVariablesGetRequest(final long scopeKey) {
+    return new RuntimeVariablesGetRequestImpl(httpClient, scopeKey);
   }
 
   @Override

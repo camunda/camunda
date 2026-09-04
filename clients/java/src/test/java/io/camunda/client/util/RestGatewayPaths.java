@@ -64,6 +64,8 @@ public class RestGatewayPaths {
       REST_API_PATH + "/decision-instances/deletion";
   private static final String URL_DEPLOYMENTS = REST_API_PATH + "/deployments";
   private static final String URL_ELEMENT_INSTANCE = REST_API_PATH + "/element-instances/%s";
+  private static final String URL_RUNTIME_VARIABLES =
+      REST_API_PATH + "/element-instances/%s/variables";
   private static final String URL_EXPRESSION_EVALUATION = REST_API_PATH + "/expression/evaluation";
   private static final String URL_GROUP = REST_API_PATH + "/groups/%s";
   private static final String URL_GROUPS = REST_API_PATH + "/groups";
@@ -450,6 +452,10 @@ public class RestGatewayPaths {
 
   public static String getElementInstanceUrl(final long elementInstanceKey) {
     return String.format(URL_ELEMENT_INSTANCE, elementInstanceKey);
+  }
+
+  public static String getRuntimeVariablesUrl(final long scopeKey) {
+    return String.format(URL_RUNTIME_VARIABLES, scopeKey);
   }
 
   public static String getClusterVariablesUrl() {

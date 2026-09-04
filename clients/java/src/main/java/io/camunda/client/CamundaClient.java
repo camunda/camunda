@@ -141,6 +141,7 @@ import io.camunda.client.api.fetch.ResourceContentGetRequest;
 import io.camunda.client.api.fetch.ResourceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
+import io.camunda.client.api.fetch.RuntimeVariablesGetRequest;
 import io.camunda.client.api.fetch.TenantGetRequest;
 import io.camunda.client.api.fetch.TenantScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.UserGetRequest;
@@ -1327,6 +1328,15 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a element instance
    */
   ElementInstanceGetRequest newElementInstanceGetRequest(long elementInstanceKey);
+
+  /**
+   * Gets an authoritative runtime variable snapshot for an active process or element instance
+   * scope.
+   *
+   * @param scopeKey the process instance key or element instance key
+   * @return a builder for the runtime variables request
+   */
+  RuntimeVariablesGetRequest newRuntimeVariablesGetRequest(long scopeKey);
 
   /**
    * Command to activate activities within an activated ad-hoc sub-process.

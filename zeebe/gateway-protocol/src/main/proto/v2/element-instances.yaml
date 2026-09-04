@@ -125,6 +125,57 @@ paths:
       x-scope: physical-tenant
 
   /element-instances/{elementInstanceKey}/variables:
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Element instance
+      operationId: getElementInstanceRuntimeVariables
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Get runtime variables visible from an element instance
+      description: Returns an authoritative variable snapshot directly from primary runtime state.
+      parameters:
+        - name: elementInstanceKey
+          in: path
+          required: true
+          description: The key of the active element instance whose variables should be returned. The root element instance key is the process instance key.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+        - name: scope
+          in: query
+          required: false
+          description: EFFECTIVE returns all variables visible from the element. LOCAL returns only variables defined directly at the element scope.
+          schema:
+            $ref: 'variables.yaml#/components/schemas/RuntimeVariableScopeEnum'
+            default: EFFECTIVE
+      responses:
+        "200":
+          description: The runtime variables are successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: 'variables.yaml#/components/schemas/RuntimeVariablesResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The active element instance scope was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+      x-scope: physical-tenant
     put:
       x-eventually-consistent: false
       tags:

@@ -28,8 +28,11 @@ import io.camunda.service.cache.ProcessCacheItem;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerFetchRuntimeVariablesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
+import io.camunda.zeebe.protocol.impl.record.value.runtimevariables.RuntimeVariablesRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.record.value.RuntimeVariableScope;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -119,6 +122,15 @@ public final class ElementInstanceServices
       brokerRequest.setOperationReference(request.operationReference());
     }
     return sendBrokerRequest(brokerRequest, authentication);
+  }
+
+  public CompletableFuture<RuntimeVariablesRecord> fetchRuntimeVariables(
+      final long scopeKey,
+      final RuntimeVariableScope scope,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerFetchRuntimeVariablesRequest().setScopeKey(scopeKey).setScope(scope),
+        authentication);
   }
 
   private SearchQueryResult<FlowNodeInstanceEntity> toCacheEnrichedResult(
