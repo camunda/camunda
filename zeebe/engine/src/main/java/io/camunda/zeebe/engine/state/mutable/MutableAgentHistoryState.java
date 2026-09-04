@@ -35,10 +35,11 @@ public interface MutableAgentHistoryState extends AgentHistoryState {
       long agentInstanceKey, String historyItemId, long agentHistoryKey);
 
   /**
-   * Deletes every committed-id entry recorded for {@code agentInstanceKey}. Called once, when the
-   * agent instance completes.
+   * Deletes the committed-id entry recorded for {@code historyItemId} on {@code agentInstanceKey},
+   * if it exists. Called from the {@code AGENT_INSTANCE:CLEANED} applier, once per id resolved by
+   * the {@code CLEAN_UP} processor.
    */
-  void deleteCommittedHistoryItemKeys(long agentInstanceKey);
+  void deleteCommittedHistoryItemKey(long agentInstanceKey, String historyItemId);
 
   /**
    * Records that metrics were accumulated for {@code historyItemId} on {@code agentInstanceKey}, so
@@ -48,8 +49,9 @@ public interface MutableAgentHistoryState extends AgentHistoryState {
   void markMetricsAccumulated(long agentInstanceKey, String historyItemId);
 
   /**
-   * Deletes every metrics-accumulated-id entry recorded for {@code agentInstanceKey}. Called once,
-   * when the agent instance completes.
+   * Deletes the metrics-accumulated-id entry recorded for {@code historyItemId} on {@code
+   * agentInstanceKey}, if it exists. Called from the {@code AGENT_INSTANCE:CLEANED} applier, once
+   * per id resolved by the {@code CLEAN_UP} processor.
    */
-  void deleteMetricsAccumulatedIds(long agentInstanceKey);
+  void deleteMetricsAccumulatedId(long agentInstanceKey, String historyItemId);
 }
