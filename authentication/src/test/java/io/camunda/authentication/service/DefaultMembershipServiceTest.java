@@ -442,6 +442,42 @@ class DefaultMembershipServiceTest {
                     .contains("groupIds"));
   }
 
+  @Test
+  void shouldNotRetainAnOutageEntryForALookupThatNeverFailed() {
+    // given — a healthy group store
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new GroupEntity(1L, "g1", "group", null)));
+    final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
+
+    // when — the lookup succeeds
+    inPhysicalTenant("default", () -> service.groupIds(query));
+
+    // then — nothing is retained. The key is derived from the physical tenant on the request, which
+    // PhysicalTenantFilter stamps without validating, so anything retained on the success path
+    // would tie this service's memory to the set of tenant ids that reach it rather than to the set
+    // that is configured.
+    assertThat(service.lookupOutages).isEmpty();
+  }
+
+  @Test
+  void shouldNotRetainAnOutageEntryForAnUnconfiguredPhysicalTenant() {
+    // given — a physical tenant this registry does not know. PhysicalTenantFilter stamps the id
+    // from the request path without validating it, so an arbitrary one does reach this service;
+    // what stops it is the lookup opening by resolving that tenant's services.
+    final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
+
+    // when / then — the registry rejects it before any search runs, and a rejection is not a
+    // transient failure, so it propagates
+    assertThatThrownBy(() -> inPhysicalTenant("tenantz", () -> service.groupIds(query)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantz");
+
+    // and nothing is retained. This is what bounds the map by the configured tenants rather than
+    // by the ids that arrive: an id no tenant matches cannot reach the failure branch that
+    // allocates.
+    assertThat(service.lookupOutages).isEmpty();
+  }
+
   private void inPhysicalTenant(final String physicalTenantId, final Runnable call) {
     final var request = new MockHttpServletRequest();
     PhysicalTenantContext.setPhysicalTenantId(request, physicalTenantId);
