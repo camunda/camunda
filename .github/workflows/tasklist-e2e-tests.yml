@@ -80,7 +80,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: Install node dependencies
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
