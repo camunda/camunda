@@ -76,6 +76,7 @@ import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -97,6 +98,13 @@ final class JobWorkerImplTest {
   private MockedGateway gateway;
   private CamundaClient client;
   private ManagedChannel channel;
+
+  // Keep this explicit teardown so the client closes before the migrated JUnit 4 GrpcCleanupRule
+  // checks that its channel has been released; @AutoClose runs too late for this mixed test.
+  @AfterEach
+  void tearDown() {
+    client.close();
+  }
 
   @BeforeEach
   void setup() throws IOException {
@@ -184,8 +192,6 @@ final class JobWorkerImplTest {
 
     // since stream is enabled then we expect the poll to backoff
     assertThat(gateway.getTimeBetweenLatestPolls()).isGreaterThan(SLOW_POLL_THRESHOLD);
-
-    client.close();
   }
 
   @Test
