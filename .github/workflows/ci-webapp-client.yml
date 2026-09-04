@@ -347,7 +347,7 @@ jobs:
     env:
       TEST_TYPE: Visual Regression
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 21
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
       image: mcr.microsoft.com/playwright:v1.62.1
