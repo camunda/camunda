@@ -72,7 +72,7 @@ public class NoopBackupManager implements BackupManager {
   }
 
   @Override
-  public void failInProgressBackup(final long lastCheckpointId) {
+  public void failInProgressBackup(final long lastCheckpointId, final long latestBackupId) {
     if (lastCheckpointId == CheckpointState.NO_CHECKPOINT) {
       return;
     }
