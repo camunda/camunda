@@ -672,7 +672,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
             .map(IncidentDocument::incident)
             .collect(Collectors.groupingBy(IncidentEntity::getId));
     final var incidentUpdatesById =
-        incidentUpdates.stream().collect(Collectors.groupingBy(DocumentUpdate::id));
+        incidentUpdates.stream().collect(Collectors.groupingBy(IncidentTaskUpdate::id));
     final var incidentsToNotify =
         updatedIds.stream()
             .filter(incidentUpdatesById::containsKey)

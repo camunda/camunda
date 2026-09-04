@@ -215,14 +215,14 @@ final class IncidentUpdateTaskTest {
               inv -> {
                 final IncidentBulkUpdate update = inv.getArgument(0);
                 return CompletableFuture.completedFuture(
-                    update.stream().map(DocumentUpdate::id).toList());
+                    update.stream().map(IncidentTaskUpdate::id).toList());
               });
       when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
           .then(
               inv -> {
                 final NonIncidentBulkUpdate update = inv.getArgument(0);
                 return CompletableFuture.completedFuture(
-                    update.stream().map(DocumentUpdate::id).toList());
+                    update.stream().map(IncidentTaskUpdate::id).toList());
               });
     }
 
