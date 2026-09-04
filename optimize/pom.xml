@@ -155,6 +155,17 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <!-- Override Spring Boot's spring-security version to resolve CVE-2026-41707.
+           Must be declared before spring-boot-dependencies so this version wins;
+           otherwise Spring Boot's own (vulnerable) spring-security version silently
+           overrides this pin, per Maven's first-import-wins BOM merge rule. -->
+      <dependency>
+        <groupId>org.springframework.security</groupId>
+        <artifactId>spring-security-bom</artifactId>
+        <version>${spring.security.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
@@ -175,13 +186,6 @@
         <version>${jackson.version}</version>
         <scope>import</scope>
         <type>pom</type>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-bom</artifactId>
-        <version>${spring.security.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
