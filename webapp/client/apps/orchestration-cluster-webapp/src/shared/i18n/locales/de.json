@@ -454,7 +454,10 @@
 				"instancesInVersion_other": "{{count}} Instanzen in Version {{version}}",
 				"version": "Version {{version}}",
 				"fetchErrorHeading": "Daten konnten nicht abgerufen werden",
-				"fetchErrorDescription": "Laden Sie die Seite neu, um es erneut zu versuchen"
+				"fetchErrorDescription": "Laden Sie die Seite neu, um es erneut zu versuchen",
+				"draining": "Wird geleert",
+				"drainingDescriptionAllVersions": "Eine oder mehrere Versionen dieser Prozessdefinition sind zur Löschung vorgesehen. Sie bleiben bestehen, bis ihre laufenden Instanzen abgeschlossen sind, und werden dann automatisch entfernt.",
+				"drainingDescriptionVersion": "Diese Version der Prozessdefinition ist zur Löschung vorgesehen und wird automatisch entfernt, sobald alle ihre laufenden Instanzen abgeschlossen sind."
 			},
 			"processes": {
 				"title": "Prozesse",

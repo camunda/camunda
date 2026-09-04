@@ -11,6 +11,8 @@ import type {
 	GetProcessDefinitionInstanceStatisticsRequestBody,
 	GetProcessDefinitionInstanceStatisticsResponseBody,
 	GetProcessDefinitionInstanceVersionStatisticsResponseBody,
+	ProcessDefinition,
+	QueryProcessDefinitionsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
@@ -18,6 +20,50 @@ import {endpoints} from '#/shared/http/endpoints';
 
 const PAGE_SIZE = 50;
 const MAX_PAGES = 5;
+const DRAINING_REFETCH_INTERVAL = 5000;
+const DRAINING_PAGE_LIMIT = 1000;
+
+type DrainingLookup = {
+	byId: Set<string>;
+	byKey: Set<string>;
+};
+
+const drainingByIdKey = (tenantId: string, processDefinitionId: string) => `${tenantId}:${processDefinitionId}`;
+
+async function fetchAllDrainingProcessDefinitions(): Promise<ProcessDefinition[]> {
+	const items: ProcessDefinition[] = [];
+	let after: string | undefined;
+
+	do {
+		const {response, error} = await request(
+			endpoints.queryProcessDefinitions({
+				filter: {state: 'DRAINING'},
+				page: {limit: DRAINING_PAGE_LIMIT, after},
+			}),
+		);
+		if (error !== null) {
+			throw mapQueryError(error);
+		}
+		const page: QueryProcessDefinitionsResponseBody = await response.json();
+		items.push(...page.items);
+		const nextCursor = page.page.hasMoreTotalItems ? page.page.endCursor : null;
+		after = nextCursor !== null && nextCursor !== after ? nextCursor : undefined;
+	} while (after !== undefined);
+
+	return items;
+}
+
+const drainingProcessDefinitionsQuery = () =>
+	queryOptions({
+		queryKey: ['drainingProcessDefinitions'] as const,
+		staleTime: DRAINING_REFETCH_INTERVAL,
+		refetchInterval: DRAINING_REFETCH_INTERVAL,
+		queryFn: fetchAllDrainingProcessDefinitions,
+		select: (items): DrainingLookup => ({
+			byId: new Set(items.map((item) => drainingByIdKey(item.tenantId, item.processDefinitionId))),
+			byKey: new Set(items.map((item) => item.processDefinitionKey)),
+		}),
+	});
 
 const DEFAULT_SORT: Pick<GetProcessDefinitionInstanceStatisticsRequestBody, 'sort'> = {
 	sort: [
@@ -70,4 +116,11 @@ const instancesByProcessVersionsQuery = (processDefinitionId: string, tenantId: 
 		},
 	});
 
-export {instancesByProcessInfiniteQuery, instancesByProcessVersionsQuery, PAGE_SIZE};
+export {
+	instancesByProcessInfiniteQuery,
+	instancesByProcessVersionsQuery,
+	drainingProcessDefinitionsQuery,
+	drainingByIdKey,
+	PAGE_SIZE,
+	type DrainingLookup,
+};
