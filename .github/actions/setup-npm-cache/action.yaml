@@ -1,0 +1,68 @@
+---
+name: Setup NPM Cache
+
+# owner: @camunda/engineering-operations
+
+description: Configures GHA cache for the npm global download cache dir (no save on PRs), see https://camunda.github.io/camunda/ci/#caching-strategy
+
+inputs:
+  cache-dependency-path:
+    description: Path to the package-lock.json used to compute the cache key.
+    required: true
+  npm-cache-key-modifier:
+    description: A modifier key used for the npm cache, can be used to create isolated caches for certain jobs.
+    default: "shared"
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Get cache path and keys
+      shell: bash
+      env:
+        HASH_FILES: ${{ hashFiles(inputs.cache-dependency-path) }}
+        # runner.environment matters for caching as absolute paths on self-hosted
+        # and GitHub runners differ (self-hosted `/runner/` vs gh-hosted `/home/runner`)
+        KEY_PREFIX: ${{ runner.environment }}-${{ runner.os }}-npm-${{ inputs.npm-cache-key-modifier }}
+      run: |
+        # ~/.npm is npm's global download cache; `npm ci` reuses tarballs from here
+        # instead of hitting the registry. GitHub env variables are used instead of
+        # outputs, as outputs are not available in post steps
+        # https://github.com/actions/runner/issues/2009
+        echo "NPM_CACHE_PATH=~/.npm" >> $GITHUB_ENV
+        echo "NPM_CACHE_KEY=${KEY_PREFIX}-${HASH_FILES}" >> $GITHUB_ENV
+        echo "NPM_CACHE_KEY_PREFIX=${KEY_PREFIX}" >> $GITHUB_ENV
+
+      # Check if PR contains a label to disable the cache
+    - name: Check if cache is enabled
+      uses: camunda/infra-global-github-actions/is-cache-enabled@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      id: is-cache-enabled
+
+    - name: Detect branch type
+      id: branch-detect
+      shell: bash
+      env:
+        IS_MAIN_OR_STABLE_BRANCH: ${{ startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' }}
+      run: |
+        echo is-main-or-stable-branch="$IS_MAIN_OR_STABLE_BRANCH" | tee -a $GITHUB_OUTPUT
+
+    - name: Cache npm download cache
+      # Only use the full cache action (save + restore) if we're on main or stable/* branches
+      if: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' }}
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ env.NPM_CACHE_PATH }}
+        key: ${{ env.NPM_CACHE_KEY }}
+        restore-keys: |
+          ${{ env.NPM_CACHE_KEY_PREFIX }}
+
+    - name: Restore npm download cache
+      # Restore cache (but don't save it) if we're not on main or stable/* branches and cache is enabled
+      if: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'false' && steps.is-cache-enabled.outputs.is-cache-enabled == 'true' }}
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        # This has to match the 'Cache npm download cache' step above
+        path: ${{ env.NPM_CACHE_PATH }}
+        key: ${{ env.NPM_CACHE_KEY }}
+        restore-keys: |
+          ${{ env.NPM_CACHE_KEY_PREFIX }}

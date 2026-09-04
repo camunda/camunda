@@ -30,6 +30,12 @@ inputs:
 runs:
   using: composite
   steps:
+    # per docs/monorepo-docs/ci.md §"GitHub Actions Cache": NPM/Yarn dependencies
+    # should use the shared cache action; writes only happen from main/stable*.
+    - name: Setup npm cache
+      uses: ./.github/actions/setup-npm-cache
+      with:
+        cache-dependency-path: ${{ inputs.directory }}/package-lock.json
     - name: Install node dependencies
       uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
       with:
@@ -41,3 +47,8 @@ runs:
         shell: bash
         command: |
           cd "${{ inputs.directory }}" && npm ci
+        # A killed attempt (timeout) can leave node_modules half-extracted,
+        # which makes the next attempt fail deterministically (e.g. ENOTEMPTY)
+        # instead of getting a clean retry.
+        on_retry_command: |
+          rm -rf "${{ inputs.directory }}/node_modules"
