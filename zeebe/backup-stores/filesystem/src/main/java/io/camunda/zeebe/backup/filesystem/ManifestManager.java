@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.filesystem;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +39,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +82,7 @@ public final class ManifestManager {
     final var path = manifestPath(manifest);
 
     try {
-      FileUtil.ensureDirectoryExists(path.getParent());
+      FileUtil.ensureDirectoryExists(requireNonNull(path.getParent()));
     } catch (final IOException e) {
       throw new UncheckedIOException(
           "Unable to create directories for manifest: " + path.getParent(), e);
@@ -167,7 +169,7 @@ public final class ManifestManager {
       final var path = manifestPath(manifest);
       Files.delete(path);
       final var dirLimit = manifestsPath.resolve(String.valueOf(manifest.id().partitionId()));
-      FilesystemBackupStore.backtrackDeleteEmptyParents(path.getParent(), dirLimit);
+      FilesystemBackupStore.backtrackDeleteEmptyParents(requireNonNull(path.getParent()), dirLimit);
     } catch (final NoSuchFileException e) {
       LOGGER.warn("Try to remove unknown manifest with id {}", manifest.id());
     } catch (final IOException e) {
@@ -175,7 +177,7 @@ public final class ManifestManager {
     }
   }
 
-  Manifest getManifest(final BackupIdentifier id) {
+  @Nullable Manifest getManifest(final BackupIdentifier id) {
     return getManifestWithPath(getManifestPath(id));
   }
 
@@ -189,7 +191,7 @@ public final class ManifestManager {
     return collector.manifests();
   }
 
-  private Manifest getManifestWithPath(final Path path) {
+  private @Nullable Manifest getManifestWithPath(final Path path) {
     if (!Files.exists(path)) {
       return null;
     }
@@ -272,7 +274,7 @@ public final class ManifestManager {
 
     @Override
     public @NonNull FileVisitResult postVisitDirectory(
-        final @NonNull Path directory, final IOException failure) throws IOException {
+        final @NonNull Path directory, final @Nullable IOException failure) throws IOException {
       return failure == null
           ? FileVisitResult.CONTINUE
           : continueIfDeletedConcurrently(directory, failure);
