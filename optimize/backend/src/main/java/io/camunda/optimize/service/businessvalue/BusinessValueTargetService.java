@@ -25,20 +25,23 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Optional;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 /**
  * Application-layer entry point for the two BVD target REST endpoints. Delegates persistence to
  * {@link BusinessValueTargetWriter} / {@link BusinessValueTargetRepository}.
  *
- * <p>Target-write → overview coherence is eventual: the {@link
- * BusinessValueOverviewSchedulerService} refreshes the overview index on a tiered cadence, and the
- * stale-read backstop on {@code /overview} (see {@code BusinessValueOverviewReadService}) triggers
- * a targeted recompute the first time a reader observes a row older than {@code 2 ×} the refresh
- * interval. A per-write synchronous recompute is intentionally omitted here — the compute service
- * on the sibling M2.4 branch has been refactored to a single scheduler-driven entry point, and
- * blasting a cluster-wide recompute on every modal save is too expensive relative to the stale-read
- * latency budget documented in {@code bvd-target-technical-design.md} §3.4.
+ * <p>A target write measures the definition and writes its overview rows synchronously, via {@link
+ * BusinessValueOverviewComputeService#computeRowsForTarget}, so the caller's next {@code GET
+ * /business-value/overview} shows the new verdict when that compute succeeds. Without it the row
+ * keeps the target it was last swept with, and the stale-read backstop does not help: it fires on
+ * the age of the measurement, and a row measured minutes ago carrying an hour-old target is not
+ * stale by that test. The cost is one definition's aggregations, not the whole catalogue's.
+ *
+ * <p>The compute is best effort. A failure is logged rather than surfaced, because the target is
+ * already durable by then and failing the request would leave the caller unable to tell whether it
+ * saved; the next sweep brings the rows up to date.
  *
  * <p>Field-level input validation ({@code automationRateTargetPct ∈ [0, 100]}, {@code
  * cycleTimeTarget.value ≥ 0}) is expressed as JSR-380 annotations on {@link
@@ -53,20 +56,26 @@ public class BusinessValueTargetService {
   private static final Map<TargetValueUnit, Duration> UNIT_DURATIONS =
       BusinessValueTargetWriter.SUPPORTED_CYCLE_TIME_UNIT_DURATIONS;
 
+  private static final Logger LOG =
+      org.slf4j.LoggerFactory.getLogger(BusinessValueTargetService.class);
+
   private final BusinessValueTargetWriter writer;
   private final BusinessValueTargetRepository repository;
   private final TenantService tenantService;
   private final DefinitionService definitionService;
+  private final BusinessValueOverviewComputeService overviewComputeService;
 
   public BusinessValueTargetService(
       final BusinessValueTargetWriter writer,
       final BusinessValueTargetRepository repository,
       final TenantService tenantService,
-      final DefinitionService definitionService) {
+      final DefinitionService definitionService,
+      final BusinessValueOverviewComputeService overviewComputeService) {
     this.writer = writer;
     this.repository = repository;
     this.tenantService = tenantService;
     this.definitionService = definitionService;
+    this.overviewComputeService = overviewComputeService;
   }
 
   public BusinessValueTargetResponseDto readTarget(
@@ -89,7 +98,29 @@ public class BusinessValueTargetService {
     final BusinessValueTargetDto toWrite =
         toPersistenceDto(tenantId, processDefinitionKey, request, userId);
     writer.upsertTarget(toWrite);
+    computeOverviewRows(toWrite);
     return toResponseDto(toWrite);
+  }
+
+  /**
+   * Measures the definition and writes its overview rows, after the target itself is durable.
+   *
+   * <p>A failure here is logged rather than surfaced: the target is already persisted, and the next
+   * sweep computes the rows from it, so the only cost is that L0 lags until then. Failing the
+   * request instead would leave the caller unable to tell whether their target was saved — the
+   * worse of the two outcomes, and the reason this runs after the write rather than as part of it.
+   */
+  private void computeOverviewRows(final BusinessValueTargetDto target) {
+    try {
+      overviewComputeService.computeRowsForTarget(target);
+    } catch (final Exception e) {
+      LOG.warn(
+          "Business-value target for tenant [{}] definition [{}] was saved, but computing its "
+              + "overview rows failed; the overview will catch up on the next sweep.",
+          target.getTenantId(),
+          target.getProcessDefinitionKey(),
+          e);
+    }
   }
 
   private void ensureTenantAccess(final String userId, final String tenantId) {
