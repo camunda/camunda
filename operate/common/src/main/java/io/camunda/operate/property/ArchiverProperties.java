@@ -51,9 +51,9 @@ public class ArchiverProperties {
    */
   private int delayBetweenRuns = 2000;
 
-  private boolean archiveByIdEnabled = false;
+  private boolean archiveByIdEnabled = true;
 
-  private int archiveByIdBatchSize = 500;
+  private int archiveByIdBatchSize = 2500;
 
   private int archiveByIdMaxRetryAttempts = 3;
 
