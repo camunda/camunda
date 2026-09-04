@@ -93,11 +93,15 @@ no way to notice, so the next export flush reuses a socket that is silently dead
 the socket timeout expires. Enabling keepalive costs a 40-byte probe per connection per keepalive
 interval, so there is no known reason to turn it off.
 
-Keepalive *timing* is not settable from Java: Apache HttpAsyncClient 4.x exposes no API for
-`TCP_KEEPIDLE`/`TCP_KEEPINTVL`, so the OS defaults apply (first probe after
-`net.ipv4.tcp_keepalive_time`, 2 hours on Linux). Deployments behind a firewall with a shorter idle
-timeout need that sysctl lowered below the firewall's timeout — on Kubernetes via the pod's
-`securityContext.sysctls`.
+Keepalive *timing* is left to the OS: the first probe goes out after `net.ipv4.tcp_keepalive_time`,
+two hours on Linux. A deployment behind a firewall whose idle timeout is shorter than that needs the
+sysctl lowered below the firewall's timeout — on Kubernetes via the pod's `securityContext.sysctls`.
+
+Camunda does not expose the timing as configuration, because it cannot be set uniformly. The
+Elasticsearch clients run on Apache HttpAsyncClient 4.x, whose `IOReactorConfig` has no equivalent
+of `TCP_KEEPIDLE`/`TCP_KEEPINTVL`; only the OpenSearch clients (Apache HttpClient 5) could set them,
+via `IOReactorConfig#setTcpKeepIdle` and friends. A knob that worked on one database and silently
+did nothing on the other would be worse than the sysctl, which works for both.
 
 ### Backwards compatibility with legacy configuration keys
 
