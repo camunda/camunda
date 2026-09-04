@@ -452,6 +452,16 @@ test.describe('task details page', () => {
     await taskPanelPage.openTask('UserTask_Number_Buttons');
     await taskDetailsPage.clickAssignToMeButton();
 
+    // The spinner buttons mutate only form-js's local display value; the field
+    // binds to the form data model once the form re-renders as editable after
+    // assignment. Clicking Increment during that read-only -> editable remount
+    // leaves the field unbound, so the task completes with an empty number even
+    // though the input shows 1. Wait for the assigned, editable form before
+    // using the buttons (the "by input" test is immune because fill() already
+    // waits for an editable field). Do not remove this guard.
+    await expect(taskDetailsPage.unassignButton).toBeVisible();
+    await expect(taskDetailsPage.numberInput).toBeEditable();
+
     await taskDetailsPage.clickIncrementButton();
     await taskDetailsPage.assertFieldValue('Number', '1');
     await taskDetailsPage.clickIncrementButton();
