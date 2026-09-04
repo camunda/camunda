@@ -8,8 +8,16 @@
 
 import {useCallback, useMemo} from 'react';
 import {useSuspenseInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
-import {createFileRoute, notFound, retainSearchParams, stripSearchParams, useRouterState} from '@tanstack/react-router';
+import {
+	createFileRoute,
+	notFound,
+	redirect,
+	retainSearchParams,
+	stripSearchParams,
+	useRouterState,
+} from '@tanstack/react-router';
 import {queries} from '#/shared/http/queries';
+import {getStateLocally} from '#/shared/browser-storage/local-storage';
 import {getTasksRequestBody} from '#/tasklist/modules/available-tasks/getTasksRequestBody';
 import {TasksLayoutPage} from '#/tasklist/pages/shadcn.components/TasksLayoutPage';
 import {
@@ -32,10 +40,23 @@ export const Route = createFileRoute('/shadcn/_auth/tasklist/_tasks')({
 	notFoundComponent: () => {
 		throw notFound({routeId: '/shadcn/_auth/tasklist'});
 	},
-	beforeLoad: async ({context: {queryClient}, search}) => {
+	beforeLoad: async ({context: {queryClient}, search, location}) => {
+		const isAutoSelectNextTaskEnabled = getStateLocally('tasklist.autoSelectNextTask') === true;
+		const isFromTaskCompletion = location.state.tasklistAutoSelectSource === 'task-completion';
+		const shouldAutoSelectNextTask = isAutoSelectNextTaskEnabled && isFromTaskCompletion;
 		const currentUser = await queryClient.query(queries.getCurrentUser());
 		const queryOptions = queries.queryUserTasks(getTasksRequestBody(search, {currentUsername: currentUser.username}));
-		await queryClient.infiniteQuery(queryOptions);
+		const {pages} = await queryClient.infiniteQuery(queryOptions);
+		const nextOpenTask = pages.flatMap((page) => page.items).find(({state}) => state === 'CREATED');
+
+		if (shouldAutoSelectNextTask && nextOpenTask !== undefined) {
+			throw redirect({
+				to: '/shadcn/tasklist/$userTaskKey',
+				params: {userTaskKey: nextOpenTask.userTaskKey},
+				search,
+				replace: true,
+			});
+		}
 	},
 	component: function TasksLayoutRoute() {
 		const search = Route.useSearch();
