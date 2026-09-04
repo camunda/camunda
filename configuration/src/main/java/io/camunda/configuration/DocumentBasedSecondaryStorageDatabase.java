@@ -42,6 +42,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** Maximum number of connections allowed per route in the ES and OS connector connection pool. */
   private Integer maxConnectionsPerRoute;
 
+  /** Whether TCP keepalive is enabled on the ES and OS connector connections. */
+  private Boolean soKeepAlive;
+
   /** How many shards the search engine database uses for all indices. */
   private int numberOfShards = 1;
 
@@ -418,6 +421,19 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public void setMaxConnectionsPerRoute(final Integer maxConnectionsPerRoute) {
     this.maxConnectionsPerRoute = maxConnectionsPerRoute;
+  }
+
+  /**
+   * TCP keepalive is on by default in the connector itself, so this property exists only to turn it
+   * off. It has no legacy counterpart and is left unset here, so that an unset value leaves the
+   * connector's own default in place rather than overwriting it.
+   */
+  public Boolean getSoKeepAlive() {
+    return soKeepAlive;
+  }
+
+  public void setSoKeepAlive(final Boolean soKeepAlive) {
+    this.soKeepAlive = soKeepAlive;
   }
 
   /**

@@ -75,6 +75,30 @@ Both default to unset, in which case the underlying Apache HttpClient defaults a
 useful when a component consumes many connections (e.g. running the archiver with a high thread
 count), which can otherwise exhaust the pool and throttle other operations such as health checks.
 
+### TCP keepalive (Elasticsearch / OpenSearch)
+
+TCP keepalive (`SO_KEEPALIVE`) is enabled on the connections to the secondary storage, and can be
+turned off with:
+
+```
+camunda.data.secondary-storage.elasticsearch.so-keep-alive=false
+```
+
+(and the equivalent `camunda.data.secondary-storage.opensearch.*` key)
+
+The Apache HttpAsyncClient leaves keepalive off by default. Without it, a stateful firewall or NAT
+device between the cluster and the search database drops its connection tracking entry once the
+connection has been idle past the device's timeout — without sending a RST or FIN. The client has
+no way to notice, so the next export flush reuses a socket that is silently dead and blocks until
+the socket timeout expires. Enabling keepalive costs a 40-byte probe per connection per keepalive
+interval, so there is no known reason to turn it off.
+
+Keepalive *timing* is not settable from Java: Apache HttpAsyncClient 4.x exposes no API for
+`TCP_KEEPIDLE`/`TCP_KEEPINTVL`, so the OS defaults apply (first probe after
+`net.ipv4.tcp_keepalive_time`, 2 hours on Linux). Deployments behind a firewall with a shorter idle
+timeout need that sysctl lowered below the firewall's timeout — on Kubernetes via the pod's
+`securityContext.sysctls`.
+
 ### Backwards compatibility with legacy configuration keys
 
 The Unified Configuration system replaces the legacy configuration properties. Nevertheless, in various cases, it is designed to work well even for Customers that have legacy configuration already defined, if possible.

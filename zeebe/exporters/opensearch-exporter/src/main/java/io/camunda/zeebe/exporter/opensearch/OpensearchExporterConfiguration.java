@@ -30,6 +30,14 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
   /** The request timeout for the opensearch client. The timeout unit is milliseconds. */
   public int requestTimeoutMs = 30_000;
 
+  /**
+   * Whether TCP keepalive (SO_KEEPALIVE) is enabled on the pooled connections to OpenSearch.
+   * Keepalive probes keep the connection visible to stateful firewalls and NAT devices, which would
+   * otherwise drop their tracking entry for an idle connection without sending a RST or FIN —
+   * leaving the exporter to reuse a socket that is silently dead until the request timeout expires.
+   */
+  public boolean soKeepAlive = true;
+
   public final IndexConfiguration index = new IndexConfiguration();
   public final BulkConfiguration bulk = new BulkConfiguration();
   public final AwsConfiguration aws = new AwsConfiguration();
@@ -54,6 +62,10 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
 
   public int getRequestTimeoutMs() {
     return requestTimeoutMs;
+  }
+
+  public boolean isSoKeepAlive() {
+    return soKeepAlive;
   }
 
   public boolean hasAuthenticationPresent() {
@@ -107,6 +119,8 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
         + "url='"
         + url
         + '\''
+        + ", soKeepAlive="
+        + soKeepAlive
         + ", index="
         + index
         + ", bulk="

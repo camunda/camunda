@@ -29,7 +29,7 @@ import org.elasticsearch.client.RestClientBuilder;
 
 final class ElasticsearchClientFactory {
 
-  private static final ElasticsearchClientFactory INSTANCE = new ElasticsearchClientFactory();
+  static final ElasticsearchClientFactory INSTANCE = new ElasticsearchClientFactory();
 
   private ElasticsearchClientFactory() {}
 
@@ -79,12 +79,15 @@ final class ElasticsearchClientFactory {
     return builder.build();
   }
 
-  private HttpAsyncClientBuilder configureHttpClient(
+  HttpAsyncClientBuilder configureHttpClient(
       final ElasticsearchExporterConfiguration config,
       final HttpAsyncClientBuilder builder,
       final HttpRequestInterceptor... interceptors) {
-    // use single thread for rest client
-    builder.setDefaultIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(1).build());
+    // use single thread for rest client; enable TCP keepalive so that a firewall or NAT device in
+    // front of Elasticsearch does not silently drop its tracking entry for a connection left idle
+    // between flushes, which would leave the exporter blocked on a dead socket until it times out
+    builder.setDefaultIOReactorConfig(
+        IOReactorConfig.custom().setIoThreadCount(1).setSoKeepAlive(config.soKeepAlive).build());
 
     if (config.hasAuthenticationPresent()) {
       setupBasicAuthentication(config, builder);

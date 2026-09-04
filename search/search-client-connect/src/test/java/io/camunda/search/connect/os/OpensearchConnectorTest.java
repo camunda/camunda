@@ -30,6 +30,7 @@ import org.apache.hc.client5.http.nio.AsyncClientConnectionManager;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -211,6 +212,41 @@ class OpensearchConnectorTest {
 
     // then
     Mockito.verify(builder, Mockito.never()).setConnectionManager(Mockito.any());
+  }
+
+  @Test
+  void shouldEnableTcpKeepAliveByDefault() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        new OpensearchConnector(configuration, new ObjectMapper(), null, new PluginRepository());
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+
+    // when
+    connector.configureHttpClient(builder, configuration);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
+    Mockito.verify(builder).setIOReactorConfig(captor.capture());
+    Assertions.assertThat(captor.getValue().isSoKeepAlive()).isTrue();
+  }
+
+  @Test
+  void shouldDisableTcpKeepAliveWhenTurnedOff() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    configuration.setSoKeepAlive(false);
+    final var connector =
+        new OpensearchConnector(configuration, new ObjectMapper(), null, new PluginRepository());
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+
+    // when
+    connector.configureHttpClient(builder, configuration);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
+    Mockito.verify(builder).setIOReactorConfig(captor.capture());
+    Assertions.assertThat(captor.getValue().isSoKeepAlive()).isFalse();
   }
 
   private static CloseableHttpAsyncClient getOpensearchApacheClient(

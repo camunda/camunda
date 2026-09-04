@@ -26,6 +26,14 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
   /** The request timeout for the elastic search client. The timeout unit is milliseconds. */
   public int requestTimeoutMs = 30_000;
 
+  /**
+   * Whether TCP keepalive (SO_KEEPALIVE) is enabled on the pooled connections to Elasticsearch.
+   * Keepalive probes keep the connection visible to stateful firewalls and NAT devices, which would
+   * otherwise drop their tracking entry for an idle connection without sending a RST or FIN —
+   * leaving the exporter to reuse a socket that is silently dead until the request timeout expires.
+   */
+  public boolean soKeepAlive = true;
+
   public final IndexConfiguration index = new IndexConfiguration();
   public final BulkConfiguration bulk = new BulkConfiguration();
   public final RetentionConfiguration retention = new RetentionConfiguration();
@@ -62,6 +70,8 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
         + '\''
         + ", requestTimeoutMs="
         + requestTimeoutMs
+        + ", soKeepAlive="
+        + soKeepAlive
         + ", index="
         + index
         + ", bulk="
