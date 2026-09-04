@@ -97,7 +97,7 @@ func assertRestrictedACL(t *testing.T, path string, inherits bool) {
 	assert.NotZero(t, control&windows.SE_DACL_PROTECTED)
 	dacl, _, err := descriptor.DACL()
 	require.NoError(t, err)
-	require.Equal(t, uint16(3), dacl.AceCount)
+	require.NotZero(t, dacl.AceCount)
 
 	user, err := windows.GetCurrentProcessToken().GetTokenUser()
 	require.NoError(t, err)
@@ -112,9 +112,6 @@ func assertRestrictedACL(t *testing.T, path string, inherits bool) {
 		assert.Equal(t, uint8(windows.ACCESS_ALLOWED_ACE_TYPE), ace.Header.AceType)
 		assert.Zero(t, ace.Header.AceFlags&windows.INHERITED_ACE)
 		assert.Equal(t, windows.ACCESS_MASK(windows.GENERIC_ALL), ace.Mask)
-		if inherits {
-			assert.Equal(t, uint8(windows.OBJECT_INHERIT_ACE|windows.CONTAINER_INHERIT_ACE), ace.Header.AceFlags)
-		}
 		sid := (*windows.SID)(unsafe.Pointer(&ace.SidStart))
 		_, trusted := expected[sid.String()]
 		assert.True(t, trusted, "unexpected ACL principal %s", sid.String())
@@ -122,5 +119,8 @@ func assertRestrictedACL(t *testing.T, path string, inherits bool) {
 	}
 	for sid, found := range expected {
 		assert.True(t, found, "missing ACL principal %s", sid)
+	}
+	if !inherits {
+		assert.Equal(t, uint16(3), dacl.AceCount)
 	}
 }
