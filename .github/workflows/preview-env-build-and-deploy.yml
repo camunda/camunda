@@ -73,7 +73,11 @@ jobs:
       id: resolve
       run: |
         SHA=$(git rev-parse HEAD)
-        echo "image-tag=pr-${SHA}" >> "$GITHUB_OUTPUT"
+        # Web Modeler derives the preview cluster version from this tag and rejects
+        # anything that does not parse as semver >= 8.8, hence the version prefix.
+        # Taken from the root pom, which inherits its version from the parent.
+        VERSION=$(grep -m1 -oE '<version>[^<]+</version>' pom.xml | sed -E 's:</?version>::g')
+        echo "image-tag=${VERSION}-pr-${SHA:0:12}" >> "$GITHUB_OUTPUT"
         echo "checkout-ref=${SHA}" >> "$GITHUB_OUTPUT"
 
   build-camunda:
