@@ -8,6 +8,7 @@
 package io.camunda.it.rdbms.db.processdefinition;
 
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinition;
+import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveRandomProcessDefinition;
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveRandomProcessDefinitions;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -212,17 +213,17 @@ public class ProcessDefinitionIT {
     // given a process definition deleted with zero active instances emits DRAINING and
     // FULLY_DELETED back-to-back, so markDraining and markDeleted are queued into the same flush
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionDbReader processDefinitionReader =
         rdbmsService.getProcessDefinitionReader();
 
-    final var processDefinition = createAndSaveRandomProcessDefinition(rdbmsWriters, b -> b);
+    final var processDefinition = createAndSaveRandomProcessDefinition(rdbmsWriter, b -> b);
     final var key = processDefinition.processDefinitionKey();
 
     // when both state transitions are flushed together
-    rdbmsWriters.getProcessDefinitionWriter().markDraining(key);
-    rdbmsWriters.getProcessDefinitionWriter().markDeleted(key);
-    rdbmsWriters.flush();
+    rdbmsWriter.getProcessDefinitionWriter().markDraining(key);
+    rdbmsWriter.getProcessDefinitionWriter().markDeleted(key);
+    rdbmsWriter.flush();
 
     // then the terminal state wins and the row is DELETED, not stuck at DRAINING
     final var deleted = processDefinitionReader.findOne(key).orElse(null);
