@@ -138,7 +138,7 @@ export class IdentityAuthorizationsPage {
     await this.createAuthorizationOwnerTypeComboBox.click();
   }
 
-  async selectOwnerTypeFromDrowdown(name: string) {
+  async selectOwnerTypeFromDropdown(name: string) {
     await this.createAuthorizationOwnerTypeOption(name).click();
   }
 
@@ -243,7 +243,7 @@ export class IdentityAuthorizationsPage {
 
   async selectAuthorizationOwnerType(authorization: {ownerType: string}) {
     await this.createAuthorizationOwnerTypeComboBox.click();
-    await this.selectOwnerTypeFromDrowdown(authorization.ownerType);
+    await this.selectOwnerTypeFromDropdown(authorization.ownerType);
     // Selecting an owner type re-renders the owner field. User, Group and Role
     // owners all now render the searchable "Search by owner ID" entity input
     // (#51442) instead of the former "Select an owner" combobox; wait for it
@@ -256,7 +256,7 @@ export class IdentityAuthorizationsPage {
 
   async selectAuthorizationOwner(authorization: {ownerId: string}) {
     await this.createAuthorizationOwnerSearchInput.fill(authorization.ownerId);
-    await expect(this.page.getByRole('listbox')).toBeVisible();
+    await expect(this.createAuthorizationOwnerSearchInput).toHaveValue(authorization.ownerId);
     const ownerOption = this.page
       .getByRole('listbox')
       .getByRole('option')

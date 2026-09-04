@@ -84,12 +84,6 @@ test.describe.serial('component authorizations CRUD', () => {
     await identityAuthorizationsPage.selectAuthorizationOwnerType({
       ownerType: NEW_COMPONENT_AUTHORIZATION.ownerType,
     });
-    await identityAuthorizationsPage.createAuthorizationOwnerSearchInput.waitFor(
-      {
-        state: 'visible',
-        timeout: 10000,
-      },
-    );
 
     // No owner is selected here: the owner field is now a search that only
     // lists existing owners, and this role is intentionally never created.
