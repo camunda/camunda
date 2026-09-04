@@ -30,7 +30,7 @@ export class IdentityAuthorizationsPage {
   readonly authorizationRowByOwnerId: (ownerId: string) => Locator;
   readonly selectResourceTypeTab: (resourceType: string) => Promise<void>;
   readonly resourceTypeComboBox: Locator;
-  readonly authorizationTypeFilterComboBox: Locator;
+  readonly resourceTypeFilterComboBox: Locator;
   readonly getAuthorizationCell: (ownerId: string) => Locator;
   readonly resourceTypeOption: (resourceType: string) => Locator;
 
@@ -90,8 +90,8 @@ export class IdentityAuthorizationsPage {
     this.resourceTypeComboBox = page.getByRole('combobox', {
       name: 'Resource type',
     });
-    this.authorizationTypeFilterComboBox = page.getByRole('combobox', {
-      name: 'Authorization type',
+    this.resourceTypeFilterComboBox = page.getByRole('combobox', {
+      name: 'Resource type',
     });
     this.getAuthorizationCell = (ownerId) =>
       this.authorizationsList.getByRole('cell', {
@@ -102,7 +102,7 @@ export class IdentityAuthorizationsPage {
         name: new RegExp(`^${resourceType}$`, 'i'),
       });
     this.selectResourceTypeTab = async (resourceType) => {
-      await this.authorizationTypeFilterComboBox.click();
+      await this.resourceTypeFilterComboBox.click();
       await this.resourceTypeOption(resourceType).click();
     };
   }
