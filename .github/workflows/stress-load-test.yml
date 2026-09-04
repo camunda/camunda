@@ -140,8 +140,6 @@ jobs:
     secrets: inherit
     with:
       name: c8-${{ inputs.name }}
-      pod: ''
-      test-type: ${{ inputs.name }}
       duration-seconds: '600'
 
   # Wait 3 hours, anchored to this variant's own setup completion, before taking its metrics
