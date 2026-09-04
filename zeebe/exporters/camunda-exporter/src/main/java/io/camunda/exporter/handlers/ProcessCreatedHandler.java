@@ -26,15 +26,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
+public class ProcessCreatedHandler implements ExportHandler<ProcessEntity, Process> {
 
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final boolean exportDocument;
 
-  public ProcessHandler(
+  public ProcessCreatedHandler(
       final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+    this(indexName, processCache, true);
+  }
+
+  public ProcessCreatedHandler(
+      final String indexName,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final boolean exportDocument) {
     this.indexName = indexName;
     this.processCache = processCache;
+    this.exportDocument = exportDocument;
   }
 
   @Override
@@ -110,6 +119,11 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   @Override
   public void flush(final ProcessEntity entity, final BatchRequest batchRequest) {
+    // CREATED is distributed to every partition. Only the deployment partition may index the
+    // shared process document; other partitions still run updateEntity to warm the process cache.
+    if (!exportDocument) {
+      return;
+    }
     batchRequest.add(indexName, entity);
   }
 
