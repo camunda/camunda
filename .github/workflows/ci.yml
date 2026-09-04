@@ -2536,7 +2536,7 @@ jobs:
     name: "Lint / Renovate Config Validator"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 22
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
@@ -2548,16 +2548,18 @@ jobs:
         with:
           node-version: 24
       # Retry to absorb transient npm-registry resolution failures when npx resolves
-      # renovate@latest and its transitive deps on a fresh run (see INC-6869).
+      # renovate@latest and its transitive deps on a fresh run (see INC-6869, INC-7810).
       - name: Validate Renovate config
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_on: error
           retry_wait_seconds: 15
-          # 2 min/attempt keeps all 3 attempts (~6.5 min worst case) within the
-          # 10-min job timeout; validation normally completes in well under a minute.
-          timeout_minutes: 2
+          # 6 min/attempt keeps all 3 attempts (~18.5 min worst case) within
+          # the 22-min job timeout; validation normally completes in well
+          # under a minute. Widened from 2min (10min job timeout) because a
+          # registry-wide slowdown (INC-7810) left no margin at that budget.
+          timeout_minutes: 6
           command: npx --yes --package "renovate@latest" -- renovate-config-validator --no-global .github/renovate.json* .github/renovate/*
       - name: Observe build status
         if: always()
