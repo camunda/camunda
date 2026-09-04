@@ -11,8 +11,8 @@ import io.camunda.search.sort.SortOrder;
 import java.util.List;
 
 /**
- * @param searchBefore whether the page is seeked backwards from a {@code before} cursor. The seek
- *     has to walk away from the cursor, so the mapper renders its ORDER BY reversed (see {@code
+ * @param searchBefore whether the page seeks backwards from a {@code before} cursor. The seek has
+ *     to walk away from the cursor, so the mapper renders its ORDER BY reversed (see {@code
  *     Commons.orderBy}) — otherwise LIMIT would cut the first rows of the whole filtered range
  *     instead of the rows adjacent to the cursor. The reader restores the display order afterwards.
  */

@@ -44,9 +44,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 /**
  * Regression guard for backward keyset pagination on RDBMS storage.
  *
- * <p>A {@code before} page has to be seeked against the display direction, otherwise the page-size
- * LIMIT keeps the first rows of the whole preceding range instead of the rows next to the cursor,
- * and every backward step lands on page 1 (#61712). The reversal lives in the shared {@code
+ * <p>A {@code before} page has to seek against the display direction, otherwise the page-size LIMIT
+ * keeps the first rows of the whole preceding range instead of the rows next to the cursor, and
+ * every backward step lands on page 1 (#61712). The reversal lives in the shared {@code
  * Commons.orderBy} fragment and in {@code AbstractEntityReader}, so it is easy to bypass by
  * accident: a mapper that hardcodes its ORDER BY, or a reader that assembles its result without
  * {@code executePagedQuery}, silently keeps the old behaviour.
