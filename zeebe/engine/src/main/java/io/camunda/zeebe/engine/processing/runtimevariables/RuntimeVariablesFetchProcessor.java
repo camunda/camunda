@@ -143,8 +143,6 @@ public final class RuntimeVariablesFetchProcessor
     return ProcessingError.UNEXPECTED_ERROR;
   }
 
-  private static final class RuntimeVariablesTooLargeException extends RuntimeException {}
-
   private void acceptCommand(
       final TypedRecord<RuntimeVariablesRecord> command, final RuntimeVariablesRecord fetched) {
     responseWriter.writeAcceptedResponseOnCommand(
@@ -156,4 +154,6 @@ public final class RuntimeVariablesFetchProcessor
     rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
     responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
   }
+
+  private static final class RuntimeVariablesTooLargeException extends RuntimeException {}
 }
