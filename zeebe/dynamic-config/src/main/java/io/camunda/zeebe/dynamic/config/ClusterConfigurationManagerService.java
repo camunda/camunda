@@ -37,7 +37,6 @@ import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
@@ -65,15 +64,6 @@ import org.jspecify.annotations.Nullable;
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
   public static final String TOPOLOGY_FILE_NAME = ".topology.meta";
-
-  /**
-   * Static feature flag indicating that the manager operates on the multi-partition-group model.
-   * Kept as a named constant for callers outside this class that still branch on it explicitly
-   * (e.g. {@code BrokerTopologyManagerImpl}, {@code GatewayClusterConfigurationService}); within
-   * this class and {@link ClusterConfigurationManagerImpl}, the legacy single-group code path has
-   * been removed and the new model always runs.
-   */
-  public static final boolean USE_NEW_CONFIG = true;
 
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
@@ -302,10 +292,6 @@ public final class ClusterConfigurationManagerService
                   .onComplete(result);
             });
     return result;
-  }
-
-  public ActorFuture<ClusterConfiguration> getClusterTopology() {
-    return clusterConfigurationManager.getClusterConfiguration();
   }
 
   public ActorFuture<CurrentClusterConfiguration> getClusterConfiguration() {

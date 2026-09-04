@@ -12,18 +12,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.util.MemberIdArbitraries;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
@@ -32,9 +30,12 @@ import org.junit.jupiter.api.Test;
 
 class AddMembersTransformerTest {
 
-  final ClusterConfiguration currentTopology =
-      ClusterConfiguration.init()
-          .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
+  final CurrentClusterConfiguration currentTopology =
+      CurrentClusterConfiguration.init()
+          .updateGlobalConfiguration(
+              globalConfiguration ->
+                  globalConfiguration.addMember(
+                      MemberId.from("1"), BrokerState.initializeAsActive()));
 
   @Test
   void shouldGenerateMemberJoinOperation() {
@@ -103,11 +104,13 @@ class AddMembersTransformerTest {
     final MemberId existingMember = MemberId.from("1");
     final var addRequest = new AddMembersTransformer(Set.of(existingMember));
     final var zonedConfiguration =
-        ClusterConfiguration.builder()
-            .members(Map.of(MemberId.from("zone-a", 0), MemberState.uninitialized()))
-            .partitionDistributorConfig(
-                Optional.of(new ZoneAwareConfig(List.of(new ZoneSpec("zone-a", 1, 1)))))
-            .build();
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration
+                        .addMember(MemberId.from("zone-a", 0), BrokerState.initializeAsActive())
+                        .setPartitionDistributorConfig(
+                            new ZoneAwareConfig(List.of(new ZoneSpec("zone-a", 1, 1)))));
 
     // when
     final var result = plannedOperations(addRequest, zonedConfiguration);

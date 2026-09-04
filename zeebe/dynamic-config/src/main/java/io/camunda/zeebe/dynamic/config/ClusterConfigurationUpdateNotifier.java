@@ -27,14 +27,9 @@ public interface ClusterConfigurationUpdateNotifier {
    */
   void removeUpdateListener(ClusterConfigurationUpdateListener listener);
 
-  @FunctionalInterface
   interface ClusterConfigurationUpdateListener {
     void onClusterConfigurationUpdated(ClusterConfiguration clusterConfiguration);
 
-    default void onClusterConfigurationUpdated(
-        final CurrentClusterConfiguration clusterConfiguration) {
-      // Temporary workaround until fully switched to the new data model.
-      onClusterConfigurationUpdated(clusterConfiguration.toLegacyDefault());
-    }
+    void onClusterConfigurationUpdated(final CurrentClusterConfiguration clusterConfiguration);
   }
 }
