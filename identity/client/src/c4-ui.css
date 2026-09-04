@@ -169,3 +169,13 @@
 :where(.c4-ui) [data-slot="multi-select-content"] {
   pointer-events: auto;
 }
+
+/* DateRangePicker's calendar popover is unclickable when opened from inside
+ * a Dialog — the same root cause as the MultiSelect fix above (see #496):
+ * its portaled Popover content is a sibling of the Dialog, not a descendant
+ * of its content, so it never gets the `pointer-events: auto` restoration
+ * Radix applies to the Dialog's own content and inherits `none` from <body>.
+ */
+:where(.c4-ui) [data-slot="date-range-picker-content"] {
+  pointer-events: auto;
+}

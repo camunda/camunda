@@ -18,7 +18,7 @@ import useTranslate from "src/utility/localization";
 import FormField from "./FormField";
 
 type TextInputProps = {
-  type?: "text" | "email";
+  type?: "text" | "email" | "time";
   cols?: never;
   counterMode?: never;
   enableCounter?: never;
@@ -52,20 +52,24 @@ export type TextFieldProps = {
   onBlur?: (newValue: string) => void;
   readOnly?: boolean;
   onChange?: (newValue: string) => void;
+  onClick?: () => void;
   validate?: (newValue: string) => boolean;
   name?: string;
   autoComplete?: string;
+  title?: string;
 } & (TextInputProps | TextAreaProps | PasswordInputProps);
 
 const TextField: FC<TextFieldProps> = ({
   onChange,
   onBlur,
+  onClick,
   validate,
   errors = [],
   value,
   helperText,
   placeholder,
   label,
+  title = label,
   cols,
   autoFocus = false,
   type = "text",
@@ -121,7 +125,7 @@ const TextField: FC<TextFieldProps> = ({
       {(control) => {
         const commonProps = {
           ...control,
-          title: label,
+          title,
           value,
           placeholder,
           readOnly,
@@ -130,6 +134,7 @@ const TextField: FC<TextFieldProps> = ({
           autoComplete,
           onChange: handleChange,
           onBlur: handleBlur,
+          onClick,
         };
 
         if (type === "password") {
