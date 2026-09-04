@@ -480,8 +480,8 @@ postgresql:
   # this Pooler's Service (`<clusterName>-pooler`) instead of the Cluster's `-rw`
   # Service, with `?prepareThreshold=0` appended: pgjdbc defaults to server-side
   # prepared statements after 5 uses of the same statement, which do not survive
-  # PgBouncer's transaction-mode connection swapping. The `postgres_pooler=true`
-  # Makefile variable (see `../../common.mk`) does both for you.
+  # PgBouncer's transaction-mode connection swapping. The `--use-pgbouncer` flag
+  # to `../../newLoadTest.sh` does both for you at namespace scaffold time.
   #
   # Reference: https://cloudnative-pg.io/docs/1.30/connection_pooling
   pooler:

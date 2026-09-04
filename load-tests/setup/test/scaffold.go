@@ -25,7 +25,7 @@ func (ns *ScaffoldedNamespace) Cleanup() {
 	_ = os.RemoveAll(ns.Dir)
 }
 
-// Scaffold runs newLoadTest.sh -t <version> <namespace> <storage> 1 <optimize>
+// Scaffold runs newLoadTest.sh -t <version> <namespace> <storage> 1 <optimize> [extraArgs...]
 // with GIT_AUTHOR=golden-test in the environment and returns a ScaffoldedNamespace.
 //
 // newLoadTest.sh reads the author label from the GIT_AUTHOR env var
@@ -38,7 +38,9 @@ func (ns *ScaffoldedNamespace) Cleanup() {
 // namespace must be unique per (version, scenario) pair to allow parallel execution.
 // storage is one of: elasticsearch, opensearch, postgresql, none.
 // optimize is "true" or "false".
-func Scaffold(t *testing.T, setupDirName, namespace, storage, optimize string) *ScaffoldedNamespace {
+// extraArgs are additional newLoadTest.sh flags (e.g. "--use-pgbouncer") for
+// scaffold-time opt-in features baked into the generated values files.
+func Scaffold(t *testing.T, setupDirName, namespace, storage, optimize string, extraArgs ...string) *ScaffoldedNamespace {
 	t.Helper()
 
 	scriptDir := filepath.Join(repoRoot(t), "load-tests", "setup")
@@ -51,7 +53,8 @@ func Scaffold(t *testing.T, setupDirName, namespace, storage, optimize string) *
 	// Clean up any leftover from a previous interrupted run.
 	_ = os.RemoveAll(namespaceDir)
 
-	cmd := exec.Command(script, "-t", setupDirName, namespace, storage, "1", optimize)
+	args := append([]string{"-t", setupDirName, namespace, storage, "1", optimize}, extraArgs...)
+	cmd := exec.Command(script, args...)
 	// newLoadTest.sh copies sibling files (Makefile, values/) with relative
 	// paths, so it must run from its own directory.
 	cmd.Dir = scriptDir

@@ -188,9 +188,10 @@ full simultaneous restart of all broker pods.
 
 This is opt-in and off by default. Enabling it also requires switching
 `orchestration.data.secondaryStorage.rdbms.url` (in the platform values) to the Pooler's
-Service and appending `?prepareThreshold=0` — see `postgres_pooler=true` in
-[`../../common.mk`](../../common.mk), which does both. Setting `postgresql.pooler.enabled`
-directly (e.g. via `additional_load_test_setup_configuration`) without the matching JDBC URL
-change leaves Camunda connected straight to the Cluster's `-rw` Service — the Pooler
-deploys but nothing routes through it.
+Service and appending `?prepareThreshold=0` — see `--use-pgbouncer` in
+[`../../newLoadTest.sh`](../../newLoadTest.sh), which does both at namespace scaffold time.
+Setting `postgresql.pooler.enabled` directly (e.g. via
+`additional_load_test_setup_configuration`) without the matching JDBC URL change leaves
+Camunda connected straight to the Cluster's `-rw` Service — the Pooler deploys but nothing
+routes through it.
 

@@ -58,6 +58,7 @@ type scenario struct {
 	PhysicalTenantCount int
 	PlatformOnly        bool
 	PathFilter          []string
+	UsePgbouncer        bool // scaffold with newLoadTest.sh --use-pgbouncer
 }
 
 // versionedScenario defines a scenario with a specific version
@@ -103,9 +104,11 @@ var defaultScenarios = []scenario{
 	// Makefile target, verifying opt-in chart features without duplicating the
 	// full storage matrix.
 	{Name: "chaos-killer", Storage: "elasticsearch", Optimize: false, SetupTarget: "template-load-test-setup-chaos"},
-	// The CNPG Pooler (PgBouncer) only applies to postgresql, unlike chaos-killer
-	// above, so this scaffolds with postgresql storage rather than an arbitrary one.
-	{Name: "rdbms-pooler", Storage: "postgresql", Optimize: false, SetupTarget: "template-load-test-setup-pooler"},
+	// The CNPG Pooler (PgBouncer) is baked in at scaffold time via
+	// newLoadTest.sh --use-pgbouncer (see UsePgbouncer below), and only applies
+	// to postgresql, unlike chaos-killer above, so this scaffolds with
+	// postgresql storage rather than an arbitrary one.
+	{Name: "rdbms-pooler", Storage: "postgresql", Optimize: false, SetupTarget: "template-load-test-setup", UsePgbouncer: true},
 	// physical_tenant_count=1 deploys a pt1 tenant alongside the default one, sharing the
 	// default tenant's secondary storage (table prefix for rdbms, index prefix for ES/OS,
 	// REST-routing/authorization only for none). One scenario per storage type; N>1 is
@@ -188,7 +191,11 @@ func TestGoldenFiles(t *testing.T) {
 		t.Run(namespace, func(t *testing.T) {
 			t.Parallel()
 
-			ns := Scaffold(t, s.Version, namespace, s.Storage, strconv.FormatBool(s.Optimize))
+			var extraArgs []string
+			if s.UsePgbouncer {
+				extraArgs = append(extraArgs, "--use-pgbouncer")
+			}
+			ns := Scaffold(t, s.Version, namespace, s.Storage, strconv.FormatBool(s.Optimize), extraArgs...)
 			defer ns.Cleanup()
 
 			if s.Workload != "" {

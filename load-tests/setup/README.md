@@ -357,15 +357,18 @@ cluster's `-rw` Service — see [Connection pooling
 rationale.
 
 This is opt-in and off by default; only supported with `secondary_storage=postgresql`.
+Pass `--use-pgbouncer` to `newLoadTest.sh` when scaffolding the namespace:
 
 ```sh
-make install secondary_storage=postgresql postgres_pooler=true
+./newLoadTest.sh <namespace> postgresql 1 true --use-pgbouncer
+cd <namespace>
+make install
 ```
 
 To preview the rendered manifests before installing:
 
 ```sh
-make template-load-test-setup-pooler
+make template-load-test-setup
 ```
 
 #### Optional physical tenants (pt1..ptN)

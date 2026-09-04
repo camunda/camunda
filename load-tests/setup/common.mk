@@ -46,12 +46,6 @@ chaos ?= false
 # by REST-routing/authorization only).
 # Pass directly: make install physical_tenant_count=3 secondary_storage=postgresql
 physical_tenant_count ?= 0
-# Route Postgres traffic through a CNPG Pooler (PgBouncer, transaction-pooling mode)
-# instead of connecting straight to the Cluster's `-rw` Service. Opt-in and off by
-# default; only supported with secondary_storage=postgresql. See "Connection pooling
-# (PgBouncer)" in charts/load-test-setup/README.md for why this exists.
-# Pass directly: make install secondary_storage=postgresql postgres_pooler=true
-postgres_pooler ?= false
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
 #   make install additional_platform_configuration="--set zeebeGateway.env[0].name=FOO --set zeebeGateway.env[0].value=bar"
@@ -117,14 +111,6 @@ $(error physical_tenant_count > 0 is not supported for this Camunda version)
 endif
 endif
 
-# postgres_pooler=true only makes sense against the postgresql secondary storage.
-# (Nested conditionals are left-aligned: a leading tab would make `$(error ...)` look like a recipe.)
-ifeq ($(postgres_pooler),true)
-ifneq ($(secondary_storage),postgresql)
-$(error postgres_pooler=true requires secondary_storage=postgresql)
-endif
-endif
-
 # Add secondary storage values
 ifneq ($(filter $(secondary_storage),$(rdbms_storages)),)
 	platform_values += -f camunda-platform-values-rdbms.yaml
@@ -132,16 +118,6 @@ else ifeq ($(secondary_storage),none)
 	_load_test_setup_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
 endif
 platform_values += -f camunda-platform-values-$(secondary_storage).yaml
-
-# Route through the CNPG Pooler: deploy it (load-test-setup chart) and point the
-# JDBC URL at its Service instead of the Cluster's `-rw` Service, with
-# `prepareThreshold=0` — pgjdbc's server-side prepared statements (enabled by
-# default after 5 uses of the same statement) don't survive PgBouncer's
-# transaction-mode connection swapping.
-ifeq ($(postgres_pooler),true)
-	_load_test_setup_flags += --set postgresql.pooler.enabled=true
-	platform_values += --set-string 'orchestration.data.secondaryStorage.rdbms.url=jdbc:postgresql://postgresql-pooler:5432/camunda?prepareThreshold=0'
-endif
 
 # Layer the pt1..ptN physical-tenant overlay on top, generated at install/template time
 # (not scaffold time) so re-running `make install` with a different physical_tenant_count
@@ -382,12 +358,6 @@ template-load-test-setup:
 .PHONY: template-load-test-setup-chaos
 template-load-test-setup-chaos:
 	$(MAKE) template-load-test-setup chaos=true
-
-# Renders the load-test-setup chart with the Postgres CNPG Pooler enabled.
-# Requires the namespace's secondary_storage to be postgresql (see postgres_pooler above).
-.PHONY: template-load-test-setup-pooler
-template-load-test-setup-pooler:
-	$(MAKE) template-load-test-setup postgres_pooler=true
 
 # Print the resolved scenario flags without running any Helm commands
 .PHONY: print-scenario
