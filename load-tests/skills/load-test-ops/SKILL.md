@@ -316,7 +316,8 @@ After ~5 min, download flamegraph artifacts:
 gh run download <run-id> --repo camunda/camunda
 ```
 
-Artifact names: `flamegraph-cpu-camunda-0`, `flamegraph-wall-camunda-1`, `flamegraph-alloc-camunda-2`
+Artifact names: one per pod, containing the cpu/wall/alloc reports for that pod, e.g.
+`flamegraph-<name>-<date>-camunda-0`, `flamegraph-<name>-<date>-camunda-1`, `flamegraph-<name>-<date>-camunda-2`
 
 ---
 

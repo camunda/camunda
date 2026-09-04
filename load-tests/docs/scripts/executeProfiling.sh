@@ -1,7 +1,7 @@
 #!/bin/bash -xeu
 # Usage:
-#  ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS] [TEST-TYPE]
-#  PROFILING_DURATION=200 ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS] [TEST-TYPE]
+#  ./executeProfiling.sh [-p|--prefix PREFIX] <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]
+#  PROFILING_DURATION=200 ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]
 #
 # EVENT-TYPE can be:
 #   cpu   - CPU profiling (default)
@@ -9,24 +9,32 @@
 #   alloc - Memory allocation profiling
 # ADDITIONAL-OPTIONS: Optional additional flags to pass to async-profiler (e.g., "-t" to profile threads separately)
 # See https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md for potential options
-# TEST-TYPE: Short label identifying the calling test/database variant (e.g. "grpc", "rest",
-#            "elasticsearch", "opensearch"), included in the output filename to disambiguate
-#            runs. Leave empty to omit it.
+# -p, --prefix: Filename prefix for the generated report (default: flamegraph-)
 #
 # Environment variables:
 #   PROFILING_DURATION - profiling duration in seconds (default: 100)
 set -oxe pipefail
 
-if [ -z "$1" ]; then
+prefix="flamegraph-"
+if [ "${1:-}" = "-p" ] || [ "${1:-}" = "--prefix" ]; then
+  if [ -z "${2:-}" ]; then
+    echo "Error: ${1} requires a value."
+    echo "Usage: ./executeProfiling.sh [-p|--prefix PREFIX] <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]"
+    exit 1
+  fi
+  prefix="$2"
+  shift 2
+fi
+
+if [ -z "${1:-}" ]; then
   echo "Error: Missing required argument <POD-NAME>."
-  echo "Usage: ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS] [TEST-TYPE]"
+  echo "Usage: ./executeProfiling.sh [-p|--prefix PREFIX] <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]"
   exit 1
 fi
 pod_name=$1
 
 profiler_event="${2:-cpu}"
 additional_options="${3:-}"
-test_type="${4:-}"
 
 OUTPUT_DIR="${OUTPUT_DIR:-"profiling"}"
 echo "Profiling reports will be saved to $OUTPUT_DIR"
@@ -60,14 +68,7 @@ then
   kubectl exec "$pod_name" -- chmod +x "$containerPath/asprof"
 fi
 
-# Run profiling
-# Build the filename incrementally so an empty test_type doesn't leave behind
-# stray/doubled separators, e.g. flamegraph--cpu-20260710.html.
-filename="flamegraph"
-if [ -n "$test_type" ]; then
-  filename="$filename-$test_type"
-fi
-filename="$filename-$profiler_event-$(date +%Y%m%d).html"
+filename="${prefix}${profiler_event}.html"
 # Extracting the PID:
 #
 #  $ k exec camunda-0 -it -- ps -ax

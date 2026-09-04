@@ -152,8 +152,6 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
-      pod: ''
-      test-type: ${{ needs.sanitize-branch-name.outputs.storage-type }}
 
   resolve-daily-namespace:
     name: Resolve last completed daily-on-main run
