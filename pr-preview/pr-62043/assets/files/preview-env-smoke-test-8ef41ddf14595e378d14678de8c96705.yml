@@ -1,0 +1,549 @@
+# type: Preview Environment
+# owner: @camunda/engineering-operations
+---
+name: Preview Environment Smoke Test
+
+on:
+  schedule:
+  # Run weekly on Monday at 06:00 UTC
+  - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version(s) to test'
+        required: false
+        type: choice
+        options:
+        - all
+        - '8.11'
+        - '8.10'
+        - '8.9'
+        - '8.8'
+        default: all
+      skip-teardown:
+        description: |
+          Skip teardown (e.g. keep deployed preview env for debugging)
+        required: false
+        type: boolean
+        default: false
+      existing-host:
+        description: |
+          Iteration shortcut (8.11 only): reuse an already-deployed preview env
+          (host FQDN, e.g. smoke811-123.camunda.camunda.cloud) instead of
+          building images and deploying. Chart changes reach the existing env
+          via ArgoCD branch tracking, so a push + this input skips ~20min of
+          build/deploy per iteration.
+        required: false
+        type: string
+        default: ''
+      fast-feedback:
+        description: |
+          Iteration shortcut: run Playwright with --retries=0 so a red result
+          arrives in minutes instead of retry-multiplied timeouts.
+        required: false
+        type: boolean
+        default: false
+      ref-8-8:
+        description: |
+          Git ref to build and deploy the 8.8 preview from. Lets stable-branch
+          chart changes be smoke-tested pre-merge from their PR branch. The
+          reusable deploy workflow itself still runs from stable/8.8 (static
+          `uses:` ref).
+        required: false
+        type: string
+        default: 'stable/8.8'
+      ref-8-9:
+        description: |
+          Git ref to build and deploy the 8.9 preview from. Lets stable-branch
+          chart changes be smoke-tested pre-merge from their PR branch. The
+          reusable deploy workflow itself still runs from stable/8.9 (static
+          `uses:` ref).
+        required: false
+        type: string
+        default: 'stable/8.9'
+      ref-8-10:
+        description: |
+          Git ref to build and deploy the 8.10 preview from. Lets stable-branch
+          chart changes be smoke-tested pre-merge from their PR branch. The
+          reusable deploy workflow itself still runs from stable/8.10 (static
+          `uses:` ref).
+        required: false
+        type: string
+        default: 'stable/8.10'
+
+env:
+  TEST_OWNER: '@camunda/engineering-operations'
+  E2E_DIR: e2e-tests
+
+jobs:
+  # Gate for the free-form ref-8-8/ref-8-9/ref-8-10 dispatch inputs: they are forwarded
+  # as `ref` into the reusable deploy/teardown workflows, where they end up in
+  # shell-built ArgoCD arguments (--revision, --helm-set), so restrict them to
+  # git-ref characters before anything consumes them. Always runs (trivially
+  # green on scheduled runs, where inputs are empty) so the deploy jobs'
+  # implicit success() dependency doesn't skip the default path.
+  validate-ref-inputs:
+    name: Validate ref override inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Validate refs
+        env:
+          REF_8_8: ${{ inputs.ref-8-8 }}
+          REF_8_9: ${{ inputs.ref-8-9 }}
+          REF_8_10: ${{ inputs.ref-8-10 }}
+        run: |
+          for ref in "$REF_8_8" "$REF_8_9" "$REF_8_10"; do
+            if [[ -n "$ref" && ! "$ref" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+              echo "::error::Invalid ref override (allowed: A-Z a-z 0-9 . _ / -): ${ref}"
+              exit 1
+            fi
+          done
+          echo "✅ ref overrides valid (or empty)"
+      - name: Checkout
+        if: always()
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  deploy-8-8:
+    name: Deploy 8.8 Preview Environment
+    if: contains(fromJSON('["all", "8.8", ""]'), inputs.version)
+    needs: validate-ref-inputs
+    uses: camunda/camunda/.github/workflows/preview-env-build-and-deploy.yml@stable/8.8
+    secrets: inherit
+    with:
+      app-name: smoke88-${{ github.run_number }}
+      # The || fallback stays despite the input default: input defaults only
+      # apply to workflow_dispatch — on scheduled runs the inputs context is
+      # empty, and an empty ref would make the cross-branch reusable workflow
+      # fall back to the caller's SHA (main). Same for every ref below.
+      ref: ${{ inputs.ref-8-8 || 'stable/8.8' }}
+      labels: |
+        preview=smoke-test
+        repo=camunda_camunda
+        version=8.8
+      helm-extra-args: |
+        --helm-set global.preview.ingress.internalAuthBypass.enabled=true
+
+  deploy-8-9:
+    name: Deploy 8.9 Preview Environment
+    if: contains(fromJSON('["all", "8.9", ""]'), inputs.version)
+    needs: validate-ref-inputs
+    uses: camunda/camunda/.github/workflows/preview-env-build-and-deploy.yml@stable/8.9
+    secrets: inherit
+    with:
+      app-name: smoke89-${{ github.run_number }}
+      ref: ${{ inputs.ref-8-9 || 'stable/8.9' }}
+      labels: |
+        preview=smoke-test
+        repo=camunda_camunda
+        version=8.9
+      helm-extra-args: |
+        --helm-set global.preview.ingress.internalAuthBypass.enabled=true
+
+  deploy-8-10:
+    name: Deploy 8.10 Preview Environment
+    if: contains(fromJSON('["all", "8.10", ""]'), inputs.version)
+    needs: validate-ref-inputs
+    uses: camunda/camunda/.github/workflows/preview-env-build-and-deploy.yml@stable/8.10
+    secrets: inherit
+    with:
+      app-name: smoke810-${{ github.run_number }}
+      ref: ${{ inputs.ref-8-10 || 'stable/8.10' }}
+      labels: |
+        preview=smoke-test
+        repo=camunda_camunda
+        version=8.10
+      helm-extra-args: |
+        --helm-set global.preview.ingress.internalAuthBypass.enabled=true
+
+  deploy-8-11:
+    name: Deploy 8.11 Preview Environment
+    # Temporary: 8.11 only runs when someone starts this workflow by hand and
+    # picks version 8.11. We keep it out of the weekly Monday run because the
+    # 8.11 smoke tests (tests/SM-8.11/smoke-tests.spec.ts) don't exist yet in
+    # camunda/c8-cross-component-e2e-tests. With them missing, the scheduled run
+    # failed every Monday with "No tests found" and paged the on-call medic for
+    # nothing they could fix. The team agreed to stick with the 8.10 tests until
+    # 8.11 is released, so we don't add a new version here until its tests exist.
+    # Once QA ships tests/SM-8.11, put "all" and "" back to run it on schedule.
+    if: contains(fromJSON('["8.11"]'), inputs.version) && inputs.existing-host == ''
+    uses: ./.github/workflows/preview-env-build-and-deploy.yml
+    secrets: inherit
+    with:
+      app-name: smoke811-${{ github.run_number }}
+      labels: |
+        preview=smoke-test
+        repo=camunda_camunda
+        version=8.11
+      helm-extra-args: |
+        --helm-set global.preview.ingress.internalAuthBypass.enabled=true
+
+  test:
+    name: Run ${{ matrix.deployment.version }} Smoke Tests
+    needs:
+    - deploy-8-8
+    - deploy-8-9
+    - deploy-8-10
+    - deploy-8-11
+    # Run if at least one deploy succeeded (or an existing 8.11 preview is
+    # reused; existing-host only applies when the version selection includes 8.11)
+    if: always() && (needs.deploy-8-11.result == 'success' || needs.deploy-8-10.result == 'success' || needs.deploy-8-9.result == 'success' || needs.deploy-8-8.result == 'success' || (inputs.existing-host != '' && contains(fromJSON('["all", "8.11", ""]'), inputs.version)))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      # Required for Teleport authentication
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        deployment:
+        - version: '8.8'
+          host: ${{ needs.deploy-8-8.outputs.host-name }}
+          run: ${{ needs.deploy-8-8.result == 'success' }}
+        - version: '8.9'
+          host: ${{ needs.deploy-8-9.outputs.host-name }}
+          run: ${{ needs.deploy-8-9.result == 'success' }}
+        - version: '8.10'
+          host: ${{ needs.deploy-8-10.outputs.host-name }}
+          run: ${{ needs.deploy-8-10.result == 'success' }}
+        - version: '8.11'
+          host: ${{ inputs.existing-host || needs.deploy-8-11.outputs.host-name }}
+          run: ${{ needs.deploy-8-11.result == 'success' || (inputs.existing-host != '' && contains(fromJSON('["all", "8.11", ""]'), inputs.version)) }}
+        exclude:
+        - deployment:
+            run: false
+    steps:
+      # Sparse-checkout .github so local composite actions (npm-ci-with-retry,
+      # observe-build-status) resolve.
+      - name: Check out .github for local actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
+      - name: Install Teleport
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+
+      - name: Authenticate to Teleport
+        uses: teleport-actions/auth@3b365df2b4f64891358392a444ff34929ba0d0b1 # v2.1.2
+        with:
+          # Required for tsh proxy app: allows the bot to reissue app-specific TLS certificates.
+          # Without this, the bot cert has "disallow-reissue" extension and tsh proxy app fails with:
+          # "access denied: identity is not allowed to reissue certificates"
+          # The bot's Teleport role also needs: rules: [{resources: [role], verbs: [read]}]
+          allow-reissue: true
+          certificate-ttl: 1h
+          proxy: camunda.teleport.sh:443
+          token: infra-ci-prod-github-action-preview-env-infra
+
+      - name: Start Teleport TCP Tunnel
+        env:
+          TELEPORT_APP: camunda-ci-ingress-gateway-443
+          PREVIEW_HOST: ${{ matrix.deployment.host }}
+        run: |
+          # Start TCP proxy on port 443 (requires sudo for privileged port)
+          # Use full path since sudo doesn't inherit PATH
+          sudo -E "$(which tsh)" proxy app "${TELEPORT_APP}" --port 443 --debug &
+          sleep 5
+
+          # Verify tunnel is running
+          if ! nc -z 127.0.0.1 443; then
+            echo "::error::Failed to start tsh proxy on port 443"
+            exit 1
+          fi
+          echo "✅ Teleport TCP tunnel running on port 443"
+
+          # Map preview hostname to localhost. PREVIEW_HOST may come from the
+          # user-provided existing-host dispatch input, so allow only hostname
+          # characters before writing it to /etc/hosts.
+          if [[ ! "${PREVIEW_HOST}" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]]; then
+            echo "::error::Invalid preview host: ${PREVIEW_HOST}"
+            exit 1
+          fi
+          echo "127.0.0.1 ${PREVIEW_HOST}" | sudo tee -a /etc/hosts
+          echo "✅ Added ${PREVIEW_HOST} to /etc/hosts"
+
+          # Backends behind Traefik emit absolute http:// Locations for their
+          # trailing-slash redirects (they ignore X-Forwarded-Proto). In production
+          # Traefik's :80 entrypoint bounces those back to https; the tsh tunnel
+          # only serves :443, so mirror that bounce with a tiny redirector on :80.
+          sudo python3 -c '
+          import http.server, socketserver
+          class R(http.server.BaseHTTPRequestHandler):
+              def _r(self):
+                  self.send_response(308)
+                  self.send_header("Location", "https://" + (self.headers.get("Host") or "") + self.path)
+                  self.end_headers()
+              do_GET = do_POST = do_HEAD = do_PUT = do_DELETE = do_PATCH = _r
+              def log_message(self, *a): pass
+          socketserver.TCPServer(("127.0.0.1", 80), R).serve_forever()' &
+          sleep 2
+          if ! nc -z 127.0.0.1 80; then
+            echo "::error::Failed to start http->https redirector on port 80"
+            exit 1
+          fi
+          echo "✅ http->https redirector running on port 80"
+
+      - name: Generate GitHub Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: c8-cross-component-e2e-tests
+
+      - name: Checkout Smoke Tests
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: camunda/c8-cross-component-e2e-tests
+          token: ${{ steps.github-token.outputs.token }}
+          path: e2e-tests
+          ref: main
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ${{ env.E2E_DIR }}/package-lock.json
+
+      - name: Install Dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.E2E_DIR }}
+
+      - name: Install Playwright Browsers
+        working-directory: ${{ env.E2E_DIR }}
+        run: npx playwright install chromium --with-deps
+
+      - name: Run Smoke Tests
+        working-directory: ${{ env.E2E_DIR }}
+        env:
+          LOCAL_TEST: true
+          MINOR_VERSION: SM-${{ matrix.deployment.version }}
+          PLAYWRIGHT_BASE_URL: https://${{ matrix.deployment.host }}
+          PROJECT: chromium
+          CI: true
+          # Preview envs are deployed with internalAuthBypass.enabled=true: the
+          # client tunnels in from the internal (10/8) network via Teleport, and
+          # internal source IPs skip Vouch at the gateway (see c8sm chart
+          # global.preview.ingress.internalAuthBypass). No client-side header is
+          # required.
+          DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD: demo
+          DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET: admin
+          DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD: admin
+          TASKLIST_VERSION: v2
+        run: |
+          npx playwright test "tests/${MINOR_VERSION}/smoke-tests.spec.ts" \
+            --project=chromium \
+            --reporter=list,html \
+            --retries=${{ inputs.fast-feedback && '0' || '2' }}
+
+      - name: Upload Test Artifacts
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report-${{ matrix.deployment.version }}-${{ github.run_number }}
+          path: |
+            e2e-tests/html-report/
+            e2e-tests/test-results/
+          retention-days: 7
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "test/${{ matrix.deployment.version }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  teardown-8-8:
+    name: Teardown 8.8 Preview Environment
+    if: >
+      always() &&
+      needs.deploy-8-8.result == 'success' &&
+      needs.test.result == 'success' &&
+      !inputs.skip-teardown
+    needs:
+    - deploy-8-8
+    - test
+    uses: camunda/camunda/.github/workflows/preview-env-teardown.yml@stable/8.8
+    secrets: inherit
+    with:
+      app-name: smoke88-${{ github.run_number }}
+      ref: ${{ inputs.ref-8-8 || 'stable/8.8' }}
+
+  teardown-8-9:
+    name: Teardown 8.9 Preview Environment
+    if: >
+      always() &&
+      needs.deploy-8-9.result == 'success' &&
+      needs.test.result == 'success' &&
+      !inputs.skip-teardown
+    needs:
+    - deploy-8-9
+    - test
+    uses: camunda/camunda/.github/workflows/preview-env-teardown.yml@stable/8.9
+    secrets: inherit
+    with:
+      app-name: smoke89-${{ github.run_number }}
+      ref: ${{ inputs.ref-8-9 || 'stable/8.9' }}
+
+  teardown-8-10:
+    name: Teardown 8.10 Preview Environment
+    if: >
+      always() &&
+      needs.deploy-8-10.result == 'success' &&
+      needs.test.result == 'success' &&
+      !inputs.skip-teardown
+    needs:
+    - deploy-8-10
+    - test
+    uses: camunda/camunda/.github/workflows/preview-env-teardown.yml@stable/8.10
+    secrets: inherit
+    with:
+      app-name: smoke810-${{ github.run_number }}
+      ref: ${{ inputs.ref-8-10 || 'stable/8.10' }}
+
+  teardown-8-11:
+    name: Teardown 8.11 Preview Environment
+    if: >
+      always() &&
+      needs.deploy-8-11.result == 'success' &&
+      needs.test.result == 'success' &&
+      !inputs.skip-teardown
+    needs:
+    - deploy-8-11
+    - test
+    uses: ./.github/workflows/preview-env-teardown.yml
+    secrets: inherit
+    with:
+      app-name: smoke811-${{ github.run_number }}
+
+  notify-failure:
+    name: Notify on Failure
+    # Notify on failure for scheduled runs only
+    if: >
+      always() &&
+      github.event_name == 'schedule' &&
+      (
+        contains(fromJSON('["failure", "cancelled"]'), needs.deploy-8-8.result) ||
+        contains(fromJSON('["failure", "cancelled"]'), needs.deploy-8-9.result) ||
+        contains(fromJSON('["failure", "cancelled"]'), needs.deploy-8-10.result) ||
+        contains(fromJSON('["failure", "cancelled"]'), needs.deploy-8-11.result) ||
+        contains(fromJSON('["failure", "cancelled"]'), needs.test.result)
+      )
+    needs:
+    - deploy-8-8
+    - deploy-8-9
+    - deploy-8-10
+    - deploy-8-11
+    - test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
+
+      - name: Get failed jobs
+        id: failed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          # shellcheck disable=SC2016
+          {
+            echo "jobs<<EOF"
+            gh api "repos/${REPO}/actions/runs/${RUN_ID}/jobs" --jq '
+              .jobs
+              | map(select(.conclusion == "failure" or .conclusion == "cancelled"))
+              | map(
+                  (try (.name | capture("(?<v>8\\.[0-9]+)").v) // .name) as $ver |
+                  (if .name | test("Deploy") then "deploy" elif .name | test("Test") then "tests" else "job" end) as $type |
+                  "• *\($ver)* <\(.html_url)|\($type) \(if .conclusion == "cancelled" then "cancelled" else "failed" end)>"
+                )
+              | join("\n")
+            '
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Notify Slack on Failure
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Preview Environment Smoke Test* failed:\n${{ steps.failed.outputs.jobs }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<!subteam^S07D6C6B18T|monorepo-ci-medic> please check <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|workflow run>\n<https://camunda.github.io/camunda/ci-runbooks/#preview-environment-smoke-test-failure|Runbook>"
+                  }
+                }
+              ]
+            }
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
