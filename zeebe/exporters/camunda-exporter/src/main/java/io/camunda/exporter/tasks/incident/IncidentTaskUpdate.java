@@ -9,7 +9,8 @@ package io.camunda.exporter.tasks.incident;
 
 import java.util.Map;
 
-interface IncidentTaskUpdate {
+sealed interface IncidentTaskUpdate
+    permits IncidentUpdate, ListViewInstanceUpdate, FlowNodeInstanceUpdate {
   String id();
 
   String index();
