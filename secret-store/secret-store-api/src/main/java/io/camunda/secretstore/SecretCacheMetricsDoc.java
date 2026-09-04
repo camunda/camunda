@@ -81,13 +81,14 @@ public enum SecretCacheMetricsDoc implements MeterDocumentation {
     public String getDescription() {
       return "Number of entries removed from a secret cache, per store and per cause. SIZE and "
           + "EXPIRED are what say the bound no longer fits the workload: sustained SIZE evictions "
-          + "mean the per-store maximum of "
+          + "mean the per-store maximum set by camunda.secrets.cache.max-size (default "
           + CaffeineSecretCache.DEFAULT_MAX_SIZE
-          + " entries is smaller than the working set, while a high EXPIRED rate together with a "
-          + "low hit rate means the "
+          + " entries) is smaller than the working set, while a high EXPIRED rate together with a "
+          + "low hit rate means the TTL set by camunda.secrets.cache.ttl (default "
           + CaffeineSecretCache.DEFAULT_TTL.toMinutes()
-          + "-minute TTL is shorter than the interval callers resolve at. Neither is configurable "
-          + "today, so both are worth reporting rather than tuning against. A forward jump of the "
+          + "m) is shorter than the interval callers resolve at. Both bounds are configurable and "
+          + "overridable per physical tenant, so a rate that stays high on either is a bound to "
+          + "raise rather than only a number to report. A forward jump of the "
           + "cluster clock is the one EXPIRED spike that means nothing: expiry follows that clock, "
           + "so time travel through /actuator/clock expires the whole cache at once. EXPLICIT "
           + "counts the invalidation the caching store performs when a store answers a secret "
@@ -117,15 +118,16 @@ public enum SecretCacheMetricsDoc implements MeterDocumentation {
   CACHE_SIZE {
     @Override
     public String getDescription() {
-      return "Estimated number of entries a secret cache currently holds, per store, out of a "
-          + "per-store maximum of "
+      return "Estimated number of entries a secret cache currently holds, per store, out of the "
+          + "per-store maximum set by camunda.secrets.cache.max-size (default "
           + CaffeineSecretCache.DEFAULT_MAX_SIZE
-          + " entries. Estimated because eviction is asynchronous, so the value can briefly sit "
-          + "above that maximum and can lag a removal: read it as a level to compare against it, "
-          + "not as an exact count. The maximum is fixed rather than configured, and is stated here "
-          + "because it is published on no meter of its own. Sitting at the maximum with a healthy "
-          + "hit rate is fine; sitting there while camunda.secret.cache.evictions with cause=SIZE "
-          + "keeps rising is the signal that the cache is too small.";
+          + " entries, overridable per physical tenant). Estimated because eviction is "
+          + "asynchronous, so the value can briefly sit above that maximum and can lag a removal: "
+          + "read it as a level to compare against it, not as an exact count. The default is "
+          + "stated here because the maximum is published on no meter of its own. Sitting at the "
+          + "maximum with a healthy hit rate is fine; sitting there while "
+          + "camunda.secret.cache.evictions with cause=SIZE keeps rising is the signal that the "
+          + "cache is too small.";
     }
 
     @Override
