@@ -149,7 +149,7 @@ public final class ConfigurationUtil {
   }
 
   public static Set<PartitionMetadata> getPartitionDistributionFrom(
-      final ClusterConfiguration clusterConfiguration, final String groupName) {
+      final CurrentClusterConfiguration clusterConfiguration, final String groupName) {
     if (clusterConfiguration.isUninitialized()) {
       throw new IllegalStateException(
           "Cannot generated partition distribution from uninitialized configuration");
@@ -157,6 +157,7 @@ public final class ConfigurationUtil {
 
     final var memberPriorityByPartition = new HashMap<Integer, Map<MemberId, Integer>>();
     clusterConfiguration
+        .partitionGroup(groupName)
         .members()
         .forEach(
             (memberId, member) -> {

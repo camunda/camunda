@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.gateway.protocol.model.RestoreBrokerStatus;
 import io.camunda.gateway.protocol.model.RestorePartitionStatus;
 import io.camunda.gateway.protocol.model.RestoreStatusResponse;
@@ -25,16 +26,16 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
-import io.camunda.zeebe.dynamic.config.state.ChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph;
+import io.camunda.zeebe.dynamic.config.state.OperationId;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
@@ -42,13 +43,16 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -364,13 +368,46 @@ public class RecoveryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldReturnNotFoundWhenPhysicalTenantNotFound() {
+    // given
+    final var partitionGroups = Map.<String, PartitionGroupConfiguration>of();
+
+    // when
+    Mockito.when(recoveryServices.restoreStatus(Mockito.any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.right(
+                    new CurrentClusterConfiguration(
+                        1,
+                        GlobalConfiguration.init(),
+                        partitionGroups,
+                        PhasedChangeState.empty()))));
+
+    // then
+    expectRestoreStatusProblem(
+        HttpStatus.NOT_FOUND, "NOT_FOUND", "No configuration found for physical tenant 'default'");
+  }
+
+  @Test
   void shouldReturnNotFoundWhenNoRestore() {
     // given
-    Mockito.when(recoveryServices.restoreStatus(Mockito.any()))
-        .thenReturn(CompletableFuture.completedFuture(Either.right(ClusterConfiguration.init())));
+    final var partitionGroups =
+        Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PartitionGroupConfiguration.empty(1));
 
-    // when / then
-    expectNoRestoreInProgress();
+    // when
+    Mockito.when(recoveryServices.restoreStatus(Mockito.any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.right(
+                    new CurrentClusterConfiguration(
+                        1,
+                        GlobalConfiguration.init(),
+                        partitionGroups,
+                        PhasedChangeState.empty()))));
+
+    // then
+    expectRestoreStatusProblem(
+        HttpStatus.NOT_FOUND, "NOT_FOUND", "No restore is currently in progress");
   }
 
   @Test
@@ -379,19 +416,21 @@ public class RecoveryControllerTest extends RestControllerTest {
     final var broker = MemberId.from("1");
     final var startedAt = Instant.parse("2024-01-01T10:00:00Z");
     final var plan =
-        new ClusterChangePlan(
+        new DependencyChangePlan(
             -2L,
-            3,
             Status.IN_PROGRESS,
             startedAt,
-            List.of(
-                new CompletedOperation(
-                    new PartitionPreRestoreOperation(broker, 1), startedAt.plusSeconds(1)),
-                new CompletedOperation(
+            OperationGraph.sequential(
+                List.<ClusterConfigurationChangeOperation>of(
+                    new PartitionPreRestoreOperation(broker, 1),
                     new PartitionRestoreOperation(broker, 1, new TreeSet<>(List.of(10L, 11L))),
-                    startedAt.plusSeconds(2))),
-            List.<ClusterConfigurationChangeOperation>of(
-                new ModeChangeOperation(broker, Mode.PROCESSING)));
+                    new ModeChangeOperation(broker, Mode.PROCESSING))),
+            new TreeMap<>(
+                Map.of(
+                    new OperationId(0),
+                    startedAt.plusSeconds(1),
+                    new OperationId(1),
+                    startedAt.plusSeconds(2))));
     stubTopology(Optional.empty(), Optional.of(plan));
 
     // when
@@ -449,14 +488,14 @@ public class RecoveryControllerTest extends RestControllerTest {
     // given
     final var broker = MemberId.from("1");
     final var plan =
-        new ClusterChangePlan(
+        new DependencyChangePlan(
             42L,
-            1,
             Status.IN_PROGRESS,
             Instant.parse("2024-01-01T10:00:00Z"),
-            List.of(),
-            List.<ClusterConfigurationChangeOperation>of(
-                new ModeChangeOperation(broker, Mode.PROCESSING)));
+            OperationGraph.sequential(
+                List.<ClusterConfigurationChangeOperation>of(
+                    new ModeChangeOperation(broker, Mode.PROCESSING))),
+            Collections.emptySortedMap());
     stubTopology(Optional.empty(), Optional.of(plan));
 
     // when / then
@@ -521,17 +560,23 @@ public class RecoveryControllerTest extends RestControllerTest {
   }
 
   private void stubTopology(
-      final Optional<CompletedChange> lastChange, final Optional<ChangePlan> pendingChanges) {
+      final Optional<CompletedChange> lastChange,
+      final Optional<DependencyChangePlan> pendingChanges) {
     final var configuration =
-        new ClusterConfiguration(
+        new CurrentClusterConfiguration(
             2,
-            Map.of(),
-            lastChange,
-            pendingChanges,
-            Optional.empty(),
-            Optional.empty(),
-            0,
-            Optional.empty());
+            new GlobalConfiguration(
+                6,
+                Optional.empty(),
+                Map.of(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty()),
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                new PartitionGroupConfiguration(
+                    1, 1, Map.of(), Optional.empty(), pendingChanges, lastChange)),
+            new PhasedChangeState(1, Map.of(), List.of()));
     Mockito.when(recoveryServices.restoreStatus(Mockito.any()))
         .thenReturn(CompletableFuture.completedFuture(Either.right(configuration)));
   }
