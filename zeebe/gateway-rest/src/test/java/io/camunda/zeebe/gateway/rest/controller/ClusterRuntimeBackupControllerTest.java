@@ -310,7 +310,7 @@ public class ClusterRuntimeBackupControllerTest extends RestControllerTest {
   @Test
   void listBackupsShouldReturnOkWithTheBackupsGroupedByBackupId() {
     // given
-    when(clusterRuntimeBackupServices.listBackups(isNull(), isNull()))
+    when(clusterRuntimeBackupServices.listBackups(isNull(), isNull(), isNull(), isNull()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 List.of(
@@ -340,7 +340,7 @@ public class ClusterRuntimeBackupControllerTest extends RestControllerTest {
   @Test
   void listBackupsShouldPassThePrefixThrough() {
     // given
-    when(clusterRuntimeBackupServices.listBackups(isNull(), eq("17*")))
+    when(clusterRuntimeBackupServices.listBackups(isNull(), eq("17*"), isNull(), isNull()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when - then
@@ -352,7 +352,7 @@ public class ClusterRuntimeBackupControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk();
 
-    verify(clusterRuntimeBackupServices).listBackups(isNull(), eq("17*"));
+    verify(clusterRuntimeBackupServices).listBackups(isNull(), eq("17*"), isNull(), isNull());
   }
 
   @Test
@@ -432,6 +432,24 @@ public class ClusterRuntimeBackupControllerTest extends RestControllerTest {
   }
 
   @Test
+  void listBackupsShouldPassTheCursorAndLimitThrough() {
+    // given
+    when(clusterRuntimeBackupServices.listBackups(isNull(), isNull(), eq(170L), eq(50)))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    // when - then
+    webClient
+        .get()
+        .uri(BASE_URL + "?before=170&limit=50")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(clusterRuntimeBackupServices).listBackups(isNull(), isNull(), eq(170L), eq(50));
+  }
+
+  @Test
   void shouldNarrowToThePhysicalTenantNamedByTheQueryParameter() {
     // given
     when(clusterRuntimeBackupServices.getBackup(eq(TENANT_A), eq(17L)))
@@ -459,7 +477,7 @@ public class ClusterRuntimeBackupControllerTest extends RestControllerTest {
   @Test
   void shouldTreatABlankPhysicalTenantIdAsClusterWide() {
     // given
-    when(clusterRuntimeBackupServices.listBackups(isNull(), isNull()))
+    when(clusterRuntimeBackupServices.listBackups(isNull(), isNull(), isNull(), isNull()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when - then
@@ -471,13 +489,13 @@ public class ClusterRuntimeBackupControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk();
 
-    verify(clusterRuntimeBackupServices).listBackups(isNull(), isNull());
+    verify(clusterRuntimeBackupServices).listBackups(isNull(), isNull(), isNull(), isNull());
   }
 
   @Test
   void shouldReturnNotFoundForAnUnknownPhysicalTenantId() {
     // given
-    when(clusterRuntimeBackupServices.listBackups(eq("nosuchtenant"), isNull()))
+    when(clusterRuntimeBackupServices.listBackups(eq("nosuchtenant"), isNull(), isNull(), isNull()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new ServiceException("this cluster only has [tenanta]", Status.NOT_FOUND)));

@@ -11,6 +11,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -443,11 +444,11 @@ public class ClusterRuntimeBackupServicesTest {
   @Test
   public void shouldGroupTheListingByBackupIdMostRecentFirst() {
     // given tenantA holds two backups and tenantB only the older one
-    when(apiA.listBackups(TENANT_A, "*"))
+    when(apiA.listBackups(TENANT_A, "*", OptionalLong.empty(), OptionalInt.empty()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 List.of(backup(43L, State.IN_PROGRESS), backup(42L, State.COMPLETED))));
-    when(apiB.listBackups(TENANT_B, "*"))
+    when(apiB.listBackups(TENANT_B, "*", OptionalLong.empty(), OptionalInt.empty()))
         .thenReturn(CompletableFuture.completedFuture(List.of(backup(42L, State.COMPLETED))));
 
     // when
@@ -478,9 +479,10 @@ public class ClusterRuntimeBackupServicesTest {
   @Test
   public void shouldFoldAListedGroupTheSameWayASingleIdReadDoes() {
     // given a backup only one tenant holds, and both a listing and a direct read of it
-    when(apiA.listBackups(TENANT_A, "*"))
+    when(apiA.listBackups(TENANT_A, "*", OptionalLong.empty(), OptionalInt.empty()))
         .thenReturn(CompletableFuture.completedFuture(List.of(backup(42L, State.COMPLETED))));
-    when(apiB.listBackups(TENANT_B, "*")).thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(apiB.listBackups(TENANT_B, "*", OptionalLong.empty(), OptionalInt.empty()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
     when(apiA.getStatus(TENANT_A, 42L))
         .thenReturn(CompletableFuture.completedFuture(backup(42L, State.COMPLETED)));
     when(apiB.getStatus(TENANT_B, 42L))
@@ -507,9 +509,10 @@ public class ClusterRuntimeBackupServicesTest {
   @Test
   public void shouldReportNoPartitionDetailForATenantHoldingNothingInAListing() {
     // given
-    when(apiA.listBackups(TENANT_A, "*"))
+    when(apiA.listBackups(TENANT_A, "*", OptionalLong.empty(), OptionalInt.empty()))
         .thenReturn(CompletableFuture.completedFuture(List.of(backup(42L, State.COMPLETED))));
-    when(apiB.listBackups(TENANT_B, "*")).thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(apiB.listBackups(TENANT_B, "*", OptionalLong.empty(), OptionalInt.empty()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when
     final var backups = services.listBackups(null, null);
@@ -526,6 +529,46 @@ public class ClusterRuntimeBackupServicesTest {
             });
   }
 
+  @Test
+  public void shouldReportOnlyBackupsEveryTenantWasEnumeratedPast() {
+    // given tenantA pages 100, 90, 80 while tenantB pages 100, 95, 85
+    when(apiA.listBackups(TENANT_A, "*", OptionalLong.empty(), OptionalInt.of(3)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                List.of(
+                    backup(100L, State.COMPLETED),
+                    backup(90L, State.COMPLETED),
+                    backup(80L, State.COMPLETED))));
+    when(apiB.listBackups(TENANT_B, "*", OptionalLong.empty(), OptionalInt.of(3)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                List.of(
+                    backup(100L, State.COMPLETED),
+                    backup(95L, State.COMPLETED),
+                    backup(85L, State.COMPLETED))));
+
+    // when
+    final var backups = services.listBackups(null, null, null, 3);
+
+    // then 85 and 80 wait for the next page, because tenantA may still hold statuses below 80
+    assertThat(backups)
+        .succeedsWithin(TIMEOUT)
+        .satisfies(
+            result -> assertThat(result).extracting("backupId").containsExactly(100L, 95L, 90L));
+  }
+
+  @Test
+  public void shouldRejectAPageOutsideTheContract() {
+    // when
+    final var zeroLimit = services.listBackups(null, null, null, 0);
+    final var negativeCursor = services.listBackups(null, null, -1L, null);
+
+    // then
+    assertThat(failureOf(zeroLimit).getStatus()).isEqualTo(Status.INVALID_ARGUMENT);
+    assertThat(failureOf(negativeCursor).getStatus()).isEqualTo(Status.INVALID_ARGUMENT);
+    verify(apiA, never()).listBackups(anyString(), anyString(), any(), any());
+  }
+
   /**
    * The published {@code BackupIdPrefix} is digits plus one wildcard, and backup ids are numbers,
    * so anything else can never match. Rejecting it says the request was malformed, where passing it
@@ -539,16 +582,16 @@ public class ClusterRuntimeBackupServicesTest {
 
     // then
     assertThat(failureOf(backups).getStatus()).isEqualTo(Status.INVALID_ARGUMENT);
-    verify(apiA, never()).listBackups(anyString(), anyString());
+    verify(apiA, never()).listBackups(anyString(), anyString(), any(), any());
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"*", "17*"})
   public void shouldAcceptAPrefixTheContractAllows(final String prefix) {
     // given
-    when(apiA.listBackups(TENANT_A, prefix))
+    when(apiA.listBackups(TENANT_A, prefix, OptionalLong.empty(), OptionalInt.empty()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
-    when(apiB.listBackups(TENANT_B, prefix))
+    when(apiB.listBackups(TENANT_B, prefix, OptionalLong.empty(), OptionalInt.empty()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when - then

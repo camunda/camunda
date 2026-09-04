@@ -70,6 +70,10 @@ paths:
       description: |
         Returns a list of all available runtime backups of the physical tenant, with their
         state and additional info, sorted in descending order of backupId.
+
+        Large stores are read page by page with `limit` and `before`: the response then holds at
+        most `limit` backups, the `backupId` of its last backup is the `before` cursor of the next
+        page, and a response with fewer than `limit` backups is the last page.
       parameters:
         - name: prefix
           in: query
@@ -79,6 +83,8 @@ paths:
             backups are returned.
           schema:
             $ref: '#/components/schemas/BackupIdPrefix'
+        - $ref: '#/components/parameters/BackupListLimit'
+        - $ref: '#/components/parameters/BackupListBefore'
       responses:
         "200":
           description: The list of runtime backups.
@@ -484,6 +490,33 @@ paths:
       x-scope: physical-tenant
 
 components:
+  parameters:
+    BackupListLimit:
+      name: limit
+      in: query
+      required: false
+      description: |
+        The maximum number of backups to return, between 1 and 1000. When set, the response is one
+        page: it holds at most `limit` backups, the `backupId` of its last backup is the `before`
+        cursor of the next page, and a response with fewer than `limit` backups is the last page.
+        If omitted, all matching backups are returned.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 1000
+        example: 100
+    BackupListBefore:
+      name: before
+      in: query
+      required: false
+      description: |
+        Only backups with a smaller `backupId` are returned. Pass the `backupId` of the last backup
+        of the previous page to get the next page. New backups always get a higher id than any
+        cursor a caller holds, so paging stays stable while backups are being taken.
+      schema:
+        $ref: '#/components/schemas/BackupId'
+
   responses:
     HistoryBackupForbidden:
       description: |

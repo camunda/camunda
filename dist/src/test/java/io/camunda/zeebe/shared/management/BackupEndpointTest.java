@@ -468,7 +468,7 @@ final class BackupEndpointTest {
       doThrow(failure).when(api).getStatus(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1", null);
+      final WebEndpointResponse<?> response = endpoint.query("1", null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -492,7 +492,7 @@ final class BackupEndpointTest {
           .getStatus(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1", null);
+      final WebEndpointResponse<?> response = endpoint.query("1", null, null, null);
 
       // then
       assertThat(response.getStatus()).isEqualTo(404);
@@ -516,7 +516,7 @@ final class BackupEndpointTest {
           .getStatus(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
-      final var response = endpoint.query("1", null);
+      final var response = endpoint.query("1", null, null, null);
 
       // then
       assertThat(response.getStatus()).isEqualTo(expectedCode);
@@ -611,7 +611,7 @@ final class BackupEndpointTest {
       final BackupInfo expectedResponse = mapper.readValue(expectedJson, BackupInfo.class);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1", null);
+      final WebEndpointResponse<?> response = endpoint.query("1", null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -693,7 +693,7 @@ final class BackupEndpointTest {
       final BackupInfo expectedResponse = mapper.readValue(expectedJson, BackupInfo.class);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1", null);
+      final WebEndpointResponse<?> response = endpoint.query("1", null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -759,10 +759,12 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
-      doThrow(failure).when(api).listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*");
+      doThrow(failure)
+          .when(api)
+          .listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*", OptionalLong.empty(), OptionalInt.empty());
 
       // when
-      final WebEndpointResponse<?> response = endpoint.listAll(null);
+      final WebEndpointResponse<?> response = endpoint.listAll(null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -782,10 +784,10 @@ final class BackupEndpointTest {
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.failedFuture(error))
           .when(api)
-          .listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*");
+          .listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*", OptionalLong.empty(), OptionalInt.empty());
 
       // when
-      final var response = endpoint.listAll(null);
+      final var response = endpoint.listAll(null, null, null);
 
       // then
       assertThat(response.getStatus()).isEqualTo(expectedCode);
@@ -819,7 +821,7 @@ final class BackupEndpointTest {
               List.of(createPartialPartitionStatus(BackupStatusCode.IN_PROGRESS)));
       doReturn(CompletableFuture.completedFuture(List.of(backup1, backup2)))
           .when(api)
-          .listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*");
+          .listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*", OptionalLong.empty(), OptionalInt.empty());
 
       final String expectedJson =
           """
@@ -890,7 +892,7 @@ final class BackupEndpointTest {
               mapper.getTypeFactory().constructCollectionType(List.class, BackupInfo.class));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.listAll(null);
+      final WebEndpointResponse<?> response = endpoint.listAll(null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -909,10 +911,10 @@ final class BackupEndpointTest {
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.completedFuture(List.of()))
           .when(api)
-          .listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*");
+          .listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*", OptionalLong.empty(), OptionalInt.empty());
 
       // when
-      final WebEndpointResponse<?> response = endpoint.listAll(null);
+      final WebEndpointResponse<?> response = endpoint.listAll(null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -1099,7 +1101,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(rangesResponse));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null);
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -1162,7 +1164,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null);
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -1205,7 +1207,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null);
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -1253,7 +1255,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null);
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -1299,7 +1301,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null);
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -1388,7 +1390,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null);
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -1654,7 +1656,7 @@ final class BackupEndpointTest {
       final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
 
       // when
-      final var response = endpoint.query("7", null);
+      final var response = endpoint.query("7", null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -1688,7 +1690,7 @@ final class BackupEndpointTest {
       final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
 
       // when
-      final var response = endpoint.query("7", null);
+      final var response = endpoint.query("7", null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -1711,7 +1713,7 @@ final class BackupEndpointTest {
       final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
 
       // when
-      final var response = endpoint.query("7", null);
+      final var response = endpoint.query("7", null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -1750,7 +1752,7 @@ final class BackupEndpointTest {
       final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
 
       // when
-      final var response = endpoint.query("7", null);
+      final var response = endpoint.query("7", null, null, null);
 
       // then
       assertThat(response.getStatus()).isEqualTo(404);
@@ -1761,16 +1763,16 @@ final class BackupEndpointTest {
       // given
       final var apiA = mock(BackupApi.class);
       final var apiB = mock(BackupApi.class);
-      when(apiA.listBackups(TENANT_A, "*"))
+      when(apiA.listBackups(TENANT_A, "*", OptionalLong.empty(), OptionalInt.empty()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   List.of(status(2L, State.COMPLETED), status(1L, State.COMPLETED))));
-      when(apiB.listBackups(TENANT_B, "*"))
+      when(apiB.listBackups(TENANT_B, "*", OptionalLong.empty(), OptionalInt.empty()))
           .thenReturn(CompletableFuture.completedFuture(List.of(status(2L, State.IN_PROGRESS))));
       final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
 
       // when
-      final var response = endpoint.listAll(null);
+      final var response = endpoint.listAll(null, null, null);
 
       // then a backup only one tenant has is INCOMPLETE, exactly as querying it by id reports it,
       // and every in-scope tenant is accounted for
@@ -1798,9 +1800,9 @@ final class BackupEndpointTest {
       // given a backup only one of two tenants has
       final var apiA = mock(BackupApi.class);
       final var apiB = mock(BackupApi.class);
-      when(apiA.listBackups(TENANT_A, "*"))
+      when(apiA.listBackups(TENANT_A, "*", OptionalLong.empty(), OptionalInt.empty()))
           .thenReturn(CompletableFuture.completedFuture(List.of(status(7L, State.COMPLETED))));
-      when(apiB.listBackups(TENANT_B, "*"))
+      when(apiB.listBackups(TENANT_B, "*", OptionalLong.empty(), OptionalInt.empty()))
           .thenReturn(CompletableFuture.completedFuture(List.of()));
       when(apiA.getStatus(TENANT_A, 7L))
           .thenReturn(CompletableFuture.completedFuture(status(7L, State.COMPLETED)));
@@ -1810,8 +1812,8 @@ final class BackupEndpointTest {
 
       // when
       final var listed =
-          ((List<BackupInfo>) endpoint.listAll(null).getBody()).getFirst().getState();
-      final var queried = ((BackupInfo) endpoint.query("7", null).getBody()).getState();
+          ((List<BackupInfo>) endpoint.listAll(null, null, null).getBody()).getFirst().getState();
+      final var queried = ((BackupInfo) endpoint.query("7", null, null, null).getBody()).getState();
 
       // then
       assertThat(listed).isEqualTo(queried).isEqualTo(StateCode.INCOMPLETE);
@@ -1867,7 +1869,7 @@ final class BackupEndpointTest {
       final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
 
       // when
-      final var response = endpoint.query(BackupApi.STATE, null);
+      final var response = endpoint.query(BackupApi.STATE, null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -1896,7 +1898,7 @@ final class BackupEndpointTest {
       final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
 
       // when
-      final var response = endpoint.query(BackupApi.STATE, null);
+      final var response = endpoint.query(BackupApi.STATE, null, null, null);
 
       // then
       assertThat(response.getBody())
@@ -1987,15 +1989,15 @@ final class BackupEndpointTest {
           Arguments.of(
               "list",
               (Function<BackupEndpoint, WebEndpointResponse<?>>)
-                  endpoint -> endpoint.listAll("tenantz")),
+                  endpoint -> endpoint.listAll("tenantz", null, null)),
           Arguments.of(
               "status",
               (Function<BackupEndpoint, WebEndpointResponse<?>>)
-                  endpoint -> endpoint.query("7", "tenantz")),
+                  endpoint -> endpoint.query("7", "tenantz", null, null)),
           Arguments.of(
               "state",
               (Function<BackupEndpoint, WebEndpointResponse<?>>)
-                  endpoint -> endpoint.query(BackupApi.STATE, "tenantz")),
+                  endpoint -> endpoint.query(BackupApi.STATE, "tenantz", null, null)),
           Arguments.of(
               "delete",
               (Function<BackupEndpoint, WebEndpointResponse<?>>)

@@ -187,7 +187,7 @@ public class RuntimeBackupControllerTest extends RestControllerTest {
   @Test
   void listBackupsShouldDefaultToEmptyPrefix() {
     // given
-    when(runtimeBackupServices.listBackups(isNull(), any()))
+    when(runtimeBackupServices.listBackups(isNull(), isNull(), isNull(), any()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when - then
@@ -199,13 +199,13 @@ public class RuntimeBackupControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk();
 
-    verify(runtimeBackupServices).listBackups(isNull(), any());
+    verify(runtimeBackupServices).listBackups(isNull(), isNull(), isNull(), any());
   }
 
   @Test
   void listBackupsShouldForwardPrefix() {
     // given
-    when(runtimeBackupServices.listBackups(eq("12*"), any()))
+    when(runtimeBackupServices.listBackups(eq("12*"), isNull(), isNull(), any()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when - then
@@ -217,7 +217,25 @@ public class RuntimeBackupControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk();
 
-    verify(runtimeBackupServices).listBackups(eq("12*"), any());
+    verify(runtimeBackupServices).listBackups(eq("12*"), isNull(), isNull(), any());
+  }
+
+  @Test
+  void listBackupsShouldForwardCursorAndLimit() {
+    // given
+    when(runtimeBackupServices.listBackups(eq("17*"), eq(170L), eq(50), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    // when - then
+    webClient
+        .get()
+        .uri(BASE_URL + "?prefix=17*&before=170&limit=50")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(runtimeBackupServices).listBackups(eq("17*"), eq(170L), eq(50), any());
   }
 
   @Test

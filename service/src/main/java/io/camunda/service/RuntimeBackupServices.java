@@ -27,6 +27,8 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import java.util.List;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
@@ -113,6 +115,19 @@ public final class RuntimeBackupServices
 
   public CompletableFuture<List<BackupStatus>> listBackups(
       final @Nullable String prefix, final CamundaAuthentication authentication) {
+    return listBackups(prefix, null, null, authentication);
+  }
+
+  /**
+   * Lists backups newest first. With a {@code limit} the result is one page: at most {@code limit}
+   * backups, whose last {@code backupId} is the {@code before} cursor of the next page, and a page
+   * shorter than {@code limit} is the last one. Without a limit every matching backup is returned.
+   */
+  public CompletableFuture<List<BackupStatus>> listBackups(
+      final @Nullable String prefix,
+      final @Nullable Long before,
+      final @Nullable Integer limit,
+      final CamundaAuthentication authentication) {
     if (!hasPermission(BACKUP_READ_AUTHORIZATION, authentication)) {
       return failedFuture(BACKUP_READ_AUTHORIZATION);
     }
@@ -123,11 +138,28 @@ public final class RuntimeBackupServices
               "Expected a prefix ending with '*', but got '%s'".formatted(prefix),
               ServiceException.Status.INVALID_ARGUMENT));
     }
+    if (limit != null && (limit < 1 || limit > BackupApi.MAX_PAGE_SIZE)) {
+      return CompletableFuture.failedFuture(
+          new ServiceException(
+              "Expected a limit between 1 and %d, but got %d"
+                  .formatted(BackupApi.MAX_PAGE_SIZE, limit),
+              ServiceException.Status.INVALID_ARGUMENT));
+    }
+    if (before != null && before < 0) {
+      return CompletableFuture.failedFuture(
+          new ServiceException(
+              "Expected a backup id as before cursor, but got %d".formatted(before),
+              ServiceException.Status.INVALID_ARGUMENT));
+    }
 
     return mapErrors(
         () ->
             backupApi
-                .listBackups(getPhysicalTenantId(), prefix != null ? prefix : BackupApi.WILDCARD)
+                .listBackups(
+                    getPhysicalTenantId(),
+                    prefix != null ? prefix : BackupApi.WILDCARD,
+                    before != null ? OptionalLong.of(before) : OptionalLong.empty(),
+                    limit != null ? OptionalInt.of(limit) : OptionalInt.empty())
                 .toCompletableFuture());
   }
 

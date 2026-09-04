@@ -13,6 +13,7 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.backup.client.api.BackupApi;
 import io.camunda.zeebe.backup.client.api.BackupStatus;
+import io.camunda.zeebe.backup.client.api.PagedListing;
 import io.camunda.zeebe.backup.client.api.State;
 import java.util.Collection;
 import java.util.Comparator;
@@ -21,6 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
@@ -147,14 +150,37 @@ public final class ClusterRuntimeBackupServices {
    */
   public CompletableFuture<List<ClusterRuntimeBackup>> listBackups(
       final @Nullable String physicalTenantId, final @Nullable String prefix) {
+    return listBackups(physicalTenantId, prefix, null, null);
+  }
+
+  /**
+   * Lists one page of the backups of every targeted physical tenant, grouped by backup id, most
+   * recent id first. With a {@code limit} the result holds at most {@code limit} backup ids, whose
+   * last one is the {@code before} cursor of the next page; a page shorter than {@code limit} is
+   * the last one. Every tenant is asked for the same page, and only ids every tenant has been
+   * enumerated past are reported, see {@link PagedListing#safeBound}.
+   *
+   * @param physicalTenantId the single tenant to target, or {@code null} for every tenant
+   */
+  public CompletableFuture<List<ClusterRuntimeBackup>> listBackups(
+      final @Nullable String physicalTenantId,
+      final @Nullable String prefix,
+      final @Nullable Long before,
+      final @Nullable Integer limit) {
     return validated(
         () -> {
           final var targets = targets(physicalTenantId);
           final var queried = requireValidPrefix(prefix);
+          final var page = requireValidPage(before, limit);
           return onEveryTenant(
-                  targets, target -> target.api().listBackups(target.physicalTenantId(), queried))
+                  targets,
+                  target ->
+                      target
+                          .api()
+                          .listBackups(
+                              target.physicalTenantId(), queried, page.before(), page.limit()))
               .thenApply(PhysicalTenantFanOut::requireEveryTenant)
-              .thenApply(perTenant -> groupByBackupId(targets, perTenant));
+              .thenApply(perTenant -> groupByBackupId(targets, perTenant, page.limit()));
         });
   }
 
@@ -324,6 +350,24 @@ public final class ClusterRuntimeBackupServices {
     return prefix;
   }
 
+  private static Page requireValidPage(final @Nullable Long before, final @Nullable Integer limit) {
+    if (limit != null && (limit < 1 || limit > BackupApi.MAX_PAGE_SIZE)) {
+      throw new ServiceException(
+          "Expected a limit between 1 and %d, but got %d".formatted(BackupApi.MAX_PAGE_SIZE, limit),
+          Status.INVALID_ARGUMENT);
+    }
+    if (before != null && before < 0) {
+      throw new ServiceException(
+          "Expected a backup id as before cursor, but got %d".formatted(before),
+          Status.INVALID_ARGUMENT);
+    }
+    return new Page(
+        before != null ? OptionalLong.of(before) : OptionalLong.empty(),
+        limit != null ? OptionalInt.of(limit) : OptionalInt.empty());
+  }
+
+  private record Page(OptionalLong before, OptionalInt limit) {}
+
   private static CompletionStage<Long> take(
       final PhysicalTenantBackupPort target, final @Nullable Long backupId) {
     return backupId == null
@@ -457,22 +501,34 @@ public final class ClusterRuntimeBackupServices {
    * the single-id read.
    */
   private static List<ClusterRuntimeBackup> groupByBackupId(
-      final List<PhysicalTenantBackupPort> targets, final List<List<BackupStatus>> perTenant) {
+      final List<PhysicalTenantBackupPort> targets,
+      final List<List<BackupStatus>> perTenant,
+      final OptionalInt limit) {
+    // ids below the bound wait for the next page: a tenant that filled its page may still hold them
+    final var bound =
+        PagedListing.safeBound(
+            perTenant.stream()
+                .map(
+                    backups ->
+                        backups.stream().map(BackupStatus::backupId).collect(Collectors.toSet()))
+                .toList(),
+            limit);
     final Map<Long, Map<String, BackupStatus>> holdersByBackupId =
         new TreeMap<>(Comparator.reverseOrder());
     zip(targets, perTenant, PhysicalTenantBackups::new)
         .forEach(
             tenant ->
-                tenant
-                    .backups()
+                tenant.backups().stream()
+                    .filter(backup -> backup.backupId() >= bound)
                     .forEach(
                         backup ->
                             holdersByBackupId
                                 .computeIfAbsent(backup.backupId(), id -> new HashMap<>())
                                 .put(tenant.physicalTenantId(), backup)));
-    return holdersByBackupId.entrySet().stream()
-        .map(entry -> toClusterBackup(entry.getKey(), everyTenant(targets, entry)))
-        .toList();
+    final var grouped =
+        holdersByBackupId.entrySet().stream()
+            .map(entry -> toClusterBackup(entry.getKey(), everyTenant(targets, entry)));
+    return (limit.isPresent() ? grouped.limit(limit.getAsInt()) : grouped).toList();
   }
 
   /**
