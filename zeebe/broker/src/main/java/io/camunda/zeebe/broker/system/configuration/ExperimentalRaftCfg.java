@@ -17,10 +17,10 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
 
   public static final Duration DEFAULT_SNAPSHOT_REQUEST_TIMEOUT = Duration.ofMillis(2500);
   public static final DataSize DEFAULT_SNAPSHOT_CHUNK_SIZE = DataSize.ofMegabytes(8);
-  private static final Duration DEFAULT_CONFIGURATION_CHANGE_TIMEOUT = Duration.ofSeconds(10);
   // Keep in sync with the defaults in RaftPartitionConfig, which these override on startup.
-  private static final Duration DEFAULT_JOIN_CATCH_UP_TIMEOUT = Duration.ofSeconds(60);
-  private static final DataSize DEFAULT_PROMOTION_LAG_THRESHOLD = DataSize.ofMegabytes(16);
+  public static final Duration DEFAULT_JOIN_CATCH_UP_TIMEOUT = Duration.ofSeconds(60);
+  public static final DataSize DEFAULT_PROMOTION_LAG_THRESHOLD = DataSize.ofMegabytes(16);
+  private static final Duration DEFAULT_CONFIGURATION_CHANGE_TIMEOUT = Duration.ofSeconds(10);
   // Requests should time out faster than the election timeout to ensure that a single missed
   // heartbeat does not cause immediate re-election.
   private static final Duration DEFAULT_REQUEST_TIMEOUT = DEFAULT_ELECTION_TIMEOUT;

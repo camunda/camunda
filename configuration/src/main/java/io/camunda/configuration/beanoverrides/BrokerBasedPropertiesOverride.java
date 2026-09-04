@@ -650,6 +650,8 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getRaft()
         .setConfigurationChangeTimeout(raft.getConfigurationChangeTimeout());
+    override.getExperimental().getRaft().setJoinCatchUpTimeout(raft.getJoinCatchUpTimeout());
+    override.getExperimental().getRaft().setPromotionLagThreshold(raft.getPromotionLagThreshold());
     override
         .getExperimental()
         .getRaft()
