@@ -231,7 +231,7 @@
       "verticalAlignment": "end"
     },
     {
-      "content": "<style>\n    .invoice-total {\n      border: 1px solid #ccc;\n      padding: 10px;\n      max-width: 300px;\n      margin-left: auto;\n      text-align: right;\n    }\n</style>\n\n\n<div class=\"invoice-total\">\n    <h4>Invoice Total</h4>\n    <p>Subtotal: {{currency}} {{sum(items[unitPrice * quantity])}}</p>\n    <p>Tax (10%): {{currency}} {{floor(sum(items[unitPrice * quantity]) * 0.1, 2)}}</p>\n    <hr>\n    <p>Total: {{currency}} {{floor(sum(items[unitPrice * quantity ]) * 1.1, 2)}}</p>\n</div>\n",
+      "content": "<style>\n    .invoice-total {\n      border: 1px solid #ccc;\n      padding: 10px;\n      max-width: 300px;\n      margin-left: auto;\n      text-align: right;\n    }\n</style>\n\n\n<div class=\"invoice-total\">\n    <h4>Invoice Total</h4>\n    <p>Subtotal: {{currency}} {{sum(for i in items return i.unitPrice * i.quantity)}}</p>\n    <p>Tax (10%): {{currency}} {{floor(sum(for i in items return i.unitPrice * i.quantity) * 0.1, 2)}}</p>\n    <hr>\n    <p>Total: {{currency}} {{floor(sum(for i in items return i.unitPrice * i.quantity) * 1.1, 2)}}</p>\n</div>\n",
       "label": "HTML",
       "type": "html",
       "layout": {
