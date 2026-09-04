@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.incident;
 
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import java.util.Map;
+import java.util.Objects;
 
 public record ListViewInstanceUpdate(String id, String index, String routing, boolean hasIncident)
     implements DocumentUpdate {
@@ -25,7 +26,7 @@ public record ListViewInstanceUpdate(String id, String index, String routing, bo
   public static final class Builder
       extends DocumentUpdate.Builder<ListViewInstanceUpdate, Builder> {
     private String routing;
-    private boolean hasIncident;
+    private Boolean hasIncident;
 
     private Builder(final String id) {
       super(id);
@@ -43,7 +44,7 @@ public record ListViewInstanceUpdate(String id, String index, String routing, bo
 
     @Override
     public ListViewInstanceUpdate build() {
-      return new ListViewInstanceUpdate(id, index, routing, hasIncident);
+      return new ListViewInstanceUpdate(id, index, routing, Objects.requireNonNull(hasIncident));
     }
   }
 }

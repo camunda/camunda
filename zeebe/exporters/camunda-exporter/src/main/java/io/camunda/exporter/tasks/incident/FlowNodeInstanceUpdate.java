@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.incident;
 
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import java.util.Map;
+import java.util.Objects;
 
 public record FlowNodeInstanceUpdate(String id, String index, boolean hasIncident)
     implements DocumentUpdate {
@@ -24,7 +25,7 @@ public record FlowNodeInstanceUpdate(String id, String index, boolean hasInciden
 
   public static final class Builder
       extends DocumentUpdate.Builder<FlowNodeInstanceUpdate, Builder> {
-    private boolean hasIncident;
+    private Boolean hasIncident;
 
     private Builder(final String id) {
       super(id);
@@ -37,7 +38,7 @@ public record FlowNodeInstanceUpdate(String id, String index, boolean hasInciden
 
     @Override
     public FlowNodeInstanceUpdate build() {
-      return new FlowNodeInstanceUpdate(id, index, hasIncident);
+      return new FlowNodeInstanceUpdate(id, index, Objects.requireNonNull(hasIncident));
     }
   }
 }
