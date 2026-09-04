@@ -137,8 +137,8 @@
 
     <!-- Test dependencies -->
     <dependency>
-      <groupId>org.wiremock</groupId>
-      <artifactId>wiremock-standalone</artifactId>
+      <groupId>org.wiremock.integrations</groupId>
+      <artifactId>wiremock-spring-boot</artifactId>
       <scope>test</scope>
     </dependency>
 

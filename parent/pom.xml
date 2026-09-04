@@ -107,6 +107,7 @@
     <version.snakeyaml>2.6</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>3.13.2</version.wiremock>
+    <version.wiremock-spring-boot>4.2.2</version.wiremock-spring-boot>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.10.1</version.asm>
     <version.testcontainers>2.0.5</version.testcontainers>
@@ -1722,6 +1723,12 @@
         <groupId>org.wiremock</groupId>
         <artifactId>wiremock-standalone</artifactId>
         <version>${version.wiremock}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.wiremock.integrations</groupId>
+        <artifactId>wiremock-spring-boot</artifactId>
+        <version>${version.wiremock-spring-boot}</version>
       </dependency>
 
       <!-- Testcontainers & Docker for container based integration tests -->
