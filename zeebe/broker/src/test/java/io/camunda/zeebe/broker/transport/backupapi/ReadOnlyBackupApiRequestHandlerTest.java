@@ -89,7 +89,7 @@ class ReadOnlyBackupApiRequestHandlerTest {
         .when(backupService.getBackupStatus(anyLong()))
         .thenReturn(CompletableActorFuture.completed(doesNotExist));
     lenient()
-        .when(backupService.listBackups(anyString()))
+        .when(backupService.listBackups(anyString(), any()))
         .thenReturn(CompletableActorFuture.completed(List.of()));
     lenient()
         .when(backupService.getBackupRangeStatus())
@@ -128,7 +128,7 @@ class ReadOnlyBackupApiRequestHandlerTest {
 
     // then
     assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
-    verify(backupService).listBackups(any());
+    verify(backupService).listBackups(any(), any());
   }
 
   @Test

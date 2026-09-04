@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.Checkpoint;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -51,7 +52,8 @@ public class NoopBackupManager implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
+  public ActorFuture<Collection<BackupStatus>> listBackups(
+      final String pattern, final ListOptions options) {
     return CompletableActorFuture.completedExceptionally(
         new UnsupportedOperationException(errorMessage));
   }

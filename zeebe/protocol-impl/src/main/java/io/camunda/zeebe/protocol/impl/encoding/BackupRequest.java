@@ -15,6 +15,8 @@ import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -29,12 +31,16 @@ public class BackupRequest implements BufferReader, BufferWriter {
   private long backupId;
   private String pattern;
   private CheckpointType checkpointType;
+  private long pageSize = BackupRequestEncoder.pageSizeNullValue();
+  private long beforeCheckpointId = BackupRequestEncoder.beforeCheckpointIdNullValue();
 
   public BackupRequest reset() {
     type = BackupRequestType.NULL_VAL;
     partitionId = BackupRequestEncoder.partitionIdNullValue();
     backupId = BackupRequestEncoder.backupIdNullValue();
     pattern = null;
+    pageSize = BackupRequestEncoder.pageSizeNullValue();
+    beforeCheckpointId = BackupRequestEncoder.beforeCheckpointIdNullValue();
     return this;
   }
 
@@ -83,12 +89,45 @@ public class BackupRequest implements BufferReader, BufferWriter {
     return this;
   }
 
+  /**
+   * Maximum number of distinct backup ids a LIST request returns, or empty for all. Absent in
+   * requests from gateways before schema version 3.
+   */
+  public OptionalInt getPageSize() {
+    return pageSize == BackupRequestEncoder.pageSizeNullValue()
+        ? OptionalInt.empty()
+        : OptionalInt.of((int) pageSize);
+  }
+
+  public BackupRequest setPageSize(final int pageSize) {
+    this.pageSize = pageSize;
+    return this;
+  }
+
+  /**
+   * Only backups with a smaller id are returned by a LIST request, or empty to start at the newest
+   * backup. Absent in requests from gateways before schema version 3.
+   */
+  public OptionalLong getBeforeCheckpointId() {
+    return beforeCheckpointId == BackupRequestEncoder.beforeCheckpointIdNullValue()
+        ? OptionalLong.empty()
+        : OptionalLong.of(beforeCheckpointId);
+  }
+
+  public BackupRequest setBeforeCheckpointId(final long beforeCheckpointId) {
+    this.beforeCheckpointId = beforeCheckpointId;
+    return this;
+  }
+
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     bodyDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
     partitionId = bodyDecoder.partitionId();
     type = bodyDecoder.type();
     backupId = bodyDecoder.backupId();
+    // Both read as their null value when the message was written with an older schema version
+    pageSize = bodyDecoder.pageSize();
+    beforeCheckpointId = bodyDecoder.beforeCheckpointId();
     pattern = bodyDecoder.pattern();
     if (bodyDecoder.checkpointType() != BackupRequestEncoder.checkpointTypeNullValue()) {
       checkpointType = CheckpointType.valueOf(bodyDecoder.checkpointType());
@@ -110,6 +149,8 @@ public class BackupRequest implements BufferReader, BufferWriter {
         .partitionId(partitionId)
         .type(type)
         .backupId(backupId)
+        .pageSize(pageSize)
+        .beforeCheckpointId(beforeCheckpointId)
         .pattern(pattern);
 
     if (checkpointType != null) {

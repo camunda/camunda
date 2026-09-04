@@ -11,6 +11,7 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.api.ReadOnlyBackupManager;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
@@ -131,7 +132,9 @@ public sealed class ReadOnlyBackupApiRequestHandler
     final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
         new CompletableActorFuture<>();
     backupManager
-        .listBackups(requestReader.pattern())
+        .listBackups(
+            requestReader.pattern(),
+            ListOptions.newestFirst(requestReader.beforeCheckpointId(), requestReader.pageSize()))
         .onComplete(
             (backups, error) -> {
               if (error == null) {

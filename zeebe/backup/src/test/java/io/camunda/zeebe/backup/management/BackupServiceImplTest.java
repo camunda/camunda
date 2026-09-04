@@ -514,11 +514,13 @@ class BackupServiceImplTest {
 
     when(backupStore.list(
             new BackupIdentifierWildcardImpl(
-                Optional.empty(), Optional.of(partitionId), CheckpointPattern.any())))
+                Optional.empty(), Optional.of(partitionId), CheckpointPattern.any()),
+            ListOptions.all()))
         .thenReturn(CompletableFuture.completedFuture(List.of(backup1, backup2)));
 
     // when
-    final var backups = backupService.listBackups(partitionId, null, concurrencyControl).join();
+    final var backups =
+        backupService.listBackups(partitionId, null, ListOptions.all(), concurrencyControl).join();
 
     // then
     assertThat(backups).containsExactlyInAnyOrder(backup1, backup2);

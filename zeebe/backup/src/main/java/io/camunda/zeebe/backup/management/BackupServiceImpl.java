@@ -450,8 +450,11 @@ final class BackupServiceImpl {
   }
 
   ActorFuture<Collection<BackupStatus>> listBackups(
-      final int partitionId, final String pattern, final ConcurrencyControl executor) {
-    return storeQueries.listBackups(partitionId, pattern, executor);
+      final int partitionId,
+      final String pattern,
+      final ListOptions options,
+      final ConcurrencyControl executor) {
+    return storeQueries.listBackups(partitionId, pattern, options, executor);
   }
 
   ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus(
