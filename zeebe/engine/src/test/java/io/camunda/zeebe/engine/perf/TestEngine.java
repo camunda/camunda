@@ -20,13 +20,17 @@ import io.camunda.zeebe.engine.util.StreamProcessingComposite;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender;
 import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
+import io.camunda.zeebe.engine.util.client.JobActivationClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.scheduler.clock.DefaultActorClock;
 import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FeatureFlags;
+import java.io.IOException;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Map;
@@ -45,6 +49,7 @@ public final class TestEngine {
       final int partitionId,
       final int partitionCount,
       final TestContext testContext,
+      final InstantSource clock,
       final Consumer<StreamProcessorBuilder> processorConfiguration) {
     this.partitionCount = partitionCount;
 
@@ -53,7 +58,7 @@ public final class TestEngine {
             testContext.temporaryFolder(),
             testContext.autoCloseableRule(),
             testContext.actorScheduler(),
-            InstantSource.system());
+            clock);
     testStreams.withStreamProcessorMode(StreamProcessorMode.PROCESSING);
     // for performance reasons we want to enable batch processing
     testStreams.maxCommandsInBatch(100);
@@ -112,13 +117,41 @@ public final class TestEngine {
     return new ProcessInstanceClient(streamProcessingComposite);
   }
 
+  public JobActivationClient createJobActivationClient() {
+    return new JobActivationClient(streamProcessingComposite);
+  }
+
   public static TestEngine createSinglePartitionEngine(final TestContext testContext) {
-    return new TestEngine(1, 1, testContext, cfg -> {});
+    return new TestEngine(1, 1, testContext, InstantSource.system(), cfg -> {});
+  }
+
+  public static TestEngine createSinglePartitionEngine(
+      final TestContext testContext, final InstantSource clock) {
+    return new TestEngine(1, 1, testContext, clock, cfg -> {});
   }
 
   public void reset() {
     RecordingExporter.reset();
     testStreams.resetLog();
+  }
+
+  public static TestContext createTestContext() throws IOException {
+    return createTestContext(new DefaultActorClock());
+  }
+
+  public static TestContext createTestContext(final ActorClock clock) throws IOException {
+    final var autoCloseableRule = new AutoCloseableRule();
+    final var temporaryFolder = new TemporaryFolder();
+    temporaryFolder.create();
+    final var actorScheduler =
+        ActorScheduler.newActorScheduler()
+            .setCpuBoundActorThreadCount(1)
+            .setIoBoundActorThreadCount(1)
+            .setActorClock(clock)
+            .build();
+    autoCloseableRule.manage(actorScheduler);
+    actorScheduler.start();
+    return new TestContext(actorScheduler, temporaryFolder, autoCloseableRule);
   }
 
   /**
