@@ -197,7 +197,13 @@ runs:
           ubuntu-latest) tar -xzf camunda8-run-*.tar.gz -C e2e-distribution ;;
           macos*) unzip -q camunda8-run-*.zip -d e2e-distribution ;;
         esac
-        echo "C8RUN_E2E_DIR=$(printf '%s' "$PWD"/e2e-distribution/c8run-*)" >> "$GITHUB_ENV"
+        shopt -s nullglob
+        distributions=("$PWD"/e2e-distribution/c8run-*)
+        if [[ ${#distributions[@]} -ne 1 || ! -d "${distributions[0]}" ]]; then
+          echo "Expected exactly one extracted c8run distribution, found ${#distributions[@]}" >&2
+          exit 1
+        fi
+        echo "C8RUN_E2E_DIR=${distributions[0]}" >> "$GITHUB_ENV"
       shell: bash
       working-directory: ./c8run
 

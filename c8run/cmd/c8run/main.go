@@ -537,21 +537,22 @@ func main() {
 			os.Exit(1)
 		}
 		if mode == "local" {
-			secretDirectory, err := localsecrets.ResolveDirectory(baseDir)
+			secretStore := localsecrets.New(baseDir)
+			if err := secretStore.Ensure(); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			secretDirectory, err := secretStore.Directory()
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 			if err := os.Setenv(localsecrets.DirectoryEnv, secretDirectory); err != nil {
-				fmt.Fprintln(os.Stderr, "failed to configure local secrets directory")
-				os.Exit(1)
-			}
-			if err := localsecrets.New(baseDir).Ensure(); err != nil {
-				fmt.Fprintln(os.Stderr, err)
+				fmt.Fprintln(os.Stderr, "failed to configure local secrets directory:", err)
 				os.Exit(1)
 			}
 			if err := os.Setenv("CAMUNDA_SECRETS_STORES_FILE_DEFAULT_PATH", secretDirectory); err != nil {
-				fmt.Fprintln(os.Stderr, "failed to configure Camunda secret store")
+				fmt.Fprintln(os.Stderr, "failed to configure Camunda secret store:", err)
 				os.Exit(1)
 			}
 		}

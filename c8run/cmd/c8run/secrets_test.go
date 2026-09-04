@@ -17,6 +17,7 @@ import (
 	"strings"
 	"testing"
 
+	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -88,6 +89,33 @@ func TestSecretsSetRejectsOversizedStdin(t *testing.T) {
 	err := command.run(t.TempDir(), []string{"set", "API_KEY", "--stdin"})
 
 	assert.ErrorContains(t, err, "must not exceed")
+}
+
+func TestSecretsSetAllowsMaximumSizeWithTrailingNewline(t *testing.T) {
+	command, _, _ := testSecretsCommand(strings.Repeat("x", localsecrets.MaxSecretSize)+"\n", false)
+	baseDir := t.TempDir()
+
+	err := command.run(baseDir, []string{"set", "API_KEY", "--stdin"})
+
+	require.NoError(t, err)
+	value, err := os.ReadFile(filepath.Join(baseDir, "secrets", "API_KEY"))
+	require.NoError(t, err)
+	assert.Len(t, value, localsecrets.MaxSecretSize)
+}
+
+func TestSecretsSetReportsStdinReadFailure(t *testing.T) {
+	command, _, _ := testSecretsCommand("", false)
+	command.input = failingReader{}
+
+	err := command.run(t.TempDir(), []string{"set", "API_KEY", "--stdin"})
+
+	assert.ErrorContains(t, err, "failed to read secret value: test read failure")
+}
+
+type failingReader struct{}
+
+func (failingReader) Read([]byte) (int, error) {
+	return 0, errors.New("test read failure")
 }
 
 func TestSecretsSetRejectsInvalidUTF8FromStdin(t *testing.T) {

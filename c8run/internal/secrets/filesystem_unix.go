@@ -20,53 +20,53 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func ensureDirectory(path string) error {
+func ensureDirectory(path string) (string, error) {
 	if info, err := os.Lstat(path); err == nil && info.Mode()&os.ModeSymlink != 0 {
-		return fmt.Errorf("local secrets path %q must be a directory and not a symbolic link", path)
+		return "", fmt.Errorf("local secrets path %q must be a directory and not a symbolic link", path)
 	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("failed to inspect local secrets directory: %w", err)
+		return "", fmt.Errorf("failed to inspect local secrets directory: %w", err)
 	}
 	resolvedPath, err := resolveExistingSymlinks(path)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if err := createDirectoryTree(resolvedPath); err != nil {
-		return err
+		return "", err
 	}
 	info, err := os.Lstat(resolvedPath)
 	if err != nil {
-		return fmt.Errorf("failed to inspect local secrets directory: %w", err)
+		return "", fmt.Errorf("failed to inspect local secrets directory: %w", err)
 	}
 	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
-		return fmt.Errorf("local secrets path %q must be a directory and not a symbolic link", resolvedPath)
+		return "", fmt.Errorf("local secrets path %q must be a directory and not a symbolic link", resolvedPath)
 	}
 	if stat, ok := info.Sys().(*syscall.Stat_t); ok && stat.Uid != uint32(os.Geteuid()) {
-		return fmt.Errorf("local secrets directory %q is not owned by the current user", resolvedPath)
+		return "", fmt.Errorf("local secrets directory %q is not owned by the current user", resolvedPath)
 	}
 	if err := os.Chmod(resolvedPath, 0o700); err != nil {
-		return fmt.Errorf("failed to secure local secrets directory: %w", err)
+		return "", fmt.Errorf("failed to secure local secrets directory: %w", err)
 	}
 	entries, err := os.ReadDir(resolvedPath)
 	if err != nil {
-		return fmt.Errorf("failed to inspect existing local secrets: %w", err)
+		return "", fmt.Errorf("failed to inspect existing local secrets: %w", err)
 	}
 	for _, entry := range entries {
-		if ValidateName(entry.Name()) != nil {
+		if !isRuntimeSecretName(entry.Name()) {
 			continue
 		}
 		entryPath := filepath.Join(resolvedPath, entry.Name())
 		info, err := os.Lstat(entryPath)
 		if err != nil {
-			return fmt.Errorf("failed to inspect secret %q: %w", entry.Name(), err)
+			return "", fmt.Errorf("failed to inspect secret %q: %w", entry.Name(), err)
 		}
 		if !info.Mode().IsRegular() {
-			return fmt.Errorf("secret %q must be a regular file and not a symbolic link", entry.Name())
+			return "", fmt.Errorf("secret %q must be a regular file and not a symbolic link", entry.Name())
 		}
 		if err := os.Chmod(entryPath, 0o600); err != nil {
-			return fmt.Errorf("failed to secure secret %q: %w", entry.Name(), err)
+			return "", fmt.Errorf("failed to secure secret %q: %w", entry.Name(), err)
 		}
 	}
-	return nil
+	return resolvedPath, nil
 }
 
 func resolveExistingSymlinks(path string) (string, error) {

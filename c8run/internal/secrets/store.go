@@ -82,7 +82,12 @@ func (s *Store) Ensure() error {
 	if s.resolveErr != nil {
 		return s.resolveErr
 	}
-	return ensureDirectory(s.directory)
+	directory, err := ensureDirectory(s.directory)
+	if err != nil {
+		return err
+	}
+	s.directory = directory
+	return nil
 }
 
 func (s *Store) Directory() (string, error) {
@@ -129,6 +134,11 @@ func ValidateName(name string) error {
 		return errors.New("secret name is reserved by Windows")
 	}
 	return nil
+}
+
+func isRuntimeSecretName(name string) bool {
+	return name != "" && name != "." && name != ".." &&
+		!strings.HasPrefix(name, ".") && !strings.ContainsAny(name, `/\`)
 }
 
 func (s *Store) Set(name string, value []byte) error {
@@ -211,7 +221,7 @@ func (s *Store) List() ([]string, error) {
 	names := make([]string, 0, len(entries))
 	for _, entry := range entries {
 		info, err := entry.Info()
-		if err != nil || !info.Mode().IsRegular() || ValidateName(entry.Name()) != nil {
+		if err != nil || !info.Mode().IsRegular() || !isRuntimeSecretName(entry.Name()) {
 			continue
 		}
 		names = append(names, entry.Name())
@@ -269,7 +279,7 @@ func (s *Store) DeleteAll() ([]string, error) {
 	var names []string
 	for _, entry := range entries {
 		info, err := entry.Info()
-		if err == nil && info.Mode().IsRegular() && ValidateName(entry.Name()) == nil {
+		if err == nil && info.Mode().IsRegular() && isRuntimeSecretName(entry.Name()) {
 			names = append(names, entry.Name())
 		}
 	}
