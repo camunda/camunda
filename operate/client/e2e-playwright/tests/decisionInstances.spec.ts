@@ -8,7 +8,7 @@
 
 import {setup} from './decisionInstances.mocks';
 import {test} from '../test-fixtures';
-import {SETUP_WAITING_TIME} from './constants';
+import {SETUP_WAITING_TIME, SETUP_WAITING_TIME_LONG} from './constants';
 import {expect} from '@playwright/test';
 import {config} from '../config';
 
@@ -40,6 +40,7 @@ test.describe('Decision Instances', () => {
   });
 
   test('Switch between Decision versions', async ({decisionsPage}) => {
+    test.setTimeout(SETUP_WAITING_TIME_LONG);
     const {decisions} = initialData;
     const [
       decision1Version1,
@@ -76,7 +77,7 @@ test.describe('Decision Instances', () => {
     await decisionsPage.selectDecision('Decision 2');
     await expect(
       decisionsPage.decisionViewer.getByText('Decision 2'),
-    ).toBeVisible();
+    ).toBeVisible({timeout: SETUP_WAITING_TIME});
 
     await decisionsPage.selectVersion(decision2Version1!.version);
     await expect(

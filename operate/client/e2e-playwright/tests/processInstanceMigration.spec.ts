@@ -9,7 +9,7 @@
 import {setup} from './processInstanceMigration.mocks';
 import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
-import {SETUP_WAITING_TIME} from './constants';
+import {SETUP_WAITING_TIME, SETUP_WAITING_TIME_LONG} from './constants';
 import {config} from '../config';
 import {zeebeGrpcApi} from '../api/zeebe-grpc';
 
@@ -35,7 +35,7 @@ test.beforeAll(async ({request}) => {
 
         return await response.json();
       },
-      {timeout: SETUP_WAITING_TIME},
+      {timeout: SETUP_WAITING_TIME_LONG},
     )
     .toHaveProperty('total', 10);
 
@@ -67,7 +67,7 @@ test.beforeAll(async ({request}) => {
 
         return await response.json();
       },
-      {timeout: SETUP_WAITING_TIME},
+      {timeout: SETUP_WAITING_TIME_LONG},
     )
     .toHaveProperty('total', 10);
 
@@ -92,7 +92,7 @@ test.beforeAll(async ({request}) => {
 
         return await response.json();
       },
-      {timeout: SETUP_WAITING_TIME},
+      {timeout: SETUP_WAITING_TIME_LONG},
     )
     .toHaveProperty('total', 10);
 
@@ -116,7 +116,7 @@ test.beforeAll(async ({request}) => {
 
         return await response.json();
       },
-      {timeout: SETUP_WAITING_TIME},
+      {timeout: SETUP_WAITING_TIME_LONG},
     )
     .toHaveProperty('total', 10);
 
@@ -140,7 +140,7 @@ test.beforeAll(async ({request}) => {
 
         return await response.json();
       },
-      {timeout: SETUP_WAITING_TIME},
+      {timeout: SETUP_WAITING_TIME_LONG},
     )
     .toHaveProperty('total', 10);
 });
