@@ -256,7 +256,9 @@ export class IdentityAuthorizationsPage {
 
   async selectAuthorizationOwner(authorization: {ownerId: string}) {
     await this.createAuthorizationOwnerSearchInput.fill(authorization.ownerId);
-    await expect(this.createAuthorizationOwnerSearchInput).toHaveValue(authorization.ownerId);
+    await expect(this.createAuthorizationOwnerSearchInput).toHaveValue(
+      authorization.ownerId,
+    );
     const ownerOption = this.page
       .getByRole('listbox')
       .getByRole('option')
