@@ -63,7 +63,6 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -303,7 +302,7 @@ final class CamundaExporterIT {
     resourceProvider.init(
         config,
         cacheProvider,
-        new SimpleMeterRegistry(),
+        new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
     final var expectedHandlers =
@@ -370,7 +369,7 @@ final class CamundaExporterIT {
     resourceProvider.init(
         config,
         mock(ExporterEntityCacheProvider.class),
-        new SimpleMeterRegistry(),
+        new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
 
@@ -407,7 +406,7 @@ final class CamundaExporterIT {
     resourceProvider.init(
         config,
         mock(ExporterEntityCacheProvider.class),
-        new SimpleMeterRegistry(),
+        new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
 
@@ -533,7 +532,7 @@ final class CamundaExporterIT {
     defaultExporterResourceProvider.init(
         config,
         mock(ExporterEntityCacheProvider.class),
-        new SimpleMeterRegistry(),
+        new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
 
