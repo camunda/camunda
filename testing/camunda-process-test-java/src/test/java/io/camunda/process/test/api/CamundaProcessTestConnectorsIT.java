@@ -45,6 +45,8 @@ import org.testcontainers.Testcontainers;
 @WireMockTest(httpPort = 9999)
 public class CamundaProcessTestConnectorsIT {
 
+  private static final int WIREMOCK_PORT = 9999;
+
   // The ID is part of the connector configuration in the BPMN element
   private static final String INBOUND_CONNECTOR_ID = "941c5492-ab2b-4305-aa18-ac86991ff4ca";
 
@@ -54,7 +56,7 @@ public class CamundaProcessTestConnectorsIT {
           .withConnectorsEnabled(true)
           .withConnectorsSecret(
               "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness")
-          .withConnectorsSecret("BASE_URL", "http://host.testcontainers.internal:9999");
+          .withConnectorsSecret("BASE_URL", "http://host.testcontainers.internal:" + WIREMOCK_PORT);
 
   // to be injected
   private CamundaClient client;
@@ -62,7 +64,7 @@ public class CamundaProcessTestConnectorsIT {
 
   @BeforeAll
   static void setup() {
-    Testcontainers.exposeHostPorts(9999);
+    Testcontainers.exposeHostPorts(WIREMOCK_PORT);
   }
 
   @Test
