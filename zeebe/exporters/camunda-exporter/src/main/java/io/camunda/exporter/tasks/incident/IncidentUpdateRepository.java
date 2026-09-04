@@ -163,7 +163,7 @@ public interface IncidentUpdateRepository extends AutoCloseable {
       this(new ConcurrentLinkedQueue<>(), new ConcurrentLinkedQueue<>());
     }
 
-    Stream<? extends DocumentUpdate> stream() {
+    Stream<? extends IncidentTaskUpdate> stream() {
       return Stream.concat(listViewRequests.stream(), flowNodeInstanceRequests.stream()).distinct();
     }
   }

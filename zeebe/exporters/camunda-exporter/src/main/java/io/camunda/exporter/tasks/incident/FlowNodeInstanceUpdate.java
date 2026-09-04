@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public record FlowNodeInstanceUpdate(String id, String index, boolean hasIncident)
-    implements DocumentUpdate {
+    implements IncidentTaskUpdate {
 
   @Override
   public Map<String, Object> doc() {
@@ -24,7 +24,7 @@ public record FlowNodeInstanceUpdate(String id, String index, boolean hasInciden
   }
 
   public static final class Builder
-      extends DocumentUpdate.Builder<FlowNodeInstanceUpdate, Builder> {
+      extends IncidentTaskUpdate.Builder<FlowNodeInstanceUpdate, Builder> {
     private Boolean hasIncident;
 
     private Builder(final String id) {
