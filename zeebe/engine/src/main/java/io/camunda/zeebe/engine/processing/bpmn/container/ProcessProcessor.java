@@ -30,7 +30,6 @@ import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.Either;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -103,10 +102,18 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     // event applier will delete the element instance
     processResultSenderBehavior.sendResult(context);
 
-    return transitionTo(
-        element,
-        context,
-        completing -> stateTransitionBehavior.transitionToCompleted(element, completing));
+    final var result =
+        transitionTo(
+            element,
+            context,
+            completing -> stateTransitionBehavior.transitionToCompleted(element, completing));
+
+    // a completing instance may have been RESUMING (a buffered command drained straight to
+    // completion, superseding the RESUME_JOBS/COMPLETE_RESUMING chain — see those processors'
+    // lifecycle-ending rejection) without ever reaching the normal resume finish line; discard the
+    // sample so it doesn't stay in the map forever
+    suspensionMetrics.cancelResumeDuration(context.getElementInstanceKey());
+    return result;
   }
 
   @Override
@@ -131,7 +138,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
 
     // capture suspension state before finalization — the applier clears it
     final boolean wasSuspended = suspensionState.getSuspensionState(piKey) != null;
-    final int droppedCommands = wasSuspended ? countBufferedCommands(piKey) : 0;
+    final int droppedCommands = wasSuspended ? suspensionState.countBufferedCommands(piKey) : 0;
 
     agentInstanceBehavior.completeAgentInstancesOfProcessInstance(element, terminationContext);
     transitionTo(
@@ -156,13 +163,6 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
             ValueType.PROCESS_INSTANCE,
             ProcessInstanceIntent.CANCEL)
         .orElse(null);
-  }
-
-  private int countBufferedCommands(final long processInstanceKey) {
-    final var count = new AtomicInteger();
-    suspensionState.visitBufferedCommands(
-        processInstanceKey, (key, cmd) -> count.incrementAndGet());
-    return count.get();
   }
 
   private void activateStartEvent(
