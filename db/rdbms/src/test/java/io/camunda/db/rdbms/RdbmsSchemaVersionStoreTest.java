@@ -9,6 +9,9 @@ package io.camunda.db.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.intThat;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -19,6 +22,7 @@ import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIndeterminateException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionUnreadableException;
 import io.camunda.zeebe.util.migration.CurrentSchemaVersion.Kind;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
@@ -173,6 +177,34 @@ class RdbmsSchemaVersionStoreTest {
 
     // then - the datasource is never touched
     verify(dataSource, never()).getConnection();
+  }
+
+  @Test
+  void shouldBoundEveryWriteStatementWithAPositiveQueryTimeout() throws Exception {
+    // given - a connection whose statements are mocks, so the timeout applied to them can be
+    // inspected without a real database or a real contended row
+    final var dataSource = mock(DataSource.class);
+    final var connection = mock(Connection.class);
+    final var preparedStatement = mock(PreparedStatement.class);
+    when(dataSource.getConnection()).thenReturn(connection);
+    when(connection.prepareStatement(anyString())).thenReturn(preparedStatement);
+    when(preparedStatement.executeUpdate()).thenReturn(1);
+
+    final var store =
+        new RdbmsSchemaVersionStore(dataSource, "", "8.10.0") {
+          @Override
+          protected String readSchemaVersion(final Connection connection, final String prefix) {
+            // an older version, so recordCurrentVersion has to issue a write rather than skip it
+            return "8.9.0";
+          }
+        };
+
+    // when
+    store.recordCurrentVersion();
+
+    // then - a positive timeout, not any particular one: the value is free to change (see
+    // RdbmsSchemaVersionStore#STATEMENT_TIMEOUT_SECONDS), only that every statement carries one
+    verify(preparedStatement, atLeastOnce()).setQueryTimeout(intThat(timeout -> timeout > 0));
   }
 
   // ---- getCurrentSchemaVersion (upgrade-readiness facts) ----
