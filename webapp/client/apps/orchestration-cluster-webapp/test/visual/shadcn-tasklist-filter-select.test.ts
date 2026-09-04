@@ -73,11 +73,25 @@ test('should match snapshot with the filter select closed', async ({shadcnTaskli
 });
 
 test('should match snapshot with the filter select open', async ({shadcnTasklistIndexPage, page}) => {
+	await shadcnTasklistIndexPage.seedCustomFilters({
+		custom: {assignee: 'all', status: 'all'},
+		'filter-1': {assignee: 'all', status: 'completed', name: 'Completed orders'},
+		'filter-2': {
+			assignee: 'me',
+			status: 'open',
+			name: 'Assigned finance tasks with a very long filter name',
+		},
+	});
 	await shadcnTasklistIndexPage.goto();
 
 	await expect(shadcnTasklistIndexPage.taskItem('Review purchase contract')).toBeVisible();
 	await shadcnTasklistIndexPage.filterSelect.click();
 	await expect(shadcnTasklistIndexPage.filterOption('All open tasks')).toBeVisible();
+	await expect(shadcnTasklistIndexPage.filterOption('Custom')).toBeVisible();
+	await expect(shadcnTasklistIndexPage.filterOption('Completed orders')).toBeVisible();
+	await expect(
+		shadcnTasklistIndexPage.filterOption('Assigned finance tasks with a very long filter name'),
+	).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });
