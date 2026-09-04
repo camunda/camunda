@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.api.gax.paging.Page;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
@@ -24,6 +25,7 @@ import com.google.cloud.storage.StorageException;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+<<<<<<< HEAD
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
@@ -32,6 +34,29 @@ import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Spliterator;
 import java.util.Spliterators;
+=======
+import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.ListOptions;
+import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
+import io.camunda.zeebe.backup.common.Manifest;
+import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
+import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
+import io.camunda.zeebe.util.retry.RetryDecorator;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Semaphore;
+import java.util.function.Consumer;
+>>>>>>> 57406a47 (feat: page backup store listings by checkpoint id)
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
@@ -49,6 +74,20 @@ public final class ManifestManager {
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
   public static final int PRECONDITION_FAILED = 412;
+<<<<<<< HEAD
+=======
+  private static final int NOT_FOUND = 404;
+  private static final int LIST_MAX_RETRIES = 6;
+  private static final int LIST_PAGE_SIZE = 1000;
+  private static final int MANIFEST_READ_PARALLELISM = 16;
+  private static final int MAX_CAUSE_DEPTH = 20;
+  private static final Duration MIN_LIST_RETRY_DELAY = Duration.ofMillis(100);
+  private static final Duration MAX_LIST_RETRY_DELAY = Duration.ofSeconds(2);
+  private static final RetryDecorator MANIFEST_LIST_RETRY =
+      new RetryDecorator(manifestListRetryConfiguration())
+          .withRetryOnException(ManifestManager::shouldRetryListOperation);
+  private static final Logger LOG = LoggerFactory.getLogger(ManifestManager.class);
+>>>>>>> 57406a47 (feat: page backup store listings by checkpoint id)
 
   /**
    * Format for path to all manifests.
@@ -78,6 +117,11 @@ public final class ManifestManager {
   private final BucketInfo bucketInfo;
   private final Storage client;
   private final String basePath;
+<<<<<<< HEAD
+=======
+  private final ExecutorService executor;
+  private final Semaphore manifestReadConcurrencyLimit = new Semaphore(MANIFEST_READ_PARALLELISM);
+>>>>>>> 57406a47 (feat: page backup store listings by checkpoint id)
 
   ManifestManager(final Storage client, final BucketInfo bucketInfo, final String basePath) {
     this.bucketInfo = bucketInfo;
@@ -173,6 +217,7 @@ public final class ManifestManager {
     }
   }
 
+<<<<<<< HEAD
   public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
     final var spliterator =
         Spliterators.spliteratorUnknownSize(
@@ -198,6 +243,228 @@ public final class ManifestManager {
 
   public void deleteManifest(final BackupIdentifier id) {
     client.delete(manifestBlobInfo(id).getBlobId());
+=======
+  /**
+   * Lists the page of backup statuses selected by the options. All matching blobs are enumerated
+   * page by page, but only the selected ones become statuses: from their metadata where present,
+   * otherwise by downloading the manifest.
+   *
+   * <p>Reads a checkpoint id at a time, in waves: every checkpoint id the page currently needs is
+   * read concurrently (bounded by {@link #manifestReadConcurrencyLimit}), and only if one comes
+   * back empty — its manifest was deleted between listing and this read — does a further wave read
+   * the next checkpoint id to refill the page. One vanished manifest costs one extra checkpoint id,
+   * not a short page silently mistaken for the end of the data.
+   */
+  public List<BackupStatus> listBackupStatuses(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
+    final var blobFilter = filterBlobsByWildcard(wildcard);
+    LOG.debug("Listing backup statuses for wildcard {} with {}", wildcard, options);
+    final var manifestBlobs = new ArrayList<ManifestBlob>();
+    forEachManifestBlobPage(
+        wildcardPrefix(wildcard),
+        page -> {
+          for (final var blob : page.getValues()) {
+            if (!blobFilter.test(blob)) {
+              continue;
+            }
+            final var id =
+                ManifestMetadata.parseIdentifier(blob.getName(), basePath, MANIFEST_BLOB_NAME);
+            if (id.isEmpty()) {
+              LOG.warn(
+                  "Tried interpreting blob {} as a backup manifest but failed", blob.getName());
+              continue;
+            }
+            if (wildcard.matches(id.get())) {
+              manifestBlobs.add(new ManifestBlob(id.get(), blob));
+            }
+          }
+        });
+
+    final var byCheckpointId = new LinkedHashMap<Long, List<ManifestBlob>>();
+    for (final var manifestBlob : manifestBlobs) {
+      byCheckpointId
+          .computeIfAbsent(manifestBlob.id().checkpointId(), ignored -> new ArrayList<>())
+          .add(manifestBlob);
+    }
+    final var orderedCheckpointIds =
+        new ListOptions(options.order(), options.startExclusive(), OptionalInt.empty())
+            .selectCheckpointIds(byCheckpointId.keySet());
+
+    final var statuses = new ArrayList<BackupStatus>();
+    var remaining = options.limit().orElse(orderedCheckpointIds.size());
+    var index = 0;
+    while (remaining > 0 && index < orderedCheckpointIds.size()) {
+      final var window =
+          orderedCheckpointIds.subList(
+              index, Math.min(index + remaining, orderedCheckpointIds.size()));
+      index += window.size();
+      final var perCheckpointFutures =
+          window.stream()
+              .map(checkpointId -> readCheckpointStatuses(byCheckpointId.get(checkpointId)))
+              .toList();
+      CompletableFuture.allOf(perCheckpointFutures.toArray(CompletableFuture[]::new)).join();
+      for (final var future : perCheckpointFutures) {
+        final var resolved = future.join();
+        statuses.addAll(resolved);
+        if (!resolved.isEmpty()) {
+          remaining--;
+        }
+      }
+    }
+    LOG.debug("Found {} matching backup statuses for wildcard {}", statuses.size(), wildcard);
+    return statuses;
+  }
+
+  /**
+   * Reads every copy of one checkpoint id concurrently. A copy missing here was deleted between
+   * listing and this read — retention's own deletes race with its next sweep, so this is expected,
+   * not a failure. Skip it, like {@link #getManifest} does.
+   */
+  private CompletableFuture<List<BackupStatus>> readCheckpointStatuses(
+      final List<ManifestBlob> manifestBlobs) {
+    final var futures =
+        manifestBlobs.stream()
+            .map(
+                manifestBlob ->
+                    ManifestMetadata.toBackupStatus(
+                            manifestBlob.blob(), basePath, MANIFEST_BLOB_NAME)
+                        .map(status -> CompletableFuture.completedFuture(Optional.of(status)))
+                        // Fallback: download the manifest for blobs without metadata
+                        .orElseGet(() -> downloadManifestStatus(manifestBlob.blob())))
+            .toList();
+    return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+        .thenApply(
+            ignored ->
+                futures.stream().map(CompletableFuture::join).flatMap(Optional::stream).toList());
+  }
+
+  private void forEachManifestBlobPage(final String prefix, final Consumer<Page<Blob>> onPage) {
+    var pageToken = Optional.<String>empty();
+    while (true) {
+      final var page = listManifestBlobPageWithRetry(prefix, pageToken);
+      onPage.accept(page);
+      if (!page.hasNextPage()) {
+        return;
+      }
+      pageToken = Optional.of(page.getNextPageToken());
+    }
+  }
+
+  private Page<Blob> listManifestBlobPageWithRetry(
+      final String prefix, final Optional<String> pageToken) {
+    try {
+      final var operationName =
+          "list GCS backup manifests from bucket '%s' with prefix '%s'"
+              .formatted(bucketInfo.getName(), prefix);
+      return MANIFEST_LIST_RETRY.decorate(
+          operationName, () -> listManifestBlobPage(prefix, pageToken), ignored -> false);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException(
+          "Failed to list GCS backup manifests from bucket '%s' with prefix '%s'"
+              .formatted(bucketInfo.getName(), prefix),
+          e);
+    }
+  }
+
+  private Page<Blob> listManifestBlobPage(final String prefix, final Optional<String> pageToken) {
+    final var options = new ArrayList<BlobListOption>();
+    options.add(BlobListOption.prefix(prefix));
+    options.add(BlobListOption.pageSize(LIST_PAGE_SIZE));
+    pageToken.map(BlobListOption::pageToken).ifPresent(options::add);
+    return client.list(bucketInfo.getName(), options.toArray(BlobListOption[]::new));
+  }
+
+  private static boolean shouldRetryListOperation(final Throwable error) {
+    return causes(error)
+        .anyMatch(
+            current ->
+                current instanceof final StorageException storageException
+                    && shouldRetryStorageException(storageException));
+  }
+
+  private static boolean shouldRetryStorageException(final StorageException storageException) {
+    return storageException.isRetryable()
+        || isServerError(storageException)
+        || isNonHttpIoError(storageException);
+  }
+
+  private static boolean isServerError(final StorageException e) {
+    final var statusCode = e.getCode();
+    return statusCode >= 500 && statusCode < 600;
+  }
+
+  private static boolean isNonHttpIoError(final StorageException e) {
+    return e.getCode() == 0 && hasCause(e, IOException.class);
+  }
+
+  private static boolean hasCause(
+      final Throwable error, final Class<? extends Throwable> causeType) {
+    return causes(error).anyMatch(causeType::isInstance);
+  }
+
+  private static Stream<Throwable> causes(final Throwable error) {
+    return Stream.iterate(error, Objects::nonNull, Throwable::getCause).limit(MAX_CAUSE_DEPTH);
+  }
+
+  private static RetryConfiguration manifestListRetryConfiguration() {
+    final var retryConfiguration = new RetryConfiguration();
+    retryConfiguration.setMaxRetries(LIST_MAX_RETRIES);
+    retryConfiguration.setMinRetryDelay(MIN_LIST_RETRY_DELAY);
+    retryConfiguration.setMaxRetryDelay(MAX_LIST_RETRY_DELAY);
+    return retryConfiguration;
+  }
+
+  /**
+   * Downloads and parses a manifest without status metadata. Empty, not exceptional, if the
+   * manifest was deleted between listing and this read: {@link StorageException} is unchecked, so
+   * without this the racing deletion would fail the whole page instead of skipping one entry, the
+   * way {@link #getManifest} already tolerates a 404 by returning null.
+   */
+  private CompletableFuture<Optional<BackupStatus>> downloadManifestStatus(final Blob blob) {
+    return SemaphoreLeasedScheduler.schedule(
+        () -> {
+          try {
+            final var manifest =
+                MAPPER.readValue(client.readAllBytes(blob.getBlobId()), Manifest.class);
+            return Optional.of(Manifest.toStatus(manifest));
+          } catch (final StorageException e) {
+            if (e.getCode() == NOT_FOUND) {
+              return Optional.<BackupStatus>empty();
+            }
+            throw e;
+          } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        },
+        executor,
+        manifestReadConcurrencyLimit);
+  }
+
+  public void deleteManifest(final Manifest manifest) {
+    final var blobInfo = manifestBlobInfo(manifest.id());
+    client.delete(blobInfo.getBlobId());
+  }
+
+  public void markAsDeleted(final Manifest manifest) {
+    final var deletedManifest =
+        switch (manifest.statusCode()) {
+          case DELETED -> manifest;
+          case COMPLETED -> manifest.asCompleted().delete();
+          case IN_PROGRESS -> manifest.asInProgress().delete();
+          case FAILED -> manifest.asFailed().delete();
+        };
+    if (manifest != deletedManifest) {
+      try {
+        client.create(
+            manifestBlobInfoWithMetadata(manifest.id(), deletedManifest),
+            MAPPER.writeValueAsBytes(deletedManifest));
+      } catch (final JsonProcessingException e) {
+        throw new RuntimeException(e);
+      }
+    }
+>>>>>>> 57406a47 (feat: page backup store listings by checkpoint id)
   }
 
   private BlobInfo manifestBlobInfo(final BackupIdentifier id) {
@@ -231,4 +498,6 @@ public final class ManifestManager {
   }
 
   record PersistedManifest(Long generation, InProgressManifest manifest) {}
+
+  private record ManifestBlob(BackupIdentifier id, Blob blob) {}
 }

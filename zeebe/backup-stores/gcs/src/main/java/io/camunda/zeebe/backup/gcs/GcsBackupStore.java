@@ -20,6 +20,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.Manifest;
@@ -27,7 +28,12 @@ import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationExceptio
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 import java.nio.file.Path;
 import java.time.Duration;
+<<<<<<< HEAD
 import java.util.Collection;
+=======
+import java.util.ArrayList;
+import java.util.List;
+>>>>>>> 57406a47 (feat: page backup store listings by checkpoint id)
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -100,10 +106,15 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
+  public CompletableFuture<List<BackupStatus>> list(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
     return CompletableFuture.supplyAsync(
+<<<<<<< HEAD
         () -> manifestManager.listManifests(wildcard).stream().map(Manifest::toStatus).toList(),
         executor);
+=======
+        () -> manifestManager.listBackupStatuses(wildcard, options), executor);
+>>>>>>> 57406a47 (feat: page backup store listings by checkpoint id)
   }
 
   @Override
