@@ -10,6 +10,7 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.auth.Authorization;
@@ -66,9 +67,10 @@ public class ActivateJobIT {
   @BeforeAll
   static void setup() {
     // The CamundaMultiDBExtension resets RecordingExporter (maximumWaitTime → 5s) in its
-    // beforeAll, which runs before this method. Override to 30s to tolerate slow CI runners
-    // where gateway-issued FAIL commands can take longer to propagate.
-    RecordingExporter.setMaximumWaitTime(Duration.ofSeconds(30).toMillis());
+    // beforeAll, which runs before this method. Override to use the data availability time
+    // to tolerate slow CI runners where gateway-issued FAIL commands can take longer to propagate.
+    RecordingExporter.setMaximumWaitTime(
+        CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY.toMillis());
     grpcClient = BROKER.newClientBuilder().preferRestOverGrpc(false).build();
     // gRPC calls are not retried and basic auth validates the demo user against secondary
     // storage, whose export can lag behind broker start on a loaded cluster — retry until
