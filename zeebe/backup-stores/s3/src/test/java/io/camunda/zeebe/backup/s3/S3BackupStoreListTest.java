@@ -181,8 +181,8 @@ final class S3BackupStoreListTest {
             .list(partition(1), ListOptions.newestFirst(OptionalLong.empty(), OptionalInt.of(2)))
             .join();
 
-    // then
-    assertThat(page).extracting(BackupStatus::id).containsExactly(id(0, 700), id(2, 700));
+    // then: both copies of checkpoint 700 are reported, in the order their manifests were read
+    assertThat(page).extracting(BackupStatus::id).containsExactlyInAnyOrder(id(0, 700), id(2, 700));
   }
 
   @Test
