@@ -29,10 +29,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Exploratory test for https://github.com/camunda/camunda/issues/57230.
@@ -63,11 +64,20 @@ import org.junit.jupiter.params.provider.ValueSource;
  * rather than silently.
  *
  * <p><b>Observed finding:</b> both content kinds succeed end-to-end (broker/engine and the
- * exporter-style re-serialization) up to depth ~900, and are rejected at the CLIENT layer from
- * depth ~999 onward — the Java client's own {@code ObjectMapper} hits Jackson's unconfigured
- * default {@code StreamWriteConstraints} (max depth 1000) while serializing the request, before any
- * network call. No depth in the tested range ever reaches a broker/engine or exporter-layer
- * failure, because the client-side guard rejects it first.
+ * exporter-style re-serialization) up to depth 995, and are rejected at the CLIENT layer from depth
+ * 997 onward — the Java client's own {@code ObjectMapper} hits Jackson's unconfigured default
+ * {@code StreamWriteConstraints} (max depth 1000) while serializing the request, before any network
+ * call. (Depth 996 instead gets a clean {@code 400 Bad Request} from the gateway's own Jackson
+ * request-body parsing hitting the same default limit.)
+ *
+ * <p><b>Important caveat:</b> the {@link Record#toJson()} exporter simulation here reports depth
+ * 995 as succeeding, but {@code AgentInstanceDeepNestingIT} (qa/acceptance-tests) — which reads the
+ * item back through a real Elasticsearch-backed search API instead of simulating it — shows that
+ * depth 995 actually breaks on read: Elasticsearch's own client library deserializes the search hit
+ * via a separate Jackson {@code ObjectMapper} with the same unrelaxed default depth limit, so the
+ * item is written but never becomes readable again ({@code 500 Internal Server Error}). This test's
+ * simulated exporter check is too permissive to catch that; see the other test for the confirmed
+ * write-succeeds-read-fails finding.
  */
 @ZeebeIntegration
 final class AgentInstanceDeepNestingTest {
@@ -85,8 +95,18 @@ final class AgentInstanceDeepNestingTest {
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
+  /**
+   * Nesting depths probed by both parameterized tests below, from safely shallow to well past the
+   * client-side rejection boundary, with fine-grained steps between 900 and 999 to pinpoint the
+   * exact depth at which the Java client starts rejecting the request.
+   */
+  private static IntStream nestingDepths() {
+    return IntStream.of(
+        10, 500, 900, 950, 990, 991, 992, 993, 994, 995, 996, 997, 998, 999, 1_000, 1_500);
+  }
+
   @ParameterizedTest(name = "objectContentNestingDepth={0}")
-  @ValueSource(ints = {10, 500, 900, 999, 1_000, 1_500})
+  @MethodSource("nestingDepths")
   void shouldRevealFailureLayerForDeeplyNestedObjectContent(final int depth) {
     // given
     final var target = createAgentServiceTaskInstance("nested-object-job-" + depth);
@@ -103,7 +123,7 @@ final class AgentInstanceDeepNestingTest {
   }
 
   @ParameterizedTest(name = "toolCallArgumentsNestingDepth={0}")
-  @ValueSource(ints = {10, 500, 900, 999, 1_000, 1_500})
+  @MethodSource("nestingDepths")
   void shouldRevealFailureLayerForDeeplyNestedToolCallArguments(final int depth) {
     // given
     final var target = createAgentServiceTaskInstance("nested-args-job-" + depth);

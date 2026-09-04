@@ -30,9 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Exploratory test for https://github.com/camunda/camunda/issues/57230.
@@ -56,13 +57,33 @@ import org.junit.jupiter.params.provider.ValueSource;
  * flagged) rather than asserted into a fixed pass/fail, since the whole point is to find where the
  * current, unguarded behavior breaks down.
  *
- * <p><b>Observed finding:</b> both content kinds succeed end-to-end — UPDATE accepted, committed,
- * and confirmed searchable via secondary storage — up to depth ~900, and are rejected at the CLIENT
- * layer from depth ~999 onward, before the request is even sent: the Java client's own {@code
- * ObjectMapper} hits Jackson's unconfigured default {@code StreamWriteConstraints} (max depth 1000)
- * while serializing the request body. No depth in the tested range was ever accepted by UPDATE but
- * then missing from secondary storage — the client-side guard consistently rejects deep payloads
- * before they can reach that failure mode.
+ * <p><b>Observed finding — three distinct boundaries, identical for both content kinds:</b>
+ *
+ * <ul>
+ *   <li><b>depth &le; 990</b> — succeeds end-to-end: UPDATE accepted, committed, and confirmed
+ *       searchable via secondary storage.
+ *   <li><b>depth 995</b> — UPDATE <em>succeeds</em> (the item is written), but the subsequent
+ *       search read fails with a {@code 500 Internal Server Error}: Elasticsearch's own client
+ *       library ({@code co.elastic.clients}) deserializes the search hit's {@code _source} via a
+ *       separate Jackson {@code ObjectMapper} that keeps Jackson's <em>unrelaxed default</em>
+ *       {@code StreamReadConstraints} (max depth 1000, exceeded at depth 1001 through the {@code
+ *       AgentHistoryEntity["content"]->...->["object"]} reference chain). The item is written but
+ *       becomes permanently unreadable via the search API — this is a real, reproduced instance of
+ *       the same write-succeeds-read-fails asymmetry that made #54335 dangerous for {@code
+ *       VariableRecord}, now confirmed for {@code AgentHistoryRecord} via real secondary storage.
+ *   <li><b>depth 996</b> — rejected at the gateway itself, before it ever reaches the engine:
+ *       Spring's Jackson HTTP message converter hits its own default {@code StreamReadConstraints}
+ *       (max depth 1000) parsing the incoming request body, surfacing as a clean {@code 400 Bad
+ *       Request}.
+ *   <li><b>depth &ge; 997</b> — rejected by the Java client itself, before any network call: the
+ *       client's own {@code ObjectMapper} hits Jackson's default {@code StreamWriteConstraints}
+ *       (max depth 1000) while serializing the request body.
+ * </ul>
+ *
+ * <p>Note the asymmetry with {@code AgentInstanceDeepNestingTest} (zeebe/qa/integration-tests):
+ * that test's {@code Record#toJson()} exporter simulation does <em>not</em> reproduce the depth-995
+ * failure above, because it never round-trips through Elasticsearch's own deserialization — the
+ * real bug only surfaces with an actual secondary-storage read, which only this test exercises.
  */
 @MultiDbTest
 @CompatibilityTest
@@ -72,14 +93,23 @@ public class AgentInstanceDeepNestingIT {
 
   private static CamundaClient camundaClient;
 
+  /**
+   * Nesting depths probed by both parameterized tests below, from safely shallow to well past the
+   * client-side rejection boundary, with fine-grained steps between 900 and 999 to pinpoint the
+   * exact depth at which the Java client starts rejecting the request.
+   */
+  private static IntStream nestingDepths() {
+    return IntStream.of(10, 500, 900, 950, 990, 993, 994, 995, 996, 997, 998, 999, 1_000, 1_500);
+  }
+
   @ParameterizedTest(name = "objectContentNestingDepth={0}")
-  @ValueSource(ints = {10, 500, 900, 999, 1_000, 1_500})
+  @MethodSource("nestingDepths")
   void shouldFlagIfDeeplyNestedObjectContentIsUnavailableViaSecondaryStorage(final int depth) {
     exploreNestingDepth(depth, "nested-object-" + depth, this::assistantItemWithObjectContent);
   }
 
   @ParameterizedTest(name = "toolCallArgumentsNestingDepth={0}")
-  @ValueSource(ints = {10, 500, 900, 999, 1_000, 1_500})
+  @MethodSource("nestingDepths")
   void shouldFlagIfDeeplyNestedToolCallArgumentsAreUnavailableViaSecondaryStorage(final int depth) {
     exploreNestingDepth(depth, "nested-args-" + depth, this::assistantItemWithToolCallArguments);
   }
