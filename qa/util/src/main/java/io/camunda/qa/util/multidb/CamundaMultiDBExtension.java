@@ -32,18 +32,27 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.jspecify.annotations.NonNull;
@@ -233,6 +242,8 @@ public class CamundaMultiDBExtension
       "test.integration.camunda.physical-tenant.elasticsearch.url";
   public static final String TEST_INTEGRATION_PHYSICAL_TENANT_OPENSEARCH_URL =
       "test.integration.camunda.physical-tenant.opensearch.url";
+  public static final String PROP_TEST_INTEGRATION_APP_STARTUP_TIMEOUT =
+      "test.integration.camunda.app.startup.timeout.seconds";
   public static final Duration TIMEOUT_DATA_AVAILABILITY =
       Optional.ofNullable(System.getProperty(PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
           .map(val -> Duration.ofSeconds(Long.parseLong(val)))
@@ -241,6 +252,10 @@ public class CamundaMultiDBExtension
   public static final String DEFAULT_OS_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_ADMIN_USER = "admin";
   public static final String DEFAULT_OS_ADMIN_PW = "yourStrongPassword123!";
+  public static final Duration TIMEOUT_APPLICATION_STARTUP =
+      Optional.ofNullable(System.getProperty(PROP_TEST_INTEGRATION_APP_STARTUP_TIMEOUT))
+          .map(val -> Duration.ofSeconds(Long.parseLong(val)))
+          .orElse(Duration.ofMinutes(5));
   public static final Duration TIMEOUT_DATABASE_EXPORTER_READINESS = Duration.ofMinutes(3);
   public static final Duration TIMEOUT_DATABASE_READINESS = Duration.ofMinutes(3);
   public static final String KEYCLOAK_REALM = "camunda";
@@ -1147,7 +1162,7 @@ public class CamundaMultiDBExtension
   private void manageApplicationUnderTest() {
     final var application = applicationUnderTest.application;
     closeables.add(application);
-    application.start();
+    startWithinTimeout(application);
     final var clusterCfg = application.unifiedConfig().getCluster();
     application.awaitCompleteTopology(
         clusterCfg.getSize(),
@@ -1175,6 +1190,79 @@ public class CamundaMultiDBExtension
             defaultScopeClient);
       }
     }
+  }
+
+  /**
+   * Starts the application on a separate thread so a startup that never returns fails the class
+   * instead of hanging the fork. Only the bootstrap call moves: every pool the application builds
+   * during startup is created by its own code with its own factory, so thread usage afterwards is
+   * unchanged. Also logs a threaddump when the timeout is hit, so a hang leaves evidence for later
+   * debugging & fixing tests.
+   *
+   * <p>A startup that outlives the timeout is handed to {@link
+   * #abandonStartup(TestStandaloneApplication, ExecutorService)}.
+   */
+  private void startWithinTimeout(final TestStandaloneApplication<?> application) {
+    final var starter =
+        Executors.newSingleThreadExecutor(r -> new Thread(r, "multidbext-app-startup"));
+    try {
+      starter
+          .submit(application::start)
+          .get(TIMEOUT_APPLICATION_STARTUP.toMillis(), TimeUnit.MILLISECONDS);
+    } catch (final TimeoutException e) {
+      LOGGER.error(
+          "The test application used for the MultiDbTest within CamundaMultiDBExtension did not "
+              + "start within {}. Thread dump follows.\n{}",
+          TIMEOUT_APPLICATION_STARTUP,
+          threadDump());
+      abandonStartup(application, starter);
+      throw new IllegalStateException(
+          "The test application used for the MultiDbTest within CamundaMultiDBExtension did not "
+              + "start within %s".formatted(TIMEOUT_APPLICATION_STARTUP),
+          e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      abandonStartup(application, starter);
+      throw new IllegalStateException(
+          "Interrupted while starting the test application used "
+              + "for the MultiDbTest within CamundaMultiDBExtension",
+          e);
+    } catch (final ExecutionException e) {
+      throw new IllegalStateException(
+          "The test application used for the MultiDbTest within "
+              + "CamundaMultiDBExtension failed to start",
+          e.getCause());
+    } finally {
+      // orderly, so a close queued by abandonStartup still runs once start() returns
+      starter.shutdown();
+    }
+  }
+
+  /**
+   * This will reuse the same executor service to trigger closing the application. As it is single
+   * threaded, will only execute once it returns from start() - if it ever does.
+   *
+   * <p>A startup that completes after its timeout would otherwise leave a broker nobody closes and
+   * may introduce weird test behaviors tint the same fork.
+   */
+  private void abandonStartup(
+      final TestStandaloneApplication<?> application, final ExecutorService starter) {
+    closeables.remove(application);
+    starter.execute(
+        () -> {
+          LOGGER.warn(
+              "The test application used for the MultiDbTest within CamundaMultiDBExtension "
+                  + "started after its timeout had already failed the class; closing it now so it "
+                  + "stops writing to the secondary storage and releases its ports.");
+          CloseHelper.quietClose(application);
+        });
+  }
+
+  private static String threadDump() {
+    final var bean = ManagementFactory.getThreadMXBean();
+    return Arrays.stream(bean.dumpAllThreads(true, true))
+        .map(ThreadInfo::toString)
+        .collect(Collectors.joining());
   }
 
   private ElasticsearchContainer setupElasticsearch() {
