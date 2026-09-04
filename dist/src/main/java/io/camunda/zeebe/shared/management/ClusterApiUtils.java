@@ -17,10 +17,8 @@ import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -64,7 +62,9 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncar
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Global;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Groups;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
@@ -243,39 +243,86 @@ final class ClusterApiUtils {
         .map(ClusterApiUtils::mapConfigurationChange);
   }
 
-  /**
-   * Maps a pending plan's operations to completed/pending, using the actual progress of whichever
-   * sub-config (global or physical tenant) the currently active phase targets: phases before {@code
-   * currentPhaseIndex} are fully done, phases after it are entirely untouched, but the active
-   * phase's own operations may be partially done already — activating a phase copies its operations
-   * into the target sub-config's {@link ClusterChangePlan}, which independently tracks which of
-   * those operations have completed so far.
-   */
   private static ConfigurationChange mapConfigurationChange(
+      final CurrentClusterConfiguration configuration, final PhasedChangePlan plan) {
+    final var progress = progressOf(configuration, plan);
+    return new ConfigurationChange()
+        .id(plan.id())
+        .status(ConfigurationChange.StatusEnum.IN_PROGRESS)
+        .startedAt(mapInstantToDateTime(plan.startedAt()))
+        .completed(
+            progress.completed().stream().map(CompletedOperationProgress::operation).toList())
+        .pending(progress.pending());
+  }
+
+  /**
+   * The pending phased plan, if any, that {@code GET /actuator/cluster} reports as {@code
+   * pendingChange} when {@code groupId} is the one group in view: the plan that touches that group,
+   * either directly or by being cluster-wide. {@link PhasedChangeState#initPlan} rejects
+   * overlapping scopes, so at most one pending plan can match.
+   */
+  private static Optional<PhasedChangePlan> pendingPlanFor(
+      final CurrentClusterConfiguration configuration, final String groupId) {
+    return configuration.phasedChangeState().pending().values().stream()
+        .filter(
+            plan ->
+                switch (plan.scope()) {
+                  case final Global ignored -> true;
+                  case final Groups groups -> groups.groupIds().contains(groupId);
+                })
+        .findFirst();
+  }
+
+  /**
+   * Maps a pending phased plan to the topology endpoint's {@code pendingChange}. The id is the
+   * phased plan's, the same id {@code POST /actuator/cluster/...} returned when the change was
+   * submitted, that {@code GET /actuator/cluster/changes/{id}} accepts, and that {@code lastChange}
+   * will report once the plan completes — never the id of the sub-config plan currently executing
+   * one of its phases, which comes from an unrelated counter.
+   */
+  private static TopologyChange mapPendingChange(
+      final CurrentClusterConfiguration configuration, final PhasedChangePlan plan) {
+    final var progress = progressOf(configuration, plan);
+    return new TopologyChange()
+        .id(plan.id())
+        .status(StatusEnum.IN_PROGRESS)
+        .startedAt(mapInstantToDateTime(plan.startedAt()))
+        .completed(
+            progress.completed().stream()
+                .map(op -> mapCompletedOperation(op.operation(), op.completedAt()))
+                .toList())
+        .pending(progress.pending());
+  }
+
+  /**
+   * Splits a pending plan's operations into completed/pending, using the actual progress of
+   * whichever sub-config (global or physical tenant) the currently active phase targets: phases
+   * before {@code currentPhaseIndex} are fully done, phases after it are entirely untouched, but
+   * the active phase's own operations may be partially done already — activating a phase copies its
+   * operations into the target sub-config's {@link ClusterChangePlan}, which independently tracks
+   * which of those operations have completed so far, and when.
+   */
+  private static ChangeProgress progressOf(
       final CurrentClusterConfiguration configuration, final PhasedChangePlan plan) {
     final var phases = plan.phases();
     final var completedPhases = phases.subList(0, plan.currentPhaseIndex());
     final var remainingPhases = phases.subList(plan.currentPhaseIndex(), phases.size());
 
-    final List<Operation> completed = new ArrayList<>(mapPhaseOperations(completedPhases));
+    final List<CompletedOperationProgress> completed = new ArrayList<>();
+    mapPhaseOperations(completedPhases)
+        .forEach(operation -> completed.add(new CompletedOperationProgress(operation, null)));
     final List<Operation> pending = new ArrayList<>();
     if (!remainingPhases.isEmpty()) {
       splitActivePhase(configuration, remainingPhases.get(0), completed, pending);
       pending.addAll(mapPhaseOperations(remainingPhases.subList(1, remainingPhases.size())));
     }
-
-    return new ConfigurationChange()
-        .id(plan.id())
-        .status(ConfigurationChange.StatusEnum.IN_PROGRESS)
-        .startedAt(mapInstantToDateTime(plan.startedAt()))
-        .completed(completed)
-        .pending(pending);
+    return new ChangeProgress(completed, pending);
   }
 
   private static void splitActivePhase(
       final CurrentClusterConfiguration configuration,
       final Phase activePhase,
-      final List<Operation> completed,
+      final List<CompletedOperationProgress> completed,
       final List<Operation> pending) {
     switch (activePhase) {
       case final GlobalPhase globalPhase ->
@@ -294,7 +341,7 @@ final class ClusterApiUtils {
       final CurrentClusterConfiguration configuration,
       final Map<String, ? extends List<? extends ClusterConfigurationChangeOperation>>
           groupOperations,
-      final List<Operation> completed,
+      final List<CompletedOperationProgress> completed,
       final List<Operation> pending) {
     groupOperations.forEach(
         (groupId, operations) ->
@@ -318,7 +365,7 @@ final class ClusterApiUtils {
       final String physicalTenantId,
       final List<? extends ClusterConfigurationChangeOperation> phaseOperations,
       final Optional<? extends ChangePlan> subConfigPlan,
-      final List<Operation> completed,
+      final List<CompletedOperationProgress> completed,
       final List<Operation> pending) {
     if (subConfigPlan.isEmpty()) {
       pending.addAll(mapOperations(physicalTenantId, phaseOperations));
@@ -328,7 +375,10 @@ final class ClusterApiUtils {
     plan.completedOperations()
         .forEach(
             completedOperation ->
-                completed.add(mapOperation(physicalTenantId, completedOperation.operation())));
+                completed.add(
+                    new CompletedOperationProgress(
+                        mapOperation(physicalTenantId, completedOperation.operation()),
+                        completedOperation.completedAt())));
     pending.addAll(mapOperations(physicalTenantId, plan.pendingOperations()));
   }
 
@@ -764,12 +814,14 @@ final class ClusterApiUtils {
    * <ul>
    *   <li>at most one group in view (an unscoped request against a single-tenant cluster, a request
    *       scoped to one physical tenant, or an uninitialized configuration with zero groups):
-   *       {@code version}, {@code lastChange} and {@code pendingChange} are populated from {@link
-   *       CurrentClusterConfiguration#toLegacy}'s cluster-wide projection — {@code version} is the
-   *       higher of the global and this one group's version, {@code lastChange} always reflects the
-   *       cluster-wide change history regardless of which group is in view, and {@code
-   *       pendingChange} prefers the global pending change and falls back to this group's own; only
-   *       {@code routing} is genuinely this one group's own state.
+   *       {@code version} is populated from {@link CurrentClusterConfiguration#toLegacy}'s
+   *       cluster-wide projection as the higher of the global and this one group's version; {@code
+   *       lastChange} and {@code pendingChange} both come from the {@link PhasedChangeState} so
+   *       that they share one id space with each other and with the change endpoints — {@code
+   *       lastChange} always reflects the cluster-wide change history regardless of which group is
+   *       in view, and {@code pendingChange} is the pending plan that touches this group, whether
+   *       cluster-wide or group-scoped; only {@code routing} is genuinely this one group's own
+   *       state.
    *   <li>more than one group in view (an unscoped request against a multi-tenant cluster): none of
    *       {@code version}, {@code lastChange}, {@code pendingChange} or {@code routing} are
    *       populated at the top level — reporting any one group's routing state there would
@@ -814,11 +866,19 @@ final class ClusterApiUtils {
               : groupsInView.keySet().iterator().next();
       final var legacy = configuration.toLegacy(groupId);
       response.version(legacy.version());
-      legacy.lastChange().ifPresent(change -> response.lastChange(mapCompletedChange(change)));
-      legacy.pendingChanges().ifPresent(change -> response.pendingChange(mapOngoingChange(change)));
       legacy
           .routingState()
           .ifPresent(routingState -> response.routing(mapRoutingState(routingState)));
+      // change ids must come from the phased change state, not the legacy projection: the legacy
+      // pendingChanges is whichever sub-config plan is executing the active phase, and sub-config
+      // plan ids are counted independently of phased plan ids (and of each other). See
+      // mapPendingChange.
+      configuration
+          .phasedChangeState()
+          .lastChange()
+          .ifPresent(change -> response.lastChange(mapCompletedChange(change)));
+      pendingPlanFor(configuration, groupId)
+          .ifPresent(plan -> response.pendingChange(mapPendingChange(configuration, plan)));
     }
 
     if (physicalTenant == null && singleTenantShape) {
@@ -931,7 +991,7 @@ final class ClusterApiUtils {
   }
 
   private static io.camunda.zeebe.management.cluster.CompletedChange mapCompletedChange(
-      final CompletedChange completedChange) {
+      final CompletedPhasedChange completedChange) {
     return new io.camunda.zeebe.management.cluster.CompletedChange()
         .id(completedChange.id())
         .status(mapCompletedChangeStatus(completedChange.status()))
@@ -939,36 +999,13 @@ final class ClusterApiUtils {
         .completedAt(mapInstantToDateTime(completedChange.completedAt()));
   }
 
-  private static TopologyChange mapOngoingChange(final ChangePlan changePlan) {
-    return new TopologyChange()
-        .id(changePlan.id())
-        .status(mapChangeStatus(changePlan.status()))
-        .pending(mapOperations(changePlan.pendingOperations()))
-        .completed(mapCompletedOperations(changePlan.completedOperations()));
-  }
-
   private static io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum
-      mapCompletedChangeStatus(final Status status) {
+      mapCompletedChangeStatus(final PhasedChangePlanStatus status) {
     return switch (status) {
       case COMPLETED -> io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum.COMPLETED;
       case FAILED -> io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum.FAILED;
       case CANCELLED -> io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum.CANCELLED;
-      case IN_PROGRESS -> throw new IllegalStateException("Completed change cannot be in progress");
     };
-  }
-
-  private static StatusEnum mapChangeStatus(final Status status) {
-    return switch (status) {
-      case IN_PROGRESS -> StatusEnum.IN_PROGRESS;
-      case COMPLETED -> StatusEnum.COMPLETED;
-      case FAILED -> StatusEnum.FAILED;
-      case CANCELLED -> StatusEnum.CANCELLED;
-    };
-  }
-
-  private static List<TopologyChangeCompletedInner> mapCompletedOperations(
-      final List<CompletedOperation> completedOperations) {
-    return completedOperations.stream().map(ClusterApiUtils::mapCompletedOperation).toList();
   }
 
   static TopologyChangeCompletedInner mapCompletedOperation(final CompletedOperation operation) {
@@ -1129,4 +1166,15 @@ final class ClusterApiUtils {
               .status(ExporterStatus.StatusEnum.CONFIG_NOT_FOUND);
     };
   }
+
+  /** A pending plan's operations, split by whether they have run yet. See {@link #progressOf}. */
+  private record ChangeProgress(
+      List<CompletedOperationProgress> completed, List<Operation> pending) {}
+
+  /**
+   * A completed operation and when it completed. {@code completedAt} is only known for operations
+   * of the active phase, whose sub-config plan records completion times; a phase that has been
+   * advanced past leaves no such record, so its operations are reported without one.
+   */
+  private record CompletedOperationProgress(Operation operation, @Nullable Instant completedAt) {}
 }
