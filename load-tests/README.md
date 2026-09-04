@@ -543,3 +543,18 @@ One use case for manually creating load tests is running them against a SaaS clu
 As a precondition for such tests, you need to create a cluster in SaaS (the stage doesn't matter, may it be **DEV**, **INT,** or **PROD**). Additionally, we need client credentials deployed with the SaaS load tests, such that the starters and workers can connect to the right cluster.
 
 For further details on this topic, follow the [README](setup/README.md#load-testing-camunda-saas) in our `load-tests/setup` directory.
+
+## Extending Load Tests
+
+> [!Note]
+>
+> Builds on the endurance/stress variants and release/weekly/daily schedule described in [Test Scenarios](#test-scenarios) above; read that first if these terms are unfamiliar.
+
+When a new feature lands, work through these questions:
+
+- **What should this new test or variant achieve?** Name the goal, the specific reliability or performance property to validate, before deciding on infrastructure. This also decides which test type to run: an endurance run (release/weekly) for reliability under sustained load, or a stress run (daily) for performance under short-burst load; pick both if it's unclear which applies. See the [reliability testing documentation](../docs/testing/reliability-testing.md) for the full definitions.
+- **Is the change foundational or functional?** This follows from what the change touches, not a judgment call:
+  - **Foundational**: the feature changes what we need to run against, not just what we run through it. Examples: new secondary-storage support, different low-level storage mechanics. This likely means changing the [Helm setup](setup/README.md) and adding a new variant, covered by both an endurance and a stress run.
+  - **Functional**: the feature is exercised through the existing engine/API surface. Check whether it's already covered by extending the load tester's process models or payloads; if not, add a new workload to the [load tester](load-tester/README.md), still using the existing variant infrastructure. Only do this when it is worth a dedicated test: a new feature not yet covered, and something customers or users commonly rely on. Reliability testing is non-functional testing, see the [reliability testing documentation](../docs/testing/reliability-testing.md), so we do not add a dedicated test for every connector or task type. For example, adding a new task type or connector to the realistic workload's process model is a functional extension, not a new variant.
+- **Is it automated?** Wire the new coverage into the existing release/weekly/daily schedule rather than validating it manually once; a one-off run catches today's bug but not next release's regression.
+
