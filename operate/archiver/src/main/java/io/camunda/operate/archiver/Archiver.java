@@ -92,7 +92,7 @@ public class Archiver {
 
       final boolean archiveById = operateProperties.getArchiver().isArchiveByIdEnabled();
       if (archiveById) {
-        LOGGER.info("Archive-by-ID mode enabled (opt-in).");
+        LOGGER.info("Archive-by-ID mode enabled.");
       }
 
       final int effectiveThreadsCount = Math.min(threadsCount, partitionIds.size());
