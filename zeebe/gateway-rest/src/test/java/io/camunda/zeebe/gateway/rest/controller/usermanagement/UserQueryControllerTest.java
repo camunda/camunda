@@ -16,6 +16,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.UserFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserQuery;
@@ -192,6 +194,52 @@ public class UserQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userServices).search(eq(new UserQuery.Builder().build()), any());
+  }
+
+  @Test
+  void shouldSearchUsersWithOrOperator() {
+    // given
+    when(userServices.search(any(UserQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+
+    final var orFilters =
+        List.of(
+            new UserFilter.Builder().nameOperations(Operation.eq("Name A")).build(),
+            new UserFilter.Builder()
+                .nameOperations(Operation.eq("Name B"))
+                .emailOperations(Operation.eq("b@example.com"))
+                .build());
+
+    final var expectedFilter =
+        new UserFilter.Builder().usernameOperations(Operation.eq("user-top"));
+    orFilters.forEach(expectedFilter::addOrOperation);
+
+    // when / then
+    webClient
+        .post()
+        .uri(USERS_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "username": "user-top",
+                "$or": [
+                  { "name": "Name A" },
+                  { "name": "Name B", "email": "b@example.com" }
+                ]
+              }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(userServices)
+        .search(eq(new UserQuery.Builder().filter(expectedFilter.build()).build()), any());
   }
 
   @Test

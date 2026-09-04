@@ -77,12 +77,14 @@ const DropdownSearch = <Item extends Record<string, unknown>>({
   // text, so it's rendered directly rather than accumulated/re-filtered here.
   const filteredItems: ItemWithTitleAndSubTitle<Item>[] = useMemo(
     () =>
-      items.map((item) => ({
-        ...item,
-        title: itemTitle(item),
-        subTitle: itemSubTitle ? itemSubTitle(item) : undefined,
-      })),
-    [items, itemTitle, itemSubTitle],
+      items
+        .map((item) => ({
+          ...item,
+          title: itemTitle(item),
+          subTitle: itemSubTitle ? itemSubTitle(item) : undefined,
+        }))
+        .filter(filter),
+    [items, itemTitle, itemSubTitle, filter],
   );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

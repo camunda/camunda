@@ -31,6 +31,7 @@ import io.camunda.search.filter.UserFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.UserSort;
+import io.camunda.zeebe.test.util.Strings;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Arrays;
 import java.util.List;
@@ -178,6 +179,33 @@ public class UserSpecificFilterIT {
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst().userKey()).isEqualTo(1337L);
+  }
+
+  @Test
+  public void shouldFindUsersWithOrFilters() {
+    final var matchingUsername = Strings.newRandomValidUsername();
+    final var otherMatchingUsername = Strings.newRandomValidUsername();
+    final var nonMatchingUsername = Strings.newRandomValidUsername();
+    createAndSaveUser(
+        rdbmsWriters, UserFixtures.createRandomized(b -> b.username(matchingUsername)));
+    createAndSaveUser(
+        rdbmsWriters, UserFixtures.createRandomized(b -> b.username(otherMatchingUsername)));
+    createAndSaveUser(
+        rdbmsWriters, UserFixtures.createRandomized(b -> b.username(nonMatchingUsername)));
+
+    final var searchResult =
+        userReader.search(
+            new UserQuery(
+                new UserFilter.Builder()
+                    .orFilters(
+                        List.of(
+                            new UserFilter.Builder().usernames(matchingUsername).build(),
+                            new UserFilter.Builder().usernames(otherMatchingUsername).build()))
+                    .build(),
+                UserSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
   }
 
   static List<UserFilter> shouldFindWithSpecificFilterParameters() {

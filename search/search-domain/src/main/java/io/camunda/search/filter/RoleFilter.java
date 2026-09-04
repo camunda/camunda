@@ -20,14 +20,15 @@ import java.util.Set;
 import java.util.function.Function;
 
 public record RoleFilter(
-    String roleId,
+    List<Operation<String>> roleIdOperations,
     List<Operation<String>> nameOperations,
     String description,
     Set<String> memberIds,
     Set<String> roleIds,
     EntityType childMemberType,
     String tenantId,
-    Map<EntityType, Set<String>> memberIdsByType)
+    Map<EntityType, Set<String>> memberIdsByType,
+    List<RoleFilter> orFilters)
     implements FilterBase {
 
   public static RoleFilter of(
@@ -37,18 +38,19 @@ public record RoleFilter(
 
   public Builder toBuilder() {
     return new Builder()
-        .roleId(roleId)
+        .roleIdOperations(roleIdOperations)
         .nameOperations(nameOperations)
         .description(description)
         .memberIds(memberIds)
         .roleIds(roleIds)
         .childMemberType(childMemberType)
         .tenantId(tenantId)
-        .memberIdsByType(memberIdsByType);
+        .memberIdsByType(memberIdsByType)
+        .orFilters(orFilters);
   }
 
   public static final class Builder implements ObjectBuilder<RoleFilter> {
-    private String roleId;
+    private List<Operation<String>> roleIdOperations;
     private List<Operation<String>> nameOperations;
     private String description;
     private Set<String> memberIds;
@@ -56,10 +58,27 @@ public record RoleFilter(
     private EntityType childMemberType;
     private String tenantId;
     private Map<EntityType, Set<String>> memberIdsByType;
+    private List<RoleFilter> orFilters;
 
-    public Builder roleId(final String value) {
-      roleId = value;
+    public Builder roleIdOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        roleIdOperations = addValuesToList(roleIdOperations, operations);
+      }
       return this;
+    }
+
+    public Builder roleId(final String value, final String... values) {
+      final var vals = FilterUtil.mapDefaultToOperation(value, values);
+      if (vals != null) {
+        return roleIdOperations(vals);
+      }
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder roleIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return roleIdOperations(collectValues(operation, operations));
     }
 
     public Builder nameOperations(final List<Operation<String>> operations) {
@@ -125,20 +144,34 @@ public record RoleFilter(
       return this;
     }
 
+    public Builder addOrOperation(final RoleFilter orOperation) {
+      if (orFilters == null) {
+        orFilters = new ArrayList<>();
+      }
+      orFilters.add(orOperation);
+      return this;
+    }
+
+    public Builder orFilters(final List<RoleFilter> orFilters) {
+      this.orFilters = orFilters;
+      return this;
+    }
+
     @Override
     public RoleFilter build() {
       if (memberIds != null && childMemberType == null) {
         throw new IllegalArgumentException("If memberIds is set, childMemberType must be set too");
       }
       return new RoleFilter(
-          roleId,
+          roleIdOperations,
           nameOperations,
           description,
           memberIds,
           roleIds,
           childMemberType,
           tenantId,
-          memberIdsByType);
+          memberIdsByType,
+          orFilters);
     }
   }
 }
