@@ -330,7 +330,6 @@ Example values from a past release:
 | `release_tag`       | `8.7.17`        | The release tag to use for the test |
 | `benchmark_name`    | `release-8-7-x` | The name of the load test           |
 
-
 > [!NOTE]
 >
 > Since 8.8+ Optimize is build together with the main Camunda OC release, the `optimize-tag` input needs to be filled with the corresponding value.
@@ -410,7 +409,7 @@ It is as easy as it sounds; we can label an existing PR with the [**benchmark**]
 >
 > This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
 
-Load tests started by labeling a PR will always run a stress test (no endurance test). Running Camunda applications will be profiled after a warm up period, and metrics will be collected during the subsequent steady-state period. Afterwards the results will be shared via a comment on the PR. 
+Load tests started by labeling a PR will always run a stress test (no endurance test). Running Camunda applications will be profiled after a warm up period, and metrics will be collected during the subsequent steady-state period. Afterwards the results will be shared via a comment on the PR.
 
 - **Profile path:** after the 15-minute warmup, async-profiler samples each pod and the flamegraph comment is posted as soon as artifacts upload. No dependency on the metrics path.
 - **Metrics path:**
