@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "24.0.0",
+    "@types/node": "24.0.15",
     "@vercel/ncc": "0.38.4",
     "tsx": "4.19.4",
     "typescript": "5.7.3"
