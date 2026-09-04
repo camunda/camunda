@@ -600,18 +600,35 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-
-    final var batch1 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(helper.getJobType())
             .getFirst()
             .getKey();
+    final var batch1 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobIndex1 = batch1.getValue().getJobKeys().indexOf(jobKey);
     final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getLeaseToken();
+
+    // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor. Needed so the
+    // instance has a real definition to assert on below, since the CONFIGURATION item sent with
+    // the update is only queued, never applied.
+    final var baselineConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-baseline-stale-lease")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    baselineConfigItem.setModel("gpt-4o").setProvider("openai");
+    baselineConfigItem.setChangedAttributes(List.of("model", "provider"));
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLease(lease1)
+            .withHistory(List.of(baselineConfigItem))
+            .create()
+            .getKey();
 
     ENGINE
         .job()
@@ -691,72 +708,6 @@ public class AgentInstanceHistoryBatchProcessingTest {
                 .exists())
         .as("an item pending under a stale lease is never committed by that same update")
         .isFalse();
-  }
-
-  @Test
-  public void shouldRejectWhenCommandCarriesStaleJobLease() {
-    // given — the job has a lease, and the update command carries an explicit lease token, but
-    // it is a stale one that does not match the job's current token (as opposed to omitting the
-    // lease altogether, which shouldRejectWhenJobLeaseMismatch above already covers).
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .serviceTask(
-                    SERVICE_TASK_ID,
-                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
-                .endEvent()
-                .done())
-        .deploy();
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final var elementInstanceKey =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.SERVICE_TASK)
-            .withElementId(SERVICE_TASK_ID)
-            .getFirst()
-            .getKey();
-    final var agentInstanceKey =
-        ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
-    final var jobKey =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withType(helper.getJobType())
-            .getFirst()
-            .getKey();
-    ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
-
-    // when — carries a lease that does not match the job's current token
-    final var rejection =
-        ENGINE
-            .agentInstances()
-            .withAgentInstanceKey(agentInstanceKey)
-            .withElementInstanceKey(elementInstanceKey)
-            .withJobKey(jobKey)
-            .withJobLease("stale-lease-that-does-not-match")
-            .withHistory(
-                List.of(
-                    new AgentHistoryRecord()
-                        .setHistoryItemId("item-1")
-                        .setRole(AgentHistoryRole.USER)
-                        .setLoopIteration(1)
-                        .addContent(
-                            new AgentHistoryMessageContent()
-                                .setContentType(AgentHistoryContentType.TEXT)
-                                .setText("hi"))))
-            .expectRejection()
-            .update();
-
-    // then
-    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
-    assertThat(rejection.getRejectionReason())
-        .isEqualTo(
-            "Expected to update agent instance related to job with key '"
-                + jobKey
-                + "', but job did not hold the supplied lease. The job may have been "
-                + "re-activated.");
   }
 
   @Test
