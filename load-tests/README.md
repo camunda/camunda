@@ -245,7 +245,7 @@ Load tests are triggered on different occasions (per release, weekly, daily, or 
 
 ### Release load tests (endurance test)
 
-For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous endurance test with a realistic workload. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn), which triggers the [Camunda release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-release-load-test.yaml).
+For every [supported/maintained](https://github.com/camunda/company-handbook/blob/main/departments/products/engineering/processes-technical-processes-and-standards/standard-and-extended-support-periods/index.md) version, we run a continuous endurance test with a realistic workload. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn), which triggers the [Camunda release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-release-load-test.yaml).
 
 **Goal:** Validating the long-term reliability of our releases and detecting earlier issues, especially with alpha versions and updates.
 
