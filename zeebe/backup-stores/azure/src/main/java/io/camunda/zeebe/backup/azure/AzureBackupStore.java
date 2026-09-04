@@ -23,6 +23,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.ContainerDoesNotExist;
 import io.camunda.zeebe.backup.common.BackupImpl;
@@ -32,7 +33,6 @@ import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -206,9 +206,13 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
+  public CompletableFuture<List<BackupStatus>> list(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
     return CompletableFuture.supplyAsync(
-        () -> manifestManager.listManifests(wildcard).stream().map(Manifest::toStatus).toList(),
+        () ->
+            manifestManager.listManifests(wildcard, options).stream()
+                .map(Manifest::toStatus)
+                .toList(),
         executor);
   }
 
