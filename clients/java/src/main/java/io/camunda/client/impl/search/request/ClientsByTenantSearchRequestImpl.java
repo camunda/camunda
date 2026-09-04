@@ -20,7 +20,6 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.clientS
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.filter.ClientFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.ClientsByTenantSearchRequest;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
@@ -75,18 +74,6 @@ public class ClientsByTenantSearchRequestImpl
         SearchResponseMapper::toTenantClientsResponse,
         result);
     return result;
-  }
-
-  @Override
-  public ClientsByTenantSearchRequest filter(final ClientFilter value) {
-    // This command doesn't support filtering
-    throw new UnsupportedOperationException("This command does not support filtering");
-  }
-
-  @Override
-  public ClientsByTenantSearchRequest filter(final Consumer<ClientFilter> fn) {
-    // This command doesn't support filtering
-    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override

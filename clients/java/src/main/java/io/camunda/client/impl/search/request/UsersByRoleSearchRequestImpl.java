@@ -20,7 +20,6 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.roleUse
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.filter.RoleUserFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
@@ -75,18 +74,6 @@ public class UsersByRoleSearchRequestImpl
         SearchResponseMapper::toRoleUsersResponse,
         result);
     return result;
-  }
-
-  @Override
-  public UsersByRoleSearchRequest filter(final RoleUserFilter value) {
-    // This command doesn't support filtering
-    throw new UnsupportedOperationException("This command does not support filtering");
-  }
-
-  @Override
-  public UsersByRoleSearchRequest filter(final Consumer<RoleUserFilter> fn) {
-    // This command doesn't support filtering
-    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override

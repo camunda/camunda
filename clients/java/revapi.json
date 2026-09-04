@@ -80,6 +80,54 @@
           "old": "method SELF io.camunda.client.api.search.request.TypedPageableRequest<SELF extends io.camunda.client.api.search.request.TypedPageableRequest<SELF>>::page(io.camunda.client.api.search.request.SearchRequestPage)",
           "justification": "The page() method signature changed to accept typed pagination models (via SearchPagination<P>) instead of the legacy SearchRequestPage. The method is now available through TypedSearchRequest with type-safe pagination model parameters (AnyPage, OffsetPage, CursorForwardPage, etc.)."
         },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method SELF io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF extends io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF>>::filter(F) @ io.camunda.client.api.search.request.ClientsByGroupSearchRequest",
+          "justification": "The membership / nested sub-collection search request no longer extends TypedFilterableRequest because its REST contract does not expose a filter property (the endpoint is scoped by a path parameter, so filtering never applied). The removed filter(...) methods previously threw UnsupportedOperationException at runtime and now fail at compile time instead."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method SELF io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF extends io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF>>::filter(F) @ io.camunda.client.api.search.request.ClientsByRoleSearchRequest",
+          "justification": "The membership / nested sub-collection search request no longer extends TypedFilterableRequest because its REST contract does not expose a filter property (the endpoint is scoped by a path parameter, so filtering never applied). The removed filter(...) methods previously threw UnsupportedOperationException at runtime and now fail at compile time instead."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method SELF io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF extends io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF>>::filter(F) @ io.camunda.client.api.search.request.ClientsByTenantSearchRequest",
+          "justification": "The membership / nested sub-collection search request no longer extends TypedFilterableRequest because its REST contract does not expose a filter property (the endpoint is scoped by a path parameter, so filtering never applied). The removed filter(...) methods previously threw UnsupportedOperationException at runtime and now fail at compile time instead."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method SELF io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF extends io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF>>::filter(F) @ io.camunda.client.api.search.request.GroupsByRoleSearchRequest",
+          "justification": "The membership / nested sub-collection search request no longer extends TypedFilterableRequest because its REST contract does not expose a filter property (the endpoint is scoped by a path parameter, so filtering never applied). The removed filter(...) methods previously threw UnsupportedOperationException at runtime and now fail at compile time instead."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method SELF io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF extends io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF>>::filter(F) @ io.camunda.client.api.search.request.GroupsByTenantSearchRequest",
+          "justification": "The membership / nested sub-collection search request no longer extends TypedFilterableRequest because its REST contract does not expose a filter property (the endpoint is scoped by a path parameter, so filtering never applied). The removed filter(...) methods previously threw UnsupportedOperationException at runtime and now fail at compile time instead."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method SELF io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF extends io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF>>::filter(F) @ io.camunda.client.api.search.request.UsersByGroupSearchRequest",
+          "justification": "The membership / nested sub-collection search request no longer extends TypedFilterableRequest because its REST contract does not expose a filter property (the endpoint is scoped by a path parameter, so filtering never applied). The removed filter(...) methods previously threw UnsupportedOperationException at runtime and now fail at compile time instead."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method SELF io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF extends io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF>>::filter(F) @ io.camunda.client.api.search.request.UsersByRoleSearchRequest",
+          "justification": "The membership / nested sub-collection search request no longer extends TypedFilterableRequest because its REST contract does not expose a filter property (the endpoint is scoped by a path parameter, so filtering never applied). The removed filter(...) methods previously threw UnsupportedOperationException at runtime and now fail at compile time instead."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method SELF io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF extends io.camunda.client.api.search.request.TypedFilterableRequest<F, SELF>>::filter(F) @ io.camunda.client.api.search.request.UsersByTenantSearchRequest",
+          "justification": "The membership / nested sub-collection search request no longer extends TypedFilterableRequest because its REST contract does not expose a filter property (the endpoint is scoped by a path parameter, so filtering never applied). The removed filter(...) methods previously threw UnsupportedOperationException at runtime and now fail at compile time instead."
+        },
 
         {
           "ignore": true,

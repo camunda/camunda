@@ -20,7 +20,6 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.groupUs
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.filter.GroupUserFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.UsersByGroupSearchRequest;
@@ -75,18 +74,6 @@ public class UsersByGroupSearchRequestImpl
         SearchResponseMapper::toGroupUsersResponse,
         result);
     return result;
-  }
-
-  @Override
-  public UsersByGroupSearchRequest filter(final GroupUserFilter value) {
-    // This command doesn't support filtering
-    throw new UnsupportedOperationException("This command does not support filtering");
-  }
-
-  @Override
-  public UsersByGroupSearchRequest filter(final Consumer<GroupUserFilter> fn) {
-    // This command doesn't support filtering
-    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override

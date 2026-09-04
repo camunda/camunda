@@ -20,7 +20,6 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.tenantG
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.filter.TenantGroupFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
@@ -75,18 +74,6 @@ public class GroupsByTenantSearchRequestImpl
         SearchResponseMapper::toTenantGroupsResponse,
         result);
     return result;
-  }
-
-  @Override
-  public GroupsByTenantSearchRequest filter(final TenantGroupFilter value) {
-    // this command does not support filtering
-    throw new UnsupportedOperationException("This command does not support filtering");
-  }
-
-  @Override
-  public GroupsByTenantSearchRequest filter(final Consumer<TenantGroupFilter> fn) {
-    // this command does not support filtering
-    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override

@@ -15,11 +15,11 @@
  */
 package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.filter.GroupUserFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.sort.GroupUserSort;
 
 public interface UsersByGroupSearchRequest
-    extends TypedSearchRequest<GroupUserFilter, GroupUserSort, AnyPage, UsersByGroupSearchRequest>,
+    extends TypedSortableRequest<GroupUserSort, UsersByGroupSearchRequest>,
+        TypedPageableRequest<AnyPage, UsersByGroupSearchRequest>,
         FinalSearchRequestStep<GroupUser> {}

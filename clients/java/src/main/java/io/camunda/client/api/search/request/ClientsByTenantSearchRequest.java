@@ -15,11 +15,11 @@
  */
 package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.filter.ClientFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.sort.ClientSort;
 
 public interface ClientsByTenantSearchRequest
-    extends TypedSearchRequest<ClientFilter, ClientSort, AnyPage, ClientsByTenantSearchRequest>,
+    extends TypedSortableRequest<ClientSort, ClientsByTenantSearchRequest>,
+        TypedPageableRequest<AnyPage, ClientsByTenantSearchRequest>,
         FinalSearchRequestStep<Client> {}
