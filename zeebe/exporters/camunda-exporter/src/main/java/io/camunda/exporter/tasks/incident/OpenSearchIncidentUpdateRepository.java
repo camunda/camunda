@@ -270,7 +270,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   }
 
   private CompletableFuture<List<String>> bulkUpdate(
-      final Stream<DocumentUpdate> docUpdatesStream, final Refresh refresh) {
+      final Stream<? extends IncidentTaskUpdate> docUpdatesStream, final Refresh refresh) {
     final var updates = docUpdatesStream.map(this::createUpdateOperation).toList();
     if (updates.isEmpty()) {
       return CompletableFuture.completedFuture(List.of());
@@ -369,7 +369,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
     return QueryBuilders.bool().must(piKeyQ, typeQ, stateQ).build().toQuery();
   }
 
-  private BulkOperation createUpdateOperation(final DocumentUpdate update) {
+  private BulkOperation createUpdateOperation(final IncidentTaskUpdate update) {
     return new UpdateOperation.Builder<>()
         .index(update.index())
         .id(update.id())
