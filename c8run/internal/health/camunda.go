@@ -65,13 +65,13 @@ func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8
 			if err := c8.OpenBrowser(ctx, settings.StartupUrl); err != nil {
 				log.Err(err).Msg("Failed to open browser")
 			}
+			if err := markSeenStartup(settings.StartupMarkerPath); err != nil {
+				log.Warn().Err(err).Str("path", settings.StartupMarkerPath).Msg("Failed to persist quickstart marker")
+			}
 		}
 		if err := printStatusFunc(settings); err != nil {
 			log.Err(err).Msg("Failed to print status")
 			return err
-		}
-		if err := markSeenStartup(settings.StartupMarkerPath); err != nil {
-			log.Warn().Err(err).Str("path", settings.StartupMarkerPath).Msg("Failed to persist quickstart marker")
 		}
 		return nil
 	}
