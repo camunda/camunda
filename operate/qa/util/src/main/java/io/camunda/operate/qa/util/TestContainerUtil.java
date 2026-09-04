@@ -364,7 +364,7 @@ public class TestContainerUtil {
         new GenericContainer<>(String.format("%s:%s", dockerImageName, version))
             .withExposedPorts(8080)
             .withNetwork(testContext.getNetwork())
-            .withExtraHost("host.testcontainer.internal", "host-gateway")
+            .withExtraHost("host.testcontainers.internal", "host-gateway")
             .withCopyFileToContainer(
                 MountableFile.forHostPath(createConfigurationFile(testContext), 0775),
                 "/usr/local/operate/config/application.properties")
