@@ -25,47 +25,28 @@ import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import net.jodah.concurrentunit.ConcurrentTestCase;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import org.agrona.CloseHelper;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /** Netty unicast service test. */
-public class NettyUnicastServiceTest extends ConcurrentTestCase {
-  ManagedUnicastService service1;
-  ManagedUnicastService service2;
-  Address address1;
-  Address address2;
+final class NettyUnicastServiceTest {
+
+  private static final Duration TIMEOUT = Duration.ofSeconds(5);
+
   @AutoClose private final MeterRegistry registry = new SimpleMeterRegistry();
 
-  @Test
-  public void testUnicast() throws Exception {
-    service1.addListener(
-        "test",
-        (address, payload) -> {
-          assertThat(address).isEqualTo(address2);
-          assertThat(payload).containsExactly("Hello world!".getBytes());
-          resume();
-        });
+  private ManagedUnicastService service1;
+  private ManagedUnicastService service2;
+  private Address address1;
+  private Address address2;
 
-    service2.unicast(address1, "test", "Hello world!".getBytes());
-    await(5000);
-  }
-
-  @Test
-  public void shouldNotThrowExceptionWhenServiceStopped() {
-    // given
-    service2.stop();
-
-    // when - then
-    assertThatCode(() -> service2.unicast(address1, "test", "Hello world!".getBytes()))
-        .doesNotThrowAnyException();
-  }
-
-  @Before
-  public void setUp() throws Exception {
+  @BeforeEach
+  void setUp() {
     address1 = Address.from("127.0.0.1", SocketUtil.getNextAddress().getPort());
     address2 = Address.from("127.0.0.1", SocketUtil.getNextAddress().getPort());
 
@@ -79,8 +60,38 @@ public class NettyUnicastServiceTest extends ConcurrentTestCase {
     service2.start().join();
   }
 
-  @After
-  public void tearDown() throws Exception {
+  @AfterEach
+  void tearDown() {
     CloseHelper.quietCloseAll(() -> service1.stop().join(), () -> service2.stop().join());
+  }
+
+  @Test
+  void shouldDeliverUnicastMessageToItsListener() {
+    // given
+    final var sender = new CompletableFuture<Address>();
+    final var received = new CompletableFuture<byte[]>();
+    service1.addListener(
+        "test",
+        (address, payload) -> {
+          sender.complete(address);
+          received.complete(payload);
+        });
+
+    // when
+    service2.unicast(address1, "test", "Hello world!".getBytes());
+
+    // then - the sender is the peer's advertised address, not its ephemeral source port
+    assertThat(received).succeedsWithin(TIMEOUT).isEqualTo("Hello world!".getBytes());
+    assertThat(sender).succeedsWithin(TIMEOUT).isEqualTo(address2);
+  }
+
+  @Test
+  void shouldNotThrowExceptionWhenServiceStopped() {
+    // given
+    service2.stop();
+
+    // when - then
+    assertThatCode(() -> service2.unicast(address1, "test", "Hello world!".getBytes()))
+        .doesNotThrowAnyException();
   }
 }
