@@ -10,8 +10,15 @@ package io.camunda.db.rdbms.read.domain;
 import io.camunda.search.sort.SortOrder;
 import java.util.List;
 
+/**
+ * @param searchBefore whether the page is seeked backwards from a {@code before} cursor. The seek
+ *     has to walk away from the cursor, so the mapper renders its ORDER BY reversed (see {@code
+ *     Commons.orderBy}) — otherwise LIMIT would cut the first rows of the whole filtered range
+ *     instead of the rows adjacent to the cursor. The reader restores the display order afterwards.
+ */
 public record DbQueryPage(
-    Integer size, Integer from, Integer maxTotalHits, List<KeySetPagination> keySetPagination) {
+    Integer size, Integer from, Integer maxTotalHits, List<KeySetPagination> keySetPagination,
+    boolean searchBefore) {
 
   public record KeySetPagination(List<KeySetPaginationFieldEntry> entries) {}
 

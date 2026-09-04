@@ -143,7 +143,9 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
             .toList();
 
     return buildSearchQueryResult(
-        entities.size(), entities, convertSort(JOB_TYPE_STATS_FIXED_SORT));
+        entities.size(),
+        restoreDisplayOrder(dbPage, entities),
+        convertSort(JOB_TYPE_STATS_FIXED_SORT));
   }
 
   @Override
@@ -181,7 +183,8 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
                             ofNullable(result.failedCount()).orElse(0L), result.lastFailedAt())))
             .toList();
 
-    return workerStatsReader.buildSearchQueryResult(entities.size(), entities, dbSort);
+    return workerStatsReader.buildSearchQueryResult(
+        entities.size(), workerStatsReader.restoreDisplayOrder(dbPage, entities), dbSort);
   }
 
   @Override
@@ -221,7 +224,8 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
                             ofNullable(result.failedCount()).orElse(0L), result.lastFailedAt())))
             .toList();
 
-    return timeSeriesStatsReader.buildSearchQueryResult(entities.size(), entities, dbSort);
+    return timeSeriesStatsReader.buildSearchQueryResult(
+        entities.size(), timeSeriesStatsReader.restoreDisplayOrder(dbPage, entities), dbSort);
   }
 
   @Override
@@ -257,7 +261,8 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
                         ofNullable(result.workers()).orElse(0)))
             .toList();
 
-    return errorStatsReader.buildSearchQueryResult(entities.size(), entities, dbSort);
+    return errorStatsReader.buildSearchQueryResult(
+        entities.size(), errorStatsReader.restoreDisplayOrder(dbPage, entities), dbSort);
   }
 
   /** Inner reader for worker statistics to provide typed AbstractEntityReader methods. */
