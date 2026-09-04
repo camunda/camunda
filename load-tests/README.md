@@ -563,7 +563,7 @@ For further details on this topic, follow the [README](setup/README.md#load-test
 
 > [!Note]
 >
-> Builds on the endurance/stress variants and release/weekly/daily schedule described in [Test Scenarios](#test-scenarios) above; read that first if these terms are unfamiliar. See the [Reliability coverage Miro board](https://miro.com/app/board/uXjVJRlgaXU=/) for a visual overview of what's already covered before deciding whether something new is needed.
+> Builds on the endurance/stress variants and release/weekly/daily schedule described in [When Load Tests Run](#when-load-tests-run) above; read that first if these terms are unfamiliar. See the [Reliability coverage Miro board](https://miro.com/app/board/uXjVJRlgaXU=/) for a visual overview of what's already covered before deciding whether something new is needed.
 
 When a new feature lands, work through these questions:
 
