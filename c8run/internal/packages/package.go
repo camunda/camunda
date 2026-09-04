@@ -582,6 +582,109 @@ func stripConscryptNativeLibs(camundaVersion, osType, arch string) error {
 	return nil
 }
 
+// awsCrtNativePrefix returns the 3-level directory prefix used by aws-crt to
+// store native libs for the given platform: "<os>/<arch>/<libc>/". Linux
+// targets keep glibc only — c8run targets standard distros, not Alpine/musl.
+func awsCrtNativePrefix(osType, arch string) (string, error) {
+	switch osType {
+	case "linux":
+		switch arch {
+		case "x86_64":
+			return "linux/x86_64/glibc/", nil
+		case "aarch64":
+			return "linux/armv8/glibc/", nil
+		}
+	case "darwin":
+		switch arch {
+		case "x86_64":
+			return "osx/x86_64/cruntime/", nil
+		case "aarch64":
+			return "osx/armv8/cruntime/", nil
+		}
+	case "windows":
+		switch arch {
+		case "x86_64":
+			return "windows/x86_64/cruntime/", nil
+		}
+	}
+	return "", fmt.Errorf("no aws-crt native prefix for os=%s arch=%s", osType, arch)
+}
+
+// awsCrtNativeOsPrefixes lists all top-level OS directory prefixes used by
+// aws-crt to store native libs, across all platforms it ships.
+var awsCrtNativeOsPrefixes = []string{
+	"linux/", "osx/", "windows/",
+}
+
+func isAwsCrtNativeEntry(name string) bool {
+	for _, prefix := range awsCrtNativeOsPrefixes {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// stripAwsCrtNativeLibs removes aws-crt native libs for all platforms except
+// the target one. Like stripZstdJniNativeLibs, it globs
+// camunda-zeebe-<version>/lib/aws-crt-*.jar relative to CWD.
+func stripAwsCrtNativeLibs(camundaVersion, osType, arch string) error {
+	keepPrefix, err := awsCrtNativePrefix(osType, arch)
+	if err != nil {
+		return fmt.Errorf("stripAwsCrtNativeLibs: %w", err)
+	}
+
+	pattern := filepath.Join("camunda-zeebe-"+camundaVersion, "lib", "aws-crt-*.jar")
+	jars, err := filepath.Glob(pattern)
+	if err != nil {
+		return fmt.Errorf("stripAwsCrtNativeLibs: failed to glob %s: %w", pattern, err)
+	}
+	if len(jars) == 0 {
+		log.Warn().Str("pattern", pattern).Msg("no aws-crt jar found; skipping native lib stripping")
+		return nil
+	}
+	if len(jars) > 1 {
+		log.Warn().Strs("jars", jars).Msg("multiple aws-crt jars found; stripping only the first")
+	}
+
+	r, err := zip.OpenReader(jars[0])
+	if err != nil {
+		return fmt.Errorf("stripAwsCrtNativeLibs: open %s: %w", jars[0], err)
+	}
+	var toDrop int
+	var keepFound bool
+	for _, f := range r.File {
+		if strings.HasPrefix(f.Name, keepPrefix) {
+			keepFound = true
+		}
+		if isAwsCrtNativeEntry(f.Name) && !strings.HasPrefix(f.Name, keepPrefix) {
+			toDrop++
+		}
+	}
+	if err := r.Close(); err != nil {
+		return fmt.Errorf("stripAwsCrtNativeLibs: close %s: %w", jars[0], err)
+	}
+
+	if toDrop > 0 && !keepFound {
+		return fmt.Errorf("stripAwsCrtNativeLibs: no entries matching prefix %q found in %s: verify awsCrtNativePrefix mapping", keepPrefix, jars[0])
+	}
+
+	if toDrop == 0 {
+		log.Info().Str("jar", jars[0]).Str("keeping", keepPrefix).Msg("no unused aws-crt native libs to strip (already stripped?)")
+		return nil
+	}
+
+	log.Info().Str("jar", jars[0]).Str("keeping", keepPrefix).Int("dropping", toDrop).Msg("stripping unused aws-crt native libs")
+
+	shouldDrop := func(name string) bool {
+		return isAwsCrtNativeEntry(name) && !strings.HasPrefix(name, keepPrefix)
+	}
+	if _, err := rewriteJarDroppingEntries(jars[0], shouldDrop); err != nil {
+		return err
+	}
+	return nil
+}
+
 func getJavaArtifactsToken() (string, error) {
 	javaArtifactsUser := os.Getenv("JAVA_ARTIFACTS_USER")
 	javaArtifactsPassword := os.Getenv("JAVA_ARTIFACTS_PASSWORD")
@@ -1023,6 +1126,10 @@ func New(camundaVersion, connectorsVersion string) error {
 
 	if err := stripConscryptNativeLibs(camundaVersion, osType, architecture); err != nil {
 		return fmt.Errorf("package %s: failed to strip conscrypt native libs: %w", osType, err)
+	}
+
+	if err := stripAwsCrtNativeLibs(camundaVersion, osType, architecture); err != nil {
+		return fmt.Errorf("package %s: failed to strip aws-crt native libs: %w", osType, err)
 	}
 
 	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, ".", javaArtifactsToken, func(_, _ string) error { return nil })
