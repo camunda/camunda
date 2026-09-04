@@ -100,4 +100,4 @@ If you want to run your own connectors runtime, start C8Run with `./c8run start 
 
 ### Headless startup
 
-To start C8Run without opening a browser window (for example, in a headless dev environment or an autostart script), use `./c8run start --no-browser`.
+To start C8Run without opening a browser window (for example, in a headless dev environment or an autostart script), use `./c8run start --no-browser`. A headless start also leaves the quickstart marker untouched, so the next regular (non-headless) start still shows the quickstart URL instead of jumping straight to Operate.
