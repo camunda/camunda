@@ -12,8 +12,8 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * @param searchBefore whether the page is seeked backwards from a {@code before} cursor. The seek
- *     has to walk away from the cursor, so the mapper renders its ORDER BY reversed (see {@code
+ * @param searchBefore whether the page seeks backwards from a {@code before} cursor. The seek has
+ *     to walk away from the cursor, so the mapper renders its ORDER BY reversed (see {@code
  *     Commons.orderBy}) — otherwise LIMIT would cut the first rows of the whole filtered range
  *     instead of the rows adjacent to the cursor. The reader restores the display order afterwards.
  */

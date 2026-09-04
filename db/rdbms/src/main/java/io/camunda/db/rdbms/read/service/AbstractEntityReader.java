@@ -104,8 +104,8 @@ abstract class AbstractEntityReader<T> {
   }
 
   /**
-   * Restores the display order of a page seeked backwards from a {@code before} cursor. Such a page
-   * is queried against the display direction so that its LIMIT keeps the rows adjacent to the
+   * Restores the display order of a page that seeks backwards from a {@code before} cursor. Such a
+   * page is queried against the display direction so that its LIMIT keeps the rows adjacent to the
    * cursor (see {@code Commons.orderBy}), which leaves the returned rows in reverse order.
    */
   protected List<T> restoreDisplayOrder(final DbQueryPage page, final List<T> hits) {
