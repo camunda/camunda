@@ -327,15 +327,41 @@ public class ExtendedConfigurationBuilder {
 
   /**
    * Same as {@link #flatPropertiesFor(Camunda)} but emits the keys under an arbitrary {@code
-   * prefix} instead of the top-level {@code camunda} header — e.g. {@code
-   * camunda.physical-tenants.<id>} so a physical-tenant {@link Camunda} can be flattened into the
-   * very keys the broker binds it from (see {@code
-   * io.camunda.configuration.physicaltenants.PhysicalTenantResolver}).
+   * prefix} instead of the top-level {@code camunda} header.
+   *
+   * <p>Still diffs against a pristine {@code Camunda}, so this is only correct for a {@code config}
+   * whose absent keys fall back to pristine defaults. To flatten a physical tenant under {@code
+   * camunda.physical-tenants.<id>}, use {@link #flatPropertiesFor(Camunda, String, Camunda)} with
+   * the root configuration as the baseline — an absent tenant key resolves to the root's value, not
+   * to the pristine default.
    */
   public static Map<String, Object> flatPropertiesFor(final Camunda config, final String prefix) {
-    final Map<String, Object> defaultMap = flatten(new Camunda());
+    return flatPropertiesFor(config, prefix, new Camunda());
+  }
+
+  /**
+   * Same as {@link #flatPropertiesFor(Camunda, String)} but diffs against an explicit {@code
+   * baseline} instead of a pristine {@code new Camunda()}.
+   *
+   * <p>The baseline decides which fields are <em>omitted</em>, so it must be whatever the consumer
+   * of these properties falls back to for a key that is absent. For the top-level {@code camunda.*}
+   * properties that is a pristine {@code Camunda}, which is what the other overloads pass. For a
+   * physical tenant it is the <em>root</em> configuration: {@code PhysicalTenantResolver} builds
+   * each tenant by binding {@code camunda.*} into a fresh instance and only then overlaying {@code
+   * camunda.physical-tenants.<id>.*}, so an omitted tenant key resolves to the root's value, not to
+   * the pristine default. Diffing a tenant against a pristine baseline instead would silently drop
+   * any tenant value that happens to equal a pristine default while the root differs — the tenant
+   * would then inherit the root's value rather than the declared one.
+   *
+   * <p>{@code config} must be expressed relative to the same {@code baseline} (i.e. built by
+   * copying it and applying the overrides), otherwise every field the baseline itself moved away
+   * from the pristine default reads as a deliberate override.
+   */
+  public static Map<String, Object> flatPropertiesFor(
+      final Camunda config, final String prefix, final Camunda baseline) {
+    final Map<String, Object> baselineMap = flatten(baseline);
     final Map<String, Object> configuredMap = flatten(config);
-    final Map<String, Object> diff = diffMaps(defaultMap, configuredMap);
+    final Map<String, Object> diff = diffMaps(baselineMap, configuredMap);
     putLegacyNodeIdPropertyIfNeeded(diff);
     final Map<String, Object> flat = new LinkedHashMap<>();
     flattenInto(diff, prefix, flat);
