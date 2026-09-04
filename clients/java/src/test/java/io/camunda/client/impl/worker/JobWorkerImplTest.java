@@ -103,7 +103,9 @@ final class JobWorkerImplTest {
   // checks that its channel has been released; @AutoClose runs too late for this mixed test.
   @AfterEach
   void tearDown() {
-    client.close();
+    if (client != null) {
+      client.close();
+    }
   }
 
   @BeforeEach
@@ -216,20 +218,21 @@ final class JobWorkerImplTest {
     Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "false");
 
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
-    builder.applyEnvironmentVariableOverrides(true).build();
-    final CamundaClient camundaClient =
-        new CamundaClientImpl(builder, channel, GatewayGrpc.newStub(channel));
+    try (final CamundaClient configurationClient =
+            builder.applyEnvironmentVariableOverrides(true).build();
+        final CamundaClient camundaClient =
+            new CamundaClientImpl(builder, channel, GatewayGrpc.newStub(channel))) {
+      final JobWorkerBuilderStep3 jobWorkerBuilderStep3 =
+          camundaClient.newWorker().jobType("test").handler(NOOP_JOB_HANDLER).streamEnabled(true);
 
-    final JobWorkerBuilderStep3 jobWorkerBuilderStep3 =
-        camundaClient.newWorker().jobType("test").handler(NOOP_JOB_HANDLER).streamEnabled(true);
-
-    // when
-    try (final JobWorker ignored = jobWorkerBuilderStep3.open()) {
-      // then
-      Awaitility.await("until a stream is open")
-          .pollInterval(Duration.ofMillis(100))
-          .atMost(Duration.ofSeconds(5))
-          .untilAsserted(() -> assertThat(gateway.openStreams).hasSize(1));
+      // when
+      try (final JobWorker ignored = jobWorkerBuilderStep3.open()) {
+        // then
+        Awaitility.await("until a stream is open")
+            .pollInterval(Duration.ofMillis(100))
+            .atMost(Duration.ofSeconds(5))
+            .untilAsserted(() -> assertThat(gateway.openStreams).hasSize(1));
+      }
     }
   }
 
