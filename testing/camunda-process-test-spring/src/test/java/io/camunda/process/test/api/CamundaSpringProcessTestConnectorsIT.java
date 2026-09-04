@@ -43,16 +43,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.testcontainers.Testcontainers;
 
-@WireMockTest(httpPort = 9999)
+@WireMockTest(httpPort = 10000)
 @SpringBootTest(
     classes = {CamundaSpringProcessTestConnectorsIT.class},
     properties = {
       "io.camunda.process.test.connectors-enabled=true",
       "io.camunda.process.test.connectors-secrets.CONNECTORS_URL=http://connectors:8080/actuator/health/readiness",
-      "io.camunda.process.test.connectors-secrets.BASE_URL=http://host.testcontainers.internal:9999"
+      "io.camunda.process.test.connectors-secrets.BASE_URL=http://host.testcontainers.internal:10000"
     })
 @CamundaSpringProcessTest
 public class CamundaSpringProcessTestConnectorsIT {
+
+  private static final int WIREMOCK_PORT = 10000;
 
   // The ID is part of the connector configuration in the BPMN element
   private static final String INBOUND_CONNECTOR_ID = "941c5492-ab2b-4305-aa18-ac86991ff4ca";
@@ -62,7 +64,7 @@ public class CamundaSpringProcessTestConnectorsIT {
 
   @BeforeAll
   static void setup() {
-    Testcontainers.exposeHostPorts(9999);
+    Testcontainers.exposeHostPorts(WIREMOCK_PORT);
   }
 
   @Test
