@@ -367,6 +367,18 @@ runs weekly on Mondays to verify that preview environment deployments are workin
 failure indicates a potential issue with the preview environment infrastructure that could affect
 developers using the `deploy-preview` label on their PRs.
 
+> **Note — a job for an unreleased version is skipped on purpose:** The `deploy-<version>` job for a
+> minor that hasn't been released yet is set up to run only when someone starts the workflow by hand.
+> This is because its smoke tests often don't exist yet in
+> [`camunda/c8-cross-component-e2e-tests`](https://github.com/camunda/c8-cross-component-e2e-tests).
+> If that job did run on schedule, it would fail every Monday with `No tests found` and page
+> `monorepo-ci-medic` for something no one can fix.
+>
+> **So:** don't turn on a version's job (or move the smoke tests to a new version) until that minor is
+> released and its tests exist — see the [minor-release checklist](release/release-monorepo.md). If the
+> Monday run fails only on a version that isn't released yet, that's expected. Skip that job instead of
+> treating it as a real infra failure.
+
 #### Troubleshooting
 
 1. Check the failed workflow run linked in the Slack notification:
