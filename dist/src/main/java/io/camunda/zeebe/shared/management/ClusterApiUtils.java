@@ -972,167 +972,34 @@ final class ClusterApiUtils {
   }
 
   static TopologyChangeCompletedInner mapCompletedOperation(final CompletedOperation operation) {
-    final var mappedOperation =
-        switch (operation.operation()) {
-          case final MemberJoinOperation join ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_ADD)
-                  .brokerId(brokerIdValue(join.memberId()));
-          case final MemberLeaveOperation leave ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_REMOVE)
-                  .brokerId(brokerIdValue(leave.memberId()));
-          case final PartitionJoinOperation join ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_JOIN)
-                  .brokerId(brokerIdValue(join.memberId()))
-                  .partitionId(join.partitionId())
-                  .priority(join.priority());
-          case final PartitionLeaveOperation leave ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_LEAVE)
-                  .brokerId(brokerIdValue(leave.memberId()))
-                  .partitionId(leave.partitionId());
-          case final PartitionPromoteOperation promote ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_PROMOTE)
-                  .brokerId(brokerIdValue(promote.memberId()))
-                  .partitionId(promote.partitionId());
-          case final PartitionDemoteOperation demote ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_DEMOTE)
-                  .brokerId(brokerIdValue(demote.memberId()))
-                  .partitionId(demote.partitionId());
-          case final PartitionReconfigurePriorityOperation reconfigure ->
-              new TopologyChangeCompletedInner()
-                  .operation(
-                      TopologyChangeCompletedInner.OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
-                  .brokerId(brokerIdValue(reconfigure.memberId()))
-                  .partitionId(reconfigure.partitionId())
-                  .priority(reconfigure.priority());
-          case final PartitionForceReconfigureOperation partitionForceReconfigureOperation ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_FORCE_RECONFIGURE)
-                  .brokerId(brokerIdValue(partitionForceReconfigureOperation.memberId()))
-                  .partitionId(partitionForceReconfigureOperation.partitionId())
-                  .brokers(
-                      partitionForceReconfigureOperation.members().stream()
-                          .map(ClusterApiUtils::brokerIdValue)
-                          .toList());
-          case final MemberRemoveOperation memberRemoveOperation ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_REMOVE)
-                  .brokerId(brokerIdValue(memberRemoveOperation.memberId()))
-                  .brokers(List.of(brokerIdValue(memberRemoveOperation.memberToRemove())));
-          case final PartitionDisableExporterOperation disableExporterOperation ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_DISABLE_EXPORTER)
-                  .brokerId(brokerIdValue(disableExporterOperation.memberId()))
-                  .partitionId(disableExporterOperation.partitionId())
-                  .exporterId(disableExporterOperation.exporterId());
-          case final PartitionEnableExporterOperation enableExporterOperation ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_ENABLE_EXPORTER)
-                  .brokerId(brokerIdValue(enableExporterOperation.memberId()))
-                  .partitionId(enableExporterOperation.partitionId())
-                  .exporterId(enableExporterOperation.exporterId());
-          case final PartitionDeleteExporterOperation deleteExporterOperation ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_DELETE_EXPORTER)
-                  .brokerId(brokerIdValue(deleteExporterOperation.memberId()))
-                  .partitionId(deleteExporterOperation.partitionId())
-                  .exporterId(deleteExporterOperation.exporterId());
-          case final StartPartitionScaleUp startScaleUp ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.START_PARTITION_SCALE_UP)
-                  .brokerId(brokerIdValue(startScaleUp.memberId()));
-          case final PartitionBootstrapOperation bootstrapOperation ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_BOOTSTRAP)
-                  .brokerId(brokerIdValue(bootstrapOperation.memberId()))
-                  .partitionId(bootstrapOperation.partitionId())
-                  .priority(bootstrapOperation.priority());
-          case final PartitionPreRestoreOperation preRestoreOperation ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_PRE_RESTORE)
-                  .brokerId(brokerIdValue(preRestoreOperation.memberId()))
-                  .partitionId(preRestoreOperation.partitionId());
-          case final PartitionRestoreOperation restoreOperation ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_RESTORE)
-                  .brokerId(brokerIdValue(restoreOperation.memberId()))
-                  .partitionId(restoreOperation.partitionId());
-          case final DeleteHistoryOperation deleteHistoryOperation ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.DELETE_HISTORY);
-          case final AwaitRedistributionCompletion redistributionCompletion ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.AWAIT_REDISTRIBUTION)
-                  .brokerId(brokerIdValue(redistributionCompletion.memberId()));
-          case final AwaitRelocationCompletion relocationCompletion ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.AWAIT_RELOCATION)
-                  .brokerId(brokerIdValue(relocationCompletion.memberId()));
-          case final UpdateRoutingState updateRoutingState ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.UPDATE_ROUTING_STATE)
-                  .brokerId(brokerIdValue(updateRoutingState.memberId()));
-          case final UpdateIncarnationNumberOperation updateIncarnationNumberOperation ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.UPDATE_INCARNATION_NUMBER)
-                  .brokerId(brokerIdValue(updateIncarnationNumberOperation.memberId()));
-          case final PreScalingOperation preScalingOperation ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PRE_SCALING)
-                  .brokerId(brokerIdValue(preScalingOperation.memberId()))
-                  .brokers(
-                      preScalingOperation.clusterMembers().stream()
-                          .map(ClusterApiUtils::brokerIdValue)
-                          .toList());
-          case final PostScalingOperation postScalingOperation ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.POST_SCALING)
-                  .brokerId(brokerIdValue(postScalingOperation.memberId()))
-                  .brokers(
-                      postScalingOperation.clusterMembers().stream()
-                          .map(ClusterApiUtils::brokerIdValue)
-                          .toList());
-          case final UpdatePartitionDistributorConfigOperation
-                  updatePartitionDistributorConfigOperation ->
-              new TopologyChangeCompletedInner()
-                  .brokerId(brokerIdValue(updatePartitionDistributorConfigOperation.memberId()))
-                  .operation(
-                      TopologyChangeCompletedInner.OperationEnum
-                          .UPDATE_PARTITION_DISTRIBUTOR_CONFIG)
-                  .partitionDistributionConfig(
-                      toPartitionDistributionConfig(updatePartitionDistributorConfigOperation));
-          case final ModeChangeOperation modeChange ->
-              switch (modeChange.mode()) {
-                case RECOVERING ->
-                    new TopologyChangeCompletedInner()
-                        .operation(TopologyChangeCompletedInner.OperationEnum.ENTER_RECOVERY)
-                        .brokerId(brokerIdValue(modeChange.memberId()));
-                case PROCESSING ->
-                    new TopologyChangeCompletedInner()
-                        .operation(TopologyChangeCompletedInner.OperationEnum.EXIT_RECOVERY)
-                        .brokerId(brokerIdValue(modeChange.memberId()));
-              };
-          case final AwaitModeChangeOperation modeChange ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.AWAIT_MODE_CHANGE)
-                  .brokerId(brokerIdValue(modeChange.memberId()));
-          case final RemovePhysicalTenantOperation removal ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.REMOVE_PHYSICAL_TENANT)
-                  .brokerId(brokerIdValue(removal.memberId()));
-          default ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);
-        };
+    return mapCompletedOperation(
+        mapOperation(null, operation.operation()), operation.completedAt());
+  }
 
-    mappedOperation.completedAt(mapInstantToDateTime(operation.completedAt()));
-
-    return mappedOperation;
+  /**
+   * Re-tags an already mapped operation as a completed one. The generated {@code
+   * TopologyChangeCompletedInner} is {@code Operation} plus {@code completedAt}, so every field
+   * carries over unchanged and there is no second per-operation-type mapping to keep in sync.
+   */
+  private static TopologyChangeCompletedInner mapCompletedOperation(
+      final Operation operation, final @Nullable Instant completedAt) {
+    final var completed =
+        new TopologyChangeCompletedInner()
+            .operation(
+                TopologyChangeCompletedInner.OperationEnum.fromValue(
+                    operation.getOperation().getValue()))
+            .brokerId(operation.getBrokerId())
+            .partitionId(operation.getPartitionId())
+            .physicalTenant(operation.getPhysicalTenant())
+            .priority(operation.getPriority())
+            .brokers(operation.getBrokers())
+            .exporterId(operation.getExporterId())
+            .partitionDistributionConfig(operation.getPartitionDistributionConfig())
+            .exportingState(operation.getExportingState());
+    if (completedAt != null) {
+      completed.completedAt(mapInstantToDateTime(completedAt));
+    }
+    return completed;
   }
 
   private static io.camunda.zeebe.management.cluster.PartitionDistributionConfig
