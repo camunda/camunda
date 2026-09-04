@@ -123,6 +123,181 @@ final class DbAgentHistoryStateTest {
     assertThat(visitedFor20).hasSize(1);
   }
 
+  @Test
+  void shouldPutAndGetCommittedHistoryItemKey() {
+    // given / when
+    state.putCommittedHistoryItemKey(1L, "history-item-1", 101L);
+
+    // then
+    assertThat(state.getCommittedHistoryItemKey(1L, "history-item-1")).isEqualTo(101L);
+  }
+
+  @Test
+  void shouldReturnNullForUncommittedHistoryItemId() {
+    // given / when / then
+    assertThat(state.getCommittedHistoryItemKey(1L, "unknown")).isNull();
+  }
+
+  @Test
+  void shouldDeleteCommittedHistoryItemKey() {
+    // given
+    state.putCommittedHistoryItemKey(1L, "history-item-1", 101L);
+    state.putCommittedHistoryItemKey(1L, "history-item-2", 102L);
+
+    // when
+    state.deleteCommittedHistoryItemKey(1L, "history-item-1");
+
+    // then — only the deleted id is gone
+    assertThat(state.getCommittedHistoryItemKey(1L, "history-item-1")).isNull();
+    assertThat(state.getCommittedHistoryItemKey(1L, "history-item-2")).isEqualTo(102L);
+  }
+
+  @Test
+  void shouldIgnoreDeleteOfUnknownCommittedHistoryItemKey() {
+    // given / when / then — must not throw
+    state.deleteCommittedHistoryItemKey(1L, "unknown");
+  }
+
+  @Test
+  void shouldNotDeleteCommittedHistoryItemKeyOfOtherAgentInstance() {
+    // given
+    state.putCommittedHistoryItemKey(1L, "history-item-1", 101L);
+    state.putCommittedHistoryItemKey(2L, "history-item-1", 201L);
+
+    // when
+    state.deleteCommittedHistoryItemKey(1L, "history-item-1");
+
+    // then
+    assertThat(state.getCommittedHistoryItemKey(2L, "history-item-1")).isEqualTo(201L);
+  }
+
+  @Test
+  void shouldVisitAllCommittedHistoryItemIds() {
+    // given
+    state.putCommittedHistoryItemKey(1L, "history-item-1", 101L);
+    state.putCommittedHistoryItemKey(1L, "history-item-2", 102L);
+
+    // when
+    final List<String> visited = new ArrayList<>();
+    state.visitCommittedHistoryItemIds(
+        1L,
+        id -> {
+          visited.add(id);
+          return true;
+        });
+
+    // then
+    assertThat(visited).containsExactlyInAnyOrder("history-item-1", "history-item-2");
+  }
+
+  @Test
+  void shouldStopVisitingCommittedHistoryItemIdsWhenVisitorReturnsFalse() {
+    // given
+    for (int i = 0; i < 5; i++) {
+      state.putCommittedHistoryItemKey(1L, "history-item-" + i, i);
+    }
+
+    // when
+    final List<String> visited = new ArrayList<>();
+    state.visitCommittedHistoryItemIds(
+        1L,
+        id -> {
+          visited.add(id);
+          return visited.size() < 3;
+        });
+
+    // then
+    assertThat(visited).hasSize(3);
+  }
+
+  @Test
+  void shouldNotVisitCommittedHistoryItemIdsOfOtherAgentInstance() {
+    // given
+    state.putCommittedHistoryItemKey(1L, "history-item-1", 101L);
+    state.putCommittedHistoryItemKey(2L, "history-item-1", 201L);
+
+    // when
+    final List<String> visited = new ArrayList<>();
+    state.visitCommittedHistoryItemIds(
+        1L,
+        id -> {
+          visited.add(id);
+          return true;
+        });
+
+    // then
+    assertThat(visited).containsExactly("history-item-1");
+  }
+
+  @Test
+  void shouldMarkAndCheckMetricsAccumulated() {
+    // given / when
+    state.markMetricsAccumulated(1L, "history-item-1");
+
+    // then
+    assertThat(state.hasAccumulatedMetrics(1L, "history-item-1")).isTrue();
+    assertThat(state.hasAccumulatedMetrics(1L, "unknown")).isFalse();
+  }
+
+  @Test
+  void shouldDeleteMetricsAccumulatedId() {
+    // given
+    state.markMetricsAccumulated(1L, "history-item-1");
+    state.markMetricsAccumulated(1L, "history-item-2");
+
+    // when
+    state.deleteMetricsAccumulatedId(1L, "history-item-1");
+
+    // then — only the deleted id is gone
+    assertThat(state.hasAccumulatedMetrics(1L, "history-item-1")).isFalse();
+    assertThat(state.hasAccumulatedMetrics(1L, "history-item-2")).isTrue();
+  }
+
+  @Test
+  void shouldIgnoreDeleteOfUnknownMetricsAccumulatedId() {
+    // given / when / then — must not throw
+    state.deleteMetricsAccumulatedId(1L, "unknown");
+  }
+
+  @Test
+  void shouldStopVisitingMetricsAccumulatedHistoryItemIdsWhenVisitorReturnsFalse() {
+    // given
+    for (int i = 0; i < 5; i++) {
+      state.markMetricsAccumulated(1L, "history-item-" + i);
+    }
+
+    // when
+    final List<String> visited = new ArrayList<>();
+    state.visitMetricsAccumulatedHistoryItemIds(
+        1L,
+        id -> {
+          visited.add(id);
+          return visited.size() < 3;
+        });
+
+    // then
+    assertThat(visited).hasSize(3);
+  }
+
+  @Test
+  void shouldNotVisitMetricsAccumulatedHistoryItemIdsOfOtherAgentInstance() {
+    // given
+    state.markMetricsAccumulated(1L, "history-item-1");
+    state.markMetricsAccumulated(2L, "history-item-1");
+
+    // when
+    final List<String> visited = new ArrayList<>();
+    state.visitMetricsAccumulatedHistoryItemIds(
+        1L,
+        id -> {
+          visited.add(id);
+          return true;
+        });
+
+    // then
+    assertThat(visited).containsExactly("history-item-1");
+  }
+
   private static AgentHistoryRecord sampleRecord(final long jobKey, final String lease) {
     return new AgentHistoryRecord()
         .setJobKey(jobKey)
