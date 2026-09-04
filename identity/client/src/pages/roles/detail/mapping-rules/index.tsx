@@ -18,6 +18,7 @@ import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/roles/detail/mapping-rules/DeleteModal";
 import AssignMappingRulesModal from "src/pages/roles/detail/mapping-rules/AssignMappingRulesModal.tsx";
 import TabEmptyState from "src/components/layout/TabEmptyState";
+import { useListPollingReload } from "src/utility/hooks/useListPollingReload";
 
 type MappingRulesProps = {
   roleId: string;
@@ -25,7 +26,6 @@ type MappingRulesProps = {
 
 const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
   const { t } = useTranslate("roles");
-  const noop = () => {};
 
   const { pageParams, page, ...paginationCallbacks } = usePagination();
   const {
@@ -37,18 +37,25 @@ const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
 
   const isMappingRulesListEmpty =
     !mappingRules || mappingRules.items?.length === 0;
+  const { startPolling } = useListPollingReload(
+    reload,
+    mappingRules?.items ?? [],
+    "mappingRuleId",
+    mappingRules?.page.totalItems,
+  );
 
   const [assignMappingRules, assignMappingRulesModal] = useEntityModal(
     AssignMappingRulesModal,
-    noop,
+    () => {},
     {
       assignedMappingRules: mappingRules?.items || [],
+      onItemsAssigned: startPolling,
     },
   );
   const openAssignModal = () => assignMappingRules({ id: roleId });
   const [unassignMappingRule, unassignMappingRuleModal] = useEntityModal(
     DeleteModal,
-    noop,
+    () => startPolling(-1),
     {
       roleId,
     },
