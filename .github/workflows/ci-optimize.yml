@@ -144,6 +144,9 @@ jobs:
         uses: ./.github/actions/run-maven
         env:
           LIMITS_CPU: 8
+          # optimize/upgrade's ITs select their database via this env var rather than
+          # the -Ddatabase.type system property that optimize/backend's ITs use.
+          CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
         with:
           threads: 8
           parameters: >
@@ -151,7 +154,7 @@ jobs:
             -Dit.test.includedGroups=${{ matrix.includedGroups }}
             -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
             -Dfailsafe.rerunFailingTestsCount=2
-            -Ddatabase.type=elasticsearch -f optimize/pom.xml -pl backend -am
+            -Ddatabase.type=elasticsearch -f optimize/pom.xml -pl backend,upgrade -am
 
       - name: Upload Test Results
         if: always()
@@ -236,6 +239,9 @@ jobs:
         uses: ./.github/actions/run-maven
         env:
           LIMITS_CPU: 8
+          # optimize/upgrade's ITs select their database via this env var rather than
+          # the -Ddatabase.type system property that optimize/backend's ITs use.
+          CAMUNDA_OPTIMIZE_DATABASE: opensearch
         with:
           threads: 8
           parameters: >
@@ -243,7 +249,7 @@ jobs:
             -Dit.test.includedGroups=${{ matrix.includedGroups }}
             -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
             -Dfailsafe.rerunFailingTestsCount=2
-            -Ddatabase.type=opensearch -f optimize/pom.xml -pl backend -am
+            -Ddatabase.type=opensearch -f optimize/pom.xml -pl backend,upgrade -am
 
       - name: Upload Test Results
         if: always()
