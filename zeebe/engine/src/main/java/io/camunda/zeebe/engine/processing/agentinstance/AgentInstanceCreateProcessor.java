@@ -67,9 +67,13 @@ public final class AgentInstanceCreateProcessor
       "Expected to create agent instance with history item '%s', but its role is '%s'. Allowed "
           + "roles are: %s.";
   private static final String ERROR_MSG_CREATE_METRICS_NOT_ALLOWED =
-      "Expected to create agent instance with history item '%s', but it carries positive "
+      "Expected to create agent instance with history item '%s', but it carries non-zero "
           + "token-usage metrics. History items included when creating an agent instance must "
-          + "not carry positive token-usage metrics; durationMs is exempt.";
+          + "not carry non-zero token-usage metrics; durationMs is exempt.";
+
+  // AgentHistoryMetrics properties default to -1 to mean "not provided" — that sentinel, like 0,
+  // must not itself count as a non-zero metric.
+  private static final long METRIC_NOT_PROVIDED = -1L;
 
   private static final Set<AgentHistoryRole> ALLOWED_CREATE_ROLES =
       Set.of(AgentHistoryRole.CONFIGURATION, AgentHistoryRole.USER);
@@ -300,7 +304,7 @@ public final class AgentInstanceCreateProcessor
 
   /**
    * Validates that every item in a CREATE batch has an allowed role ({@link
-   * AgentHistoryRole#CONFIGURATION} or {@link AgentHistoryRole#USER}) and carries no positive
+   * AgentHistoryRole#CONFIGURATION} or {@link AgentHistoryRole#USER}) and carries no non-zero
    * token-usage metrics ({@code inputTokens}, {@code outputTokens}, {@code reasoningTokenCount},
    * {@code cacheCreationTokenCount}, {@code cacheReadTokenCount}); {@code durationMs} is exempt.
    * UPDATE keeps accepting every role, metrics included, since a rejected UPDATE still has a live
@@ -308,7 +312,7 @@ public final class AgentInstanceCreateProcessor
    * CREATE-only.
    *
    * @return the rejection for the first invalid item found, or {@link Either#rightVoid()} if every
-   *     item is a CONFIGURATION or USER item without positive token-usage metrics
+   *     item is a CONFIGURATION or USER item without non-zero token-usage metrics
    */
   private static Either<Rejection, Void> validateCreateHistoryItems(
       final List<? extends AgentHistoryRecordValue> history) {
@@ -331,7 +335,7 @@ public final class AgentInstanceCreateProcessor
                     historyItemId, item.getRole(), sortedAllowedRoles)));
       }
 
-      if (hasPositiveMetrics(item.getMetrics())) {
+      if (hasNonZeroMetrics(item.getMetrics())) {
         return Either.left(
             new Rejection(
                 RejectionType.INVALID_ARGUMENT,
@@ -343,16 +347,20 @@ public final class AgentInstanceCreateProcessor
 
   /**
    * {@code durationMs} is deliberately excluded from this check: it isn't an accumulated
-   * conversation metric like the others, so it may be positive even on an otherwise-clean
+   * conversation metric like the others, so it may be non-zero even on an otherwise-clean
    * CONFIGURATION/USER item.
    */
-  private static boolean hasPositiveMetrics(
+  private static boolean hasNonZeroMetrics(
       final AgentHistoryRecordValue.AgentHistoryMetricsValue metrics) {
-    return metrics.getInputTokens() > 0
-        || metrics.getOutputTokens() > 0
-        || metrics.getReasoningTokenCount() > 0
-        || metrics.getCacheCreationTokenCount() > 0
-        || metrics.getCacheReadTokenCount() > 0;
+    return isNonZeroMetricValue(metrics.getInputTokens())
+        || isNonZeroMetricValue(metrics.getOutputTokens())
+        || isNonZeroMetricValue(metrics.getReasoningTokenCount())
+        || isNonZeroMetricValue(metrics.getCacheCreationTokenCount())
+        || isNonZeroMetricValue(metrics.getCacheReadTokenCount());
+  }
+
+  private static boolean isNonZeroMetricValue(final long value) {
+    return value != 0 && value != METRIC_NOT_PROVIDED;
   }
 
   private void writeRejection(
