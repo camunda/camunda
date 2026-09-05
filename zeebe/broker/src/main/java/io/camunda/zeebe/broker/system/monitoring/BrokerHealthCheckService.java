@@ -143,6 +143,45 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     actor.run(this::logBrokerReadyOnce);
   }
 
+  /**
+   * Registers the partitions of a physical tenant that is in recovery mode. Recovery partitions
+   * never join Raft, so the {@link PartitionRaftListener} callbacks that normally mark a bootstrap
+   * partition as installed never fire for them. A broker in recovery mode is ready by design - it
+   * must accept management traffic (e.g. restore requests) - so its partitions count as installed
+   * immediately. Unhealthy recovery outcomes are surfaced through the health monitor instead, via
+   * {@link #registerMonitoredPartition(int, HealthMonitorable)}.
+   */
+  public void registerRecoveringPartitions(
+      final String physicalTenantId, final Collection<PartitionId> partitions) {
+    registeredPhysicalTenants.add(physicalTenantId);
+    if (partitionInstallStatus == null) {
+      partitionInstallStatus = new ConcurrentHashMap<>();
+    }
+    // Clear this tenant's previous entries first: its partition manager may have stopped for the
+    // mode transition without unregistering (e.g. a processing-mode manager never does), leaving
+    // a still-installing ("false") or now-stale partition behind. Left in place, that entry would
+    // permanently block isBrokerReady() even though recovery does not depend on Raft roles.
+    partitionInstallStatus.keySet().removeIf(id -> id.group().equals(physicalTenantId));
+    partitions.forEach(partitionId -> partitionInstallStatus.put(partitionId, true));
+    actor.run(this::logBrokerReadyOnce);
+  }
+
+  /**
+   * Unregisters a physical tenant and all of its partitions' install status. Called when the
+   * tenant's partition manager stops as part of a mode transition, so that the next manager's
+   * registration starts from a clean slate: without this, the "installed" marks left behind by
+   * recovery mode would make {@link #isBrokerReady()} claim readiness after exiting recovery,
+   * before the partitions have actually rejoined Raft ({@link #registerBootstrapPartitions} only
+   * uses putIfAbsent).
+   */
+  public void unregisterPhysicalTenant(final String physicalTenantId) {
+    registeredPhysicalTenants.remove(physicalTenantId);
+    final var status = partitionInstallStatus;
+    if (status != null) {
+      status.keySet().removeIf(partitionId -> partitionId.group().equals(physicalTenantId));
+    }
+  }
+
   public boolean isBrokerReady() {
     // Ready once every expected physical tenant has registered and every one of their partitions
     // has been installed. Both conditions are evaluated live: requiring all tenants prevents a

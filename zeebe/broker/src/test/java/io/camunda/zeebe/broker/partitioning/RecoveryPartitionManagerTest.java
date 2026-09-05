@@ -25,6 +25,8 @@ import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.broker.system.monitoring.HealthTreeMetrics;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
@@ -71,6 +73,7 @@ final class RecoveryPartitionManagerTest {
   private BrokerInfo brokerInfo;
   private AtomixServerTransport transport;
   private SimpleMeterRegistry meterRegistry;
+  private BrokerHealthCheckService healthCheckService;
 
   @BeforeEach
   void setUp() {
@@ -107,6 +110,15 @@ final class RecoveryPartitionManagerTest {
     when(transport.unsubscribe(any(), any())).thenReturn(CompletableActorFuture.completed(null));
 
     meterRegistry = new SimpleMeterRegistry();
+
+    // real health check service, named Broker-0 to match BROKER_COMPONENT_NAME, so the tests can
+    // observe the readiness and health the recovery manager reports to the broker probes
+    healthCheckService =
+        new BrokerHealthCheckService(
+            MemberId.from("0"), new HealthTreeMetrics(meterRegistry), Set.of(GROUP));
+    actorScheduler.submitActor(healthCheckService).join();
+    healthCheckService.setBrokerStarted();
+
     partitionManager = buildManager(new BrokerCfg(), actorScheduler);
   }
 
@@ -124,7 +136,7 @@ final class RecoveryPartitionManagerTest {
         transport,
         null,
         topologyManager,
-        BROKER_COMPONENT_NAME);
+        healthCheckService);
   }
 
   private PartitionMetadata localPartitionMetadata(final int partitionId) {
@@ -140,6 +152,9 @@ final class RecoveryPartitionManagerTest {
   void tearDown() {
     if (partitionManager != null) {
       partitionManager.stop().join();
+    }
+    if (healthCheckService != null) {
+      healthCheckService.closeAsync().join();
     }
     if (controlActor != null) {
       controlActor.closeAsync().join();
@@ -339,6 +354,62 @@ final class RecoveryPartitionManagerTest {
         .tags("physicalTenant", GROUP, "partition", String.valueOf(partitionId))
         .gauge()
         .value();
+  }
+
+  @Test
+  void shouldReportBrokerReadyAndHealthyWhileRecovering() {
+    // when
+    assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
+
+    // then - a broker in recovery mode is ready and healthy by design: it must keep accepting
+    // management traffic (restore requests) and must not be restarted by the Kubernetes probes,
+    // even though its partitions never join Raft
+    await()
+        .untilAsserted(
+            () -> {
+              assertThat(healthCheckService.isBrokerReady()).isTrue();
+              assertThat(healthCheckService.isBrokerHealthy()).isTrue();
+            });
+  }
+
+  @Test
+  void shouldReportBrokerUnhealthyWhenAPartitionFailsToRecover() {
+    // given: partition 2's recovery steps fail to schedule, so only partition 1 recovers
+    partitionManager =
+        buildManager(
+            new BrokerCfg(), new FailingActorSchedulingService(actorScheduler, PARTITION_ID_2));
+
+    // when
+    assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
+
+    // then - the broker stays ready so the restore can be retried through the management API,
+    // but the dead partition must surface through the health status
+    await()
+        .untilAsserted(
+            () -> {
+              assertThat(healthCheckService.isBrokerReady()).isTrue();
+              assertThat(healthCheckService.isBrokerHealthy()).isFalse();
+            });
+  }
+
+  @Test
+  void shouldResetReadinessAndHealthOnStop() {
+    // given - the broker reports ready and healthy while recovering
+    assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
+    await().untilAsserted(() -> assertThat(healthCheckService.isBrokerReady()).isTrue());
+
+    // when
+    assertThat(partitionManager.stop()).succeedsWithin(Duration.ofSeconds(10));
+
+    // then - the tenant and its recovery health components are unregistered, so readiness and
+    // health are gated on the next partition manager (e.g. processing mode after exiting
+    // recovery) genuinely installing its partitions rather than on recovery leftovers
+    await()
+        .untilAsserted(
+            () -> {
+              assertThat(healthCheckService.isBrokerReady()).isFalse();
+              assertThat(healthCheckService.isBrokerHealthy()).isFalse();
+            });
   }
 
   @Test
