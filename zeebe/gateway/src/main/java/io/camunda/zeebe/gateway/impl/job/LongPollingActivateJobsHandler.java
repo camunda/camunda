@@ -378,6 +378,15 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     // get to avoid the creation of a state instance.
     final var state = jobTypeState.get(key);
 
+    // A notification only wakes a request when it is delivered to the same handler instance that
+    // parked it, under an equal key. Logging both identities makes a mismatch of either directly
+    // visible instead of showing up as a silent absence of "Handle jobs available notification".
+    LOG.trace(
+        "Notification on handler {} looked up {}; known keys are {}.",
+        System.identityHashCode(this),
+        key,
+        jobTypeState.keySet());
+
     if (state != null) {
       LOG.trace("Handle jobs available notification for type {}.", jobType);
       actor.run(
@@ -410,6 +419,9 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
         request.getType(),
         request.getLongPollingTimeout(longPollingTimeout));
     state.enqueueRequest(request);
+    // Counterpart to the identity logged on the notification path: the two must agree for the
+    // request to ever be woken.
+    LOG.trace("Parked on handler {} under {}.", System.identityHashCode(this), keyOf(request));
   }
 
   private void scheduleLongPollingTimeout(
