@@ -321,7 +321,11 @@ public class CamundaProcessTestExtension
 
     // initialize assertions
     testCaseStartTime = readCurrentRuntimeTime();
-    dataSource = new CamundaDataSource(camundaProcessTestContext.createClient(), testCaseStartTime);
+    dataSource =
+        new CamundaDataSource(
+            camundaProcessTestContext.createClient(),
+            testCaseStartTime,
+            CamundaProcessTestRuntimeDefaults.QUERY_PAGE_LIMIT);
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector

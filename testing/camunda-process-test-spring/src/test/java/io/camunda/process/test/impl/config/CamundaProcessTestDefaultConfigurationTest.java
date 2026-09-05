@@ -34,6 +34,7 @@ import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.DataDeletionMode;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestAutoConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -390,6 +391,30 @@ public class CamundaProcessTestDefaultConfigurationTest {
 
     private CamundaClientConfiguration buildConfiguration() {
       return CamundaProcessTestDefaultConfigurationTest.buildConfiguration(clientBuilderFactory);
+    }
+  }
+
+  @Nested
+  class ShouldApplyQueryPageLimitConfiguration {
+
+    @Autowired private CamundaProcessTestRuntimeConfiguration configuration;
+
+    @Test
+    void shouldReturnDefaultQueryPageLimit() {
+      assertThat(configuration.getQueryPageLimit())
+          .isEqualTo(CamundaProcessTestRuntimeDefaults.DEFAULT_QUERY_PAGE_LIMIT);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.process-test.query-page-limit=1000"})
+  class ShouldApplyCustomQueryPageLimit {
+
+    @Autowired private CamundaProcessTestRuntimeConfiguration configuration;
+
+    @Test
+    void shouldReturnCustomQueryPageLimit() {
+      assertThat(configuration.getQueryPageLimit()).isEqualTo(1000);
     }
   }
 }

@@ -420,6 +420,7 @@ public class ContainerRuntimePropertiesUtilTest {
       final AssertionProperties assertionProperties = propertiesUtil.getAssertionProperties();
       assertThat(assertionProperties.getAssertionTimeout()).isEmpty();
       assertThat(assertionProperties.getAssertionInterval()).isEmpty();
+      assertThat(propertiesUtil.getQueryPageLimit()).isEqualTo(100);
     }
 
     @Test
@@ -428,6 +429,7 @@ public class ContainerRuntimePropertiesUtilTest {
       final Properties properties = new Properties();
       properties.put(AssertionProperties.PROPERTY_NAME_ASSERTION_TIMEOUT, "PT1M");
       properties.put(AssertionProperties.PROPERTY_NAME_ASSERTION_INTERVAL, "PT1S");
+      properties.put(ContainerRuntimePropertiesUtil.PROPERTY_NAME_QUERY_PAGE_LIMIT, "1000");
 
       // when
       final ContainerRuntimePropertiesUtil propertiesUtil =
@@ -437,6 +439,7 @@ public class ContainerRuntimePropertiesUtilTest {
       final AssertionProperties assertionProperties = propertiesUtil.getAssertionProperties();
       assertThat(assertionProperties.getAssertionTimeout()).hasValue(Duration.ofMinutes(1));
       assertThat(assertionProperties.getAssertionInterval()).hasValue(Duration.ofSeconds(1));
+      assertThat(propertiesUtil.getQueryPageLimit()).isEqualTo(1000);
     }
 
     @Test
@@ -449,6 +452,7 @@ public class ContainerRuntimePropertiesUtilTest {
       final AssertionProperties assertionProperties = propertiesUtil.getAssertionProperties();
       assertThat(assertionProperties.getAssertionTimeout()).hasValue(Duration.ofMinutes(5));
       assertThat(assertionProperties.getAssertionInterval()).hasValue(Duration.ofMillis(500));
+      assertThat(propertiesUtil.getQueryPageLimit()).isEqualTo(500);
     }
   }
 }

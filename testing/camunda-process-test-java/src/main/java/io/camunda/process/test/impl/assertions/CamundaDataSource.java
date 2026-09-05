@@ -52,13 +52,14 @@ import java.util.function.Consumer;
 
 public class CamundaDataSource {
 
-  private static final Consumer<AnyPage> DEFAULT_PAGE_REQUEST = page -> page.limit(100);
-
+  private final Consumer<AnyPage> pageRequest;
   private final CamundaClient client;
   private final OffsetDateTime testCaseStartTime;
 
   public CamundaDataSource(final CamundaClient client) {
-    this(client, null);
+    this.client = client;
+    testCaseStartTime = null;
+    pageRequest = page -> {};
   }
 
   /**
@@ -69,11 +70,14 @@ public class CamundaDataSource {
    * @param client the Camunda client to use for queries
    * @param testCaseStartTime the start time of the current test case, as reported by the runtime
    *     clock; may be {@code null} to disable filtering
+   * @param queryPageLimit the maximum number of results to return per paged query
    */
-  public CamundaDataSource(final CamundaClient client, final Instant testCaseStartTime) {
+  public CamundaDataSource(
+      final CamundaClient client, final Instant testCaseStartTime, final int queryPageLimit) {
     this.client = client;
     this.testCaseStartTime =
         testCaseStartTime != null ? testCaseStartTime.atOffset(ZoneOffset.UTC) : null;
+    pageRequest = page -> page.limit(queryPageLimit);
   }
 
   /**
@@ -118,7 +122,7 @@ public class CamundaDataSource {
     return client
         .newProcessDefinitionSearchRequest()
         .filter(filter -> filter.processDefinitionId(bpmnProcessId))
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(pageRequest)
         .sort(sort -> sort.version().desc())
         .send()
         .join()
@@ -145,7 +149,7 @@ public class CamundaDataSource {
         .newElementInstanceSearchRequest()
         .filter(withElementInstanceStartTimeFilter(filter))
         .sort(sort -> sort.startDate().asc())
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(pageRequest)
         .send()
         .join()
         .items();
@@ -170,7 +174,7 @@ public class CamundaDataSource {
         .newVariableSearchRequest()
         .filter(filter)
         .withFullValues()
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(pageRequest)
         .send()
         .join()
         .items();
@@ -199,7 +203,7 @@ public class CamundaDataSource {
         .newProcessInstanceSearchRequest()
         .filter(withProcessInstanceStartTimeFilter(filter))
         .sort(sort -> sort.startDate().asc())
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(pageRequest)
         .send()
         .join()
         .items();
@@ -219,7 +223,7 @@ public class CamundaDataSource {
         .newIncidentSearchRequest()
         .filter(withIncidentStartTimeFilter(filter))
         .sort(sort -> sort.creationTime().asc())
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(pageRequest)
         .send()
         .join()
         .items();
@@ -239,7 +243,7 @@ public class CamundaDataSource {
         .newUserTaskSearchRequest()
         .filter(withUserTaskStartTimeFilter(filter))
         .sort(sort -> sort.creationDate().asc())
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(pageRequest)
         .send()
         .join()
         .items();
@@ -258,7 +262,7 @@ public class CamundaDataSource {
     return client
         .newJobSearchRequest()
         .filter(withJobStartTimeFilter(filter))
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(pageRequest)
         .send()
         .join()
         .items();
@@ -277,6 +281,7 @@ public class CamundaDataSource {
     return client
         .newDecisionInstanceSearchRequest()
         .filter(withDecisionInstanceStartTimeFilter(filter))
+        .page(pageRequest)
         .send()
         .join()
         .items();
@@ -300,7 +305,7 @@ public class CamundaDataSource {
     return client
         .newDecisionDefinitionSearchRequest()
         .filter(f -> f.decisionDefinitionId(decisionDefinitionId))
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(pageRequest)
         .sort(sort -> sort.version().desc())
         .send()
         .join()
@@ -327,7 +332,7 @@ public class CamundaDataSource {
         .newMessageSubscriptionSearchRequest()
         .filter(withMessageSubscriptionStartTimeFilter(filter))
         .sort(sort -> sort.lastUpdatedDate().asc())
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(pageRequest)
         .send()
         .join()
         .items();
@@ -349,7 +354,7 @@ public class CamundaDataSource {
         .newCorrelatedMessageSubscriptionSearchRequest()
         .filter(withCorrelatedMessageStartTimeFilter(filter))
         .sort(sort -> sort.correlationTime().asc())
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(pageRequest)
         .send()
         .join()
         .items();

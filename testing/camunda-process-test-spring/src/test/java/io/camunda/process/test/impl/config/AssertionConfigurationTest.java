@@ -55,7 +55,7 @@ public class AssertionConfigurationTest {
   @TestPropertySource(
       properties = {
         "camunda.process-test.assertion.timeout=PT1M",
-        "camunda.process-test.assertion.interval=PT0.5S"
+        "camunda.process-test.assertion.interval=PT0.5S",
       })
   class ConfigureAssertion {
 

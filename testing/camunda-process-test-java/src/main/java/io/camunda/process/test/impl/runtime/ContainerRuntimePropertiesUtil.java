@@ -52,6 +52,7 @@ public final class ContainerRuntimePropertiesUtil {
   public static final String PROPERTY_NAME_MULTI_TENANCY_ENABLED = "multiTenancyEnabled";
   public static final String PROPERTY_NAME_CLOCK_RESET_ENABLED = "clockResetEnabled";
   public static final String PROPERTY_NAME_DATA_DELETION_MODE = "dataDeletionMode";
+  public static final String PROPERTY_NAME_QUERY_PAGE_LIMIT = "queryPageLimit";
 
   private static final String BASE_DIR = "/";
 
@@ -68,6 +69,7 @@ public final class ContainerRuntimePropertiesUtil {
   private final boolean multiTenancyEnabled;
   private final boolean clockResetEnabled;
   private final DataDeletionMode dataDeletionMode;
+  private final int queryPageLimit;
 
   private final String elasticsearchVersion;
 
@@ -115,6 +117,13 @@ public final class ContainerRuntimePropertiesUtil {
             PROPERTY_NAME_DATA_DELETION_MODE,
             value -> parseDataDeletionModeOrDefault(value, DataDeletionMode.CLUSTER_PURGE),
             DataDeletionMode.CLUSTER_PURGE);
+
+    queryPageLimit =
+        getPropertyOrDefault(
+            properties,
+            PROPERTY_NAME_QUERY_PAGE_LIMIT,
+            Integer::parseInt,
+            CamundaProcessTestRuntimeDefaults.DEFAULT_QUERY_PAGE_LIMIT);
   }
 
   public static ContainerRuntimePropertiesUtil readProperties() {
@@ -268,6 +277,10 @@ public final class ContainerRuntimePropertiesUtil {
 
   public DataDeletionMode getDataDeletionMode() {
     return dataDeletionMode;
+  }
+
+  public int getQueryPageLimit() {
+    return queryPageLimit;
   }
 
   public CoverageReportProperties getCoverageReportProperties() {
