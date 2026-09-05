@@ -42,7 +42,6 @@ import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.utils.VoteQuorum;
 import io.atomix.raft.utils.VoteQuorum.VoteErrorStatus;
-import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -319,19 +318,18 @@ public final class FollowerRole extends ActiveRole {
 
     if (isRunning() && !complete.get()) {
       if (error != null) {
-        final var cause = FuturesUtil.unwrapCompletionException(error);
-        final var status = VoteErrorStatus.of(cause);
-        log.atLevel(status.logLevel())
-            .log("Poll request to {} failed with {}: {}", member.memberId(), status, cause);
-        quorum.fail(member.memberId(), status);
+        quorum.fail(member.memberId(), logRequestFailure("Poll", member, error));
       } else {
-        if (response.term() > raft.getTerm()) {
+        final boolean respondedWithGreaterTerm = response.term() > raft.getTerm();
+        if (respondedWithGreaterTerm) {
           raft.setTerm(response.term());
         }
 
         if (!response.accepted()) {
           log.debug("Received rejected poll from {}", member);
-          quorum.fail(member.memberId(), VoteErrorStatus.REJECTED);
+          quorum.fail(
+              member.memberId(),
+              respondedWithGreaterTerm ? VoteErrorStatus.INVALID_TERM : VoteErrorStatus.REJECTED);
         } else if (response.term() != raft.getTerm()) {
           log.debug("Received accepted poll for a different term from {}", member);
           quorum.fail(member.memberId(), VoteErrorStatus.INVALID_TERM);
