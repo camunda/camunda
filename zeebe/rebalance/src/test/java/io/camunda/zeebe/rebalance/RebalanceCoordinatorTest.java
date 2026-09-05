@@ -12,12 +12,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.ConfigurationChangeInProgressException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.NotCoordinatorException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.RebalanceInProgressException;
@@ -32,6 +36,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,6 +53,7 @@ final class RebalanceCoordinatorTest {
 
   private static final MemberId LOWEST_ID_MEMBER = MemberId.from("1");
   private static final MemberId OTHER_MEMBER = MemberId.from("2");
+  private static final String OTHER_TENANT = "tenant-b";
   private static final Instant FIXED_INSTANT = Instant.parse("2024-01-01T00:00:00Z");
   private static final PartitionRebalance PLAN =
       PartitionRebalance.pending("default", 1, LOWEST_ID_MEMBER, OTHER_MEMBER);
@@ -605,6 +611,157 @@ final class RebalanceCoordinatorTest {
     assertThat(runner.invocations).isEqualTo(1);
   }
 
+  @Test
+  void shouldAdmitARebalanceWhileAPhysicalTenantIsRecovering() {
+    // given
+    final var runner = new CountingRunner();
+    final var coordinator = startCoordinator(LOWEST_ID_MEMBER, runner);
+    configurationWithEveryMemberRecovering(coordinator);
+
+    // when
+    final var triggered =
+        coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // then
+    assertThat(triggered.join().running().rebalanceId()).isEqualTo(100);
+    assertThat(runner.invocations).isEqualTo(1);
+  }
+
+  @Test
+  void shouldAdmitADryRunWhileAPhysicalTenantIsRecovering() {
+    // given
+    final var runner = new CountingRunner();
+    final var coordinator = startCoordinator(LOWEST_ID_MEMBER, runner);
+    configurationWithARecoveringMember(coordinator);
+
+    // when
+    final var triggered =
+        coordinator.triggerRebalance(new TriggerRebalanceRequest(RebalanceOverrides.none(), true));
+
+    // then
+    assertThat(triggered.join().running().rebalanceId()).isEqualTo(100);
+    assertThat(runner.invocations).isEqualTo(1);
+  }
+
+  @Test
+  void shouldTellTheRunningRebalanceThatAPhysicalTenantIsRecovering() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // when
+    configurationWithARecoveringMember(coordinator);
+
+    // then
+    assertThat(
+            runner.rebalance.isPhysicalTenantRecovering(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .isTrue();
+    assertThat(runner.rebalance.isCancelRequested())
+        .as("recovery is tracked per-partition, not by cancelling the run")
+        .isFalse();
+    assertThat(runner.rebalance.isAbandoned()).isFalse();
+  }
+
+  @Test
+  void shouldReportOnlyTheNamedTenantAsRecovering() {
+    // given
+    final var otherTenantPlan =
+        PartitionRebalance.pending(OTHER_TENANT, 1, LOWEST_ID_MEMBER, OTHER_MEMBER);
+    final var runner = new BlockedRunner(List.of(PLAN, otherTenantPlan));
+    final var coordinator = startCoordinator(LOWEST_ID_MEMBER, runner);
+    configurationWithBothMembers(coordinator);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // when
+    coordinator.onClusterConfigurationUpdated(
+        withRecoveringTenant(partitionedMembers(), OTHER_TENANT));
+
+    // then
+    assertThat(runner.rebalance.isPhysicalTenantRecovering(OTHER_TENANT)).isTrue();
+    assertThat(
+            runner.rebalance.isPhysicalTenantRecovering(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .isFalse();
+    assertThat(runner.rebalance.isCancelRequested()).isFalse();
+  }
+
+  @Test
+  void shouldTakeNoFurtherActionOnRepeatedRecoveryConfigurationUpdates() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+    configurationWithARecoveringMember(coordinator);
+
+    // when
+    configurationWithARecoveringMember(coordinator);
+
+    // then
+    assertThat(
+            runner.rebalance.isPhysicalTenantRecovering(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .isTrue();
+    final var status = coordinator.getRebalanceStatus().join();
+    assertThat(status.running().rebalanceId()).isEqualTo(100);
+    assertThat(status.lastCompleted()).isNull();
+  }
+
+  @Test
+  void shouldClearRecoveringStateWhenAPhysicalTenantReturnsToProcessing() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+    configurationWithARecoveringMember(coordinator);
+
+    // when
+    configurationWithBothMembers(coordinator);
+
+    // then
+    assertThat(
+            runner.rebalance.isPhysicalTenantRecovering(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .isFalse();
+    assertThat(runner.rebalance.isCancelRequested()).isFalse();
+  }
+
+  @Test
+  void shouldReportARebalanceThatLeftARecoveringPhysicalTenantAloneAsCompleted() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+    runner.rebalance.updatePartition(
+        0, partition -> partition.completed(PartitionRebalanceOutcome.PHYSICAL_TENANT_RECOVERING));
+
+    // when
+    runner.finish();
+
+    // then
+    assertThat(coordinator.getRebalanceStatus().join().lastCompleted().outcome())
+        .isEqualTo(RebalanceOutcome.COMPLETED);
+  }
+
+  @Test
+  void shouldAbandonRatherThanTrackRecoveryWhenItArrivesWithACoordinatorHandover() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // when
+    coordinator.onClusterConfigurationUpdated(
+        withRecoveringTenant(aNewLowestIdMember(), OTHER_TENANT));
+
+    // then
+    assertThat(runner.rebalance.isAbandoned()).isTrue();
+    assertThat(runner.rebalance.isCancelRequested())
+        .as("abandonment, not recovery, is why the run stopped")
+        .isFalse();
+  }
+
   private RebalanceCoordinator coordinatingWith(final RebalanceRunner runner) {
     final var coordinator = startCoordinator(LOWEST_ID_MEMBER, runner);
     configurationWithBothMembers(coordinator);
@@ -624,11 +781,77 @@ final class RebalanceCoordinatorTest {
   }
 
   private void configurationWithBothMembers(final RebalanceCoordinator coordinator) {
+    coordinator.onClusterConfigurationUpdated(bothMembers());
+  }
+
+  private void configurationWithARecoveringMember(final RebalanceCoordinator coordinator) {
     coordinator.onClusterConfigurationUpdated(
         CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))
-                .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of()))));
+            partitionedMemberStates().updateMember(OTHER_MEMBER, MemberState::toRecovering)));
+  }
+
+  private void configurationWithEveryMemberRecovering(final RebalanceCoordinator coordinator) {
+    coordinator.onClusterConfigurationUpdated(
+        CurrentClusterConfiguration.fromLegacy(
+            partitionedMemberStates()
+                .updateMember(LOWEST_ID_MEMBER, MemberState::toRecovering)
+                .updateMember(OTHER_MEMBER, MemberState::toRecovering)));
+  }
+
+  private static ClusterConfiguration bothMemberStates() {
+    return ClusterConfiguration.init()
+        .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))
+        .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of()));
+  }
+
+  private static ClusterConfiguration partitionedMemberStates() {
+    return ClusterConfiguration.init()
+        .addMember(
+            LOWEST_ID_MEMBER,
+            MemberState.initializeAsActive(
+                Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))))
+        .addMember(
+            OTHER_MEMBER,
+            MemberState.initializeAsActive(
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))));
+  }
+
+  private static CurrentClusterConfiguration bothMembers() {
+    return CurrentClusterConfiguration.fromLegacy(bothMemberStates());
+  }
+
+  private static CurrentClusterConfiguration partitionedMembers() {
+    return CurrentClusterConfiguration.fromLegacy(partitionedMemberStates());
+  }
+
+  private static CurrentClusterConfiguration aNewLowestIdMember() {
+    return CurrentClusterConfiguration.fromLegacy(
+        ClusterConfiguration.init()
+            .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()))
+            .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of())));
+  }
+
+  private static CurrentClusterConfiguration withRecoveringTenant(
+      final CurrentClusterConfiguration configuration, final String tenantId) {
+    final var recovering =
+        new PartitionGroupConfiguration(
+            PartitionGroupConfiguration.INITIAL_VERSION,
+            PartitionGroupConfiguration.INITIAL_INCARNATION_NUMBER,
+            Map.of(
+                LOWEST_ID_MEMBER,
+                BrokerPartitionState.initialize(
+                        Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))
+                    .setMode(Mode.RECOVERING)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var groups = new HashMap<>(configuration.partitionGroups());
+    groups.put(tenantId, recovering);
+    return new CurrentClusterConfiguration(
+        configuration.version(),
+        configuration.globalConfiguration(),
+        groups,
+        configuration.phasedChangeState());
   }
 
   private void configurationWithADisabledDefaultPhysicalTenant(
@@ -644,10 +867,7 @@ final class RebalanceCoordinatorTest {
   }
 
   private void configurationWithAPendingChange(final RebalanceCoordinator coordinator) {
-    final var members =
-        ClusterConfiguration.init()
-            .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))
-            .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of()));
+    final var members = bothMemberStates();
     coordinator.onClusterConfigurationUpdated(
         CurrentClusterConfiguration.fromLegacy(
             ClusterConfiguration.builder()
@@ -661,11 +881,7 @@ final class RebalanceCoordinatorTest {
   }
 
   private void configurationWithANewLowestIdMember(final RebalanceCoordinator coordinator) {
-    coordinator.onClusterConfigurationUpdated(
-        CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()))
-                .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))));
+    coordinator.onClusterConfigurationUpdated(aNewLowestIdMember());
   }
 
   private static final class CountingRunner implements RebalanceRunner {
@@ -683,12 +899,21 @@ final class RebalanceCoordinatorTest {
   private static final class BlockedRunner implements RebalanceRunner {
 
     private final CompletableActorFuture<Void> completion = new CompletableActorFuture<>();
+    private final List<PartitionRebalance> plan;
     private RebalanceRun rebalance;
+
+    BlockedRunner() {
+      this(List.of(PLAN));
+    }
+
+    BlockedRunner(final List<PartitionRebalance> plan) {
+      this.plan = plan;
+    }
 
     @Override
     public ActorFuture<Void> run(final RebalanceRun rebalance) {
       this.rebalance = rebalance;
-      rebalance.plan(List.of(PLAN));
+      rebalance.plan(plan);
       return completion;
     }
 
