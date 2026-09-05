@@ -135,6 +135,54 @@ func TestShouldMarkQuickstartAsSeenAfterSuccessfulStartup(t *testing.T) {
 	}
 }
 
+func TestShouldSkipOpeningBrowserWhenNoBrowserIsSet(t *testing.T) {
+	// given
+	markerPath := filepath.Join(t.TempDir(), ".c8run-quickstart-seen")
+	settings := types.C8RunSettings{
+		StartupUrl:        "http://localhost:8080/operate",
+		StartupMarkerPath: markerPath,
+		NoBrowser:         true,
+	}
+	opener := &stubOpener{}
+
+	originalIsRunningFunc := isRunningFunc
+	originalPrintStatusFunc := printStatusFunc
+	printStatusCalled := false
+	t.Cleanup(func() {
+		isRunningFunc = originalIsRunningFunc
+		printStatusFunc = originalPrintStatusFunc
+	})
+
+	isRunningFunc = func(_ context.Context, _ string, _ string, _ int, _ time.Duration) bool {
+		return true
+	}
+	printStatusFunc = func(types.C8RunSettings) error {
+		printStatusCalled = true
+		return nil
+	}
+
+	// when
+	err := QueryCamunda(context.Background(), opener, "Camunda", settings, 0)
+	if err != nil {
+		t.Fatalf("QueryCamunda failed: %v", err)
+	}
+
+	// then
+	if opener.url != "" {
+		t.Fatalf("expected browser not to be opened, but it was opened with %s", opener.url)
+	}
+	if !printStatusCalled {
+		t.Fatal("expected printStatusFunc to still be called")
+	}
+	_, err = os.Stat(markerPath)
+	if err == nil {
+		t.Fatal("expected quickstart marker not to be consumed on a headless start, but it was created")
+	}
+	if !os.IsNotExist(err) {
+		t.Fatalf("unexpected error checking marker path: %v", err)
+	}
+}
+
 func TestShouldShowConnectorsAsDisabledInStatusOutput(t *testing.T) {
 	// given
 	cwd, err := os.Getwd()
