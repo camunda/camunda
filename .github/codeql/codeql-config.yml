@@ -1,0 +1,37 @@
+# CodeQL configuration for the Code Quality AI Pipeline.
+#
+# Source of truth for queries, severity/precision filters, and ignore
+# patterns. The Stage 1 `hotspots` job in the workflow takes a copy of
+# this file at runtime, replaces `paths:` with the code-maat hotspot
+# ranking, and feeds the result to codeql-action/init via `config-file:`.
+# Editing query packs, filters, or ignores? Edit this file — not the
+# workflow.
+#
+# `paths:` here is the local-run / fallback default; the runtime copy
+# overrides it. Keep it narrow so a manual `codeql database analyze`
+# against this config doesn't accidentally scan the whole monorepo.
+#
+# Query pack: security-and-quality (broad). Switch to security-extended
+# if the volume of findings is unmanageable.
+
+name: "Code Quality AI Pipeline — CodeQL configuration"
+
+queries:
+  - uses: security-and-quality
+
+# Drop low-signal findings before they reach the AI triage stage.
+query-filters:
+  - exclude:
+      problem.severity:
+        - recommendation
+        - note
+  - exclude:
+      problem.precision:
+        - low
+
+paths:
+  - zeebe/engine
+
+paths-ignore:
+  - "**/target/**"
+  - "**/generated-sources/**"
