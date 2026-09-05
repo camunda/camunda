@@ -503,6 +503,15 @@
 					"endDate": "Enddatum",
 					"operationState": "Vorgangsstatus",
 					"operationStateLoading": "Wird geladen...",
+					"operations": {
+						"header": "Vorgänge",
+						"resolveIncidentsFailed": "Wiederholung der Incidents fehlgeschlagen",
+						"cancelFailed": "Abbrechen der Prozessinstanz fehlgeschlagen",
+						"deleteFailed": "Löschen der Prozessinstanz fehlgeschlagen",
+						"deleteScheduled": "Instanz ist zum Löschen vorgemerkt",
+						"forbiddenTitle": "Sie haben keine Berechtigung, diese Operation auszuführen",
+						"forbiddenSubtitle": "Bitte kontaktieren Sie Ihren Administrator, wenn Sie Zugriff benötigen."
+					},
 					"parentProcessInstanceKey": "Übergeordneter Prozessinstanz-Schlüssel",
 					"viewInstance": "Instanz {{key}} anzeigen",
 					"viewParentInstance": "Übergeordnete Instanz {{key}} anzeigen",

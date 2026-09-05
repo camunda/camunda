@@ -15,6 +15,7 @@ import {
 	mockLicenseEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
@@ -28,6 +29,7 @@ import {
 	createProcessInstance,
 	createQueryProcessInstancesResponse,
 } from '#/shared-test-modules/api-mocks/process-instances';
+import {createQueryBatchOperationItemsResponse} from '#/shared-test-modules/api-mocks/batch-operations';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 test.beforeEach(({network}) => {
@@ -53,6 +55,9 @@ test.beforeEach(({network}) => {
 					items: [createProcessDefinition({name: 'Order Process', processDefinitionId: 'order-process'})],
 				}),
 			),
+		}),
+		mockQueryBatchOperationItemsEndpoint({
+			successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse()),
 		}),
 		mockQueryProcessInstancesEndpoint({
 			successResponse: HttpResponse.json(
