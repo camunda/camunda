@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.processinstance.CommandBufferingBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
@@ -137,12 +138,16 @@ public class Engine implements RecordProcessor {
             recordProcessorContext, writers, config, securityConfig);
     processingState = typedProcessorContext.getProcessingState();
     writers.setKeyValidator(processingState.getKeyGenerator());
-    bufferingBehavior = new CommandBufferingBehavior(processingState.getKeyGenerator(), writers);
     suspensionCheck = new SuspensionCheck(processingState);
+
+    final var suspensionMetrics = new SuspensionMetrics(typedProcessorContext.getMeterRegistry());
+    typedProcessorContext.setSuspensionMetrics(suspensionMetrics);
 
     ((EventAppliers) eventApplier).registerEventAppliers(processingState);
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
+    bufferingBehavior =
+        new CommandBufferingBehavior(processingState.getKeyGenerator(), writers, suspensionMetrics);
 
     recordProcessorContext.addLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();

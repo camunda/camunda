@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
@@ -56,11 +57,13 @@ public final class ProcessInstanceResumeProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final CslAuthorizationCheck cslCheck;
   private final SuspensionState suspensionState;
+  private final SuspensionMetrics suspensionMetrics;
 
   public ProcessInstanceResumeProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final SuspensionMetrics suspensionMetrics) {
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     stateWriter = writers.state();
@@ -68,6 +71,7 @@ public final class ProcessInstanceResumeProcessor
     rejectionWriter = writers.rejection();
     this.cslCheck = cslCheck;
     suspensionState = processingState.getSuspensionState();
+    this.suspensionMetrics = suspensionMetrics;
   }
 
   @Override
@@ -174,6 +178,9 @@ public final class ProcessInstanceResumeProcessor
     // buffer spans several command batches, and RESUMED is written only once it is empty
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.RESUMING, value, command);
+    if (!isRestart) {
+      suspensionMetrics.startResumeDuration(command.getKey());
+    }
   }
 
   /**

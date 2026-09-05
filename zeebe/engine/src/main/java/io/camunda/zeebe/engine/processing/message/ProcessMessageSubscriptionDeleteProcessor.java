@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -47,6 +48,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
   private final SuspensionState suspensionState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final KeyGenerator keyGenerator;
+  private final SuspensionMetrics suspensionMetrics;
 
   // Scratch copy of the manifest, taken before CREATED (whose applier re-reads the shared record),
   // so the REOPEN command we buffer keeps the right field values.
@@ -58,11 +60,13 @@ public final class ProcessMessageSubscriptionDeleteProcessor
       final SuspensionState suspensionState,
       final Writers writers,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final SuspensionMetrics suspensionMetrics) {
     this.subscriptionState = subscriptionState;
     this.suspensionState = suspensionState;
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     this.keyGenerator = keyGenerator;
+    this.suspensionMetrics = suspensionMetrics;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
@@ -94,6 +98,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
     }
 
     final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
+    final boolean bufferedReopen;
     if (subscription.getRecord().isClosedForSuspend()) {
       // Restore the PI-side row to OPENED as the durable resume manifest and buffer a REOPEN so the
       // drain re-subscribes it one row per batch on resume. Snapshot before CREATED, whose applier
@@ -105,6 +110,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
           subscription.getRecord());
       bufferReopenCommand(subscription.getKey(), reopenScratch);
       retriggerDrainIfResuming(processInstanceKey, reopenScratch);
+      bufferedReopen = true;
     } else {
       stateWriter.appendFollowUpEvent(
           subscription.getKey(),
@@ -115,6 +121,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
       // Re-wake the drain here too, otherwise the instance stays RESUMING forever. Self-gates on
       // RESUMING, so it is a no-op for the common unsuspended close.
       retriggerDrainIfResuming(processInstanceKey, subscription.getRecord());
+      bufferedReopen = false;
     }
 
     // update transient state in a side-effect to ensure that these changes only take effect after
@@ -124,6 +131,11 @@ public final class ProcessMessageSubscriptionDeleteProcessor
           transientProcessMessageSubscriptionState.remove(
               new PendingSubscription(elementInstanceKey, messageName, tenantId));
         });
+
+    // metrics after all writes
+    if (bufferedReopen) {
+      suspensionMetrics.commandBuffered();
+    }
   }
 
   /**

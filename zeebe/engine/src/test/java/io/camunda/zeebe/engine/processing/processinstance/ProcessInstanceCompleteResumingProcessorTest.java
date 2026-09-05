@@ -16,6 +16,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -44,6 +45,7 @@ public final class ProcessInstanceCompleteResumingProcessorTest {
   private SideEffectWriter sideEffectWriter;
   private TypedRejectionWriter rejectionWriter;
   private DueDateTimerCheckScheduler timerChecker;
+  private SuspensionMetrics suspensionMetrics;
   private ProcessInstanceCompleteResumingProcessor processor;
 
   @BeforeEach
@@ -54,6 +56,7 @@ public final class ProcessInstanceCompleteResumingProcessorTest {
     sideEffectWriter = mock(SideEffectWriter.class);
     rejectionWriter = mock(TypedRejectionWriter.class);
     timerChecker = mock(DueDateTimerCheckScheduler.class);
+    suspensionMetrics = mock(SuspensionMetrics.class);
 
     final var writers = mock(Writers.class);
     when(writers.state()).thenReturn(stateWriter);
@@ -62,7 +65,7 @@ public final class ProcessInstanceCompleteResumingProcessorTest {
 
     processor =
         new ProcessInstanceCompleteResumingProcessor(
-            elementInstanceState, suspensionState, writers, timerChecker);
+            elementInstanceState, suspensionState, writers, timerChecker, suspensionMetrics);
 
     // default: the common case of an active instance still marked RESUMING
     when(suspensionState.getSuspensionState(PROCESS_INSTANCE_KEY))
