@@ -1237,6 +1237,243 @@ func TestStripConscryptNativeLibsSkipsWhenJarMissing(t *testing.T) {
 	}
 }
 
+func TestStripGrpcNettyShadedNativeLibsStripsJarLinux(t *testing.T) {
+	// given
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "grpc-netty-shaded-1.81.0.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	entries := []string{
+		"META-INF/MANIFEST.MF",
+		"io/grpc/netty/shaded/io/grpc/netty/NettyServer.class",
+		"META-INF/native/libio_grpc_netty_shaded_netty_tcnative_linux_x86_64.so",
+		"META-INF/native/libio_grpc_netty_shaded_netty_tcnative_linux_aarch_64.so",
+		"META-INF/native/libio_grpc_netty_shaded_netty_tcnative_osx_x86_64.jnilib",
+		"META-INF/native/libio_grpc_netty_shaded_netty_tcnative_osx_aarch_64.jnilib",
+		"META-INF/native/io_grpc_netty_shaded_netty_tcnative_windows_x86_64.dll",
+		"META-INF/native/libio_grpc_netty_shaded_netty_transport_native_epoll_x86_64.so",
+		"META-INF/native/libio_grpc_netty_shaded_netty_transport_native_epoll_aarch_64.so",
+	}
+	for _, name := range entries {
+		fw, err := w.Create(name)
+		if err != nil {
+			t.Fatalf("failed to create zip entry %s: %v", name, err)
+		}
+		if _, err := fw.Write([]byte("binary-" + name)); err != nil {
+			t.Fatalf("failed to write zip entry %s: %v", name, err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when: strip for linux/x86_64 — keeps tcnative_linux_x86_64 + epoll_x86_64
+	err = stripGrpcNettyShadedNativeLibs(version, "linux", "x86_64")
+
+	// then
+	if err != nil {
+		t.Fatalf("stripGrpcNettyShadedNativeLibs returned error: %v", err)
+	}
+
+	r, err := zip.OpenReader(jarPath)
+	if err != nil {
+		t.Fatalf("failed to open stripped jar: %v", err)
+	}
+	defer func() {
+		if err := r.Close(); err != nil {
+			t.Errorf("failed to close stripped jar: %v", err)
+		}
+	}()
+
+	kept := make(map[string]bool)
+	for _, entry := range r.File {
+		kept[entry.Name] = true
+	}
+
+	for _, mustKeep := range []string{
+		"META-INF/MANIFEST.MF",
+		"io/grpc/netty/shaded/io/grpc/netty/NettyServer.class",
+		"META-INF/native/libio_grpc_netty_shaded_netty_tcnative_linux_x86_64.so",
+		"META-INF/native/libio_grpc_netty_shaded_netty_transport_native_epoll_x86_64.so",
+	} {
+		if !kept[mustKeep] {
+			t.Fatalf("expected entry %q to be preserved, got entries: %v", mustKeep, kept)
+		}
+	}
+
+	for _, mustDrop := range []string{
+		"META-INF/native/libio_grpc_netty_shaded_netty_tcnative_linux_aarch_64.so",
+		"META-INF/native/libio_grpc_netty_shaded_netty_tcnative_osx_x86_64.jnilib",
+		"META-INF/native/libio_grpc_netty_shaded_netty_tcnative_osx_aarch_64.jnilib",
+		"META-INF/native/io_grpc_netty_shaded_netty_tcnative_windows_x86_64.dll",
+		"META-INF/native/libio_grpc_netty_shaded_netty_transport_native_epoll_aarch_64.so",
+	} {
+		if kept[mustDrop] {
+			t.Fatalf("expected entry %q to be dropped, but it was kept", mustDrop)
+		}
+	}
+}
+
+func TestStripGrpcNettyShadedNativeLibsDropsEpollOnDarwin(t *testing.T) {
+	// given: epoll transport is Linux-only — must be fully dropped on darwin targets.
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "grpc-netty-shaded-1.81.0.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	entries := []string{
+		"META-INF/native/libio_grpc_netty_shaded_netty_tcnative_osx_x86_64.jnilib",
+		"META-INF/native/libio_grpc_netty_shaded_netty_tcnative_linux_x86_64.so",
+		"META-INF/native/libio_grpc_netty_shaded_netty_transport_native_epoll_x86_64.so",
+		"META-INF/native/libio_grpc_netty_shaded_netty_transport_native_epoll_aarch_64.so",
+	}
+	for _, name := range entries {
+		fw, err := w.Create(name)
+		if err != nil {
+			t.Fatalf("failed to create zip entry %s: %v", name, err)
+		}
+		if _, err := fw.Write([]byte("binary-" + name)); err != nil {
+			t.Fatalf("failed to write zip entry %s: %v", name, err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when: strip for darwin/x86_64 — epoll has no darwin variant, so both entries drop.
+	err = stripGrpcNettyShadedNativeLibs(version, "darwin", "x86_64")
+
+	// then
+	if err != nil {
+		t.Fatalf("stripGrpcNettyShadedNativeLibs returned error: %v", err)
+	}
+
+	r, err := zip.OpenReader(jarPath)
+	if err != nil {
+		t.Fatalf("failed to open stripped jar: %v", err)
+	}
+	defer func() {
+		if err := r.Close(); err != nil {
+			t.Errorf("failed to close stripped jar: %v", err)
+		}
+	}()
+
+	kept := make(map[string]bool)
+	for _, entry := range r.File {
+		kept[entry.Name] = true
+	}
+
+	if !kept["META-INF/native/libio_grpc_netty_shaded_netty_tcnative_osx_x86_64.jnilib"] {
+		t.Fatalf("expected osx tcnative entry to be preserved, got entries: %v", kept)
+	}
+	for _, mustDrop := range []string{
+		"META-INF/native/libio_grpc_netty_shaded_netty_tcnative_linux_x86_64.so",
+		"META-INF/native/libio_grpc_netty_shaded_netty_transport_native_epoll_x86_64.so",
+		"META-INF/native/libio_grpc_netty_shaded_netty_transport_native_epoll_aarch_64.so",
+	} {
+		if kept[mustDrop] {
+			t.Fatalf("expected entry %q to be dropped on darwin, but it was kept", mustDrop)
+		}
+	}
+}
+
+func TestStripGrpcNettyShadedNativeLibsErrorsWhenKeepTokenAbsent(t *testing.T) {
+	// given: JAR contains only foreign-platform tcnative entries — target token absent.
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "grpc-netty-shaded-1.81.0.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	fw, err := w.Create("META-INF/native/libio_grpc_netty_shaded_netty_tcnative_linux_aarch_64.so")
+	if err != nil {
+		t.Fatalf("failed to create zip entry: %v", err)
+	}
+	if _, err := fw.Write([]byte("binary")); err != nil {
+		t.Fatalf("failed to write zip entry: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when: strip for linux/x86_64 — only aarch_64 tcnative entry exists, no x86_64 match.
+	err = stripGrpcNettyShadedNativeLibs(version, "linux", "x86_64")
+
+	// then
+	if err == nil {
+		t.Fatal("expected error when target token is absent in JAR, got nil")
+	}
+}
+
 func TestVerifyClassFileVersionAcceptsJava21Class(t *testing.T) {
 	// given — minimal class file header with major version matching helperJavaRelease
 	dir := t.TempDir()
