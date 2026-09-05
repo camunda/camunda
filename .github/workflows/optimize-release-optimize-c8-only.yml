@@ -169,7 +169,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Install common tooling (buildx) # required on self-hosted runners
-        uses: camunda/infra-global-github-actions/common-tooling@b20a0e8f64ea6554900bab2d3fb3906be613aa19 # common-tooling-1.0.1
+        uses: camunda/infra-global-github-actions/common-tooling@475528365f4010480dccff71ccac554cc3352e7c # common-tooling-1.0.5
         with:
           buildx-enabled: true
           java-enabled: false
