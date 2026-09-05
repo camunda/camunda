@@ -18,6 +18,7 @@ package io.atomix.raft.roles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftException;
 import io.atomix.raft.RaftException.AppendFailureException;
 import io.atomix.raft.RaftException.CommitFailedException;
@@ -76,6 +77,7 @@ final class LeaderAppender {
   private final long electionTimeout;
   private final NavigableMap<Long, CompletableFuture<Long>> appendFutures = new TreeMap<>();
   private final List<TimestampedFuture<Long>> heartbeatFutures = new ArrayList<>();
+  private final List<ReplicationWait> replicationWaits = new ArrayList<>();
   private final long heartbeatTime;
   private final int minStepDownFailureCount;
   private final long maxQuorumResponseTimeout;
@@ -266,6 +268,7 @@ final class LeaderAppender {
   private void updateMatchIndex(final RaftMemberContext member, final AppendResponse response) {
     // If the replica returned a valid match index then update the existing match index.
     member.setMatchIndex(response.lastLogIndex());
+    completeReplicationWaits(member);
     observeRemainingMemberEntries(member);
   }
 
@@ -660,6 +663,63 @@ final class LeaderAppender {
     return future;
   }
 
+  /**
+   * Observes replication to a single follower: the returned future completes once {@code memberId}
+   * acknowledges an append that carries its {@code matchIndex} to {@code targetIndex}.
+   *
+   * <p>This also triggers an immediate append for the follower, if there is anything to replicate.
+   *
+   * <p>The returned future must only be completed or cancelled on the Raft thread: cancelling it
+   * unregisters the waiter, which is a direct mutation of appender state.
+   *
+   * @return a future completing when the follower reaches {@code targetIndex}, or failing if this
+   *     leader steps down first
+   */
+  CompletableFuture<Void> awaitReplication(final MemberId memberId, final long targetIndex) {
+    raft.checkThread();
+
+    if (!open) {
+      return CompletableFuture.failedFuture(
+          new NoLeader("Cannot await replication on closed leader"));
+    }
+
+    final var member = raft.getCluster().getMemberContext(memberId);
+    if (member == null) {
+      return CompletableFuture.failedFuture(
+          new IllegalArgumentException("Unknown member " + memberId));
+    }
+
+    if (member.getMatchIndex() >= targetIndex) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    final var future = new CompletableFuture<Void>();
+    final var wait = new ReplicationWait(memberId, targetIndex, future);
+
+    replicationWaits.add(wait);
+    future.whenComplete((ignored, error) -> replicationWaits.remove(wait));
+
+    appendEntries(member);
+    return future;
+  }
+
+  /** Completes the waiters that {@code member}'s new match index has satisfied. */
+  private void completeReplicationWaits(final RaftMemberContext member) {
+    if (replicationWaits.isEmpty()) {
+      return;
+    }
+
+    final var memberId = member.getMember().memberId();
+    final var completed =
+        replicationWaits.stream()
+            .filter(wait -> wait.memberId().equals(memberId))
+            .filter(wait -> member.getMatchIndex() >= wait.targetIndex())
+            .toList();
+
+    replicationWaits.removeAll(completed);
+    completed.forEach(wait -> wait.future().complete(null));
+  }
+
   /** Completes append entries attempts up to the given index. */
   private void completeCommits(final long commitIndex) {
     final var completable = appendFutures.headMap(commitIndex, true);
@@ -920,6 +980,14 @@ final class LeaderAppender {
         future ->
             future.completeExceptionally(
                 new RaftException.ProtocolException("Failed to reach consensus")));
+
+    final var waits = List.copyOf(replicationWaits);
+    replicationWaits.clear();
+    waits.forEach(
+        wait ->
+            wait.future()
+                .completeExceptionally(
+                    new AppendFailureException(wait.targetIndex(), "Leader stepping down")));
   }
 
   private void tryToReplicate(final RaftMemberContext member) {
@@ -1111,6 +1179,10 @@ final class LeaderAppender {
    * heartbeat requests have {@code 0} size and retain the current position.
    */
   private record SizedAppendRequest(VersionedAppendRequest request, long size) {}
+
+  /** A one-shot observer of a single follower reaching {@code targetIndex}. */
+  private record ReplicationWait(
+      MemberId memberId, long targetIndex, CompletableFuture<Void> future) {}
 
   /** Timestamped completable future. */
   private static class TimestampedFuture<T> extends CompletableFuture<T> {
