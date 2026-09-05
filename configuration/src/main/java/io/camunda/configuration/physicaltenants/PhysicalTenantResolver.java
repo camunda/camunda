@@ -70,7 +70,8 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
           new SecondaryStorageTypeHomogeneityValidation(),
           new DocumentStoreIsolationValidation(),
           new PrimaryStorageBackupIsolationValidation(),
-          new SnapshotRepositoryIsolationValidation());
+          new SnapshotRepositoryIsolationValidation(),
+          new ArchiverlessSecondaryStorageValidation());
 
   private final Map<String, Camunda> resolved;
 
