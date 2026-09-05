@@ -425,6 +425,64 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
             Tuple.tuple("objectVar.likes._listSize", LONG.getId(), Collections.singletonList("3")));
   }
 
+  @Test
+  public void zeebeVariableImport_objectVariableIsFlattenedRetroactivelyAfterEnablingFlag() {
+    // Regression for epic camunda/product-hub#3785 (case 5, recovery via reimport): an object
+    // variable imported while the flag was false (so no flattening happened) must get correctly
+    // flattened retroactively once the flag is switched to true and the importer reimports the
+    // underlying Zeebe records. The raw Zeebe record always preserves the full object regardless of
+    // the flag - only Optimize's own import behavior is gated by it.
+    // given the flag is off and the object variable is imported (and therefore skipped)
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getConfiguredZeebe()
+        .setIncludeObjectVariableValue(false);
+    final Map<String, Object> objectVar = new HashMap<>();
+    objectVar.put("firstName", "Ada");
+    objectVar.put("lastName", "Lovelace");
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("user", objectVar);
+    variables.put("plainVar", "keep");
+    final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(variables);
+    waitUntilMinimumVariableDocumentsWithCreatedIntentForInstanceExportedCount(
+        2, processInstanceKey);
+    importAllZeebeEntitiesFromScratch();
+
+    // then only the plain variable is stored; the object variable is absent (not flattened, raw not
+    // stored)
+    final ProcessInstanceDto beforeReimport =
+        getProcessInstanceForId(String.valueOf(processInstanceKey));
+    assertThat(beforeReimport.getVariables())
+        .extracting(SimpleProcessVariableDto::getName, SimpleProcessVariableDto::getType)
+        .containsExactly(Tuple.tuple("plainVar", STRING_TYPE));
+
+    // when the flag is switched on and the same Zeebe records are reimported from scratch
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getConfiguredZeebe()
+        .setIncludeObjectVariableValue(true);
+    importAllZeebeEntitiesFromScratch();
+
+    // then the object variable is now flattened into report-usable sub-fields and its raw value is
+    // stored
+    final ProcessInstanceDto afterReimport =
+        getProcessInstanceForId(String.valueOf(processInstanceKey));
+    assertThat(afterReimport.getVariables())
+        .extracting(
+            SimpleProcessVariableDto::getName,
+            SimpleProcessVariableDto::getType,
+            SimpleProcessVariableDto::getValue)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("plainVar", STRING_TYPE, Collections.singletonList("keep")),
+            Tuple.tuple(
+                "user",
+                OBJECT.getId(),
+                Collections.singletonList(
+                    variablesClient.createMapJsonObjectVariableDto(objectVar).getValue())),
+            Tuple.tuple("user.firstName", STRING.getId(), Collections.singletonList("Ada")),
+            Tuple.tuple("user.lastName", STRING.getId(), Collections.singletonList("Lovelace")));
+  }
+
   private Map<String, Object> generateVariables() {
     return Map.of("var1", "someValue", "var2", false, "var3", 123, "var4", 123.3, "var5", "");
   }
