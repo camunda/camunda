@@ -37,7 +37,7 @@
     "react-error-boundary": "6.0.3",
     "react-final-form": "6.5.9",
     "react-final-form-arrays": "3.1.4",
-    "react-router": "7.18.0",
+    "react-router": "7.18.2",
     "react-transition-group": "4.4.5",
     "styled-components": "6.4.1",
     "tiny-svg": "4.1.4"
