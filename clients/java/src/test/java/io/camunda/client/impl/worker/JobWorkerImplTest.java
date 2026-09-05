@@ -76,6 +76,7 @@ import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -97,6 +98,15 @@ final class JobWorkerImplTest {
   private MockedGateway gateway;
   private CamundaClient client;
   private ManagedChannel channel;
+
+  // Keep this explicit teardown so the client closes before the migrated JUnit 4 GrpcCleanupRule
+  // checks that its channel has been released; @AutoClose runs too late for this mixed test.
+  @AfterEach
+  void tearDown() {
+    if (client != null) {
+      client.close();
+    }
+  }
 
   @BeforeEach
   void setup() throws IOException {
@@ -184,8 +194,6 @@ final class JobWorkerImplTest {
 
     // since stream is enabled then we expect the poll to backoff
     assertThat(gateway.getTimeBetweenLatestPolls()).isGreaterThan(SLOW_POLL_THRESHOLD);
-
-    client.close();
   }
 
   @Test
@@ -210,20 +218,21 @@ final class JobWorkerImplTest {
     Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "false");
 
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
-    builder.applyEnvironmentVariableOverrides(true).build();
-    final CamundaClient camundaClient =
-        new CamundaClientImpl(builder, channel, GatewayGrpc.newStub(channel));
+    try (final CamundaClient configurationClient =
+            builder.applyEnvironmentVariableOverrides(true).build();
+        final CamundaClient camundaClient =
+            new CamundaClientImpl(builder, channel, GatewayGrpc.newStub(channel))) {
+      final JobWorkerBuilderStep3 jobWorkerBuilderStep3 =
+          camundaClient.newWorker().jobType("test").handler(NOOP_JOB_HANDLER).streamEnabled(true);
 
-    final JobWorkerBuilderStep3 jobWorkerBuilderStep3 =
-        camundaClient.newWorker().jobType("test").handler(NOOP_JOB_HANDLER).streamEnabled(true);
-
-    // when
-    try (final JobWorker ignored = jobWorkerBuilderStep3.open()) {
-      // then
-      Awaitility.await("until a stream is open")
-          .pollInterval(Duration.ofMillis(100))
-          .atMost(Duration.ofSeconds(5))
-          .untilAsserted(() -> assertThat(gateway.openStreams).hasSize(1));
+      // when
+      try (final JobWorker ignored = jobWorkerBuilderStep3.open()) {
+        // then
+        Awaitility.await("until a stream is open")
+            .pollInterval(Duration.ofMillis(100))
+            .atMost(Duration.ofSeconds(5))
+            .untilAsserted(() -> assertThat(gateway.openStreams).hasSize(1));
+      }
     }
   }
 
