@@ -81,6 +81,13 @@ load-tester:
     rate-duration: ${LOAD_TESTER_STARTER_RATE_DURATION:1s}
     threads: ${LOAD_TESTER_STARTER_THREADS:2}
     bpmn-xml-path: ${LOAD_TESTER_STARTER_BPMN_XML_PATH:bpmn/one_task.bpmn}
+    # Secret benchmark mode. When > 0, bpmn-xml-path is read as a template with
+    # __PROCESS_ID__ and __SECRET__ placeholders, and that many variants are deployed
+    # as `<process-id>-<i>` referencing secret `s<i>`. Each instance is then started on
+    # a uniformly random variant, so the share of secret cache misses follows the ratio
+    # of variants to camunda.secrets.cache.max-size. The backing secret store must hold
+    # s0..s<n-1>; see load-tests/setup/main/values/camunda-platform-values-secrets.yaml.
+    secret-variants: ${LOAD_TESTER_STARTER_SECRET_VARIANTS:0}
     # Extra BPMN models: set via indexed env vars, e.g.
     # LOAD_TESTER_STARTER_EXTRA_BPMN_MODELS_0_=bpmn/realistic/refundingProcess.bpmn
     extra-bpmn-models: []
