@@ -29,12 +29,17 @@
 #   Set to `false` for versions without product-side physical-tenant config
 #   support, so physical_tenant_count > 0 fails fast instead of silently
 #   rendering an incomplete overlay.
+#
+# - prefer_rest
+#   Whether the load testers prefer REST over gRPC (matches the load-tester
+#   application default). Set to `false` on versions that should keep gRPC (8.7).
 
 rdbms_storages ?= postgresql mysql mariadb mssql oracle
 optimize_self_sufficient_storages ?= elasticsearch opensearch
 scenario_max_override_key ?= orchestration.extraConfiguration[1].content=
 install_storage_target ?= install-storage
 physical_tenants_supported ?= true
+prefer_rest ?= true
 
 template_output_dir ?= .
 # Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
@@ -98,6 +103,12 @@ additional_load_test_setup_configuration ?=
 # Makefile-side load-test-setup flags. Separate from `additional_load_test_setup_configuration`,
 # which CI sets on the make command line and would suppress `+=` here.
 _load_test_setup_flags =
+
+# load-tester-values-defaults.yaml defaults preferRest to true. Only emit an explicit
+# override when a version opts out of the REST default (e.g. 8.7, which keeps gRPC).
+ifneq ($(prefer_rest),true)
+_load_test_setup_flags += --set global.preferRest.enabled=$(prefer_rest)
+endif
 
 # The Docker image tag for the load test metrics exporter
 metrics_exporter_image_tag = latest
@@ -266,8 +277,12 @@ generate-physical-tenant-values:
 # The camunda-load-tests subchart hardcodes the starter/worker resource names, so a second
 # Helm release per tenant would collide. Instead we render only those two templates from the
 # same chart, values, scenario and image as the default tester, rename them to *-pt<i>, and
-# apply — looped over pt1..ptN. REST is required because gRPC only routes to the default
-# physical tenant.
+# apply — looped over pt1..ptN. These testers are pinned to REST
+# (--set global.preferRest.enabled=true) regardless of the namespace default: per-tenant
+# isolation is wired solely through the tenant's REST base address (the credentials clone
+# below), and the load tester never sets a physical tenant id, so it emits no
+# Camunda-Physical-Tenant gRPC header — over gRPC the requests would fall back to the
+# default tenant.
 .PHONY: install-load-test-physical-tenants
 install-load-test-physical-tenants:
 	@for i in $$(seq 1 $(physical_tenant_count)); do \

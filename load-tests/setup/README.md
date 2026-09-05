@@ -375,8 +375,10 @@ When `physical_tenant_count > 0`, the Makefile:
   overriding only the REST address to that tenant's path `http://camunda:8080/physical-tenants/pt<i>`.
 - Renders the `starter`/`worker` from the same chart, values, scenario and **image** as the default
   tester, renames them to `starter-pt<i>`/`worker-pt<i>`, and applies them — looped over `pt1..ptN`.
-  Each tester uses REST (`global.preferRest.enabled=true`) because gRPC only routes to the default
-  physical tenant.
+  These testers are pinned to REST (`--set global.preferRest.enabled=true`), independent of the
+  namespace default: per-tenant isolation relies on the tenant's REST base address, and the load
+  tester does not send the `Camunda-Physical-Tenant` gRPC header, so gRPC would route to the
+  default tenant.
 
 A second Helm release per tenant is not used because the `camunda-load-tests` subchart hardcodes the
 `starter`/`worker` resource names, which would collide in the same namespace. This also means each
