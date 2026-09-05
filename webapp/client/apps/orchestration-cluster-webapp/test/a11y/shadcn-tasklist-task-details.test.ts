@@ -161,3 +161,60 @@ test('should have no accessibility violations when process access is forbidden',
 	const accessibilityScanResults = await makeAxeBuilder().analyze();
 	expect(accessibilityScanResults.violations).toEqual([]);
 });
+
+test('should have no accessibility violations on the task details 404 page', async ({
+	network,
+	shadcnTaskDetailPage: taskDetailPage,
+	notFoundPage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: new HttpResponse(null, {status: 404}),
+		}),
+	);
+
+	await taskDetailPage.goto(USER_TASK_KEY);
+	await expect(notFoundPage.heading).toBeVisible();
+
+	const accessibilityScanResults = await makeAxeBuilder().analyze();
+	expect(accessibilityScanResults.violations).toEqual([]);
+});
+
+test('should have no accessibility violations on the task details forbidden page', async ({
+	network,
+	shadcnTaskDetailPage: taskDetailPage,
+	forbiddenPage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: new HttpResponse(null, {status: 403}),
+		}),
+	);
+
+	await taskDetailPage.goto(USER_TASK_KEY);
+	await expect(forbiddenPage.heading).toBeVisible();
+
+	const accessibilityScanResults = await makeAxeBuilder().analyze();
+	expect(accessibilityScanResults.violations).toEqual([]);
+});
+
+test('should have no accessibility violations on the task details generic error page', async ({
+	network,
+	shadcnTaskDetailPage: taskDetailPage,
+	page,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: new HttpResponse(null, {status: 500}),
+		}),
+	);
+
+	await taskDetailPage.goto(USER_TASK_KEY);
+	await expect(page.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
+
+	const accessibilityScanResults = await makeAxeBuilder().analyze();
+	expect(accessibilityScanResults.violations).toEqual([]);
+});

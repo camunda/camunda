@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -65,6 +66,18 @@ test('should match the tasklist index page snapshot with available tasks', async
 	await shadcnTasklistIndexPage.goto();
 	await expect(page.getByText('ORDER-2024-0042')).toBeVisible();
 	await expect(page.getByText('ORDER-2024-0043')).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the tasklist 404 page snapshot', async ({notFoundPage, page, network}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: HttpResponse.json({}, {status: 404}),
+		}),
+	);
+	await page.goto('/shadcn/tasklist/nonexistent/page');
+	await expect(notFoundPage.heading).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

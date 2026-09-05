@@ -15,7 +15,7 @@ type Props = {
 	children: React.ReactNode;
 };
 
-const ThemeProvider = observer(({children}: Props) => {
+const ThemeProvider: React.FC<Props> = observer(({children}) => {
 	const {resolvedTheme} = useTheme(themeStore.selectedTheme);
 
 	return (
