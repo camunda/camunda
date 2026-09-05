@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.shared.management;
+package io.camunda.service;
 
 import io.camunda.cluster.migration.MigrationConditionStatus;
 import io.camunda.cluster.migration.MigrationState;
@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Collects every registered {@link MigrationStatusProvider} and combines their per-physical-tenant
- * statuses into an {@link UpgradeReadinessResponse}.
+ * statuses into one {@code Map<physicalTenantId, Map<conditionName, MigrationConditionStatus>>}.
  *
  * <p>Keeps the last confirmed {@code MIGRATED} status per (physical tenant, condition) pair.
  */
@@ -37,7 +37,7 @@ public class MigrationStatusAggregator {
     this.providers = providers;
   }
 
-  public UpgradeReadinessResponse aggregate() {
+  public Map<String, Map<String, MigrationConditionStatus>> aggregate() {
     final var conditionNames =
         providers.stream().map(MigrationStatusProvider::conditionName).toList();
     final var physicalTenants = new LinkedHashMap<String, Map<String, MigrationConditionStatus>>();
@@ -57,15 +57,7 @@ public class MigrationStatusAggregator {
 
     backfillMissingPairs(physicalTenants, conditionNames);
 
-    final var upgradeable =
-        !physicalTenants.isEmpty()
-            && physicalTenants.values().stream()
-                .allMatch(
-                    conditions ->
-                        !conditions.isEmpty()
-                            && conditions.values().stream()
-                                .allMatch(status -> status.state() == MigrationState.MIGRATED));
-    return new UpgradeReadinessResponse(upgradeable, physicalTenants);
+    return physicalTenants;
   }
 
   private Map<String, MigrationConditionStatus> safeGetMigrationStatus(

@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.cluster.migration.MigrationConditionStatus;
 import io.camunda.cluster.migration.MigrationState;
 import io.camunda.cluster.migration.MigrationStatusProvider;
+import io.camunda.service.MigrationStatusAggregator;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,8 @@ final class UpgradeReadinessEndpointTest {
                 new MigrationConditionStatus(MigrationState.MIGRATED, "schema is current"));
           }
         };
-    final var endpoint = new UpgradeReadinessEndpoint(List.of(provider));
+    final var endpoint =
+        new UpgradeReadinessEndpoint(new MigrationStatusAggregator(List.of(provider)));
 
     // when
     final var response = endpoint.getUpgradeReadiness();
@@ -51,7 +53,7 @@ final class UpgradeReadinessEndpointTest {
   @Test
   void shouldReportNotUpgradeableWhenNoProviderIsRegisteredYet() {
     // given - staged rollout, before any MigrationStatusProvider bean exists
-    final var endpoint = new UpgradeReadinessEndpoint(List.of());
+    final var endpoint = new UpgradeReadinessEndpoint(new MigrationStatusAggregator(List.of()));
 
     // when
     final var response = endpoint.getUpgradeReadiness();
@@ -59,5 +61,35 @@ final class UpgradeReadinessEndpointTest {
     // then
     assertThat(response.upgradeable()).isFalse();
     assertThat(response.physicalTenants()).isEmpty();
+  }
+
+  @Test
+  void shouldReportNotUpgradeableWhenAConditionIsInProgress() {
+    // given
+    final MigrationStatusProvider provider =
+        new MigrationStatusProvider() {
+          @Override
+          public String conditionName() {
+            return "rdbmsSchemaMigrated";
+          }
+
+          @Override
+          public Map<String, MigrationConditionStatus> getMigrationStatus() {
+            return Map.of(
+                "default",
+                new MigrationConditionStatus(
+                    MigrationState.MIGRATION_IN_PROGRESS, "schema migration running"));
+          }
+        };
+    final var endpoint =
+        new UpgradeReadinessEndpoint(new MigrationStatusAggregator(List.of(provider)));
+
+    // when
+    final var response = endpoint.getUpgradeReadiness();
+
+    // then
+    assertThat(response.upgradeable()).isFalse();
+    assertThat(response.physicalTenants().get("default").get("rdbmsSchemaMigrated").state())
+        .isEqualTo(MigrationState.MIGRATION_IN_PROGRESS);
   }
 }

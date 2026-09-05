@@ -32,6 +32,7 @@ import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.ManagementServices;
+import io.camunda.service.MigrationStatusAggregator;
 import io.camunda.service.SecretServices.ResolvedSecret;
 import io.camunda.service.SecretServices.SecretErrorCode;
 import io.camunda.service.SecretServices.SecretResolutionError;
@@ -426,7 +427,8 @@ class CamundaServicesConfigurationTest {
         readinessProvider(),
         mock(ObjectProvider.class),
         new ApiServicesExecutorProvider(Executors.newSingleThreadExecutor()),
-        secretStoreRegistries);
+        secretStoreRegistries,
+        new MigrationStatusAggregator(List.of()));
   }
 
   /**
