@@ -859,9 +859,9 @@ jobs:
             secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
       - name: Get FOSSA context
         id: fossa-context
-        uses: camunda/infra-global-github-actions/fossa/info@fc4fa13813cbc1835129967f10a12f24aa7a393c # fossa-1.0.2
+        uses: camunda/infra-global-github-actions/fossa/info@ee746fa695a43480b4294e944a6bf6e01b4f8459 # fossa-1.0.17
       - name: Wait for FOSSA scan completion
-        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@fc4fa13813cbc1835129967f10a12f24aa7a393c # fossa-1.0.2
+        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@ee746fa695a43480b4294e944a6bf6e01b4f8459 # fossa-1.0.17
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}
@@ -869,7 +869,7 @@ jobs:
           revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       - name: Create FOSSA releases and generate reports
-        uses: camunda/infra-global-github-actions/fossa/release@fc4fa13813cbc1835129967f10a12f24aa7a393c # fossa-1.0.2
+        uses: camunda/infra-global-github-actions/fossa/release@ee746fa695a43480b4294e944a6bf6e01b4f8459 # fossa-1.0.17
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}
