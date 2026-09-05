@@ -157,7 +157,8 @@ class DmnEvaluationTest {
 
   @Nested
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  @DisplayName("If successfully evaluated, the output")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("If successfully evaluated, the output")
   class OutputTests {
 
     Stream<Arguments> outputs() {

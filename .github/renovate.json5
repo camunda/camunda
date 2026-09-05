@@ -724,7 +724,7 @@
       ],
     },
     {
-      description: "maven-surefire-plugin 3.5.4 has an issue with inner class tests reports https://github.com/apache/maven-surefire/issues/3203, causing the retry of the wrong tests. 3.5.3 version has a bug preventing ArchUnit tests from running. Enable PRs but block auto-merge until the upstream bug is confirmed fixed.",
+      description: "maven-surefire-plugin has several known issues across 3.5.x: 3.5.3 prevents ArchUnit tests from running; 3.5.4 reports inner class tests incorrectly https://github.com/apache/maven-surefire/issues/3203, causing the retry of the wrong tests; 3.5.6 reports @Nested classes carrying a class-level @DisplayName under their flattened display name instead of their fully-qualified name, breaking FQN-based tooling (hence @DisplayName is commented out on @Nested classes, see AGENTS.md). Enable PRs but block auto-merge until these are manually verified against the new version.",
       matchManagers: [
         "maven",
       ],
@@ -733,7 +733,7 @@
       ],
       automerge: false,
       prBodyNotes: [
-        "**Manual verification required before merging:** Check that [apache/maven-surefire#3203](https://github.com/apache/maven-surefire/issues/3203) (inner class test report bug in 3.5.4) is fixed in this version. Do **not** merge until confirmed.",
+        "**Manual verification required before merging.** Do **not** merge until all three are confirmed against this version:\n\n1. **ArchUnit tests run.** 3.5.3 silently skipped them — confirm `qa/archunit-tests` actually executes tests rather than reporting zero.\n2. **Inner class test reports are correct.** Check [apache/maven-surefire#3203](https://github.com/apache/maven-surefire/issues/3203) (present in 3.5.4) is fixed, so test retries target the right tests.\n3. **@Nested classes report their fully-qualified name.** 3.5.6 reported a `@Nested` class with a class-level `@DisplayName` under its flattened display name, breaking FQN-based tooling (flaky-test tracking, CI report parsing). Verify the generated `target/surefire-reports/*.xml` uses `classname=\"...Outer$Nested\"`; if fixed, the `@DisplayName` annotations commented out on `@Nested` classes can be restored (see the testing conventions in `AGENTS.md`).",
       ],
     },
     {
