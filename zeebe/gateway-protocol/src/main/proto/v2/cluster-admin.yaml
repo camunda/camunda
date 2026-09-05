@@ -610,12 +610,16 @@ paths:
             backups are returned.
           schema:
             $ref: 'backups.yaml#/components/schemas/BackupIdPrefix'
+        - $ref: 'backups.yaml#/components/parameters/BackupListLimit'
+        - $ref: 'backups.yaml#/components/parameters/BackupListBefore'
       responses:
         "200":
           description: >-
             The runtime backups of every targeted physical tenant, grouped by backup id and sorted in
             descending order of backup id, as the per-physical-tenant listing is. Empty when every
-            targeted tenant was read and none of them holds a matching backup.
+            targeted tenant was read and none of them holds a matching backup. With `limit` and
+            `before` the listing is read page by page, exactly as the per-physical-tenant listing is:
+            every targeted tenant is asked for the same page.
           content:
             application/json:
               schema:

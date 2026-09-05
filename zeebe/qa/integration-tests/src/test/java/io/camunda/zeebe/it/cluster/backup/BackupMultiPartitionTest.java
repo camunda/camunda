@@ -15,6 +15,7 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.client.api.BackupApi;
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.backup.client.api.BackupStatus;
 import io.camunda.zeebe.backup.client.api.BackupStatusRequest;
@@ -53,7 +54,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -289,6 +293,37 @@ class BackupMultiPartitionTest {
         .timeout(Duration.ofSeconds(30))
         .ignoreExceptions()
         .until(() -> getBackupStatus(backupId).status(), isEqual(State.DOES_NOT_EXIST));
+  }
+
+  @Test
+  @Timeout(value = 180)
+  void shouldListBackupsPageByPage() {
+    // given five completed backups on every partition
+    for (long backupId = 1; backupId <= 5; backupId++) {
+      backupActuator.take(backupId);
+      waitUntilBackupIsCompleted(backupId);
+    }
+
+    // when walking the listing newest first, two backups at a time
+    final var firstPage = listPage(OptionalLong.empty(), 2);
+    final var secondPage = listPage(OptionalLong.of(firstPage.getLast().backupId()), 2);
+    final var lastPage = listPage(OptionalLong.of(secondPage.getLast().backupId()), 2);
+
+    // then every backup is reported exactly once, complete, and the short page ends the walk
+    assertThat(firstPage).extracting(BackupStatus::backupId).containsExactly(5L, 4L);
+    assertThat(secondPage).extracting(BackupStatus::backupId).containsExactly(3L, 2L);
+    assertThat(lastPage).extracting(BackupStatus::backupId).containsExactly(1L);
+    assertThat(List.of(firstPage, secondPage, lastPage))
+        .allSatisfy(
+            page ->
+                assertThat(page).extracting(BackupStatus::status).containsOnly(State.COMPLETED));
+  }
+
+  private List<BackupStatus> listPage(final OptionalLong before, final int limit) {
+    return backupRequestHandler
+        .listBackups(DEFAULT_PHYSICAL_TENANT_ID, BackupApi.WILDCARD, before, OptionalInt.of(limit))
+        .toCompletableFuture()
+        .join();
   }
 
   @Test

@@ -36,6 +36,8 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -234,7 +236,8 @@ public class RuntimeBackupServicesTest {
   @Test
   public void listBackupsShouldDefaultToWildcard() {
     // given
-    when(backupApi.listBackups(PHYSICAL_TENANT_ID, BackupApi.WILDCARD))
+    when(backupApi.listBackups(
+            PHYSICAL_TENANT_ID, BackupApi.WILDCARD, OptionalLong.empty(), OptionalInt.empty()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when
@@ -242,7 +245,9 @@ public class RuntimeBackupServicesTest {
 
     // then
     assertThat(future).succeedsWithin(Duration.ofSeconds(1));
-    verify(backupApi).listBackups(PHYSICAL_TENANT_ID, BackupApi.WILDCARD);
+    verify(backupApi)
+        .listBackups(
+            PHYSICAL_TENANT_ID, BackupApi.WILDCARD, OptionalLong.empty(), OptionalInt.empty());
   }
 
   @Test
@@ -252,13 +257,14 @@ public class RuntimeBackupServicesTest {
 
     // then
     assertServiceExceptionStatus(future, Status.INVALID_ARGUMENT);
-    verify(backupApi, never()).listBackups(any(), any());
+    verify(backupApi, never()).listBackups(any(), any(), any(), any());
   }
 
   @Test
   public void listBackupsShouldForwardValidPrefix() {
     // given
-    when(backupApi.listBackups(PHYSICAL_TENANT_ID, "12*"))
+    when(backupApi.listBackups(
+            PHYSICAL_TENANT_ID, "12*", OptionalLong.empty(), OptionalInt.empty()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when
@@ -266,14 +272,16 @@ public class RuntimeBackupServicesTest {
 
     // then
     assertThat(future).succeedsWithin(Duration.ofSeconds(1));
-    verify(backupApi).listBackups(PHYSICAL_TENANT_ID, "12*");
+    verify(backupApi)
+        .listBackups(PHYSICAL_TENANT_ID, "12*", OptionalLong.empty(), OptionalInt.empty());
   }
 
   @Test
   public void listBackupsShouldDelegateWhenUserHasReadPermission() {
     // given
     grantBackupPermissions(PermissionType.READ);
-    when(backupApi.listBackups(PHYSICAL_TENANT_ID, BackupApi.WILDCARD))
+    when(backupApi.listBackups(
+            PHYSICAL_TENANT_ID, BackupApi.WILDCARD, OptionalLong.empty(), OptionalInt.empty()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when
@@ -281,7 +289,9 @@ public class RuntimeBackupServicesTest {
 
     // then
     assertThat(future).succeedsWithin(Duration.ofSeconds(1));
-    verify(backupApi).listBackups(PHYSICAL_TENANT_ID, BackupApi.WILDCARD);
+    verify(backupApi)
+        .listBackups(
+            PHYSICAL_TENANT_ID, BackupApi.WILDCARD, OptionalLong.empty(), OptionalInt.empty());
   }
 
   @Test
@@ -294,7 +304,55 @@ public class RuntimeBackupServicesTest {
 
     // then
     assertServiceExceptionStatus(future, Status.FORBIDDEN);
-    verify(backupApi, never()).listBackups(any(), any());
+    verify(backupApi, never()).listBackups(any(), any(), any(), any());
+  }
+
+  @Test
+  public void listBackupsShouldForwardCursorAndLimit() {
+    // given
+    when(backupApi.listBackups(
+            PHYSICAL_TENANT_ID, BackupApi.WILDCARD, OptionalLong.of(17L), OptionalInt.of(50)))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    // when
+    final var future = manualModeServices.listBackups(null, 17L, 50, authentication);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(1));
+    verify(backupApi)
+        .listBackups(
+            PHYSICAL_TENANT_ID, BackupApi.WILDCARD, OptionalLong.of(17L), OptionalInt.of(50));
+  }
+
+  @Test
+  public void listBackupsShouldRejectLimitBelowOne() {
+    // when
+    final var future = manualModeServices.listBackups(null, null, 0, authentication);
+
+    // then
+    assertServiceExceptionStatus(future, Status.INVALID_ARGUMENT);
+    verify(backupApi, never()).listBackups(any(), any(), any(), any());
+  }
+
+  @Test
+  public void listBackupsShouldRejectLimitAboveMaximumPageSize() {
+    // when
+    final var future =
+        manualModeServices.listBackups(null, null, BackupApi.MAX_PAGE_SIZE + 1, authentication);
+
+    // then
+    assertServiceExceptionStatus(future, Status.INVALID_ARGUMENT);
+    verify(backupApi, never()).listBackups(any(), any(), any(), any());
+  }
+
+  @Test
+  public void listBackupsShouldRejectNegativeCursor() {
+    // when
+    final var future = manualModeServices.listBackups(null, -1L, null, authentication);
+
+    // then
+    assertServiceExceptionStatus(future, Status.INVALID_ARGUMENT);
+    verify(backupApi, never()).listBackups(any(), any(), any(), any());
   }
 
   @Test

@@ -60,10 +60,15 @@ public class RuntimeBackupController {
   @CamundaGetMapping
   public CompletableFuture<ResponseEntity<Object>> listBackups(
       @PhysicalTenantId final String physicalTenantId,
-      @RequestParam(required = false) final String prefix) {
+      @RequestParam(required = false) final String prefix,
+      @RequestParam(required = false) final Long before,
+      @RequestParam(required = false) final Integer limit) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> serviceRegistry.backupServices(physicalTenantId).listBackups(prefix, authentication),
+        () ->
+            serviceRegistry
+                .backupServices(physicalTenantId)
+                .listBackups(prefix, before, limit, authentication),
         BackupResponseMapper::toBackupInfoList,
         HttpStatus.OK);
   }

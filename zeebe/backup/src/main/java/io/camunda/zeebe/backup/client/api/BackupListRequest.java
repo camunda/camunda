@@ -15,6 +15,8 @@ import io.camunda.zeebe.protocol.management.BackupListResponseDecoder;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.jspecify.annotations.Nullable;
@@ -43,6 +45,22 @@ public class BackupListRequest extends BrokerRequest<BackupListResponse> {
 
   public void setPattern(final String pattern) {
     request.setPattern(pattern);
+  }
+
+  public OptionalInt getPageSize() {
+    return request.getPageSize();
+  }
+
+  public void setPageSize(final int pageSize) {
+    request.setPageSize(pageSize);
+  }
+
+  public OptionalLong getBeforeCheckpointId() {
+    return request.getBeforeCheckpointId();
+  }
+
+  public void setBeforeCheckpointId(final long beforeCheckpointId) {
+    request.setBeforeCheckpointId(beforeCheckpointId);
   }
 
   @Override

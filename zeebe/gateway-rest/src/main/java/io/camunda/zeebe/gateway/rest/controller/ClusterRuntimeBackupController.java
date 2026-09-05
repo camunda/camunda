@@ -77,12 +77,14 @@ public final class ClusterRuntimeBackupController {
   @CamundaGetMapping
   public CompletableFuture<ResponseEntity<Object>> listBackups(
       @RequestParam(required = false) final @Nullable String physicalTenantId,
-      @RequestParam(required = false) final @Nullable String prefix) {
+      @RequestParam(required = false) final @Nullable String prefix,
+      @RequestParam(required = false) final @Nullable Long before,
+      @RequestParam(required = false) final @Nullable Integer limit) {
     return RequestExecutor.executeServiceMethod(
         () ->
             serviceRegistry
                 .clusterRuntimeBackupServices()
-                .listBackups(targetPhysicalTenant(physicalTenantId), prefix),
+                .listBackups(targetPhysicalTenant(physicalTenantId), prefix, before, limit),
         BackupResponseMapper::toClusterRuntimeBackupInfoList,
         HttpStatus.OK);
   }

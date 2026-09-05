@@ -57,14 +57,20 @@ public final class BackupEndpointStandalone {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> listAll(final @Nullable String physicalTenant) {
-    return backupEndpoint.listAll(physicalTenant);
+  public WebEndpointResponse<?> listAll(
+      final @Nullable String physicalTenant,
+      final @Nullable Long before,
+      final @Nullable Integer limit) {
+    return backupEndpoint.listAll(physicalTenant, before, limit);
   }
 
   @ReadOperation
   public WebEndpointResponse<?> query(
-      @Selector final String prefixOrId, final @Nullable String physicalTenant) {
-    return backupEndpoint.query(prefixOrId, physicalTenant);
+      @Selector final String prefixOrId,
+      final @Nullable String physicalTenant,
+      final @Nullable Long before,
+      final @Nullable Integer limit) {
+    return backupEndpoint.query(prefixOrId, physicalTenant, before, limit);
   }
 
   @DeleteOperation

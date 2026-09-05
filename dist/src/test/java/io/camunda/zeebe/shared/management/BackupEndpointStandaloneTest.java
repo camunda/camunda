@@ -45,19 +45,19 @@ public abstract class BackupEndpointStandaloneTest {
   @Test
   public void shouldCallListWhenIsStandalone() {
     // when
-    backupEndpointStandalone.query(null, null);
+    backupEndpointStandalone.query(null, null, null, null);
 
     // then
-    verify(backupEndpoint).query(null, null);
+    verify(backupEndpoint).query(null, null, null, null);
   }
 
   @Test
   public void shouldCallGetWhenIsStandalone() {
     // when
-    backupEndpointStandalone.query("11", null);
+    backupEndpointStandalone.query("11", null, null, null);
 
     // then
-    verify(backupEndpoint).query("11", null);
+    verify(backupEndpoint).query("11", null, null, null);
   }
 
   @Test
@@ -72,9 +72,9 @@ public abstract class BackupEndpointStandaloneTest {
   @Test
   public void shouldCallQueryWhenIsStandalone() {
     // when
-    backupEndpointStandalone.query(BackupApi.STATE, null);
+    backupEndpointStandalone.query(BackupApi.STATE, null, null, null);
 
     // then
-    verify(backupEndpoint).query(BackupApi.STATE, null);
+    verify(backupEndpoint).query(BackupApi.STATE, null, null, null);
   }
 }

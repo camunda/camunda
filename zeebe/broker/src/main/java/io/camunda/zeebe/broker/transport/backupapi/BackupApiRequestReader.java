@@ -12,6 +12,8 @@ import io.camunda.zeebe.protocol.management.BackupRequestDecoder;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import org.agrona.DirectBuffer;
 
 public final class BackupApiRequestReader implements RequestReader {
@@ -50,5 +52,21 @@ public final class BackupApiRequestReader implements RequestReader {
       return CheckpointType.valueOf(messageDecoder.checkpointType());
     }
     return CheckpointType.MANUAL_BACKUP;
+  }
+
+  /** Page size of a LIST request. Empty lists everything, as gateways before version 3 expect. */
+  public OptionalInt pageSize() {
+    final var pageSize = messageDecoder.pageSize();
+    return pageSize == BackupRequestDecoder.pageSizeNullValue()
+        ? OptionalInt.empty()
+        : OptionalInt.of((int) pageSize);
+  }
+
+  /** Cursor of a LIST request: only backups with a smaller id are listed. */
+  public OptionalLong beforeCheckpointId() {
+    final var before = messageDecoder.beforeCheckpointId();
+    return before == BackupRequestDecoder.beforeCheckpointIdNullValue()
+        ? OptionalLong.empty()
+        : OptionalLong.of(before);
   }
 }

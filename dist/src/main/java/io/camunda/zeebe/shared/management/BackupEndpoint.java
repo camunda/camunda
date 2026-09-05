@@ -27,6 +27,7 @@ import io.camunda.zeebe.backup.client.api.BackupAlreadyExistException;
 import io.camunda.zeebe.backup.client.api.BackupApi;
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.backup.client.api.BackupStatus;
+import io.camunda.zeebe.backup.client.api.PagedListing;
 import io.camunda.zeebe.backup.client.api.PartitionBackupStatus;
 import io.camunda.zeebe.backup.client.api.State;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
@@ -54,6 +55,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.SequencedMap;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
@@ -205,14 +208,25 @@ public final class BackupEndpoint {
     return write(path, null);
   }
 
+  /**
+   * Lists backups newest first. With a {@code limit} the response is one page of at most {@code
+   * limit} backups; the id of its last backup is the {@code before} cursor of the next page, and a
+   * page shorter than {@code limit} is the last one. Without a limit every backup is returned.
+   */
   @ReadOperation
-  public WebEndpointResponse<?> listAll(final @Nullable String physicalTenant) {
-    return query(BackupApi.WILDCARD, physicalTenant);
+  public WebEndpointResponse<?> listAll(
+      final @Nullable String physicalTenant,
+      final @Nullable Long before,
+      final @Nullable Integer limit) {
+    return query(BackupApi.WILDCARD, physicalTenant, before, limit);
   }
 
   @ReadOperation
   public WebEndpointResponse<?> query(
-      @Selector final String prefixOrId, final @Nullable String physicalTenant) {
+      @Selector final String prefixOrId,
+      final @Nullable String physicalTenant,
+      final @Nullable Long before,
+      final @Nullable Integer limit) {
     final List<String> targets;
     try {
       targets = resolveTargets(physicalTenant);
@@ -224,7 +238,19 @@ public final class BackupEndpoint {
       return state(targets);
     }
     if (prefixOrId.endsWith(BackupApi.WILDCARD)) {
-      return listPrefix(targets, prefixOrId);
+      if (limit != null && (limit < 1 || limit > BackupApi.MAX_PAGE_SIZE)) {
+        return badRequest(
+            "Expected a limit between 1 and %d, but got %d."
+                .formatted(BackupApi.MAX_PAGE_SIZE, limit));
+      }
+      if (before != null && before < 0) {
+        return badRequest("Expected a backup ID as before cursor, but got %d.".formatted(before));
+      }
+      return listPrefix(
+          targets,
+          prefixOrId,
+          before != null ? OptionalLong.of(before) : OptionalLong.empty(),
+          limit != null ? OptionalInt.of(limit) : OptionalInt.empty());
     }
     final long id;
     try {
@@ -374,13 +400,31 @@ public final class BackupEndpoint {
     return new WebEndpointResponse<>(aggregate(perTenant));
   }
 
-  private WebEndpointResponse<?> listPrefix(final List<String> targets, final String prefix) {
+  private WebEndpointResponse<?> listPrefix(
+      final List<String> targets,
+      final String prefix,
+      final OptionalLong before,
+      final OptionalInt limit) {
     final var listings =
-        PhysicalTenantFanOut.over(targets, tenant -> api(tenant).api().listBackups(tenant, prefix));
+        PhysicalTenantFanOut.over(
+            targets, tenant -> api(tenant).api().listBackups(tenant, prefix, before, limit));
     final var failure = PhysicalTenantFanOut.firstFailure(listings);
     if (failure != null) {
       return mapErrorResponse(failure);
     }
+
+    // every tenant answered the same page; ids below the bound wait for the next page because a
+    // tenant that filled its page may still hold them
+    final var bound =
+        PagedListing.safeBound(
+            targets.stream()
+                .map(
+                    tenant ->
+                        listings.get(tenant).value().stream()
+                            .map(BackupStatus::backupId)
+                            .collect(Collectors.toSet()))
+                .toList(),
+            limit);
 
     // one entry per backup id, holding every in-scope tenant. A tenant that did not list the id
     // contributes DOES_NOT_EXIST rather than being left out, so a listed backup aggregates exactly
@@ -389,9 +433,8 @@ public final class BackupEndpoint {
     final var byBackupId = new LinkedHashMap<Long, LinkedHashMap<String, BackupStatus>>();
     targets.forEach(
         tenant ->
-            listings
-                .get(tenant)
-                .value()
+            listings.get(tenant).value().stream()
+                .filter(status -> status.backupId() >= bound)
                 .forEach(
                     status ->
                         byBackupId
@@ -411,9 +454,9 @@ public final class BackupEndpoint {
         byBackupId.entrySet().stream()
             .sorted(
                 Map.Entry.<Long, LinkedHashMap<String, BackupStatus>>comparingByKey().reversed())
-            .map(entry -> aggregate(perTenantStatuses(targets, entry.getValue())))
-            .toList();
-    return new WebEndpointResponse<>(response);
+            .map(entry -> aggregate(perTenantStatuses(targets, entry.getValue())));
+    return new WebEndpointResponse<>(
+        (limit.isPresent() ? response.limit(limit.getAsInt()) : response).toList());
   }
 
   /** One backup's statuses in fan-out order, so every response orders tenants the same way. */

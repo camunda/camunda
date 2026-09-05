@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupRangeStatus.CheckpointInfo;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.api.ReadOnlyBackupManager;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupMetadata;
@@ -78,11 +79,12 @@ public final class ReadOnlyBackupService extends Actor implements ReadOnlyBackup
     return result;
   }
 
-  /** Lists all backups of this partition matching the given pattern. */
+  /** Lists the page of backups of this partition matching the given pattern. */
   @Override
-  public ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
+  public ActorFuture<Collection<BackupStatus>> listBackups(
+      final String pattern, final ListOptions options) {
     final ActorFuture<Collection<BackupStatus>> result = actor.createFuture();
-    storeQueries.listBackups(partition.number(), pattern, actor).onComplete(result);
+    storeQueries.listBackups(partition.number(), pattern, options, actor).onComplete(result);
     return result;
   }
 

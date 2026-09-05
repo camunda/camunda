@@ -11,6 +11,7 @@ import static io.camunda.zeebe.backup.processing.state.CheckpointState.NO_CHECKP
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -22,6 +23,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
@@ -57,6 +59,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import org.agrona.ExpandableArrayBuffer;
@@ -335,7 +339,7 @@ class BackupApiRequestHandlerTest {
             Optional.of(createdAt),
             Optional.of(lastModified));
 
-    when(backupManager.listBackups(""))
+    when(backupManager.listBackups(eq(""), any()))
         .thenReturn(CompletableActorFuture.completed(List.of(status)));
 
     // when
@@ -370,7 +374,8 @@ class BackupApiRequestHandlerTest {
                             Optional.of(Instant.now())))
             .toList();
 
-    when(backupManager.listBackups("")).thenReturn(CompletableActorFuture.completed(statuses));
+    when(backupManager.listBackups(eq(""), any()))
+        .thenReturn(CompletableActorFuture.completed(statuses));
 
     // when
     final BackupListResponse listResponse = new BackupListResponse(List.of());
@@ -383,11 +388,49 @@ class BackupApiRequestHandlerTest {
   }
 
   @Test
+  void shouldListEverythingWhenNoPageIsRequested() {
+    // given — a request as gateways before the paged protocol send it
+    final var request = new BackupRequest().setType(BackupRequestType.LIST).setPartitionId(1);
+    when(backupManager.listBackups(eq(""), any()))
+        .thenReturn(CompletableActorFuture.completed(List.of()));
+    serverOutput.setResponseObject(new BackupListResponse(List.of()));
+
+    // when
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    verify(backupManager).listBackups("", ListOptions.all());
+  }
+
+  @Test
+  void shouldPassRequestedPageToBackupManager() {
+    // given
+    final var request =
+        new BackupRequest()
+            .setType(BackupRequestType.LIST)
+            .setPartitionId(1)
+            .setPageSize(3)
+            .setBeforeCheckpointId(10);
+    when(backupManager.listBackups(eq(""), any()))
+        .thenReturn(CompletableActorFuture.completed(List.of()));
+    serverOutput.setResponseObject(new BackupListResponse(List.of()));
+
+    // when
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    verify(backupManager)
+        .listBackups("", ListOptions.newestFirst(OptionalLong.of(10), OptionalInt.of(3)));
+  }
+
+  @Test
   void shouldSendErrorResponseWhenListFailed() {
     // given
     final var request = new BackupRequest().setType(BackupRequestType.LIST).setPartitionId(1);
 
-    when(backupManager.listBackups(""))
+    when(backupManager.listBackups(eq(""), any()))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(new RuntimeException("list failed")));
 

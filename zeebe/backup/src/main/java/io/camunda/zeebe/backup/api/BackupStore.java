@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.api;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -23,6 +24,21 @@ public interface BackupStore {
 
   /** Uses the given wildcard to list all backups matching this wildcard. */
   CompletableFuture<Collection<BackupStatus>> list(BackupIdentifierWildcard wildcard);
+
+  /**
+   * Lists the backups matching the wildcard that fall into the page described by the options,
+   * ordered by checkpoint id as the options request.
+   *
+   * <p>Stores override this so that only the manifests of the selected page are read: they
+   * enumerate the keys matching the wildcard, select the page with {@link
+   * ListOptions#selectCheckpointIds(Collection)} and read manifests for the selected checkpoint ids
+   * only. The default reads every matching manifest and selects in memory, which is correct for any
+   * store but as expensive as {@link #list(BackupIdentifierWildcard)}.
+   */
+  default CompletableFuture<List<BackupStatus>> list(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
+    return list(wildcard).thenApply(statuses -> options.select(statuses, BackupStatus::id));
+  }
 
   /**
    * Delete all state related to the backup from the storage. Backups with status{@link

@@ -16,6 +16,7 @@ import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Checkpoint;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.metrics.BackupManagerMetrics;
@@ -145,8 +146,9 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
-  public void failInProgressBackup(final long lastCheckpointId) {
-    internalBackupManager.failInProgressBackups(partitionId.number(), lastCheckpointId, actor);
+  public void failInProgressBackup(final long lastCheckpointId, final long latestBackupId) {
+    internalBackupManager.failInProgressBackups(
+        partitionId.number(), lastCheckpointId, latestBackupId, actor);
   }
 
   @Override
@@ -199,10 +201,11 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
+  public ActorFuture<Collection<BackupStatus>> listBackups(
+      final String pattern, final ListOptions options) {
     final var operationMetrics = metrics.startListingBackups();
     final var resultFuture =
-        internalBackupManager.listBackups(partitionId.number(), pattern, actor);
+        internalBackupManager.listBackups(partitionId.number(), pattern, options, actor);
     resultFuture.onComplete(operationMetrics::complete);
     resultFuture.onComplete(
         (ignore, error) -> {

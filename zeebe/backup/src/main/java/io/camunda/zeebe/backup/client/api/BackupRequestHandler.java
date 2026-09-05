@@ -89,9 +89,18 @@ public final class BackupRequestHandler implements BackupApi {
 
   @Override
   public CompletionStage<List<BackupStatus>> listBackups(
-      final String physicalTenantId, final String prefix) {
-    return broadcastRequest(physicalTenantId, partitionId -> createListRequest(partitionId, prefix))
-        .thenApply(responses -> aggregateBackupList(physicalTenantId, responses));
+      final String physicalTenantId,
+      final String prefix,
+      final OptionalLong before,
+      final OptionalInt limit) {
+    final var pageSize =
+        limit.isPresent()
+            ? OptionalInt.of(Math.min(limit.getAsInt(), MAX_PAGE_SIZE))
+            : OptionalInt.empty();
+    return broadcastRequest(
+            physicalTenantId,
+            partitionId -> createListRequest(partitionId, prefix, before, pageSize))
+        .thenApply(responses -> aggregateBackupList(physicalTenantId, responses, pageSize));
   }
 
   @Override
@@ -191,12 +200,29 @@ public final class BackupRequestHandler implements BackupApi {
     return request;
   }
 
+  /**
+   * Groups the partitions' pages by backup id. Only ids that every partition has been enumerated
+   * past are reported, see {@link PagedListing#safeBound}; the rest belongs to the next page.
+   */
   private List<BackupStatus> aggregateBackupList(
-      final String physicalTenantId, final Collection<BackupListResponse> backupsReceived) {
+      final String physicalTenantId,
+      final Collection<BackupListResponse> backupsReceived,
+      final OptionalInt limit) {
+    final var idsPerPartition =
+        backupsReceived.stream()
+            .map(
+                response ->
+                    response.getBackups().stream()
+                        .map(BackupListResponse.BackupStatus::backupId)
+                        .collect(Collectors.toSet()))
+            .toList();
+    final var bound = PagedListing.safeBound(idsPerPartition, limit);
+
     // backupId -> [partitiondId -> partitionBackupStatus]
     final var statusByBackupAndPartition =
         backupsReceived.stream()
             .flatMap(backupListResponse -> backupListResponse.getBackups().stream())
+            .filter(status -> status.backupId() >= bound)
             .collect(
                 Collectors.groupingBy(
                     BackupListResponse.BackupStatus::backupId,
@@ -207,42 +233,46 @@ public final class BackupRequestHandler implements BackupApi {
 
     final var partitions = topologyManager.getTopology(physicalTenantId).getPartitions();
     // calculate status of each backup from the status of each partition
-    return statusByBackupAndPartition.entrySet().stream()
-        .map(
-            entry -> {
-              final var backupId = entry.getKey();
-              final var statusByPartition = entry.getValue();
-              return aggregatePartitionStatus(
-                  backupId,
-                  partitions.stream()
-                      .map(
-                          partitionId -> {
-                            if (!statusByPartition.containsKey(partitionId)) {
-                              // If a partition does not have this backup, it is not included in the
-                              // response received. So when aggregating backup status, an incomplete
-                              // backup can be determined as completed. To prevent that replace a
-                              // missing status with all DOES_NOT_EXIST.
-                              return PartitionBackupStatus.notExistingStatus(partitionId);
-                            }
-                            final var status = statusByPartition.get(partitionId);
-                            return new PartitionBackupStatus(
-                                status.partitionId(),
-                                status.status(),
-                                status.status() == BackupStatusCode.FAILED
-                                    ? Optional.ofNullable(status.failureReason())
-                                    : Optional.empty(),
-                                Optional.ofNullable(status.createdAt()),
-                                Optional.empty(),
-                                Optional.empty(),
-                                OptionalLong.empty(),
-                                OptionalLong.empty(),
-                                OptionalInt.empty(),
-                                Optional.ofNullable(status.brokerVersion()));
-                          })
-                      .toList());
-            })
-        .sorted(Comparator.comparingLong(BackupStatus::backupId).reversed())
-        .toList();
+    final var aggregated =
+        statusByBackupAndPartition.entrySet().stream()
+            .map(
+                entry -> {
+                  final var backupId = entry.getKey();
+                  final var statusByPartition = entry.getValue();
+                  return aggregatePartitionStatus(
+                      backupId,
+                      partitions.stream()
+                          .map(
+                              partitionId -> {
+                                if (!statusByPartition.containsKey(partitionId)) {
+                                  // If a partition does not have this backup, it is not included in
+                                  // the
+                                  // response received. So when aggregating backup status, an
+                                  // incomplete
+                                  // backup can be determined as completed. To prevent that replace
+                                  // a
+                                  // missing status with all DOES_NOT_EXIST.
+                                  return PartitionBackupStatus.notExistingStatus(partitionId);
+                                }
+                                final var status = statusByPartition.get(partitionId);
+                                return new PartitionBackupStatus(
+                                    status.partitionId(),
+                                    status.status(),
+                                    status.status() == BackupStatusCode.FAILED
+                                        ? Optional.ofNullable(status.failureReason())
+                                        : Optional.empty(),
+                                    Optional.ofNullable(status.createdAt()),
+                                    Optional.empty(),
+                                    Optional.empty(),
+                                    OptionalLong.empty(),
+                                    OptionalLong.empty(),
+                                    OptionalInt.empty(),
+                                    Optional.ofNullable(status.brokerVersion()));
+                              })
+                          .toList());
+                })
+            .sorted(Comparator.comparingLong(BackupStatus::backupId).reversed());
+    return (limit.isPresent() ? aggregated.limit(limit.getAsInt()) : aggregated).toList();
   }
 
   // When a backup status returns more than one status for a partition, this method helps to
@@ -364,10 +394,16 @@ public final class BackupRequestHandler implements BackupApi {
     return request;
   }
 
-  private BackupListRequest createListRequest(final Integer partitionId, final String pattern) {
+  private BackupListRequest createListRequest(
+      final Integer partitionId,
+      final String pattern,
+      final OptionalLong before,
+      final OptionalInt limit) {
     final var request = new BackupListRequest();
     request.setPartitionId(partitionId);
     request.setPattern(pattern);
+    before.ifPresent(request::setBeforeCheckpointId);
+    limit.ifPresent(request::setPageSize);
     return request;
   }
 

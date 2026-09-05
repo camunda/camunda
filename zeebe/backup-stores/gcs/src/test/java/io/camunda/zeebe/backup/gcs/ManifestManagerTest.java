@@ -13,10 +13,12 @@ import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.Storage.BlobTargetOption;
 import com.google.cloud.storage.StorageException;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
@@ -33,6 +35,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.concurrent.Executors;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
@@ -252,8 +256,7 @@ final class ManifestManagerTest {
     Mockito.when(blob.getName()).thenReturn("basePathmanifests/2/3/1/manifest.json");
     Mockito.when(blob.getMetadata()).thenReturn(ManifestMetadata.fromManifest(manifest));
     final var page = mockBlobPage(blob);
-    Mockito.when(page.iterateAll()).thenReturn(List.of(blob));
-    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any()))
+    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class)))
         .thenThrow(
             new StorageException(
                 new IOException("universe domain metadata request failed while listing manifests")))
@@ -273,7 +276,8 @@ final class ManifestManagerTest {
               Assertions.assertThat(status.id()).isEqualTo(backup.id());
               Assertions.assertThat(status.statusCode()).isEqualTo(BackupStatusCode.COMPLETED);
             });
-    Mockito.verify(client, Mockito.times(2)).list(Mockito.eq("bucket"), Mockito.any());
+    Mockito.verify(client, Mockito.times(2))
+        .list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class));
   }
 
   @Test
@@ -294,8 +298,7 @@ final class ManifestManagerTest {
     Mockito.when(blob.getName()).thenReturn("basePathmanifests/2/3/1/manifest.json");
     Mockito.when(blob.getMetadata()).thenReturn(ManifestMetadata.fromManifest(manifest));
     final var page = mockBlobPage(blob);
-    Mockito.when(page.iterateAll()).thenReturn(List.of(blob));
-    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any()))
+    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class)))
         .thenThrow(
             new RuntimeException(
                 new StorageException(
@@ -317,7 +320,8 @@ final class ManifestManagerTest {
               Assertions.assertThat(status.id()).isEqualTo(backup.id());
               Assertions.assertThat(status.statusCode()).isEqualTo(BackupStatusCode.COMPLETED);
             });
-    Mockito.verify(client, Mockito.times(2)).list(Mockito.eq("bucket"), Mockito.any());
+    Mockito.verify(client, Mockito.times(2))
+        .list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class));
   }
 
   @Test
@@ -327,7 +331,7 @@ final class ManifestManagerTest {
     final var manager =
         new ManifestManager(
             client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
-    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any()))
+    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class)))
         .thenThrow(new StorageException(0, "not an I/O failure"));
     final var wildcard =
         new BackupIdentifierWildcardImpl(
@@ -337,7 +341,7 @@ final class ManifestManagerTest {
     Assertions.assertThatThrownBy(() -> manager.listBackupStatuses(wildcard))
         .isInstanceOf(StorageException.class)
         .hasMessageContaining("not an I/O failure");
-    Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any());
+    Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class));
   }
 
   @Test
@@ -347,7 +351,7 @@ final class ManifestManagerTest {
     final var manager =
         new ManifestManager(
             client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
-    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any()))
+    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class)))
         .thenThrow(new StorageException(0, "cyclic cause", new CyclicCauseException()));
     final var wildcard =
         new BackupIdentifierWildcardImpl(
@@ -360,7 +364,7 @@ final class ManifestManagerTest {
             Assertions.assertThatThrownBy(() -> manager.listBackupStatuses(wildcard))
                 .isInstanceOf(StorageException.class)
                 .hasMessageContaining("cyclic cause"));
-    Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any());
+    Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class));
   }
 
   @Test
@@ -370,7 +374,7 @@ final class ManifestManagerTest {
     final var manager =
         new ManifestManager(
             client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
-    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any()))
+    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class)))
         .thenThrow(new StorageException(400, "bad request"));
     final var wildcard =
         new BackupIdentifierWildcardImpl(
@@ -380,7 +384,7 @@ final class ManifestManagerTest {
     Assertions.assertThatThrownBy(() -> manager.listBackupStatuses(wildcard))
         .isInstanceOf(StorageException.class)
         .hasMessageContaining("bad request");
-    Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any());
+    Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class));
   }
 
   @Test
@@ -399,7 +403,7 @@ final class ManifestManagerTest {
     firstCause.initCause(secondCause);
     secondCause.initCause(firstCause);
 
-    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any()))
+    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class)))
         .thenThrow(new RuntimeException("cyclic failure", firstCause));
 
     // when / then
@@ -410,13 +414,82 @@ final class ManifestManagerTest {
               .isInstanceOf(RuntimeException.class)
               .hasMessageContaining("cyclic failure");
         });
-    Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any());
+    Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class));
+  }
+
+  @Test
+  void shouldDownloadOnlySelectedManifestsWithoutMetadata() throws IOException {
+    // given: five manifests written before metadata was introduced, so listing yields no statuses
+    final var client = Mockito.mock(Storage.class);
+    final var manager =
+        new ManifestManager(
+            client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
+    final var blobs =
+        List.of(
+            manifestBlobWithoutMetadata(1),
+            manifestBlobWithoutMetadata(2),
+            manifestBlobWithoutMetadata(3),
+            manifestBlobWithoutMetadata(4),
+            manifestBlobWithoutMetadata(5));
+    final var page = mockBlobPage(blobs);
+    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class)))
+        .thenReturn(page);
+    Mockito.when(client.readAllBytes(Mockito.any(BlobId.class)))
+        .thenAnswer(
+            invocation -> {
+              final BlobId blobId = invocation.getArgument(0);
+              final var checkpointId = Long.parseLong(blobId.getName().split("/")[2]);
+              return ManifestManager.MAPPER.writeValueAsBytes(
+                  Manifest.createInProgress(backup(new BackupIdentifierImpl(1, 2, checkpointId)))
+                      .complete());
+            });
+    final var wildcard =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.of(2), BackupIdentifierWildcard.CheckpointPattern.any());
+
+    // when
+    final var statuses =
+        manager.listBackupStatuses(
+            wildcard, ListOptions.newestFirst(OptionalLong.empty(), OptionalInt.of(2)));
+
+    // then
+    Assertions.assertThat(statuses)
+        .extracting(status -> status.id().checkpointId())
+        .containsExactly(5L, 4L);
+    final var downloaded = ArgumentCaptor.forClass(BlobId.class);
+    Mockito.verify(client, Mockito.times(2)).readAllBytes(downloaded.capture());
+    Assertions.assertThat(downloaded.getAllValues())
+        .extracting(BlobId::getName)
+        .containsExactlyInAnyOrder(
+            "basePathmanifests/2/5/1/manifest.json", "basePathmanifests/2/4/1/manifest.json");
+  }
+
+  private static Blob manifestBlobWithoutMetadata(final long checkpointId) {
+    final var blob = Mockito.mock(Blob.class);
+    final var blobId =
+        BlobId.of("bucket", "basePathmanifests/2/%d/1/manifest.json".formatted(checkpointId));
+    Mockito.when(blob.getName()).thenReturn(blobId.getName());
+    Mockito.when(blob.getBlobId()).thenReturn(blobId);
+    return blob;
+  }
+
+  private static BackupImpl backup(final BackupIdentifierImpl id) {
+    return new BackupImpl(
+        id,
+        new BackupDescriptorImpl(1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+        new NamedFileSetImpl(Map.of()),
+        new NamedFileSetImpl(Map.of()));
+  }
+
+  private static Page<Blob> mockBlobPage(final Blob blob) {
+    return mockBlobPage(List.of(blob));
   }
 
   @SuppressWarnings("unchecked")
-  private static Page<Blob> mockBlobPage(final Blob blob) {
+  private static Page<Blob> mockBlobPage(final List<Blob> blobs) {
     final var page = Mockito.mock(Page.class);
-    Mockito.when(page.iterateAll()).thenReturn(List.of(blob));
+    Mockito.when(page.getValues()).thenReturn(blobs);
+    Mockito.when(page.iterateAll()).thenReturn(blobs);
     return page;
   }
 

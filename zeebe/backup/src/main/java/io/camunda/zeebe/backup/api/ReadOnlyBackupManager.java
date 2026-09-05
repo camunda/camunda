@@ -39,7 +39,20 @@ public interface ReadOnlyBackupManager {
    * @param pattern null, empty, a prefix ending in '*' or an exact backup id
    * @return all backups with ids matching the pattern
    */
-  ActorFuture<Collection<BackupStatus>> listBackups(String pattern);
+  default ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
+    return listBackups(pattern, ListOptions.all());
+  }
+
+  /**
+   * Get the page of available backups selected by the options, ordered by checkpoint id, where
+   * status is one of {@link BackupStatusCode#COMPLETED}, {@link BackupStatusCode#FAILED}, {@link
+   * BackupStatusCode#IN_PROGRESS}
+   *
+   * @param pattern null, empty, a prefix ending in '*' or an exact backup id
+   * @param options the page to select from the backups matching the pattern
+   * @return the selected backups with ids matching the pattern
+   */
+  ActorFuture<Collection<BackupStatus>> listBackups(String pattern, ListOptions options);
 
   /**
    * A member in recovery mode has no RocksDB state and answers from the last metadata manifest

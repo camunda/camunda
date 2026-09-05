@@ -22,6 +22,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
@@ -149,6 +150,13 @@ public final class GcsBackupStore implements BackupStore {
   public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
     return CompletableFuture.supplyAsync(
         () -> manifestManager.listBackupStatuses(wildcard), executor);
+  }
+
+  @Override
+  public CompletableFuture<List<BackupStatus>> list(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
+    return CompletableFuture.supplyAsync(
+        () -> manifestManager.listBackupStatuses(wildcard, options), executor);
   }
 
   @Override
