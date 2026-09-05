@@ -8,7 +8,6 @@
 
 package io.camunda.configuration;
 
-import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_ELECTION_TIMEOUT;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalCfg.DEFAULT_MAX_APPENDS_PER_FOLLOWER;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalCfg.DEFAULT_MAX_APPEND_BATCH_SIZE;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_JOIN_CATCH_UP_TIMEOUT;
@@ -112,10 +111,13 @@ public class Raft {
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
 
   /**
-   * Sets the timeout for all requests send by raft leaders and followers.When modifying the values
-   * for requestTimeout, it might also be useful to update snapshotTimeout.
+   * Sets the timeout for all requests sent by raft leaders and followers. When modifying the
+   * values for requestTimeout, it might also be useful to update snapshotTimeout.
+   *
+   * <p>When not set, the partition factory derives the value from the configured electionTimeout
+   * at startup.
    */
-  private Duration requestTimeout = DEFAULT_ELECTION_TIMEOUT;
+  private Duration requestTimeout = null;
 
   /**
    * Sets the timeout for all snapshot requests sent by raft leaders to the followers. If the

@@ -72,6 +72,37 @@ public final class RaftPartitionFactoryTest {
   }
 
   @Test
+  void shouldUseElectionTimeoutAsRequestTimeoutWhenNotConfigured() {
+    // given
+    final Duration electionTimeout = Duration.ofMillis(500);
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().setElectionTimeout(electionTimeout);
+    // requestTimeout is intentionally left unconfigured (null)
+
+    // when
+    final var partition = buildRaftPartition(brokerCfg);
+
+    // then
+    assertThat(partition.getPartitionConfig().getRequestTimeout()).isEqualTo(electionTimeout);
+  }
+
+  @Test
+  void shouldUseConfiguredRequestTimeoutOverElectionTimeout() {
+    // given
+    final Duration electionTimeout = Duration.ofMillis(500);
+    final Duration requestTimeout = Duration.ofSeconds(3);
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().setElectionTimeout(electionTimeout);
+    brokerCfg.getExperimental().getRaft().setRequestTimeout(requestTimeout);
+
+    // when
+    final var partition = buildRaftPartition(brokerCfg);
+
+    // then
+    assertThat(partition.getPartitionConfig().getRequestTimeout()).isEqualTo(requestTimeout);
+  }
+
+  @Test
   void shouldSetRaftSnapshotRequestTimeout() {
     // given
     final Duration expected = Duration.ofSeconds(15);
