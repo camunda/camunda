@@ -748,6 +748,27 @@ jobs:
 
           # To show the changelog also as step summary
           echo "$changelog" >> "$GITHUB_STEP_SUMMARY"
+      # Shadow run of the new release-notes generator (#57713), alongside the
+      # legacy zcl tool above, so both outputs land in the same run summary
+      # for comparison. Read-only and non-blocking: never gates the release.
+      #   - Runs even when dryRun is true (unlike the zcl step above) so it
+      #     still gives signal on a dry run, where zcl is skipped entirely.
+      #   - Skipped for the scheduled dry-run wrapper's fake `dryrun` tags —
+      #     those aren't real semver and would fail baseline resolution.
+      #   - allow-unattributed=true: shadow mode must never fail on an
+      #     attribution gap the legacy tool doesn't even check for.
+      - name: Generate Changelog (new generator, shadow run)
+        id: gen-changelog-shadow
+        if: ${{ !contains(inputs.releaseVersion, 'dryrun') }}
+        continue-on-error: true
+        uses: ./.github/actions/release-notes/generate
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target-version: ${{ inputs.releaseVersion }}
+          release-branch: ${{ env.RELEASE_BRANCH }}
+          allow-unattributed: 'true'
+          unattributed-reason: 'shadow run (#57713) — comparing against the legacy zcl changelog, not yet gating'
+          output-dir: release-notes-shadow
       - name: Download Release Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:

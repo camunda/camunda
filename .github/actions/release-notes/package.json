@@ -9,7 +9,8 @@
   "type": "commonjs",
   "scripts": {
     "build:lint": "ncc build src/lint.ts -o lint/dist --no-source-map-register",
-    "build": "npm run build:lint",
+    "build:generate": "ncc build src/generate.ts -o generate/dist --no-source-map-register",
+    "build": "npm run build:lint && npm run build:generate",
     "test": "node --import tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
