@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.sql;
 
+import io.camunda.db.rdbms.read.replication.ReplicationLagStatus;
 import io.camunda.db.rdbms.read.replication.ReplicationLsnStatus;
 import java.util.List;
 
@@ -42,4 +43,15 @@ public interface ReplicationStatusMapper {
 
   /** Returns per-replica replication status for Aurora Global Database. */
   List<ReplicationLsnStatus> getAuroraReplicationStatus();
+
+  /** Returns per-replica geo-replication status for Azure SQL Database. */
+  List<ReplicationLagStatus> getAzureGeoReplicationStatus();
+
+  /**
+   * Returns the primary's own clock for Azure SQL Database, as an absolute epoch-millisecond value.
+   */
+  long getAzureCurrentDbTime();
+
+  /** Returns {@code true} when connected to Azure SQL Database. */
+  boolean isAzureSqlDatabase();
 }
