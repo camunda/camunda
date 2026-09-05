@@ -264,7 +264,7 @@ jobs:
     #########################################################################
     # Create a preview environment
     - name: Deploy Preview Environment for c8sm
-      uses: camunda/infra-global-github-actions/preview-env/create@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env-1.0.8
+      uses: camunda/infra-global-github-actions/preview-env/create@67d00e9260887361a31f6446252fffbecae4a02e # preview-env-1.0.12
       with:
         revision: ${{ inputs.ref || github.head_ref || github.ref_name }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
@@ -299,7 +299,7 @@ jobs:
     steps:
     - name: Check PR for merge conflicts
       if: github.event_name == 'pull_request'
-      uses: camunda/infra-global-github-actions/preview-env/conflicts@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env-1.0.8
+      uses: camunda/infra-global-github-actions/preview-env/conflicts@67d00e9260887361a31f6446252fffbecae4a02e # preview-env-1.0.12
       with:
         pull-request-id: ${{ github.event.pull_request.number }}
 
@@ -343,7 +343,7 @@ jobs:
     timeout-minutes: 5
     needs: [deploy-preview]
     steps:
-    - uses: camunda/infra-global-github-actions/preview-env/comment@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env-1.0.8
+    - uses: camunda/infra-global-github-actions/preview-env/comment@67d00e9260887361a31f6446252fffbecae4a02e # preview-env-1.0.12
 
     - name: Checkout
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
