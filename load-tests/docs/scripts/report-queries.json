@@ -1,0 +1,220 @@
+{
+  "queries": [
+    {
+      "key": "namespace",
+      "header": "Namespace",
+      "value": "$NAMESPACE"
+    },
+    {
+      "key": "docker_image",
+      "header": "Docker image",
+      "valueLabel": "image",
+      "query": "count by (image) (max_over_time(kube_pod_container_info{namespace=\"$NAMESPACE\", pod=~\"(camunda|zeebe)-[0-9]+\", container=~\".*(orchestration|zeebe|camunda).*\"}[$DURATION_S]))"
+    },
+    {
+      "key": "camunda_nodes",
+      "header": "Camunda Nodes",
+      "query": "count(max_over_time((kube_pod_status_phase{namespace=\"$NAMESPACE\", pod=~\"(camunda|zeebe)-[0-9]+\", phase=\"Running\"} == 1)[$DURATION_S:$SAMPLE_STEP]))"
+    },
+    {
+      "key": "secondary_storage_nodes",
+      "header": "Secondary Storage Nodes",
+      "query": "count(max_over_time((kube_pod_status_phase{namespace=\"$NAMESPACE\", pod=~\"(elastic|elasticsearch|opensearch).*\", phase=\"Running\"} == 1)[$DURATION_S:$SAMPLE_STEP]))"
+    },
+    {
+      "key": "camunda_cpu_limit",
+      "header": "Camunda CPU limit",
+      "query": "max(max_over_time(kube_pod_container_resource_limits{namespace=\"$NAMESPACE\", pod=~\"(camunda|zeebe).*\", container=~\".*(orchestration|zeebe|camunda).*\", resource=\"cpu\", unit=\"core\"}[$DURATION_S])) or max(max_over_time(kube_pod_container_resource_limits_cpu_cores{namespace=\"$NAMESPACE\", pod=~\"(camunda|zeebe).*\", container=~\".*(orchestration|zeebe|camunda).*\"}[$DURATION_S]))"
+    },
+    {
+      "key": "camunda_cpu_used_p50",
+      "header": "Camunda CPU used p50",
+      "query": "quantile_over_time(0.50, (max(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"$NAMESPACE\", pod=~\"(camunda|zeebe).*\", container!=\"\"}[$RATE_INTERVAL]))))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "camunda_cpu_used_p99",
+      "header": "Camunda CPU used p99",
+      "query": "quantile_over_time(0.99, (max(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"$NAMESPACE\", pod=~\"(camunda|zeebe).*\", container!=\"\"}[$RATE_INTERVAL]))))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "camunda_cpu_throttling_percent",
+      "header": "Camunda CPU throttling %",
+      "query": "avg_over_time((avg(100 * sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{namespace=\"$NAMESPACE\", pod=~\"(camunda|zeebe).*\", container!=\"\"}[$RATE_INTERVAL])) / sum by (pod) (rate(container_cpu_cfs_periods_total{namespace=\"$NAMESPACE\", pod=~\"(camunda|zeebe).*\", container!=\"\"}[$RATE_INTERVAL]))))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "camunda_memory_limit_gb",
+      "header": "Camunda Memory limit GB",
+      "query": "(max(max_over_time(kube_pod_container_resource_limits{namespace=\"$NAMESPACE\", pod=~\"(camunda|zeebe).*\", container=~\".*(orchestration|zeebe|camunda).*\", resource=\"memory\", unit=\"byte\"}[$DURATION_S])) or max(max_over_time(kube_pod_container_resource_limits_memory_bytes{namespace=\"$NAMESPACE\", pod=~\"(camunda|zeebe).*\", container=~\".*(orchestration|zeebe|camunda).*\"}[$DURATION_S]))) / 1024 / 1024 / 1024"
+    },
+    {
+      "key": "camunda_memory_rss_gb",
+      "header": "Camunda Memory RSS GB",
+      "query": "max(max_over_time(container_memory_rss{namespace=\"$NAMESPACE\", pod=~\"(camunda|zeebe).*\", container=~\".*(orchestration|zeebe|camunda).*\"}[$DURATION_S])) / 1024 / 1024 / 1024"
+    },
+    {
+      "key": "camunda_heap_gb",
+      "header": "Camunda heap GB",
+      "query": "(max(max_over_time((sum by (pod) (jvm_memory_bytes_used{namespace=\"$NAMESPACE\", area=\"heap\", pod=~\"(camunda|zeebe).*\"}))[$DURATION_S:$SAMPLE_STEP])) or max(max_over_time((sum by (pod) (jvm_memory_used_bytes{namespace=\"$NAMESPACE\", area=\"heap\", pod=~\"(camunda|zeebe).*\"}))[$DURATION_S:$SAMPLE_STEP]))) / 1024 / 1024 / 1024"
+    },
+    {
+      "key": "camunda_disk_capacity_gib",
+      "header": "Camunda Disk capacity GiB",
+      "query": "max(max_over_time(kubelet_volume_stats_capacity_bytes{namespace=\"$NAMESPACE\", persistentvolumeclaim=~\".*(camunda|zeebe).*\"}[$DURATION_S])) / 1024 / 1024 / 1024"
+    },
+    {
+      "key": "camunda_disk_used_gib",
+      "header": "Camunda Disk used GiB",
+      "query": "max(max_over_time(kubelet_volume_stats_used_bytes{namespace=\"$NAMESPACE\", persistentvolumeclaim=~\".*(camunda|zeebe).*\"}[$DURATION_S])) / 1024 / 1024 / 1024"
+    },
+    {
+      "key": "secondary_storage_cpu_limit",
+      "header": "Secondary Storage CPU limit",
+      "query": "max(max_over_time(kube_pod_container_resource_limits{namespace=\"$NAMESPACE\", pod=~\"(elastic|elasticsearch|opensearch).*\", container=~\"(elasticsearch|opensearch)\", resource=\"cpu\", unit=\"core\"}[$DURATION_S])) or max(max_over_time(kube_pod_container_resource_limits_cpu_cores{namespace=\"$NAMESPACE\", pod=~\"(elastic|elasticsearch|opensearch).*\", container=~\"(elasticsearch|opensearch)\"}[$DURATION_S]))"
+    },
+    {
+      "key": "secondary_storage_cpu_used_p50",
+      "header": "Secondary Storage CPU used p50",
+      "query": "quantile_over_time(0.50, (max(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"$NAMESPACE\", pod=~\"(elastic|elasticsearch|opensearch).*\", container=~\"(elasticsearch|opensearch)\"}[$RATE_INTERVAL]))))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "secondary_storage_cpu_used_p99",
+      "header": "Secondary Storage CPU used p99",
+      "query": "quantile_over_time(0.99, (max(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"$NAMESPACE\", pod=~\"(elastic|elasticsearch|opensearch).*\", container=~\"(elasticsearch|opensearch)\"}[$RATE_INTERVAL]))))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "secondary_storage_cpu_throttling_percent",
+      "header": "Secondary Storage CPU throttling %",
+      "query": "avg_over_time((avg(100 * sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{namespace=\"$NAMESPACE\", pod=~\"(elastic|elasticsearch|opensearch).*\", container=~\"(elasticsearch|opensearch)\"}[$RATE_INTERVAL])) / sum by (pod) (rate(container_cpu_cfs_periods_total{namespace=\"$NAMESPACE\", pod=~\"(elastic|elasticsearch|opensearch).*\", container=~\"(elasticsearch|opensearch)\"}[$RATE_INTERVAL]))))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "secondary_storage_memory_limit_gb",
+      "header": "Secondary Storage Memory limit GB",
+      "query": "(max(max_over_time(kube_pod_container_resource_limits{namespace=\"$NAMESPACE\", pod=~\"(elastic|elasticsearch|opensearch).*\", container=~\"(elasticsearch|opensearch)\", resource=\"memory\", unit=\"byte\"}[$DURATION_S])) or max(max_over_time(kube_pod_container_resource_limits_memory_bytes{namespace=\"$NAMESPACE\", pod=~\"(elastic|elasticsearch|opensearch).*\", container=~\"(elasticsearch|opensearch)\"}[$DURATION_S]))) / 1024 / 1024 / 1024"
+    },
+    {
+      "key": "secondary_storage_memory_rss_gb",
+      "header": "Secondary Storage Memory RSS GB",
+      "query": "max(max_over_time(container_memory_rss{namespace=\"$NAMESPACE\", pod=~\"(elastic|elasticsearch|opensearch).*\", container=~\"(elasticsearch|opensearch)\"}[$DURATION_S])) / 1024 / 1024 / 1024"
+    },
+    {
+      "key": "secondary_storage_heap_gb",
+      "header": "Secondary Storage heap GB",
+      "query": "(max(max_over_time((sum by (pod) (jvm_memory_bytes_used{namespace=\"$NAMESPACE\", area=\"heap\", pod=~\"(elastic|elasticsearch|opensearch).*\"}))[$DURATION_S:$SAMPLE_STEP])) or max(max_over_time((sum by (pod) (jvm_memory_used_bytes{namespace=\"$NAMESPACE\", area=\"heap\", pod=~\"(elastic|elasticsearch|opensearch).*\"}))[$DURATION_S:$SAMPLE_STEP])) or max(max_over_time((sum by (name) (elasticsearch_jvm_memory_used_bytes{namespace=\"$NAMESPACE\", area=\"heap\", name=~\"(elastic|elasticsearch|opensearch).*\"}))[$DURATION_S:$SAMPLE_STEP]))) / 1024 / 1024 / 1024"
+    },
+    {
+      "key": "secondary_storage_disk_capacity_gib",
+      "header": "Secondary Storage Disk capacity GiB",
+      "query": "max(max_over_time(kubelet_volume_stats_capacity_bytes{namespace=\"$NAMESPACE\", persistentvolumeclaim=~\".*(elastic|opensearch).*\"}[$DURATION_S])) / 1024 / 1024 / 1024"
+    },
+    {
+      "key": "secondary_storage_disk_used_gib",
+      "header": "Secondary Storage Disk used GiB",
+      "query": "max(max_over_time(kubelet_volume_stats_used_bytes{namespace=\"$NAMESPACE\", persistentvolumeclaim=~\".*(elastic|opensearch).*\"}[$DURATION_S])) / 1024 / 1024 / 1024"
+    },
+    {
+      "key": "records_processed_per_second",
+      "header": "Proc rec/s",
+      "query": "avg_over_time((sum(rate(zeebe_stream_processor_records_total{namespace=\"$NAMESPACE\", action=\"processed\"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "records_exported_per_second",
+      "header": "Export rec/s",
+      "query": "avg_over_time((sum(rate(zeebe_exporter_events_total{namespace=\"$NAMESPACE\", action=~\"EXPORTED|exported\"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "secondary_storage_indexed_documents_per_second",
+      "header": "Secondary Storage idx docs/s",
+      "query": "avg_over_time((avg(rate(elasticsearch_indices_indexing_index_total{namespace=\"$NAMESPACE\"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "process_instances_per_second",
+      "header": "PI/s",
+      "query": "avg_over_time((sum(rate(zeebe_element_instance_events_total{namespace=\"$NAMESPACE\", action=\"completed\", type=\"PROCESS\"}[$RATE_INTERVAL])) or sum(rate(zeebe_executed_instances_total{namespace=\"$NAMESPACE\", action=\"completed\", type=\"ROOT_PROCESS_INSTANCE\"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "archived_process_instances_per_second",
+      "header": "Archived PI/s",
+      "query": "avg_over_time((sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=\"$NAMESPACE\", state=\"archived\"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "flow_node_instances_per_second",
+      "header": "FNI/s",
+      "query": "avg_over_time((sum(rate(zeebe_element_instance_events_total{namespace=\"$NAMESPACE\", type!=\"PROCESS\", action=\"completed\"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "service_task_instances_per_second",
+      "header": "STI/s",
+      "query": "avg_over_time((sum(rate(zeebe_element_instance_events_total{namespace=\"$NAMESPACE\", action=\"completed\", type=\"SERVICE_TASK\"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "jobs_per_second",
+      "header": "Job/s",
+      "query": "avg_over_time((sum(rate(zeebe_job_events_total{namespace=\"$NAMESPACE\", action=\"completed\"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "processing_latency_p50_ms",
+      "header": "ProcLat p50 ms",
+      "query": "1000 * histogram_quantile(0.50, sum(rate(zeebe_stream_processor_latency_bucket{namespace=\"$NAMESPACE\"}[$DURATION_S]) or rate(zeebe_stream_processor_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$DURATION_S])) by (le))"
+    },
+    {
+      "key": "processing_latency_p99_ms",
+      "header": "ProcLat p99 ms",
+      "query": "1000 * histogram_quantile(0.99, sum(rate(zeebe_stream_processor_latency_bucket{namespace=\"$NAMESPACE\"}[$DURATION_S]) or rate(zeebe_stream_processor_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$DURATION_S])) by (le))"
+    },
+    {
+      "key": "exporting_latency_p50_ms",
+      "header": "ExportLat p50 ms",
+      "query": "1000 * histogram_quantile(0.50, sum(rate(zeebe_exporting_latency_bucket{namespace=\"$NAMESPACE\"}[$DURATION_S]) or rate(zeebe_exporting_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$DURATION_S])) by (le))"
+    },
+    {
+      "key": "exporting_latency_p99_ms",
+      "header": "ExportLat p99 ms",
+      "query": "1000 * histogram_quantile(0.99, sum(rate(zeebe_exporting_latency_bucket{namespace=\"$NAMESPACE\"}[$DURATION_S]) or rate(zeebe_exporting_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$DURATION_S])) by (le))"
+    },
+    {
+      "key": "process_instance_execution_p50_ms",
+      "header": "PIExec p50 ms",
+      "query": "1000 * histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=\"$NAMESPACE\"}[$DURATION_S])) by (le))"
+    },
+    {
+      "key": "process_instance_execution_p99_ms",
+      "header": "PIExec p99 ms",
+      "query": "1000 * histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=\"$NAMESPACE\"}[$DURATION_S])) by (le))"
+    },
+    {
+      "key": "data_availability_p50_seconds",
+      "header": "DataAvail p50 sec",
+      "query": "histogram_quantile(0.50, sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$DURATION_S])))"
+    },
+    {
+      "key": "data_availability_p99_seconds",
+      "header": "DataAvail p99 sec",
+      "query": "histogram_quantile(0.99, sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$DURATION_S])))"
+    },
+    {
+      "key": "response_latency_p50_ms",
+      "header": "Response p50 ms",
+      "query": "1000 * histogram_quantile(0.50, sum by (le) (rate(starter_response_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$DURATION_S])))"
+    },
+    {
+      "key": "response_latency_p99_ms",
+      "header": "Response p99 ms",
+      "query": "1000 * histogram_quantile(0.99, sum by (le) (rate(starter_response_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$DURATION_S])))"
+    },
+    {
+      "key": "backpressure_percent",
+      "header": "Backpressure %",
+      "query": "avg_over_time((max(100 * sum by (partition) (rate(zeebe_dropped_request_count_total{namespace=\"$NAMESPACE\"}[$RATE_INTERVAL])) / sum by (partition) (rate(zeebe_received_request_count_total{namespace=\"$NAMESPACE\"}[$RATE_INTERVAL]))))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "processing_backlog",
+      "header": "Proc backlog",
+      "query": "avg_over_time((max(max by (partition) (zeebe_log_appender_last_appended_position{namespace=\"$NAMESPACE\"}) - max by (partition) (zeebe_stream_processor_last_processed_position{namespace=\"$NAMESPACE\"})))[$DURATION_S:$SAMPLE_STEP])"
+    },
+    {
+      "key": "exporting_backlog",
+      "header": "Export backlog",
+      "query": "avg_over_time((max(max by (partition) (zeebe_log_appender_last_committed_position{namespace=\"$NAMESPACE\"}) - max by (partition) (zeebe_exporter_last_exported_position{namespace=\"$NAMESPACE\"})))[$DURATION_S:$SAMPLE_STEP])"
+    }
+  ]
+}
