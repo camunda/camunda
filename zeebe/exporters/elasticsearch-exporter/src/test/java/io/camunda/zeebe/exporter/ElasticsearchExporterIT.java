@@ -114,7 +114,7 @@ final class ElasticsearchExporterIT {
 
     controller = new ExporterTestController();
     exporter = new ElasticsearchExporter();
-    indexRouter = new RecordIndexRouter(config.index);
+    indexRouter = new RecordIndexRouter(config.index, index -> config.index.getNumberOfShards());
 
     config.url = CONTAINER.getHttpHostAddress();
     config.setIncludeEnabledRecords(true);
@@ -165,7 +165,7 @@ final class ElasticsearchExporterIT {
         .containsExactly(
             indexRouter.indexFor(record),
             indexRouter.idFor(record),
-            String.valueOf(record.getPartitionId()),
+            indexRouter.routingFor(record, indexRouter.indexFor(record)),
             record);
   }
 
@@ -318,7 +318,7 @@ final class ElasticsearchExporterIT {
           .containsExactly(
               indexRouter.indexFor(record),
               indexRouter.idFor(record),
-              String.valueOf(record.getPartitionId()));
+              indexRouter.routingFor(record, indexRouter.indexFor(record)));
     } else {
       assertThatThrownBy(() -> testClient.getExportedDocumentFor(record))
           .isInstanceOf(ElasticsearchException.class)

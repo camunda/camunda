@@ -50,13 +50,7 @@ class ElasticsearchExporterClient implements AutoCloseable {
 
   ElasticsearchExporterClient(
       final ElasticsearchExporterConfiguration configuration, final MeterRegistry meterRegistry) {
-    this(
-        configuration,
-        new BulkIndexRequest(),
-        ElasticsearchClientFactory.of(configuration),
-        new RecordIndexRouter(configuration.index),
-        new TemplateReader(configuration),
-        new ElasticsearchMetrics(meterRegistry));
+    this(configuration, meterRegistry, ElasticsearchClientFactory.of(configuration));
   }
 
   ElasticsearchExporterClient(
@@ -67,7 +61,8 @@ class ElasticsearchExporterClient implements AutoCloseable {
         configuration,
         new BulkIndexRequest(),
         esClient,
-        new RecordIndexRouter(configuration.index),
+        new RecordIndexRouter(
+            configuration.index, new IndexShardCounts(esClient, configuration.index)),
         new TemplateReader(configuration),
         new ElasticsearchMetrics(meterRegistry));
   }
@@ -105,11 +100,10 @@ class ElasticsearchExporterClient implements AutoCloseable {
       flushLatencyMeasurement = metrics.startFlushLatencyMeasurement();
     }
 
+    final String index = indexRouter.indexFor(record);
     final BulkIndexAction action =
         new BulkIndexAction(
-            indexRouter.indexFor(record),
-            indexRouter.idFor(record),
-            indexRouter.routingFor(record));
+            index, indexRouter.idFor(record), indexRouter.routingFor(record, index));
     return bulkIndexRequest.index(action, record, recordSequence);
   }
 

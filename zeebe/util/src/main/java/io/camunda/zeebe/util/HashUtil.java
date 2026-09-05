@@ -13,6 +13,9 @@ import java.nio.charset.StandardCharsets;
 /** Utility class for generating hash values. */
 public final class HashUtil {
 
+  /** The ceiling Elasticsearch and OpenSearch keep their default routing shards under. */
+  private static final int MAX_ROUTING_SHARDS = 1024;
+
   private HashUtil() {}
 
   /**
@@ -47,5 +50,56 @@ public final class HashUtil {
    */
   public static long getStringHashValue(final String stringValue) {
     return Hashing.murmur3_128().hashString(stringValue, StandardCharsets.UTF_8).asLong();
+  }
+
+  /**
+   * Computes the shard Elasticsearch and OpenSearch assign a document to, given its routing value.
+   * Reimplementing their calculation here lets a caller pick routing values that land on a chosen
+   * shard. Both engines were verified to agree with this implementation.
+   *
+   * <p>They hash the routing value with 32-bit Murmur3 (seed 0) over its <em>UTF-16</em> chars, two
+   * bytes per char, rather than over its UTF-8 bytes. The hash is then taken modulo the number of
+   * routing shards and divided by the routing factor, see {@link
+   * #getDefaultNumberOfRoutingShards(int)}.
+   *
+   * <p>The result holds for an index left on the defaults this assumes: one created with an
+   * explicit {@code index.number_of_routing_shards}, or with an {@code
+   * index.routing_partition_size} above 1 (which spreads a single routing value over several
+   * shards), is assigned differently.
+   *
+   * @param routing the routing value of the document
+   * @param numberOfShards the number of primary shards of the index, at least 1
+   * @return the zero-based index of the shard the document is assigned to
+   */
+  public static int getShardForRouting(final String routing, final int numberOfShards) {
+    if (numberOfShards < 1) {
+      throw new IllegalArgumentException(
+          "Expected the number of shards to be at least 1, but was " + numberOfShards);
+    }
+
+    final int routingShards = getDefaultNumberOfRoutingShards(numberOfShards);
+    final int hash = Hashing.murmur3_32_fixed().hashUnencodedChars(routing).asInt();
+    return Math.floorMod(hash, routingShards) / (routingShards / numberOfShards);
+  }
+
+  /**
+   * Returns the number of routing shards Elasticsearch and OpenSearch give an index that does not
+   * set {@code index.number_of_routing_shards} itself.
+   *
+   * <p>They hash into this number rather than into the number of shards, so that an index can later
+   * be split without documents having to move: doubling the shards halves the routing factor, which
+   * keeps every document on a shard derived from the one it already sits on. The default leaves
+   * room for as many such splits as fit under 1024 shards.
+   *
+   * @param numberOfShards the number of primary shards of the index, at least 1
+   * @return the number of routing shards, a power-of-two multiple of {@code numberOfShards}
+   */
+  private static int getDefaultNumberOfRoutingShards(final int numberOfShards) {
+    int routingShards = numberOfShards;
+    while (routingShards * 2 <= MAX_ROUTING_SHARDS) {
+      routingShards *= 2;
+    }
+
+    return routingShards;
   }
 }
