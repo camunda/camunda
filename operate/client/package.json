@@ -11,7 +11,7 @@
     "@camunda/design-system": "0.48.0",
     "@camunda/session-heartbeat": "0.0.1",
     "@carbon/elements": "11.96.0",
-    "@carbon/react": "1.112.0",
+    "@carbon/react": "1.115.0",
     "@devbookhq/splitter": "1.4.2",
     "@floating-ui/react-dom": "2.1.8",
     "@monaco-editor/react": "4.7.0",
