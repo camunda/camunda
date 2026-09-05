@@ -34,7 +34,7 @@ import org.springframework.context.annotation.Bean;
  * authentication system properly handles the no-db scenario with appropriate fail-fast behavior and
  * limited functionality.
  */
-public class NoSecondaryStorageAuthenticationIT {
+public class NoSecondaryStorageAuthenticationTest {
 
   @Test
   void shouldFailFastWhenBasicAuthenticationConfiguredInNoDbMode() {
