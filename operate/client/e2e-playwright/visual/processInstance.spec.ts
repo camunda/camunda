@@ -498,6 +498,9 @@ test.describe('process instance page', () => {
 
     await expect(page.getByText('Value has to be JSON')).toBeVisible();
 
+    await page.keyboard.press('Control+Space');
+    await expect(page.locator('.suggest-widget')).toBeVisible();
+
     await processInstancePage.variablesEditor.hideCaret();
 
     await expect(page).toHaveScreenshot();
@@ -507,6 +510,24 @@ test.describe('process instance page', () => {
     page,
     processInstancePage,
   }) => {
+    let notifyEditorChunkRequested: (() => void) | undefined;
+    const editorChunkRequested = new Promise<void>((resolve) => {
+      notifyEditorChunkRequested = resolve;
+    });
+    let releaseEditorChunk: (() => void) | undefined;
+    const editorChunkReleased = new Promise<void>((resolve) => {
+      releaseEditorChunk = resolve;
+    });
+
+    await page.route('**/assets/RichTextEditor-*.js', async (route) => {
+      if (notifyEditorChunkRequested === undefined) {
+        throw new Error('Rich text editor chunk request is not initialized');
+      }
+      notifyEditorChunkRequested();
+      await editorChunkReleased;
+      await route.continue();
+    });
+
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -531,13 +552,32 @@ test.describe('process instance page', () => {
 
     await processInstancePage.newVariableNameField.fill('newPayload');
 
-    await expect(
-      page
-        .getByTestId('json-editor-wrapper')
-        .getByTestId('json-editor-readonly'),
-    ).toBeVisible();
+    const inlineEditor = page.getByTestId('json-editor-wrapper');
+    const readOnlyEditor = inlineEditor.getByTestId('json-editor-readonly');
+
+    await expect(readOnlyEditor).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+
+    const widthBeforeFocus = await inlineEditor.evaluate(
+      (element) => element.getBoundingClientRect().width,
+    );
+
+    await readOnlyEditor.click();
+    await editorChunkRequested;
+    await expect(readOnlyEditor).toBeVisible();
+    await expect(readOnlyEditor).toBeFocused();
+    if (releaseEditorChunk === undefined) {
+      throw new Error('Rich text editor chunk release is not initialized');
+    }
+    releaseEditorChunk();
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
+
+    const widthAfterFocus = await inlineEditor.evaluate(
+      (element) => element.getBoundingClientRect().width,
+    );
+
+    expect(widthAfterFocus).toBeLessThanOrEqual(widthBeforeFocus + 1);
   });
 
   test('inline JSON edit - error state after blur', async ({

@@ -32,6 +32,7 @@ const EditorWrapper = styled.div<{
   $invalid?: boolean;
 }>`
   position: relative;
+  min-width: 0;
 
   ${({$invalid}) =>
     $invalid &&
@@ -44,10 +45,6 @@ const EditorWrapper = styled.div<{
         color: var(--cds-text-error);
       }
     `}
-`;
-
-const EditorLoader = styled.div<{$height: number}>`
-  height: ${({$height}) => $height}px;
 `;
 
 const ReadOnlyEditorWrapper = styled.div<{
@@ -195,7 +192,6 @@ const WriteModeEditor = styled.div<{
 
 export {
   EditorWrapper,
-  EditorLoader,
   ReadOnlyEditorContainer,
   ReadOnlyEditorWrapper,
   ReadOnlyEditorContent,
