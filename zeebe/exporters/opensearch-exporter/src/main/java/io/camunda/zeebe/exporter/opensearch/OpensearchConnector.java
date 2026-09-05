@@ -27,6 +27,7 @@ import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBu
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
+import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.util.Timeout;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContexts;
@@ -187,6 +188,8 @@ public final class OpensearchConnector {
       setupSSLContext(httpAsyncClientBuilder, osConfig.getSecurity());
     }
 
+    setupKeepAlive(httpAsyncClientBuilder, osConfig);
+
     final ProxyConfiguration proxyConfig = osConfig.getProxy();
     if (proxyConfig != null && proxyConfig.isEnabled()) {
       setupProxy(httpAsyncClientBuilder, proxyConfig);
@@ -244,6 +247,19 @@ public final class OpensearchConnector {
     } catch (final Exception e) {
       LOGGER.error("Error in setting up SSLContext", e);
     }
+  }
+
+  /**
+   * Enables TCP keepalive on the NIO sockets, which the Apache HttpAsyncClient leaves off by
+   * default. Without it, a firewall or NAT device in front of OpenSearch drops its connection
+   * tracking entry for a connection left idle between flushes without sending a RST or FIN, and the
+   * next flush blocks on that dead socket until the request timeout expires.
+   */
+  private void setupKeepAlive(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder,
+      final OpensearchExporterConfiguration osConfig) {
+    httpAsyncClientBuilder.setIOReactorConfig(
+        IOReactorConfig.custom().setSoKeepAlive(osConfig.isSoKeepAlive()).build());
   }
 
   private void setupProxy(

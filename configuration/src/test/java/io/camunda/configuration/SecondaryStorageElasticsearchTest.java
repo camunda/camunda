@@ -849,6 +849,87 @@ public class SecondaryStorageElasticsearchTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
+      })
+  class WithSoKeepAliveUnset {
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    WithSoKeepAliveUnset(
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    @Test
+    void shouldKeepTcpKeepAliveEnabledForTheCamundaExporter() {
+      // given
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getConnect().isSoKeepAlive()).isTrue();
+    }
+
+    @Test
+    void shouldKeepTcpKeepAliveEnabledForTheSearchEngineConnectProperties() {
+      // then
+      assertThat(searchEngineConnectProperties.isSoKeepAlive()).isTrue();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
+        "camunda.data.secondary-storage.elasticsearch.so-keep-alive=false",
+      })
+  class WithSoKeepAliveDisabled {
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    WithSoKeepAliveDisabled(
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    @Test
+    void shouldDisableTcpKeepAliveForTheCamundaExporter() {
+      // given
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getConnect().isSoKeepAlive()).isFalse();
+    }
+
+    @Test
+    void shouldDisableTcpKeepAliveForTheSearchEngineConnectProperties() {
+      // then
+      assertThat(searchEngineConnectProperties.isSoKeepAlive()).isFalse();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
         "camunda.data.secondary-storage.autoconfigure-camunda-exporter=false",
         "camunda.data.secondary-storage.elasticsearch.url=http://unwanted-url:4321",
       })

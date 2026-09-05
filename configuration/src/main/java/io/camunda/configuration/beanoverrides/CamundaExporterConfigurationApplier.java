@@ -81,6 +81,12 @@ public final class CamundaExporterConfigurationApplier {
     if (maxConnectionsPerRoute != null) {
       target.setMaxConnectionsPerRoute(maxConnectionsPerRoute);
     }
+    // Same reasoning: 'zeebe.broker.exporters.camundaexporter.args.connect.soKeepAlive' binds onto
+    // this same target, and the connector already defaults keepalive to on.
+    final var soKeepAlive = source.getSoKeepAlive();
+    if (soKeepAlive != null) {
+      target.setSoKeepAlive(soKeepAlive);
+    }
     target.setUsername(source.getUsername());
     target.setPassword(source.getPassword());
     target.setIndexPrefix(source.getIndexPrefix());
