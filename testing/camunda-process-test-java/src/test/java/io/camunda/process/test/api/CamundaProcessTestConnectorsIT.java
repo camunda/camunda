@@ -25,7 +25,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import java.io.IOException;
@@ -37,33 +38,42 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.Testcontainers;
 
-@WireMockTest(httpPort = 9999)
 public class CamundaProcessTestConnectorsIT {
 
   // The ID is part of the connector configuration in the BPMN element
   private static final String INBOUND_CONNECTOR_ID = "941c5492-ab2b-4305-aa18-ac86991ff4ca";
 
   @RegisterExtension
-  private static final CamundaProcessTestExtension EXTENSION =
-      new CamundaProcessTestExtension()
-          .withConnectorsEnabled(true)
-          .withConnectorsSecret(
-              "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness")
-          .withConnectorsSecret("BASE_URL", "http://host.testcontainers.internal:9999");
+  @Order(1)
+  private static final WireMockExtension WIREMOCK =
+      WireMockExtension.newInstance()
+          .options(WireMockConfiguration.wireMockConfig().dynamicPort())
+          .configureStaticDsl(true)
+          .build();
 
-  // to be injected
+  @RegisterExtension
+  @Order(2)
+  private static final CamundaProcessTestExtension EXTENSION =
+      new CamundaProcessTestExtension() {
+        @Override
+        public void beforeAll(final ExtensionContext context) {
+          final int wireMockPort = WIREMOCK.getRuntimeInfo().getHttpPort();
+          Testcontainers.exposeHostPorts(wireMockPort);
+          withConnectorsSecret("BASE_URL", "http://host.testcontainers.internal:" + wireMockPort);
+          super.beforeAll(context);
+        }
+      }.withConnectorsEnabled(true)
+          .withConnectorsSecret(
+              "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness");
+
   private CamundaClient client;
   private CamundaProcessTestContext processTestContext;
-
-  @BeforeAll
-  static void setup() {
-    Testcontainers.exposeHostPorts(9999);
-  }
 
   @Test
   void shouldInvokeInAndOutboundConnectors() throws IOException {
