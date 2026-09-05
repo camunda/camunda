@@ -11,6 +11,7 @@ import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.cluster.messaging.MessagingException.ProtocolException;
 import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.time.Duration;
 import java.util.Collection;
@@ -70,6 +72,8 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
   // maps the registration state,  for each known host, of each stream
   private final Map<MemberId, Map<UUID, ClientStreamRegistration<M>>> registrations =
       new HashMap<>();
+  private final Map<ServerKey, ServerCleanup> serverCleanups = new HashMap<>();
+
   private final StreamResponseDecoder responseDecoder = new StreamResponseDecoder();
 
   private final ClusterCommunicationService communicationService;
@@ -79,6 +83,14 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       final ClusterCommunicationService communicationService, final ConcurrencyControl executor) {
     this.communicationService = communicationService;
     this.executor = executor;
+  }
+
+  /**
+   * Removes any streams left over from a previous incarnation of this client. Registrations for
+   * this server are held back until that removal is acknowledged.
+   */
+  void onServerJoined(final MemberId serverId, final String physicalTenantId) {
+    ensureStaleStreamsRemoved(new ServerKey(serverId, physicalTenantId));
   }
 
   /**
@@ -162,6 +174,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
         .flatMap(m -> m.values().stream())
         .forEach(ClientStreamRegistration::transitionToClosed);
     registrations.clear();
+    serverCleanups.clear();
 
     serversByPhysicalTenantId.forEach(
         (physicalTenantId, servers) ->
@@ -200,12 +213,6 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       return;
     }
 
-    final var request =
-        new AddStreamRequest()
-            .streamId(registration.streamId())
-            .streamType(registration.logicalId().streamType())
-            .metadata(registration.logicalId().metadata());
-
     final var pendingRequest = registration.pendingRequest();
     if (pendingRequest != null) {
       // error - should not have a pending request if we're registering!
@@ -214,6 +221,20 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
               .formatted(registration.streamId(), registration.serverId()));
     }
 
+    if (!ensureStaleStreamsRemoved(
+        new ServerKey(registration.serverId(), registration.physicalTenantId()))) {
+      return;
+    }
+
+    sendAddRequestAndLegacy(registration);
+  }
+
+  private void sendAddRequestAndLegacy(final ClientStreamRegistration<M> registration) {
+    final var request =
+        new AddStreamRequest()
+            .streamId(registration.streamId())
+            .streamType(registration.logicalId().streamType())
+            .metadata(registration.logicalId().metadata());
     final var payload = BufferUtil.bufferAsArray(request);
     final var added = new CompletableFuture<Void>();
     sendAddRequest(registration, payload, added);
@@ -298,6 +319,12 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
    * serve untouched.
    */
   void onServerRemoved(final MemberId serverId, final String physicalTenantId) {
+    final var cleanup = serverCleanups.get(new ServerKey(serverId, physicalTenantId));
+    if (cleanup != null) {
+      cleanup.serverActive = false;
+      cleanup.cleaned = false;
+    }
+
     final var perHost = registrations.get(serverId);
     if (perHost == null) {
       return;
@@ -578,6 +605,101 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     }
   }
 
+  private boolean ensureStaleStreamsRemoved(final ServerKey server) {
+    final var cleanup = serverCleanups.computeIfAbsent(server, ignored -> new ServerCleanup());
+    cleanup.serverActive = true;
+    if (cleanup.cleaned) {
+      return true;
+    }
+
+    if (!cleanup.inFlight) {
+      removeStaleStreams(server, cleanup);
+    }
+
+    return false;
+  }
+
+  private void removeStaleStreams(final ServerKey server, final ServerCleanup cleanup) {
+    final var topic =
+        DEFAULT_PHYSICAL_TENANT_ID.equals(server.physicalTenantId())
+            ? StreamTopics.REMOVE_ALL.legacyTopic()
+            : StreamTopics.REMOVE_ALL.topic(server.physicalTenantId());
+
+    cleanup.inFlight = true;
+    communicationService
+        .send(
+            topic,
+            REMOVE_ALL_REQUEST,
+            Function.identity(),
+            Function.identity(),
+            server.serverId(),
+            REQUEST_TIMEOUT)
+        .whenCompleteAsync(
+            (ok, error) -> {
+              if (error == null) {
+                cleanup.inFlight = false;
+                cleanup.cleaned = true;
+                sendPendingRegistrations(server);
+              } else {
+                handleCleanupFailure(server, cleanup, error);
+              }
+            },
+            executor::run);
+  }
+
+  private void sendPendingRegistrations(final ServerKey server) {
+    final var perHost = registrations.get(server.serverId());
+    if (perHost == null) {
+      return;
+    }
+
+    perHost.values().stream()
+        .filter(registration -> server.physicalTenantId().equals(registration.physicalTenantId()))
+        .filter(registration -> registration.state() == State.ADDING)
+        .filter(
+            registration ->
+                registration.pendingRequest() == null
+                    && registration.legacyPendingRequest() == null)
+        .toList()
+        .forEach(this::sendAddRequestAndLegacy);
+  }
+
+  private void handleCleanupFailure(
+      final ServerKey server, final ServerCleanup cleanup, final Throwable error) {
+    final var failure = FuturesUtil.unwrapCompletionException(error);
+
+    if (failure instanceof NoRemoteHandler || failure instanceof NoSuchMemberException) {
+      cleanup.inFlight = false;
+      if (!cleanup.serverActive) {
+        return;
+      }
+
+      LOGGER.debug(
+          "Cannot yet clear streams from a previous incarnation on server {}"
+              + " and physical tenant {}; retrying in {}",
+          server.serverId(),
+          server.physicalTenantId(),
+          RETRY_DELAY,
+          failure);
+      executor.schedule(RETRY_DELAY, () -> retryCleanup(server));
+      return;
+    }
+
+    LOGGER.warn(
+        "Failed to clear streams from a previous incarnation on server {} and physical tenant {};"
+            + " new streams remain disconnected until this client is restarted",
+        server.serverId(),
+        server.physicalTenantId(),
+        failure);
+  }
+
+  private void retryCleanup(final ServerKey server) {
+    final var cleanup = serverCleanups.get(server);
+    if (cleanup != null && cleanup.serverActive && !cleanup.cleaned && !cleanup.inFlight) {
+      removeStaleStreams(server, cleanup);
+    }
+  }
+
   private void doRemoveAll(final MemberId brokerId, final String physicalTenantId) {
     communicationService.unicast(
         StreamTopics.REMOVE_ALL.topic(physicalTenantId),
@@ -599,5 +721,13 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       return;
     }
     communicationService.unicast(topic.legacyTopic(), payload, Function.identity(), serverId, true);
+  }
+
+  private record ServerKey(MemberId serverId, String physicalTenantId) {}
+
+  private static final class ServerCleanup {
+    private boolean serverActive;
+    private boolean cleaned;
+    private boolean inFlight;
   }
 }

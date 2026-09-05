@@ -56,8 +56,13 @@ final class ClientStreamManager<M extends BufferWriter> {
   void onServerJoined(final MemberId serverId, final String physicalTenantId) {
     final var servers =
         serversByPhysicalTenantId.computeIfAbsent(physicalTenantId, id -> new HashSet<>());
-    servers.add(serverId);
+    final var added = servers.add(serverId);
     metricsFactory.apply(physicalTenantId).serverCount(servers.size());
+
+    if (!added) {
+      return;
+    }
+    requestManager.onServerJoined(serverId, physicalTenantId);
 
     registry.list().stream()
         .filter(c -> physicalTenantId.equals(c.physicalTenantId()))

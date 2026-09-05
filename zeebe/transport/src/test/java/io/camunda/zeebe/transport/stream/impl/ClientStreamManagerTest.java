@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
@@ -196,6 +198,21 @@ class ClientStreamManagerTest {
 
     // then
     assertThat(serverStream.isConnected(server)).isTrue();
+  }
+
+  @Test
+  void shouldCleanupStaleStreamsOnlyOnFirstJoin() {
+    // given
+    final MemberId server = MemberId.from("3");
+    clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    clientStreamManager.onServerJoined(server, DEFAULT_PHYSICAL_TENANT_ID);
+
+    // when
+    clientStreamManager.onServerJoined(server, DEFAULT_PHYSICAL_TENANT_ID);
+
+    // then
+    verify(mockTransport, times(1))
+        .send(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(server), any());
   }
 
   @Test

@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.MessagingException;
+import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.cluster.messaging.MessagingException.ProtocolException;
 import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
@@ -40,6 +41,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -153,6 +156,9 @@ final class ClientStreamRequestManagerTest {
     final var serverId = MemberId.anonymous();
     when(mockTransport.<byte[], byte[]>send(any(), any(), any(), any(), any(), any()))
         .thenReturn(pendingRequest);
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new byte[0]));
     requestManager.add(clientStream, serverId);
 
     // when
@@ -809,6 +815,451 @@ final class ClientStreamRequestManagerTest {
 
     // then
     assertThat(clientStream.isConnected(serverId)).isTrue();
+  }
+
+  @Test
+  void shouldWaitForPreviousIncarnationCleanupBeforeAdding() {
+    // given
+    final var serverId = MemberId.anonymous();
+    final var cleanup = new CompletableFuture<byte[]>();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(cleanup);
+
+    // when
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    requestManager.add(clientStream, serverId);
+
+    // then
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+
+    cleanup.complete(new byte[0]);
+
+    verify(mockTransport)
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+  }
+
+  @Test
+  void shouldUseOnlyLegacyCleanupTopicForDefaultTenant() {
+    // given
+    final var serverId = MemberId.anonymous();
+
+    // when
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+
+    // then
+    verify(mockTransport)
+        .send(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any());
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.REMOVE_ALL.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+  }
+
+  @Test
+  void shouldUseTenantScopedCleanupTopicForNonDefaultTenant() {
+    // given
+    final var serverId = MemberId.anonymous();
+    final var physicalTenantId = "tenant-" + UUID.randomUUID();
+
+    // when
+    requestManager.onServerJoined(serverId, physicalTenantId);
+
+    // then
+    verify(mockTransport)
+        .send(
+            eq(StreamTopics.REMOVE_ALL.topic(physicalTenantId)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+    verify(mockTransport, never())
+        .send(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any());
+  }
+
+  @Test
+  void shouldCleanupOnlyOnceWhileServerStaysJoined() {
+    // given
+    final var serverId = MemberId.anonymous();
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+
+    // when
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    requestManager.add(clientStream, serverId);
+
+    // then
+    verify(mockTransport, times(1))
+        .send(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any());
+  }
+
+  @Test
+  void shouldCleanupAgainWhenServerRejoins() {
+    // given
+    final var serverId = MemberId.anonymous();
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    requestManager.onServerRemoved(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+
+    // when
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+
+    // then
+    verify(mockTransport, times(2))
+        .send(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any());
+  }
+
+  @Test
+  void shouldNotAddWhenPreviousIncarnationCleanupFails() {
+    // given
+    final var serverId = MemberId.anonymous();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("expected")));
+
+    // when
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    requestManager.add(clientStream, serverId);
+
+    // then
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+  }
+
+  @Test
+  void shouldKeepBlockingAddsAfterCleanupFailed() {
+    // given
+    final var serverId = MemberId.anonymous();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("expected")));
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    requestManager.add(clientStream, serverId);
+
+    // when
+    final var otherStream =
+        new AggregatedClientStream<>(
+            UUID.randomUUID(),
+            new LogicalId<>(new UnsafeBuffer(BufferUtil.wrapString("bar")), new TestMetadata()),
+            DEFAULT_PHYSICAL_TENANT_ID);
+    otherStream.open(requestManager, Collections.emptySet());
+    requestManager.add(otherStream, serverId);
+
+    // then
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+    verify(mockTransport, times(1))
+        .send(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any());
+  }
+
+  @Test
+  void shouldCleanupBeforeAddingWhenServerNeverJoined() {
+    // given
+    final var serverId = MemberId.anonymous();
+    final var cleanup = new CompletableFuture<byte[]>();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(cleanup);
+
+    // when
+    requestManager.add(clientStream, serverId);
+
+    // then
+    verify(mockTransport)
+        .send(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any());
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+  }
+
+  @Test
+  void shouldRetryCleanupWhenServerHasNoHandlerYet() {
+    // given
+    final var serverId = MemberId.anonymous();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CompletionException(
+                    new NoRemoteHandler(StreamTopics.REMOVE_ALL.legacyTopic()))))
+        .thenReturn(CompletableFuture.completedFuture(new byte[0]));
+
+    // when
+    requestManager.add(clientStream, serverId);
+
+    // then
+    verify(mockTransport, times(2))
+        .send(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any());
+    verify(mockTransport)
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+  }
+
+  @Test
+  void shouldRetryCleanupWhenMemberIsNotKnownYet() {
+    // given
+    final var serverId = MemberId.anonymous();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.failedFuture(new NoSuchMemberException("not known yet")))
+        .thenReturn(CompletableFuture.completedFuture(new byte[0]));
+
+    // when
+    requestManager.add(clientStream, serverId);
+
+    // then
+    verify(mockTransport, times(2))
+        .send(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any());
+    verify(mockTransport)
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+  }
+
+  @Test
+  void shouldNotRetryCleanupWhenItMayStillExecute() {
+    // given
+    final var serverId = MemberId.anonymous();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.failedFuture(new CompletionException(new TimeoutException())))
+        .thenReturn(CompletableFuture.completedFuture(new byte[0]));
+
+    // when
+    requestManager.add(clientStream, serverId);
+
+    // then
+    verify(mockTransport, times(1))
+        .send(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any());
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+  }
+
+  @Test
+  void shouldNotBypassCleanupThatMayStillExecuteWhenServerRejoins() {
+    // given
+    final var serverId = MemberId.anonymous();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.failedFuture(new CompletionException(new TimeoutException())))
+        .thenReturn(CompletableFuture.completedFuture(new byte[0]));
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+
+    // when
+    requestManager.onServerRemoved(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    requestManager.add(clientStream, serverId);
+
+    // then
+    verify(mockTransport, times(1))
+        .send(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any());
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+  }
+
+  @Test
+  void shouldWaitForOutstandingCleanupOnRejoinInsteadOfIssuingAnother() {
+    // given
+    final var serverId = MemberId.anonymous();
+    final var cleanup = new CompletableFuture<byte[]>();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(cleanup);
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    requestManager.add(clientStream, serverId);
+
+    // when
+    requestManager.onServerRemoved(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    requestManager.add(clientStream, serverId);
+
+    // then
+    verify(mockTransport, times(1))
+        .send(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any());
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+
+    // when
+    cleanup.complete(new byte[0]);
+
+    // then
+    verify(mockTransport, times(1))
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+  }
+
+  @Test
+  void shouldNotRetryCleanupAfterServerLeft() {
+    // given
+    final var serverId = MemberId.anonymous();
+    final var cleanup = new CompletableFuture<byte[]>();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(cleanup);
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+
+    // when
+    requestManager.onServerRemoved(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    cleanup.completeExceptionally(new NoSuchMemberException("gone"));
+
+    // then
+    verify(mockTransport, times(1))
+        .send(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any());
+    verify(concurrencyControl, never()).schedule(any(), any());
+  }
+
+  @Test
+  void shouldCleanupOnRejoinAfterRemovalProvablyNeverExecuted() {
+    // given
+    final var serverId = MemberId.anonymous();
+    final var cleanup = new CompletableFuture<byte[]>();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(cleanup)
+        .thenReturn(CompletableFuture.completedFuture(new byte[0]));
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    requestManager.onServerRemoved(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    cleanup.completeExceptionally(new NoSuchMemberException("gone"));
+
+    // when
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    requestManager.add(clientStream, serverId);
+
+    // then
+    verify(mockTransport, times(2))
+        .send(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any());
+    verify(mockTransport)
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+  }
+
+  @Test
+  void shouldNotAddStreamsOfRemovedServerWhenItsCleanupCompletes() {
+    // given
+    final var serverId = MemberId.anonymous();
+    final var cleanup = new CompletableFuture<byte[]>();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(cleanup);
+    requestManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    requestManager.add(clientStream, serverId);
+
+    // when
+    requestManager.onServerRemoved(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+    cleanup.complete(new byte[0]);
+
+    // then
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+  }
+
+  @Test
+  void shouldNotBlockOtherPhysicalTenantWhenCleanupFails() {
+    // given
+    final var serverId = MemberId.anonymous();
+    final var otherTenantId = "tenant-" + UUID.randomUUID();
+    final var otherStream =
+        new AggregatedClientStream<>(
+            UUID.randomUUID(),
+            new LogicalId<>(new UnsafeBuffer(BufferUtil.wrapString("bar")), new TestMetadata()),
+            otherTenantId);
+    otherStream.open(requestManager, Collections.emptySet());
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(new CompletionException(new TimeoutException())));
+
+    // when
+    requestManager.add(clientStream, serverId);
+    requestManager.add(otherStream, serverId);
+
+    // then
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+    verify(mockTransport)
+        .send(eq(StreamTopics.ADD.topic(otherTenantId)), any(), any(), any(), eq(serverId), any());
   }
 
   @Test
