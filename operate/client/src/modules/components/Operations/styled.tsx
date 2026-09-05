@@ -9,11 +9,7 @@
 import {Stack} from '@carbon/react';
 import styled from 'styled-components';
 
-const OperationsContainer = styled(Stack)`
-  .cds--popover[role='tooltip'] {
-    display: none;
-  }
-`;
+const OperationsContainer = Stack;
 
 const LoadingSlot = styled.li`
   align-items: center;

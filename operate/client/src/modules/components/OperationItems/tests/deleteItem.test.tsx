@@ -12,29 +12,44 @@ import {OperationItems} from '../';
 import {DangerButton} from '../../OperationItem/DangerButton';
 
 describe('Delete Item', () => {
-  it('should show the correct icon based on the type', () => {
-    render(
-      <OperationItems>
-        <DangerButton
-          type="DELETE"
-          onClick={noop}
-          title="delete process instance"
-        />
-      </OperationItems>,
-    );
+  it('should render a text button by default', () => {
+    const BUTTON_TITLE = 'Delete process definition';
 
-    expect(screen.getByTestId('delete-operation')).toBeInTheDocument();
-  });
-
-  it('should render delete button', () => {
-    const BUTTON_TITLE = 'Delete Instance 1';
     render(
       <OperationItems>
         <DangerButton type="DELETE" onClick={noop} title={BUTTON_TITLE} />
       </OperationItems>,
     );
 
-    expect(screen.getByRole('button', {name: /delete/i})).toBeInTheDocument();
+    const deleteButton = screen.getByRole('button', {name: BUTTON_TITLE});
+
+    expect(deleteButton).toHaveTextContent('Delete');
+    expect(deleteButton).toHaveAttribute('title', BUTTON_TITLE);
+    expect(deleteButton.querySelector('svg')).not.toBeInTheDocument();
+  });
+
+  it('should render an icon-only delete button with a tooltip', async () => {
+    const BUTTON_TITLE = 'Delete Instance 1';
+    const {user} = render(
+      <OperationItems>
+        <DangerButton
+          type="DELETE"
+          onClick={noop}
+          title={BUTTON_TITLE}
+          isIconOnly
+        />
+      </OperationItems>,
+    );
+
+    const deleteButton = screen.getByRole('button', {name: BUTTON_TITLE});
+
+    expect(deleteButton).toHaveClass('cds--btn--icon-only');
+    expect(deleteButton).toHaveClass('cds--btn--danger--ghost');
+    expect(deleteButton).not.toHaveTextContent('Delete');
+
+    await user.hover(deleteButton);
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(BUTTON_TITLE);
   });
 
   it('should execute callback function', async () => {
