@@ -453,6 +453,10 @@ class ConditionalBehaviorEngineTest {
 
   @Test
   void shouldNotWaitForResetAfterFailedAction() {
+    // Use a short resetTimeout so the backoff gap is observable within a reasonable test window
+    engine.stop();
+    engine = new ConditionalBehaviorEngine(Duration.ofMillis(300));
+
     final List<Long> fireTimestampsNanos = new CopyOnWriteArrayList<>();
 
     engine
@@ -464,12 +468,39 @@ class ConditionalBehaviorEngineTest {
             });
 
     await()
-        .atMost(3, TimeUnit.SECONDS)
+        .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(() -> assertThat(fireTimestampsNanos).hasSizeGreaterThanOrEqualTo(2));
 
     final long gapMillis =
         TimeUnit.NANOSECONDS.toMillis(fireTimestampsNanos.get(1) - fireTimestampsNanos.get(0));
-    // resetTimeout=5s, pollInterval=100ms — any gap < 5s proves reset-wait was skipped.
-    assertThat(gapMillis).isLessThan(5000);
+    // reset-wait (condition re-evaluation) is skipped on a failed action:
+    // gap should be ~resetTimeout (300ms), not the full default 5s.
+    assertThat(gapMillis).isGreaterThanOrEqualTo(250).isLessThan(5000);
+  }
+
+  @Test
+  void shouldApplyFixedBackoffOnRepeatedActionFailures() {
+    // Use a short resetTimeout so the test completes quickly
+    engine.stop();
+    engine = new ConditionalBehaviorEngine(Duration.ofMillis(300));
+
+    final List<Long> failureTimestampsNanos = new CopyOnWriteArrayList<>();
+
+    engine
+        .when(() -> {})
+        .then(
+            () -> {
+              failureTimestampsNanos.add(System.nanoTime());
+              throw new RuntimeException("repeated failure");
+            });
+
+    await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(failureTimestampsNanos).hasSizeGreaterThanOrEqualTo(2));
+
+    final long gapMillis =
+        TimeUnit.NANOSECONDS.toMillis(failureTimestampsNanos.get(1) - failureTimestampsNanos.get(0));
+    // Backoff is fixed at resetTimeout (300ms) — not exponential
+    assertThat(gapMillis).isGreaterThanOrEqualTo(250);
   }
 }
