@@ -46,6 +46,7 @@ import io.camunda.exporter.tasks.incident.ElasticsearchIncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
 import io.camunda.exporter.tasks.incident.OpenSearchIncidentUpdateRepository;
+import io.camunda.exporter.tasks.incident.PendingIncidentUpdateCountTask;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.BatchOperationDependant;
@@ -268,6 +269,7 @@ public final class CamundaBackgroundTaskManagerFactory {
     final List<RunnableTask> tasks = new ArrayList<>();
 
     tasks.add(buildIncidentMarkerTask());
+    tasks.add(buildPendingIncidentCountTask());
     if (config.getHistory().isProcessInstanceEnabled()) {
       tasks.add(buildProcessInstanceArchiverJob());
       if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
@@ -391,6 +393,16 @@ public final class CamundaBackgroundTaskManagerFactory {
         1,
         postExport.getDelayBetweenRuns(),
         postExport.getMaxDelayBetweenRuns(),
+        executor,
+        logger);
+  }
+
+  private ReschedulingTask buildPendingIncidentCountTask() {
+    return new ReschedulingTask(
+        new PendingIncidentUpdateCountTask(metrics, metadata, incidentRepository, logger),
+        0,
+        PendingIncidentUpdateCountTask.DELAY_BETWEEN_RUNS,
+        PendingIncidentUpdateCountTask.MAX_DELAY_BETWEEN_RUNS,
         executor,
         logger);
   }
