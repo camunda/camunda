@@ -8155,7 +8155,7 @@
               },
               "disableTextWrap": false,
               "editorMode": "code",
-              "expr": "topk(20,\r\n  avg (node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{\r\n    container=~\"zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*\",\r\n    camunda_geo_area=~\"$geo_area\",\r\n    camunda_provider=~\"$cloud_provider\",\r\n    namespace=~\"$namespace\",\r\n    cluster=~\"$cluster\"\r\n  }\r\n  * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n  }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n  /\r\n  avg (kube_pod_container_resource_limits{resource=\"cpu\", namespace=~\"$namespace\", cluster=~\"$cluster\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n    * on(namespace)\r\n    group_left(\r\n      label_cloud_camunda_io_generation,\r\n      label_cloud_camunda_io_sales_plan_type\r\n    )\r\n    max(\r\n      kube_namespace_labels{\r\n        namespace=~\"$namespace\",\r\n        label_cloud_camunda_io_generation=~\"$generation\",\r\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n      }\r\n    ) by (\r\n      namespace\r\n    )\r\n  ) by (container, namespace)\r\n)",
+              "expr": "topk(20,\r\n  avg (node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{\r\n    container=~\"zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*|camunda-gateway.*\",\r\n    camunda_geo_area=~\"$geo_area\",\r\n    camunda_provider=~\"$cloud_provider\",\r\n    namespace=~\"$namespace\",\r\n    cluster=~\"$cluster\"\r\n  }\r\n  * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n  }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n  /\r\n  avg (kube_pod_container_resource_limits{resource=\"cpu\", namespace=~\"$namespace\", cluster=~\"$cluster\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n    * on(namespace)\r\n    group_left(\r\n      label_cloud_camunda_io_generation,\r\n      label_cloud_camunda_io_sales_plan_type\r\n    )\r\n    max(\r\n      kube_namespace_labels{\r\n        namespace=~\"$namespace\",\r\n        label_cloud_camunda_io_generation=~\"$generation\",\r\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n      }\r\n    ) by (\r\n      namespace\r\n    )\r\n  ) by (container, namespace)\r\n)",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
               "legendFormat": "{{namespace}} {{container}}",
@@ -8262,7 +8262,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "topk(20,\r\navg (node_namespace_pod_container:container_memory_working_set_bytes{container=~\"zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*\",\r\n    cluster=~\"$cluster\",\r\n    namespace=~\"$namespace\",\r\n    camunda_geo_area=~\"$geo_area\",\r\n    camunda_provider=~\"$cloud_provider\"}\r\n    * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n    /\r\navg (kube_pod_container_resource_limits{resource=\"memory\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n* on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n)",
+              "expr": "topk(20,\r\navg (node_namespace_pod_container:container_memory_working_set_bytes{container=~\"zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*|camunda-gateway.*\",\r\n    cluster=~\"$cluster\",\r\n    namespace=~\"$namespace\",\r\n    camunda_geo_area=~\"$geo_area\",\r\n    camunda_provider=~\"$cloud_provider\"}\r\n    * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n    /\r\navg (kube_pod_container_resource_limits{resource=\"memory\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n* on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n)",
               "legendFormat": "{{namespace}} {{container}}",
               "range": true,
               "refId": "A"
@@ -8811,7 +8811,7 @@
         "type": "query"
       },
       {
-        "allValue": "zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*",
+        "allValue": "zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*|camunda-gateway.*",
         "allowCustomValue": true,
         "current": {
           "text": "All",
@@ -8834,7 +8834,7 @@
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
-        "regex": "zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*",
+        "regex": "zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*|camunda-gateway.*",
         "sort": 1,
         "type": "query"
       },
