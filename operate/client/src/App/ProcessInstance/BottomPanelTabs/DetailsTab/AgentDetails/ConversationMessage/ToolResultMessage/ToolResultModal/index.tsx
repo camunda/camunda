@@ -34,6 +34,8 @@ const RichTextEditor = lazy(async () => {
   return {default: RichTextEditor};
 });
 
+const PREVIEW_OPTIONS = {overviewRulerLanes: 0};
+
 type ToolResultModalProps = {
   toolName: string;
   description: string | null;
@@ -75,6 +77,7 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
                   readOnly
                   language="json"
                   height="100%"
+                  options={PREVIEW_OPTIONS}
                 />
               </Suspense>
             </EditorContainer>
@@ -99,6 +102,7 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
                   readOnly
                   language={result.language}
                   height="100%"
+                  options={PREVIEW_OPTIONS}
                 />
               </Suspense>
             </EditorContainer>
