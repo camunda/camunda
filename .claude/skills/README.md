@@ -50,6 +50,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `frontend-operate-migrator`    | End-to-end ticket-driven Operate migration, fidelity review, draft PR, and CI convergence      |
 | `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp             |
 | `operate-frontend`             | Fix bugs or make changes in the Operate legacy frontend at `operate/client/`                  |
+| `quality-board-check`          | Scan the quality board for urgency:immediate bugs, research ownership and merge correlation, and report via Slack |
 | `tasklist-frontend`            | Build or change Tasklist pod features in the OC webapp at `src/tasklist/`                      |
 
 ## Adding a new skill
