@@ -429,6 +429,8 @@ make typical   # 50 instances/s, 6 workers, typical_process BPMN
 make realistic # Realistic multi-instance benchmark (values from camunda-load-tests-helm)
 make max       # 300 instances/s — maximum stress, also disables consistency check overhead
 make archiver  # Multi-instance archiver scenario (no workers)
+make secrets   # 100 jobs/s, each referencing one of 1500 secrets — see below
+make secrets-control # the same run without secret references, for attribution
 ```
 
 You can also pass `scenario=` directly to combine with additional overrides:
@@ -455,6 +457,49 @@ To render Helm templates for inspection:
 make template scenario=max          # renders platform manifests
 make template-load-test scenario=max  # renders load test manifests
 ```
+
+#### The `secrets` scenario
+
+Measures secret resolution on the job activation path (`main` only). It puts the engine in
+the state that path is most sensitive to: many distinct references, a cache that cannot hold
+them all, and job variables large enough that injecting into them costs something.
+
+| Parameter | Value | Where |
+|---|---|---|
+| Process instances (and jobs) | 100/s | `--set load-tester.starter.rate=100` |
+| Distinct secret references | 1500 | `LOAD_TESTER_STARTER_SECRET_VARIANTS`, `load-tester-values-secret-benchmark.yaml` |
+| Secret cache | 1000 entries, 20m ttl (product defaults) | `camunda-platform-override-values-secrets.yaml` |
+| Resulting cache miss rate | ~1/3 of jobs | consequence of the two rows above |
+| Job variables | ~30KB, 10 levels deep | `bpmn/deep_payload_30kb.json` |
+| Secret store | file-based, `/etc/camunda/secrets` | `camunda-platform-values-secrets.yaml` |
+
+The starter deploys 1500 variants of `bpmn/secret_task.bpmn`, one per secret, because a job's
+secret references are extracted from its element's input mappings at deploy time and are
+therefore static. Each instance is started on a uniformly random variant, which is what makes
+the misses independent rather than a scan over the whole key space (a cyclic pattern would
+evict every entry before its reuse and miss ~always). An init container seeds the store with
+`s0`..`s1499`; that count must match the variant count, or the surplus references fail
+resolution and raise incidents.
+
+The engine's process definition cache is raised to 2000 for the same reason it exists: 1500
+definitions against its default of 1000 would add a definition cache miss to the same
+activation path, and afterwards the two are indistinguishable.
+
+What to read, per namespace, in [the benchmark dashboards](https://dashboard.benchmark.camunda.cloud/):
+
+- `zeebe_job_activation_time` — created to activated; carries the park and reactivation of a miss
+- `zeebe_job_life_time` — created to completed
+- `camunda_secret_cache_result{result="HIT"|"MISS"}` — expect a hit ratio near 0.67
+- `camunda_secret_cache_size` / `camunda_secret_cache_evictions{cause="SIZE"}` — expect ~1000 and a steady rise
+- `camunda_secret_resolution_duration` / `_outcome` — the background resolution itself
+
+Before trusting any of it, check that the run is actually at its operating point: starter rate
+~100/s, completion ratio ~1, no incidents, no write backpressure. A hit ratio far from 0.67 means
+the workload is not what this table describes.
+
+Note that `helm upgrade` runs with `--reset-then-reuse-values`, so switching an existing
+namespace between `secrets` and `secrets-control` leaves the previous scenario's `--set` values
+in place. Use a separate namespace per scenario.
 
 ### Accessing Services
 
