@@ -40,10 +40,13 @@ public class DbVariableState implements MutableVariableState {
   private final ExpandableArrayBuffer documentResultBuffer = new ExpandableArrayBuffer();
   private final DirectBuffer resultView = new UnsafeBuffer(0, 0);
 
-  // (child scope key) => (parent scope key)
+  // (child scope key) => (parent scope key, whether the scope has no local variables)
+  // we need two separate wrapper to not interfere with get and put
+  // see https://github.com/zeebe-io/zeebe/issues/1914
   private final ColumnFamily<DbLong, ParentScopeKey> childParentColumnFamily;
   private final DbLong childKey;
-  private final ParentScopeKey parentKey = new ParentScopeKey();
+  private final ParentScopeKey scopeToRead = new ParentScopeKey();
+  private final ParentScopeKey scopeToWrite = new ParentScopeKey();
 
   // (scope key, variable name) => (variable value)
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, VariableInstance>
@@ -75,7 +78,7 @@ public class DbVariableState implements MutableVariableState {
             ZbColumnFamilies.ELEMENT_INSTANCE_CHILD_PARENT,
             transactionContext,
             childKey,
-            parentKey);
+            scopeToRead);
 
     scopeKey = new DbLong();
     variableName = new DbString();
@@ -127,21 +130,27 @@ public class DbVariableState implements MutableVariableState {
     variableName.wrapBuffer(variableNameView);
 
     variablesColumnFamily.upsert(scopeKeyVariableNameKey, newVariable);
+
+    setScopeEmpty(scopeKey, false);
   }
 
   @Override
-  public void createScope(final long childKey, final long parentKey) {
+  public void createScope(final long childKey, final long parentKey, final boolean hasVariables) {
     this.childKey.wrapLong(childKey);
-    this.parentKey.set(parentKey);
+    // Variables can be written before their scope exists: the create-instance payload, modification
+    // variable instructions and call activity propagation all merge variables while the element is
+    // only activated by a follow-up ACTIVATE_ELEMENT command. Those callers flag it on the record,
+    // because marking such a scope empty would hide the variables from every later read.
+    scopeToWrite.set(parentKey, !hasVariables);
 
-    childParentColumnFamily.insert(this.childKey, this.parentKey);
+    childParentColumnFamily.insert(this.childKey, scopeToWrite);
   }
 
   @Override
   public void removeScope(final long scopeKey) {
-    this.scopeKey.wrapLong(scopeKey);
-
-    removeAllVariables(scopeKey);
+    if (!isScopeEmpty(scopeKey)) {
+      deleteAllVariablesLocal(scopeKey);
+    }
 
     childKey.wrapLong(scopeKey);
     // TODO: Could be deleteExisting except for tests
@@ -150,11 +159,12 @@ public class DbVariableState implements MutableVariableState {
 
   @Override
   public void removeAllVariables(final long scopeKey) {
-    visitVariablesLocal(
-        scopeKey,
-        dbString -> true,
-        (dbString, variable1) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
-        () -> false);
+    if (isScopeEmpty(scopeKey)) {
+      return;
+    }
+
+    deleteAllVariablesLocal(scopeKey);
+    setScopeEmpty(scopeKey, true);
   }
 
   @Override
@@ -195,17 +205,33 @@ public class DbVariableState implements MutableVariableState {
   public DirectBuffer getVariable(
       final long scopeKey, final DirectBuffer name, final int nameOffset, final int nameLength) {
 
-    long currentScopeKey = scopeKey;
-    do {
-      final VariableInstance variable =
-          getVariableLocal(currentScopeKey, name, nameOffset, nameLength);
+    // the given scope is read without looking up its scope record first: on a local hit that saves
+    // the lookup entirely, and otherwise the record is needed anyway to find the parent
+    VariableInstance variable = getVariableLocal(scopeKey, name, nameOffset, nameLength);
+    if (variable != null) {
+      return variable.getValue();
+    }
 
-      if (variable != null) {
-        return variable.getValue();
+    long currentScopeKey = getParentScopeKey(scopeKey);
+    while (currentScopeKey >= 0) {
+      childKey.wrapLong(currentScopeKey);
+      final ParentScopeKey scope = childParentColumnFamily.get(childKey);
+      if (scope == null) {
+        // The scope record may not exist yet even though variables have already been written to it.
+        variable = getVariableLocal(currentScopeKey, name, nameOffset, nameLength);
+        return variable != null ? variable.getValue() : null;
       }
 
-      currentScopeKey = getParentScopeKey(currentScopeKey);
-    } while (currentScopeKey >= 0);
+      final long parentScopeKey = scope.get();
+      if (!scope.isEmpty()) {
+        variable = getVariableLocal(currentScopeKey, name, nameOffset, nameLength);
+        if (variable != null) {
+          return variable.getValue();
+        }
+      }
+
+      currentScopeKey = parentScopeKey;
+    }
 
     return null;
   }
@@ -366,13 +392,20 @@ public class DbVariableState implements MutableVariableState {
       final BooleanSupplier completionCondition) {
     long currentScope = scopeKey;
 
-    boolean completed;
-    do {
-      completed = visitVariablesLocal(currentScope, filter, variableConsumer, completionCondition);
+    boolean completed = false;
+    while (!completed && currentScope >= 0) {
+      childKey.wrapLong(currentScope);
+      final ParentScopeKey scope = childParentColumnFamily.get(childKey);
+      // an unknown scope has no parent to continue with, but it may still hold variables
+      final boolean empty = scope != null && scope.isEmpty();
+      final long parentScope = scope != null ? scope.get() : NO_PARENT;
 
-      currentScope = getParentScopeKey(currentScope);
+      if (!empty) {
+        completed = seekVariablesLocal(currentScope, filter, variableConsumer, completionCondition);
+      }
 
-    } while (!completed && currentScope >= 0);
+      currentScope = parentScope;
+    }
   }
 
   /**
@@ -385,6 +418,22 @@ public class DbVariableState implements MutableVariableState {
    * @return true if the completion condition was met
    */
   private boolean visitVariablesLocal(
+      final long scopeKey,
+      final Predicate<DbString> variableFilter,
+      final BiConsumer<DbString, VariableInstance> variableConsumer,
+      final BooleanSupplier completionCondition) {
+    if (isScopeEmpty(scopeKey)) {
+      return false;
+    }
+
+    return seekVariablesLocal(scopeKey, variableFilter, variableConsumer, completionCondition);
+  }
+
+  /**
+   * Like {@link #visitVariablesLocal(long, Predicate, BiConsumer, BooleanSupplier)}, but without
+   * checking first whether the scope is empty. Only for callers that already know it is not.
+   */
+  private boolean seekVariablesLocal(
       final long scopeKey,
       final Predicate<DbString> variableFilter,
       final BiConsumer<DbString, VariableInstance> variableConsumer,
@@ -403,5 +452,32 @@ public class DbVariableState implements MutableVariableState {
           return !completionCondition.getAsBoolean();
         });
     return false;
+  }
+
+  private void deleteAllVariablesLocal(final long scopeKey) {
+    seekVariablesLocal(
+        scopeKey,
+        dbString -> true,
+        (dbString, variable) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
+        () -> false);
+  }
+
+  /** Returns true only if the scope is known to have no variables of its own. */
+  private boolean isScopeEmpty(final long scopeKey) {
+    childKey.wrapLong(scopeKey);
+    final ParentScopeKey scope = childParentColumnFamily.get(childKey);
+    return scope != null && scope.isEmpty();
+  }
+
+  private void setScopeEmpty(final long scopeKey, final boolean empty) {
+    childKey.wrapLong(scopeKey);
+    final ParentScopeKey scope = childParentColumnFamily.get(childKey);
+
+    if (scope == null || scope.isEmpty() == empty) {
+      return;
+    }
+
+    scopeToWrite.set(scope.get(), empty);
+    childParentColumnFamily.update(childKey, scopeToWrite);
   }
 }

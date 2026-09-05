@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -61,6 +62,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   public static final StringValue RESUME_FROM_JOB_KEY_KEY = new StringValue("resumeFromJobKey");
+  public static final StringValue HAS_VARIABLES_KEY = new StringValue("hasVars");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -106,8 +108,15 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   private final LongProperty resumeFromJobKeyProp = new LongProperty(RESUME_FROM_JOB_KEY_KEY, -1L);
 
+  /**
+   * Whether variables have already been written for this element instance's scope before the scope
+   * itself is created. Engine-internal: it lets the ELEMENT_ACTIVATING applier create the scope
+   * with the right "has local variables" state instead of looking it up.
+   */
+  private final BooleanProperty hasVariablesProp = new BooleanProperty(HAS_VARIABLES_KEY, false);
+
   public ProcessInstanceRecord() {
-    super(19);
+    super(20);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -126,7 +135,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(storageOrdinalKeyProp)
         .declareProperty(businessIdProp)
-        .declareProperty(resumeFromJobKeyProp);
+        .declareProperty(resumeFromJobKeyProp)
+        .declareProperty(hasVariablesProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -145,6 +155,16 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
     businessIdProp.setValue(record.getBusinessId());
     resumeFromJobKeyProp.setValue(record.getResumeFromJobKey());
+    hasVariablesProp.setValue(record.hasVariables());
+  }
+
+  public boolean hasVariables() {
+    return hasVariablesProp.getValue();
+  }
+
+  public ProcessInstanceRecord setHasVariables(final boolean hasVariables) {
+    hasVariablesProp.setValue(hasVariables);
+    return this;
   }
 
   @JsonIgnore
