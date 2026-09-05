@@ -17,6 +17,8 @@ package io.camunda.process.test.impl.testCases;
 
 import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
 import io.camunda.process.test.api.assertions.DecisionSelector;
+import io.camunda.process.test.api.assertions.IncidentAssert;
+import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
@@ -49,4 +51,12 @@ public interface AssertionFacade {
    * @return the assertion object
    */
   DecisionInstanceAssert assertThatDecision(final DecisionSelector decisionSelector);
+
+  /**
+   * Returns the assertion object for the given incident selector.
+   *
+   * @param incidentSelector the selector to identify the incident
+   * @return the assertion object
+   */
+  IncidentAssert assertThatIncident(final IncidentSelector incidentSelector);
 }
