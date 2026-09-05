@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
@@ -27,13 +28,17 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -481,6 +486,71 @@ public class ProcessInstanceIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(10);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 20));
+  }
+
+  @TestTemplate
+  public void shouldFindProcessInstanceWithSearchBefore(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given - three pages traversed forwards
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final var processDefinition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
+    createAndSaveRandomProcessInstances(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionKey(processDefinition.processDefinitionKey())
+                .processDefinitionId(processDefinition.processDefinitionId()));
+    final var sort = ProcessInstanceSort.of(s -> s.startDate().desc());
+
+    final var firstPage =
+        searchProcessInstances(processInstanceReader, processDefinition, sort, p -> p.size(5));
+    final var secondPage =
+        searchProcessInstances(
+            processInstanceReader,
+            processDefinition,
+            sort,
+            p -> p.size(5).after(firstPage.endCursor()));
+    final var thirdPage =
+        searchProcessInstances(
+            processInstanceReader,
+            processDefinition,
+            sort,
+            p -> p.size(5).after(secondPage.endCursor()));
+
+    // when - paging backwards from the third page
+    final var backToSecondPage =
+        searchProcessInstances(
+            processInstanceReader,
+            processDefinition,
+            sort,
+            p -> p.size(5).before(thirdPage.startCursor()));
+    final var backToFirstPage =
+        searchProcessInstances(
+            processInstanceReader,
+            processDefinition,
+            sort,
+            p -> p.size(5).before(backToSecondPage.startCursor()));
+
+    // then - the same entries in the same order as the forward traversal produced
+    assertThat(backToSecondPage.total()).isEqualTo(20);
+    assertThat(backToSecondPage.items()).isEqualTo(secondPage.items());
+    assertThat(backToFirstPage.items()).isEqualTo(firstPage.items());
+  }
+
+  private static SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
+      final ProcessInstanceDbReader processInstanceReader,
+      final ProcessDefinitionDbModel processDefinition,
+      final ProcessInstanceSort sort,
+      final Function<SearchQueryPage.Builder, ObjectBuilder<SearchQueryPage>> page) {
+    return processInstanceReader.search(
+        ProcessInstanceQuery.of(
+            b ->
+                b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
+                    .sort(sort)
+                    .page(page)));
   }
 
   @TestTemplate
