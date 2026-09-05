@@ -70,13 +70,17 @@ import org.junit.jupiter.params.provider.MethodSource;
  * call. (Depth 996 instead gets a clean {@code 400 Bad Request} from the gateway's own Jackson
  * request-body parsing hitting the same default limit.)
  *
- * <p><b>Important caveat:</b> the {@link Record#toJson()} exporter simulation here reports depth
- * 995 as succeeding, but {@code AgentInstanceDeepNestingIT} (qa/acceptance-tests) — which reads the
- * item back through a real Elasticsearch-backed search API instead of simulating it — shows that
- * depth 995 actually breaks on read: Elasticsearch's own client library deserializes the search hit
- * via a separate Jackson {@code ObjectMapper} with the same unrelaxed default depth limit, so the
- * item is written but never becomes readable again ({@code 500 Internal Server Error}). This test's
- * simulated exporter check is too permissive to catch that; see the other test for the confirmed
+ * <p><b>Important caveat:</b> the {@link Record#toJson()} exporter simulation here reports depths
+ * up to 995 as succeeding, but {@code AgentInstanceDeepNestingIT} (qa/acceptance-tests) — run
+ * against each locally-runnable secondary storage backend — shows a more nuanced picture: depth 993
+ * is the last depth that works on <em>every</em> backend. From depth 994 the write still succeeds,
+ * but on Elasticsearch and OpenSearch specifically the read breaks: their search-client libraries
+ * deserialize the search hit via a separate Jackson {@code ObjectMapper} with the same unrelaxed
+ * default depth limit, so the item is written but never becomes readable again ({@code 500 Internal
+ * Server Error}). RDBMS (H2) does not reproduce this — its reader parses the stored JSON directly,
+ * without the extra response-envelope nesting the ES/OS clients add, so it keeps working through
+ * depth 995 same as this simulation reports. This test's simulated exporter check is too permissive
+ * to catch the ES/OS-specific failure; see the other test for the confirmed, backend-dependent
  * write-succeeds-read-fails finding.
  */
 @ZeebeIntegration

@@ -57,33 +57,45 @@ import org.junit.jupiter.params.provider.MethodSource;
  * flagged) rather than asserted into a fixed pass/fail, since the whole point is to find where the
  * current, unguarded behavior breaks down.
  *
- * <p><b>Observed finding — three distinct boundaries, identical for both content kinds:</b>
+ * <p><b>Observed finding — run against each locally-runnable {@code DatabaseType} via {@code
+ * -Dtest.integration.camunda.database.type=<ES|OS|RDBMS_H2>}, identical for both content kinds:</b>
  *
  * <ul>
- *   <li><b>depth &le; 990</b> — succeeds end-to-end: UPDATE accepted, committed, and confirmed
- *       searchable via secondary storage.
- *   <li><b>depth 995</b> — UPDATE <em>succeeds</em> (the item is written), but the subsequent
- *       search read fails with a {@code 500 Internal Server Error}: Elasticsearch's own client
- *       library ({@code co.elastic.clients}) deserializes the search hit's {@code _source} via a
- *       separate Jackson {@code ObjectMapper} that keeps Jackson's <em>unrelaxed default</em>
- *       {@code StreamReadConstraints} (max depth 1000, exceeded at depth 1001 through the {@code
- *       AgentHistoryEntity["content"]->...->["object"]} reference chain). The item is written but
- *       becomes permanently unreadable via the search API — this is a real, reproduced instance of
- *       the same write-succeeds-read-fails asymmetry that made #54335 dangerous for {@code
- *       VariableRecord}, now confirmed for {@code AgentHistoryRecord} via real secondary storage.
- *   <li><b>depth 996</b> — rejected at the gateway itself, before it ever reaches the engine:
- *       Spring's Jackson HTTP message converter hits its own default {@code StreamReadConstraints}
- *       (max depth 1000) parsing the incoming request body, surfacing as a clean {@code 400 Bad
- *       Request}.
- *   <li><b>depth &ge; 997</b> — rejected by the Java client itself, before any network call: the
- *       client's own {@code ObjectMapper} hits Jackson's default {@code StreamWriteConstraints}
- *       (max depth 1000) while serializing the request body.
+ *   <li><b>depth &le; 993</b> — the last depth that fully succeeds end-to-end on every backend:
+ *       UPDATE accepted, committed, and confirmed searchable via secondary storage.
+ *   <li><b>depth 994–995</b> — <b>Elasticsearch and OpenSearch only:</b> UPDATE <em>succeeds</em>
+ *       (the item is written), but the subsequent search read fails with a {@code 500 Internal
+ *       Server Error}. Both clients' search-response JSON mapper ({@code
+ *       co.elastic.clients.json.jackson}/{@code org.opensearch.client.json.jackson}) deserializes
+ *       the search hit via a separate Jackson {@code ObjectMapper} that keeps Jackson's
+ *       <em>unrelaxed default</em> {@code StreamReadConstraints} (max depth 1000, exceeded at depth
+ *       1001 through the {@code AgentHistoryEntity["content"]->...->["object"]} reference chain —
+ *       identical exception on both). The item is written but becomes permanently unreadable via
+ *       the search API — a real, reproduced instance of the same write-succeeds-read-fails
+ *       asymmetry that made #54335 dangerous for {@code VariableRecord}, now confirmed for {@code
+ *       AgentHistoryRecord} via real secondary storage.
+ *       <p><b>RDBMS (H2) does not reproduce this</b> — depths 994 and 995 round-trip successfully.
+ *       {@code AgentHistoryDbModel}'s reader ({@code
+ *       db/rdbms/.../write/domain/AgentHistoryDbModel.java}) deserializes just the raw JSON {@code
+ *       content} column via a plain, unguarded {@code ObjectMapper}, without the extra
+ *       response-envelope nesting ({@code hits.hits[]._source...}) that the ES/OS client libraries
+ *       add on top of the stored document when parsing the whole search hit. That extra envelope
+ *       depth is exactly what pushes ES/OS over the 1000-depth ceiling two levels earlier than the
+ *       write-side gate below.
+ *   <li><b>depth 996</b> — rejected at the gateway itself, before it ever reaches the engine, on
+ *       every backend: Spring's Jackson HTTP message converter hits its own default {@code
+ *       StreamReadConstraints} (max depth 1000) parsing the incoming request body, surfacing as a
+ *       clean {@code 400 Bad Request}.
+ *   <li><b>depth &ge; 997</b> — rejected by the Java client itself, before any network call, on
+ *       every backend: the client's own {@code ObjectMapper} hits Jackson's default {@code
+ *       StreamWriteConstraints} (max depth 1000) while serializing the request body.
  * </ul>
  *
  * <p>Note the asymmetry with {@code AgentInstanceDeepNestingTest} (zeebe/qa/integration-tests):
- * that test's {@code Record#toJson()} exporter simulation does <em>not</em> reproduce the depth-995
- * failure above, because it never round-trips through Elasticsearch's own deserialization — the
- * real bug only surfaces with an actual secondary-storage read, which only this test exercises.
+ * that test's {@code Record#toJson()} exporter simulation does <em>not</em> reproduce the
+ * depth-994/995 ES/OS failure above, because it never round-trips through a real search client's
+ * deserialization — the real bug only surfaces with an actual secondary-storage read, which only
+ * this test exercises.
  */
 @MultiDbTest
 @CompatibilityTest
