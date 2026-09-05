@@ -17,6 +17,8 @@ import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
+import io.camunda.zeebe.qa.util.actuator.RebalanceActuator;
+import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
@@ -29,6 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 
@@ -64,8 +69,30 @@ public class ZoneHelpers {
       final int nodeId,
       final int clusterSize,
       final List<Zone> newZones) {
+    return startBrokerInZone(cluster, zone, nodeId, clusterSize, newZones, ignored -> {});
+  }
+
+  /**
+   * Same as {@link #startBrokerInZone(TestCluster, String, int, int, List)}, but applies {@code
+   * additionalConfig} before starting - e.g. to layer physical-tenant configuration ({@code
+   * PhysicalTenantsITHelper#configure}) onto a replacement broker joining a cluster that already
+   * runs non-default tenants, which this method knows nothing about on its own.
+   */
+  public static TestStandaloneBroker startBrokerInZone(
+      final TestCluster cluster,
+      final String zone,
+      final int nodeId,
+      final int clusterSize,
+      final List<Zone> newZones,
+      final Consumer<TestStandaloneBroker> additionalConfig) {
+    // a stopped broker (e.g. one belonging to a zone this test just killed) cannot bootstrap a
+    // joiner that only ever learns of this single seed
     final var contactPoint =
-        cluster.brokers().values().iterator().next().address(TestZeebePort.CLUSTER);
+        cluster.brokers().values().stream()
+            .filter(TestApplication::isStarted)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("no started broker to contact"))
+            .address(TestZeebePort.CLUSTER);
     final var broker =
         new TestStandaloneBroker()
             .withUnauthenticatedAccess()
@@ -81,6 +108,7 @@ public class ZoneHelpers {
                   clusterCfg.getPartitioning().setZoneAware(new ZoneAware(newZones));
                   cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
                 });
+    additionalConfig.accept(broker);
 
     broker.start();
 
@@ -194,14 +222,67 @@ public class ZoneHelpers {
       final String physicalTenantId,
       final String zone,
       final int partitionCount) {
+    assertLeaders(
+        cluster,
+        physicalTenantId,
+        partitionCount,
+        member -> member.isInZone(zone),
+        "in zone '%s'".formatted(zone));
+  }
+
+  /**
+   * Asserts that every partition of {@code physicalTenantId} has exactly one leader and that none
+   * of them run in {@code excludedZone}.
+   *
+   * <p>For asserting re-election after {@code excludedZone} is killed: with a zone-aware,
+   * priority-ranked distributor there is no fixed zone to require the new leader in, since which of
+   * the surviving zones wins a given partition's election is not pinned by this test (only that the
+   * dead zone cannot).
+   */
+  public static void assertLeadersOutsideZone(
+      final TestCluster cluster,
+      final String physicalTenantId,
+      final String excludedZone,
+      final int partitionCount) {
+    assertLeaders(
+        cluster,
+        physicalTenantId,
+        partitionCount,
+        member -> !member.isInZone(excludedZone),
+        "outside zone '%s'".formatted(excludedZone));
+  }
+
+  /**
+   * Rebalances {@code cluster} until every leader of {@code physicalTenantId} sits in {@code zone},
+   * re-triggering the best-effort rebalance on each poll.
+   *
+   * <p>Re-adding a zone, or raising its priority, does not by itself displace a healthy sitting
+   * leader elsewhere - only an explicit rebalance issues {@code stepDownIfNotPrimary} so the
+   * highest-priority zone's replica wins re-election, mirroring {@code
+   * ZoneAwareClusterEndpointIT#shouldSwapZonePrioritiesAndMoveLeaders}. Unlike {@link
+   * #assertLeadersInZone}, this drives that rebalance itself rather than assuming leadership has
+   * already settled.
+   *
+   * <p>Takes the broker map explicitly, rather than a {@link TestCluster}, because {@link
+   * #startBrokerInZone} deliberately starts a replacement broker outside the cluster's own
+   * bookkeeping - callers combine the cluster's surviving brokers with any such replacement
+   * themselves.
+   */
+  public static void awaitLeadersInZoneAfterRebalance(
+      final Map<MemberId, TestStandaloneBroker> brokers,
+      final RebalanceActuator rebalanceActuator,
+      final String physicalTenantId,
+      final String zone,
+      final int partitionCount) {
     Awaitility.await(
-            "physical tenant '%s' elected every leader in zone '%s'"
+            "physical tenant '%s' moves every leader to zone '%s' after rebalancing"
                 .formatted(physicalTenantId, zone))
         .atMost(ASSERTION_TIMEOUT)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var leaders = leadersByPartition(cluster, physicalTenantId);
+              rebalanceActuator.rebalance();
+              final var leaders = leadersByPartition(brokers, physicalTenantId);
               assertThat(leaders)
                   .as("every partition of physical tenant '%s' has a leader", physicalTenantId)
                   .containsOnlyKeys(partitionIds(partitionCount));
@@ -215,6 +296,41 @@ public class ZoneHelpers {
                           .singleElement()
                           .matches(member -> member.isInZone(zone)));
             });
+  }
+
+  private static void assertLeaders(
+      final TestCluster cluster,
+      final String physicalTenantId,
+      final int partitionCount,
+      final Predicate<MemberId> leaderMatcher,
+      final String matcherDescription) {
+    Awaitility.await(
+            "physical tenant '%s' elected every leader %s"
+                .formatted(physicalTenantId, matcherDescription))
+        .atMost(ASSERTION_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var leaders = leadersByPartition(cluster.brokers(), physicalTenantId);
+              assertThat(leaders)
+                  .as("every partition of physical tenant '%s' has a leader", physicalTenantId)
+                  .containsOnlyKeys(partitionIds(partitionCount));
+              leaders.forEach(
+                  (partitionId, members) ->
+                      assertThat(members)
+                          .as(
+                              "partition %d of physical tenant '%s' has exactly one leader, %s",
+                              partitionId, physicalTenantId, matcherDescription)
+                          .singleElement()
+                          .matches(leaderMatcher));
+            });
+  }
+
+  /** The members of {@code zone} in {@code cluster}, started or not. */
+  public static Set<MemberId> membersOfZone(final TestCluster cluster, final String zone) {
+    return cluster.brokers().keySet().stream()
+        .filter(member -> member.isInZone(zone))
+        .collect(Collectors.toSet());
   }
 
   /** The members holding each of {@code physicalTenantId}'s partitions, keyed by partition id. */
@@ -250,24 +366,29 @@ public class ZoneHelpers {
     };
   }
 
-  /** The members currently leading each of {@code physicalTenantId}'s partitions. */
+  /**
+   * The members currently leading each of {@code physicalTenantId}'s partitions.
+   *
+   * <p>Skips brokers that are not currently started: a stopped broker's actuator is unreachable,
+   * and this is queried while a zone may be deliberately down, not only when every broker is up.
+   */
   private static Map<Integer, List<MemberId>> leadersByPartition(
-      final TestCluster cluster, final String physicalTenantId) {
+      final Map<MemberId, TestStandaloneBroker> brokers, final String physicalTenantId) {
     final Map<Integer, List<MemberId>> leaders = new HashMap<>();
-    cluster
-        .brokers()
+    brokers.entrySet().stream()
+        .filter(entry -> entry.getValue().isStarted())
         .forEach(
-            (member, broker) ->
-                PartitionsActuator.of(broker)
-                    .query(physicalTenantId)
-                    .forEach(
-                        (partitionId, status) -> {
-                          if ("Leader".equalsIgnoreCase(status.role())) {
-                            leaders
-                                .computeIfAbsent(partitionId, id -> new ArrayList<>())
-                                .add(member);
-                          }
-                        }));
+            entry -> {
+              final var member = entry.getKey();
+              PartitionsActuator.of(entry.getValue())
+                  .query(physicalTenantId)
+                  .forEach(
+                      (partitionId, status) -> {
+                        if ("Leader".equalsIgnoreCase(status.role())) {
+                          leaders.computeIfAbsent(partitionId, id -> new ArrayList<>()).add(member);
+                        }
+                      });
+            });
     return leaders;
   }
 
