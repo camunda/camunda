@@ -150,6 +150,41 @@ test.describe('Filter request bodies', () => {
 			await expect(shadcnTasklistIndexPage.sortOption('Completion date')).toBeVisible();
 		});
 	});
+
+	test('should not auto-select completed tasks when auto-select is enabled', async ({
+		network,
+		page,
+		shadcnTasklistIndexPage,
+	}) => {
+		await page.addInitScript(`localStorage.setItem('tasklist.autoSelectNextTask', JSON.stringify(true))`);
+		network.use(
+			mockQueryUserTasksEndpoint({
+				schema: createUserTasksRequestSchema({
+					filter: z.object({
+						state: z.literal('COMPLETED'),
+					}),
+					sortField: 'completionDate',
+				}),
+				successResponse: HttpResponse.json(
+					createQueryUserTasksResponse({
+						items: [createUserTask({userTaskKey: '1', name: 'Completed task', state: 'COMPLETED'})],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(
+					createUserTask({userTaskKey: '1', name: 'Completed task', state: 'COMPLETED'}),
+				),
+			}),
+		);
+
+		await page.goto('/shadcn/tasklist?filter=completed&sortBy=completion');
+
+		await expect(page).toHaveURL(/\/shadcn\/tasklist\?filter=completed&sortBy=completion$/);
+		await expect(shadcnTasklistIndexPage.taskItem('Completed task')).toBeVisible();
+		await expect(shadcnTasklistIndexPage.taskItem('Completed task')).toBeVisible();
+	});
 });
 
 test.describe('Sorting', () => {
