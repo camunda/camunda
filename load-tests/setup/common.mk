@@ -262,20 +262,29 @@ ifeq ($(physical_tenants_supported),true)
 generate-physical-tenant-values:
 	../generate-physical-tenant-values.sh "$(secondary_storage)" "$(physical_tenant_count)" "$(rdbms_storages)"
 
-# Deploy pt1..ptN's own load testers, sharing the default tenant's secondary storage.
-# The camunda-load-tests subchart hardcodes the starter/worker resource names, so a second
-# Helm release per tenant would collide. Instead we render only those two templates from the
-# same chart, values, scenario and image as the default tester, rename them to *-pt<i>, and
-# apply — looped over pt1..ptN. REST is required because gRPC only routes to the default
-# physical tenant.
+# Deploy pt1..ptN's own load testers, sharing the default tenant's secondary storage and its
+# load-test-credentials secret. The camunda-load-tests subchart hardcodes the starter/worker
+# resource names, so a second Helm release per tenant would collide. Instead we render only
+# those two templates from the same chart, values, scenario and image as the default tester,
+# rename them to *-pt<i>, and apply — looped over pt1..ptN. Each tenant gets its own
+# CAMUNDA_CLIENT_PHYSICAL_TENANT_ID env var: the load-tester's camunda-spring-boot-starter client
+# turns that into both the `Camunda-Physical-Tenant` gRPC metadata header (so its job stream
+# registers into the tenant's own partition group instead of leaking into "default") and, via
+# prefixPhysicalTenantPath (default true), the `/physical-tenants/<tenant>` REST path prefix —
+# so both gRPC and REST route correctly without a per-tenant secret or address override.
+#
+# The extraEnvVars index below (4) is appended after the 4 entries already set in
+# global.extraEnvVars by scenarios/load-tester-values-defaults.yaml — currently
+# LOAD_TESTER_LOG_APPENDER (0), LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME (1),
+# LOAD_TESTER_LOG_STACKDRIVER_SERVICEVERSION (2), OPTIMIZE_LOADTEST_CLIENT_SECRET (3).
+# Helm merges --set on a list index positionally, not by appending, so reusing an
+# already-used index (0-3) would silently overwrite one of those defaults instead of
+# adding a new entry. Bump this index if that file's global.extraEnvVars list grows.
 .PHONY: install-load-test-physical-tenants
 install-load-test-physical-tenants:
 	@for i in $$(seq 1 $(physical_tenant_count)); do \
 	  tenant="pt$$i"; \
 	  echo "Deploying the $$tenant physical-tenant load tester for namespace $(namespace)..."; \
-	  kubectl get secret load-test-credentials -n $(namespace) -o json \
-	    | jq --arg tenant "$$tenant" '.data.zeebeRestAddress = ("http://camunda:8080/physical-tenants/" + $$tenant | @base64) | .metadata.name = ("load-test-credentials-" + $$tenant) | del(.metadata.uid,.metadata.resourceVersion,.metadata.creationTimestamp,.metadata.ownerReferences,.metadata.managedFields)' \
-	    | kubectl apply -n $(namespace) -f - ; \
 	  helm template load-test-setup $(helm_chart_load_test_setup) \
 	      --namespace $(namespace) \
 	      -s charts/load-tester/templates/starter.yaml \
@@ -283,7 +292,8 @@ install-load-test-physical-tenants:
 	      $(load_test_setup_flags) \
 	      --set load-tester.enabled=true \
 	      --set global.preferRest.enabled=true \
-	      --set load-tester.saas.credentials.existingSecret=load-test-credentials-$$tenant \
+	      --set global.extraEnvVars[4].name=CAMUNDA_CLIENT_PHYSICAL_TENANT_ID \
+	      --set global.extraEnvVars[4].value=$$tenant \
 	    | sed -E "s/: starter$$/: starter-$$tenant/; s/: worker$$/: worker-$$tenant/" \
 	    | kubectl apply -n $(namespace) -f - ; \
 	done
