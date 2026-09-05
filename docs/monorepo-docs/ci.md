@@ -767,6 +767,10 @@ Available commands:
 * `/ci-enable-cache` comment on a Pull Request:
   * Synopsis: Removes the `ci:no-cache` label from the list of labels of the Pull Request and creates a new empty commit to trigger a new CI run.
   * Use case: Complements the `/ci-disable-cache` commands and can be used to restore CI regular cache restoration step.
+* `/pull-in` comment on a Pull Request from a fork:
+  * Synopsis: Cherry-picks the PR's commits onto a new `internal/pr-<number>` branch in `camunda/camunda` and opens a linked internal Pull Request authored by the Monorepo DevOps Automation bot, so that the full CI pipeline (which does not run on fork PRs without approval) executes. A comment is posted back on the original PR linking to the internal one, and the commenter is added as assignee/reviewer.
+  * Use case: Required step before merging an external contribution — a Camunda colleague with write access runs `/pull-in` once the change is ready, then reviews and merges the internal PR instead of the original.
+  * Re-running the command after new commits are pushed to the fork updates the same internal branch/PR.
 
 ## Flaky tests
 
