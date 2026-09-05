@@ -67,12 +67,21 @@ public abstract class AbstractZeebeValidationTest {
     }
   }
 
+  /**
+   * Subclasses can skip this when the fixture is intentionally invalid at the Camunda BPMN XML
+   * layer (for example unresolved sequenceFlow sourceRef/targetRef) but should still exercise Zeebe
+   * design-time validators loaded from stream.
+   */
+  protected void assertCamundaModelConsistency() {
+    Bpmn.validateModel(modelInstance);
+  }
+
   @Test
   public void validateModel() {
     // when
     final ValidationResults results = validate(modelInstance);
 
-    Bpmn.validateModel(modelInstance);
+    assertCamundaModelConsistency();
 
     // then
     final List<ExpectedValidationResult> unmatchedExpectations = new ArrayList<>(expectedResults);

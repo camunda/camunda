@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSeq
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
+import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 
 public final class SequenceFlowTransformer implements ModelElementTransformer<SequenceFlow> {
@@ -37,10 +38,28 @@ public final class SequenceFlowTransformer implements ModelElementTransformer<Se
       final SequenceFlow element,
       final ExecutableProcess process,
       final ExecutableSequenceFlow sequenceFlow) {
+    final FlowNode sourceRef = element.getSource();
+    final FlowNode targetRef = element.getTarget();
+
+    if (sourceRef == null || targetRef == null) {
+      final String missingReference = sourceRef == null ? "sourceRef" : "targetRef";
+      throw new IllegalStateException(
+          "Sequence flow '%s' has an unresolved %s reference"
+              .formatted(element.getId(), missingReference));
+    }
+
     final ExecutableFlowNode source =
-        process.getElementById(element.getSource().getId(), ExecutableFlowNode.class);
+        process.getElementById(sourceRef.getId(), ExecutableFlowNode.class);
     final ExecutableFlowNode target =
-        process.getElementById(element.getTarget().getId(), ExecutableFlowNode.class);
+        process.getElementById(targetRef.getId(), ExecutableFlowNode.class);
+
+    if (source == null || target == null) {
+      final String missingNode = source == null ? "source" : "target";
+      final String missingNodeId = source == null ? sourceRef.getId() : targetRef.getId();
+      throw new IllegalStateException(
+          "Sequence flow '%s' references unknown %s node '%s'"
+              .formatted(element.getId(), missingNode, missingNodeId));
+    }
 
     source.addOutgoing(sequenceFlow);
     target.addIncoming(sequenceFlow);
