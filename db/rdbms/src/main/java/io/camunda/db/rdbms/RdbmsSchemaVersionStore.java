@@ -14,6 +14,7 @@ import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.migration.CurrentSchemaVersion;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -51,6 +52,31 @@ public class RdbmsSchemaVersionStore {
    * written/updated after every successful Liquibase migration run.
    */
   private static final String SCHEMA_VERSION_TABLE = "RDBMS_SCHEMA_VERSION";
+
+  /**
+   * Bounds every statement this class issues, so that contention for the single {@code
+   * RDBMS_SCHEMA_VERSION} row fails instead of waiting forever.
+   *
+   * <p>Nothing serializes the nodes writing that row: {@link #recordCurrentVersion()} runs after
+   * Liquibase's changelog lock and {@code LiquibaseSchemaManager}'s migration lock are both
+   * released, and every broker initializes the schema itself. Unbounded, a peer holding the row in
+   * an open transaction parks the caller inside the JDBC call for as long as the vendor allows —
+   * indefinitely on PostgreSQL, Oracle and MySQL — throwing nothing, and so logging nothing
+   * (#61405).
+   *
+   * <p>Matches HikariCP's {@code connectionTimeout} default, which already bounds the other half of
+   * these calls. Not configurable: the failure it raises is retryable, so the value decides how
+   * soon an operator sees a log line, not whether the node recovers.
+   *
+   * <p>Bounds it on PostgreSQL, MySQL, MariaDB and MSSQL, whose drivers cancel a waiting statement.
+   * Oracle and H2 do not: measured on 23 (free) and 2.4.240, their lock waits ignore both this and
+   * {@link java.sql.Statement#cancel()}. H2 self-protects with its own {@code LOCK_TIMEOUT} (~2s by
+   * default); Oracle has no equivalent, so what keeps it out of an unbounded wait is {@link
+   * #recordCurrentVersion()} not issuing the write at all when the version is unchanged. Bounding
+   * Oracle's remaining write path would need vendor-specific SQL ({@code SELECT ... FOR UPDATE WAIT
+   * n}, or a {@code MERGE}), which this class has none of.
+   */
+  private static final int STATEMENT_TIMEOUT_SECONDS = 30;
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSchemaVersionStore.class);
   private final DataSource dataSource;
@@ -199,7 +225,14 @@ public class RdbmsSchemaVersionStore {
    * Liquibase migration. The version is normalized to stable {@code major.minor.patch} before
    * storage (pre-release suffixes such as {@code -SNAPSHOT} are stripped). If the version cannot be
    * parsed as a semantic version (e.g. {@code "development"}), the write is skipped with a warning.
-   * Any failure fails with an {@link RdbmsSchemaVersionUnreadableException} because a missing or
+   *
+   * <p>The write is also skipped when the row already holds that version, which is what every start
+   * after the first finds. That is not only an avoided round trip: the write contends with every
+   * other node recording the same version, and not issuing it is the only way to keep a vendor
+   * whose lock wait cannot be bounded — Oracle, H2 — out of that contention altogether. See {@link
+   * #STATEMENT_TIMEOUT_SECONDS}.
+   *
+   * <p>Any failure fails with an {@link RdbmsSchemaVersionUnreadableException} because a missing or
    * incorrect schema-version record would cause the next startup to perform an incorrect
    * compatibility check; it is retryable, since re-running the whole initialization writes it
    * again.
@@ -221,6 +254,21 @@ public class RdbmsSchemaVersionStore {
     final var tableName = prefix + SCHEMA_VERSION_TABLE;
 
     try (final var connection = dataSource.getConnection()) {
+      if (stableVersion.get().equals(readSchemaVersion(connection, prefix))) {
+        // Nothing to write, and so nothing to contend for. Every node records the same version,
+        // and the row already holds it on every start after the first — which is the state a
+        // restart finds, and the one the peers whose uncommitted row could otherwise be waited on
+        // are themselves recording. Reads do not block behind an uncommitted write on any vendor
+        // whose reads are snapshot-based, so this is also the only step Oracle can take safely:
+        // its row-lock wait cannot be bounded from here at all.
+        LOG.debug(
+            "[RDBMS Schema] Schema version {} is already recorded for prefix '{}'; nothing to"
+                + " write.",
+            stableVersion.get(),
+            prefix);
+        return;
+      }
+
       final var autoCommit = connection.getAutoCommit();
       connection.setAutoCommit(false);
       try {
@@ -294,7 +342,7 @@ public class RdbmsSchemaVersionStore {
     if (!tableExists(connection, tableName)) {
       return null;
     }
-    try (final var stmt = connection.prepareStatement("SELECT VERSION FROM " + tableName)) {
+    try (final var stmt = boundedStatement(connection, "SELECT VERSION FROM " + tableName)) {
       stmt.setMaxRows(1);
       try (final var rs = stmt.executeQuery()) {
         return rs.next() ? rs.getString(1) : null;
@@ -399,7 +447,7 @@ public class RdbmsSchemaVersionStore {
       final Connection connection, final String tableName, final String stableVersion)
       throws SQLException {
     try (final var updateStmt =
-        connection.prepareStatement("UPDATE " + tableName + " SET VERSION = ? WHERE ID = 1")) {
+        boundedStatement(connection, "UPDATE " + tableName + " SET VERSION = ? WHERE ID = 1")) {
       updateStmt.setString(1, stableVersion);
       return updateStmt.executeUpdate();
     }
@@ -409,9 +457,26 @@ public class RdbmsSchemaVersionStore {
       final Connection connection, final String tableName, final String stableVersion)
       throws SQLException {
     try (final var insertStmt =
-        connection.prepareStatement("INSERT INTO " + tableName + " (ID, VERSION) VALUES (1, ?)")) {
+        boundedStatement(connection, "INSERT INTO " + tableName + " (ID, VERSION) VALUES (1, ?)")) {
       insertStmt.setString(1, stableVersion);
       insertStmt.executeUpdate();
     }
+  }
+
+  /**
+   * Prepares a statement that gives up rather than waiting indefinitely. See {@link
+   * #STATEMENT_TIMEOUT_SECONDS} for why every statement in this class needs that.
+   */
+  private static PreparedStatement boundedStatement(final Connection connection, final String sql)
+      throws SQLException {
+    final var statement = connection.prepareStatement(sql);
+    try {
+      statement.setQueryTimeout(STATEMENT_TIMEOUT_SECONDS);
+    } catch (final SQLException cannotBeBounded) {
+      // an unbounded statement is what this exists to prevent, so it is not run instead
+      statement.close();
+      throw cannotBeBounded;
+    }
+    return statement;
   }
 }
