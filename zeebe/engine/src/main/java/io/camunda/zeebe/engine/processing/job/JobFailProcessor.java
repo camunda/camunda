@@ -169,6 +169,7 @@ public final class JobFailProcessor
             value.getProcessDefinitionKey(),
             value.getProcessInstanceKey(),
             value.getRootProcessInstanceKey(),
+            value.getStorageOrdinalKey(),
             value.getBpmnProcessIdBuffer(),
             value.getTenantId(),
             variables);

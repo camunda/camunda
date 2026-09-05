@@ -103,6 +103,7 @@ public final class ProcessInstanceBatchActivateProcessor
     final var nextBatchRecord =
         new ProcessInstanceBatchRecord()
             .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+            .setStorageOrdinalKey(recordValue.getStorageOrdinalKey())
             .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
             .setBatchElementInstanceKey(recordValue.getBatchElementInstanceKey())
             .setIndex(remainingChildrenToActivate);
