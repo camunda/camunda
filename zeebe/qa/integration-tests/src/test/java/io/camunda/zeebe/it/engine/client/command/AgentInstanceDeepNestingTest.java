@@ -77,11 +77,11 @@ import org.junit.jupiter.params.provider.MethodSource;
  * but on Elasticsearch and OpenSearch specifically the read breaks: their search-client libraries
  * deserialize the search hit via a separate Jackson {@code ObjectMapper} with the same unrelaxed
  * default depth limit, so the item is written but never becomes readable again ({@code 500 Internal
- * Server Error}). RDBMS (H2) does not reproduce this — its reader parses the stored JSON directly,
- * without the extra response-envelope nesting the ES/OS clients add, so it keeps working through
- * depth 995 same as this simulation reports. This test's simulated exporter check is too permissive
- * to catch the ES/OS-specific failure; see the other test for the confirmed, backend-dependent
- * write-succeeds-read-fails finding.
+ * Server Error}). RDBMS does not reproduce this, on either H2 or MySQL — its reader parses the
+ * stored JSON directly, without the extra response-envelope nesting the ES/OS clients add, so it
+ * keeps working through depth 995 same as this simulation reports. This test's simulated exporter
+ * check is too permissive to catch the ES/OS-specific failure; see the other test for the
+ * confirmed, backend-dependent write-succeeds-read-fails finding.
  */
 @ZeebeIntegration
 final class AgentInstanceDeepNestingTest {

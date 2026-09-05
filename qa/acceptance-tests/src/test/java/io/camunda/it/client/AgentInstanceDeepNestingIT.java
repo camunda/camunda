@@ -58,7 +58,8 @@ import org.junit.jupiter.params.provider.MethodSource;
  * current, unguarded behavior breaks down.
  *
  * <p><b>Observed finding — run against each locally-runnable {@code DatabaseType} via {@code
- * -Dtest.integration.camunda.database.type=<ES|OS|RDBMS_H2>}, identical for both content kinds:</b>
+ * -Dtest.integration.camunda.database.type=<ES|OS|RDBMS_H2|RDBMS_MYSQL>} (MySQL via {@code docker
+ * compose -f db/docker-compose.yml up -d mysql}), identical for both content kinds:</b>
  *
  * <ul>
  *   <li><b>depth &le; 993</b> — the last depth that fully succeeds end-to-end on every backend:
@@ -74,8 +75,9 @@ import org.junit.jupiter.params.provider.MethodSource;
  *       the search API — a real, reproduced instance of the same write-succeeds-read-fails
  *       asymmetry that made #54335 dangerous for {@code VariableRecord}, now confirmed for {@code
  *       AgentHistoryRecord} via real secondary storage.
- *       <p><b>RDBMS (H2) does not reproduce this</b> — depths 994 and 995 round-trip successfully.
- *       {@code AgentHistoryDbModel}'s reader ({@code
+ *       <p><b>RDBMS does not reproduce this</b> — depths 994 and 995 round-trip successfully,
+ *       confirmed on both H2 and MySQL (same {@code AgentHistoryDbModel} read path, dialect makes
+ *       no difference here). {@code AgentHistoryDbModel}'s reader ({@code
  *       db/rdbms/.../write/domain/AgentHistoryDbModel.java}) deserializes just the raw JSON {@code
  *       content} column via a plain, unguarded {@code ObjectMapper}, without the extra
  *       response-envelope nesting ({@code hits.hits[]._source...}) that the ES/OS client libraries
