@@ -21,7 +21,7 @@ jobs:
       with:
         persist-credentials: false
     - name: Check all PRs for conflict
-      uses: camunda/infra-global-github-actions/preview-env/conflicts@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env-1.0.8
+      uses: camunda/infra-global-github-actions/preview-env/conflicts@67d00e9260887361a31f6446252fffbecae4a02e # preview-env-1.0.12
   check-single-pr-conflict:
     # No check on label `deploy-preview` here, because it wouldn't run
     # if there's a remaining merge conflict. Thus, only a cleanup can happen here.
@@ -29,6 +29,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check PR for merge conflicts
-      uses: camunda/infra-global-github-actions/preview-env/conflicts@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env-1.0.8
+      uses: camunda/infra-global-github-actions/preview-env/conflicts@67d00e9260887361a31f6446252fffbecae4a02e # preview-env-1.0.12
       with:
         pull-request-id: ${{ github.event.pull_request.number }}
