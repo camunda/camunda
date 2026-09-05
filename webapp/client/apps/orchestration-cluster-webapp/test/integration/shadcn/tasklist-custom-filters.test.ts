@@ -137,7 +137,7 @@ test.describe('Custom filters', () => {
 
 		await expect(shadcnTasklistIndexPage.customFilterLink('Custom')).toBeVisible();
 
-		await shadcnTasklistIndexPage.customFilterActionsButton.click();
+		await shadcnTasklistIndexPage.customFilterActionsButton('Custom').click();
 		await shadcnTasklistIndexPage.customFilterOverflowItem('Edit').click();
 
 		await expect(shadcnTasklistIndexPage.customFiltersModal.dialog).toBeVisible();
@@ -152,7 +152,7 @@ test.describe('Custom filters', () => {
 
 		await expect(shadcnTasklistIndexPage.customFilterLink('Custom')).toBeVisible();
 
-		await shadcnTasklistIndexPage.customFilterActionsButton.click();
+		await shadcnTasklistIndexPage.customFilterActionsButton('Custom').click();
 		await shadcnTasklistIndexPage.customFilterOverflowItem('Delete').click();
 
 		await expect(shadcnTasklistIndexPage.deleteFilterModal.dialog).toBeVisible();

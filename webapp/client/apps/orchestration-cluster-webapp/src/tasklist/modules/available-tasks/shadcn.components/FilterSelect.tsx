@@ -10,6 +10,7 @@ import {
 	Button,
 	DropdownMenu,
 	DropdownMenuContent,
+	DropdownMenuGroup,
 	DropdownMenuItem,
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
@@ -80,9 +81,9 @@ const FilterSelect: React.FC<Props> = ({
 				</Button>
 			</DropdownMenuTrigger>
 
-			<DropdownMenuContent align="start" className="grid min-w-52 grid-cols-[minmax(0,1fr)_2rem]">
+			<DropdownMenuContent align="start" className="w-52">
 				{BUILT_IN_FILTERS.map(({id, labelKey}) => (
-					<DropdownMenuItem key={id} className="col-span-2 justify-between" onSelect={() => onFilterChange(id)}>
+					<DropdownMenuItem key={id} className="justify-between" onSelect={() => onFilterChange(id)}>
 						<span>{t(labelKey)}</span>
 						{filter === id ? <Check aria-hidden /> : null}
 					</DropdownMenuItem>
@@ -90,52 +91,57 @@ const FilterSelect: React.FC<Props> = ({
 
 				{customFilters.length > 0 ? (
 					<>
-						<DropdownMenuSeparator className="col-span-2" />
-						<DropdownMenuLabel className="col-span-2">{t('tasklist.taskFiltersCustomFilter')}</DropdownMenuLabel>
+						<DropdownMenuSeparator />
+						<DropdownMenuLabel>{t('tasklist.taskFiltersCustomFilter')}</DropdownMenuLabel>
 						{customFilters.map(([filterId, {name}]) => {
 							const label = getCustomFilterLabel(filterId, name);
 
 							return (
-								<DropdownMenuSub key={filterId}>
-									<DropdownMenuItem className="min-w-0 justify-between" onSelect={() => onFilterChange(filterId)}>
+								<DropdownMenuGroup key={filterId} className="flex min-w-0">
+									<DropdownMenuItem
+										className="min-w-0 flex-1 justify-between"
+										onSelect={() => onFilterChange(filterId)}
+									>
 										<span className="truncate">{label}</span>
 										{filter === filterId ? <Check aria-hidden /> : null}
 									</DropdownMenuItem>
-									<DropdownMenuSubTrigger
-										className="size-8 justify-center p-0 [&>svg:last-child]:hidden"
-										aria-label={`${t('tasklist.taskFilterPanelCustomFilterActions')} - ${label}`}
-										title={t('tasklist.taskFilterPanelCustomFilterActions')}
-									>
-										<EllipsisVertical aria-hidden />
-									</DropdownMenuSubTrigger>
-									<DropdownMenuSubContent>
-										<DropdownMenuItem
-											onSelect={() => {
-												setIsOpen(false);
-												onEditFilter(filterId);
-											}}
+									<DropdownMenuSub>
+										<DropdownMenuSubTrigger
+											className="size-8 shrink-0 justify-center p-0 [&>svg:last-child]:hidden"
+											aria-label={`${t('tasklist.taskFilterPanelCustomFilterActions')} - ${label}`}
+											title={t('tasklist.taskFilterPanelCustomFilterActions')}
 										>
-											{t('tasklist.taskFilterPanelEdit')}
-										</DropdownMenuItem>
-										<DropdownMenuSeparator />
-										<DropdownMenuItem
-											variant="destructive"
-											onSelect={() => {
-												setIsOpen(false);
-												onDeleteFilter(filterId);
-											}}
-										>
-											{t('tasklist.taskFilterPanelDelete')}
-										</DropdownMenuItem>
-									</DropdownMenuSubContent>
-								</DropdownMenuSub>
+											<EllipsisVertical aria-hidden />
+										</DropdownMenuSubTrigger>
+										<DropdownMenuSubContent>
+											<DropdownMenuItem
+												onSelect={() => {
+													setIsOpen(false);
+													onEditFilter(filterId);
+												}}
+											>
+												{t('tasklist.taskFilterPanelEdit')}
+											</DropdownMenuItem>
+											<DropdownMenuSeparator />
+											<DropdownMenuItem
+												variant="destructive"
+												onSelect={() => {
+													setIsOpen(false);
+													onDeleteFilter(filterId);
+												}}
+											>
+												{t('tasklist.taskFilterPanelDelete')}
+											</DropdownMenuItem>
+										</DropdownMenuSubContent>
+									</DropdownMenuSub>
+								</DropdownMenuGroup>
 							);
 						})}
 					</>
 				) : null}
 
-				<DropdownMenuSeparator className="col-span-2" />
-				<DropdownMenuItem className="col-span-2" onSelect={onCreateFilter}>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem onSelect={onCreateFilter}>
 					<Plus aria-hidden />
 					{t('tasklist.taskFilterPanelNewFilter')}
 				</DropdownMenuItem>
