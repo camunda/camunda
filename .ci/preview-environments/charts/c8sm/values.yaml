@@ -17,11 +17,6 @@ global:
     - name: dockerhub-registry
     - name: registry-camunda-cloud
 
-  # still required by some subcharts (e.g. elasticsearch)
-  imagePullSecrets:
-  - name: dockerhub-registry
-  - name: registry-camunda-cloud
-
   # Preview environment configurations
   preview:
     git:
@@ -52,6 +47,15 @@ global:
     secrets:
       name: camunda-credentials
 
+  # Drives the chart's external URLs (Console links, Web Modeler websocket client).
+  # external=true keeps them derived while leaving routing to the Gateway API HTTPRoutes.
+  host: '{{ include "ingress.domain" . }}'
+  ingress:
+    enabled: true
+    external: true
+    tls:
+      enabled: true
+
   identity:
     auth:
       # Enable Camunda Identity-based authentication
@@ -63,11 +67,6 @@ global:
         secret:
           existingSecret: camunda-credentials
           existingSecretKey: identity-admin-client-token
-      console:
-        redirectUrl: https://{{ include "ingress.domain" . }}/console
-        secret:
-          existingSecret: camunda-credentials
-          existingSecretKey: identity-console-client-token
       optimize:
         redirectUrl: https://{{ include "ingress.domain" . }}/optimize
         secret:
@@ -350,6 +349,10 @@ camunda-platform:
     enabled: true
     fullnameOverride: web-modeler
     contextPath: /modeler
+    # Without this the chart-generated cluster entry falls back to BASIC.
+    security:
+      authentication:
+        method: oidc
     restapi:
       # image:
       #   repository: camunda/web-modeler-restapi
@@ -366,20 +369,6 @@ camunda-platform:
       mail:
         # This value is required, otherwise, the restapi pod won't start.
         fromAddress: noreply@example.com
-      # Override cluster configuration to provide valid version and complete config
-      # The Helm chart would auto-generate cluster config but uses the image tag as version
-      # which fails validation for PR builds (e.g., "pr-abc123...")
-      # When providing clusters override, ALL fields must be specified
-      clusters:
-        - id: "default-cluster"
-          name: "Default Cluster"
-          version: "8.10.0-alphax"
-          authentication: "BEARER_TOKEN"
-          authorizations:
-            enabled: true
-          url:
-            grpc: "grpc://orchestration-gateway:26500"
-            rest: "http://orchestration-gateway:8080/orchestration"
       resources:
         limits:
           cpu: "1"
