@@ -540,7 +540,7 @@ public final class EngineProcessors {
         keyGenerator, typedRecordProcessors, writers, cslCheck, processingState);
 
     AgentHistoryProcessors.addAgentHistoryProcessors(
-        keyGenerator, typedRecordProcessors, writers, cslCheck, processingState);
+        typedRecordProcessors, writers, processingState);
 
     SecretReferenceProcessors.addSecretReferenceProcessors(
         typedRecordProcessors,

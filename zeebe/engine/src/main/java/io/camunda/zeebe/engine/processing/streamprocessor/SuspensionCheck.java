@@ -154,8 +154,8 @@ public final class SuspensionCheck {
   }
 
   /**
-   * CREATE carries {@code agentInstanceKey} on the value; the target agent instance's process
-   * instance key is looked up.
+   * Every agent history command (COMMIT, DISCARD) carries {@code agentInstanceKey} on the value;
+   * the target agent instance's process instance key is looked up.
    */
   private long resolveAgentHistoryProcessInstanceKey(final TypedRecord<?> command) {
     final var value = (AgentHistoryRecordValue) command.getValue();

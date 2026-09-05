@@ -7,28 +7,20 @@
  */
 package io.camunda.zeebe.engine.processing.agenthistory;
 
-import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public final class AgentHistoryProcessors {
 
   private AgentHistoryProcessors() {}
 
   public static void addAgentHistoryProcessors(
-      final KeyGenerator keyGenerator,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final CslAuthorizationCheck cslCheck,
       final ProcessingState processingState) {
-    typedRecordProcessors.onCommand(
-        ValueType.AGENT_HISTORY,
-        AgentHistoryIntent.CREATE,
-        new AgentHistoryCreateProcessor(writers, processingState, cslCheck, keyGenerator));
     typedRecordProcessors.onCommand(
         ValueType.AGENT_HISTORY,
         AgentHistoryIntent.COMMIT,
