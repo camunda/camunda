@@ -71,6 +71,23 @@ const DateRangeModal: React.FC<Props> = ({
     return () => flatpickrDays?.removeEventListener('click', handlePick);
   }, [calendarRef]);
 
+  useEffect(() => {
+    if (!calendarRef) return;
+
+    const closeFlatpickrCalendars = () => {
+      document
+        .querySelectorAll<
+          HTMLInputElement & {_flatpickr?: {close: () => void}}
+        >('.flatpickr-input')
+        .forEach((input) => input._flatpickr?.close());
+    };
+
+    document.addEventListener('scroll', closeFlatpickrCalendars, true);
+    return () => {
+      document.removeEventListener('scroll', closeFlatpickrCalendars, true);
+    };
+  }, [calendarRef]);
+
   const handleApply = ({
     fromDate,
     fromTime,
