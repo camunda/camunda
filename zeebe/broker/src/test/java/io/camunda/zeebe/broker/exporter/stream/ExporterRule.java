@@ -156,6 +156,13 @@ public final class ExporterRule implements TestRule {
     contextApplier.accept(context);
     director = new ExporterDirector(context, phase, recordExporter);
     director.startAsync(actorSchedulerRule.get()).join();
+    // startAsync()'s future completes once the actor leaves its (framework-internal) STARTING
+    // phase, which is before onActorStarted() - and thus
+    // initContainers()/startActiveExportingMode(),
+    // which schedule the per-exporter ExporterActors - has actually run. Round-tripping through the
+    // director's own actor here forces this call to wait behind that already-queued work, so tests
+    // that immediately close the director don't race its own startup.
+    director.getPhase().join();
   }
 
   public ExporterDirector getDirector() {
