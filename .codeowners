@@ -77,6 +77,7 @@ buf.yaml                    @camunda/orchestration-cluster
 /.claude/skills/ci-security-compliance/ @camunda/engineering-operations
 /.claude/skills/ci-validation/ @camunda/engineering-operations
 /.claude/skills/ci-workflow-authoring/ @camunda/engineering-operations
+/.claude/skills/gradle-build-parity/ @camunda/engineering-operations
 
 /.ci/                       @camunda/engineering-operations
 /.github/                   @camunda/engineering-operations
@@ -89,6 +90,21 @@ buf.yaml                    @camunda/orchestration-cluster
 /bom-deprecated/            @camunda/engineering-operations
 /scripts/                   @camunda/engineering-operations
 /monorepo-docs-site/        @camunda/engineering-operations
+
+
+# Gradle build (parallel path to Maven)
+/build.gradle.kts           @camunda/engineering-operations
+/settings.gradle.kts        @camunda/engineering-operations
+/gradle.properties          @camunda/engineering-operations
+/gradlew                    @camunda/engineering-operations
+/gradlew.bat                @camunda/engineering-operations
+/gradle/                    @camunda/engineering-operations
+/buildSrc/                  @camunda/engineering-operations
+# Convention-plugin exceptions (domain team owns, last match wins)
+/buildSrc/src/main/kotlin/buildlogic.sbe-conventions.gradle.kts              @camunda/zeebe-distributed-platform
+/buildSrc/src/main/kotlin/buildlogic.netty-tcnative-runtime-conventions.gradle.kts @camunda/zeebe-distributed-platform
+/buildSrc/src/main/kotlin/buildlogic.frontend-webjar-conventions.gradle.kts  @camunda/core-features
+/buildSrc/src/main/kotlin/buildlogic.client-conventions.gradle.kts           @camunda/camundaex
 
 .fossa.yml                  @camunda/engineering-operations
 .hadolint.yaml              @camunda/engineering-operations
