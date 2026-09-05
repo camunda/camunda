@@ -227,9 +227,16 @@ public class UserTaskListenersTest {
     ZeebeAssertHelper.assertUserTaskCanceled(
         userTaskKey,
         userTask -> {
+          // Compare against the originally created record with the action normalised to the
+          // canceled value. Using recursive comparison with ignoringFields("actionProp") does not
+          // work here because the action string is also embedded in the msgpack-backed
+          // customHeaders buffer, so byte-level diffs remain even after excluding the property.
           assertThat(userTask)
               .describedAs("Canceled user task should match the originally created one")
-              .isEqualTo(createdUserTask);
+              .isEqualTo(((UserTaskRecord) createdUserTask).copy().setAction("cancel"));
+          assertThat(userTask.getAction())
+              .describedAs("Action should reflect the cancel transition")
+              .isEqualTo("cancel");
 
           assertThat(userTask.getAssignee())
               .describedAs(
@@ -929,7 +936,7 @@ public class UserTaskListenersTest {
           assertThat(userTask.getDueDate()).isEmpty();
           assertThat(userTask.getFollowUpDate()).isEmpty();
           assertThat(userTask.getVariables()).isEmpty();
-          assertThat(userTask.getAction()).isEmpty();
+          assertThat(userTask.getAction()).isEqualTo("cancel");
           // updated attributes
           assertThat(userTask.getAssignee()).isEqualTo("corrected_assignee");
           assertThat(userTask.getPriority()).isEqualTo(3);
@@ -987,10 +994,18 @@ public class UserTaskListenersTest {
 
     ZeebeAssertHelper.assertUserTaskCanceled(
         userTaskKey,
-        userTask ->
-            assertThat(userTask)
-                .describedAs("Canceled user task should match the originally created one")
-                .isEqualTo(createdUserTask));
+        userTask -> {
+          // Compare against the originally created record with the action normalised to the
+          // canceled value. Using recursive comparison with ignoringFields("actionProp") does not
+          // work here because the action string is also embedded in the msgpack-backed
+          // customHeaders buffer, so byte-level diffs remain even after excluding the property.
+          assertThat(userTask)
+              .describedAs("Canceled user task should match the originally created one")
+              .isEqualTo(((UserTaskRecord) createdUserTask).copy().setAction("cancel"));
+          assertThat(userTask.getAction())
+              .describedAs("Action should reflect the cancel transition")
+              .isEqualTo("cancel");
+        });
   }
 
   @Test
@@ -1046,10 +1061,18 @@ public class UserTaskListenersTest {
 
     ZeebeAssertHelper.assertUserTaskCanceled(
         userTaskKey,
-        userTask ->
-            assertThat(userTask)
-                .describedAs("Canceled user task should match the originally created one")
-                .isEqualTo(createdUserTask));
+        userTask -> {
+          // Compare against the originally created record with the action normalised to the
+          // canceled value. Using recursive comparison with ignoringFields("actionProp") does not
+          // work here because the action string is also embedded in the msgpack-backed
+          // customHeaders buffer, so byte-level diffs remain even after excluding the property.
+          assertThat(userTask)
+              .describedAs("Canceled user task should match the originally created one")
+              .isEqualTo(((UserTaskRecord) createdUserTask).copy().setAction("cancel"));
+          assertThat(userTask.getAction())
+              .describedAs("Action should reflect the cancel transition")
+              .isEqualTo("cancel");
+        });
   }
 
   @Test

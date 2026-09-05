@@ -257,7 +257,9 @@ public class MigrateUserTaskTest {
         .hasCandidateUsersList(userTask.getCandidateUsersList())
         .hasDueDate(userTask.getDueDate())
         .hasFollowUpDate(userTask.getFollowUpDate())
-        .hasFormKey(userTask.getFormKey());
+        .hasFormKey(userTask.getFormKey())
+        .describedAs("Expect that action is reset on MIGRATED — migration is not user-driven")
+        .hasAction("");
   }
 
   @Test
@@ -1181,7 +1183,9 @@ public class MigrateUserTaskTest {
         .hasAssignee("userA")
         .hasDueDate("2023-03-02T16:35+02:00")
         .hasFollowUpDate("2023-03-02T15:35+02:00")
-        .hasPriority(50); // default priority
+        .hasPriority(50) // default priority
+        .describedAs("Expect that action is set on migration ASSIGNING")
+        .hasAction("assign");
 
     assertThat(
             RecordingExporter.records()
