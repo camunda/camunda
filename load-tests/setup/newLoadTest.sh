@@ -275,6 +275,16 @@ global:
     camunda.io/created-by: "$git_author"
   nodeSelector:
     topology.kubernetes.io/zone: $availability_zone
+EOF
+
+  if [[ "$target_version" == "stable-87" ]]; then
+    cat <<'EOF'
+  # 8.7 doesn't have a REST API
+  performReadBenchmarks: false
+EOF
+  fi
+
+  cat <<EOF
 
 name: "$namespace"
 author: "$git_author"

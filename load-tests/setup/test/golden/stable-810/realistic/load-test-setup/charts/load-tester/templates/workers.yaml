@@ -40,7 +40,7 @@ spec:
                 -Dconfig.override_with_env_vars=true
                 -Dapp.tls=true
                 -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
+                -Dapp.performReadBenchmarks=true
                 -Dzeebe.client.requestTimeout=62000
                 -Dapp.worker.capacity=30
                 -Dapp.worker.completionDelay=300ms
@@ -107,7 +107,7 @@ spec:
             - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
               value: "false"
             - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
-              value: "false"
+              value: "true"
             - name: CAMUNDA_CLIENT_MODE
               value: "saas"
             - name: CAMUNDA_CLIENT_AUTH_METHOD
@@ -183,7 +183,7 @@ spec:
                 -Dconfig.override_with_env_vars=true
                 -Dapp.tls=true
                 -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
+                -Dapp.performReadBenchmarks=true
                 -Dzeebe.client.requestTimeout=62000
                 -Dapp.worker.capacity=30
                 -Dapp.worker.completionDelay=10ms
@@ -247,7 +247,7 @@ spec:
             - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
               value: "false"
             - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
-              value: "false"
+              value: "true"
             - name: CAMUNDA_CLIENT_MODE
               value: "saas"
             - name: CAMUNDA_CLIENT_AUTH_METHOD
@@ -317,7 +317,7 @@ spec:
                 -Dconfig.override_with_env_vars=true
                 -Dapp.tls=true
                 -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
+                -Dapp.performReadBenchmarks=true
                 -Dzeebe.client.requestTimeout=62000
                 -Dapp.worker.capacity=60
                 -Dapp.worker.threads=30
@@ -385,7 +385,7 @@ spec:
             - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
               value: "false"
             - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
-              value: "false"
+              value: "true"
             - name: CAMUNDA_CLIENT_MODE
               value: "saas"
             - name: CAMUNDA_CLIENT_AUTH_METHOD
@@ -463,7 +463,7 @@ spec:
                 -Dconfig.override_with_env_vars=true
                 -Dapp.tls=true
                 -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
+                -Dapp.performReadBenchmarks=true
                 -Dzeebe.client.requestTimeout=62000
                 -Dapp.worker.capacity=30
                 -Dapp.worker.completionDelay=300ms
@@ -527,7 +527,7 @@ spec:
             - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
               value: "false"
             - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
-              value: "false"
+              value: "true"
             - name: CAMUNDA_CLIENT_MODE
               value: "saas"
             - name: CAMUNDA_CLIENT_AUTH_METHOD
@@ -597,7 +597,7 @@ spec:
                 -Dconfig.override_with_env_vars=true
                 -Dapp.tls=true
                 -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
+                -Dapp.performReadBenchmarks=true
                 -Dzeebe.client.requestTimeout=62000
                 -Dapp.worker.capacity=30
                 -Dapp.worker.completionDelay=300ms
@@ -661,7 +661,7 @@ spec:
             - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
               value: "false"
             - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
-              value: "false"
+              value: "true"
             - name: CAMUNDA_CLIENT_MODE
               value: "saas"
             - name: CAMUNDA_CLIENT_AUTH_METHOD
@@ -731,7 +731,7 @@ spec:
                 -Dconfig.override_with_env_vars=true
                 -Dapp.tls=true
                 -Dapp.preferRest=false
-                -Dapp.performReadBenchmarks=false
+                -Dapp.performReadBenchmarks=true
                 -Dzeebe.client.requestTimeout=62000
                 -Dapp.worker.capacity=30
                 -Dapp.worker.threads=30
@@ -796,7 +796,7 @@ spec:
             - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
               value: "false"
             - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
-              value: "false"
+              value: "true"
             - name: CAMUNDA_CLIENT_MODE
               value: "saas"
             - name: CAMUNDA_CLIENT_AUTH_METHOD
