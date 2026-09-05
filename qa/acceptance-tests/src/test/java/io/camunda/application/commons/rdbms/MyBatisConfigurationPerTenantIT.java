@@ -20,10 +20,12 @@ import java.util.LinkedHashMap;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
+@Tag("rdbms")
 class MyBatisConfigurationPerTenantIT {
 
   private static final MyBatisConfiguration MY_BATIS = new MyBatisConfiguration();
