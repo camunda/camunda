@@ -30,6 +30,7 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -181,6 +182,7 @@ class TenantAuthorizationIT {
 
     // when/then
     Awaitility.await("Search returns correct users")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -201,6 +203,7 @@ class TenantAuthorizationIT {
 
     // when/then
     Awaitility.await("Search returns groups by tenant")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -234,6 +237,7 @@ class TenantAuthorizationIT {
 
     // when/then
     Awaitility.await("Search returns clients by tenant")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -281,6 +285,7 @@ class TenantAuthorizationIT {
 
     // then
     Awaitility.await("Client is assigned to the tenant")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -320,6 +325,7 @@ class TenantAuthorizationIT {
 
     // verify client is assigned
     Awaitility.await("Client is assigned to the tenant")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -339,6 +345,7 @@ class TenantAuthorizationIT {
 
     // then - verify client is no longer assigned
     Awaitility.await("Client is unassigned from the tenant")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {

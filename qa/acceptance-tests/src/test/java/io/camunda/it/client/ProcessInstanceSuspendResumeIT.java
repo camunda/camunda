@@ -154,7 +154,7 @@ public class ProcessInstanceSuspendResumeIT {
     // then - the same command is now accepted, and the process advances
     camundaClient.newCompleteCommand(jobKey).send().join();
     await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 assertThat(
@@ -199,7 +199,7 @@ public class ProcessInstanceSuspendResumeIT {
 
     // then - values are exported and the instance stays suspended
     await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -257,7 +257,7 @@ public class ProcessInstanceSuspendResumeIT {
         startProcessInstance(camundaClient, processId, Map.of("x", 1)).getProcessInstanceKey();
     waitForProcessInstancesToStart(camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
     await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 assertThat(
@@ -286,7 +286,7 @@ public class ProcessInstanceSuspendResumeIT {
 
     // then - variable is updated while the instance stays suspended
     await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () ->
@@ -308,7 +308,7 @@ public class ProcessInstanceSuspendResumeIT {
 
     // then - token moves past the catch event
     await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 assertThat(

@@ -19,6 +19,7 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.filter.AuthorizationFilter;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.UUID;
@@ -145,6 +146,7 @@ public class RoleIT {
 
     // then
     Awaitility.await("Role is deleted")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 assertThatThrownBy(() -> camundaClient.newRoleGetRequest(roleId).send().join())
@@ -212,6 +214,7 @@ public class RoleIT {
                 .ownerId(roleId);
 
     Awaitility.await("Authorization was created")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 assertThat(
@@ -226,6 +229,7 @@ public class RoleIT {
 
     // then
     Awaitility.await("Role is deleted")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 assertThatThrownBy(() -> camundaClient.newRoleGetRequest(roleId).send().join())
@@ -233,6 +237,7 @@ public class RoleIT {
                     .hasMessageContaining("Failed with code 404: 'Not Found'"));
 
     Awaitility.await("Authorization is deleted")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 assertThat(
@@ -281,6 +286,7 @@ public class RoleIT {
 
     // then
     Awaitility.await("Role is updated")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -314,6 +320,7 @@ public class RoleIT {
   private static void assertRoleCreated(
       final String roleId, final String roleName, final String description) {
     Awaitility.await("Role is created and exported")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {

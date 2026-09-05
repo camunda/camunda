@@ -22,6 +22,7 @@ import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -1172,7 +1173,7 @@ public class ExpressionEvaluationIT {
 
   private long waitForActiveElementInstance(final long processInstanceKey, final String elementId) {
     Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () ->
