@@ -1532,10 +1532,10 @@
     react-markdown "10.1.0"
     semver "7.8.4"
 
-"@camunda/design-system@0.48.0":
-  version "0.48.0"
-  resolved "https://registry.yarnpkg.com/@camunda/design-system/-/design-system-0.48.0.tgz#ae1abf675cfa125900491a6c76392dfb0dc97800"
-  integrity sha512-ffCaGZOYfrWggY8kt2MdDTnc5ARMRdLDI9SOtXO7ugCx4FKPitAav5M2x6K97Pc626lWOz+IhAG30gaaZj72yQ==
+"@camunda/design-system@0.52.0":
+  version "0.52.0"
+  resolved "https://registry.yarnpkg.com/@camunda/design-system/-/design-system-0.52.0.tgz#de1983a8f3d5e806abad1474e006e4d3faee99b7"
+  integrity sha512-4hgH9wVr85t6TZLVs/amlIcdt0sK9OkRcshmoJTk1ORv4T12/zbZjBTXBxxeqj37APceoCfNWxckXnZQHu1Itw==
   dependencies:
     "@tanstack/react-table" "^8.20.5"
     "@tanstack/react-virtual" "^3.14.2"
@@ -1543,7 +1543,7 @@
     clsx "2.1.1"
     cmdk "1.1.1"
     date-fns "^4.4.0"
-    lucide-react "^1.25.0"
+    lucide-react "^1.34.0"
     radix-ui "1.4.3"
     react-day-picker "^10.0.1"
     recharts "^3.8.1"
@@ -12108,10 +12108,10 @@ lru-cache@^6.0.0:
   dependencies:
     yallist "^4.0.0"
 
-lucide-react@^1.25.0:
-  version "1.34.0"
-  resolved "https://registry.yarnpkg.com/lucide-react/-/lucide-react-1.34.0.tgz#12155b6f950d63b57e29d7ce592e65c116ea95aa"
-  integrity sha512-vnjGJNI7Htk5+oWW8gXGuaLgwgAb0T6/iZbBrp9JCfRFwdNWZ0YTm3eyxjOLgwN6r8iyAf3UA70zNmBRBNv7yg==
+lucide-react@^1.34.0:
+  version "1.41.0"
+  resolved "https://registry.yarnpkg.com/lucide-react/-/lucide-react-1.41.0.tgz#6cabc941a55413a9a9363665c95508a7b48311ef"
+  integrity sha512-6lksP35l6KszDKUeRTi4LV7i6DEe0Yzl2ALJm9j4c5xEYN91GdW1xGsawGMOg2mgjF5GHBVX8pKX9kP+cWsP3Q==
 
 macos-release@^3.0.1:
   version "3.5.1"
