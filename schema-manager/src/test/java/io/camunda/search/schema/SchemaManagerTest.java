@@ -12,6 +12,7 @@ import static io.camunda.search.schema.utils.SchemaTestUtil.startupWithRetry;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.ID;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -26,17 +27,20 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
+import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.utils.TestIndexDescriptor;
 import io.camunda.search.schema.utils.TestTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
+import io.camunda.zeebe.test.util.logging.LogCapturer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -470,6 +474,145 @@ class SchemaManagerTest {
       final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
       verify(client).createIndex(eq(index), captor.capture());
       assertThat(captor.getValue().getNumberOfShards()).isEqualTo(7);
+    }
+
+    @Test
+    void shouldWarnWhenWideningASingleShardByDesignIndex() {
+      // given — post-importer-queue is pinned to 1 shard because entries for one partition must
+      // not scatter across independently refreshing shards
+      final var template = new PostImporterQueueTemplate("test", true);
+      cfg.index().getShardsByIndexName().put(template.getIndexName(), 3);
+      final var mgr = buildManager(List.of(metaIndex), List.of(template));
+
+      // when
+      try (final var logs = LogCapturer.capturing(SchemaManager.class, Level.WARN)) {
+        startupWithRetry(mgr, cfg);
+
+        // then — the override still takes effect, the operator is only told what it costs.
+        // Exactly once: the settings resolver runs three times for a configured template (template
+        // creation, index creation, settings update), so warning from there repeated the message.
+        assertThat(logs.messagesAt(Level.WARN))
+            .filteredOn(message -> message.contains("defaults to a single primary shard by design"))
+            .singleElement()
+            .satisfies(
+                message ->
+                    assertThat(message).contains(template.getIndexName()).contains("issues/56117"));
+      }
+
+      final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
+      verify(client).createIndexTemplate(eq(template), captor.capture(), eq(true));
+      assertThat(captor.getValue().getNumberOfShards()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldNotWarnWhenOverridingAnIndexThatFollowsTheGlobalKnob() {
+      // given — template descriptors carry process-instance volume and are meant to be sharded
+      final var template = new TestTemplateDescriptor("test", "mappings.json");
+      cfg.index().getShardsByIndexName().put(template.getIndexName(), 3);
+      final var mgr = buildManager(List.of(metaIndex), List.of(template));
+
+      // when
+      try (final var logs = LogCapturer.capturing(SchemaManager.class, Level.WARN)) {
+        startupWithRetry(mgr, cfg);
+
+        // then
+        assertThat(logs.messagesAt(Level.WARN))
+            .noneSatisfy(
+                message ->
+                    assertThat(message).contains("defaults to a single primary shard by design"));
+      }
+    }
+
+    @Test
+    void shouldWarnWhenAnExistingIndexDoesNotHaveTheConfiguredShardCount() {
+      // given — the index already exists with 1 shard, the operator now asks for 5
+      final var index = new TestIndexDescriptor("test", "mappings.json");
+      cfg.index().getShardsByIndexName().put(index.getIndexName(), 5);
+      final var mgr = buildManager(List.of(metaIndex, index), List.of());
+      when(client.getNumberOfShards(any())).thenReturn(Map.of(index.getFullQualifiedName(), 1));
+
+      // when
+      try (final var logs = LogCapturer.capturing(SchemaManager.class, Level.WARN)) {
+        startupWithRetry(mgr, cfg);
+
+        // then — shards are immutable, so the setting is a silent no-op without this
+        assertThat(logs.messagesAt(Level.WARN))
+            .anySatisfy(
+                message ->
+                    assertThat(message)
+                        .contains(index.getFullQualifiedName())
+                        .contains("cannot be changed after creation"));
+      }
+    }
+
+    @Test
+    void shouldNotWarnWhenAnExistingIndexAlreadyHasTheConfiguredShardCount() {
+      // given
+      final var index = new TestIndexDescriptor("test", "mappings.json");
+      cfg.index().getShardsByIndexName().put(index.getIndexName(), 5);
+      final var mgr = buildManager(List.of(metaIndex, index), List.of());
+      when(client.getNumberOfShards(any())).thenReturn(Map.of(index.getFullQualifiedName(), 5));
+
+      // when
+      try (final var logs = LogCapturer.capturing(SchemaManager.class, Level.WARN)) {
+        startupWithRetry(mgr, cfg);
+
+        // then
+        assertThat(logs.messagesAt(Level.WARN))
+            .noneSatisfy(
+                message -> assertThat(message).contains("cannot be changed after creation"));
+      }
+    }
+
+    @Test
+    void shouldNotFailStartupWhenShardCountsCannotBeRead() {
+      // given — a diagnostic must not be what fails an otherwise healthy startup. A template
+      // descriptor follows the global knob, so the only thing that could log here is the read.
+      final var template = new TestTemplateDescriptor("test", "mappings.json");
+      cfg.index().getShardsByIndexName().put(template.getIndexName(), 5);
+      final var mgr = buildManager(List.of(metaIndex), List.of(template));
+      when(client.getNumberOfShards(any()))
+          .thenThrow(new SearchEngineException("shard counts unavailable"));
+
+      // when / then — and it stays quiet: a read the startup goes on to ignore must not reach an
+      // operator's alerting as a WARN or an ERROR
+      try (final var logs = LogCapturer.capturing(SchemaManager.class, Level.WARN)) {
+        assertThatCode(() -> startupWithRetry(mgr, cfg)).doesNotThrowAnyException();
+        assertThat(logs.messagesAt(Level.WARN)).isEmpty();
+        assertThat(logs.messagesAt(Level.ERROR)).isEmpty();
+      }
+    }
+
+    @Test
+    void shouldNotReadShardCountsWhenNoIndexIsExplicitlyConfigured() {
+      // given
+      final var index = new TestIndexDescriptor("test", "mappings.json");
+      final var mgr = buildManager(List.of(metaIndex, index), List.of());
+
+      // when
+      startupWithRetry(mgr, cfg);
+
+      // then — no configured override means nothing to compare against
+      verify(client, never()).getNumberOfShards(any());
+    }
+
+    @Test
+    void shouldNotWarnWhenPinningASingleShardIndexToItsOwnDefault() {
+      // given — restating the descriptor default is not a tradeoff worth warning about
+      final var template = new PostImporterQueueTemplate("test", true);
+      cfg.index().getShardsByIndexName().put(template.getIndexName(), 1);
+      final var mgr = buildManager(List.of(metaIndex), List.of(template));
+
+      // when
+      try (final var logs = LogCapturer.capturing(SchemaManager.class, Level.WARN)) {
+        startupWithRetry(mgr, cfg);
+
+        // then
+        assertThat(logs.messagesAt(Level.WARN))
+            .noneSatisfy(
+                message ->
+                    assertThat(message).contains("defaults to a single primary shard by design"));
+      }
     }
   }
 

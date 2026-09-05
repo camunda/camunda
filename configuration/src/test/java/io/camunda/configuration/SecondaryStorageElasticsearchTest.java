@@ -64,7 +64,7 @@ public class SecondaryStorageElasticsearchTest {
 
   private static final int EXPECTED_TEMPLATE_PRIORITY = 100;
   private static final Map<String, Integer> EXPECTED_REPLICAS_BY_INDEX_NAME = Map.of("my-index", 3);
-  private static final Map<String, Integer> EXPECTED_SHARDS_BY_INDEX_NAME = Map.of("my-index", 2);
+  private static final Map<String, Integer> EXPECTED_SHARDS_BY_INDEX_NAME = Map.of("list-view", 2);
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
   private static final boolean EXPECTED_HISTORY_ARCHIVE_BY_ID_ENABLED = false;
@@ -125,7 +125,7 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.template-priority="
             + EXPECTED_TEMPLATE_PRIORITY,
         "camunda.data.secondary-storage.elasticsearch.number-of-replicas-per-index.my-index=3",
-        "camunda.data.secondary-storage.elasticsearch.number-of-shards-per-index.my-index=2",
+        "camunda.data.secondary-storage.elasticsearch.number-of-shards-per-index.list-view=2",
         "camunda.data.secondary-storage.elasticsearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
         "camunda.data.secondary-storage.elasticsearch.history.archive-by-id-enabled="
@@ -541,8 +541,8 @@ public class SecondaryStorageElasticsearchTest {
         // per-index overrides
         "camunda.data.secondary-storage.elasticsearch.number-of-replicas-per-index.my-index=3",
         "camunda.database.index.replicasByIndexName.my-index=3",
-        "camunda.data.secondary-storage.elasticsearch.number-of-shards-per-index.my-index=2",
-        "camunda.database.index.shardsByIndexName.my-index=2",
+        "camunda.data.secondary-storage.elasticsearch.number-of-shards-per-index.list-view=2",
+        "camunda.database.index.shardsByIndexName.list-view=2",
 
         // backup configuration
         "camunda.data.secondary-storage.elasticsearch.backup.repository-name="

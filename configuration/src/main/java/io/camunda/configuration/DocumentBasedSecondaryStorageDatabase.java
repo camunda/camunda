@@ -42,7 +42,12 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** Maximum number of connections allowed per route in the ES and OS connector connection pool. */
   private Integer maxConnectionsPerRoute;
 
-  /** How many shards the search engine database uses for all indices. */
+  /**
+   * How many shards the search engine database uses for indices that do not pin a shard count of
+   * their own. In practice that is the process-instance-volume indices; the remaining indices
+   * default to a single shard whatever this is set to. Use number-of-shards-per-index to override
+   * an individual index.
+   */
   private int numberOfShards = 1;
 
   /** How many replicas the search engine database uses for all indices. */
@@ -58,7 +63,8 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   private Map<String, Integer> numberOfReplicasPerIndex = new HashMap<>();
 
   /** Per-index shard overrides. */
-  private Map<String, Integer> numberOfShardsPerIndex = new HashMap<>();
+  @NestedConfigurationProperty
+  private NumberOfShardsPerIndex numberOfShardsPerIndex = new NumberOfShardsPerIndex();
 
   /** Per-index refresh interval overrides. */
   private Map<String, String> refreshIntervalByIndexName = new HashMap<>();
@@ -480,16 +486,37 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.numberOfReplicasPerIndex = numberOfReplicasPerIndex;
   }
 
-  public Map<String, Integer> getNumberOfShardsPerIndex() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        prefix() + ".number-of-shards-per-index",
-        numberOfShardsPerIndex,
-        ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
-        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
-        legacyShardsByIndexNameProperties());
+  /**
+   * @throws IllegalArgumentException if any index is configured with fewer than one shard
+   */
+  public NumberOfShardsPerIndex getNumberOfShardsPerIndex() {
+    final var shardsPerIndex =
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            prefix() + ".number-of-shards-per-index",
+            numberOfShardsPerIndex,
+            NumberOfShardsPerIndex.class,
+            BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+            legacyShardsByIndexNameProperties());
+
+    // An index cannot be created with zero shards, and shards are immutable afterwards, so the
+    // search engine would reject the whole schema creation on startup with an error that names
+    // neither the property nor the index.
+    shardsPerIndex
+        .toIndexNameMap()
+        .forEach(
+            (indexName, shards) -> {
+              if (shards < 1) {
+                throw new IllegalArgumentException(
+                    String.format(
+                        "%s.number-of-shards-per-index.%s must be at least 1, but was %d",
+                        prefix(), indexName, shards));
+              }
+            });
+
+    return shardsPerIndex;
   }
 
-  public void setNumberOfShardsPerIndex(final Map<String, Integer> numberOfShardsPerIndex) {
+  public void setNumberOfShardsPerIndex(final NumberOfShardsPerIndex numberOfShardsPerIndex) {
     this.numberOfShardsPerIndex = numberOfShardsPerIndex;
   }
 

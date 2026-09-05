@@ -18,6 +18,7 @@ import static io.camunda.search.test.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.mockito.ArgumentMatchers.any;
@@ -195,6 +196,28 @@ public class SchemaManagerIT {
 
     assertThat(retrievedIndex.at("/settings/index/number_of_replicas").asInt()).isEqualTo(5);
     assertThat(retrievedIndex.at("/settings/index/number_of_shards").asInt()).isEqualTo(5);
+  }
+
+  @TestTemplate
+  void shouldReadShardCountsOfExistingIndicesOnly(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given
+    config.index().setShardsByIndexName(Map.of(index.getIndexName(), 3));
+    final var searchEngineClient = searchEngineClientFromConfig(config);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(index, metadataIndex), Set.of(), config, objectMapper);
+    initialiseResources(schemaManager);
+
+    // when
+    final var shardCounts =
+        searchEngineClient.getNumberOfShards(
+            Set.of(index.getFullQualifiedName(), CUSTOM_PREFIX + "-absent-index"));
+
+    // then — an index that does not exist is absent from the result rather than an error, which is
+    // what lets the startup check run before every index has necessarily been created
+    assertThat(shardCounts).containsExactly(entry(index.getFullQualifiedName(), 3));
   }
 
   @TestTemplate

@@ -195,6 +195,7 @@ public class SchemaManager implements CloseableSilently {
       schemaMetadataStore.storeSchemaVersion(currentVersion);
     }
     updateSchemaSettings();
+    checkShardConfiguration();
     createLifecyclePolicies();
     LOG.info("Schema management completed.");
   }
@@ -276,6 +277,73 @@ public class SchemaManager implements CloseableSilently {
     final boolean performCleanup = config.schemaManager().isPerformCleanup();
     final SchemaCleanup schemaCleanup = new SchemaCleanup(performCleanup, searchEngineClient);
     CompletableFuture.runAsync(schemaCleanup::performCleanup, virtualThreadExecutor);
+  }
+
+  /**
+   * Reports per-index shard configuration that will not do what the operator expects.
+   *
+   * <p>Runs once per startup rather than from {@link #getIndexSettingsFromConfig}: that resolver is
+   * called again for every descriptor during template creation, index creation and the settings
+   * update, so warning from there would repeat each message up to three times.
+   */
+  private void checkShardConfiguration() {
+    final var explicitShards = config.index().getShardsByIndexName();
+    if (explicitShards.isEmpty()) {
+      return;
+    }
+
+    final var configuredShardsByIndexName = new HashMap<String, Integer>();
+    allIndexDescriptors.forEach(
+        descriptor ->
+            ofNullable(explicitShards.get(descriptor.getIndexName()))
+                .ifPresent(
+                    shards -> {
+                      warnIfWideningSingleShardIndex(descriptor, shards);
+                      configuredShardsByIndexName.put(descriptor.getFullQualifiedName(), shards);
+                    }));
+
+    if (configuredShardsByIndexName.isEmpty()) {
+      return;
+    }
+
+    warnOnUnappliedShardCounts(configuredShardsByIndexName);
+  }
+
+  /**
+   * Reports configured shard counts that an existing index does not actually have.
+   *
+   * <p>{@link #updateIndexSettings} only pushes {@code number_of_replicas}, because shards are
+   * immutable once an index exists. Changing {@code number-of-shards-per-index} on a running
+   * installation is therefore a silent no-op: the operator sees the setting they asked for in their
+   * configuration and a differently sharded index in the engine, with nothing connecting the two.
+   *
+   * <p>Only indices that already exist are compared — a missing one was either just created with
+   * the configured count or is not in use.
+   */
+  private void warnOnUnappliedShardCounts(final Map<String, Integer> configuredShardsByIndexName) {
+    final Map<String, Integer> actualShardsByIndexName;
+    try {
+      actualShardsByIndexName =
+          searchEngineClient.getNumberOfShards(configuredShardsByIndexName.keySet());
+    } catch (final Exception e) {
+      // A diagnostic must never be the thing that fails a startup that would otherwise succeed.
+      LOG.debug("Could not read shard counts to check them against the configuration", e);
+      return;
+    }
+
+    actualShardsByIndexName.forEach(
+        (indexName, actual) -> {
+          final var configured = configuredShardsByIndexName.get(indexName);
+          if (configured != null && !configured.equals(actual)) {
+            LOG.warn(
+                "Index '{}' is configured with '{}' primary shards but was created with '{}'. "
+                    + "Shards cannot be changed after creation, so the configured value has no "
+                    + "effect on this index; it applies only to newly created indices.",
+                indexName,
+                configured,
+                actual);
+          }
+        });
   }
 
   private void updateSchemaSettings() {
@@ -484,6 +552,31 @@ public class SchemaManager implements CloseableSilently {
       return explicit;
     }
     return descriptor.getDefaultShardCount().orElse(config.index().getNumberOfShards());
+  }
+
+  /**
+   * Explicit configuration wins over the descriptor default by design, so this only warns.
+   *
+   * <p>Most single-shard-by-design indices hold configuration or definition data that simply does
+   * not benefit from being spread, so widening one costs a fan-out per read and nothing else. Only
+   * where a reader also assumes a single atomic refresh does it become a correctness risk, which is
+   * why the message offers post-importer-queue as the example rather than asserting the risk
+   * applies to whichever index is being warned about.
+   */
+  private void warnIfWideningSingleShardIndex(
+      final IndexDescriptor descriptor, final int configured) {
+    if (configured <= 1 || descriptor.getDefaultShardCount().orElse(configured) != 1) {
+      return;
+    }
+    LOG.warn(
+        "Index '{}' defaults to a single primary shard by design but is configured with '{}'. "
+            + "The explicit configuration wins. Such indices generally hold configuration or "
+            + "definition data that does not benefit from sharding; where a reader additionally "
+            + "assumes an atomic refresh, spreading entries over independently refreshing shards "
+            + "can make it skip data, as it did for post-importer-queue - see "
+            + "https://github.com/camunda/camunda/issues/56117.",
+        descriptor.getIndexName(),
+        configured);
   }
 
   private int getNumberOfReplicasFromConfig(final String indexName) {
