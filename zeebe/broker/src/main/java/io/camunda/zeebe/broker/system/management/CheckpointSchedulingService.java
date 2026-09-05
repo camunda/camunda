@@ -95,19 +95,31 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
   @Override
   protected void onActorCloseRequested() {
     membershipService.removeListener(this);
+<<<<<<< HEAD
     final List<ActorFuture<Void>> shutdownFutures =
         schedulerActors().stream()
             .filter(actor -> !actor.isActorClosed())
             .map(Actor::closeAsync)
             .collect(Collectors.toCollection(ArrayList::new));
 
+=======
+    final List<ActorFuture<Void>> shutdownFutures = new ArrayList<>();
+    for (final var schedulerActor : schedulerActors()) {
+      if (!schedulerActor.isActorClosed()) {
+        shutdownFutures.add(schedulerActor.closeAsync());
+      }
+    }
+>>>>>>> d3fee4f0 (fix: allow retention job to be registered without the checkpoint scheduler)
     actor.runOnCompletion(
         shutdownFutures,
         (error) -> {
           if (error != null) {
             LOG.error("Failed to close checkpoint scheduling actors", error);
           }
+<<<<<<< HEAD
           closeMeterRegistries();
+=======
+>>>>>>> d3fee4f0 (fix: allow retention job to be registered without the checkpoint scheduler)
         });
   }
 
@@ -128,6 +140,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
     }
   }
 
+<<<<<<< HEAD
   private @Nullable PhysicalTenantSchedulers createSchedulers(
       final String physicalTenantId, final BackupCfg backupCfg) {
     Schedule checkpointSchedule = null;
@@ -137,6 +150,27 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
     }
     if (!(backupCfg.getSchedule() instanceof NoneSchedule)) {
       backupSchedule = backupCfg.getSchedule();
+=======
+  private void checkedStopScheduler() {
+    if (!shouldStopSchedulers()) {
+      return;
+    }
+    for (final var schedulerActor : schedulerActors()) {
+      if (!schedulerActor.isActorClosed()) {
+        schedulerActor.close();
+      }
+    }
+  }
+
+  private void checkedStartScheduler() {
+    if (!shouldStartSchedulers()) {
+      return;
+    }
+    for (final var schedulerActor : schedulerActors()) {
+      if (schedulerActor.isActorClosed()) {
+        actorScheduler.submitActor(schedulerActor, SchedulingHints.ioBound());
+      }
+>>>>>>> d3fee4f0 (fix: allow retention job to be registered without the checkpoint scheduler)
     }
     final var withRetention = shouldRegisterRetentionJob(backupCfg);
 
@@ -187,6 +221,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
         physicalTenantId, tenantMeterRegistry, checkpointScheduler, backupRetentionJob);
   }
 
+<<<<<<< HEAD
   private void checkedStopSchedulers() {
     if (!shouldStopSchedulers()) {
       return;
@@ -211,6 +246,17 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
 
   private void closeMeterRegistries() {
     tenantSchedulers.forEach(schedulers -> MicrometerUtil.close(schedulers.meterRegistry()));
+=======
+  private List<Actor> schedulerActors() {
+    final List<Actor> actors = new ArrayList<>(2);
+    if (checkpointScheduler != null) {
+      actors.add(checkpointScheduler);
+    }
+    if (backupRetentionJob != null) {
+      actors.add(backupRetentionJob);
+    }
+    return actors;
+>>>>>>> d3fee4f0 (fix: allow retention job to be registered without the checkpoint scheduler)
   }
 
   private boolean shouldStartSchedulers() {
