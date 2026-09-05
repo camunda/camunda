@@ -5,6 +5,13 @@
 # later versions so that the last entry in each list resolves to the newest supported minor.
 # A trailing `# LTS` comment flags longer upstream support — don't remove that entry early.
 #
+# ── Renovate coverage ────────────────────────────────────────────────────────────
+#   A `# renovate:` comment keeps that entry current automatically. Entries without
+#   one (postgresql/mysql/mariadb/mssql/azure-sql, oracle's 21-slim-faststart) use
+#   floating tags the registry repoints itself — nothing for Renovate to bump, so
+#   they're deliberately left manual. gvenzl/oracle-xe also looks abandoned upstream
+#   (no push since 2024-10-01) — worth a follow-up for @camunda/data-layer.
+#
 # ── How to use this file in CI workflows ────────────────────────────────────────
 #   CI workflows read versions from this file via the reusable action:
 #     .github/actions/read-db-versions
@@ -20,7 +27,10 @@ elasticsearch:
     # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
     - &saas '8.19.16'
   es9:
-    - "9.5.0"
+    # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
+    - '9.4.5'
+    # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
+    - '9.5.2'
   saas: *saas
 
 opensearch:
@@ -28,9 +38,12 @@ opensearch:
     # renovate: datasource=docker depName=opensearchproject/opensearch
     - '2.19.6'
   os3:
-    - "3.6.0"  # LTS - don't remove before EOL: https://opensearch.org/blog/bridging-the-gap-recapping-the-launch-of-opensearch-long-term-support-lts/
-    - "3.7.0"
-    - "3.8.0"
+    # renovate: datasource=docker depName=opensearchproject/opensearch
+    - '3.6.0'  # LTS - don't remove before EOL: https://opensearch.org/blog/bridging-the-gap-recapping-the-launch-of-opensearch-long-term-support-lts/
+    # renovate: datasource=docker depName=opensearchproject/opensearch
+    - '3.7.0'
+    # renovate: datasource=docker depName=opensearchproject/opensearch
+    - '3.8.0'
 
 # ── RDBMS databases ─────────────────────────────────────────────────────────────
 # Each entry is a Docker image tag representing one supported major version.
@@ -63,4 +76,5 @@ azure-sql:
 
 oracle:
   - "21-slim-faststart"
-  - "23.26.1-slim-faststart"
+  # renovate: datasource=docker depName=gvenzl/oracle-free versioning=docker
+  - '23.26.2-slim-faststart'

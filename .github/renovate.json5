@@ -297,6 +297,7 @@
         "elasticsearch",
         "docker.elastic.co/elasticsearch/elasticsearch",
         "opensearchproject/opensearch",
+        "gvenzl/oracle-free",
         "eclipse-temurin",
         "reg.mini.dev/1212/openjre-base",
       ],
@@ -307,24 +308,37 @@
       enabled: false,
     },
     {
-      description: "Group ES container version bumps so db-versions.yml and parent/pom.xml are always updated together.",
+      description: "Group ES container version bumps (db-versions.yml, parent/pom.xml, and auto-detected docker-compose files) into one PR.",
       matchPackageNames: [
         "docker.elastic.co/elasticsearch/elasticsearch",
       ],
       matchManagers: [
         "custom.regex",
+        "docker-compose",
       ],
       groupName: "elasticsearch container version",
     },
     {
-      description: "Group OS container version bumps so db-versions.yml and parent/pom.xml are always updated together.",
+      description: "Group OS container version bumps (db-versions.yml, parent/pom.xml, and auto-detected docker-compose files) into one PR.",
       matchPackageNames: [
         "opensearchproject/opensearch",
       ],
       matchManagers: [
         "custom.regex",
+        "docker-compose",
       ],
       groupName: "opensearch container version",
+    },
+    {
+      description: "Group Oracle Free container version bumps (db-versions.yml and auto-detected docker-compose files) into one PR.",
+      matchPackageNames: [
+        "gvenzl/oracle-free",
+      ],
+      matchManagers: [
+        "custom.regex",
+        "docker-compose",
+      ],
+      groupName: "oracle-free container version",
     },
     {
       description: "Skip lucene major updates to avoid breaking changes.",

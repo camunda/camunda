@@ -571,9 +571,9 @@ jobs:
             jdbc-username: "sa"
             jdbc-password: "Camunda#8_demo"
           # Oracle
-          - database-name: "Oracle 23ai"
+          - database-name: "Oracle 26ai"
             database-type: "oracle"
-            database-image-version: "23.26.1-slim-faststart"
+            database-image-version: "23.26.2-slim-faststart"
             jdbc-url: "jdbc:oracle:thin:@localhost:1521/FREEPDB1"
             jdbc-username: "camunda"
             jdbc-password: "camunda"

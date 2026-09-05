@@ -29,16 +29,16 @@ public final class TestSearchContainers {
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch").withTag("8.19.16");
   // Keep in sync with version.opensearch.container in parent/pom.xml
   private static final DockerImageName OPENSEARCH_IMAGE =
-      DockerImageName.parse("opensearchproject/opensearch").withTag("2.19.5");
+      DockerImageName.parse("opensearchproject/opensearch").withTag("2.19.6");
   private static final DockerImageName POSTGRES_IMAGE =
-      DockerImageName.parse("postgres").withTag("15.3-alpine");
+      DockerImageName.parse("postgres").withTag("15-alpine");
   private static final DockerImageName MARIADB_IMAGE =
       DockerImageName.parse("mariadb").withTag("12.3");
   private static final DockerImageName MYSQL_IMAGE = DockerImageName.parse("mysql").withTag("9.7");
   private static final DockerImageName MSSQLSERVER_IMAGE =
       DockerImageName.parse("mcr.microsoft.com/mssql/server").withTag("2022-latest");
   private static final DockerImageName ORACLE_IMAGE =
-      DockerImageName.parse("gvenzl/oracle-free").withTag("slim");
+      DockerImageName.parse("gvenzl/oracle-free").withTag("23.26.2-slim-faststart");
 
   private TestSearchContainers() {}
 
