@@ -15,6 +15,7 @@ import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.Secrets.GcpSecretManagerStore;
 import io.camunda.configuration.Secrets.Stores;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.secretstore.ConcurrentSecretStore;
 import io.camunda.secretstore.NoopSecretStore;
 import io.camunda.secretstore.SecretCacheFactory;
 import io.camunda.secretstore.SecretStore;
@@ -37,6 +38,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
@@ -86,6 +90,9 @@ public class SecretStoreConfiguration {
     // tracked for the same reason: a wrapped registry left behind by a failed startup would keep
     // publishing the meters of a cache nothing resolves through
     final List<MeterRegistry> tenantMeterRegistries = new ArrayList<>();
+    // tracked for the same reason: a pool backing a store that gets rolled back must not outlive
+    // it, since nothing else references the pool to shut it down later
+    final List<ExecutorService> concurrencyPools = new ArrayList<>();
     final var timeSource = new ActorClockInstantSource(clockService);
     try {
       resolver
@@ -100,10 +107,12 @@ public class SecretStoreConfiguration {
                           created,
                           timeSource,
                           meterRegistry,
-                          tenantMeterRegistries)));
+                          tenantMeterRegistries,
+                          concurrencyPools)));
     } catch (final RuntimeException e) {
       closeAll(created);
       tenantMeterRegistries.forEach(MicrometerUtil::close);
+      concurrencyPools.forEach(ExecutorService::shutdownNow);
       throw e;
     }
     return new SecretStoreRegistries(Map.copyOf(registries));
@@ -115,7 +124,8 @@ public class SecretStoreConfiguration {
       final List<SecretStore> created,
       final InstantSource timeSource,
       final MeterRegistry meterRegistry,
-      final List<MeterRegistry> tenantMeterRegistries) {
+      final List<MeterRegistry> tenantMeterRegistries,
+      final List<ExecutorService> concurrencyPools) {
     final Stores config = secrets.getStores();
     // cap is one store total per tenant, counted across all store types combined
     final long totalStores =
@@ -150,6 +160,17 @@ public class SecretStoreConfiguration {
               + e.getMessage(),
           e);
     }
+    final int maxConcurrency;
+    try {
+      maxConcurrency = secrets.getMaxConcurrency();
+    } catch (final IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+          "Physical tenant '"
+              + tenantId
+              + "' has an invalid secret max-concurrency configuration: "
+              + e.getMessage(),
+          e);
+    }
     final Map<String, SecretStore> stores = new LinkedHashMap<>();
     STORE_BINDINGS.forEach(binding -> binding.registerAll(config, stores, created, tenantId));
     if (stores.isEmpty()) {
@@ -158,6 +179,26 @@ public class SecretStoreConfiguration {
       // the three-argument constructor leaves the default cache publishing nothing: the noop store
       // caches nothing, so its hit rate would read 0% forever against no TTL or size to tune
       return new SecretStoreRegistry(Map.copyOf(stores), Map.of(), timeSource);
+    }
+    // one pool and one semaphore shared by every store this tenant configures (today always at
+    // most one store, see the totalStores check above), rather than one per store, since nothing
+    // here needs them kept apart. Built only for a store whose cost scales with the number of
+    // sequential backend calls it issues: wrapping a noop, container, or already-single-call store
+    // would only add a thread hop with nothing to overlap. Threads are virtual (one per chunk, not
+    // one per permit), so the semaphore alone bounds how many backend calls are in flight at once;
+    // the pool itself holds no threads to leak if it is never explicitly shut down.
+    if (maxConcurrency > 1
+        && stores.values().stream().anyMatch(store -> store.namesPerCall() < Integer.MAX_VALUE)) {
+      final var pool =
+          Executors.newThreadPerTaskExecutor(
+              Thread.ofVirtual().name("secret-resolution-" + tenantId + "-", 0).factory());
+      concurrencyPools.add(pool);
+      final var semaphore = new Semaphore(maxConcurrency, true);
+      stores.replaceAll(
+          (id, store) ->
+              store.namesPerCall() < Integer.MAX_VALUE
+                  ? new ConcurrentSecretStore(store, pool, semaphore)
+                  : store);
     }
     // wrapped only now that the tenant is known to have a store worth measuring, so a tenant that
     // fails the rules above never leaves a registry behind either

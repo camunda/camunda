@@ -1498,6 +1498,22 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Defaults to `20m`.
       ttl: "20m" # Type: Duration, Env: CAMUNDA_SECRETS_CACHE_TTL
 
+    # How many sequential backend calls a store whose cost scales with call count (`namesPerCall()` less
+    # than the request size) may issue at once, bounded by a semaphore shared by every such store the
+    # registry wraps. `1` resolves exactly as before this setting existed: one call at a time, on the
+    # calling thread. A store that already covers the whole request in one call (a container-style store,
+    # or one backed by local disk) is unaffected either way; a batched store (e.g. AWS's
+    # `BatchGetSecretValue` mode) is included once its request needs more than one batch.
+    # The permits are shared per node and physical tenant, so the load this puts on the secret backend is
+    # this value times the number of nodes, which is what a provider's request quota sees.
+    # Raising it past what one request can use changes nothing, since a request is split into `ceil(names
+    # / namesPerCall())` chunks and cannot use more permits than it has chunks. The two callers both cap
+    # their request size at 20 names: background resolution at
+    # `camunda.processing.engine.secrets.batch-resolution-limit`, and the resolve endpoint at the
+    # `maxItems` on its `references` array. For a one-by-one store that puts the ceiling at 20; for a
+    # batched store it is 20 divided by the batch size.
+    # Defaults to twice the available processor count, and never below `8`.
+    max-concurrency: null # Type: Integer, Env: CAMUNDA_SECRETS_MAXCONCURRENCY
     stores: # Type: io.camunda.configuration.Secrets$Stores
       aws: null # Type: Map<String,io.camunda.configuration.Secrets$AwsSecretsManagerStore>, Env: CAMUNDA_SECRETS_STORES_AWS
       file: null # Type: Map<String,io.camunda.configuration.Secrets$FileStore>, Env: CAMUNDA_SECRETS_STORES_FILE

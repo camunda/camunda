@@ -187,6 +187,11 @@ public final class GcpSecretManagerSecretStore implements SecretStore {
   }
 
   @Override
+  public int namesPerCall() {
+    return resolver.namesPerCall();
+  }
+
+  @Override
   public void close() {
     client.close();
   }
