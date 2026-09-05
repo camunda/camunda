@@ -6,9 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
-import type {ProcessInstance, ProcessInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
-import {DataTableSkeleton} from '@carbon/react';
+import {DataTableSkeleton, SkeletonText} from '@carbon/react';
+import type {
+	BatchOperationItem,
+	BatchOperationItemState,
+	ProcessInstance,
+	ProcessInstanceState,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {StateIcon} from '#/operate/shared/StateIcon/StateIcon';
@@ -18,8 +24,9 @@ import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {useProcessInstancesSearch} from './useProcessInstancesSearch';
+import {useOperationItemsForInstances} from './batchOperationItems.queries';
 import type {ProcessesSearch} from './processesFilter';
-import {InstancesTableContainer, ProcessName, InstanceLink} from './styled';
+import {InstancesTableContainer, ProcessName, InstanceLink, VisuallyHiddenStatus} from './styled';
 
 type Props = {
 	search: ProcessesSearch;
@@ -30,6 +37,24 @@ function getDisplayState(instance: ProcessInstance): ProcessInstanceState | 'INC
 		return 'SUSPENDED';
 	}
 	return instance.hasIncident ? 'INCIDENT' : instance.state;
+}
+
+const OPERATION_STATE_ORDER: BatchOperationItemState[] = ['FAILED', 'ACTIVE', 'CANCELED', 'SKIPPED', 'COMPLETED'];
+
+function getOperationStatesByInstance(items: BatchOperationItem[] | undefined) {
+	const statesByInstance = new Map<string, Set<BatchOperationItemState>>();
+	for (const item of items ?? []) {
+		const states = statesByInstance.get(item.processInstanceKey) ?? new Set<BatchOperationItemState>();
+		states.add(item.state);
+		statesByInstance.set(item.processInstanceKey, states);
+	}
+
+	return new Map(
+		[...statesByInstance].map(([processInstanceKey, states]) => [
+			processInstanceKey,
+			OPERATION_STATE_ORDER.filter((state) => states.has(state)).join(', '),
+		]),
+	);
 }
 
 const InstancesTable: React.FC<Props> = ({search}) => {
@@ -49,6 +74,18 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		fetchNextPage,
 	} = useProcessInstancesSearch(search);
 
+	// The operation-state column only exists while the list is filtered by a batch operation —
+	// outside that filter there is no operation for a row to report on. Truthiness, as in legacy,
+	// so an empty key from a hand-edited URL behaves like no filter at all.
+	const batchOperationKey = search.batchOperationKey || undefined;
+	const isOperationStateColumnVisible = batchOperationKey !== undefined;
+	const processInstanceKeys = processInstances.map((instance) => instance.processInstanceKey);
+	const {
+		data: operationItems,
+		isLoading: isLoadingOperationItems,
+		isError: isOperationItemsError,
+	} = useOperationItemsForInstances(batchOperationKey, processInstanceKeys);
+	const operationItemsByInstance = useMemo(() => getOperationStatesByInstance(operationItems), [operationItems]);
 	const isTenantColumnVisible =
 		getClientConfig().deployment.isMultiTenancyEnabled && !isSpecificTenant(search.tenantId);
 	const hasVersionTags = processInstances.some(({processDefinitionVersionTag}) => Boolean(processDefinitionVersionTag));
@@ -69,6 +106,22 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				</ProcessName>
 			),
 		},
+		...(isOperationStateColumnVisible
+			? [
+					{
+						key: 'instanceOperationState',
+						label: t('operate.processes.instancesTable.operationState'),
+						render: (row: ProcessInstance) =>
+							isLoadingOperationItems ? (
+								<SkeletonText width="6rem" />
+							) : isOperationItemsError ? (
+								t('operate.shared.errorMessage.message')
+							) : (
+								(operationItemsByInstance.get(row.processInstanceKey) ?? '--')
+							),
+					},
+				]
+			: []),
 		{
 			key: 'processInstanceKey',
 			sortKey: 'processInstanceKey',
@@ -174,6 +227,11 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				count={totalCount}
 				hasMoreTotalItems={hasMoreTotalItems}
 			/>
+			{isLoadingOperationItems && (
+				<VisuallyHiddenStatus role="status" aria-live="polite">
+					{t('operate.processes.instancesTable.operationStateLoading')}
+				</VisuallyHiddenStatus>
+			)}
 			{status === 'pending' && isFetching ? (
 				<DataTableSkeleton columnCount={columns.length} rowCount={5} showHeader={false} showToolbar={false} />
 			) : (
