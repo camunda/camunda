@@ -36,7 +36,9 @@ import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
@@ -58,6 +60,8 @@ public final class ManifestManager {
    * The path format is constructed by partitionId/checkpointId/nodeId/manifest.json
    */
   private static final String MANIFEST_PATH_FORMAT = "manifests/%s/%s/%s/manifest.json";
+
+  private static final int LIST_PAGE_SIZE = 1000;
 
   private static final ObjectMapper MAPPER =
       new ObjectMapper()
@@ -225,15 +229,23 @@ public final class ManifestManager {
 
   public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
     assureContainerCreated();
-    return blobContainerClient
-        .listBlobs(new ListBlobsOptions().setPrefix(wildcardPrefix(wildcard)), null)
-        .stream()
-        .map(BlobItem::getName)
-        .filter(path -> filterBlobsByWildcard(wildcard, path))
-        .map(this::getManifestWithPath)
-        .filter(Objects::nonNull)
-        .filter(m -> wildcard.matches(m.id()))
-        .toList();
+    final var manifests = new ArrayList<Manifest>();
+    final var options =
+        new ListBlobsOptions()
+            .setPrefix(wildcardPrefix(wildcard))
+            .setMaxResultsPerPage(LIST_PAGE_SIZE);
+    for (final var page :
+        blobContainerClient.listBlobs(options, null).iterableByPage(null, LIST_PAGE_SIZE)) {
+      manifests.addAll(
+          page.getValue().stream()
+              .map(BlobItem::getName)
+              .filter(path -> filterBlobsByWildcard(wildcard, path))
+              .map(this::getManifestWithPath)
+              .filter(Objects::nonNull)
+              .filter(manifest -> wildcard.matches(manifest.id()))
+              .toList());
+    }
+    return List.copyOf(manifests);
   }
 
   public static String manifestPath(final Manifest manifest) {
