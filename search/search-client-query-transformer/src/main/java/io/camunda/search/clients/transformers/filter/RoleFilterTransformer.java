@@ -30,13 +30,24 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
 
   @Override
   public SearchQuery toSearchQuery(final RoleFilter filter) {
+    final var queries = new ArrayList<>(toSearchQueryFields(filter));
+    queries.add(term(RoleIndex.JOIN, IdentityJoinRelationshipType.ROLE.getType()));
+
     if (filter.memberIdsByType() != null && !filter.memberIdsByType().isEmpty()) {
-      return createMultipleMemberTypeQuery(filter);
+      queries.add(createMultipleMemberTypeQuery(filter));
     }
 
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      queries.add(or(filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).toList()));
+    }
+
+    return and(queries);
+  }
+
+  private ArrayList<SearchQuery> toSearchQueryFields(final RoleFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    if (filter.roleId() != null) {
-      queries.add(term(RoleIndex.ROLE_ID, filter.roleId()));
+    if (filter.roleIdOperations() != null && !filter.roleIdOperations().isEmpty()) {
+      queries.addAll(stringOperations(RoleIndex.ROLE_ID, filter.roleIdOperations()));
     }
     if (filter.nameOperations() != null && !filter.nameOperations().isEmpty()) {
       queries.addAll(stringOperations(RoleIndex.NAME, filter.nameOperations()));
@@ -44,7 +55,6 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
     if (filter.description() != null) {
       queries.add(term(RoleIndex.DESCRIPTION, filter.description()));
     }
-    queries.add(term(RoleIndex.JOIN, IdentityJoinRelationshipType.ROLE.getType()));
     if (filter.memberIds() != null) {
       queries.add(
           filter.memberIds().isEmpty()
@@ -65,8 +75,7 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
               ? matchNone()
               : stringTerms(RoleIndex.ROLE_ID, filter.roleIds()));
     }
-
-    return and(queries);
+    return queries;
   }
 
   @Override

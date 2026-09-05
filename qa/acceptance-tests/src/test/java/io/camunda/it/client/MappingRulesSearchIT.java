@@ -14,6 +14,7 @@ import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
+import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -123,6 +124,25 @@ public class MappingRulesSearchIT {
 
     assertThat(mappingRules).hasSizeGreaterThanOrEqualTo(2);
     assertThat(mappingRules).extracting(r -> r.getClaimName()).isSorted();
+  }
+
+  @Test
+  void searchShouldReturnMappingRulesMatchingOrFilters() {
+    final var mappingRuleSearchResponse =
+        camundaClient
+            .newMappingRulesSearchRequest()
+            .filter(
+                fn ->
+                    fn.orFilters(
+                        List.of(
+                            f1 -> f1.mappingRuleId(MAPPING_RULE_ID_1),
+                            f2 -> f2.mappingRuleId(MAPPING_RULE_ID_2))))
+            .send()
+            .join();
+
+    assertThat(mappingRuleSearchResponse.items())
+        .extracting(MappingRule::getMappingRuleId)
+        .containsExactlyInAnyOrder(MAPPING_RULE_ID_1, MAPPING_RULE_ID_2);
   }
 
   private static void createMappingRule(

@@ -20,6 +20,8 @@ import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.filter.GroupFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
@@ -401,6 +403,135 @@ public class GroupQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(groupServices).search(eq(new GroupQuery.Builder().build()), any());
+  }
+
+  @Test
+  void shouldSearchGroupsWithOrOperator() {
+    // given
+    when(groupServices.search(any(GroupQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(new GroupEntity(111L, "group-top", "Group Top", "description 1")))
+                .build());
+
+    final var orFilters =
+        List.of(
+            new GroupFilter.Builder().groupIdOperations(Operation.eq("group-a")).build(),
+            new GroupFilter.Builder()
+                .groupIdOperations(Operation.eq("group-b"))
+                .name("group-b-name")
+                .build());
+
+    final var expectedFilter = new GroupFilter.Builder().name("group-top");
+    orFilters.forEach(expectedFilter::addOrOperation);
+
+    // when / then
+    webClient
+        .post()
+        .uri(GROUP_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "name": "group-top",
+                "$or": [
+                  { "groupId": "group-a" },
+                  { "groupId": "group-b", "name": "group-b-name" }
+                ]
+              }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "groupId": "group-top",
+                 "name": "Group Top",
+                 "description": "description 1"
+               }
+             ],
+             "page": {
+               "totalItems": 1,
+               "startCursor": "f",
+               "endCursor": "v",
+               "hasMoreTotalItems": false
+             }
+           }""",
+            JsonCompareMode.STRICT);
+
+    verify(groupServices)
+        .search(eq(new GroupQuery.Builder().filter(expectedFilter.build()).build()), any());
+  }
+
+  @Test
+  void shouldSearchGroupsWithNameLikeFilter() {
+    // given
+    when(groupServices.search(any(GroupQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(new GroupEntity(111L, "group-top", "Group Top", "description 1")))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(GROUP_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "name": { "$like": "Group*" }
+              }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "groupId": "group-top",
+                 "name": "Group Top",
+                 "description": "description 1"
+               }
+             ],
+             "page": {
+               "totalItems": 1,
+               "startCursor": "f",
+               "endCursor": "v",
+               "hasMoreTotalItems": false
+             }
+           }""",
+            JsonCompareMode.STRICT);
+
+    verify(groupServices)
+        .search(
+            eq(
+                new GroupQuery.Builder()
+                    .filter(
+                        new GroupFilter.Builder().nameOperations(Operation.like("Group*")).build())
+                    .build()),
+            any());
   }
 
   @Test

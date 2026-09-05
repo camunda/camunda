@@ -33,15 +33,27 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
 
   @Override
   public SearchQuery toSearchQuery(final GroupFilter filter) {
+    final var queries = new ArrayList<>(toSearchQueryFields(filter));
+    queries.add(term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType()));
+
     if (filter.memberIdsByType() != null && !filter.memberIdsByType().isEmpty()) {
-      return createMultipleMemberTypeQuery(filter);
+      queries.add(createMultipleMemberTypeQuery(filter));
     }
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      queries.add(or(filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).toList()));
+    }
+
+    return and(queries);
+  }
+
+  private ArrayList<SearchQuery> toSearchQueryFields(final GroupFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     if (filter.groupIdOperations() != null && !filter.groupIdOperations().isEmpty()) {
       queries.addAll(stringOperations(GROUP_ID, filter.groupIdOperations()));
     }
-    if (filter.name() != null) {
-      queries.add(term(NAME, filter.name()));
+    if (filter.nameOperations() != null && !filter.nameOperations().isEmpty()) {
+      queries.addAll(stringOperations(NAME, filter.nameOperations()));
     }
     if (filter.description() != null) {
       queries.add(term(GroupIndex.DESCRIPTION, filter.description()));
@@ -54,15 +66,13 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
                   IdentityJoinRelationshipType.MEMBER.getType(),
                   stringTerms(MEMBER_ID, filter.memberIds())));
     }
-    queries.add(term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType()));
     if (filter.childMemberType() != null) {
       queries.add(
           hasChildQuery(
               IdentityJoinRelationshipType.MEMBER.getType(),
               term(GroupIndex.MEMBER_TYPE, filter.childMemberType().name())));
     }
-
-    return and(queries);
+    return queries;
   }
 
   private SearchQuery createMultipleMemberTypeQuery(final GroupFilter filter) {

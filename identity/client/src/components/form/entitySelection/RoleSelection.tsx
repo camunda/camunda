@@ -22,7 +22,16 @@ const itemToString = (role: Role) => role.name || role.roleId;
 const itemSubTitle = (role: Role) => role.name;
 const search = (search: string) =>
   roleQueries.search(
-    search === "" ? {} : { filter: { name: { $like: `*${search}*` } } },
+    search === ""
+      ? {}
+      : {
+          filter: {
+            $or: [
+              { name: { $like: `*${search}*` } },
+              { roleId: { $like: `*${search}*` } },
+            ],
+          },
+        },
   );
 
 export const RoleMultiSelect: FC<EntitySearchMultiSelectProps<Role>> = (
