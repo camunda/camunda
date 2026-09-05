@@ -1120,7 +1120,7 @@
             <ignoredNonTestScopedDependency>io.camunda:zeebe-bpmn-model</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.camunda:camunda-client-java</ignoredNonTestScopedDependency>
             <!-- Reach dist transitively (compile) via camunda-authentication and operate-webapp;
-                 only EncodedSlashIntegrationIT references them directly. Declaring them here as
+                 only EncodedSlashIntegrationTest references them directly. Declaring them here as
                  test-scope would shadow that transitive compile scope and break spring-boot:start
                  at runtime (see PR #52064). -->
             <ignoredNonTestScopedDependency>org.springframework.security:spring-security-web</ignoredNonTestScopedDependency>
@@ -1171,7 +1171,7 @@
             <!-- Kept only for its oauth2-oidc-sdk exclusion, see dependency declaration above -->
             <dep>io.camunda:zeebe-backup-store-azure</dep>
           </ignoredUnusedDeclaredDependencies>
-          <!-- Referenced directly only by EncodedSlashIntegrationIT (test code) but reach dist
+          <!-- Referenced directly only by EncodedSlashIntegrationTest (test code) but reach dist
                transitively at compile scope via camunda-authentication / operate-webapp. We
                cannot declare them as test-scope: that would shadow the transitive compile
                scope and break spring-boot:start at runtime (PR #52064). -->

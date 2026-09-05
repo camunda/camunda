@@ -14,6 +14,7 @@ import io.camunda.application.commons.search.PhysicalTenantResourceAccessControl
 import io.camunda.application.commons.search.SearchClientConfiguration;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
@@ -29,8 +30,10 @@ import io.camunda.security.core.authz.ResourceAccessController;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -41,6 +44,7 @@ import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+@Tag("rdbms")
 @SpringJUnitConfig
 @TestPropertySource(properties = {"camunda.data.secondary-storage.type=rdbms"})
 @Import({
@@ -57,7 +61,8 @@ class RdbmsConfigurationPerTenantReadersIT {
   static final long PROCESS_INSTANCE_KEY_B = 99L;
 
   @Autowired private CamundaSearchClients tenantAwareSearchClients;
-  @Autowired private RdbmsWriterFactory writerFactory;
+  @Autowired private Map<String, RdbmsMapperBundle> rdbmsMapperBundles;
+  @Autowired private MeterRegistry meterRegistry;
 
   @Test
   void shouldRouteProcessInstanceReadsToCorrectTenantDatabase() {
@@ -84,6 +89,11 @@ class RdbmsConfigurationPerTenantReadersIT {
   }
 
   private void writeProcessInstance(final String physicalTenantId, final long processInstanceKey) {
+    // each physical tenant connects to its own database through its own mapper bundle, so the
+    // writer factory must be built per tenant rather than shared - the config's physicalTenantId
+    // is metadata only and does not route writes to a different database
+    final var writerFactory =
+        new RdbmsWriterFactory(rdbmsMapperBundles.get(physicalTenantId), meterRegistry);
     final var writers =
         writerFactory.createWriter(
             new RdbmsWriterConfig.Builder()

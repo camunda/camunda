@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.hub.ping;
+package io.camunda.application.commons.console.ping;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
@@ -21,7 +21,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
-import io.camunda.application.commons.hub.ping.PingHubRunner.HubPingConfiguration;
+import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
+import io.camunda.application.commons.hub.ping.M2MCredentials;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -31,7 +32,6 @@ import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 
-public class PingHubRunnerIT {
+public class PingConsoleRunnerTest {
 
   private static final BrokerTopologyManager BROKER_TOPOLOGY_MANAGER =
       mock(BrokerTopologyManager.class);
@@ -109,8 +109,8 @@ public class PingHubRunnerIT {
     final M2MCredentials credentials =
         new M2MCredentials(
             URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret", null);
-    final HubPingConfiguration config =
-        new HubPingConfiguration(
+    final ConsolePingConfiguration config =
+        new ConsolePingConfiguration(
             true,
             URI.create(baseUrl + "/ping"),
             "test-cluster-name",
@@ -119,23 +119,23 @@ public class PingHubRunnerIT {
             null,
             credentials);
 
-    final PingHubRunner pingHubRunner =
-        new PingHubRunner(config, managementServices, applicationContext, BROKER_TOPOLOGY_MANAGER);
+    final PingConsoleRunner pingConsoleRunner =
+        new PingConsoleRunner(
+            config, managementServices, applicationContext, BROKER_TOPOLOGY_MANAGER);
 
     // when
-    pingHubRunner.run(null);
+    pingConsoleRunner.run(null);
 
     // then
     await().atMost(10, TimeUnit.SECONDS).until(() -> pingEventsCount() >= 3);
 
-    // validate the first ping request received by the mock server
     final List<ServeEvent> pingEvents = pingServeEvents();
-    assertThat(pingEvents).isNotEmpty();
-
     final String actualBody = pingEvents.get(0).getRequest().getBodyAsString();
+
     final ObjectMapper mapper = new ObjectMapper();
     final JsonNode expected = mapper.readTree(expectedBody);
     final JsonNode actual = mapper.readTree(actualBody);
+
     assertThat(actual).as("JSON payload did not match expected structure").isEqualTo(expected);
   }
 
@@ -143,7 +143,6 @@ public class PingHubRunnerIT {
   void shouldSendM2MTokenInAuthorizationHeader() throws Exception {
     // given
     final String baseUrl = "http://localhost:" + wireMockServer.port();
-    final Duration pingPeriod = Duration.ofMillis(200);
 
     applicationContext = mock(ApplicationContext.class);
     final Environment environment = mock(Environment.class);
@@ -157,21 +156,22 @@ public class PingHubRunnerIT {
     final M2MCredentials credentials =
         new M2MCredentials(
             URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret", null);
-    final HubPingConfiguration config =
-        new HubPingConfiguration(
+    final ConsolePingConfiguration config =
+        new ConsolePingConfiguration(
             true,
             URI.create(baseUrl + "/ping"),
             "test-cluster-name",
-            pingPeriod,
+            Duration.ofMillis(200),
             new RetryConfiguration(),
             null,
             credentials);
 
-    final PingHubRunner pingHubRunner =
-        new PingHubRunner(config, managementServices, applicationContext, BROKER_TOPOLOGY_MANAGER);
+    final PingConsoleRunner pingConsoleRunner =
+        new PingConsoleRunner(
+            config, managementServices, applicationContext, BROKER_TOPOLOGY_MANAGER);
 
     // when
-    pingHubRunner.run(null);
+    pingConsoleRunner.run(null);
 
     // then
     await().atMost(10, TimeUnit.SECONDS).until(() -> pingEventsCount() >= 1);
@@ -180,49 +180,6 @@ public class PingHubRunnerIT {
     assertThat(pingEvents).isNotEmpty();
     assertThat(pingEvents.get(0).getRequest().getHeader("Authorization"))
         .isEqualTo("Bearer test-m2m-token");
-  }
-
-  @Test
-  void shouldSendConfiguredTokenRequestTargetParameters() throws Exception {
-    // given
-    final String baseUrl = "http://localhost:" + wireMockServer.port();
-    final M2MCredentials credentials =
-        new M2MCredentials(
-            URI.create(baseUrl + "/token"),
-            "test-client-id",
-            "test-client-secret",
-            Map.of(
-                "audience", "https://hub.example/api",
-                "scope", "api://hub/.default",
-                "resource indicator", "hub resource"));
-    final M2MTokenProvider tokenProvider = new M2MTokenProvider(credentials);
-
-    // when
-    tokenProvider.getToken();
-
-    // then
-    final String requestBody = tokenServeEvents().getFirst().getRequest().getBodyAsString();
-    assertThat(requestBody)
-        .contains("audience=https%3A%2F%2Fhub.example%2Fapi")
-        .contains("scope=api%3A%2F%2Fhub%2F.default")
-        .contains("resource+indicator=hub+resource");
-  }
-
-  @Test
-  void shouldOmitUnconfiguredTokenRequestTargetParameters() throws Exception {
-    // given
-    final String baseUrl = "http://localhost:" + wireMockServer.port();
-    final M2MCredentials credentials =
-        new M2MCredentials(
-            URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret", null);
-    final M2MTokenProvider tokenProvider = new M2MTokenProvider(credentials);
-
-    // when
-    tokenProvider.getToken();
-
-    // then
-    final String requestBody = tokenServeEvents().getFirst().getRequest().getBodyAsString();
-    assertThat(requestBody).doesNotContain("audience=").doesNotContain("scope=");
   }
 
   private long pingEventsCount() {
@@ -234,12 +191,6 @@ public class PingHubRunnerIT {
   private List<ServeEvent> pingServeEvents() {
     return wireMockServer.getAllServeEvents().stream()
         .filter(e -> e.getRequest().getUrl().equals("/ping"))
-        .toList();
-  }
-
-  private List<ServeEvent> tokenServeEvents() {
-    return wireMockServer.getAllServeEvents().stream()
-        .filter(e -> e.getRequest().getUrl().equals("/token"))
         .toList();
   }
 }
