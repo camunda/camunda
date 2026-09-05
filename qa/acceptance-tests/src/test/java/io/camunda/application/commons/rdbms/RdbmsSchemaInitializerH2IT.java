@@ -27,6 +27,7 @@ import java.util.UUID;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.springframework.core.env.MapPropertySource;
@@ -48,6 +49,7 @@ import org.springframework.mock.env.MockEnvironment;
  * needs a live HTTP surface and lives in {@code
  * PhysicalTenantRdbmsSchemaInitializationIsolationIT}.
  */
+@Tag("rdbms")
 @Timeout(120)
 class RdbmsSchemaInitializerH2IT {
 
