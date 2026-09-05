@@ -10,9 +10,9 @@ package io.camunda.zeebe.shared.management;
 import io.camunda.cluster.migration.MigrationStatusProvider;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
+import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
+import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.GetMapping;
 
 /**
  * Reports whether this cluster has completed every condition required before the next minor-version
@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
  * schema, RocksDB snapshot, exporter flush) is registered; see {@link UpgradeReadinessResponse}.
  */
 @Component
-@RestControllerEndpoint(id = "upgradeReadiness")
+@WebEndpoint(id = "upgradeReadiness")
 public class UpgradeReadinessEndpoint {
 
   private final MigrationStatusAggregator aggregator;
@@ -34,7 +34,7 @@ public class UpgradeReadinessEndpoint {
     aggregator = new MigrationStatusAggregator(providers);
   }
 
-  @GetMapping(produces = "application/json")
+  @ReadOperation(produces = "application/json")
   public UpgradeReadinessResponse getUpgradeReadiness() {
     return aggregator.aggregate();
   }

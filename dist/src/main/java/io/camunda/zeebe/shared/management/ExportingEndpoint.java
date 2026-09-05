@@ -13,15 +13,14 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.endpoint.annotation.Selector;
+import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
-import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
+import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Component
-@RestControllerEndpoint(id = "exporting")
+@WebEndpoint(id = "exporting")
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
   static final String RESUME = "resume";
@@ -51,11 +50,11 @@ public final class ExportingEndpoint {
    * already-paused or already-exporting tenant is a no-op. {@link PhysicalTenantFanOut} is what
    * makes "every tenant is attempted" true even for a tenant that fails before returning a future.
    */
-  @PostMapping(path = "/{operationKey}")
+  @WriteOperation
   public WebEndpointResponse<?> post(
-      @PathVariable("operationKey") final String operationKey,
-      @RequestParam(defaultValue = "false") final boolean soft,
-      @RequestParam(required = false) final @Nullable String physicalTenant) {
+      @Selector final String operationKey,
+      final @Nullable Boolean soft,
+      final @Nullable String physicalTenant) {
 
     final List<String> targets;
     try {
@@ -66,7 +65,8 @@ public final class ExportingEndpoint {
 
     final var failure =
         PhysicalTenantFanOut.firstFailure(
-            PhysicalTenantFanOut.over(targets, tenant -> apply(operationKey, soft, tenant)));
+            PhysicalTenantFanOut.over(
+                targets, tenant -> apply(operationKey, Boolean.TRUE.equals(soft), tenant)));
     if (failure == null) {
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     }
