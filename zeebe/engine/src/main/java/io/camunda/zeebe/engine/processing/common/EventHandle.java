@@ -103,12 +103,19 @@ public final class EventHandle {
   private long triggeringProcessEvent(
       final long processDefinitionKey,
       final long processInstanceKey,
+      final int storageOrdinalKey,
       final String tenantId,
       final long eventScopeKey,
       final DirectBuffer catchEventId,
       final DirectBuffer variables) {
     return eventTriggerBehavior.triggeringProcessEvent(
-        processDefinitionKey, processInstanceKey, tenantId, eventScopeKey, catchEventId, variables);
+        processDefinitionKey,
+        processInstanceKey,
+        storageOrdinalKey,
+        tenantId,
+        eventScopeKey,
+        catchEventId,
+        variables);
   }
 
   public void activateElement(
@@ -128,6 +135,7 @@ public final class EventHandle {
         triggeringProcessEvent(
             elementRecord.getProcessDefinitionKey(),
             elementRecord.getProcessInstanceKey(),
+            elementRecord.getStorageOrdinalKey(),
             elementRecord.getTenantId(),
             eventScopeKey,
             catchEvent.getId(),
@@ -161,6 +169,7 @@ public final class EventHandle {
     triggeringProcessEvent(
         jobRecord.getProcessDefinitionKey(),
         jobRecord.getProcessInstanceKey(),
+        jobRecord.getStorageOrdinalKey(),
         jobRecord.getTenantId(),
         jobRecord.getElementInstanceKey(),
         jobRecord.getElementIdBuffer(),
@@ -171,6 +180,7 @@ public final class EventHandle {
     triggeringProcessEvent(
         userTaskRecord.getProcessDefinitionKey(),
         userTaskRecord.getProcessInstanceKey(),
+        userTaskRecord.getStorageOrdinalKey(),
         userTaskRecord.getTenantId(),
         userTaskRecord.getElementInstanceKey(),
         userTaskRecord.getElementIdBuffer(),
@@ -261,9 +271,11 @@ public final class EventHandle {
 
     final var process = processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
 
+    // TODO: @yohanfernando >> handle process instance start events
     triggeringProcessEvent(
         processDefinitionKey,
         processInstanceKey,
+        -1,
         tenantId,
         processDefinitionKey /* The eventScope for the start event is the process definition key */,
         targetElementId,

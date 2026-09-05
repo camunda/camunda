@@ -161,6 +161,7 @@ public final class ScriptTaskProcessor
     eventTriggerBehavior.triggeringProcessEvent(
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
+        context.getStorageOrdinalKey(),
         context.getTenantId(),
         context.getElementInstanceKey(),
         context.getElementId(),

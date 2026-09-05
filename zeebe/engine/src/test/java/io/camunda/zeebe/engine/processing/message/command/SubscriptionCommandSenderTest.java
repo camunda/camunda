@@ -58,6 +58,7 @@ public class SubscriptionCommandSenderTest {
   private static final DirectBuffer DEFAULT_START_EVENT_ID = BufferUtil.wrapString("start");
   private static final long DEFAULT_MESSAGE_START_SUBSCRIPTION_KEY = 333;
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private static final int DEFAULT_STORAGE_ORDINAL_KEY = 444;
   private InterPartitionCommandSender mockInterPartitionCommandSender;
   private SubscriptionCommandSender subscriptionCommandSender;
   private ProcessingResultBuilder mockProcessingResultBuilder;
@@ -167,7 +168,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_VARIABLES,
         DEFAULT_CORRELATION_KEY,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-        1L);
+        1L,
+        DEFAULT_STORAGE_ORDINAL_KEY);
 
     // then
     verify(mockInterPartitionCommandSender)
@@ -188,6 +190,7 @@ public class SubscriptionCommandSenderTest {
     subscriptionCommandSender.closeMessageSubscription(
         DIFFERENT_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
+        DEFAULT_STORAGE_ORDINAL_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
@@ -207,6 +210,7 @@ public class SubscriptionCommandSenderTest {
     subscriptionCommandSender.closeMessageSubscription(
         SAME_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
+        DEFAULT_STORAGE_ORDINAL_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
@@ -230,7 +234,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-        -1L);
+        -1L,
+        DEFAULT_STORAGE_ORDINAL_KEY);
 
     // then
     verify(mockInterPartitionCommandSender)
@@ -311,6 +316,7 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_BUSINESS_ID,
         DEFAULT_ELEMENT_ID,
         DEFAULT_ROOT_PROCESS_INSTANCE_KEY,
+        DEFAULT_STORAGE_ORDINAL_KEY,
         DEFAULT_ELEMENT_TYPE);
 
     // then
@@ -379,7 +385,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_NAME,
         DEFAULT_CORRELATION_KEY,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-        -1L);
+        -1L,
+        DEFAULT_STORAGE_ORDINAL_KEY);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -401,7 +408,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_NAME,
         DEFAULT_CORRELATION_KEY,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-        -1L);
+        -1L,
+        DEFAULT_STORAGE_ORDINAL_KEY);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
@@ -421,7 +429,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_NAME,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_STORAGE_ORDINAL_KEY);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -441,7 +450,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_NAME,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_STORAGE_ORDINAL_KEY);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
