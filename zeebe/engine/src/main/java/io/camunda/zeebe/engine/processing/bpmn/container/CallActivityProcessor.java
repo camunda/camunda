@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.container;
 
 import io.camunda.zeebe.el.EvaluationResult;
+import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
@@ -28,9 +29,11 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class CallActivityProcessor
     implements BpmnElementContainerProcessor<ExecutableCallActivity> {
@@ -56,6 +59,13 @@ public final class CallActivityProcessor
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final BpmnJobBehavior jobBehavior;
   private final int maxProcessDepth;
+
+  // Reused view over the evaluated process id, avoiding a wrapper allocation per
+  // activation. Safe because the buffer is only read within the activation chain that
+  // produced it (the lookup in getCalledProcess) and is never retained past it — do not
+  // hand it to a record setter or hold it across a further expression evaluation, both
+  // of which alias the buffer rather than copy it.
+  private final DirectBuffer processIdView = new UnsafeBuffer();
 
   public CallActivityProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -259,10 +269,41 @@ public final class CallActivityProcessor
   private Either<Failure, DirectBuffer> evaluateProcessId(
       final BpmnElementContext context, final ExecutableCallActivity element) {
     final var processIdExpression = element.getCalledElementProcessId();
-    final var scopeKey = context.getElementInstanceKey();
-    final var tenantId = context.getTenantId();
-    return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
-        processIdExpression, scopeKey, tenantId);
+    return expressionProcessor
+        .evaluateAnyExpression(
+            processIdExpression, context.getElementInstanceKey(), context.getTenantId())
+        .flatMap(result -> resolveProcessIdFromResult(result, element, context));
+  }
+
+  private Either<Failure, DirectBuffer> resolveProcessIdFromResult(
+      final EvaluationResult result,
+      final ExecutableCallActivity element,
+      final BpmnElementContext context) {
+    if (result.getType() != ResultType.STRING) {
+      return Either.left(nonStringProcessIdFailure(result, element, context));
+    }
+    return Either.right(wrapProcessId(result.getString()));
+  }
+
+  private DirectBuffer wrapProcessId(final String processId) {
+    processIdView.wrap(StringUtil.getBytes(processId));
+    return processIdView;
+  }
+
+  private Failure nonStringProcessIdFailure(
+      final EvaluationResult result,
+      final ExecutableCallActivity element,
+      final BpmnElementContext context) {
+    return new Failure(
+        "Expected the process id expression '%s' on call activity '%s' to be %s, but was %s.%s"
+            .formatted(
+                result.getExpression(),
+                BufferUtil.bufferAsString(element.getId()),
+                ResultType.STRING,
+                result.getType(),
+                formatWarnings(result)),
+        ErrorType.EXTRACT_VALUE_ERROR,
+        context.getElementInstanceKey());
   }
 
   /**
