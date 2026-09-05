@@ -12,12 +12,15 @@ import static io.camunda.optimize.service.dashboard.AgenticReportFilters.noExtra
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.COUNT_BY_DATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.COUNT_BY_PROCESS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.WORK_HANDLED_TOTAL_REPORT_ID;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
+import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import io.camunda.optimize.service.report.ReportEvaluationService;
 import java.time.OffsetDateTime;
@@ -133,5 +136,49 @@ class BusinessValueVolumeTilesIT extends AbstractBrokerlessZeebeCCSMIT {
             .mapToDouble(Double::doubleValue)
             .sum();
     assertThat(bucketed).isEqualTo(3.0);
+  }
+
+  @Test
+  void shouldLabelPerProcessVolumeBarsWithTheProcessName() {
+    // given completed instances of a process whose BPMN id is not human-readable, plus a later
+    // definition version carrying the name (the auto-seeded v1 defaults its name to the key)
+    final String processKey = "order-fulfilment-v2";
+    persistProcessInstances(List.of(bvdInstanceWithDuration(processKey, 100L).build()));
+    persistProcessDefinitions(
+        List.of(
+            ProcessDefinitionOptimizeDto.builder()
+                .id(processKey + ":2:2")
+                .key(processKey)
+                .version("2")
+                .name("Order fulfilment")
+                .dataSource(new ZeebeDataSourceDto("test-source", 1))
+                .tenantId(ZEEBE_DEFAULT_TENANT_ID)
+                .bpmn20Xml("<definitions/>")
+                .build()));
+
+    // when evaluating the per-process count tile
+    final List<MapResultEntryDto> result =
+        reports.evaluateMapData(COUNT_BY_PROCESS_REPORT_ID, noExtraFilters());
+
+    // then the bar is still keyed by the BPMN process id but labelled with the process name
+    assertThat(result)
+        .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getLabel)
+        .containsExactly(tuple(processKey, "Order fulfilment"));
+  }
+
+  @Test
+  void shouldFallBackToTheProcessIdWhenNoDefinitionNameIsAvailable() {
+    // given a process with no named definition version beyond the auto-seeded one
+    final String processKey = "vol-unnamed-process";
+    persistProcessInstances(List.of(bvdInstanceWithDuration(processKey, 100L).build()));
+
+    // when evaluating the per-process count tile
+    final List<MapResultEntryDto> result =
+        reports.evaluateMapData(COUNT_BY_PROCESS_REPORT_ID, noExtraFilters());
+
+    // then the label is never blank — it falls back to the id
+    assertThat(result)
+        .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getLabel)
+        .containsExactly(tuple(processKey, processKey));
   }
 }

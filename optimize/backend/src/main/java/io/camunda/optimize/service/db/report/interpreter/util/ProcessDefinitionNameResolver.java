@@ -14,18 +14,17 @@ import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
 
 /**
- * Shared, database-agnostic helper for the agentic process-definition-key group-by interpreters
+ * Shared, database-agnostic helper for the process-definition-key group-by interpreters
  * (Elasticsearch and OpenSearch). It replaces each group's label with the human-readable name of
- * the definition's latest version, so the agentic "top token consumers" tile shows process names
- * instead of the raw BPMN process id (which, under Optimize's C7 naming, is what {@code
- * processDefinitionKey} holds).
+ * the definition's latest version, so per-process tiles show process names instead of the raw BPMN
+ * process id (which, under Optimize's C7 naming, is what {@code processDefinitionKey} holds).
  *
  * <p>The group key is left untouched. When no name can be resolved for a key, the label is left
  * as-is and {@link GroupByResult#getLabel()} keeps falling back to the key.
  */
-public final class AgenticProcessDefinitionNameResolver {
+public final class ProcessDefinitionNameResolver {
 
-  private AgenticProcessDefinitionNameResolver() {}
+  private ProcessDefinitionNameResolver() {}
 
   public static void applyLatestVersionNameLabels(
       final CompositeCommandResult result, final DefinitionService definitionService) {
