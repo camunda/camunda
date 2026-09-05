@@ -47,8 +47,32 @@ public interface AgentHistoryState {
    */
   boolean hasAccumulatedMetrics(long agentInstanceKey, String historyItemId);
 
+  /**
+   * Visits committed history-item ids recorded for {@code agentInstanceKey}, in unspecified order,
+   * until every id has been visited or {@code visitor} returns {@code false}.
+   *
+   * @param visitor called once per id; return {@code false} to stop visiting early
+   */
+  void visitCommittedHistoryItemIds(long agentInstanceKey, HistoryItemIdVisitor visitor);
+
+  /**
+   * Visits metrics-accumulated history-item ids recorded for {@code agentInstanceKey}, in
+   * unspecified order, until every id has been visited or {@code visitor} returns {@code false}.
+   *
+   * @param visitor called once per id; return {@code false} to stop visiting early
+   */
+  void visitMetricsAccumulatedHistoryItemIds(long agentInstanceKey, HistoryItemIdVisitor visitor);
+
   @FunctionalInterface
   interface AgentHistoryVisitor {
     void visit(AgentHistoryRecord record);
+  }
+
+  @FunctionalInterface
+  interface HistoryItemIdVisitor {
+    /**
+     * @return {@code true} to keep visiting, {@code false} to stop early
+     */
+    boolean visit(String historyItemId);
   }
 }

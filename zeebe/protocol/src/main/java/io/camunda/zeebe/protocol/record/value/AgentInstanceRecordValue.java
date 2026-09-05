@@ -142,6 +142,13 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    */
   List<AgentHistoryRecordValue> getHistory();
 
+  /**
+   * @return the history item ids to delete from the committed/metrics-accumulated dedup indexes
+   *     during this cleanup cycle; carried on {@code CLEAN_UP}/{@code CLEANED} so the applier can
+   *     delete deterministically without re-scanning state
+   */
+  List<String> getHistoryItemIdsToDelete();
+
   /** Represents a tool available to an agent. */
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableAgentInstanceToolValue.Builder.class)

@@ -17,8 +17,6 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableAgentHistoryState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
-import java.util.ArrayList;
-import java.util.function.Consumer;
 
 public final class DbAgentHistoryState implements MutableAgentHistoryState {
 
@@ -167,20 +165,22 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
   }
 
   @Override
-  public void deleteCommittedHistoryItemKeys(final long agentInstanceKey) {
+  public void deleteCommittedHistoryItemKey(
+      final long agentInstanceKey, final String historyItemId) {
     committedAgentInstanceKey.wrapLong(agentInstanceKey);
-    // Collect the ids in one pass, then delete in a second: mutating the column family while its
-    // own iterator is still open is unsafe (RocksDB explicitly warns against it), so this must not
-    // call deleteExisting from inside the whileEqualPrefix visitor below.
-    final var historyItemIds = new ArrayList<String>();
-    final Consumer<DbCompositeKey<DbLong, DbString>> collectHistoryItemId =
-        key -> historyItemIds.add(key.second().toString());
+    committedHistoryItemId.wrapString(historyItemId);
+    committedHistoryItemIdsColumnFamily.deleteIfExists(committedKey);
+  }
+
+  @Override
+  public void visitCommittedHistoryItemIds(
+      final long agentInstanceKey, final HistoryItemIdVisitor visitor) {
+    committedAgentInstanceKey.wrapLong(agentInstanceKey);
     committedHistoryItemIdsColumnFamily.whileEqualPrefix(
-        committedAgentInstanceKey, collectHistoryItemId);
-    for (final var historyItemId : historyItemIds) {
-      committedHistoryItemId.wrapString(historyItemId);
-      committedHistoryItemIdsColumnFamily.deleteExisting(committedKey);
-    }
+        committedAgentInstanceKey,
+        key -> {
+          return visitor.visit(key.second().toString());
+        });
   }
 
   @Override
@@ -198,19 +198,20 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
   }
 
   @Override
-  public void deleteMetricsAccumulatedIds(final long agentInstanceKey) {
+  public void deleteMetricsAccumulatedId(final long agentInstanceKey, final String historyItemId) {
     metricsAccumulatedAgentInstanceKey.wrapLong(agentInstanceKey);
-    // Collect the ids in one pass, then delete in a second: mutating the column family while its
-    // own iterator is still open is unsafe (RocksDB explicitly warns against it), so this must not
-    // call deleteExisting from inside the whileEqualPrefix visitor below.
-    final var historyItemIds = new ArrayList<String>();
-    final Consumer<DbCompositeKey<DbLong, DbString>> collectHistoryItemId =
-        key -> historyItemIds.add(key.second().toString());
+    metricsAccumulatedHistoryItemId.wrapString(historyItemId);
+    metricsAccumulatedIdsColumnFamily.deleteIfExists(metricsAccumulatedKey);
+  }
+
+  @Override
+  public void visitMetricsAccumulatedHistoryItemIds(
+      final long agentInstanceKey, final HistoryItemIdVisitor visitor) {
+    metricsAccumulatedAgentInstanceKey.wrapLong(agentInstanceKey);
     metricsAccumulatedIdsColumnFamily.whileEqualPrefix(
-        metricsAccumulatedAgentInstanceKey, collectHistoryItemId);
-    for (final var historyItemId : historyItemIds) {
-      metricsAccumulatedHistoryItemId.wrapString(historyItemId);
-      metricsAccumulatedIdsColumnFamily.deleteExisting(metricsAccumulatedKey);
-    }
+        metricsAccumulatedAgentInstanceKey,
+        key -> {
+          return visitor.visit(key.second().toString());
+        });
   }
 }
