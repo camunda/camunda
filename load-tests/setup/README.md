@@ -345,6 +345,32 @@ make template-load-test-setup-chaos
 
 In the GitHub workflow, set the `enable-chaos` input to `true`.
 
+#### Optional PostgreSQL connection pooling (PgBouncer)
+
+For `secondary_storage=postgresql`, each broker pod opens one connection pool per physical
+tenant, so client connections to Postgres scale as (broker pods x physical tenants) and can
+exceed Postgres's default `max_connections` under a large fleet (e.g. 10 brokers x 10
+tenants). Enabling this option deploys a CNPG `Pooler` (PgBouncer, transaction-pooling mode)
+in front of the PostgreSQL cluster and points Camunda's JDBC URL at it instead of the
+cluster's `-rw` Service — see [Connection pooling
+(PgBouncer)](charts/load-test-setup/README.md#connection-pooling-pgbouncer) for the full
+rationale.
+
+This is opt-in and off by default; only supported with `secondary_storage=postgresql`.
+Pass `--use-pgbouncer` to `newLoadTest.sh` when scaffolding the namespace:
+
+```sh
+./newLoadTest.sh <namespace> postgresql 1 true --use-pgbouncer
+cd <namespace>
+make install
+```
+
+To preview the rendered manifests before installing:
+
+```sh
+make template-load-test-setup
+```
+
 #### Optional physical tenants (pt1..ptN)
 
 A load test can exercise **N extra physical tenants** (`pt1`, `pt2`, ..., `ptN`) alongside the
