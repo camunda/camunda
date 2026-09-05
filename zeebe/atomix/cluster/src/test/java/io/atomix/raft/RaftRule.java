@@ -34,6 +34,7 @@ import io.atomix.raft.snapshot.InMemorySnapshot;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
@@ -570,6 +571,7 @@ public final class RaftRule extends ExternalResource {
             .withMaxSegmentSize(1024 * 10)
             .withFreeDiskSpace(100)
             .withSnapshotStore(snapshotStore);
+    configurator.flusherFactory(memberId).ifPresent(builder::withFlusherFactory);
 
     return builder.build();
   }
@@ -785,5 +787,14 @@ public final class RaftRule extends ExternalResource {
     default void configure(final MemberId id, final RaftServer.Builder builder) {}
 
     default void configure(final TestSnapshotStore snapshotStore) {}
+
+    /**
+     * Returns the flusher factory to use for the given member's log, or {@link Optional#empty()} to
+     * keep the storage default. It is applied to the storage the rule builds, so that all other
+     * storage settings the rule configures are preserved.
+     */
+    default Optional<RaftLogFlusher.Factory> flusherFactory(final MemberId id) {
+      return Optional.empty();
+    }
   }
 }

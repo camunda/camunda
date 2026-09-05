@@ -15,16 +15,21 @@ import io.camunda.zeebe.journal.JournalException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An implementation of {@link RaftLogFlusher} which treats calls to {@link #flush(Journal)} as
- * signals that there is data to be flushed. When that happens, an asynchronous operation is
+ * An implementation of {@link RaftLogFlusher} which treats calls to {@link #flush(Journal, long)}
+ * as signals that there is data to be flushed. When that happens, an asynchronous operation is
  * scheduled with a predefined delay. If a flush was already scheduled, then the signal is ignored.
  *
  * <p>In other words, this implementation flushes at least every given period, if there is anything
  * to flush.
+ *
+ * <p>This implementation trades durability for performance: the returned flush results complete
+ * immediately, before the data is actually on disk, so callers proceed without waiting for
+ * durability.
  *
  * <p>NOTE: this class is not thread safe, and is expected to run from the same thread as the
  * journal write path, e.g. the Raft thread.
@@ -46,8 +51,15 @@ public final class DelayedFlusher implements RaftLogFlusher {
   }
 
   @Override
-  public void flush(final Journal journal) {
+  public CompletableFuture<Void> flush(final Journal journal, final long index) {
     scheduleFlush(journal);
+    return COMPLETED;
+  }
+
+  @Override
+  public void onLogTruncation(final long newLastIndex) {
+    // nothing to do - flush results complete immediately, so there are never pending results; an
+    // already scheduled flush simply flushes the truncated journal
   }
 
   @Override
@@ -91,6 +103,11 @@ public final class DelayedFlusher implements RaftLogFlusher {
     try {
       journal.flush();
     } catch (final CheckedJournalException | JournalException | UncheckedIOException e) {
+      // only retry the failures which are plausibly transient I/O errors; any other failure is
+      // unexpected and most likely permanent, so it must escape to the thread context's uncaught
+      // exception handler, which marks the partition unhealthy. Retrying it forever would leave
+      // the log unflushed indefinitely while appends keep being acknowledged before they are
+      // durable, reported as nothing but a repeating warning.
       LOGGER.warn("Failed to flush journal, operation will be retried after {}", delayTime, e);
       scheduleFlush(journal);
     }

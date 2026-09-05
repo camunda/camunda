@@ -174,15 +174,17 @@ public final class SegmentedJournal implements Journal {
       // sequentially anyway, meaning there is virtually no contention
       final var stamp = rwlock.readLock();
       try {
+        // the writer also updates the metastore's last flushed index while holding the read lock
         writer.flush();
       } finally {
         rwlock.unlockRead(stamp);
       }
-    } finally {
-      if (writer.getLastFlushedIndex() > 0) {
-        metaStore.storeLastFlushedIndex((writer.getLastFlushedIndex()));
-      }
     }
+  }
+
+  @Override
+  public long getLastFlushedIndex() {
+    return writer.getLastFlushedIndex();
   }
 
   @Override

@@ -17,11 +17,13 @@ package io.camunda.zeebe.journal.file;
 
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
 import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
 import io.camunda.zeebe.journal.JournalReader;
@@ -1106,6 +1108,96 @@ class SegmentedJournalTest {
     journal.append(2, journalFactory.entry());
   }
 
+  @Test
+  void shouldReleaseFlushLockWhenMetaStoreWriteFails() {
+    // given - a journal whose metastore fails to store the last flushed index
+    journal = openJournal(2);
+    journal.append(1, journalFactory.entry());
+    journalFactory
+        .metaStore()
+        .setOnStoreFlushedIndex(
+            () -> {
+              throw new RuntimeException("failed to store last flushed index");
+            });
+
+    // when
+    assertThatThrownBy(journal::flush).isInstanceOf(RuntimeException.class);
+
+    // then - the read lock is released despite the failure, and write-exclusive operations as
+    // well as further flushes are still possible
+    assertThat(journal.rwlock().isReadLocked()).isFalse();
+    journalFactory.metaStore().setOnStoreFlushedIndex(null);
+    journal.deleteAfter(1);
+    journal.append(2, journalFactory.entry());
+    assertThatNoException().isThrownBy(journal::flush);
+    assertThat(journal.getLastFlushedIndex()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldNotReportUnflushedRecordsAsFlushedAfterTruncate() throws FlushException {
+    // given - a journal with one flushed and one unflushed record
+    journal = openJournal(4);
+    journal.append(1, journalFactory.entry());
+    journal.flush();
+    journal.append(2, journalFactory.entry());
+
+    // when - truncating above the flushed index
+    journal.deleteAfter(2);
+
+    // then - the record which was never flushed is not reported as durable
+    assertThat(journal.getLastFlushedIndex()).isOne();
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isOne();
+  }
+
+  @Test
+  void shouldNotReportTruncatedRecordsAsFlushed() throws FlushException {
+    // given - a journal with two flushed records
+    journal = openJournal(4);
+    journal.append(1, journalFactory.entry());
+    journal.append(2, journalFactory.entry());
+    journal.flush();
+
+    // when - truncating below the flushed index
+    journal.deleteAfter(1);
+
+    // then - the deleted record is not reported as durable anymore
+    assertThat(journal.getLastFlushedIndex()).isOne();
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isOne();
+  }
+
+  @Test
+  void shouldReportRecordsBeforeResetIndexAsFlushed() {
+    // given
+    journal = openJournal(2);
+    journal.append(1, journalFactory.entry());
+
+    // when - resetting the log, e.g. after receiving a snapshot
+    journal.reset(10);
+
+    // then - nothing is left to flush below the reset index, as the log is empty and the records
+    // below it are covered by the snapshot the log was reset for
+    assertThat(journal.getLastFlushedIndex()).isEqualTo(9);
+    // the stored index is nulled while resetting, to detect a crash in the middle of the reset
+    assertThat(journalFactory.metaStore().hasLastFlushedIndex()).isFalse();
+  }
+
+  @Test
+  void shouldReportRecordsBeforeResetIndexAsFlushedAfterRestart() {
+    // given
+    journal = openJournal(2);
+    journal.append(1, journalFactory.entry());
+    journal.reset(10);
+
+    // when - reopening the journal with the same metastore, as it happens after a restart
+    journal.close();
+    journal = journalFactory.journal(journalFactory.segmentsManager(directory));
+    closeables.add(journal);
+
+    // then - the reset index is still reported as durable, even though nothing was appended and
+    // flushed since the reset, so a flush is never required for it
+    assertThat(journal.getLastFlushedIndex()).isEqualTo(9);
+  }
+
   // this test ensure that flushing is thread-safe w.r.t. write-exclusive methods such as
   // deleteUntil, deleteAfter, and reset
   @Test
@@ -1125,6 +1217,12 @@ class SegmentedJournalTest {
             SegmentedJournalWriter.class,
             Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS),
             (mock, context) -> {
+              // the construction mock bypasses the constructor, so inject the metastore field
+              // which the real flush methods update with the last flushed index
+              final var metaStoreField = SegmentedJournalWriter.class.getDeclaredField("metaStore");
+              metaStoreField.setAccessible(true);
+              metaStoreField.set(mock, journalFactory.metaStore());
+
               doAnswer(
                       (invocation) -> {
                         barrier.arriveAndAwaitAdvance();

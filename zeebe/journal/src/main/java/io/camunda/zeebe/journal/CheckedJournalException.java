@@ -20,5 +20,9 @@ public sealed class CheckedJournalException extends Exception {
     public FlushException(@Nullable final IOException cause) {
       super("Error when flushing", cause);
     }
+
+    public FlushException(final String message, @Nullable final Throwable cause) {
+      super(message, cause);
+    }
   }
 }

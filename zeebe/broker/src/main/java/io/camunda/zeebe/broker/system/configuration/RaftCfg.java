@@ -17,7 +17,8 @@ public final class RaftCfg implements ConfigurationEntry {
   public static final Duration DEFAULT_REBALANCE_REPLICATION_TIMEOUT = Duration.ofSeconds(10);
   public static final int DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS = 3;
   public static final Duration DEFAULT_REBALANCE_LEADER_WAIT_TIMEOUT = Duration.ofMinutes(1);
-  private static final FlushConfig DEFAULT_FLUSH_CONFIG = new FlushConfig(true, Duration.ZERO);
+  private static final FlushConfig DEFAULT_FLUSH_CONFIG =
+      new FlushConfig(true, Duration.ZERO, false);
 
   private boolean enablePriorityElection = DEFAULT_ENABLE_PRIORITY_ELECTION;
 
@@ -93,10 +94,17 @@ public final class RaftCfg implements ConfigurationEntry {
         + '}';
   }
 
-  public record FlushConfig(boolean enabled, Duration delayTime) {
-    public FlushConfig(final boolean enabled, final Duration delayTime) {
-      this.enabled = enabled;
-      this.delayTime = delayTime == null ? Duration.ZERO : delayTime;
+  /**
+   * @param enabled if false, the raft log is only flushed before snapshots, trading durability for
+   *     performance
+   * @param delayTime if positive, flushes are delayed by at least the given period, trading
+   *     durability for performance; mutually exclusive with {@code coalesced}
+   * @param coalesced if true, redundant flushes are deduped and concurrent flushes are coalesced
+   *     without giving up durability; mutually exclusive with {@code delayTime}
+   */
+  public record FlushConfig(boolean enabled, Duration delayTime, boolean coalesced) {
+    public FlushConfig {
+      delayTime = delayTime == null ? Duration.ZERO : delayTime;
     }
   }
 }

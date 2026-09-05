@@ -11,12 +11,12 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftRule.Configurator;
 import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.partition.RaftElectionConfig;
-import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import java.io.IOException;
-import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,18 +37,35 @@ public record FaultyFlusherConfigurator(
     return (ignored) ->
         new RaftLogFlusher() {
           @Override
-          public void flush(final Journal journal) throws FlushException {
+          public CompletableFuture<Void> flush(final Journal journal, final long index) {
             if (faultyWhen.get()) {
               notifyFaultyFlush.run();
               if (withDataLoss) {
                 journal.deleteAfter(journal.getLastIndex() - 1);
               }
-              throw new FlushException(new IOException("Failed sync"));
-            } else {
-              journal.flush();
+              return CompletableFuture.failedFuture(
+                  new FlushException(new IOException("Failed sync")));
             }
+
+            return RaftLogFlusher.Factory.DIRECT.flush(journal, index);
+          }
+
+          @Override
+          public void onLogTruncation(final long newLastIndex) {
+            // nothing to do - flushes complete synchronously, there are never pending results
           }
         };
+  }
+
+  @Override
+  public Optional<RaftLogFlusher.Factory> flusherFactory(final MemberId id) {
+    if (isFaulty(id)) {
+      LOG.trace("failing flusher for member {}", id);
+      return Optional.of(faultyFlusher(faultyWhen, notifyFaultyFlush));
+    }
+
+    LOG.trace("not failing flusher for member {} ", id);
+    return Optional.empty();
   }
 
   @Override
@@ -56,21 +73,15 @@ public record FaultyFlusherConfigurator(
     final var numericId = Integer.parseInt(id.id());
     // Node priority is used to avoid the faulty nodes to become leaders
     final int nodePriority;
-    if (numericId <= faultyFlusherNumber) {
-      LOG.trace("failing flusher for member {}", id);
-      final var storage = builder.storage;
-      Objects.requireNonNull(storage);
-      builder.withStorage(
-          RaftStorage.builder(builder.meterRegistry)
-              .withDirectory(storage.directory())
-              .withSnapshotStore(storage.getPersistedSnapshotStore())
-              .withFlusherFactory(faultyFlusher(faultyWhen, notifyFaultyFlush))
-              .build());
+    if (isFaulty(id)) {
       nodePriority = leaderFaulty ? Math.max(5 - numericId, 2) : numericId;
     } else {
-      LOG.trace("not failing flusher for member {} ", id);
       nodePriority = leaderFaulty ? numericId : Math.max(5 - numericId, 2);
     }
     builder.withElectionConfig(RaftElectionConfig.ofPriorityElection(5, nodePriority));
+  }
+
+  private boolean isFaulty(final MemberId id) {
+    return Integer.parseInt(id.id()) <= faultyFlusherNumber;
   }
 }

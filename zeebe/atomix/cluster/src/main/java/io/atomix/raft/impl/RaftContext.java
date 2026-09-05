@@ -78,7 +78,6 @@ import io.atomix.raft.utils.StateUtil;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
@@ -583,8 +582,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       if (isLeader()) {
         // leader counts itself in quorum, so in order to commit the leader must persist
         try {
-          raftLog.flush();
-        } catch (final FlushException e) {
+          raftLog.flushSync(commitIndex);
+        } catch (final Exception e) {
+          // any flush failure, not just the expected journal exceptions, means the entries cannot
+          // be treated as durable and the leader must not commit; step down instead of crashing
+          // the raft thread
           if (LOGGER.isWarnEnabled()) {
             LOGGER.warn(
                 "Failed to flush commit at index %s, resetting journal to %s and stepping down"
@@ -676,21 +678,25 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
-   * Ensures everything written to the log until this point, is flushed to disk. If default raft
-   * flush is enabled, then this will not flush because the logs are flushed when necessary to
-   * achieve expected consistency guarantees.
+   * Ensures everything written to the log until this point is flushed to disk, bypassing the
+   * configured flush strategy. This is mainly used to guarantee that the log is durable before a
+   * snapshot is persisted and the log is compacted: for flush strategies which acknowledge before
+   * durability, this bounds the data loss on a crash to records written after the snapshot.
    *
-   * @return a future to be completed once the log is flushed to disk
+   * <p>With a strategy which flushes directly, everything written is already flushed synchronously
+   * on the Raft thread before it is acknowledged or committed, so there is nothing left to flush.
+   * Nothing is done then, as an optimization to ensure we are not unnecessarily blocking the Raft
+   * thread to do an i/o.
+   *
+   * @return a future to be completed once the log is durable
    */
   public CompletableFuture<Void> flushLog() {
-    // If flush operations are synchronous on the Raft thread, then the log is guaranteed to be
-    // flushed by before committing. Hence, there is no need to flush them again here. This is an
-    // optimization to ensure we are not unnecessarily blocking raft thread to do an i/o.
     if (raftLog.flushesDirectly()) {
       return CompletableFuture.completedFuture(null);
     }
 
-    return CompletableFuture.runAsync(CheckedRunnable.toUnchecked(raftLog::flush), threadContext);
+    return CompletableFuture.runAsync(
+        CheckedRunnable.toUnchecked(raftLog::forceFlush), threadContext);
   }
 
   /**

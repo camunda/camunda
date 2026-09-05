@@ -244,7 +244,8 @@ final class JournalTest {
 
     // then
     assertThat(journal.getLastIndex()).isEqualTo(1);
-    assertThat(metaStore.loadLastFlushedIndex()).isOne();
+    // nothing was ever flushed, so truncating must not claim that index 1 is durable
+    assertThat(metaStore.loadLastFlushedIndex()).isLessThan(1);
     assertThat(reader.hasNext()).isFalse();
   }
 

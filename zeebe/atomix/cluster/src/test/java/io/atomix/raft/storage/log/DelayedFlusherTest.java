@@ -8,10 +8,12 @@
 package io.atomix.raft.storage.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.Scheduler;
 import io.camunda.zeebe.journal.CheckedJournalException;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -40,13 +42,28 @@ final class DelayedFlusherTest {
     Mockito.when(journal.isOpen()).thenReturn(true);
 
     // when
-    flusher.flush(journal);
+    flusher.flush(journal, 1);
 
     // then
     assertThat(scheduler.operations).hasSize(1);
 
     final var scheduled = scheduler.operations.get(0);
     assertThat(scheduled.delay).isEqualTo(Duration.ofSeconds(5));
+    Mockito.verify(journal, Mockito.never()).flush();
+  }
+
+  @Test
+  void shouldCompleteResultImmediately() throws CheckedJournalException {
+    // given
+    final var journal = Mockito.mock(Journal.class);
+    Mockito.when(journal.isOpen()).thenReturn(true);
+
+    // when
+    final var result = flusher.flush(journal, 1);
+
+    // then - the flush is only scheduled, but callers may proceed immediately as this flusher
+    // trades durability for performance
+    assertThat(result).isCompleted();
     Mockito.verify(journal, Mockito.never()).flush();
   }
 
@@ -58,7 +75,7 @@ final class DelayedFlusherTest {
     Mockito.when(journal.getLastIndex()).thenReturn(5L);
 
     // when
-    flusher.flush(journal);
+    flusher.flush(journal, 1);
     scheduler.runNext();
 
     // then
@@ -72,9 +89,9 @@ final class DelayedFlusherTest {
     Mockito.when(journal.getLastIndex()).thenReturn(5L);
 
     // when
-    flusher.flush(journal);
-    flusher.flush(journal);
-    flusher.flush(journal);
+    flusher.flush(journal, 1);
+    flusher.flush(journal, 1);
+    flusher.flush(journal, 1);
 
     // then
     assertThat(scheduler.operations).hasSize(1);
@@ -88,7 +105,7 @@ final class DelayedFlusherTest {
     final var journal = Mockito.mock(Journal.class);
 
     // when
-    flusher.flush(journal);
+    flusher.flush(journal, 1);
     flusher.close();
 
     // then
@@ -104,7 +121,7 @@ final class DelayedFlusherTest {
 
     // when
     flusher.close();
-    flusher.flush(journal);
+    flusher.flush(journal, 1);
 
     // then
     assertThat(scheduler.operations).isEmpty();
@@ -119,13 +136,49 @@ final class DelayedFlusherTest {
         .flush();
 
     // when
-    flusher.flush(journal);
+    flusher.flush(journal, 1);
     scheduler.runNext();
     Mockito.doNothing().when(journal).flush();
     scheduler.runNext();
 
     // then
     Mockito.verify(journal, Mockito.times(2)).flush();
+  }
+
+  @Test
+  void shouldRescheduleOnJournalFlushError() throws CheckedJournalException {
+    // given
+    final var journal = Mockito.mock(Journal.class);
+    Mockito.doThrow(new FlushException(new IOException("No space left on device")))
+        .when(journal)
+        .flush();
+
+    // when
+    flusher.flush(journal, 1);
+    scheduler.runNext();
+    Mockito.doNothing().when(journal).flush();
+    scheduler.runNext();
+
+    // then
+    Mockito.verify(journal, Mockito.times(2)).flush();
+  }
+
+  @Test
+  void shouldPropagateUnexpectedFlushError() throws CheckedJournalException {
+    // given
+    final var journal = Mockito.mock(Journal.class);
+    Mockito.doThrow(new IllegalStateException("Metastore is in an unexpected state"))
+        .when(journal)
+        .flush();
+
+    // when
+    flusher.flush(journal, 1);
+
+    // then - unexpected failures are most likely permanent, so instead of retrying them forever
+    // they escape to the thread context's uncaught exception handler, which marks the partition
+    // unhealthy
+    assertThatThrownBy(scheduler::runNext).isInstanceOf(IllegalStateException.class);
+    assertThat(scheduler.operations).isEmpty();
   }
 
   @Test
@@ -137,7 +190,7 @@ final class DelayedFlusherTest {
         .flush();
 
     // when
-    flusher.flush(journal);
+    flusher.flush(journal, 1);
     flusher.close();
     scheduler.runNext();
 

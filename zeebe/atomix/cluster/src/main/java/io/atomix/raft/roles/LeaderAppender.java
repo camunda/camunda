@@ -262,10 +262,19 @@ final class LeaderAppender {
     member.setConfigIndex(configIndex);
   }
 
-  /** Updates the match index when a response is received. */
+  /**
+   * Updates the match index when a successful response is received.
+   *
+   * <p>The match index only ever advances here: successful responses can be reordered, e.g. when a
+   * follower acknowledges a re-transmitted append of already durable records ahead of an earlier
+   * append it is still persisting. Within a term, a successful acknowledgement never invalidates an
+   * earlier one at a higher index, so taking the maximum keeps the leader's view of the follower's
+   * progress accurate instead of letting a late, lower acknowledgement regress it. Only a failed
+   * response tells the leader that the follower lost records, which is why lowering the match index
+   * is left to {@link #resetMatchIndex(RaftMemberContext, AppendResponse)}.
+   */
   private void updateMatchIndex(final RaftMemberContext member, final AppendResponse response) {
-    // If the replica returned a valid match index then update the existing match index.
-    member.setMatchIndex(response.lastLogIndex());
+    member.setMatchIndex(Math.max(member.getMatchIndex(), response.lastLogIndex()));
     observeRemainingMemberEntries(member);
   }
 
