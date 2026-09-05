@@ -78,7 +78,7 @@
     "@types/react-transition-group": "4.4.12",
     "@typescript-eslint/eslint-plugin": "8.69.0",
     "@typescript-eslint/parser": "8.69.0",
-    "@vitejs/plugin-react": "6.0.4",
+    "@vitejs/plugin-react": "6.1.1",
     "@vitest/coverage-istanbul": "4.1.10",
     "@vitest/eslint-plugin": "1.6.24",
     "@vitest/ui": "4.1.10",
