@@ -429,6 +429,7 @@ make typical   # 50 instances/s, 6 workers, typical_process BPMN
 make realistic # Realistic multi-instance benchmark (values from camunda-load-tests-helm)
 make max       # 300 instances/s — maximum stress, also disables consistency check overhead
 make archiver  # Multi-instance archiver scenario (no workers)
+make secrets-connector # Secret resolution via a real outbound-connector job (no workers)
 ```
 
 You can also pass `scenario=` directly to combine with additional overrides:

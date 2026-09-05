@@ -429,7 +429,7 @@ In practice, most ad-hoc runs only need a test `name`, a Git `ref`, a built-in `
 
 * Specification of the Camunda/Zeebe version to test against (by selecting the workflow revision) — will make sure to use the right Camunda Platform Helm Chart version and values file.
 * Specification of the branch to test against (default: main) — will build a Docker image based on the specified branch and be used for the cluster under test and load test applications.
-* Specification of a workload scenario (`max`, `realistic`, `typical`, `latency`, or `archiver`) — making it easy to start from a known workload profile before applying targeted overrides.
+* Specification of a workload scenario (`max`, `realistic`, `typical`, `latency`, `archiver`, or `secrets-connector`) — making it easy to start from a known workload profile before applying targeted overrides.
 * Specification of the time to live (TTL) for the load test — making sure that the load test is automatically cleaned up after the specified time.
 * Specification of an existing Docker image to use — making it possible to reuse existing images.
 * Specification of platform chart overrides via `platform-helm-values` — for example orchestration sizing, env vars, and image-related settings.
@@ -469,6 +469,7 @@ Select the `scenario` input in the workflow dispatch form:
 - `typical` — straight-through baseline with a representative BPMN model and `50` PI/s target load; use it for sustained baseline comparisons. See [typical load](../docs/testing/reliability-testing.md#typical-load).
 - `latency` — low-throughput artificial workload (`1` PI/s, `1` worker) to isolate latency and reduce blast radius while debugging. See [latency load test](../docs/testing/reliability-testing.md#latency-load-test).
 - `archiver` — multi-instance archiver-focused scenario with no workers; use it when validating archiver or secondary-storage-related behavior. Its current wiring is defined in [`load-tests/setup/main/Makefile`](setup/main/Makefile).
+- `secrets-connector` — benchmarks secret resolution through a real outbound-connector job instead of workers; no workers are deployed. Requires the `platform-chart-from-main` checkbox (uses the unreleased `orchestration.secretStore.file`). See [`load-tests/docs/secrets-connector-benchmark.md`](docs/secrets-connector-benchmark.md).
 
 For manual runs and deeper scenario details, see [`load-tests/setup/README.md`](setup/README.md#running-specific-scenarios).
 

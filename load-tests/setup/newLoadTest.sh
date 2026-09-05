@@ -181,8 +181,19 @@ cp -v  "$VERSION_DIR/values/camunda-platform-override-values.yaml"              
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-defaults.yaml"                 "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/values-stable.yaml"                                 "$TARGET_DIRECTORY/"
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-realistic-benchmark.yaml"      "$TARGET_DIRECTORY/"
+cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-secrets-connector.yaml"        "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-defaults.yaml"              "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-${secondary_storage}.yaml"   "$TARGET_DIRECTORY/"
+
+# The secrets-connector-e2e benchmark's platform overrides (file secret store + SECRET authz
+# for the connectors client) only exist for the main version, which is the only version the
+# `secrets-connector` scenario supports (it needs orchestration.secretStore.file, which is
+# unreleased — see the LOAD_TEST_PLATFORM_CHART_GIT_REF handling below). Copy it when present so
+# `make secrets-connector` can reference it.
+if [[ -f "$VERSION_DIR/values/camunda-platform-values-secrets-connector.yaml" ]]; then
+  cp -v "$VERSION_DIR/values/camunda-platform-values-secrets-connector.yaml"    "$TARGET_DIRECTORY/"
+fi
+
 
 # Don't configure Elasticsearch unless specifically enabled (secondary storage,
 # or via Optimize)
@@ -374,7 +385,58 @@ CHARTS_DIR="charts"
 # per version, before this script runs), reuse it instead of pulling over the
 # network again. Unset by default, so a manual invocation always pulls fresh.
 platform_cache_src="${LOAD_TEST_CHART_CACHE_DIR:-}/${camunda_platform_helm_chart_version}/camunda-platform"
-if [[ -n "${LOAD_TEST_CHART_CACHE_DIR:-}" && -d "$platform_cache_src" ]]; then
+if [[ -n "${LOAD_TEST_PLATFORM_CHART_GIT_REF:-}" ]]; then
+  # Opt-in override: source the camunda-platform chart from a git ref of
+  # camunda/camunda-platform-helm instead of the released artifact, to pick up
+  # features that have merged to the chart repo but are not released yet (e.g.
+  # orchestration.secretStore.file, required by the secrets-connector scenario). The
+  # default path (helm pull) is unchanged, so a run without this set keeps using
+  # the pinned, released camunda_platform_helm_chart_version.
+  git_ref="$LOAD_TEST_PLATFORM_CHART_GIT_REF"
+  clone_dir="$(mktemp -d)"
+  chart_repo="https://github.com/camunda/camunda-platform-helm"
+  if [[ "$git_ref" =~ ^[0-9a-f]{7,40}$ ]]; then
+    # A commit SHA cannot be selected with `git clone --branch`, but a full clone
+    # includes it in history, so clone then check it out. Pinning to a SHA yields
+    # a reproducible chart; a floating branch like `main` can drift between runs.
+    RETRY_CLEANUP_CMD="rm -rf \"$clone_dir\"" retry_with_backoff git clone \
+        "$chart_repo" "$clone_dir"
+    git -C "$clone_dir" checkout --quiet "$git_ref"
+  else
+    RETRY_CLEANUP_CMD="rm -rf \"$clone_dir\"" retry_with_backoff git clone --depth 1 \
+        --branch "$git_ref" "$chart_repo" "$clone_dir"
+  fi
+  # The chart repo stores every version line side by side under charts/ (e.g.
+  # camunda-platform-8.10). Resolve the newest one present on the cloned ref
+  # rather than pinning a directory name here, so this keeps working when the
+  # version line rolls forward (`sort -V` orders 8.10 after 8.9). git-sourcing is
+  # only meaningful against a ref whose newest line matches the run (the checkbox
+  # sources main), so newest is the right chart.
+  chart_dirs=("$clone_dir"/charts/camunda-platform-*/)
+  chart_subdir="$(basename "$(printf '%s\n' "${chart_dirs[@]}" | sort -V | tail -1)")"
+  if [[ ! -d "$clone_dir/charts/$chart_subdir" ]]; then
+    echo "Error: no camunda-platform-* chart directory found on ref '$git_ref' of camunda-platform-helm." >&2
+    exit 1
+  fi
+  echo "Sourcing camunda-platform chart from git ($git_ref, $chart_subdir)..."
+  rm -rf "$CHARTS_DIR/camunda-platform"
+  cp -r "$clone_dir/charts/$chart_subdir" "$CHARTS_DIR/camunda-platform"
+  # The versioned chart references sibling helper charts by relative path (e.g.
+  # `file://../common-2`), which live next to it in the git repo but outside the
+  # copied subdir. Copy each referenced sibling into the scaffold's charts/ dir
+  # so those `../<name>` paths resolve; the released artifact ships them
+  # pre-packaged, so this only applies to the git-sourced chart.
+  while IFS= read -r sibling; do
+    [[ -z "$sibling" ]] && continue
+    rm -rf "${CHARTS_DIR:?}/$sibling"
+    cp -r "$clone_dir/charts/$sibling" "$CHARTS_DIR/$sibling"
+  done < <(grep -oE 'file://\.\./[^"]+' "$CHARTS_DIR/camunda-platform/Chart.yaml" \
+      | sed 's#file://\.\./##' | sort -u)
+  rm -rf "$clone_dir"
+  # The git chart declares sub-chart dependencies that the released artifact
+  # ships pre-packaged; build them from the repos and siblings prepared above.
+  retry_with_backoff helm dependency build "$CHARTS_DIR/camunda-platform"
+elif [[ -n "${LOAD_TEST_CHART_CACHE_DIR:-}" && -d "$platform_cache_src" ]]; then
   echo "Using pre-warmed camunda-platform $camunda_platform_helm_chart_version chart from cache..."
   rm -rf "$CHARTS_DIR/camunda-platform"
   cp -r "$platform_cache_src" "$CHARTS_DIR/camunda-platform"

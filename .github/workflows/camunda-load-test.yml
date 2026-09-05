@@ -38,6 +38,7 @@ on:
           - typical
           - max
           - archiver
+          - secrets-connector
         default: max
       secondary-storage-type:
         description: 'Secondary database backend for Camunda Platform'
@@ -64,6 +65,11 @@ on:
         description: 'Additional Helm values for the Camunda platform chart (e.g. --set orchestration.resources.limits.memory=2Gi)'
         type: string
         default: ""
+        required: false
+      platform-chart-from-main:
+        description: 'Source the Camunda platform Helm chart from camunda-platform-helm main instead of the pinned released artifact. Enable to benchmark chart features that have merged to the chart repo but are not released yet (required by the secrets-connector scenario).'
+        type: boolean
+        default: false
         required: false
       load-test-setup-helm-values:
         description: 'Additional Helm values for the load-test-setup chart (e.g. --set elasticsearch.storage.requests=64Gi)'
@@ -157,7 +163,7 @@ on:
         default: ""
         required: false
       scenario:
-        description: 'Workload scenario to run. Options: latency, realistic, typical, max, archiver.'
+        description: 'Workload scenario to run. Options: latency, realistic, typical, max, archiver, secrets-connector.'
         type: string
         required: false
         default: ""
@@ -169,6 +175,11 @@ on:
         description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which will be deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set orchestration.resources.limits.memory=2Gi'
         type: string
         default: ""
+        required: false
+      platform-chart-from-main:
+        description: 'Source the Camunda platform Helm chart from camunda-platform-helm main instead of the pinned released artifact. Enable to benchmark chart features that have merged to the chart repo but are not released yet (required by the secrets-connector scenario).'
+        type: boolean
+        default: false
         required: false
       load-test-setup-helm-values:
         description: 'Allows to specify additional values/configurations for the load-test-setup Helm chart, which deploys the secondary storage and supporting infra. For example, the Elasticsearch disk size can be reduced. Allows arbitrary helm arguments, like --set elasticsearch.storage.requests=64Gi'
@@ -592,6 +603,12 @@ jobs:
         run: .github/scripts/load-test-print-tool-versions.sh
 
       - name: Scaffold load-test folder
+        env:
+          # Optionally source the platform chart from camunda-platform-helm main
+          # (checkbox) instead of the pinned released artifact, to benchmark chart
+          # features that are not released yet. newLoadTest.sh sources the chart
+          # from this ref when set, and uses the released chart otherwise.
+          LOAD_TEST_PLATFORM_CHART_GIT_REF: ${{ inputs.platform-chart-from-main && 'main' || '' }}
         run: |
           cd load-tests/setup
           # The namespace label created-by will not be able resolve the actual user which triggered

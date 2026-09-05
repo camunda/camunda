@@ -119,6 +119,16 @@ public final class DataReadMeterQueryProvider {
                                             DecisionInstanceState.EVALUATED,
                                             DecisionInstanceState.FAILED))))
                     .page(p -> p.limit(100))
-                    .sort(s -> s.evaluationDate().desc())));
+                    .sort(s -> s.evaluationDate().desc())),
+        new ReadQuery(
+            // Not process-instance-related like the queries above: exists to give the
+            // secrets-connector-e2e benchmark real POST /v2/secrets/list traffic, since no
+            // connector code path ever calls it (CentralStoreSecretProvider only resolves
+            // individual references). A short, fixed interval independent of starter.rate keeps
+            // this steady and decoupled from the resolveSecret measurement, rather than scaling
+            // with process-instance throughput.
+            "secrets_list",
+            Duration.ofSeconds(1),
+            (client, context) -> client.newListSecretsCommand()));
   }
 }
