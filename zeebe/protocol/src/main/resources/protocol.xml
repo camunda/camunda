@@ -101,6 +101,7 @@
       <validValue name="SECRET_REFERENCE">75</validValue>
       <validValue name="BUFFERED_COMMAND">76</validValue>
       <validValue name="AGENT_DEFINITION">77</validValue>
+      <validValue name="RUNTIME_VARIABLES">78</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->

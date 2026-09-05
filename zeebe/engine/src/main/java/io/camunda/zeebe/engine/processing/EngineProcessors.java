@@ -81,6 +81,7 @@ import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceReexportReexportProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceReexportStartProcessor;
 import io.camunda.zeebe.engine.processing.resource.RpaReexportMigrator;
+import io.camunda.zeebe.engine.processing.runtimevariables.RuntimeVariablesFetchProcessor;
 import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.processing.secretreference.SecretReferenceProcessors;
 import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
@@ -111,6 +112,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
+import io.camunda.zeebe.protocol.record.intent.RuntimeVariablesIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -527,6 +529,16 @@ public final class EngineProcessors {
         processingState.getElementInstanceState(),
         cslCheck,
         tenantCheck);
+
+    typedRecordProcessors.onCommand(
+        ValueType.RUNTIME_VARIABLES,
+        RuntimeVariablesIntent.FETCH,
+        new RuntimeVariablesFetchProcessor(
+            processingState.getElementInstanceState(),
+            processingState.getVariableState(),
+            cslCheck,
+            tenantCheck,
+            writers));
 
     JobMetricsProcessors.addJobMetricsProcessors(
         typedRecordProcessors,

@@ -90,6 +90,32 @@ public final class VariableStateTest {
   }
 
   @Test
+  public void shouldStopCollectingEffectiveVariablesAtConfiguredSize() {
+    // given
+    declareScope(parent);
+    setVariableLocal(parent, wrapString("large"), asMsgPack("\"" + "x".repeat(100) + "\""));
+
+    // when
+    final var variables = variableState.getVariablesAsDocument(parent, size -> size < 20);
+
+    // then
+    assertThat(variables).isEmpty();
+  }
+
+  @Test
+  public void shouldStopCollectingLocalVariablesAtConfiguredSize() {
+    // given
+    declareScope(parent);
+    setVariableLocal(parent, wrapString("large"), asMsgPack("\"" + "x".repeat(100) + "\""));
+
+    // when
+    final var variables = variableState.getVariablesLocalAsDocument(parent, size -> size < 20);
+
+    // then
+    assertThat(variables).isEmpty();
+  }
+
+  @Test
   public void shouldCollectNoVariablesAsEmptyDocument() {
     // given
     declareScope(parent);

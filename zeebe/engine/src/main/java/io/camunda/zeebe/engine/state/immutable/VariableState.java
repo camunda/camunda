@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.state.variable.VariableInstance;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.IntPredicate;
 import org.agrona.DirectBuffer;
 
 public interface VariableState {
@@ -27,9 +28,13 @@ public interface VariableState {
 
   DirectBuffer getVariablesAsDocument(long scopeKey);
 
+  Optional<DirectBuffer> getVariablesAsDocument(long scopeKey, IntPredicate canWriteDocument);
+
   DirectBuffer getVariablesAsDocument(long scopeKey, Collection<DirectBuffer> names);
 
   DirectBuffer getVariablesLocalAsDocument(long scopeKey);
+
+  Optional<DirectBuffer> getVariablesLocalAsDocument(long scopeKey, IntPredicate canWriteDocument);
 
   boolean isEmpty();
 

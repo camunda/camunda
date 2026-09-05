@@ -34,6 +34,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFI
 import static io.camunda.zeebe.protocol.record.ValueType.RESOURCE_REEXPORT;
 import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
 import static io.camunda.zeebe.protocol.record.ValueType.RUNTIME_INSTRUCTION;
+import static io.camunda.zeebe.protocol.record.ValueType.RUNTIME_VARIABLES;
 import static io.camunda.zeebe.protocol.record.ValueType.SIGNAL;
 import static io.camunda.zeebe.protocol.record.ValueType.SIGNAL_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.TIMER;
@@ -136,6 +137,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.RuntimeVariablesRecordValue;
 import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
@@ -237,6 +239,7 @@ public class CompactRecordLogger {
           entry(CONDITIONAL_SUBSCRIPTION.name(), "COND_SUB"),
           entry(CONDITIONAL_EVALUATION.name(), "COND_EVAL"),
           entry(EXPRESSION.name(), "EXPR"),
+          entry(RUNTIME_VARIABLES.name(), "RT_VAR"),
           entry(IDENTITY_SETUP.name(), "ID"),
           entry(CHECKPOINT.name(), "CHK"),
           entry(GLOBAL_LISTENER.name(), "GL"),
@@ -337,6 +340,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.CONDITIONAL_SUBSCRIPTION, this::summarizeConditionalSubscription);
     valueLoggers.put(CONDITIONAL_EVALUATION, this::summarizeConditionalEvaluation);
     valueLoggers.put(EXPRESSION, this::summarizeExpression);
+    valueLoggers.put(RUNTIME_VARIABLES, this::summarizeRuntimeVariables);
     valueLoggers.put(ValueType.IDENTITY_SETUP, this::summarizeIdentitySetup);
     valueLoggers.put(ValueType.SCALE, this::summarizeScale);
     valueLoggers.put(ValueType.CHECKPOINT, this::summarizeCheckpoint);
@@ -1328,6 +1332,15 @@ public class CompactRecordLogger {
         + "\" = "
         + formatVariableValue(value.getResultValue())
         + formatVariables(value.getVariables())
+        + formatTenant(value);
+  }
+
+  private String summarizeRuntimeVariables(final Record<?> record) {
+    final var value = (RuntimeVariablesRecordValue) record.getValue();
+    return "scope="
+        + shortenKey(value.getScopeKey())
+        + " "
+        + value.getScope()
         + formatTenant(value);
   }
 

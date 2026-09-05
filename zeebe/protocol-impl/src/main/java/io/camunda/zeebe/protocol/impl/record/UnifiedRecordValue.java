@@ -73,6 +73,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.runtimevariables.RuntimeVariablesRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
@@ -223,6 +224,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.EXPRESSION -> new ExpressionRecord();
       case ValueType.MULTI_INSTANCE -> new MultiInstanceRecord();
       case ValueType.RUNTIME_INSTRUCTION -> new RuntimeInstructionRecord();
+      case ValueType.RUNTIME_VARIABLES -> new RuntimeVariablesRecord();
       case ValueType.BATCH_OPERATION_INITIALIZATION -> new BatchOperationInitializationRecord();
       case ValueType.CHECKPOINT -> new CheckpointRecord();
       case ValueType.MESSAGE_SUBSCRIPTION -> new MessageSubscriptionRecord();

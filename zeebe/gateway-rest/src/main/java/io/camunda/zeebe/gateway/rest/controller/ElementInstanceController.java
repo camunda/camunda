@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
@@ -34,11 +35,13 @@ import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @CamundaRestController
 @RequestMapping("/v2/element-instances")
@@ -74,6 +77,34 @@ public class ElementInstanceController {
         () ->
             elementInstanceServices.setVariables(
                 variablesRequest, authenticationProvider.getCamundaAuthentication()));
+  }
+
+  @CamundaGetMapping(path = "/{elementInstanceKey}/variables")
+  public CompletableFuture<ResponseEntity<Object>> getRuntimeVariables(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final long elementInstanceKey,
+      @RequestParam(defaultValue = "EFFECTIVE") final String scope) {
+    return RequestMapper.toRuntimeVariableScope(scope)
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            runtimeScope ->
+                getRuntimeVariables(physicalTenantId, elementInstanceKey, runtimeScope));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> getRuntimeVariables(
+      final String physicalTenantId,
+      final long elementInstanceKey,
+      final io.camunda.zeebe.protocol.record.value.RuntimeVariableScope runtimeScope) {
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            serviceRegistry
+                .elementInstanceServices(physicalTenantId)
+                .fetchRuntimeVariables(
+                    elementInstanceKey,
+                    runtimeScope,
+                    authenticationProvider.getCamundaAuthentication()),
+        ResponseMapper::toRuntimeVariablesResult,
+        HttpStatus.OK);
   }
 
   @RequiresSecondaryStorage

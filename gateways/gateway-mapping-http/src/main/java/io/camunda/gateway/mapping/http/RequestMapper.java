@@ -86,6 +86,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
+import io.camunda.zeebe.protocol.record.value.RuntimeVariableScope;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.Part;
@@ -97,6 +98,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -502,6 +504,22 @@ public class RequestMapper {
     final List<String> validationErrors = new ArrayList<>();
     validateKeyFormat(scopeKey, "scopeKey", validationErrors);
     return createProblemDetail(validationErrors);
+  }
+
+  public static Either<ProblemDetail, RuntimeVariableScope> toRuntimeVariableScope(
+      final @Nullable String scope) {
+    if (scope == null || scope.isBlank()) {
+      return Either.right(RuntimeVariableScope.EFFECTIVE);
+    }
+    try {
+      return Either.right(RuntimeVariableScope.valueOf(scope.toUpperCase(Locale.ROOT)));
+    } catch (final IllegalArgumentException ignored) {
+      return Either.left(
+          GatewayErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST,
+              "Unexpected runtime variable scope '%s'. Use EFFECTIVE or LOCAL.".formatted(scope),
+              INVALID_ARGUMENT.name()));
+    }
   }
 
   public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequest(
