@@ -312,26 +312,6 @@
       "reason": "#59378 - getUsageMetrics binds tenantId as a plain String and passes it straight to UsageMetricsFilter, so the TenantId pattern (^(<default>|[\\w\\.\\-]{1,31})$) is never checked and the request succeeds with a 200. Previously masked by #58948: the scenario sent no query string at all, so its 400 came from the missing required startTime/endTime"
     },
     {
-      "describe": "Setup Validation API Tests",
-      "title": "createAdminUser - Missing password (#1)",
-      "reason": "createAdminUser body validation reorder (28d20717880f) is incomplete"
-    },
-    {
-      "describe": "Setup Validation API Tests",
-      "title": "createAdminUser - Missing password (#2)",
-      "reason": "createAdminUser body validation reorder (28d20717880f) is incomplete"
-    },
-    {
-      "describe": "Setup Validation API Tests",
-      "title": "createAdminUser - Missing username",
-      "reason": "createAdminUser body validation reorder (28d20717880f) is incomplete"
-    },
-    {
-      "describe": "Setup Validation API Tests",
-      "title": "createAdminUser - Missing combo username,password",
-      "reason": "createAdminUser body validation reorder (28d20717880f) is incomplete"
-    },
-    {
       "describe": "Tenants Validation API Tests",
       "title": "assignGroupToTenant - Path param groupId length-min violation",
       "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
